@@ -1879,6 +1879,239 @@ ${productsText}`;
         </div>
       )}
 
+
+      {showOptionsMenu && (
+        <>
+          <div className="fixed inset-0 z-[1900]" onClick={() => setShowOptionsMenu(false)} />
+          <div className="fixed left-3 top-[4.5rem] w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
+            
+            {/* 1. حقل البحث مدمج هنا وجانبه زر تجهيز الإدارة */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="ابحث عن مادة..."
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl py-2 pr-8 pl-3 text-xs font-bold text-white outline-none focus:border-indigo-400 transition-all shadow-inner"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 bg-slate-700 text-slate-300 rounded-full text-[8px] flex items-center justify-center"
+                  >✕</button>
+                )}
+              </div>
+              {preAdminProducts ? (
+                <button
+                  type="button"
+                  onClick={() => { revertAdminFullfillment(); setShowOptionsMenu(false); }}
+                  className="h-8 px-2 rounded-xl text-[9px] font-black bg-indigo-650 hover:bg-indigo-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                  title="تراجع عن تجهيز الإدارة"
+                >
+                  🏛️ تراجع
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { markAllAsAdminFulfilled(); setShowOptionsMenu(false); }}
+                  className="h-8 px-2.5 rounded-xl text-[9px] font-black bg-amber-600 hover:bg-amber-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                  title="تجهيز الكل من الإدارة"
+                >
+                  🏛️ تجهيز إدارة
+                </button>
+              )}
+            </div>
+
+            {/* 2. أزرار الحفظ والإرسال */}
+            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+              {isDraft ? (
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="submit"
+                    name="submitType"
+                    value="admin_approve"
+                    disabled={pending}
+                    onClick={() => setShowOptionsMenu(false)}
+                    className="h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                  >
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={10} height={10} /> مسودة معتمدة</>}
+                  </button>
+                  <button
+                    type="submit"
+                    name="submitType"
+                    value="final_send"
+                    disabled={pending}
+                    onClick={() => setShowOptionsMenu(false)}
+                    className="h-9 rounded-xl bg-violet-650 hover:bg-violet-750 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                  >
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={10} height={10} /> إرسال نهائي</>}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={pending}
+                  onClick={() => setShowOptionsMenu(false)}
+                  className="w-full h-9 rounded-xl bg-sky-600 hover:bg-sky-700 text-[10px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                >
+                  {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> حفظ وإرسال</>}
+                </button>
+              )}
+            </div>
+
+            {/* 3. أوامر التجهيز والإسناد */}
+            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+              <div className="grid grid-cols-2 gap-1.5">
+                {isDraft && couriers ? (
+                  <button
+                    type="button"
+                    onClick={() => { setShowAutoCourier(!showAutoCourier); setShowOptionsMenu(false); }}
+                    className={`h-8 rounded-xl text-[9px] font-black text-white active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                      showAutoCourier ? "bg-violet-800" : "bg-violet-650 hover:bg-violet-750"
+                    }`}
+                  >
+                    👤 إسناد تلقائي
+                  </button>
+                ) : (
+                  <div className="h-8 rounded-xl bg-slate-800/40 text-[8px] font-bold text-slate-500 flex items-center justify-center">إسناد تلقائي مقفل</div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setShowReassign(!showReassign); setShowOptionsMenu(false); }}
+                  className="h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                >
+                  👤 إسناد للمجهزين
+                </button>
+              </div>
+            </div>
+
+            {/* 4. أوضاع التحكم السريعة */}
+            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                   type="button"
+                   onClick={() => {
+                     setShowBulkAdd(!showBulkAdd);
+                     setDeleteMode(false);
+                     setSelectionMode(false);
+                     setShowOptionsMenu(false);
+                   }}
+                   className="h-8 rounded-xl text-[9px] font-black bg-amber-500 text-white hover:bg-amber-600 transition-all active:scale-95 flex items-center justify-center gap-1"
+                >
+                   ➕ إضافة منتج
+                </button>
+                <button
+                   type="button"
+                   onClick={() => {
+                     setDeleteMode(!deleteMode);
+                     setShowBulkAdd(false);
+                     setSelectionMode(false);
+                     setShowOptionsMenu(false);
+                   }}
+                   className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                     deleteMode ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 hover:bg-slate-700 text-rose-450"
+                   }`}
+                >
+                   🗑️ حذف منتج
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                   type="button"
+                   disabled={isSorting}
+                   onClick={() => { handleAiSort(); setShowOptionsMenu(false); }}
+                   className="h-8 rounded-xl text-[9px] font-black bg-indigo-650 text-white hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
+                >
+                   ترتيب 🪄
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { handleToggleNoProfit(!noProfit); setShowOptionsMenu(false); }}
+                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                    noProfit ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 text-rose-450"
+                  }`}
+                >
+                  🚫 إيقاف الربح
+                </button>
+              </div>
+            </div>
+
+            {/* 5. أدوات ونسخ الطلب وخيار إخفاء البيع */}
+            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleCopyTemplate}
+                  className={`h-8 rounded-xl text-[9px] font-black text-white active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                    templateSuccess ? "bg-emerald-600" : "bg-teal-650 hover:bg-teal-750"
+                  }`}
+                >
+                  {templateSuccess ? "📋 تم النسخ!" : "📝 كليشة الطلب"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowDuplicateModal(true); setShowOptionsMenu(false); }}
+                  className="h-8 rounded-xl bg-violet-650 hover:bg-violet-755 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                >
+                  👯 نسخ وتكرار
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
+                className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
+                }`}
+              >
+                {hideSellPrice ? "👁️ إظهار سعر البيع" : "🙈 إخفاء سعر البيع"}
+              </button>
+            </div>
+
+            {/* 6. خيارات العرض المتقدمة (سعر المتجر وعدد المحلات بجانب بعضهما) */}
+            <div className="flex flex-col gap-2 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400">إخفاء سعر المتجر:</span>
+                <button
+                  type="button"
+                  onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
+                  className={`h-7 px-3 rounded-lg text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                    hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                  }`}
+                >
+                  {hideBuyPrice ? "👁️ إظهار" : "🙈 إخفاء"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
+                    className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
+                  >
+                    -
+                  </button>
+                  <span className="px-3 font-mono font-black text-xs text-amber-400">{placesCount}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
+                    className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </>
+      )}
+
       {previewImageUrl && (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/80" onClick={() => setPreviewImageUrl(null)}>
            <img src={previewImageUrl} className="max-h-screen max-w-full object-contain" style={{ transform: `scale(${previewZoom})` }} onClick={e => e.stopPropagation()} />
