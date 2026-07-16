@@ -1087,7 +1087,7 @@ export function OrderPricingPanel({
         )}
 
         <div className="flex-1 overflow-y-auto px-1 custom-scrollbar pb-32">
-          {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); }} icons={icons || undefined} hideContainer={true} /></div>}
+          {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); window.location.reload(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
           {selectedProductIndexes.length > 0 && (
              <div className="rounded-xl bg-sky-900 p-2 shadow-lg mb-4">
