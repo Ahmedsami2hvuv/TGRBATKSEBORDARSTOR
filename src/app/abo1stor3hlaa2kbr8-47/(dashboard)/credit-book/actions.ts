@@ -2601,8 +2601,8 @@ export async function syncOldCustomerDebts() {
           if (!cbPartner) {
             cbPartner = await prisma.creditBookPartner.create({
               data: {
-                name: `${customer.name || 'زبون'} (زبون)`,
-                phone: customer.phone || order.customerPhone || null,
+                name: "زبون",
+                phone: order.customerPhone || customer.phone || null,
                 type: "customer",
                 externalId: customerId,
                 updatedAt: new Date()

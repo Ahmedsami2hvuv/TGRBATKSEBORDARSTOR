@@ -119,11 +119,11 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               });
 
               if (!cbPartner) {
-                // إنشاء شريك جديد
+                // إنشاء شريك جديد بالاسم الافتراضي "زبون"
                 cbPartner = await db.creditBookPartner.create({
                   data: {
-                    name: `${customer.name || 'زبون'} (زبون)`,
-                    phone: customer.phone || order.customerPhone || null,
+                    name: "زبون",
+                    phone: order.customerPhone || customer.phone || null,
                     type: "customer",
                     externalId: order.customerId,
                     updatedAt: new Date()
