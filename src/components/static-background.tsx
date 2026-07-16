@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function StaticBackground({ systemDefaultBgUrl }: { systemDefaultBgUrl?: string }) {
   const [bgUrl, setBgUrl] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     // دالة تحديث الحالة وتطبيق فئة التنسيق الزجاجي على الـ body
     const updateBackground = () => {
+      // استبعاد أصحاب المحلات (العملاء) لتبقى الخلفية بيضاء ثابتة لديهم
+      if (pathname && pathname.startsWith("/client")) {
+        setBgUrl(null);
+        document.body.classList.remove("has-custom-bg");
+        return;
+      }
+
       const stored = localStorage.getItem("kse_user_background_url");
       let activeUrl = "";
 
@@ -46,7 +55,7 @@ export function StaticBackground({ systemDefaultBgUrl }: { systemDefaultBgUrl?: 
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("kse_background_changed", updateBackground);
     };
-  }, [systemDefaultBgUrl]);
+  }, [systemDefaultBgUrl, pathname]);
 
   if (!bgUrl) return null;
 
