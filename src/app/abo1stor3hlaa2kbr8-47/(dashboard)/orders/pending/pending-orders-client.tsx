@@ -960,13 +960,22 @@ ${productsText}`;
                 </button>
               )}
 
-              {/* الإجمالي الكلي معروض بوضوح في المنتصف */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 select-none">
-                 <span className="text-[9px] font-black text-slate-400">الإجمالي:</span>
-                 <span className="text-[11px] font-black font-mono text-amber-400">
-                    {totals.total.toLocaleString()} الف
-                 </span>
-              </div>
+              {/* وضع زر التحديد الفوري كخيار مباشر في الشريط العلوي */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode(!selectionMode);
+                  setDeleteMode(false);
+                  setShowBulkAdd(false);
+                }}
+                className={`h-10 px-3.5 rounded-xl text-[11px] font-black shadow-md transition-all active:scale-95 flex items-center gap-1.5 shrink-0 ${
+                  selectionMode
+                    ? "bg-sky-600 text-white ring-2 ring-sky-300"
+                    : "bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700"
+                }`}
+              >
+                🔘 وضع التحديد
+              </button>
 
               {/* زر الخيارات المنسدل الموحد */}
               <div className="relative">
@@ -1244,6 +1253,15 @@ ${productsText}`;
         <div className="p-3 bg-white/40 dark:bg-slate-850/40 rounded-2xl border border-slate-150 dark:border-slate-800 mb-2">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[10px] font-black text-slate-500">مستوى الإنجاز</span>
+            
+            {/* الإجمالي الكلي مدمج في بلوك الإنجاز */}
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 select-none">
+               <span className="text-[8px] font-black text-slate-400">الإجمالي:</span>
+               <span className="text-[10px] font-black font-mono text-emerald-700 dark:text-emerald-400">
+                  {totals.total.toLocaleString()} الف
+               </span>
+            </div>
+
             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${stats.percent === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
               {stats.priced} من {stats.total} ({stats.percent}%)
             </span>
@@ -2099,23 +2117,34 @@ export function PendingAssignPanel({
   const [doorPhotoPreview, setDoorPhotoPreview] = useState<string | null>(customerDoorPhotoUrl ? resolvePublicAssetSrc(customerDoorPhotoUrl) : null);
   const [secondDoorPhotoPreview, setSecondDoorPhotoPreview] = useState<string | null>(secondCustomerDoorPhotoUrl ? resolvePublicAssetSrc(secondCustomerDoorPhotoUrl) : null);
 
-  const handleDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const secondCameraInputRef = useRef<HTMLInputElement>(null);
+  const secondGalleryInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>, isCamera: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
       setDoorPhotoPreview(URL.createObjectURL(file));
+      if (isCamera) {
+        if (galleryInputRef.current) galleryInputRef.current.value = "";
+      } else {
+        if (cameraInputRef.current) cameraInputRef.current.value = "";
+      }
     }
   };
 
-  const handleSecondDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSecondDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>, isCamera: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
       setSecondDoorPhotoPreview(URL.createObjectURL(file));
+      if (isCamera) {
+        if (secondGalleryInputRef.current) secondGalleryInputRef.current.value = "";
+      } else {
+        if (secondCameraInputRef.current) secondCameraInputRef.current.value = "";
+      }
     }
   };
-
-  useEffect(() => {
-    if (state.ok && onSuccess) onSuccess();
-  }, [state.ok, onSuccess]);
 
   if (couriers.length === 0) return <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-bold text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مناديب متاحين حالياً.</div>;
 
@@ -2171,7 +2200,6 @@ export function PendingAssignPanel({
              options={couriers.map((c) => ({ value: c.id, label: c.name }))}
            />
         </div>
-
         {isDouble ? (
           <div className="space-y-3">
             {/* الوجهة الأولى */}
@@ -2184,7 +2212,7 @@ export function PendingAssignPanel({
                   name="customerLocationUrl"
                   defaultValue={defaultCustomerLocationUrl}
                   placeholder="الصق رابط لوكيشن البائع هنا..."
-                  className="w-full h-12 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
                 />
               </div>
 
@@ -2218,16 +2246,39 @@ export function PendingAssignPanel({
                         🚪
                       </div>
                     )}
-                    <label className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg text-[8px] font-black cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all">
-                      <span>📸 تغيير الصورة</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2 py-1.5 rounded-lg text-[8px] font-black border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+                      >
+                        📷 الكاميرا
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 px-2 py-1.5 rounded-lg text-[8px] font-black border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+                      >
+                        🖼️ المعرض
+                      </button>
                       <input
                         type="file"
                         name="doorPhoto"
                         accept="image/*"
-                        onChange={handleDoorPhotoChange}
+                        capture="environment"
+                        ref={cameraInputRef}
+                        onChange={(e) => handleDoorPhotoChange(e, true)}
                         className="sr-only"
                       />
-                    </label>
+                      <input
+                        type="file"
+                        name="doorPhoto"
+                        accept="image/*"
+                        ref={galleryInputRef}
+                        onChange={(e) => handleDoorPhotoChange(e, false)}
+                        className="sr-only"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2237,14 +2288,25 @@ export function PendingAssignPanel({
             <div className="p-3.5 bg-rose-50/10 dark:bg-rose-950/5 rounded-2xl border border-rose-100 dark:border-rose-900/20 space-y-3">
               <h4 className="text-[10px] font-black text-rose-700 border-b pb-1">الوجهة الثانية (المشتري / المستلم)</h4>
               
-              <div className="space-y-1">
-                <label className="text-[8px] font-black text-slate-400 block pr-1">رابط لوكيشن قوقل ماب</label>
-                <textarea
-                  name="secondCustomerLocationUrl"
-                  defaultValue={defaultSecondCustomerLocationUrl}
-                  placeholder="الصق رابط لوكيشن المشتري هنا..."
-                  className="w-full h-12 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
-                />
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-1">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1">رابط لوكيشن قوقل ماب</label>
+                  <textarea
+                    name="secondCustomerLocationUrl"
+                    defaultValue={defaultSecondCustomerLocationUrl}
+                    placeholder="الصق رابط لوكيشن المشتري هنا..."
+                    className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={pending}
+                  title="تأكيد الإسناد والإرسال للمندوب"
+                  className="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1 shadow-md transition-all active:scale-95 disabled:opacity-40 shrink-0 font-black text-[10px]"
+                >
+                  {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={10} height={10} /> إسناد</>}
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -2277,16 +2339,39 @@ export function PendingAssignPanel({
                         🚪
                       </div>
                     )}
-                    <label className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg text-[8px] font-black cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all">
-                      <span>📸 تغيير الصورة</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => secondCameraInputRef.current?.click()}
+                        className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2 py-1.5 rounded-lg text-[8px] font-black border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+                      >
+                        📷 الكاميرا
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => secondGalleryInputRef.current?.click()}
+                        className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 px-2 py-1.5 rounded-lg text-[8px] font-black border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+                      >
+                        🖼️ المعرض
+                      </button>
                       <input
                         type="file"
                         name="secondDoorPhoto"
                         accept="image/*"
-                        onChange={handleSecondDoorPhotoChange}
+                        capture="environment"
+                        ref={secondCameraInputRef}
+                        onChange={(e) => handleSecondDoorPhotoChange(e, true)}
                         className="sr-only"
                       />
-                    </label>
+                      <input
+                        type="file"
+                        name="secondDoorPhoto"
+                        accept="image/*"
+                        ref={secondGalleryInputRef}
+                        onChange={(e) => handleSecondDoorPhotoChange(e, false)}
+                        className="sr-only"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2294,14 +2379,25 @@ export function PendingAssignPanel({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1">رابط الموقع (Google Maps)</label>
-              <textarea
-                name="customerLocationUrl"
-                defaultValue={defaultCustomerLocationUrl}
-                className="w-full h-16 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-3 text-[11px] font-bold font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
-                placeholder="https://maps.google.com/..."
-              />
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1">رابط الموقع (Google Maps)</label>
+                <textarea
+                  name="customerLocationUrl"
+                  defaultValue={defaultCustomerLocationUrl}
+                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2.5 text-[10px] font-bold font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                  placeholder="https://maps.google.com/..."
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={pending}
+                title="تأكيد الإسناد والإرسال للمندوب"
+                className="h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-40 shrink-0 font-black text-xs"
+              >
+                {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> إسناد</>}
+              </button>
             </div>
             
             <div className="grid grid-cols-2 gap-2">
@@ -2349,16 +2445,39 @@ export function PendingAssignPanel({
                   </div>
                 )}
                 
-                <label className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-xl text-[10px] font-black cursor-pointer border border-emerald-200 dark:border-emerald-900/30 shadow-sm active:scale-95 transition-all">
-                  <span>📸 تغيير صورة الباب (كاميرا / معرض)</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-xl text-[10px] font-black border border-emerald-200 dark:border-emerald-900/30 shadow-sm active:scale-95 transition-all"
+                  >
+                    📷 فتح الكاميرا
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all"
+                  >
+                    🖼️ المعرض
+                  </button>
                   <input
                     type="file"
                     name="doorPhoto"
                     accept="image/*"
-                    onChange={handleDoorPhotoChange}
+                    capture="environment"
+                    ref={cameraInputRef}
+                    onChange={(e) => handleDoorPhotoChange(e, true)}
                     className="sr-only"
                   />
-                </label>
+                  <input
+                    type="file"
+                    name="doorPhoto"
+                    accept="image/*"
+                    ref={galleryInputRef}
+                    onChange={(e) => handleDoorPhotoChange(e, false)}
+                    className="sr-only"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -2387,14 +2506,6 @@ export function PendingAssignPanel({
       </div>
 
       {state.error && <p className="p-3 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-bold border border-rose-200">{state.error}</p>}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full h-14 bg-emerald-600 text-white rounded-[1.5rem] text-sm font-black shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-      >
-        {pending ? "جاري الإسناد والتوصيل..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> تأكيد الإسناد والإرسال للمندوب</>}
-      </button>
     </form>
   );
 }
