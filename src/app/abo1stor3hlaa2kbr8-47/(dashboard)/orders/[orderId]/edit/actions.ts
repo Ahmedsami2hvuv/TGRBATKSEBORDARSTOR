@@ -343,7 +343,7 @@ export async function updateOrderAdmin(
     await syncOrderCourierMoneyExpectations(tx, orderId);
   });
 
-  if (status === "delivered") {
+  if (status === "delivered" || status === "archived") {
     try {
       const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
       await handleOrderDelivered(orderId);
