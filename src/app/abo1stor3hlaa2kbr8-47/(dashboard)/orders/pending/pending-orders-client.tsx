@@ -987,39 +987,60 @@ ${productsText}`;
                     <div className="fixed inset-0 z-[190]" onClick={() => setShowOptionsMenu(false)} />
                     <div className="absolute left-0 mt-2 w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[200] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
                       
-                      {/* 1. حقل البحث مدمج هنا */}
-                      <div className="relative mb-1">
-                        <input
-                          type="text"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          placeholder="ابحث عن مادة..."
-                          className="w-full bg-slate-800/80 border border-slate-700 rounded-xl py-2 pr-8 pl-3 text-xs font-bold text-white outline-none focus:border-indigo-400 transition-all shadow-inner"
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
-                        {searchTerm && (
+                      {/* 1. حقل البحث مدمج هنا وجانبه زر تجهيز الإدارة */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="ابحث عن مادة..."
+                            className="w-full bg-slate-800/80 border border-slate-700 rounded-xl py-2 pr-8 pl-3 text-xs font-bold text-white outline-none focus:border-indigo-400 transition-all shadow-inner"
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                          {searchTerm && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchTerm("")}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 bg-slate-700 text-slate-300 rounded-full text-[8px] flex items-center justify-center"
+                            >✕</button>
+                          )}
+                        </div>
+                        {preAdminProducts ? (
                           <button
                             type="button"
-                            onClick={() => setSearchTerm("")}
-                            className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 bg-slate-700 text-slate-300 rounded-full text-[8px] flex items-center justify-center"
-                          >✕</button>
+                            onClick={() => { revertAdminFullfillment(); setShowOptionsMenu(false); }}
+                            className="h-8 px-2 rounded-xl text-[9px] font-black bg-indigo-650 hover:bg-indigo-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                            title="تراجع عن تجهيز الإدارة"
+                          >
+                            🏛️ تراجع
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { markAllAsAdminFulfilled(); setShowOptionsMenu(false); }}
+                            className="h-8 px-2.5 rounded-xl text-[9px] font-black bg-amber-600 hover:bg-amber-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                            title="تجهيز الكل من الإدارة"
+                          >
+                            🏛️ تجهيز إدارة
+                          </button>
                         )}
                       </div>
 
                       {/* 2. أزرار الحفظ والإرسال */}
-                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-400 mb-1">عمليات الحفظ والإرسال:</p>
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+                        <p className="text-[9px] font-black text-slate-400 mb-0.5">عمليات الحفظ والإرسال:</p>
                         {isDraft ? (
-                          <div className="grid grid-cols-1 gap-1.5">
+                          <div className="grid grid-cols-2 gap-1.5">
                             <button
                               type="submit"
                               name="submitType"
                               value="admin_approve"
                               disabled={pending}
                               onClick={() => setShowOptionsMenu(false)}
-                              className="w-full h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[10px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                              className="h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
                             >
-                              {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={12} height={12} /> حفظ كمسودة معتمدة</>}
+                              {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={10} height={10} /> مسودة معتمدة</>}
                             </button>
                             <button
                               type="submit"
@@ -1027,9 +1048,9 @@ ${productsText}`;
                               value="final_send"
                               disabled={pending}
                               onClick={() => setShowOptionsMenu(false)}
-                              className="w-full h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[10px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                              className="h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
                             >
-                              {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={12} height={12} /> إرسال نهائي للنظام</>}
+                              {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={10} height={10} /> إرسال نهائي</>}
                             </button>
                           </div>
                         ) : (
@@ -1045,28 +1066,10 @@ ${productsText}`;
                       </div>
 
                       {/* 3. أوامر التجهيز والإسناد */}
-                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-400 mb-1">أوامر التجهيز والإسناد:</p>
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أوامر التجهيز والإسناد:</p>
                         <div className="grid grid-cols-2 gap-1.5">
-                          {preAdminProducts ? (
-                            <button
-                              type="button"
-                              onClick={() => { revertAdminFullfillment(); setShowOptionsMenu(false); }}
-                              className="h-8 rounded-xl text-[9px] font-black bg-indigo-650 hover:bg-indigo-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1"
-                            >
-                              ↩️ تراجع
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => { markAllAsAdminFulfilled(); setShowOptionsMenu(false); }}
-                              className="h-8 rounded-xl text-[9px] font-black bg-amber-600 hover:bg-amber-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1"
-                            >
-                              🏛️ تجهيز الإدارة
-                            </button>
-                          )}
-
-                          {isDraft && couriers && (
+                          {isDraft && couriers ? (
                             <button
                               type="button"
                               onClick={() => { setShowAutoCourier(!showAutoCourier); setShowOptionsMenu(false); }}
@@ -1076,35 +1079,51 @@ ${productsText}`;
                             >
                               👤 إسناد تلقائي
                             </button>
+                          ) : (
+                            <div className="h-8 rounded-xl bg-slate-800/40 text-[8px] font-bold text-slate-500 flex items-center justify-center">إسناد تلقائي مقفل</div>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => { setShowReassign(!showReassign); setShowOptionsMenu(false); }}
+                            className="h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                          >
+                            👤 إسناد للمجهزين
+                          </button>
                         </div>
-                        
-                        <button
-                          type="button"
-                          onClick={() => { setShowReassign(!showReassign); setShowOptionsMenu(false); }}
-                          className="w-full h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
-                        >
-                          👤 إسناد يدوي للمجهزين
-                        </button>
                       </div>
 
                       {/* 4. أوضاع التحكم السريعة */}
-                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-400 mb-1">أوضاع التحكم السريعة:</p>
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أوضاع التحكم السريعة:</p>
+                        
+                        {/* وضع التحديد في سطر كامل للسهولة والوضوح */}
+                        <button
+                           type="button"
+                           onClick={() => {
+                             setSelectionMode(!selectionMode);
+                             setDeleteMode(false);
+                             setShowBulkAdd(false);
+                             setShowOptionsMenu(false);
+                           }}
+                           className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                             selectionMode ? "bg-sky-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-sky-400"
+                           }`}
+                        >
+                           🔘 وضع التحديد
+                        </button>
+
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                              type="button"
                              onClick={() => {
-                               setSelectionMode(!selectionMode);
+                               setShowBulkAdd(!showBulkAdd);
                                setDeleteMode(false);
-                               setShowBulkAdd(false);
+                               setSelectionMode(false);
                                setShowOptionsMenu(false);
                              }}
-                             className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                               selectionMode ? "bg-sky-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-sky-400"
-                             }`}
+                             className="h-8 rounded-xl text-[9px] font-black bg-amber-500 text-white hover:bg-amber-600 transition-all active:scale-95 flex items-center justify-center gap-1"
                           >
-                             🔘 وضع التحديد
+                             ➕ إضافة منتج
                           </button>
                           <button
                              type="button"
@@ -1120,18 +1139,9 @@ ${productsText}`;
                           >
                              🗑️ حذف منتج
                           </button>
-                          <button
-                             type="button"
-                             onClick={() => {
-                               setShowBulkAdd(!showBulkAdd);
-                               setDeleteMode(false);
-                               setSelectionMode(false);
-                               setShowOptionsMenu(false);
-                             }}
-                             className="h-8 rounded-xl text-[9px] font-black bg-amber-500 text-white hover:bg-amber-600 transition-all active:scale-95 flex items-center justify-center gap-1"
-                          >
-                             ➕ إضافة منتج
-                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1.5">
                           <button
                              type="button"
                              disabled={isSorting}
@@ -1140,22 +1150,21 @@ ${productsText}`;
                           >
                              ترتيب 🪄
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => { handleToggleNoProfit(!noProfit); setShowOptionsMenu(false); }}
+                            className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                              noProfit ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 text-rose-450"
+                            }`}
+                          >
+                            🚫 إيقاف الربح
+                          </button>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => { handleToggleNoProfit(!noProfit); setShowOptionsMenu(false); }}
-                          className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                            noProfit ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 text-rose-450"
-                          }`}
-                        >
-                          🚫 {noProfit ? "إيقاف الربح مفعل" : "إيقاف الربح"}
-                        </button>
                       </div>
 
                       {/* 5. خيارات العرض والتصوير 📸 */}
-                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-400 mb-1">خيارات العرض والتصوير 📸:</p>
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+                        <p className="text-[9px] font-black text-slate-400 mb-0.5">خيارات العرض والتصوير 📸:</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
@@ -1179,8 +1188,8 @@ ${productsText}`;
                       </div>
 
                       {/* 6. أدوات ونسخ الطلب 📝👯 */}
-                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-400 mb-1">أدوات ونسخ الطلب 📝👯:</p>
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أدوات ونسخ الطلب 📝👯:</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
@@ -1202,7 +1211,7 @@ ${productsText}`;
                       </div>
 
                       {/* 7. عدد المحلات */}
-                      <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center justify-between pt-1.5">
                         <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
                         <div className="flex items-center gap-1">
                           <button
