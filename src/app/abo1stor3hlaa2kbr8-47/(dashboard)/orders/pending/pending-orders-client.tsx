@@ -409,7 +409,7 @@ export function OrderPricingPanel({
   const [preAdminProducts, setPreAdminProducts] = useState<any[] | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [hideBuyPrice, setHideBuyPrice] = useState(true);
+  const [hideBuyPrice, setHideBuyPrice] = useState(false);
   const [hideSellPrice, setHideSellPrice] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicatePhone, setDuplicatePhone] = useState("");
