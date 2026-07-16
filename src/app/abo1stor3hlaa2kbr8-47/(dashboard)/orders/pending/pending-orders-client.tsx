@@ -409,7 +409,7 @@ export function OrderPricingPanel({
   const [preAdminProducts, setPreAdminProducts] = useState<any[] | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [hideBuyPrice, setHideBuyPrice] = useState(false);
+  const [hideBuyPrice, setHideBuyPrice] = useState(true);
   const [hideSellPrice, setHideSellPrice] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicatePhone, setDuplicatePhone] = useState("");
@@ -1038,7 +1038,6 @@ ${productsText}`;
 
                       {/* 2. أزرار الحفظ والإرسال */}
                       <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 mb-0.5">عمليات الحفظ والإرسال:</p>
                         {isDraft ? (
                           <div className="grid grid-cols-2 gap-1.5">
                             <button
@@ -1057,7 +1056,7 @@ ${productsText}`;
                               value="final_send"
                               disabled={pending}
                               onClick={() => setShowOptionsMenu(false)}
-                              className="h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                              className="h-9 rounded-xl bg-violet-600 hover:bg-violet-750 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
                             >
                               {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={10} height={10} /> إرسال نهائي</>}
                             </button>
@@ -1076,7 +1075,6 @@ ${productsText}`;
 
                       {/* 3. أوامر التجهيز والإسناد */}
                       <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أوامر التجهيز والإسناد:</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           {isDraft && couriers ? (
                             <button
@@ -1102,25 +1100,7 @@ ${productsText}`;
                       </div>
 
                       {/* 4. أوضاع التحكم السريعة */}
-                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أوضاع التحكم السريعة:</p>
-                        
-                        {/* وضع التحديد في سطر كامل للسهولة والوضوح */}
-                        <button
-                           type="button"
-                           onClick={() => {
-                             setSelectionMode(!selectionMode);
-                             setDeleteMode(false);
-                             setShowBulkAdd(false);
-                             setShowOptionsMenu(false);
-                           }}
-                           className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                             selectionMode ? "bg-sky-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-sky-400"
-                           }`}
-                        >
-                           🔘 وضع التحديد
-                        </button>
-
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                              type="button"
@@ -1171,34 +1151,8 @@ ${productsText}`;
                         </div>
                       </div>
 
-                      {/* 5. خيارات العرض والتصوير 📸 */}
-                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 mb-0.5">خيارات العرض والتصوير 📸:</p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
-                            className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                              hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
-                            }`}
-                          >
-                            {hideBuyPrice ? "👁️ إظهار الشراء" : "🙈 إخفاء الشراء"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
-                            className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                              hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
-                            }`}
-                          >
-                            {hideSellPrice ? "👁️ إظهار البيع" : "🙈 إخفاء البيع"}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 6. أدوات ونسخ الطلب 📝👯 */}
-                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 mb-0.5">أدوات ونسخ الطلب 📝👯:</p>
+                      {/* 5. أدوات ونسخ الطلب وخيار إخفاء البيع */}
+                      <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
@@ -1217,27 +1171,51 @@ ${productsText}`;
                             👯 نسخ وتكرار
                           </button>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
+                          className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                            hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
+                          }`}
+                        >
+                          {hideSellPrice ? "👁️ إظهار سعر البيع" : "🙈 إخفاء سعر البيع"}
+                        </button>
                       </div>
 
-                      {/* 7. عدد المحلات */}
-                      <div className="flex items-center justify-between pt-1.5">
-                        <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
-                        <div className="flex items-center gap-1">
+                      {/* 6. خيارات العرض المتقدمة (سعر المتجر وعدد المحلات بجانب بعضهما) */}
+                      <div className="flex flex-col gap-2 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-slate-400">إخفاء سعر المتجر:</span>
                           <button
                             type="button"
-                            onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
-                            className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
+                            onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
+                            className={`h-7 px-3 rounded-lg text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                              hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                            }`}
                           >
-                            -
+                            {hideBuyPrice ? "👁️ إظهار" : "🙈 إخفاء"}
                           </button>
-                          <span className="px-3 font-mono font-black text-xs text-amber-400">{placesCount}</span>
-                          <button
-                            type="button"
-                            onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
-                            className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
-                          >
-                            +
-                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
+                              className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
+                            >
+                              -
+                            </button>
+                            <span className="px-3 font-mono font-black text-xs text-amber-400">{placesCount}</span>
+                            <button
+                              type="button"
+                              onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
+                              className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
 
