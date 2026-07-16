@@ -109,6 +109,7 @@ export function AssignToPreparerPanel({
   const [selectedPreparers, setSelectedPreparers] = useState<string[]>(initialPreparerIds);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const togglePreparer = async (id: string) => {
     if (pending) return; // منع النقرات المزدوجة أثناء التحديث
@@ -120,6 +121,7 @@ export function AssignToPreparerPanel({
     setSelectedPreparers(nextPreparers);
     setPending(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       const fd = new FormData();
@@ -132,7 +134,8 @@ export function AssignToPreparerPanel({
         setError(result.error);
         setSelectedPreparers(selectedPreparers); // التراجع في حال الفشل
       } else if (result.ok) {
-        if (onSuccess) onSuccess();
+        setSuccessMsg("✅ تم الحفظ تلقائياً");
+        setTimeout(() => setSuccessMsg(null), 2000);
       }
     } catch (err: any) {
       setError(err.message || "حدث خطأ غير متوقع أثناء حفظ الإسناد");
@@ -155,6 +158,11 @@ export function AssignToPreparerPanel({
                    جاري الحفظ...
                 </span>
              )}
+             {successMsg && !pending && (
+                <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded animate-bounce">
+                   {successMsg}
+                </span>
+             )}
           </div>
           <div className="flex items-center gap-1.5 bg-sky-100 dark:bg-sky-900/30 px-2 py-1 rounded-lg">
              <span className="text-[10px] font-black text-sky-700 dark:text-sky-400">{selectedPreparers.length}</span>
@@ -162,7 +170,7 @@ export function AssignToPreparerPanel({
           </div>
        </div>
 
-       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
           {preparers.map(p => {
              const active = selectedPreparers.includes(p.id);
              return (
@@ -186,7 +194,17 @@ export function AssignToPreparerPanel({
           })}
        </div>
 
-       {error && <p className="mt-2 text-xs font-bold text-rose-600 text-center bg-rose-50 dark:bg-rose-950/20 p-2 rounded-lg">{error}</p>}
+       {error && <p className="mt-2 text-xs font-bold text-rose-600 text-center bg-rose-50 dark:bg-rose-950/20 p-2 rounded-lg mb-3">{error}</p>}
+
+       {onSuccess && (
+          <button
+            type="button"
+            onClick={onSuccess}
+            className="w-full h-9 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 shadow-md"
+          >
+             ✕ إنهاء وحفظ الإسناد (تحديث الصفحة) 🔄
+          </button>
+       )}
     </div>
   );
 }
