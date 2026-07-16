@@ -177,6 +177,51 @@ export async function assignOrderToPreparer(
   const finalGroupId = existingGroupId || `GRP-${Date.now()}`;
   let unassignedDraftToUse = isDraft && (await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: orderId } }))?.preparerId === null ? orderId : null;
 
+  // جلب كافة المجهزين المسندين حالياً لهذا الطلب/المسودة وإلغاء إسناد من أزيل منهم
+  try {
+    let currentlyAssignedPreparers: string[] = [];
+    if (isDraft) {
+      const related = await prisma.companyPreparerShoppingDraft.findMany({
+        where: { customerPhone, titleLine, status: { in: ["draft", "priced"] } },
+        select: { preparerId: true }
+      });
+      currentlyAssignedPreparers = related.map(r => r.preparerId).filter(Boolean) as string[];
+    } else {
+      const related = await prisma.companyPreparerShoppingDraft.findMany({
+        where: { sentOrderId, status: { in: ["draft", "priced"] } },
+        select: { preparerId: true }
+      });
+      currentlyAssignedPreparers = related.map(r => r.preparerId).filter(Boolean) as string[];
+    }
+
+    const preparersToRemove = currentlyAssignedPreparers.filter(id => !preparerIds.includes(id));
+    for (const prepId of preparersToRemove) {
+      if (isDraft) {
+        const draftToDelete = await prisma.companyPreparerShoppingDraft.findFirst({
+          where: { customerPhone, titleLine, preparerId: prepId }
+        });
+        if (draftToDelete) {
+          if (draftToDelete.id === orderId) {
+            await prisma.companyPreparerShoppingDraft.update({
+              where: { id: orderId },
+              data: { preparerId: null, status: "draft" }
+            });
+          } else {
+            await prisma.companyPreparerShoppingDraft.delete({
+              where: { id: draftToDelete.id }
+            });
+          }
+        }
+      } else {
+        await prisma.companyPreparerShoppingDraft.deleteMany({
+          where: { sentOrderId, preparerId: prepId }
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Failed to sync removed preparers:", err);
+  }
+
   for (const preparerId of preparerIds) {
     const existing = await prisma.companyPreparerShoppingDraft.findFirst({
       where: {

@@ -204,6 +204,7 @@ export function AdminPricingPanel({
   extraActions,
   icons = null,
   storeProducts = [],
+  currentPreparerIds = [],
 }: {
   orderId: string;
   initialData: any;
@@ -216,6 +217,7 @@ export function AdminPricingPanel({
   extraActions?: React.ReactNode;
   icons?: GlobalIconsConfig | null;
   storeProducts?: any[];
+  currentPreparerIds?: string[];
 }) {
   // Alias for backward compatibility if needed elsewhere
   return <OrderPricingPanel
@@ -230,6 +232,7 @@ export function AdminPricingPanel({
     extraActions={extraActions}
     icons={icons}
     storeProducts={storeProducts}
+    currentPreparerIds={currentPreparerIds}
   />;
 }
 
@@ -339,6 +342,7 @@ export function OrderPricingPanel({
   extraActions,
   icons = null,
   storeProducts = [],
+  currentPreparerIds = [],
 }: {
   orderId: string;
   initialData: any;
@@ -351,6 +355,7 @@ export function OrderPricingPanel({
   extraActions?: React.ReactNode;
   icons?: GlobalIconsConfig | null;
   storeProducts?: any[];
+  currentPreparerIds?: string[];
 }) {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
@@ -765,6 +770,9 @@ export function OrderPricingPanel({
   }, [state.ok, onSuccess]);
 
   const initialPreparerIds = useMemo(() => {
+    if (currentPreparerIds && currentPreparerIds.length > 0) {
+      return currentPreparerIds;
+    }
     const ids = new Set<string>();
     if (initialData?.preparerId) {
       ids.add(initialData.preparerId);
@@ -775,7 +783,7 @@ export function OrderPricingPanel({
       }
     });
     return Array.from(ids);
-  }, [products, initialData]);
+  }, [products, initialData, currentPreparerIds]);
 
   const branches = useMemo(() => {
     const bSet = new Set<string>();

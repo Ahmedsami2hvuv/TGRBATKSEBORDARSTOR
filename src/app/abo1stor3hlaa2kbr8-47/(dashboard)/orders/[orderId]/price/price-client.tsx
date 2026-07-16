@@ -18,6 +18,7 @@ type PriceClientProps = {
   icons: GlobalIconsConfig | null;
   rawDeliveryPriceDinar: number | null;
   orderSummary?: string | null;
+  currentPreparerIds?: string[];
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -33,6 +34,7 @@ export function PriceClient({
   icons,
   rawDeliveryPriceDinar,
   orderSummary,
+  currentPreparerIds = [],
 }: PriceClientProps) {
   const router = useRouter();
 
@@ -92,6 +94,7 @@ export function PriceClient({
                 hideContainer={true}
                 storeProducts={storeProducts}
                 onSuccess={handleSuccess}
+                currentPreparerIds={currentPreparerIds}
               />
             ) : (
               <AdminPricingPanel
@@ -103,6 +106,7 @@ export function PriceClient({
                 storeProducts={storeProducts}
                 icons={icons}
                 onSuccess={handleSuccess}
+                currentPreparerIds={currentPreparerIds}
               />
             )}
           </div>

@@ -82,6 +82,36 @@ export default async function OrderPricingPage({ params }: Props) {
     getGlobalIcons()
   ]);
 
+  // 3.5 جلب المجهزين المسندين حالياً للطلب أو المسودة لضمان مزامنة الواجهة بعد الريفريش
+  let currentPreparerIds: string[] = [];
+  try {
+    if (isDraft && draft) {
+      const relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+        where: {
+          customerPhone: draft.customerPhone,
+          titleLine: draft.titleLine,
+          status: { in: ["draft", "priced"] }
+        },
+        select: { preparerId: true }
+      });
+      currentPreparerIds = relatedDrafts.map(d => d.preparerId).filter(Boolean) as string[];
+    } else if (order) {
+      const relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+        where: {
+          sentOrderId: order.id,
+          status: { in: ["draft", "priced"] }
+        },
+        select: { preparerId: true }
+      });
+      currentPreparerIds = relatedDrafts.map(d => d.preparerId).filter(Boolean) as string[];
+      if (currentPreparerIds.length === 0 && order.submittedByCompanyPreparerId) {
+        currentPreparerIds = [order.submittedByCompanyPreparerId];
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch currentPreparerIds on server:", err);
+  }
+
   // 4. تطهير البيانات وتمريرها للمكون العميل
   const safeInitialData = serializePrisma(initialData);
   const safePreparers = serializePrisma(preparers);
@@ -101,6 +131,7 @@ export default async function OrderPricingPage({ params }: Props) {
       icons={safeIcons}
       rawDeliveryPriceDinar={rawDeliveryPriceDinar}
       orderSummary={orderSummary}
+      currentPreparerIds={currentPreparerIds}
     />
   );
 }
