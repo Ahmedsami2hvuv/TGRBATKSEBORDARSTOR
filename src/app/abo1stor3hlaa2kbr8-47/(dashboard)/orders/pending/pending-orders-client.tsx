@@ -943,6 +943,7 @@ ${productsText}`;
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
         <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
+        <input type="hidden" id="submit-type-input" name="submitType" value="" />
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={initialData?.shopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
@@ -1931,23 +1932,29 @@ ${productsText}`;
               {isDraft ? (
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    type="submit"
-                    form="order-pricing-form"
-                    name="submitType"
-                    value="admin_approve"
+                    type="button"
                     disabled={pending}
-                    onClick={() => setShowOptionsMenu(false)}
+                    onClick={() => {
+                      const formInput = document.getElementById("submit-type-input") as HTMLInputElement;
+                      if (formInput) formInput.value = "admin_approve";
+                      setShowOptionsMenu(false);
+                      const form = document.getElementById("order-pricing-form") as HTMLFormElement;
+                      if (form) form.requestSubmit();
+                    }}
                     className="h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                   >
                     {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={11} height={11} /> حفظ كمسودة</>}
                   </button>
                   <button
-                    type="submit"
-                    form="order-pricing-form"
-                    name="submitType"
-                    value="final_send"
+                    type="button"
                     disabled={pending}
-                    onClick={() => setShowOptionsMenu(false)}
+                    onClick={() => {
+                      const formInput = document.getElementById("submit-type-input") as HTMLInputElement;
+                      if (formInput) formInput.value = "final_send";
+                      setShowOptionsMenu(false);
+                      const form = document.getElementById("order-pricing-form") as HTMLFormElement;
+                      if (form) form.requestSubmit();
+                    }}
                     className="h-9 rounded-xl bg-violet-600 hover:bg-violet-550 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                   >
                     {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={11} height={11} /> إرسال نهائي</>}
@@ -1955,10 +1962,15 @@ ${productsText}`;
                 </div>
               ) : (
                 <button
-                  type="submit"
-                  form="order-pricing-form"
+                  type="button"
                   disabled={pending}
-                  onClick={() => setShowOptionsMenu(false)}
+                  onClick={() => {
+                    const formInput = document.getElementById("submit-type-input") as HTMLInputElement;
+                    if (formInput) formInput.value = "";
+                    setShowOptionsMenu(false);
+                    const form = document.getElementById("order-pricing-form") as HTMLFormElement;
+                    if (form) form.requestSubmit();
+                  }}
                   className="w-full h-9 rounded-xl bg-sky-600 hover:bg-sky-500 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
                   {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> حفظ وإرسال</>}
