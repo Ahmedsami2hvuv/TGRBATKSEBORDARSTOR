@@ -382,6 +382,8 @@ export function OrderPricingPanel({
   const [preAdminProducts, setPreAdminProducts] = useState<any[] | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [hideBuyPrice, setHideBuyPrice] = useState(false);
+  const [hideSellPrice, setHideSellPrice] = useState(false);
 
   const sellInputRef = useRef<HTMLInputElement>(null);
   const buyInputRef = useRef<HTMLInputElement>(null);
@@ -1065,7 +1067,32 @@ export function OrderPricingPanel({
                         </button>
                       </div>
 
-                      {/* 5. عدد المحلات */}
+                      {/* 5. خيارات العرض والتصوير 📸 */}
+                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
+                        <p className="text-[9px] font-black text-slate-400 mb-1">خيارات العرض والتصوير 📸:</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
+                            className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                              hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                            }`}
+                          >
+                            {hideBuyPrice ? "👁️ إظهار الشراء" : "🙈 إخفاء الشراء"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
+                            className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                              hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
+                            }`}
+                          >
+                            {hideSellPrice ? "👁️ إظهار البيع" : "🙈 إخفاء البيع"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 6. عدد المحلات */}
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
                         <div className="flex items-center gap-1">
@@ -1299,8 +1326,12 @@ export function OrderPricingPanel({
                   <div className="absolute top-1 left-1 flex gap-1 items-center">
                     {priced ? (
                       <div className="flex gap-0.5">
-                        <span className={`font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm ${priced ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>{p.buyAlf}</span>
-                        <span className="font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm bg-indigo-500 text-white">{p.sellAlf}</span>
+                        {!hideBuyPrice && (
+                          <span className={`font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm ${priced ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>{p.buyAlf}</span>
+                        )}
+                        {!hideSellPrice && (
+                          <span className="font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm bg-indigo-500 text-white">{p.sellAlf}</span>
+                        )}
                       </div>
                     ) : (
                       isMeat && (
