@@ -98,34 +98,70 @@ body.has-custom-bg {
 }
 
 body.has-custom-bg .kse-app-bg {
-  background-color: rgba(240, 244, 248, 0.25) !important;
+  background-color: rgba(240, 244, 248, 0.2) !important;
   backdrop-filter: blur(12px) saturate(120%);
 }
 
 body.has-custom-bg.dark .kse-app-bg {
-  background-color: rgba(9, 9, 11, 0.3) !important;
+  background-color: rgba(9, 9, 11, 0.25) !important;
   backdrop-filter: blur(12px) saturate(120%);
 }
 
 /* جعل الكروت والصناديق البيضاء والرمادية شبه شفافة بنعومة لتتناسق مع الخلفية المخصصة */
 body.has-custom-bg .bg-white,
 body.has-custom-bg .bg-slate-50,
+body.has-custom-bg .bg-slate-100,
+body.has-custom-bg .bg-white\/95,
+body.has-custom-bg .bg-white\/90,
+body.has-custom-bg .bg-white\/80,
+body.has-custom-bg aside,
+body.has-custom-bg header,
+body.has-custom-bg dialog,
 body.has-custom-bg .kse-glass-card,
-body.has-custom-bg .kse-glass-dark {
-  background-color: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(8px) saturate(110%);
-  border-color: rgba(255, 255, 255, 0.3) !important;
+body.has-custom-bg .kse-glass-dark,
+body.has-custom-bg .kse-glass-dark\/95 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(125%) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 body.has-custom-bg.dark .bg-white,
 body.has-custom-bg.dark .bg-slate-50,
 body.has-custom-bg.dark .bg-slate-900,
+body.has-custom-bg.dark .bg-slate-950,
+body.has-custom-bg.dark .bg-white\/95,
+body.has-custom-bg.dark .bg-white\/90,
+body.has-custom-bg.dark .bg-white\/80,
+body.has-custom-bg.dark aside,
+body.has-custom-bg.dark header,
+body.has-custom-bg.dark dialog,
+body.has-custom-bg.dark .bg-slate-900\/95,
+body.has-custom-bg.dark .bg-slate-900\/90,
+body.has-custom-bg.dark .bg-[#09090b]\/95,
 body.has-custom-bg.dark .kse-glass-card,
 body.has-custom-bg.dark .kse-glass-dark {
-  background-color: rgba(19, 20, 24, 0.7) !important;
-  backdrop-filter: blur(8px) saturate(110%);
+  background-color: rgba(19, 20, 24, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(125%) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* النوافذ العائمة المنبثقة ذات التموضع الثابت والمطلق (Modals & Overlays) */
+body.has-custom-bg [class*="fixed"],
+body.has-custom-bg [class*="absolute"] {
+  &.bg-white, &.bg-white\/95, &.bg-white\/90, &.bg-white\/80, &.kse-glass-dark {
+    background-color: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px) saturate(125%) !important;
+  }
+}
+
+body.has-custom-bg.dark [class*="fixed"],
+body.has-custom-bg.dark [class*="absolute"] {
+  &.bg-white, &.bg-slate-900, &.bg-slate-900\/95, &.bg-slate-900\/90, &.bg-[#09090b]\/95, &.kse-glass-dark {
+    background-color: rgba(19, 20, 24, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(125%) !important;
+  }
+}
+
 
 
 

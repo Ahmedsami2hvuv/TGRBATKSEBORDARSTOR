@@ -90,3 +90,37 @@ export async function deleteBackgroundAction(id: string) {
     return { error: error.message || "حدث خطأ أثناء حذف الخلفية" };
   }
 }
+
+export async function setSystemDefaultBackgroundAction(id: string | null) {
+  if (!(await isAdminSession())) {
+    return { error: "غير مصرح لك بالقيام بهذا الإجراء" };
+  }
+
+  try {
+    if (!id) {
+      // إلغاء تفعيل جميع الخلفيات للعودة للخلفية البيضاء الافتراضية للنظام
+      await prisma.systemBackground.updateMany({
+        data: { active: false },
+      });
+    } else {
+      // إلغاء تفعيل البقية وتفعيل الخلفية المحددة لتكون الافتراضية
+      await prisma.$transaction([
+        prisma.systemBackground.updateMany({
+          data: { active: false },
+        }),
+        prisma.systemBackground.update({
+          where: { id },
+          data: { active: true },
+        }),
+      ]);
+    }
+
+    revalidatePath("/");
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Failed to set default background:", error);
+    return { error: error.message || "حدث خطأ تعيين الخلفية الافتراضية" };
+  }
+}
+

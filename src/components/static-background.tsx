@@ -2,16 +2,26 @@
 
 import { useEffect, useState } from "react";
 
-export function StaticBackground() {
+export function StaticBackground({ systemDefaultBgUrl }: { systemDefaultBgUrl?: string }) {
   const [bgUrl, setBgUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // دالة تحديث الحالة وتطبيق فئة التنسيق الزجاجي على الـ body
     const updateBackground = () => {
       const stored = localStorage.getItem("kse_user_background_url");
-      setBgUrl(stored);
+      let activeUrl = "";
 
-      if (stored) {
+      if (stored === "none") {
+        activeUrl = "";
+      } else if (stored) {
+        activeUrl = stored;
+      } else {
+        activeUrl = systemDefaultBgUrl || "";
+      }
+
+      setBgUrl(activeUrl || null);
+
+      if (activeUrl) {
         document.body.classList.add("has-custom-bg");
       } else {
         document.body.classList.remove("has-custom-bg");
@@ -36,7 +46,7 @@ export function StaticBackground() {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("kse_background_changed", updateBackground);
     };
-  }, []);
+  }, [systemDefaultBgUrl]);
 
   if (!bgUrl) return null;
 
@@ -50,4 +60,5 @@ export function StaticBackground() {
     />
   );
 }
+
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ad } from "@/lib/admin-ui";
-import { getBackgroundsAction, addBackgroundAction, deleteBackgroundAction } from "./background-actions";
+import { getBackgroundsAction, addBackgroundAction, deleteBackgroundAction, setSystemDefaultBackgroundAction } from "./background-actions";
 
 export function AdminBackgroundsSettings() {
   const [backgrounds, setBackgrounds] = useState<any[]>([]);
@@ -11,13 +10,17 @@ export function AdminBackgroundsSettings() {
   const [bgName, setBgName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeBgUrl, setActiveBgUrl] = useState<string | null>(null);
+  const [systemDefaultBgUrl, setSystemDefaultBgUrl] = useState<string | null>(null);
 
-  // جلب الخلفيات ومعرفة الخلفية المفعلة حالياً للجهاز
+  // جلب الخلفيات ومعرفة الخلفية المفعلة حالياً للجهاز وللنظام
   const fetchBackgrounds = async () => {
     setLoading(true);
     const res = await getBackgroundsAction();
     if (res.ok && res.backgrounds) {
       setBackgrounds(res.backgrounds);
+      // معرفة خلفية النظام المفعلة
+      const activeSystem = res.backgrounds.find((b: any) => b.active);
+      setSystemDefaultBgUrl(activeSystem ? activeSystem.imageUrl : null);
     }
     setLoading(false);
   };
@@ -27,19 +30,36 @@ export function AdminBackgroundsSettings() {
     setActiveBgUrl(localStorage.getItem("kse_user_background_url"));
   }, []);
 
-  // تفعيل الخلفية للجهاز الحالي
-  const handleSelectBackground = (url: string) => {
+  // تفعيل الخلفية للنظام وللجهاز الحالي
+  const handleSelectBackground = async (id: string, url: string) => {
+    // تفعيلها محلياً للجهاز
     localStorage.setItem("kse_user_background_url", url);
     setActiveBgUrl(url);
-    // إرسال حدث لتنبيه المكون StaticBackground بالتحديث الفوري
     window.dispatchEvent(new CustomEvent("kse_background_changed"));
+
+    // تفعيلها كافتراضية للنظام في قاعدة البيانات
+    const res = await setSystemDefaultBackgroundAction(id);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      fetchBackgrounds();
+    }
   };
 
   // إلغاء تفعيل الخلفية
-  const handleClearBackground = () => {
+  const handleClearBackground = async () => {
+    // إلغاؤها محلياً للجهاز
     localStorage.removeItem("kse_user_background_url");
     setActiveBgUrl(null);
     window.dispatchEvent(new CustomEvent("kse_background_changed"));
+
+    // إلغاؤها كافتراضية للنظام
+    const res = await setSystemDefaultBackgroundAction(null);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      fetchBackgrounds();
+    }
   };
 
   // رفع خلفية جديدة
@@ -81,8 +101,10 @@ export function AdminBackgroundsSettings() {
     } else {
       alert("تم الحذف بنجاح");
       // إذا كانت هي المفعلة حالياً نقوم بإزالتها
-      if (activeBgUrl === url) {
-        handleClearBackground();
+      if (activeBgUrl === url || systemDefaultBgUrl === url) {
+        localStorage.removeItem("kse_user_background_url");
+        setActiveBgUrl(null);
+        window.dispatchEvent(new CustomEvent("kse_background_changed"));
       }
       fetchBackgrounds();
     }
@@ -129,20 +151,20 @@ export function AdminBackgroundsSettings() {
         </button>
       </form>
 
-      {/* قسم التحكم بالخلفية المفعلة حالياً للجهاز */}
-      <div className="flex items-center justify-between p-3.5 bg-sky-50 border border-sky-100 rounded-2xl">
+      {/* قسم التحكم بالخلفية المفعلة حالياً للنظام */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-sky-50 border border-sky-100 rounded-2xl">
         <div>
-          <h4 className="text-xs font-black text-sky-900">التحكم بالخلفية الحالية لجهازك</h4>
-          <p className="text-[10px] text-sky-700 mt-0.5">
-            {activeBgUrl ? "لديك خلفية مخصصة مفعلة حالياً على هذا الجهاز." : "تستخدم حالياً الخلفية البيضاء الافتراضية للنظام."}
+          <h4 className="text-xs font-black text-sky-900">التحكم بالخلفية الحالية للنظام</h4>
+          <p className="text-[10px] text-sky-700 mt-0.5 font-bold">
+            {systemDefaultBgUrl ? "توجد خلفية مخصصة مفعلة حالياً كخلفية افتراضية للنظام بأكمله." : "النظام يستخدم حالياً الخلفية البيضاء الافتراضية."}
           </p>
         </div>
-        {activeBgUrl && (
+        {(activeBgUrl || systemDefaultBgUrl) && (
           <button
             onClick={handleClearBackground}
-            className="px-3 py-1.5 bg-white text-xs font-black text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl transition"
+            className="px-3 py-2 bg-white text-xs font-black text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl transition shadow-sm"
           >
-            إلغاء التفعيل والعودة للون الأبيض
+            إلغاء تفعيل الخلفية والعودة للون الأبيض الافتراضي
           </button>
         )}
       </div>
@@ -158,12 +180,13 @@ export function AdminBackgroundsSettings() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {backgrounds.map((bg) => {
-              const isSelected = activeBgUrl === bg.imageUrl;
+              const isSystemDefault = systemDefaultBgUrl === bg.imageUrl;
+              const isSelected = activeBgUrl === bg.imageUrl || isSystemDefault;
               return (
                 <div
                   key={bg.id}
                   className={`relative rounded-2xl overflow-hidden border-2 transition-all duration-300 flex flex-col group ${
-                    isSelected ? "border-amber-500 shadow-md ring-2 ring-amber-100" : "border-slate-200 hover:border-slate-300"
+                    isSystemDefault ? "border-emerald-500 shadow-md ring-2 ring-emerald-100" : isSelected ? "border-amber-500 shadow-md" : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
                   {/* معاينة الصورة */}
@@ -173,11 +196,15 @@ export function AdminBackgroundsSettings() {
                       alt={bg.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    {isSelected && (
-                      <span className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                        مفعلة لحسابك ✓
+                    {isSystemDefault ? (
+                      <span className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                        خلفية النظام الافتراضية ✓
                       </span>
-                    )}
+                    ) : isSelected ? (
+                      <span className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                        مفعلة لجهازك ✓
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* اسم وأزرار التحكم */}
@@ -186,15 +213,15 @@ export function AdminBackgroundsSettings() {
                     
                     <div className="flex gap-1.5 mt-1">
                       <button
-                        onClick={() => handleSelectBackground(bg.imageUrl)}
+                        onClick={() => handleSelectBackground(bg.id, bg.imageUrl)}
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${
-                          isSelected
+                          isSystemDefault
                             ? "bg-slate-100 text-slate-500 border border-slate-200 cursor-default"
-                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-250 hover:bg-emerald-100"
                         }`}
-                        disabled={isSelected}
+                        disabled={isSystemDefault}
                       >
-                        تفعيل
+                        {isSystemDefault ? "مفعلة للنظام" : "تفعيل للنظام"}
                       </button>
                       <button
                         onClick={() => handleDelete(bg.id, bg.imageUrl)}

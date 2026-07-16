@@ -14,12 +14,22 @@ export function UserBackgroundPicker() {
       const res = await getBackgroundsAction();
       if (res.ok && res.backgrounds) {
         setBackgrounds(res.backgrounds);
+        
+        const stored = localStorage.getItem("kse_user_background_url");
+        if (stored) {
+          setActiveBgUrl(stored);
+        } else {
+          // إذا لم يحدد المستخدم خياراً، نتحقق من وجود خلفية افتراضية للنظام
+          const activeSystem = res.backgrounds.find((b: any) => b.active);
+          if (activeSystem) {
+            setActiveBgUrl(activeSystem.imageUrl);
+          }
+        }
       }
       setLoading(false);
     };
 
     fetchBgs();
-    setActiveBgUrl(localStorage.getItem("kse_user_background_url"));
   }, []);
 
   const handleSelect = (url: string) => {
@@ -29,8 +39,9 @@ export function UserBackgroundPicker() {
   };
 
   const handleClear = () => {
-    localStorage.removeItem("kse_user_background_url");
-    setActiveBgUrl(null);
+    // تعيين القيمة 'none' لرفض استخدام أي خلفية والعودة للون الأبيض
+    localStorage.setItem("kse_user_background_url", "none");
+    setActiveBgUrl("none");
     window.dispatchEvent(new CustomEvent("kse_background_changed"));
   };
 
@@ -38,11 +49,14 @@ export function UserBackgroundPicker() {
     return <div className="text-center py-4 text-xs font-bold text-slate-400 animate-pulse">جاري تحميل الخلفيات المتاحة...</div>;
   }
 
+  // يظهر خيار إلغاء التفعيل والعودة للون الأبيض إذا لم تكن الخلفية بيضاء بالفعل
+  const hasBackgroundActive = activeBgUrl && activeBgUrl !== "none";
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-black text-slate-700">اختر خلفية مخصصة لحسابك:</span>
-        {activeBgUrl && (
+        {hasBackgroundActive && (
           <button
             onClick={handleClear}
             className="text-[10px] font-black text-rose-600 hover:underline"
@@ -87,3 +101,4 @@ export function UserBackgroundPicker() {
     </div>
   );
 }
+
