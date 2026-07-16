@@ -412,21 +412,34 @@ export function OrderPricingPanel({
   const [hideBuyPrice, setHideBuyPrice] = useState(false);
   const [hideSellPrice, setHideSellPrice] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [duplicatePhone, setDuplicatePhone] = useState(initialData?.customerPhone || "");
-  const [duplicateRegionId, setDuplicateRegionId] = useState(initialData?.customerRegionId || initialData?.regionId || "");
+  const [duplicatePhone, setDuplicatePhone] = useState("");
+  const [duplicateRegionId, setDuplicateRegionId] = useState("");
+  const [regionSearch, setRegionSearch] = useState("");
+  const [showRegionSuggestions, setShowRegionSuggestions] = useState(false);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [templateSuccess, setTemplateSuccess] = useState(false);
 
+  useEffect(() => {
+    if (initialData?.customerPhone) {
+      setDuplicatePhone(initialData.customerPhone);
+    }
+    if (initialData?.customerRegionId) {
+      setDuplicateRegionId(initialData.customerRegionId);
+    }
+    if (initialData?.customerRegionName) {
+      setRegionSearch(initialData.customerRegionName);
+    }
+  }, [initialData]);
+
   const handleCopyTemplate = () => {
     try {
       const productsText = products.map((p, index) => `${index + 1}. ${p.line}`).join("\n");
-      const regionName = regions.find(r => r.id === (initialData?.customerRegionId || initialData?.regionId))?.name || "غير محددة";
+      const regionName = initialData?.customerRegionName || regions.find(r => r.id === (initialData?.customerRegionId || initialData?.regionId))?.name || "غير محددة";
       const landmarkText = initialData?.customerLandmark ? `\n📍 أقرب نقطة دالة: ${initialData.customerLandmark}` : "";
       
       const template = `📱 رقم الهاتف: ${initialData?.customerPhone || "غير محدد"}
 📍 المنطقة: ${regionName}${landmarkText}
-📦 المنتجات:
 ${productsText}`;
 
       navigator.clipboard.writeText(template);
@@ -1772,18 +1785,52 @@ ${productsText}`;
                 />
               </div>
 
-              <div>
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 block">المنطقة للطلب الجديد:</label>
-                <select
-                  value={duplicateRegionId}
-                  onChange={(e) => setDuplicateRegionId(e.target.value)}
-                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 px-4 text-xs font-black outline-none focus:border-sky-500 text-center text-slate-900 dark:text-white"
-                >
-                  <option value="">-- اختر المنطقة --</option>
-                  {regions.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 block">المنطقة للطلب الجديد (اكتب للبحث):</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={regionSearch}
+                    onChange={(e) => {
+                      setRegionSearch(e.target.value);
+                      setShowRegionSuggestions(true);
+                      const exact = regions.find(r => r.name.trim() === e.target.value.trim());
+                      if (exact) {
+                        setDuplicateRegionId(exact.id);
+                      }
+                    }}
+                    onFocus={() => setShowRegionSuggestions(true)}
+                    placeholder="اكتب اسم المنطقة للبحث..."
+                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 px-4 text-xs font-black outline-none focus:border-sky-500 text-center text-slate-900 dark:text-white"
+                  />
+                  {showRegionSuggestions && (
+                    <>
+                      <div className="fixed inset-0 z-[1010]" onClick={() => setShowRegionSuggestions(false)} />
+                      <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl z-[1020] p-1.5 space-y-0.5 scrollbar-thin">
+                        {regions.filter(r => r.name.toLowerCase().includes(regionSearch.toLowerCase())).length > 0 ? (
+                          regions
+                            .filter(r => r.name.toLowerCase().includes(regionSearch.toLowerCase()))
+                            .map(r => (
+                              <button
+                                key={r.id}
+                                type="button"
+                                onClick={() => {
+                                  setDuplicateRegionId(r.id);
+                                  setRegionSearch(r.name);
+                                  setShowRegionSuggestions(false);
+                                }}
+                                className="w-full text-right px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+                              >
+                                {r.name}
+                              </button>
+                            ))
+                        ) : (
+                          <div className="text-center p-3 text-[10px] text-slate-400 font-bold">لا توجد مناطق تطابق بحثك</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {duplicateError && (

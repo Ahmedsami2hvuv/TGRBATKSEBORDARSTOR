@@ -31,13 +31,22 @@ export default async function OrderPricingPage({ params }: Props) {
 
   if (draft) {
     isDraft = true;
-    initialData = draft.data || {};
+    initialData = {
+      ...(draft.data as any || {}),
+      customerPhone: draft.customerPhone,
+      customerRegionId: draft.customerRegionId,
+      customerRegionName: draft.customerRegion?.name || null,
+      customerLandmark: draft.customerLandmark,
+    };
     orderNumber = draft.titleLine || "مسودة تجهيز";
     rawDeliveryPriceDinar = draft.customerRegion?.deliveryPrice != null ? Number(draft.customerRegion.deliveryPrice) : null;
   } else {
     // 2. إذا لم يكن مسودة، فهو بالتأكيد طلب حقيقي
     order = await prisma.order.findUnique({
       where: { id: orderId },
+      include: {
+        customerRegion: { select: { id: true, name: true } }
+      }
     });
 
     if (!order) {
@@ -45,7 +54,13 @@ export default async function OrderPricingPage({ params }: Props) {
     }
 
     isDraft = false;
-    initialData = order.preparerShoppingJson || {};
+    initialData = {
+      ...(order.preparerShoppingJson as any || {}),
+      customerPhone: order.customerPhone,
+      customerRegionId: order.customerRegionId,
+      customerRegionName: order.customerRegion?.name || null,
+      customerLandmark: order.customerLandmark,
+    };
     orderNumber = order.orderNumber ? String(order.orderNumber) : "طلب عادي";
     rawDeliveryPriceDinar = order.deliveryPrice != null ? Number(order.deliveryPrice) : null;
     orderSummary = order.summary;
