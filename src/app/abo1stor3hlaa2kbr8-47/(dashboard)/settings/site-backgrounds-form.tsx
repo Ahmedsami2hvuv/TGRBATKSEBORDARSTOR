@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { BackgroundsConfig, BackgroundItem } from "@/lib/background-settings";
-import { saveBackgroundsConfigAction } from "./background-actions";
+import { saveSiteBackgroundsConfigAction } from "./site-background-actions";
 
-export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig }) {
+export function SiteBackgroundsForm({ initial }: { initial: BackgroundsConfig }) {
   const [config, setConfig] = useState<BackgroundsConfig>(initial);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingInfo, setUploadingInfo] = useState<{ id: string; field: "lightUrl" | "darkUrl" } | null>(null);
@@ -13,16 +13,16 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
   const saveConfig = async (newConfig: BackgroundsConfig) => {
     setIsSaving(true);
     try {
-      const res = await saveBackgroundsConfigAction(newConfig);
+      const res = await saveSiteBackgroundsConfigAction(newConfig);
       if (!res.success) {
-        alert("فشل الحفظ: " + res.error);
+        alert("فشل حفظ إعدادات خلفيات الموقع: " + res.error);
       } else {
         // إخطار محرك الخلفية الحية لتحديث البيانات فوراً
         window.dispatchEvent(new CustomEvent("kse_bg_config_updated", { detail: newConfig }));
       }
     } catch (e) {
       console.error(e);
-      alert("حدث خطأ أثناء الحفظ");
+      alert("حدث خطأ غير متوقع أثناء الحفظ");
     } finally {
       setIsSaving(false);
     }
@@ -31,7 +31,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
   const handleAddField = () => {
     const newItem: BackgroundItem = {
       id: "bg-" + Date.now(),
-      name: "خلفية جديدة مخصصة",
+      name: "خلفية موقع جديدة",
       lightUrl: "",
       lightType: "image",
       darkUrl: "",
@@ -52,15 +52,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
   const handleUpdateItem = (id: string, field: keyof BackgroundItem, value: any) => {
     const nextItems = config.items.map((item) => {
       if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        // استنتاج النوع تلقائياً عند تغيير الرابط إذا لم يكن محدداً
-        if (field === "lightUrl" && typeof value === "string" && item.lightType !== "code") {
-          updated.lightType = smartDetectType(value);
-        }
-        if (field === "darkUrl" && typeof value === "string" && item.darkType !== "code") {
-          updated.darkType = smartDetectType(value);
-        }
-        return updated;
+        return { ...item, [field]: value };
       }
       return item;
     });
@@ -70,16 +62,12 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
     saveConfig(nextConfig);
   };
 
-  const smartDetectType = (url: string): "image" => {
-    return "image";
-  };
-
   const handleDeleteItem = (id: string) => {
     if (config.items.length <= 1) {
-      alert("يجب إبقاء خلفية واحدة على الأقل في النظام.");
+      alert("يجب إبقاء خلفية واحدة على الأقل لنظام خلفيات الموقع.");
       return;
     }
-    if (!confirm("هل أنت متأكد من حذف هذه الخلفية؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذه الخلفية كلياً؟")) return;
 
     const nextItems = config.items.filter((item) => item.id !== id);
     let nextDefault = config.defaultBackgroundId;
@@ -117,12 +105,12 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
       const data = await res.json();
 
       if (!res.ok || !data?.url) {
-        throw new Error(data?.error || "فشل رفع الملف");
+        throw new Error(data?.error || "فشل رفع ملف الصورة");
       }
 
       handleUpdateItem(id, field, data.url as string);
     } catch (error: any) {
-      alert(error?.message || "فشل رفع الملف إلى كلودفلير R2");
+      alert(error?.message || "فشل رفع الصورة إلى التخزين السحابي Cloudflare R2");
     } finally {
       setUploadingInfo(null);
       e.target.value = "";
@@ -135,15 +123,15 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
       <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${isSaving ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"}`}>
         <div className="bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700">
           <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm font-black">جاري حفظ الإعدادات تلقائياً...</span>
+          <span className="text-sm font-black">جاري حفظ إعدادات خلفيات الموقع...</span>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-sky-50 dark:bg-slate-900/50 rounded-2xl border border-sky-100 dark:border-white/10">
         <div>
-          <h3 className="text-sm font-black text-sky-900">إدارة الخلفيات المتحركة والمخصصة</h3>
-          <p className="text-xs text-sky-700 mt-1">
-            قم بإضافة ورفع الخلفيات المتاحة للمستخدمين وتعيين الخلفية الافتراضية للموقع.
+          <h3 className="text-sm font-black text-sky-900 dark:text-sky-300">قسم خلفيات الموقع 🎆</h3>
+          <p className="text-xs text-sky-700 dark:text-slate-400 mt-1">
+            قم بإضافة وإدارة مجموعة الخلفيات الثابتة المتاحة لجميع مستخدمي النظام (المناديب، المجهزين، الموظفين، والمدير).
           </p>
         </div>
         <button
@@ -156,8 +144,8 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
       </div>
 
       {/* اختيار الخلفية الافتراضية */}
-      <div className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-4 justify-between">
-        <label className="text-xs font-black text-slate-700">الخلفية الافتراضية للمستخدمين الجدد:</label>
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-wrap items-center gap-4 justify-between">
+        <label className="text-xs font-black text-slate-700 dark:text-slate-350">الخلفية الافتراضية لجميع المستخدمين:</label>
         <select
           value={config.defaultBackgroundId || ""}
           onChange={(e) => {
@@ -165,7 +153,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
             setConfig(nextConfig);
             saveConfig(nextConfig);
           }}
-          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 outline-none focus:border-sky-500"
+          className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500 text-slate-800 dark:text-slate-100"
         >
           {config.items.map((item) => (
             <option key={item.id} value={item.id}>
@@ -181,7 +169,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
           const isUploadingDark = uploadingInfo?.id === item.id && uploadingInfo?.field === "darkUrl";
 
           return (
-            <div key={item.id} className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-6 hover:border-sky-200 transition-colors relative overflow-hidden">
+            <div key={item.id} className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6 hover:border-sky-200 dark:hover:border-sky-500/30 transition-colors relative overflow-hidden">
               {/* شريط تمييزي للمفعلة كافتراضية */}
               {config.defaultBackgroundId === item.id && (
                 <div className="absolute top-0 end-0 bg-violet-600 text-white px-4 py-1 text-[10px] font-black rounded-bl-2xl shadow-sm">
@@ -189,13 +177,13 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex-1 min-w-[200px]">
                   <input
                     value={item.name}
                     onChange={(e) => handleUpdateItem(item.id, "name", e.target.value)}
                     placeholder="اسم الخلفية المميّز"
-                    className="w-full text-base font-black text-slate-800 outline-none focus:border-b-2 focus:border-sky-500 bg-transparent py-1"
+                    className="w-full text-base font-black text-slate-800 dark:text-white outline-none focus:border-b-2 focus:border-sky-500 bg-transparent py-1"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -204,15 +192,15 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                       type="checkbox"
                       checked={item.isActive}
                       onChange={(e) => handleUpdateItem(item.id, "isActive", e.target.checked)}
-                      className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300"
+                      className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700"
                     />
-                    <span className="text-xs font-bold text-slate-700">متاحة للمستخدمين</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">متاحة للمستخدمين</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => handleDeleteItem(item.id)}
-                    className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all"
-                    title="حذف هذه الخلفية"
+                    className="p-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-xl hover:bg-rose-100 transition-all"
+                    title="حذف هذه الخلفية كلياً"
                   >
                     🗑️
                   </button>
@@ -221,26 +209,21 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* إعدادات الوضع المضيء */}
-                <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
+                <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     ☀️ خلفية الوضع المضيء (النهاري)
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
-                    <label className="text-[11px] font-bold text-slate-600">النوع:</label>
-                    <div className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-600">
-                      صورة ثابتة / متحركة (WebP / GIF / PNG / JPG)
-                    </div>
-
-                    <label className="text-[11px] font-bold text-slate-600">رابط الصورة أو الرفع:</label>
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">رابط الصورة أو الرفع:</label>
                     <input
                       value={item.lightUrl}
                       onChange={(e) => handleUpdateItem(item.id, "lightUrl", e.target.value)}
                       placeholder="رابط مباشر للصورة أو ارفع من جهازك"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white outline-none focus:border-sky-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold bg-white dark:bg-slate-900 outline-none focus:border-sky-500 text-slate-800 dark:text-slate-100"
                     />
 
-                    <label className="cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
-                      <span>{isUploadingLight ? "جاري الرفع إلى R2..." : "📤 رفع صورة الوضع المضيء"}</span>
+                    <label className="cursor-pointer bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
+                      <span>{isUploadingLight ? "جاري الرفع..." : "📤 رفع صورة الوضع المضيء"}</span>
                       <input
                         type="file"
                         className="hidden"
@@ -257,11 +240,6 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     🌙 خلفية الوضع المظلم (الليلي)
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
-                    <label className="text-[11px] font-bold text-slate-400">النوع:</label>
-                    <div className="w-full px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold bg-slate-800 text-slate-400">
-                      صورة ثابتة / متحركة (WebP / GIF / PNG / JPG)
-                    </div>
-
                     <label className="text-[11px] font-bold text-slate-400">رابط الصورة أو الرفع:</label>
                     <input
                       value={item.darkUrl}
@@ -271,7 +249,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     />
 
                     <label className="cursor-pointer bg-slate-800 text-sky-400 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-slate-750 transition-all text-center flex items-center justify-center gap-2">
-                      <span>{isUploadingDark ? "جاري الرفع إلى R2..." : "📤 رفع صورة الوضع المظلم"}</span>
+                      <span>{isUploadingDark ? "جاري الرفع..." : "📤 رفع صورة الوضع المظلم"}</span>
                       <input
                         type="file"
                         className="hidden"
@@ -284,9 +262,9 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
               </div>
 
               {/* الشفافية والضبابية */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-black text-slate-700">
+                  <div className="flex justify-between items-center text-xs font-black text-slate-700 dark:text-slate-350">
                     <span>نسبة الشفافية:</span>
                     <span>{item.opacity}%</span>
                   </div>
@@ -302,7 +280,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-black text-slate-700">
+                  <div className="flex justify-between items-center text-xs font-black text-slate-700 dark:text-slate-350">
                     <span>نسبة التشويش/الضبابية (Blur):</span>
                     <span>{item.blur}px</span>
                   </div>
@@ -322,7 +300,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
               <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">🖥️ شاشة محاكاة المعاينة:</span>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">🖥️ محاكي المعاينة:</span>
                     <div className="flex bg-slate-200/80 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-300 dark:border-slate-700">
                       <button
                         type="button"
@@ -355,11 +333,11 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                       onClick={() => {
                         localStorage.setItem("kse_user_background", item.id);
                         window.dispatchEvent(new CustomEvent("kse_bg_changed", { detail: item }));
-                        alert(`تم تطبيق المعاينة الحية لـ "${item.name}" على حسابك بنجاح! ستراها الآن في كامل خلفية الموقع.`);
+                        alert(`تم تطبيق الخلفية "${item.name}" على حسابك الشخصي الآن!`);
                       }}
                       className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/20 dark:hover:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-900 text-[10px] font-black rounded-lg transition-all"
                     >
-                      👁️ تطبيق وتجربة على خلفية حسابي الآن
+                      👁️ تجربة الخلفية على حسابي الآن
                     </button>
 
                     {config.defaultBackgroundId === item.id ? (
@@ -373,11 +351,11 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                           const nextConfig = { ...config, defaultBackgroundId: item.id };
                           setConfig(nextConfig);
                           saveConfig(nextConfig);
-                          alert(`تم تعيين "${item.name}" كخلفية افتراضية للموقع لجميع المستخدمين بنجاح!`);
+                          alert(`تم تعيين "${item.name}" كخلفية افتراضية للموقع.`);
                         }}
                         className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/20 dark:hover:bg-sky-900/20 dark:text-sky-400 border border-sky-100 dark:border-sky-900 text-[10px] font-black rounded-lg transition-all"
                       >
-                        ⭐ تعيين كخلفية افتراضية للموقع
+                        ⭐ تعيين كخلفية افتراضية للجميع
                       </button>
                     )}
                   </div>
@@ -385,14 +363,11 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
 
                 {/* نافذة المحاكي */}
                 <div className="h-32 w-full rounded-xl bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 overflow-hidden relative flex items-center justify-center">
-                  {/* تدرج افتراضي في الخلف للمحاكي */}
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-sky-100 dark:from-slate-900 dark:to-slate-950 opacity-40 -z-20" />
                   
-                  {/* الخلفية المعروضة داخل المحاكي مع تطبيق الشفافية والضبابية */}
                   {(() => {
                     const mode = previewModes[item.id] || "light";
                     const currentUrl = mode === "light" ? item.lightUrl : item.darkUrl;
-                    const currentType = mode === "light" ? item.lightType : item.darkType;
 
                     const previewStyle = {
                       opacity: item.opacity / 100,
@@ -400,7 +375,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     };
 
                     if (!currentUrl) {
-                      return <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">لا يوجد رابط للخلفية في هذا الوضع</span>;
+                      return <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">لم يتم تحديد رابط صورة لهذا الوضع</span>;
                     }
 
                     return (
@@ -415,10 +390,9 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     );
                   })()}
 
-                  {/* نص توضيحي تراكبي يمثل محتوى الموقع لمعاينة مدى وضوح النصوص فوق الخلفية */}
                   <div className="relative z-10 text-center p-3 pointer-events-none select-none">
-                    <p className="text-xs font-black text-slate-900 dark:text-white drop-shadow-sm">مثال لنص الموقع (الوضوح القارئ)</p>
-                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-350 mt-1 drop-shadow-sm">تأكد من اختيار شفافية وضبابية مناسبة لكي لا تختفي الكلمات.</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-white drop-shadow-sm">معاينة وضوح النصوص</p>
+                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-350 mt-1 drop-shadow-sm">تحقق من التناسق لكي لا تؤذي الألوان أعين المستخدمين.</p>
                   </div>
                 </div>
               </div>

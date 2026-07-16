@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
-import { getBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
+import { getSiteBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-background-actions";
 import { BackgroundItem } from "@/lib/background-settings";
 import { PreparerPresenceToggle } from "../preparer-presence-toggle";
 import { disablePreparerSalaryPinCode, enablePreparerSalaryPinCode } from "../actions";
@@ -91,17 +91,34 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
   baseQuery.set("s", auth.s);
 
   useEffect(() => {
-    // جلب الخلفيات المفعلة من السيرفر
-    getBackgroundsConfigAction()
-      .then((data) => {
-        const activeItems = data?.items?.filter((item) => item.isActive) || [];
-        setAvailableBgs(activeItems);
+    const handleData = (data: any) => {
+      const activeItems = data?.items?.filter((item: any) => item.isActive) || [];
+      setAvailableBgs(activeItems);
 
-        const savedBg = localStorage.getItem("kse_user_background");
-        if (savedBg) {
-          setCurrentBgId(savedBg);
-        } else {
-          setCurrentBgId(data?.defaultBackgroundId || "default-gradient");
+      const savedBg = localStorage.getItem("kse_user_background");
+      if (savedBg) {
+        setCurrentBgId(savedBg);
+      } else {
+        setCurrentBgId(data?.defaultBackgroundId || "default-gradient");
+      }
+    };
+
+    // 1. تحميل التكوين من الكاش فوراً للسرعة في الهاتف
+    const cached = localStorage.getItem("kse_backgrounds_config_cache");
+    if (cached) {
+      try {
+        handleData(JSON.parse(cached));
+      } catch (e) {
+        console.error("فشل قراءة كاش الخلفيات:", e);
+      }
+    }
+
+    // 2. تحديث التكوين من السيرفر في الخلفية وحفظه بالكاش
+    getSiteBackgroundsConfigAction()
+      .then((data: any) => {
+        if (data) {
+          handleData(data);
+          localStorage.setItem("kse_backgrounds_config_cache", JSON.stringify(data));
         }
       })
       .catch((err) => console.error("Failed to load active backgrounds", err));

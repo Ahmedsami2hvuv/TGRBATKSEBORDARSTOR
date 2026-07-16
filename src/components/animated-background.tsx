@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
+import { getSiteBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-background-actions";
 import { BackgroundsConfig, BackgroundItem } from "@/lib/background-settings";
 import { useTheme } from "./theme-provider";
 
@@ -12,14 +12,31 @@ export function AnimatedBackground() {
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل
+  // 1. جلب قائمة الخلفيات المتاحة من الكاش المحلي أولاً، ثم من السيرفر في الخلفية
   useEffect(() => {
     setMounted(true);
-    getBackgroundsConfigAction()
-      .then((data) => {
-        setConfig(data);
+    
+    // محاولة قراءة التكوين من الكاش المحلي أولاً لتسريع العرض
+    const cached = localStorage.getItem("kse_backgrounds_config_cache");
+    if (cached) {
+      try {
+        setConfig(JSON.parse(cached));
+      } catch (e) {
+        console.error("فشل قراءة كاش الخلفيات:", e);
+      }
+    }
+
+    // جلب التحديثات من السيرفر وتحديث الكاش
+    getSiteBackgroundsConfigAction()
+      .then((data: any) => {
+        if (data && data.items) {
+          setConfig(data);
+          localStorage.setItem("kse_backgrounds_config_cache", JSON.stringify(data));
+          // إرسال حدث لتنبيه أي مكونات أخرى مهتمة بالتحديث
+          window.dispatchEvent(new CustomEvent("kse_bg_config_updated", { detail: data }));
+        }
       })
-      .catch((err) => console.error("فشل جلب الخلفيات:", err));
+      .catch((err) => console.error("فشل جلب الخلفيات من السيرفر:", err));
   }, []);
 
   // 2. تحديث الوضع الداكن ومراقبة تغييراته
@@ -95,6 +112,16 @@ export function AnimatedBackground() {
   // تحديد الرابط والنوع المناسبين للوضع الحالي
   const url = activeBg ? (isDark ? activeBg.darkUrl : activeBg.lightUrl) : "";
   const type = activeBg ? (isDark ? activeBg.darkType : activeBg.lightType) : "image";
+
+  // 4. حقن السمة data-has-custom-bg لتفعيل الشفافية في globals.css
+  useEffect(() => {
+    if (!mounted) return;
+    if (activeBg && url && type === "image") {
+      document.documentElement.setAttribute("data-has-custom-bg", "true");
+    } else {
+      document.documentElement.removeAttribute("data-has-custom-bg");
+    }
+  }, [activeBg, url, type, mounted]);
 
   if (!mounted || !activeBg) return null;
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { updateCourierSetting } from "./actions";
-import { getBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
+import { getSiteBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-background-actions";
 import { BackgroundItem } from "@/lib/background-settings";
 import FontSizeCustomizer from "./font-size-customizer";
 
@@ -42,9 +42,8 @@ export default function CourierSettingsClient({
 
 
   useEffect(() => {
-    // جلب الخلفيات المفعلة من السيرفر
-    getBackgroundsConfigAction().then(data => {
-      const activeItems = data?.items?.filter(item => item.isActive) || [];
+    const handleData = (data: any) => {
+      const activeItems = data?.items?.filter((item: any) => item.isActive) || [];
       setAvailableBgs(activeItems);
       
       const savedBg = localStorage.getItem("kse_user_background");
@@ -52,6 +51,20 @@ export default function CourierSettingsClient({
         setCurrentBgId(savedBg);
       } else {
         setCurrentBgId(data?.defaultBackgroundId || "default-gradient");
+      }
+    };
+
+    // 1. تحميل التكوين من الكاش فوراً للسرعة
+    const cached = localStorage.getItem("kse_backgrounds_config_cache");
+    if (cached) {
+      handleData(JSON.parse(cached));
+    }
+
+    // 2. تحديث التكوين من السيرفر في الخلفية وحفظه بالكاش
+    getSiteBackgroundsConfigAction().then((data: any) => {
+      if (data) {
+        handleData(data);
+        localStorage.setItem("kse_backgrounds_config_cache", JSON.stringify(data));
       }
     }).catch(err => console.error("Failed to load active backgrounds", err));
   }, [auth.c]);
