@@ -200,18 +200,9 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً وبدء اللمس من الثلث العلوي للشاشة (35% من الارتفاع)
-        // لمنع التحديث العشوائي عند سحب القوائم في منتصف وأسفل الشاشة
-        webView.setOnTouchListener { v, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val isAtTop = !webView.canScrollVertically(-1)
-                val touchY = event.y
-                val viewHeight = v.height
-                val threshold = viewHeight * 0.35f // 35% من الارتفاع (الثلث العلوي تقريباً)
-                
-                swipeRefreshLayout.isEnabled = (isAtTop && touchY <= threshold)
-            }
-            false // إرجاع false للسماح للـ WebView بمعالجة اللمس بشكل طبيعي
+        // تفعيل SwipeRefreshLayout عندما يكون WebView في الأعلى تماماً
+        webView.viewTreeObserver.addOnScrollChangedListener {
+            swipeRefreshLayout.isEnabled = !webView.canScrollVertically(-1)
         }
 
         // Enable cookie manager

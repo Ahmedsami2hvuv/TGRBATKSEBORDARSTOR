@@ -93,24 +93,28 @@ html, body {
 }
 
 /* أنماط الخلفيات المخصصة والتأثير الزجاجي */
-body.has-custom-bg {
+body.has-custom-bg,
+body.has-custom-bg .kse-app-bg,
+body.has-custom-bg .min-h-screen.bg-slate-50,
+body.has-custom-bg .min-h-screen.bg-slate-100,
+body.has-custom-bg .min-h-screen.bg-white {
+  background: transparent !important;
   background-color: transparent !important;
 }
 
-body.has-custom-bg .kse-app-bg {
-  background-color: rgba(240, 244, 248, 0.2) !important;
-  backdrop-filter: blur(12px) saturate(120%);
-}
-
-body.has-custom-bg.dark .kse-app-bg {
-  background-color: rgba(9, 9, 11, 0.25) !important;
-  backdrop-filter: blur(12px) saturate(120%);
+body.has-custom-bg.dark,
+body.has-custom-bg.dark .kse-app-bg,
+body.has-custom-bg.dark .min-h-screen.bg-slate-900,
+body.has-custom-bg.dark .min-h-screen.bg-slate-950,
+body.has-custom-bg.dark .min-h-screen.bg-black {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* جعل الكروت والصناديق البيضاء والرمادية شبه شفافة بنعومة لتتناسق مع الخلفية المخصصة */
-body.has-custom-bg .bg-white,
-body.has-custom-bg .bg-slate-50,
-body.has-custom-bg .bg-slate-100,
+body.has-custom-bg :not(.min-h-screen).bg-white,
+body.has-custom-bg :not(.min-h-screen).bg-slate-50,
+body.has-custom-bg :not(.min-h-screen).bg-slate-100,
 body.has-custom-bg .bg-white\/95,
 body.has-custom-bg .bg-white\/90,
 body.has-custom-bg .bg-white\/80,
@@ -125,10 +129,10 @@ body.has-custom-bg .kse-glass-dark\/95 {
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-body.has-custom-bg.dark .bg-white,
-body.has-custom-bg.dark .bg-slate-50,
-body.has-custom-bg.dark .bg-slate-900,
-body.has-custom-bg.dark .bg-slate-950,
+body.has-custom-bg.dark :not(.min-h-screen).bg-white,
+body.has-custom-bg.dark :not(.min-h-screen).bg-slate-50,
+body.has-custom-bg.dark :not(.min-h-screen).bg-slate-900,
+body.has-custom-bg.dark :not(.min-h-screen).bg-slate-950,
 body.has-custom-bg.dark .bg-white\/95,
 body.has-custom-bg.dark .bg-white\/90,
 body.has-custom-bg.dark .bg-white\/80,
