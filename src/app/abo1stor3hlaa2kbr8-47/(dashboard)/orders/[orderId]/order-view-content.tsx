@@ -453,9 +453,18 @@ export function OrderViewContent({
               <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime || "فوري"}</p></div>
             </div>
             {(() => {
-              const subRaw = order.orderSubtotalRaw || 0;
-              const delRaw = order.deliveryPriceRaw || 0;
-              const totRaw = order.totalAmountRaw || 0;
+              const parseNum = (val: string | null | undefined): number => {
+                if (!val) return 0;
+                // استخلاص الأرقام فقط (مثال: "1 الف" أو "1.5" تصبح 1 أو 1.5)
+                const clean = val.replace(/[^\d.]/g, "");
+                const num = parseFloat(clean);
+                return isNaN(num) ? 0 : num;
+              };
+
+              const subRaw = parseNum(order.orderSubtotal);
+              const delRaw = parseNum(order.deliveryPrice);
+              const totRaw = parseNum(order.totalAmount);
+              
               const calculatedDebt = totRaw - (subRaw + delRaw);
               const hasDebt = calculatedDebt > 0;
               
@@ -472,7 +481,7 @@ export function OrderViewContent({
                       <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-1 px-2">
                         <p className="text-xs font-black text-rose-600">الدين</p>
                         <p className="font-mono text-lg font-black text-rose-700 animate-pulse">
-                          {formatDinarAsAlfWithUnit(calculatedDebt)}
+                          {formatDinarAsAlfWithUnit(calculatedDebt * 1000)}
                         </p>
                       </div>
                     )}
