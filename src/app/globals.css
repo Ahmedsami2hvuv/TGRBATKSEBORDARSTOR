@@ -147,14 +147,31 @@ body.has-custom-bg.dark .kse-glass-dark {
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* جعل القائمة الجانبية شفافة بالكامل وبدون حدود أو ظلال */
-body.has-custom-bg aside {
-  background: transparent !important;
-  background-color: transparent !important;
-  backdrop-filter: none !important;
-  border-inline-end: none !important;
-  box-shadow: none !important;
+/* جعل القائمة الجانبية تدعم الخلفية المخصصة وتغلفها بطبقة شفافة ناعمة لضمان القراءة */
+body.has-custom-bg aside.aside-has-bg {
+  position: relative;
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
+
+body.has-custom-bg aside.aside-has-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.35) !important; /* طبقة تلوين بيضاء خفيفة */
+  z-index: 1; /* خلف المحتوى ولكن فوق الصورة الخلفية */
+  pointer-events: none;
+}
+
+body.has-custom-bg.dark aside.aside-has-bg::before {
+  background-color: rgba(9, 9, 11, 0.55) !important; /* طبقة داكنة خفيفة للوضع الداكن */
+}
+
+/* لضمان بقاء محتويات وأزرار القائمة الجانبية فوق طبقة التلوين الشفافة */
+body.has-custom-bg aside.aside-has-bg > * {
+  position: relative;
+  z-index: 10;
+}
+
 
 
 /* النوافذ العائمة المنبثقة ذات التموضع الثابت والمطلق (Modals & Overlays) */

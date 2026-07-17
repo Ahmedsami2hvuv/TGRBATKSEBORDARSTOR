@@ -178,6 +178,7 @@ export function AdminShell({
   const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [activeBgUrl, setActiveBgUrl] = useState<string | null>(null);
 
   const filteredTiles = orderedTiles.filter(tile =>
     tile.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -281,6 +282,25 @@ export function AdminShell({
   useEffect(() => {
     if (navWidth > maxSidebarWidth) setNavWidth(maxSidebarWidth);
   }, [maxSidebarWidth, navWidth]);
+
+  useEffect(() => {
+    const updateBg = () => {
+      const stored = localStorage.getItem("kse_user_background_url");
+      if (stored === "none") {
+        setActiveBgUrl(null);
+      } else {
+        setActiveBgUrl(stored);
+      }
+    };
+    updateBg();
+    window.addEventListener("kse_background_changed", updateBg);
+    window.addEventListener("storage", updateBg);
+    return () => {
+      window.removeEventListener("kse_background_changed", updateBg);
+      window.removeEventListener("storage", updateBg);
+    };
+  }, []);
+
 
   const isCompact = navWidth <= 260;
 
@@ -576,13 +596,17 @@ export function AdminShell({
         ref={sidebarRef}
         className={`
           fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
-          bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
-          backdrop-blur-md ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
+          shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
+          ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
           inset-y-0 start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
+          ${activeBgUrl ? "aside-has-bg bg-cover bg-center bg-no-repeat" : "bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md"}
         `}
-        style={{ width: navWidth }}
+        style={{ 
+          width: navWidth,
+          backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : undefined
+        }}
       >
         <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
           <div className="flex items-center gap-2 ms-28">
