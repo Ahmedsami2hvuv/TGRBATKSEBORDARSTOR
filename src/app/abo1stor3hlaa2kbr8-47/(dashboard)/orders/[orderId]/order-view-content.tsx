@@ -481,7 +481,7 @@ export function OrderViewContent({
                       <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-1 px-2">
                         <p className="text-xs font-black text-rose-600">الدين</p>
                         <p className="font-mono text-lg font-black text-rose-700 animate-pulse">
-                          {formatDinarAsAlfWithUnit(calculatedDebt * 1000)}
+                          {calculatedDebt}
                         </p>
                       </div>
                     )}
