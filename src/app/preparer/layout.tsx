@@ -2,10 +2,12 @@ import { Suspense } from "react";
 import { PreparerLocationGate } from "./preparer-location-gate";
 import { PreparerStickyMoneyStrip } from "./preparer-sticky-money-strip";
 import { GestureHandler } from "./gesture-handler";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 
 export default function PreparerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-800">
+      <PullToRefresh />
       <Suspense fallback={<div className="min-h-screen" aria-hidden />}>
         <PreparerLocationGate>
           <Suspense
