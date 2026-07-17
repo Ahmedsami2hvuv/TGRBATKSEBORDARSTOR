@@ -18,6 +18,7 @@ import {
   createPartner,
   getUnaddedSystemPartners,
   updatePartnerName,
+  updatePartnerDetails,
   type PartnerType
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -110,6 +111,35 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialPartner.name);
   const [isSavingName, setIsSavingName] = useState(false);
+
+  const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
+  const [editDetailsName, setEditDetailsName] = useState(initialPartner.name);
+  const [editDetailsPhone, setEditDetailsPhone] = useState(initialPartner.phone || "");
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [editDetailsError, setEditDetailsError] = useState("");
+
+  const handleSaveDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = editDetailsName.trim();
+    if (!cleanName) {
+      setEditDetailsError("الرجاء إدخال اسم صالح");
+      return;
+    }
+    setIsSavingDetails(true);
+    setEditDetailsError("");
+    const res = await updatePartnerDetails(partner.id, cleanName, editDetailsPhone ? editDetailsPhone.trim() : null);
+    setIsSavingDetails(false);
+    if (res.success) {
+      setPartner(prev => ({ 
+        ...prev, 
+        name: cleanName, 
+        phone: editDetailsPhone ? editDetailsPhone.trim() : null 
+      }));
+      setShowEditDetailsModal(false);
+    } else {
+      setEditDetailsError(res.error || "حدث خطأ أثناء تعديل البيانات");
+    }
+  };
 
   const handleSaveName = async () => {
     const cleanName = newName.trim();
@@ -552,11 +582,27 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                       ? "text-rose-600" 
                       : "text-slate-800"
                 }>{partner.name}</span>
+                
+                <button
+                  onClick={() => {
+                    setEditDetailsName(partner.name);
+                    setEditDetailsPhone(partner.phone || "");
+                    setEditDetailsError("");
+                    setShowEditDetailsModal(true);
+                  }}
+                  className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-indigo-605 hover:bg-slate-100 rounded-xl transition"
+                  title="تعديل الاسم ورقم الهاتف"
+                >
+                  ✏️
+                </button>
+
                 {showQuickRename && (
                   <button
                     onClick={() => {
-                      setIsEditingName(true);
-                      setNewName("");
+                      setEditDetailsName("");
+                      setEditDetailsPhone(partner.phone || "");
+                      setEditDetailsError("");
+                      setShowEditDetailsModal(true);
                     }}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition"
                   >
@@ -1618,6 +1664,76 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                 حسناً، فهمت
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تعديل بيانات الشريك (الاسم والهاتف) المنبثقة من القلم */}
+      {showEditDetailsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col text-right">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                ✏️ تعديل بيانات الحساب
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEditDetailsModal(false)}
+                className="text-slate-400 hover:text-rose-600 transition p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              >
+                ❌
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveDetails}>
+              <div className="p-6 space-y-4">
+                {editDetailsError && (
+                  <div className="p-3 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl">
+                    {editDetailsError}
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-xs font-black text-slate-500 mb-1.5">الاسم الحقيقي</label>
+                  <input
+                    type="text"
+                    required
+                    value={editDetailsName}
+                    onChange={(e) => setEditDetailsName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-right"
+                    placeholder="أدخل الاسم..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-black text-slate-500 mb-1.5">رقم الهاتف (اختياري)</label>
+                  <input
+                    type="text"
+                    value={editDetailsPhone}
+                    onChange={(e) => setEditDetailsPhone(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-right"
+                    placeholder="أدخل رقم الهاتف..."
+                  />
+                </div>
+              </div>
+              
+              <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditDetailsModal(false)}
+                  className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingDetails}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition shadow-sm disabled:opacity-50"
+                >
+                  {isSavingDetails ? "جاري الحفظ..." : "حفظ التغييرات"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

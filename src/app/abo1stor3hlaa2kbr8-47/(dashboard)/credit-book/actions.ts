@@ -2939,5 +2939,51 @@ export async function updatePartnerName(partnerId: string, newName: string) {
   }
 }
 
+// تعديل اسم ورقم هاتف الشريك والزبون المرتبط به
+export async function updatePartnerDetails(partnerId: string, newName: string, newPhone: string | null) {
+  try {
+    const cleanName = newName.trim();
+    if (!cleanName) {
+      return { success: false, error: "الرجاء إدخال اسم صالح" };
+    }
+
+    const partner = await prisma.creditBookPartner.findUnique({
+      where: { id: partnerId }
+    });
+
+    if (!partner) {
+      return { success: false, error: "الشريك غير موجود" };
+    }
+
+    // 1. تحديث الاسم والهاتف في دفتر الديون
+    await prisma.creditBookPartner.update({
+      where: { id: partnerId },
+      data: { 
+        name: cleanName,
+        phone: newPhone ? newPhone.trim() : null
+      }
+    });
+
+    // 2. إذا كان الشريك زبوناً، نقوم بتحديث اسمه وهاتفه في جدول الزبائن أيضاً
+    if (partner.type === "customer" && partner.externalId) {
+      await prisma.customer.update({
+        where: { id: partner.externalId },
+        data: { 
+          name: cleanName,
+          phone: newPhone ? newPhone.trim() : ""
+        }
+      });
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in updatePartnerDetails:", error);
+    return { success: false, error: error.message || "حدث خطأ غير متوقع" };
+  }
+}
+
 
 
