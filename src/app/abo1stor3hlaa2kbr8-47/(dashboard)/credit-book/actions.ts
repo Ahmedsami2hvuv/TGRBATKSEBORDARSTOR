@@ -228,6 +228,50 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       console.error("Failed to silently auto-update old notes layout:", err);
     }
 
+    // تصحيح معاملات التصفير التلقائية (الموازنة التلقائية) للزبائن بعد تحديث أو حذف الديون
+    try {
+      const customerPartners = await prisma.creditBookPartner.findMany({
+        where: { type: "customer" },
+        include: {
+          transactions: true
+        }
+      });
+
+      for (const partner of customerPartners) {
+        const zeroTx = partner.transactions.find(t => t.note === "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)");
+        if (zeroTx) {
+          let otherBalance = 0;
+          partner.transactions.forEach(t => {
+            if (t.id === zeroTx.id) return;
+            const amt = Number(t.amount || 0);
+            if (t.kind === "gave") {
+              otherBalance += amt;
+            } else if (t.kind === "took") {
+              otherBalance -= amt;
+            }
+          });
+
+          if (otherBalance > 0) {
+            if (Number(zeroTx.amount) !== otherBalance || zeroTx.kind !== "took") {
+              await prisma.creditBookTransaction.update({
+                where: { id: zeroTx.id },
+                data: {
+                  amount: otherBalance,
+                  kind: "took"
+                }
+              });
+            }
+          } else {
+            await prisma.creditBookTransaction.delete({
+              where: { id: zeroTx.id }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to silently auto-correct zero balance transactions:", err);
+    }
+
     try {
       const rootExists = await prisma.creditBookPartner.findFirst({
         where: {
@@ -2755,6 +2799,50 @@ export async function syncOldCustomerDebts() {
           }
         }
       }
+    }
+
+    // تصحيح معاملات التصفير التلقائية (الموازنة التلقائية) للزبائن بعد تحديث أو حذف الديون
+    try {
+      const customerPartners = await prisma.creditBookPartner.findMany({
+        where: { type: "customer" },
+        include: {
+          transactions: true
+        }
+      });
+
+      for (const partner of customerPartners) {
+        const zeroTx = partner.transactions.find(t => t.note === "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)");
+        if (zeroTx) {
+          let otherBalance = 0;
+          partner.transactions.forEach(t => {
+            if (t.id === zeroTx.id) return;
+            const amt = Number(t.amount || 0);
+            if (t.kind === "gave") {
+              otherBalance += amt;
+            } else if (t.kind === "took") {
+              otherBalance -= amt;
+            }
+          });
+
+          if (otherBalance > 0) {
+            if (Number(zeroTx.amount) !== otherBalance || zeroTx.kind !== "took") {
+              await prisma.creditBookTransaction.update({
+                where: { id: zeroTx.id },
+                data: {
+                  amount: otherBalance,
+                  kind: "took"
+                }
+              });
+            }
+          } else {
+            await prisma.creditBookTransaction.delete({
+              where: { id: zeroTx.id }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to auto-correct zero balance transactions in sync:", err);
     }
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
