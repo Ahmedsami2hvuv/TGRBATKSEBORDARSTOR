@@ -593,24 +593,41 @@ export function OrderDetailSection({
                     <span className="font-black text-indigo-700 dark:text-indigo-400">{order.orderNoteTime || "فوري"}</span>
                   </div>
 
-                  {!hideSubtotalInfo && (
-                    <div className={`grid ${order.customerOldDebt != null && Number(order.customerOldDebt) > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5`}>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-400 font-bold">سعر الطلب:</span>
-                        <span className="font-mono font-black text-slate-900 dark:text-white">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}</span>
-                      </div>
-                      {order.customerOldDebt != null && Number(order.customerOldDebt) > 0 && (
+                  {!hideSubtotalInfo && (() => {
+                    const subtotalVal = order.orderSubtotal != null ? Number(order.orderSubtotal) : 0;
+                    const deliveryVal = order.deliveryPrice != null ? Number(order.deliveryPrice) : 0;
+                    const totalVal = order.totalAmount != null ? Number(order.totalAmount) : 0;
+                    
+                    const calculatedDebt = totalVal - (subtotalVal + deliveryVal);
+                    const hasDebt = calculatedDebt > 0;
+
+                    return (
+                      <div className={`grid ${hasDebt ? 'grid-cols-3' : 'grid-cols-2'} gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5`}>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-rose-500 font-bold">دين سابق:</span>
-                          <span className="font-mono font-black text-rose-600 dark:text-rose-400">{`${formatDinarAsAlf(order.customerOldDebt)} الف`}</span>
+                          <span className="text-[10px] text-slate-400 font-bold">سعر الطلب:</span>
+                          <span className="font-mono font-black text-slate-900 dark:text-white">
+                            {order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-400 font-bold">التوصيل:</span>
-                        <span className="font-mono font-black text-slate-900 dark:text-white">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}</span>
+                        
+                        {hasDebt && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-rose-500 font-bold">الدين:</span>
+                            <span className="font-mono font-black text-rose-600 dark:text-rose-400">
+                              {`${formatDinarAsAlf(calculatedDebt)} الف`}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-slate-400 font-bold">التوصيل:</span>
+                          <span className="font-mono font-black text-slate-900 dark:text-white">
+                            {order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-col items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50/5 dark:bg-violet-950/10 p-2 text-center shadow-inner mt-2">
