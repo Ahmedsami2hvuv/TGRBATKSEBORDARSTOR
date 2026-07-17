@@ -808,7 +808,20 @@ export function UnifiedOrderListTable({
                     <td className="max-w-[10rem] px-2 py-2.5 text-sm text-slate-800 sm:text-base">
                       <OrderTypeLine orderType={o.orderType} />
                     </td>
-                    <td className="px-2 py-2.5 font-mono tabular-nums text-slate-900">{o.priceStr}</td>
+                    <td className="px-2 py-2.5 font-mono tabular-nums text-slate-900">
+                      {o.hasDebt ? (
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className="text-rose-600 font-black text-base sm:text-lg" title="سعر البضاعة مع الدين">
+                            {o.priceStr}
+                          </span>
+                          <span className="inline-flex items-center gap-0.5 px-1 py-0.25 rounded bg-rose-50 border border-rose-100 text-[9px] font-black text-rose-700 animate-pulse leading-none">
+                            ⚠️ مطلوب
+                          </span>
+                        </div>
+                      ) : (
+                        o.priceStr
+                      )}
+                    </td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-cyan-700">{o.delStr}</td>
                     {!hidePhoneColumn ? (
                       <td className="px-2 py-2.5 align-top" onClick={e => e.stopPropagation()}>

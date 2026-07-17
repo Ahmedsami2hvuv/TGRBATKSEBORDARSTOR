@@ -92,7 +92,9 @@ export function OrderTrackingBulkTable({
           orderType: r.routeModeLabel
             ? `${r.orderType} • ${r.routeModeLabel}`
             : r.orderType,
-          priceStr: r.totalLabel,
+          priceStr: r.hasDebt && r.priceWithDebtLabel ? r.priceWithDebtLabel : r.totalLabel,
+          hasDebt: r.hasDebt,
+          calculatedDebt: r.calculatedDebt,
           delStr: r.deliveryLabel,
           customerPhone: r.customerPhone,
           timeLine: r.orderNoteTime || "—",

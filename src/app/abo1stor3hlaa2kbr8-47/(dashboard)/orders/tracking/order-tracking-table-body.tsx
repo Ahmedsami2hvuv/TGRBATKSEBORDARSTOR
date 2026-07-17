@@ -48,6 +48,9 @@ export type TrackingTableRow = {
   /** لم يتم تسجيل أي صادر (مهم للاستلام) */
   noSaderRecorded?: boolean;
   createdAt?: Date | string;
+  calculatedDebt?: number | null;
+  hasDebt?: boolean;
+  priceWithDebtLabel?: string;
   // بيانات الوصول السريع
   audioUrl?: string | null;
   adminAudioUrl?: string | null;

@@ -452,10 +452,38 @@ export function OrderViewContent({
               <div><p className="text-sm font-bold text-slate-700 mb-1">نوع الطلب</p><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" /></div>
               <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime || "فوري"}</p></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><p className="text-xs font-bold text-slate-500">سعر البضاعة</p><p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"} </p></div>
-              <div><p className="text-xs font-bold text-slate-500">التوصيل</p><p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"} </p></div>
-            </div>
+            {(() => {
+              const subRaw = order.orderSubtotalRaw || 0;
+              const delRaw = order.deliveryPriceRaw || 0;
+              const totRaw = order.totalAmountRaw || 0;
+              const calculatedDebt = totRaw - (subRaw + delRaw);
+              const hasDebt = calculatedDebt > 0;
+              
+              const { formatDinarAsAlfWithUnit } = require("@/lib/money-alf");
+
+              return (
+                <>
+                  <div className={`grid ${hasDebt ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500">سعر البضاعة</p>
+                      <p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"}</p>
+                    </div>
+                    {hasDebt && (
+                      <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-1 px-2">
+                        <p className="text-xs font-black text-rose-600">الدين</p>
+                        <p className="font-mono text-lg font-black text-rose-700 animate-pulse">
+                          {formatDinarAsAlfWithUnit(calculatedDebt)}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-bold text-slate-500">التوصيل</p>
+                      <p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"}</p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             <div className="rounded-lg border-2 border-violet-500/30 bg-violet-500/10 p-3 shadow-sm"><p className="text-xs font-black text-violet-900 mb-1">المبلغ الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount || "—"}</p></div>
           </div>
           <div className="self-start">

@@ -58,6 +58,9 @@ export type MandoubRow = {
   prepaidAll?: boolean;
   /** طلب عكسي — تنبيه: استلام من الزبون وتسليم للعميل */
   reversePickup?: boolean;
+  calculatedDebt?: number | null;
+  hasDebt?: boolean;
+  priceWithDebtLabel?: string;
   /** دفع للعميل (المجهز للطلب) مكتمل */
   pickupComplete?: boolean;
   /** معرف المندوب المسند */

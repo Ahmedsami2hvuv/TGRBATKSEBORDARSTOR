@@ -279,6 +279,13 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       );
       const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
 
+      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
+      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
+      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
+      const hasDebt = calculatedDebt > 0;
+      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
+
       return {
         id: o.id,
         orderNumber: o.orderNumber,
@@ -290,6 +297,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
         totalLabel: o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—",
         deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+        calculatedDebt: hasDebt ? calculatedDebt : null,
+        hasDebt: hasDebt,
+        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
         customerPhone: o.customerPhone || "—",
         customerAlternatePhone: o.alternatePhone || o.secondCustomerPhone || "—",
         courierName: o.courier?.name ?? "—",
