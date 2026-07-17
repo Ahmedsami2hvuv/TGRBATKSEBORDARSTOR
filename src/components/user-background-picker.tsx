@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getBackgroundsAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
+import { getBackgroundsAction, saveUserBackgroundSelectionAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
 
-export function UserBackgroundPicker() {
+export function UserBackgroundPicker({ userKey }: { userKey?: string }) {
   const [backgrounds, setBackgrounds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeBgUrl, setActiveBgUrl] = useState<string | null>(null);
@@ -32,17 +32,33 @@ export function UserBackgroundPicker() {
     fetchBgs();
   }, []);
 
-  const handleSelect = (url: string) => {
+  const handleSelect = async (url: string) => {
     localStorage.setItem("kse_user_background_url", url);
     setActiveBgUrl(url);
     window.dispatchEvent(new CustomEvent("kse_background_changed"));
+
+    if (userKey) {
+      try {
+        await saveUserBackgroundSelectionAction(userKey, url);
+      } catch (err) {
+        console.error("Failed to sync background selection with server:", err);
+      }
+    }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     // تعيين القيمة 'none' لرفض استخدام أي خلفية والعودة للون الأبيض
     localStorage.setItem("kse_user_background_url", "none");
     setActiveBgUrl("none");
     window.dispatchEvent(new CustomEvent("kse_background_changed"));
+
+    if (userKey) {
+      try {
+        await saveUserBackgroundSelectionAction(userKey, "none");
+      } catch (err) {
+        console.error("Failed to clear background selection on server:", err);
+      }
+    }
   };
 
   if (loading) {

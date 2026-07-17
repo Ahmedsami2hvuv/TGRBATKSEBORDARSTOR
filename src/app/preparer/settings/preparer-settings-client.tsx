@@ -8,6 +8,7 @@ import { disablePreparerSalaryPinCode, enablePreparerSalaryPinCode } from "../ac
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { UserBackgroundPicker } from "@/components/user-background-picker";
+import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 
 
 type Props = {
@@ -17,9 +18,20 @@ type Props = {
   hasPinCode: boolean;
   pinDisabled: boolean;
   telegramLink?: string | null;
+  userKey?: string;
+  userBgUrl?: string | null;
 };
 
-export default function PreparerSettingsClient({ preparerName, auth, availableForAssignment, hasPinCode, pinDisabled, telegramLink }: Props) {
+export default function PreparerSettingsClient({
+  preparerName,
+  auth,
+  availableForAssignment,
+  hasPinCode,
+  pinDisabled,
+  telegramLink,
+  userKey,
+  userBgUrl,
+}: Props) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [showDisableForm, setShowDisableForm] = useState(false);
@@ -474,8 +486,10 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
               <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص خلفية الواجهة بالصور المتاحة</p>
             </div>
           </div>
-          <UserBackgroundPicker />
+          <BackgroundSynchronizer imageUrl={userBgUrl || null} />
+          <UserBackgroundPicker userKey={userKey} />
         </section>
+
 
         {/* زر الانتقال لصفحة تخصيص إيماءات الأصابع كصفحة كاملة */}
         <button

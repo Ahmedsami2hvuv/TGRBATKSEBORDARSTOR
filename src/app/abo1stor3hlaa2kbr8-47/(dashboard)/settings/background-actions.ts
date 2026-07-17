@@ -124,3 +124,40 @@ export async function setSystemDefaultBackgroundAction(id: string | null) {
   }
 }
 
+export async function saveUserBackgroundSelectionAction(userKey: string, imageUrl: string | null) {
+  if (!userKey) return { error: "معرف المستخدم مطلوب" };
+
+  try {
+    if (!imageUrl || imageUrl === "none") {
+      await prisma.userBackgroundSelection.deleteMany({
+        where: { userKey }
+      });
+    } else {
+      await prisma.userBackgroundSelection.upsert({
+        where: { userKey },
+        update: { imageUrl },
+        create: { userKey, imageUrl }
+      });
+    }
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Failed to save user background selection:", error);
+    return { error: error.message || "حدث خطأ أثناء حفظ اختيار الخلفية في قاعدة البيانات" };
+  }
+}
+
+export async function getUserBackgroundSelectionAction(userKey: string) {
+  if (!userKey) return { ok: false, imageUrl: null };
+
+  try {
+    const selection = await prisma.userBackgroundSelection.findUnique({
+      where: { userKey }
+    });
+    return { ok: true, imageUrl: selection?.imageUrl || null };
+  } catch (error) {
+    console.error("Failed to get user background selection:", error);
+    return { ok: false, imageUrl: null };
+  }
+}
+
+

@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme-provider";
 import { updateCourierSetting } from "./actions";
 import FontSizeCustomizer from "./font-size-customizer";
 import { UserBackgroundPicker } from "@/components/user-background-picker";
+import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 import { MandoubPresenceToggle } from "../mandoub-presence-toggle";
 import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagnostics";
 
@@ -27,6 +28,8 @@ type Props = {
   auth: { c: string; exp: string; s: string };
   availableForAssignment: boolean;
   telegramLink: string | null;
+  userKey?: string;
+  userBgUrl?: string | null;
 };
 
 export default function CourierSettingsClient({
@@ -36,6 +39,8 @@ export default function CourierSettingsClient({
   auth,
   availableForAssignment,
   telegramLink,
+  userKey,
+  userBgUrl,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
@@ -268,8 +273,10 @@ export default function CourierSettingsClient({
               <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص خلفية الواجهة بالصور المتاحة</p>
             </div>
           </div>
-          <UserBackgroundPicker />
+          <BackgroundSynchronizer imageUrl={userBgUrl || null} />
+          <UserBackgroundPicker userKey={userKey} />
         </section>
+
 
         {/* إعدادات حجم الخط والأزرار */}
         <div className="mb-6">

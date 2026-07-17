@@ -920,6 +920,13 @@ model SystemBackground {
   createdAt DateTime @default(now())
 }
 
+model UserBackgroundSelection {
+  userKey   String   @id
+  imageUrl  String
+  updatedAt DateTime @updatedAt
+}
+
+
 
 
 

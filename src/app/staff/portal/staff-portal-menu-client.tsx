@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { UserBackgroundPicker } from "@/components/user-background-picker";
+import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 
 export function StaffPortalMenuClient({
   emp,
-  authQ
+  authQ,
+  userKey,
+  userBgUrl
 }: {
   emp: any;
   authQ: string;
+  userKey?: string;
+  userBgUrl?: string | null;
 }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [scale, setScale] = useState(1);
@@ -50,8 +55,10 @@ export function StaffPortalMenuClient({
 
       {/* تخصيص الخلفية للموظف */}
       <div className="mb-6 bg-white/55 dark:bg-slate-900/55 p-4 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-sm text-right">
-        <UserBackgroundPicker />
+        <BackgroundSynchronizer imageUrl={userBgUrl || null} />
+        <UserBackgroundPicker userKey={userKey} />
       </div>
+
       <div className="grid gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {emp.canSubmitOrders && (
         <>

@@ -26,6 +26,12 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
     // استخدام الدالة المركزية الموحدة لضمان استقرار Next.js 15
     const sanitizedEmp = serializePrisma(emp);
 
+    const userKey = `staff_${emp.id}`;
+    const dbBg = await prisma.userBackgroundSelection.findUnique({
+      where: { userKey }
+    });
+    const userBgUrl = dbBg?.imageUrl || null;
+
     return (
       <div className="kse-app-bg min-h-screen px-4 py-10 text-slate-800" dir="rtl">
         <OneSignalInitializer externalId={v.staffEmployeeId} />
@@ -35,7 +41,7 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
             <h1 className="mt-4 text-2xl font-black text-slate-900">بوابة الموظف</h1>
             <p className="mt-2 text-sm font-bold text-slate-500">أهلاً بك، <span className="text-sky-900">{emp.name}</span></p>
 
-            <StaffPortalMenuClient emp={sanitizedEmp} authQ={authQ} />
+            <StaffPortalMenuClient emp={sanitizedEmp} authQ={authQ} userKey={userKey} userBgUrl={userBgUrl} />
           </div>
         </div>
       </div>

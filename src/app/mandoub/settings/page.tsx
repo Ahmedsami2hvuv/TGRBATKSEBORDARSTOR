@@ -125,8 +125,11 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       } catch (err) {
         console.error("[MandoubSettingsPage] Failed to create telegram placeholder", err);
       }
-      telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
-    }
+    const userKey = `courier_${courier.id}`;
+    const dbBg = await prisma.userBackgroundSelection.findUnique({
+      where: { userKey }
+    });
+    const userBgUrl = dbBg?.imageUrl || null;
 
     return (
       <CourierSettingsClient
@@ -136,6 +139,8 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         auth={auth}
         availableForAssignment={courier.availableForAssignment}
         telegramLink={telegramLink}
+        userKey={userKey}
+        userBgUrl={userBgUrl}
       />
     );
   } catch (error) {
