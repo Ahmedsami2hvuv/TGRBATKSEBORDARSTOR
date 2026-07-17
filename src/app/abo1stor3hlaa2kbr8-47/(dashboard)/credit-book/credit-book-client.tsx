@@ -442,12 +442,21 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                   <th className="p-4">رصيد الدفتر اليدوي</th>
                   <th className="p-4">المحفظة / التلقائي (من النظام)</th>
                   <th className="p-4">الرصيد الإجمالي</th>
-                  <th className="p-4 text-left">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredPartners.map((partner) => (
-                  <tr key={partner.id} className="hover:bg-slate-50/50 transition">
+                  <tr 
+                    key={partner.id} 
+                    className="hover:bg-slate-50/50 transition cursor-pointer"
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('input[type="checkbox"]') || target.closest('a')) {
+                        return;
+                      }
+                      router.push(`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`);
+                    }}
+                  >
                     <td className="p-4 text-center">
                       <input
                         type="checkbox"
@@ -532,14 +541,6 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                       ) : (
                         <span className="text-slate-400">مصفّر</span>
                       )}
-                    </td>
-                    <td className="p-4 text-left">
-                      <Link
-                        href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-indigo-600 hover:bg-indigo-50 rounded-xl transition"
-                      >
-                        👁️ كشف الحساب
-                      </Link>
                     </td>
                   </tr>
                 ))}
