@@ -2609,24 +2609,34 @@ export async function syncOldCustomerDebts() {
           let customerId = order.customerId;
           let customer = order.customer;
 
-          // إذا لم يكن الطلب مرتبطاً بزبون، نحاول البحث عن زبون بنفس رقم الهاتف وربطه تلقائياً
+          // إذا لم يكن الطلب مرتبطاً بزبون، نحاول البحث عن زبون بنفس رقم الهاتف أو إنشائه تلقائياً
           if (!customerId && order.customerPhone) {
             const phoneLocal = order.customerPhone.trim();
             if (phoneLocal) {
-              const foundCust = await prisma.customer.findFirst({
+              let foundCust = await prisma.customer.findFirst({
                 where: {
                   phone: phoneLocal,
                   shopId: order.shopId
                 }
               });
-              if (foundCust) {
-                customerId = foundCust.id;
-                customer = foundCust;
-                await prisma.order.update({
-                  where: { id: order.id },
-                  data: { customerId: foundCust.id }
+              if (!foundCust) {
+                foundCust = await prisma.customer.create({
+                  data: {
+                    shopId: order.shopId,
+                    name: "زبون",
+                    phone: phoneLocal,
+                    customerRegionId: order.customerRegionId,
+                    customerLocationUrl: order.customerLocationUrl || "",
+                    customerLandmark: order.customerLandmark || "",
+                  }
                 });
               }
+              customerId = foundCust.id;
+              customer = foundCust;
+              await prisma.order.update({
+                where: { id: order.id },
+                data: { customerId: foundCust.id }
+              });
             }
           }
 

@@ -85,10 +85,40 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
 
     // أتمتة حساب دين الزبون تلقائياً في دفتر الديون إذا كان المبلغ المستلم أقل من المطلوب
     try {
-      if (order.customerId) {
-        // جلب معلومات الزبون
+      let customerId = order.customerId;
+      let customerPhone = order.customerPhone ? order.customerPhone.trim() : "";
+
+      if (!customerId && customerPhone) {
+        let foundCust = await db.customer.findFirst({
+          where: {
+            phone: customerPhone,
+            shopId: order.shopId
+          }
+        });
+
+        if (!foundCust) {
+          foundCust = await db.customer.create({
+            data: {
+              shopId: order.shopId,
+              name: "زبون",
+              phone: customerPhone,
+              customerRegionId: order.customerRegionId,
+              customerLocationUrl: order.customerLocationUrl || "",
+              customerLandmark: order.customerLandmark || "",
+            }
+          });
+        }
+
+        customerId = foundCust.id;
+        await db.order.update({
+          where: { id: order.id },
+          data: { customerId: foundCust.id }
+        });
+      }
+
+      if (customerId) {
         const customer = await db.customer.findUnique({
-          where: { id: order.customerId },
+          where: { id: customerId },
           select: { name: true, phone: true }
         });
 
