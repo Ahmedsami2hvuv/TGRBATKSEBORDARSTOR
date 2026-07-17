@@ -62,6 +62,48 @@ export function AdminBackgroundsSettings() {
     }
   };
 
+  // دالة ضغط الصورة على جانب العميل لتجنب بطء الرفع والـ Timeout على السيرفر
+  const compressImageClientSide = (file: File, maxWidth = 1920, quality = 0.85): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              resolve(blob || file);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+    });
+  };
+
   // رفع خلفية جديدة
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,9 +113,18 @@ export function AdminBackgroundsSettings() {
     }
 
     setUploading(true);
+    
+    let fileToSend: Blob = selectedFile;
+    try {
+      // ضغط الخلفية لتسريع الرفع وتجنب الـ Timeout
+      fileToSend = await compressImageClientSide(selectedFile, 1920, 0.85);
+    } catch (err) {
+      console.error("Client side compression failed:", err);
+    }
+
     const formData = new FormData();
     formData.append("name", bgName);
-    formData.append("file", selectedFile);
+    formData.append("file", fileToSend, `${bgName}.jpg`);
 
     const res = await addBackgroundAction(formData);
     setUploading(false);
@@ -90,6 +141,7 @@ export function AdminBackgroundsSettings() {
       fetchBackgrounds();
     }
   };
+
 
   // حذف خلفية
   const handleDelete = async (id: string, url: string) => {
