@@ -8,6 +8,8 @@ import { getPublicAppUrl } from "@/lib/app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
+import { syncOrderCourierMoneyExpectations } from "@/lib/order-courier-money-sync";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external" | "supplier";
 
@@ -2606,25 +2608,45 @@ export async function syncOldCustomerDebts() {
         const difference = expectedDinar - receivedDinar;
 
         if (difference > 0) {
+          // تحديث توقعات النقدية وعجز المندوب للطلب لتطابق الأسعار الجديدة تلقائياً
+          try {
+            await syncOrderCourierMoneyExpectations(prisma, order.id);
+          } catch (syncErr) {
+            console.error(`Failed to sync money expectations for order ${order.id} in sync:`, syncErr);
+          }
+
           let customerId = order.customerId;
           let customer = order.customer;
 
-          // إذا لم يكن الطلب مرتبطاً بزبون، نحاول البحث عن زبون بنفس رقم الهاتف أو إنشائه تلقائياً
+          // إذا لم يكن الطلب مرتبطاً بزبون، نحاول البحث عن زبون بجميع احتمالات رقم الهاتف أو إنشائه تلقائياً
           if (!customerId && order.customerPhone) {
             const phoneLocal = order.customerPhone.trim();
             if (phoneLocal) {
+              const normPhone = normalizeIraqMobileLocal11(phoneLocal);
+              const cleanDigits = phoneLocal.replace(/\D/g, "");
+              const phoneVariants = [phoneLocal, cleanDigits];
+              if (normPhone) {
+                phoneVariants.push(normPhone);
+                if (normPhone.startsWith("0")) {
+                  phoneVariants.push("964" + normPhone.slice(1));
+                  phoneVariants.push(normPhone.slice(1));
+                }
+              }
+              const uniqueVariants = Array.from(new Set(phoneVariants.filter(Boolean)));
+
               let foundCust = await prisma.customer.findFirst({
                 where: {
-                  phone: phoneLocal,
+                  phone: { in: uniqueVariants },
                   shopId: order.shopId
                 }
               });
+
               if (!foundCust) {
                 foundCust = await prisma.customer.create({
                   data: {
                     shopId: order.shopId,
                     name: "زبون",
-                    phone: phoneLocal,
+                    phone: normPhone || phoneLocal,
                     customerRegionId: order.customerRegionId,
                     customerLocationUrl: order.customerLocationUrl || "",
                     customerLandmark: order.customerLandmark || "",
@@ -2723,6 +2745,11 @@ export async function syncOldCustomerDebts() {
       } else {
         // إذا كان واصلاً بالكامل أو تلاشى الفرق
         // نبحث عن أي معاملة قديمة لهذا الطلب ونحذفها لتصفير الدين تلقائياً
+        try {
+          await syncOrderCourierMoneyExpectations(prisma, order.id);
+        } catch (syncErr) {
+          console.error(`Failed to sync money expectations for order ${order.id} in sync (else):`, syncErr);
+        }
         if (order.customerId) {
           let cbPartner = await prisma.creditBookPartner.findUnique({
             where: {

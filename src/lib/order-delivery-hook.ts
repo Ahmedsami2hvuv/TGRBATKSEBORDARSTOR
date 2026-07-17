@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export async function handleOrderDelivered(orderId: string, customTx?: any) {
   const db = customTx || prisma;
@@ -89,9 +90,21 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
       let customerPhone = order.customerPhone ? order.customerPhone.trim() : "";
 
       if (!customerId && customerPhone) {
+        const normPhone = normalizeIraqMobileLocal11(customerPhone);
+        const cleanDigits = customerPhone.replace(/\D/g, "");
+        const phoneVariants = [customerPhone, cleanDigits];
+        if (normPhone) {
+          phoneVariants.push(normPhone);
+          if (normPhone.startsWith("0")) {
+            phoneVariants.push("964" + normPhone.slice(1));
+            phoneVariants.push(normPhone.slice(1));
+          }
+        }
+        const uniqueVariants = Array.from(new Set(phoneVariants.filter(Boolean)));
+
         let foundCust = await db.customer.findFirst({
           where: {
-            phone: customerPhone,
+            phone: { in: uniqueVariants },
             shopId: order.shopId
           }
         });
@@ -101,7 +114,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
             data: {
               shopId: order.shopId,
               name: "زبون",
-              phone: customerPhone,
+              phone: normPhone || customerPhone,
               customerRegionId: order.customerRegionId,
               customerLocationUrl: order.customerLocationUrl || "",
               customerLandmark: order.customerLandmark || "",
