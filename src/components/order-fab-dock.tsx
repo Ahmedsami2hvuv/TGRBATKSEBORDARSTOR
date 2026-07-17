@@ -207,17 +207,25 @@ export function OrderFabDock(props: OrderFabDockProps) {
       });
     }
     if (allowedRecipients.includes("customer") && customerPhone?.trim()) {
+      const hasAlt = !!customerAlternatePhone?.trim();
       availableContacts.push({
         type: "customer",
         phone: customerPhone.trim(),
-        label: isDoubleRoute ? "المستلم" : "الزبون الأول",
+        label: isDoubleRoute ? (hasAlt ? "المستلم الأول" : "المستلم") : (hasAlt ? "الزبون الأول" : "الزبون"),
       });
+      if (hasAlt) {
+        availableContacts.push({
+          type: "customer2",
+          phone: customerAlternatePhone.trim(),
+          label: isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني",
+        });
+      }
     }
-    if (allowedRecipients.includes("customer2") && customerAlternatePhone?.trim()) {
+    if (allowedRecipients.includes("customer2") && customerAlternatePhone?.trim() && !availableContacts.some(c => c.type === "customer2")) {
       availableContacts.push({
         type: "customer2",
         phone: customerAlternatePhone.trim(),
-        label: "الزبون الثاني",
+        label: isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني",
       });
     }
 
@@ -347,28 +355,68 @@ export function OrderFabDock(props: OrderFabDockProps) {
           ) : (
             // الاتصال ومراسلة واتساب العادية الافتراضية
             <>
-              <button
-                onClick={() => {
-                  const phone = isDoubleRoute ? customerPhone : shopPhone;
-                  if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                  else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                  closeAll();
-                }}
-                className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
-              >
-                {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
-              </button>
-              <button
-                onClick={() => {
-                  const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
-                  if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                  else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                  closeAll();
-                }}
-                className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
-              >
-                {isDoubleRoute ? "المستلم" : "الزبون"}
-              </button>
+              {customerAlternatePhone?.trim() ? (
+                <>
+                  <button
+                    onClick={() => {
+                      const phone = isDoubleRoute ? customerPhone : shopPhone;
+                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                      closeAll();
+                    }}
+                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
+                  >
+                    {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
+                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                      closeAll();
+                    }}
+                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
+                  >
+                    {isDoubleRoute ? "المستلم الأول" : "الزبون الأول"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const phone = isDoubleRoute ? "" : customerAlternatePhone;
+                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                      closeAll();
+                    }}
+                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
+                  >
+                    {isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      const phone = isDoubleRoute ? customerPhone : shopPhone;
+                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                      closeAll();
+                    }}
+                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
+                  >
+                    {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
+                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                      closeAll();
+                    }}
+                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
+                  >
+                    {isDoubleRoute ? "المستلم" : "الزبون"}
+                  </button>
+                </>
+              )}
             </>
           )}
           <button onClick={() => setActiveMenu(null)} className="flex h-12 w-40 items-center justify-center rounded-xl text-white bg-slate-800/90 shadow-lg font-bold text-sm active:scale-95 mt-1">رجوع للخلف</button>
