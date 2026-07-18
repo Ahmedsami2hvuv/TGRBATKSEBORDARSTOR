@@ -146,6 +146,8 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
             _sum: { amountDinar: true },
           });
           const isPaidAll = order.prepaidAll || order.customerPaymentReceivedAt !== null;
+          const expectedDinar = Number(order.totalAmount || 0);
+          const receivedDinar = Number(agg._sum.amountDinar || 0);
 
           if (expectedDinar > receivedDinar && !isPaidAll) {
             const difference = expectedDinar - receivedDinar;
@@ -239,13 +241,13 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               }
             });
             if (cbPartner) {
-              const noteTextContains = `طلب رقم: #${order.orderNumber}`;
               const exists = await db.creditBookTransaction.findFirst({
                 where: {
                   partnerId: cbPartner.id,
-                  note: {
-                    contains: noteTextContains
-                  }
+                  OR: [
+                    { note: { contains: `#${order.orderNumber} |` } },
+                    { note: { contains: `طلب رقم: #${order.orderNumber}` } }
+                  ]
                 }
               });
               if (exists) {
