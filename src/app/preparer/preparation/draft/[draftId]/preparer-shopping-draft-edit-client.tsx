@@ -309,6 +309,11 @@ export function PreparerShoppingDraftEditClient({
   }, [products, preparerId]);
 
   const onBubbleMouseDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopPropagation();
+    }
+
     if (showBubbleSettings) return;
 
     // منع القوائم الجانبية ومنع السحب الافتراضي للمتصفح
@@ -344,6 +349,12 @@ export function PreparerShoppingDraftEditClient({
   useEffect(() => {
     const onMouseMove = (e: any) => {
       if (!dragging || showBubbleSettings || bubbleMode !== "floating") return;
+      
+      e.stopPropagation();
+      if (e.nativeEvent) {
+        e.nativeEvent.stopPropagation();
+      }
+
       const pos = e.touches ? e.touches[0] : e;
       setBubblePos({
         x: Math.max(0, Math.min(window.innerWidth - 80, pos.clientX - rel.x)),

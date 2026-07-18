@@ -123,6 +123,7 @@ export function FloatingAdminMenu() {
     if (!btn) return;
 
     const ts = (e: TouchEvent) => {
+      e.stopPropagation(); // منع انتشار الحدث لكي لا يتفعل الـ pull-to-refresh
       onStart(e.touches[0].clientX, e.touches[0].clientY);
       if (e.cancelable) e.preventDefault();
     };
@@ -196,29 +197,41 @@ export function FloatingAdminMenu() {
   }, [isHovered]);
 
   useEffect(() => {
-    const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY);
-    const mu = (e: MouseEvent) => onEnd(e.clientX, e.clientY);
+    const mm = (e: MouseEvent) => {
+      if (isDraggingRef.current) {
+        onMove(e.clientX, e.clientY);
+      }
+    };
+    const mu = (e: MouseEvent) => {
+      if (isDraggingRef.current) {
+        onEnd(e.clientX, e.clientY);
+      }
+    };
     const tm = (e: TouchEvent) => {
       if (isDraggingRef.current) {
         onMove(e.touches[0].clientX, e.touches[0].clientY);
         if (e.cancelable) e.preventDefault();
+        e.stopPropagation(); // منع انتشار الحدث لمنع تحديث الصفحة
       }
     };
-    const tu = (e: TouchEvent) => onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    const tu = (e: TouchEvent) => {
+      if (isDraggingRef.current) {
+        onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    };
 
-    if (isDragging) {
-      window.addEventListener("mousemove", mm);
-      window.addEventListener("mouseup", mu);
-      window.addEventListener("touchmove", tm, { passive: false });
-      window.addEventListener("touchend", tu);
-    }
+    window.addEventListener("mousemove", mm);
+    window.addEventListener("mouseup", mu);
+    window.addEventListener("touchmove", tm, { passive: false });
+    window.addEventListener("touchend", tu, { passive: true });
+
     return () => {
       window.removeEventListener("mousemove", mm);
       window.removeEventListener("mouseup", mu);
       window.removeEventListener("touchmove", tm);
       window.removeEventListener("touchend", tu);
     };
-  }, [isDragging, onMove, onEnd]);
+  }, [onMove, onEnd]);
 
   const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const totalAngle = 260;
@@ -255,7 +268,10 @@ export function FloatingAdminMenu() {
             top: isHovered ? -200 : -35,
             touchAction: "none"
           }}
-          onMouseDown={(e) => onStart(e.clientX, e.clientY)}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            onStart(e.clientX, e.clientY);
+          }}
         >
           {/* القائمة الدائرية */}
           <div
