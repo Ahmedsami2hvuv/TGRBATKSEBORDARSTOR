@@ -117,7 +117,7 @@ export function FloatingAdminMenu() {
     setDragOffset({ x: clientX - positionRef.current.x, y: clientY - positionRef.current.y });
   }, []);
 
-  // تسجيل touchstart ديناميكياً بخيار passive: false لمنع السحب للتحديث الافتراضي بالهواتف
+  // تسجيل أحداث اللمس مباشرة على الزر لمنع السحب للتحديث الافتراضي (pull-to-refresh) بالهواتف
   useEffect(() => {
     const btn = mainButtonRef.current;
     if (!btn) return;
@@ -128,11 +128,31 @@ export function FloatingAdminMenu() {
       if (e.cancelable) e.preventDefault();
     };
 
+    const tm = (e: TouchEvent) => {
+      if (isDraggingRef.current) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation(); // منع انتشار الحركة للأعلى لمنع أي رفرش
+      }
+    };
+
+    const te = (e: TouchEvent) => {
+      if (isDraggingRef.current) {
+        onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        e.stopPropagation();
+      }
+    };
+
     btn.addEventListener("touchstart", ts, { passive: false });
+    btn.addEventListener("touchmove", tm, { passive: false });
+    btn.addEventListener("touchend", te, { passive: true });
+
     return () => {
       btn.removeEventListener("touchstart", ts);
+      btn.removeEventListener("touchmove", tm);
+      btn.removeEventListener("touchend", te);
     };
-  }, [onStart]);
+  }, [onStart, onMove, onEnd]);
 
   // أثناء الحركة
   const onMove = useCallback((clientX: number, clientY: number) => {
@@ -207,29 +227,13 @@ export function FloatingAdminMenu() {
         onEnd(e.clientX, e.clientY);
       }
     };
-    const tm = (e: TouchEvent) => {
-      if (isDraggingRef.current) {
-        onMove(e.touches[0].clientX, e.touches[0].clientY);
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation(); // منع انتشار الحدث لمنع تحديث الصفحة
-      }
-    };
-    const tu = (e: TouchEvent) => {
-      if (isDraggingRef.current) {
-        onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-      }
-    };
 
     window.addEventListener("mousemove", mm);
     window.addEventListener("mouseup", mu);
-    window.addEventListener("touchmove", tm, { passive: false });
-    window.addEventListener("touchend", tu, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", mm);
       window.removeEventListener("mouseup", mu);
-      window.removeEventListener("touchmove", tm);
-      window.removeEventListener("touchend", tu);
     };
   }, [onMove, onEnd]);
 

@@ -346,16 +346,34 @@ export function PreparerShoppingDraftEditClient({
     setDragging(false);
   }, []);
 
+  const onBubbleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragging || showBubbleSettings || bubbleMode !== "floating") return;
+    
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopPropagation();
+    }
+    if (e.cancelable) e.preventDefault();
+
+    const pos = e.touches[0];
+    setBubblePos({
+      x: Math.max(0, Math.min(window.innerWidth - 80, pos.clientX - rel.x)),
+      y: Math.max(0, Math.min(window.innerHeight - 80, pos.clientY - rel.y))
+    });
+  }, [dragging, rel, showBubbleSettings, bubbleMode]);
+
+  const onBubbleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopPropagation();
+    }
+    onBubbleMouseUp();
+  }, [onBubbleMouseUp]);
+
   useEffect(() => {
     const onMouseMove = (e: any) => {
       if (!dragging || showBubbleSettings || bubbleMode !== "floating") return;
-      
-      e.stopPropagation();
-      if (e.nativeEvent) {
-        e.nativeEvent.stopPropagation();
-      }
-
-      const pos = e.touches ? e.touches[0] : e;
+      const pos = e;
       setBubblePos({
         x: Math.max(0, Math.min(window.innerWidth - 80, pos.clientX - rel.x)),
         y: Math.max(0, Math.min(window.innerHeight - 80, pos.clientY - rel.y))
@@ -365,16 +383,12 @@ export function PreparerShoppingDraftEditClient({
     if (dragging) {
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onBubbleMouseUp);
-      window.addEventListener('touchmove', onMouseMove, { passive: false });
-      window.addEventListener('touchend', onBubbleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onBubbleMouseUp);
-      window.removeEventListener('touchmove', onMouseMove);
-      window.removeEventListener('touchend', onBubbleMouseUp);
     };
-  }, [dragging, rel, showBubbleSettings, onBubbleMouseUp]);
+  }, [dragging, rel, showBubbleSettings, bubbleMode, onBubbleMouseUp]);
 
   // --- Price History ---
   const [priceHistory, setPriceHistory] = useState<Record<string, { buyAlf: number }[]>>({});
@@ -1283,6 +1297,8 @@ export function PreparerShoppingDraftEditClient({
         <div
           onMouseDown={onBubbleMouseDown}
           onTouchStart={onBubbleMouseDown}
+          onTouchMove={onBubbleTouchMove}
+          onTouchEnd={onBubbleTouchEnd}
           onContextMenu={(e) => e.preventDefault()}
           style={{
             left: bubblePos.x,
