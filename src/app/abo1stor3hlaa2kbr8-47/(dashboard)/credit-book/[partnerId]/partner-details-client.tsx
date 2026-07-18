@@ -1270,7 +1270,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                               <Link
                                 href={`/abo1stor3hlaa2kbr8-47/orders/${tx.orderId}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className={`font-black hover:underline cursor-pointer transition flex-wrap items-center gap-1 inline-flex ${
+                                className={`font-black hover:underline cursor-pointer transition inline md:inline-flex md:flex-wrap md:items-center md:gap-1 ${
                                   isTransfer 
                                     ? "text-white/95 hover:text-white" 
                                     : isSalary 
