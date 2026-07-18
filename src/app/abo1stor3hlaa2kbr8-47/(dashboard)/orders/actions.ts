@@ -396,6 +396,7 @@ export async function reassignOrderToPreparer(
 
     // تحديث بيانات المجهز في الطلب والمنتجات
     const orderData = (order.preparerShoppingJson as any) || {};
+    const oldProducts = orderData.products || [];
     const products = (orderData.products || []).map((p: any) => ({
       ...p,
       assignedPreparerId: preparerId,
@@ -409,6 +410,27 @@ export async function reassignOrderToPreparer(
         preparerShoppingJson: { ...orderData, products }
       }
     });
+
+    // مزامنة معاملات الموردين في الدفتر لتحديث الأرصدة تلقائياً إذا كان الطلب مسلّماً أو نشطاً
+    if (order.status !== "draft" && order.status !== "priced" && order.status !== "cancelled") {
+      try {
+        const oldSuppIds = Array.from(new Set(
+          oldProducts
+            .map((p: any) => typeof p.assignedPreparerId === "string" ? p.assignedPreparerId.trim() : null)
+            .filter(Boolean)
+        )) as string[];
+
+        const newSuppIds = [preparerId];
+        const uniqueSuppIdsToSync = Array.from(new Set([...oldSuppIds, ...newSuppIds]));
+
+        const { syncSupplierTransactions } = await import("@/lib/order-delivery-hook");
+        for (const suppId of uniqueSuppIdsToSync) {
+          await syncSupplierTransactions(suppId);
+        }
+      } catch (syncErr) {
+        console.error("Failed to sync supplier transactions after reassigning preparer:", syncErr);
+      }
+    }
   }
 
   // إرسال إشعار تيليجرام للمجهز الجديد

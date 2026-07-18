@@ -370,6 +370,22 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
             where: { id: cbPartner.id },
             data: { updatedAt: new Date() }
           });
+        } else {
+          // تحديث المعاملة الحالية بالقيم والأسعار والملاحظات الجديدة
+          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+          await db.creditBookTransaction.update({
+            where: { id: exists.id },
+            data: {
+              amount: totalBuyAlf,
+              note: noteText,
+            }
+          });
+
+          // تحديث تاريخ الشريك ليصعد في القائمة
+          await db.creditBookPartner.update({
+            where: { id: cbPartner.id },
+            data: { updatedAt: new Date() }
+          });
         }
       }
     }
@@ -541,6 +557,22 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           } catch (logErr) {
             console.error("Failed to log transaction creator as System:", logErr);
           }
+
+          // تحديث تاريخ الشريك ليصعد في القائمة
+          await db.creditBookPartner.update({
+            where: { id: cbPartner.id },
+            data: { updatedAt: new Date() }
+          });
+        } else {
+          // تحديث المعاملة الحالية بالقيم والأسعار والملاحظات الجديدة
+          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+          await db.creditBookTransaction.update({
+            where: { id: exists.id },
+            data: {
+              amount: totalBuyAlf,
+              note: noteText,
+            }
+          });
 
           // تحديث تاريخ الشريك ليصعد في القائمة
           await db.creditBookPartner.update({

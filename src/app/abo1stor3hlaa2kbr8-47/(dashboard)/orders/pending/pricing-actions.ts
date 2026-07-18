@@ -77,9 +77,13 @@ export async function savePricingProgress(id: string, isDraft: boolean, products
         }
       });
     } else {
-      const order = await prisma.order.findUnique({ where: { id }, select: { preparerShoppingJson: true } });
+      const order = await prisma.order.findUnique({
+        where: { id },
+        select: { status: true, preparerShoppingJson: true }
+      });
       if (!order) return { error: "الطلب غير موجود" };
 
+      const oldProducts = (order.preparerShoppingJson as any)?.products || [];
       const nextJson = { ...(order.preparerShoppingJson as any || {}), products: safeProducts, placesCount };
       if (noProfit !== undefined) {
         nextJson.noProfit = noProfit;
@@ -91,6 +95,32 @@ export async function savePricingProgress(id: string, isDraft: boolean, products
           preparerShoppingJson: nextJson
         }
       });
+
+      // مزامنة معاملات الموردين في الدفتر لتحديث الأرصدة تلقائياً إذا كان الطلب مسلّماً أو نشطاً
+      if (order.status !== "draft" && order.status !== "priced" && order.status !== "cancelled") {
+        try {
+          const oldSuppIds = Array.from(new Set(
+            oldProducts
+              .map((p: any) => typeof p.assignedPreparerId === "string" ? p.assignedPreparerId.trim() : null)
+              .filter(Boolean)
+          )) as string[];
+
+          const newSuppIds = Array.from(new Set(
+            safeProducts
+              .map((p: any) => typeof p.assignedPreparerId === "string" ? p.assignedPreparerId.trim() : null)
+              .filter(Boolean)
+          )) as string[];
+
+          const uniqueSuppIdsToSync = Array.from(new Set([...oldSuppIds, ...newSuppIds]));
+
+          const { syncSupplierTransactions } = await import("@/lib/order-delivery-hook");
+          for (const suppId of uniqueSuppIdsToSync) {
+            await syncSupplierTransactions(suppId);
+          }
+        } catch (syncErr) {
+          console.error("Failed to sync supplier transactions after auto-save pricing:", syncErr);
+        }
+      }
     }
     return { ok: true };
   } catch (e) {
