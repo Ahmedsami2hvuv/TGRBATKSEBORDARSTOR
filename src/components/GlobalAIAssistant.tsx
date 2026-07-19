@@ -84,8 +84,11 @@ export default function GlobalAIAssistant({
       const dy = e.clientY - dragStartRef.current.y;
       if (!isDraggingFab && Math.hypot(dx, dy) < 6) return;
       if (!isDraggingFab) setIsDraggingFab(true);
-      const nextX = Math.max(8, Math.min(window.innerWidth - 64 - 8, e.clientX - dragOffsetRef.current.x));
-      const nextY = Math.max(8, Math.min(window.innerHeight - 64 - 8, e.clientY - dragOffsetRef.current.y));
+
+      e.stopPropagation();
+
+      const nextX = Math.max(8, Math.min(window.innerWidth - 64 - 8, (window.innerWidth - e.clientX) - dragOffsetRef.current.x));
+      const nextY = Math.max(8, Math.min(window.innerHeight - 64 - 8, (window.innerHeight - e.clientY) - dragOffsetRef.current.y));
       setFabPosition({ x: nextX, y: nextY });
     };
 
@@ -343,10 +346,12 @@ export default function GlobalAIAssistant({
   };
 
   const startFabDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
+
     dragOffsetRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (window.innerWidth - e.clientX) - fabPosition.x,
+      y: (window.innerHeight - e.clientY) - fabPosition.y,
     };
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     activePointerIdRef.current = e.pointerId;
