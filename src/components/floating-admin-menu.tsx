@@ -117,43 +117,6 @@ export function FloatingAdminMenu() {
     setDragOffset({ x: clientX - positionRef.current.x, y: clientY - positionRef.current.y });
   }, []);
 
-  // تسجيل أحداث اللمس مباشرة على الزر لمنع السحب للتحديث الافتراضي (pull-to-refresh) بالهواتف
-  useEffect(() => {
-    const btn = mainButtonRef.current;
-    if (!btn) return;
-
-    const ts = (e: TouchEvent) => {
-      e.stopPropagation(); // منع انتشار الحدث لكي لا يتفعل الـ pull-to-refresh
-      onStart(e.touches[0].clientX, e.touches[0].clientY);
-      if (e.cancelable) e.preventDefault();
-    };
-
-    const tm = (e: TouchEvent) => {
-      if (isDraggingRef.current) {
-        onMove(e.touches[0].clientX, e.touches[0].clientY);
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation(); // منع انتشار الحركة للأعلى لمنع أي رفرش
-      }
-    };
-
-    const te = (e: TouchEvent) => {
-      if (isDraggingRef.current) {
-        onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        e.stopPropagation();
-      }
-    };
-
-    btn.addEventListener("touchstart", ts, { passive: false });
-    btn.addEventListener("touchmove", tm, { passive: false });
-    btn.addEventListener("touchend", te, { passive: true });
-
-    return () => {
-      btn.removeEventListener("touchstart", ts);
-      btn.removeEventListener("touchmove", tm);
-      btn.removeEventListener("touchend", te);
-    };
-  }, [onStart, onMove, onEnd]);
-
   // أثناء الحركة
   const onMove = useCallback((clientX: number, clientY: number) => {
     if (!isDraggingRef.current) return;
@@ -215,6 +178,43 @@ export function FloatingAdminMenu() {
     setIsActuallyDragging(false);
     if (dist > 10) localStorage.setItem("kse_admin_floating_pos", JSON.stringify(positionRef.current));
   }, [isHovered]);
+
+  // تسجيل أحداث اللمس مباشرة على الزر لمنع السحب للتحديث الافتراضي (pull-to-refresh) بالهواتف
+  useEffect(() => {
+    const btn = mainButtonRef.current;
+    if (!btn) return;
+
+    const ts = (e: TouchEvent) => {
+      e.stopPropagation(); // منع انتشار الحدث لكي لا يتفعل الـ pull-to-refresh
+      onStart(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const tm = (e: TouchEvent) => {
+      if (isDraggingRef.current) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation(); // منع انتشار الحركة للأعلى لمنع أي رفرش
+      }
+    };
+
+    const te = (e: TouchEvent) => {
+      if (isDraggingRef.current) {
+        onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        e.stopPropagation();
+      }
+    };
+
+    btn.addEventListener("touchstart", ts, { passive: false });
+    btn.addEventListener("touchmove", tm, { passive: false });
+    btn.addEventListener("touchend", te, { passive: true });
+
+    return () => {
+      btn.removeEventListener("touchstart", ts);
+      btn.removeEventListener("touchmove", tm);
+      btn.removeEventListener("touchend", te);
+    };
+  }, [onStart, onMove, onEnd]);
 
   useEffect(() => {
     const mm = (e: MouseEvent) => {
