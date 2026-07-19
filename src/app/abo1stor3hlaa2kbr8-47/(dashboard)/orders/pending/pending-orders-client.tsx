@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useActionState, useEffect, useState, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -419,6 +420,11 @@ export function OrderPricingPanel({
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [templateSuccess, setTemplateSuccess] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (initialData?.customerPhone) {
@@ -1491,8 +1497,8 @@ ${productsText}`;
         </div>
       )}
       {/* نافذة التسعير المنبثقة الذكية للمدير */}
-      {editingIndex !== null && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      {editingIndex !== null && isMounted && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
           <div className="absolute inset-0" onClick={cancelPricingPanel} />
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200">
             <div className="bg-sky-600 p-3 sm:p-4 text-white flex items-center justify-between gap-3">
@@ -1759,11 +1765,12 @@ ${productsText}`;
               })()}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* مودال نسخ وتكرار الطلب الفخم الطويل بحجم الشاشة */}
-      {showDuplicateModal && (
+      {showDuplicateModal && isMounted && createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
           <div className="w-full max-w-md h-[80vh] sm:h-[70vh] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 flex flex-col justify-between overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
             
@@ -1873,7 +1880,8 @@ ${productsText}`;
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
