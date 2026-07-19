@@ -1657,78 +1657,16 @@ ${productsText}`;
                 </div>
               </div>
 
-              {/* السعر الأصلي في المتجر */}
-              {(() => {
-                const details = findStoreProductDetails(products[editingIndex]?.line, storeProducts);
-                if (!details) return null;
-                return (
-                  <div className="mt-4 p-3 rounded-2xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 flex items-center justify-between gap-3 shadow-sm text-right" dir="rtl">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-black text-violet-950 dark:text-violet-100 flex items-center gap-1">
-                        🏪 السعر الأصلي في المتجر
-                      </span>
-                      <span className="text-[9px] font-bold text-violet-700/70 dark:text-violet-400/70 leading-relaxed">
-                        سعر البيع: {details.salePrice} | الشراء: {details.purchasePrice}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSellText(details.salePrice.toString());
-                        if (details.purchasePrice > 0) {
-                          setBuyText(details.purchasePrice.toString());
-                        }
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black transition active:scale-95 shadow-sm"
-                    >
-                      اعتماد
-                    </button>
-                  </div>
-                );
-              })()}
-
-              {/* خيارات البيع المقترحة */}
-              {(() => {
-                const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
-                if (buyNum <= 0) return null;
-                return (
-                  <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-3">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع:</label>
-                    <div className="flex flex-wrap gap-1.5 justify-start">
-                      <button
-                        type="button"
-                        onClick={() => applyPriceDirectly(buyNum)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95"
-                      >
-                        بدون ربح: {buyNum}
-                      </button>
-
-                      {suggestedPrices.map((price) => (
-                        <button
-                          key={price}
-                          type="button"
-                          onClick={() => applyPriceDirectly(price)}
-                          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
-                        >
-                          {price}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              {/* أزرار الإجراءات الثلاثة تحت مربعي التسعير مباشرة */}
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     applyPricingPanel();
                   }}
-                  className="rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="rounded-2xl bg-emerald-600 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
-                  حفظ والتالي ⬅️
+                  حفظ ⬅️
                 </button>
                 <button
                   type="button"
@@ -1750,31 +1688,75 @@ ${productsText}`;
                     }
                     cancelPricingPanel();
                   }}
-                  className="rounded-2xl bg-sky-600 py-3 text-sm font-black text-white"
+                  className="rounded-2xl bg-sky-600 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
-                  حفظ وإغلاق
+                  حفظ ✅
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetProductPricing(editingIndex);
+                    cancelPricingPanel();
+                  }}
+                  className="rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 py-2.5 text-xs sm:text-sm font-black active:scale-95 transition-all flex items-center justify-center gap-1"
+                >
+                  مسح 💵
                 </button>
               </div>
 
-              <div className="mt-3 flex items-center gap-2">
-                {products[editingIndex]?.buyAlf !== "0" ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resetProductPricing(editingIndex);
-                        cancelPricingPanel();
-                      }}
-                      className="flex-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl py-2.5 text-xs font-black active:bg-rose-600 active:text-white transition-all text-center"
-                    >
-                       مسح السعر الحالي
-                    </button>
-                    <button type="button" onClick={cancelPricingPanel} className="flex-1 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold text-center">تراجع</button>
-                  </>
-                ) : (
-                  <button type="button" onClick={cancelPricingPanel} className="w-full bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold text-center">تراجع</button>
-                )}
-              </div>
+              {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
+
+              {/* خيارات البيع المقترحة بالأسفل */}
+              {(() => {
+                const details = findStoreProductDetails(products[editingIndex]?.line, storeProducts);
+                const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
+                
+                if (buyNum <= 0 && !details) return null;
+                
+                return (
+                  <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-3">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع:</label>
+                    <div className="flex flex-wrap gap-1.5 justify-start">
+                      {/* زر سعر المتجر (لافندر) */}
+                      {details && details.salePrice > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSellText(details.salePrice.toString());
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-violet-100 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 text-violet-700 font-mono text-xs font-black border border-violet-200 dark:border-violet-900 transition active:scale-95 shadow-sm"
+                          title="سعر البيع الأصلي في المتجر (تعديل سعر البيع فقط)"
+                        >
+                          {details.salePrice}
+                        </button>
+                      )}
+
+                      {/* زر بدون ربح */}
+                      {buyNum > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => applyPriceDirectly(buyNum)}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95"
+                        >
+                          بدون ربح: {buyNum}
+                        </button>
+                      )}
+
+                      {/* بقية الأرقام المقترحة */}
+                      {buyNum > 0 && suggestedPrices.map((price) => (
+                        <button
+                          key={price}
+                          type="button"
+                          onClick={() => applyPriceDirectly(price)}
+                          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
+                        >
+                          {price}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
