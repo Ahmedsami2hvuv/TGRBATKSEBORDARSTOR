@@ -1560,41 +1560,34 @@ ${productsText}`;
 
 
               {/* اقتراحات الكسور الذكية للمدير (بناءً على الشراء) */}
-              <div className="mb-4">
-                {(() => {
-                  const typedValue = parseFloat(buyText);
-                  if (isNaN(typedValue) || typedValue <= 0) return null;
+              {(() => {
+                const typedValue = parseFloat(buyText);
+                if (isNaN(typedValue) || typedValue <= 0) return null;
 
-                  const base = Math.floor(typedValue);
-                  const fractions = [0, 0.25, 0.5, 0.75];
+                const base = Math.floor(typedValue);
+                const fractions = [0, 0.25, 0.5, 0.75];
 
-                  return (
-                    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 mb-4 animate-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] font-black text-indigo-900 dark:text-indigo-300">إكمال سعر الشراء لـ ({base}) :</p>
-                      </div>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {fractions.map(frac => {
-                          const total = base + frac;
-                          return (
-                            <button
-                              key={frac}
-                              type="button"
-                              onClick={() => {
-                                setBuyText(total.toString());
-                                setSellText(calculateAutoSellPrice(products[editingIndex].line, total, noProfit).toString());
-                              }}
-                              className="py-2 rounded-xl text-xs font-black bg-indigo-600 text-white active:scale-95 transition-all"
-                            >
-                              {total}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
+                return (
+                  <div className="grid grid-cols-4 gap-1.5 mb-4 animate-in slide-in-from-top-2 duration-300">
+                    {fractions.map(frac => {
+                      const total = base + frac;
+                      return (
+                        <button
+                          key={frac}
+                          type="button"
+                          onClick={() => {
+                            setBuyText(total.toString());
+                            setSellText(calculateAutoSellPrice(products[editingIndex].line, total, noProfit).toString());
+                          }}
+                          className="py-2 rounded-xl text-xs font-black bg-indigo-600 text-white active:scale-95 transition-all"
+                        >
+                          {total}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
