@@ -65,6 +65,14 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
       { orderType: { contains: q, mode: "insensitive" } },
       { shop: { name: { contains: q, mode: "insensitive" } } },
       { courier: { name: { contains: q, mode: "insensitive" } } },
+      { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+      { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+      { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+      { customer: { name: { contains: q, mode: "insensitive" } } },
+      { orderNoteTime: { contains: q, mode: "insensitive" } },
+      { customerLandmark: { contains: q, mode: "insensitive" } },
+      { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+      { summary: { contains: q, mode: "insensitive" } },
     ];
     const asNum = parseInt(q, 10);
     if (!Number.isNaN(asNum) && String(asNum) === q) {

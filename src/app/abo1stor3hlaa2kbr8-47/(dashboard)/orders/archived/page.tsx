@@ -32,7 +32,16 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
     } else {
       where.OR = [
         { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
         { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
         { summary: { contains: q, mode: "insensitive" } },
       ];
     }
