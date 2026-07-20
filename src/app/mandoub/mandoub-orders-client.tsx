@@ -141,6 +141,15 @@ export function MandoubOrdersSection({
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-900 transition-all hover:scale-105 hover:bg-sky-100 active:scale-95"
+            title="تحديث الصفحة"
+          >
+            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-5 h-5 text-sky-600" fallback="🔄" />
+          </button>
+
           <div className="flex items-center gap-1.5 px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl h-10 text-sm font-black text-slate-800 dark:text-[#00f3ff]">
             <DynamicIcon iconKey="ui_user" config={icons} className="w-4 h-4 text-sky-600" fallback="👤" />
             <span className="truncate max-w-[120px]">{courierName}</span>
