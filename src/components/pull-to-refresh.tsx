@@ -6,12 +6,16 @@ export function PullToRefresh() {
   const [translateY, setTranslateY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [pullProgress, setPullProgress] = useState(0); // من 0 إلى 1 أو أكثر
+  const [pullProgress, setPullProgress] = useState(0); // من 0 إلى 100 ليتوافق مع النسب
 
   const startY = useRef(0);
   const isPulling = useRef(false);
   const translateYRef = useRef(0);
   const isRefreshingRef = useRef(false);
+
+  // لتجميع حركة عجلة الماوس (Wheel) على الكمبيوتر
+  const accumulatedDeltaRef = useRef(0);
+  const pullTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // تحديث المرجع عند تغير حالة التحديث
   useEffect(() => {
@@ -19,32 +23,35 @@ export function PullToRefresh() {
   }, [isRefreshing]);
 
   useEffect(() => {
-    // التابع المشترك لبداية السحب
-    const startPull = (clientY: number) => {
+    // ----------------------------------------------------
+    // أولاً: معالجة أحداث اللمس للهواتف والتابلت
+    // ----------------------------------------------------
+    const handleTouchStart = (e: TouchEvent) => {
       const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
       if (scrollTop <= 10 && !isRefreshingRef.current) {
-        startY.current = clientY;
+        startY.current = e.touches[0].clientY;
         isPulling.current = true;
       }
     };
 
-    // التابع المشترك لحركة السحب
-    const movePull = (clientY: number, preventDefaultFn: () => void) => {
+    const handleTouchMove = (e: TouchEvent) => {
       if (!isPulling.current || isRefreshingRef.current) return;
 
-      const pullDistance = clientY - startY.current;
+      const currentY = e.touches[0].clientY;
+      const pullDistance = currentY - startY.current;
 
       if (pullDistance > 0) {
-        preventDefaultFn();
+        if (e.cancelable) {
+          e.preventDefault();
+        }
 
         const resistance = 0.4;
         const rawDistance = pullDistance * resistance;
-        // نحدد أقصى مسافة سحب بـ 100 بكسل
         const distance = Math.min(rawDistance, 100);
 
         translateYRef.current = distance;
         setTranslateY(distance);
-        setPullProgress(Math.min(distance / 70, 1.5)); // حد التفعيل هو 70 بكسل
+        setPullProgress(Math.min((distance / 70) * 100, 150));
         setIsVisible(true);
       } else {
         isPulling.current = false;
@@ -52,29 +59,64 @@ export function PullToRefresh() {
       }
     };
 
-    // التابع المشترك لنهاية السحب
-    const endPull = () => {
+    const handleTouchEnd = () => {
       if (!isPulling.current || isRefreshingRef.current) return;
       isPulling.current = false;
 
-      // إذا تجاوز حد التفعيل (70 بكسل)، نقوم بالرفرش
       if (translateYRef.current >= 70) {
-        setIsRefreshing(true);
-        isRefreshingRef.current = true;
-        translateYRef.current = 60;
-        setTranslateY(60);
-        
-        // إعادة تحميل الصفحة بعد فترة وجيزة لتوضيح حركة التحميل الدائرية للمستخدم
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
+        triggerRefresh();
       } else {
         resetPull();
       }
     };
 
+    // ----------------------------------------------------
+    // ثانياً: معالجة أحداث عجلة الماوس والـ Touchpad للكمبيوتر
+    // ----------------------------------------------------
+    const handleWheel = (e: WheelEvent) => {
+      const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      
+      // إذا كان المستخدم في أعلى الصفحة وقام بالتمرير للأعلى (deltaY < 0 تعني التمرير للأعلى)
+      if (scrollTop <= 5 && e.deltaY < 0 && !isRefreshingRef.current) {
+        if (pullTimeoutRef.current) {
+          clearTimeout(pullTimeoutRef.current);
+        }
+
+        accumulatedDeltaRef.current += Math.abs(e.deltaY);
+        
+        const threshold = 220; // نفس قيمة العتبة المستخدمة في لوحة المدير
+        const progress = Math.min(100, (accumulatedDeltaRef.current / threshold) * 100);
+        
+        // محاكاة الإزاحة البصرية (translateY) بناءً على التقدم
+        const visualDistance = (progress / 100) * 75; // نصل لأقصى ارتفاع 75 بكسل
+        setTranslateY(visualDistance);
+        setPullProgress(progress);
+        setIsVisible(true);
+
+        if (accumulatedDeltaRef.current >= threshold) {
+          triggerRefresh();
+        } else {
+          pullTimeoutRef.current = setTimeout(() => {
+            resetPull();
+          }, 800);
+        }
+      }
+    };
+
+    const triggerRefresh = () => {
+      setIsRefreshing(true);
+      isRefreshingRef.current = true;
+      setTranslateY(60);
+      translateYRef.current = 60;
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    };
+
     const resetPull = () => {
       translateYRef.current = 0;
+      accumulatedDeltaRef.current = 0;
       setTranslateY(0);
       setPullProgress(0);
       setTimeout(() => {
@@ -82,68 +124,29 @@ export function PullToRefresh() {
       }, 300);
     };
 
-    // أحداث اللمس (الهاتف والتابلت)
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length > 0) {
-        startPull(e.touches[0].clientY);
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) {
-        movePull(e.touches[0].clientY, () => {
-          if (e.cancelable) {
-            e.preventDefault();
-          }
-        });
-      }
-    };
-
-    const handleTouchEnd = () => {
-      endPull();
-    };
-
-    // أحداث الماوس (الكمبيوتر واللابتوب)
-    const handleMouseDown = (e: MouseEvent) => {
-      // نتحقق من أن الضغط بالزر الأيسر للماوس فقط (button === 0)
-      if (e.button === 0) {
-        startPull(e.clientY);
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      movePull(e.clientY, () => {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-      });
-    };
-
-    const handleMouseUp = () => {
-      endPull();
-    };
-
-    // تسجيل المستمعين مع passive: false للـ touchmove و mousemove للسماح بمنع السلوك الافتراضي للمتصفح
+    // تسجيل المستمعين على الجوال والكمبيوتر
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
 
-    window.addEventListener("mousedown", handleMouseDown, { passive: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: false });
-    window.addEventListener("mouseup", handleMouseUp, { passive: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
 
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("wheel", handleWheel);
+      if (pullTimeoutRef.current) {
+        clearTimeout(pullTimeoutRef.current);
+      }
     };
   }, []);
 
   if (!isVisible && !isRefreshing) return null;
+
+  // نسبة الدوران بناءً على pullProgress
+  const rotation = (pullProgress / 100) * 360;
 
   return (
     <div
@@ -180,8 +183,8 @@ export function PullToRefresh() {
         // أيقونة السهم الدائري التي تزداد دورانها ووضوحها مع السحب
         <svg
           style={{
-            transform: `rotate(${pullProgress * 360}deg)`,
-            opacity: Math.min(pullProgress, 1),
+            transform: `rotate(${rotation}deg)`,
+            opacity: Math.min(pullProgress / 100, 1),
             transition: "transform 0.1s linear",
           }}
           xmlns="http://www.w3.org/2000/svg"
