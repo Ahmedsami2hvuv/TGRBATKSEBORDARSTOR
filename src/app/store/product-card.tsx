@@ -105,7 +105,7 @@ export function ProductCard({
         </div>
 
         {/* محتوى المنتج (الاسم، السعر، السلة) - هذا ما سيظهر فوراً */}
-        <div className="p-3 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900">
+        <div className="p-2 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900">
           <div className="flex justify-between items-start mb-1 gap-2">
             <h2 className="text-sm md:text-xl font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors line-clamp-1 flex-1 text-right">
               {product.name}
@@ -115,7 +115,7 @@ export function ProductCard({
             </div>
           </div>
 
-          <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-3 md:mb-6 line-clamp-2 h-7 md:h-10 text-right">
+          <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-1.5 md:mb-6 line-clamp-1 md:line-clamp-2 md:h-10 text-right">
             {product.description}
           </p>
 

@@ -175,7 +175,7 @@ export function ProductCardLazy({
         </div>
 
         {/* معلومات المنتج - تظهر فوراً وتكون قابلة للتفاعل حتى قبل تحميل الصور */}
-        <div className="p-3 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-800">
+        <div className="p-2 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-800">
           <div className="flex justify-between items-start mb-1 gap-2">
             <button
               onClick={openModal}
@@ -187,7 +187,7 @@ export function ProductCardLazy({
               {currentPrice.toLocaleString()}
             </div>
           </div>
-          <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-3 md:mb-6 line-clamp-2 h-7 md:h-10 text-right">
+          <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-1.5 md:mb-6 line-clamp-1 md:line-clamp-2 md:h-10 text-right">
             {product.description}
           </p>
           <div className="mt-auto">
