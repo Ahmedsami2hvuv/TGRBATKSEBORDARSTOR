@@ -10,18 +10,26 @@ export function PullToRefresh() {
 
   const startY = useRef(0);
   const isPulling = useRef(false);
+  const translateYRef = useRef(0);
+  const isRefreshingRef = useRef(false);
+
+  // تحديث المرجع عند تغير حالة التحديث
+  useEffect(() => {
+    isRefreshingRef.current = isRefreshing;
+  }, [isRefreshing]);
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
-      // نبدأ التتبع فقط إذا كان التمرير عند أعلى الصفحة تماماً
-      if (window.scrollY === 0 && !isRefreshing) {
+      // نتحقق من أن التمرير قريب من أعلى الصفحة (أو سالب في iOS)
+      const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (scrollTop <= 10 && !isRefreshingRef.current) {
         startY.current = e.touches[0].pageY;
         isPulling.current = true;
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isPulling.current || isRefreshing) return;
+      if (!isPulling.current || isRefreshingRef.current) return;
 
       const currentY = e.touches[0].pageY;
       const pullDistance = currentY - startY.current;
@@ -38,6 +46,7 @@ export function PullToRefresh() {
         // نحدد أقصى مسافة سحب بـ 100 بكسل
         const distance = Math.min(rawDistance, 100);
 
+        translateYRef.current = distance;
         setTranslateY(distance);
         setPullProgress(Math.min(distance / 70, 1.5)); // حد التفعيل هو 70 بكسل
         setIsVisible(true);
@@ -49,13 +58,15 @@ export function PullToRefresh() {
     };
 
     const handleTouchEnd = () => {
-      if (!isPulling.current || isRefreshing) return;
+      if (!isPulling.current || isRefreshingRef.current) return;
       isPulling.current = false;
 
       // إذا تجاوز حد التفعيل (70 بكسل)، نقوم بالرفرش
-      if (translateY >= 70) {
+      if (translateYRef.current >= 70) {
         setIsRefreshing(true);
-        setTranslateY(60); // نثبت المؤشر عند 60 بكسل أثناء التحميل
+        isRefreshingRef.current = true;
+        translateYRef.current = 60;
+        setTranslateY(60);
         
         // إعادة تحميل الصفحة بعد فترة وجيزة لتوضيح حركة التحميل الدائرية للمستخدم
         setTimeout(() => {
@@ -67,6 +78,7 @@ export function PullToRefresh() {
     };
 
     const resetPull = () => {
+      translateYRef.current = 0;
       setTranslateY(0);
       setPullProgress(0);
       setTimeout(() => {
@@ -84,7 +96,7 @@ export function PullToRefresh() {
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [translateY, isRefreshing]);
+  }, []);
 
   if (!isVisible && !isRefreshing) return null;
 
