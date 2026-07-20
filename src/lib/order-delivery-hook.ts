@@ -158,7 +158,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
                 where: {
                   type_externalId: {
                     type: "customer",
-                    externalId: order.customerId
+                    externalId: customerId
                   }
                 }
               });
@@ -170,7 +170,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
                     name: "زبون",
                     phone: order.customerPhone || customer.phone || null,
                     type: "customer",
-                    externalId: order.customerId,
+                    externalId: customerId,
                     updatedAt: new Date()
                   }
                 });
@@ -236,7 +236,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               where: {
                 type_externalId: {
                   type: "customer",
-                  externalId: order.customerId
+                  externalId: customerId
                 }
               }
             });
