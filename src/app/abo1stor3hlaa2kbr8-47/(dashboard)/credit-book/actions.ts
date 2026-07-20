@@ -1174,7 +1174,7 @@ export async function getPartnerDetails(partnerId: string) {
         }
       } else if (partner.type === "preparer") {
         try {
-          const prep = await prisma.preparer.findUnique({
+          const prep = await prisma.companyPreparer.findUnique({
             where: { id: partner.externalId },
             select: { portalToken: true }
           });
