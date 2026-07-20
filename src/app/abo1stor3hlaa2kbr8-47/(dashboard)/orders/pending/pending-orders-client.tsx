@@ -3003,6 +3003,7 @@ export default function PendingOrdersClient({
   initialPricingId = null,
   storeProducts = [],
   fishPricesRaw = "",
+  initialShowFishPrices = false,
 }: {
   orders: PendingOrderRow[];
   couriers: { id: string; name: string }[];
@@ -3014,6 +3015,7 @@ export default function PendingOrdersClient({
   initialPricingId?: string | null;
   storeProducts?: any[];
   fishPricesRaw?: string;
+  initialShowFishPrices?: boolean;
 }) {
   const router = useRouter();
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
@@ -3021,10 +3023,19 @@ export default function PendingOrdersClient({
   const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
   const [activeAssignPreparerOrderId, setActiveAssignPreparerOrderId] = useState<string | null>(null);
 
-  const [showFishPricesModal, setShowFishPricesModal] = useState(false);
+  const [showFishPricesModal, setShowFishPricesModal] = useState(initialShowFishPrices);
   const [fishPricesText, setFishPricesText] = useState(fishPricesRaw || "");
   const [isSavingFishPrices, setIsSavingFishPrices] = useState(false);
   const [fishPricesSaveError, setFishPricesSaveError] = useState<string | null>(null);
+
+  const handleCloseFishPricesModal = () => {
+    setShowFishPricesModal(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("fishPrices")) {
+      url.searchParams.delete("fishPrices");
+      router.replace(url.pathname + url.search);
+    }
+  };
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -3785,7 +3796,7 @@ export default function PendingOrdersClient({
 
       {showFishPricesModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
-          <div className="absolute inset-0" onClick={() => setShowFishPricesModal(false)} />
+          <div className="absolute inset-0" onClick={handleCloseFishPricesModal} />
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200">
             <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
               <div className="text-right">
@@ -3794,7 +3805,7 @@ export default function PendingOrdersClient({
               </div>
               <button 
                 type="button" 
-                onClick={() => setShowFishPricesModal(false)} 
+                onClick={handleCloseFishPricesModal} 
                 className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
               >✕</button>
             </div>
@@ -3837,7 +3848,7 @@ export default function PendingOrdersClient({
                       if (res.error) {
                         setFishPricesSaveError(res.error);
                       } else if (res.ok) {
-                        setShowFishPricesModal(false);
+                        handleCloseFishPricesModal();
                         router.refresh();
                       }
                     } catch (err: any) {
@@ -3859,7 +3870,7 @@ export default function PendingOrdersClient({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowFishPricesModal(false)}
+                  onClick={handleCloseFishPricesModal}
                   className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
                 >
                   إلغاء

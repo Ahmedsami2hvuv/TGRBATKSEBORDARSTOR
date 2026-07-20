@@ -36,7 +36,7 @@ function customerOrderTimeLabel(orderNoteTime: string | null): string {
   return t.replace(/^وقت الطلب:\s*/i, "").trim() || t;
 }
 
-type PageProps = { searchParams: Promise<{ tab?: string; assignOrder?: string; pricing?: string }> };
+type PageProps = { searchParams: Promise<{ tab?: string; assignOrder?: string; pricing?: string; fishPrices?: string }> };
 
 export default async function PendingOrdersPage({ searchParams }: PageProps) {
   try {
@@ -44,6 +44,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const activeTab = sp.tab ?? "new";
     const assignOrder = (sp.assignOrder ?? "").trim();
     const pricingId = (sp.pricing ?? "").trim();
+    const showFishPrices = sp.fishPrices === "true";
 
     // 1. جلب البيانات الثقيلة أولاً (الطلبات والمسودات)
     const [allActiveDrafts, allPendingOrders] = await Promise.all([
@@ -380,7 +381,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+             <Link href="?fishPrices=true" className="px-5 py-2.5 text-xs font-black rounded-xl bg-gradient-to-r from-sky-500 to-indigo-650 hover:from-sky-600 hover:to-indigo-700 text-white shadow-md active:scale-95 transition-all flex items-center gap-1 shrink-0">🐟 أسعار السمك اليومية</Link>
              <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.btnDark}>تتبع الطلبات</Link>
              <Link href={`${SECRET_ADMIN_PATH}/preparation-orders`} className={ad.btnDark}>سجل التجهيز</Link>
              <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>+ طلب إداري جديد</Link>
@@ -401,7 +403,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "new" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
+            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} initialShowFishPrices={showFishPrices} />
           </div>
         )}
 
@@ -411,7 +413,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
               <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
             ) : (
               <div className="grid gap-3">
-                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} isDraftMode initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
+                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} isDraftMode initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} initialShowFishPrices={showFishPrices} />
               </div>
             )}
           </div>
@@ -419,7 +421,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "completed" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
+            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} initialShowFishPrices={showFishPrices} />
           </div>
         )}
       </div>
