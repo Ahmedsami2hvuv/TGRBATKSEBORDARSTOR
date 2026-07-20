@@ -72,7 +72,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       }),
     ]);
 
-    const [couriers, shops, preparers, icons, waButtons, storeProducts] = await Promise.all([
+    const [couriers, shops, preparers, icons, waButtons, storeProducts, fishPricesSetting] = await Promise.all([
       prisma.courier.findMany({
         where: courierAssignableWhere,
         orderBy: { name: "asc" },
@@ -105,7 +105,14 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           }
         }
       }),
+      prisma.uISystemSetting.findUnique({
+        where: {
+          target_section: { target: "system", section: "fish_prices" }
+        }
+      })
     ]);
+
+    const fishPricesRaw = (fishPricesSetting?.config as any)?.rawText || "";
 
     // تقسيم الطلبات برمجياً
     const newOrders = allPendingOrders;
@@ -394,7 +401,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "new" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} initialPricingId={pricingId} />
+            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
           </div>
         )}
 
@@ -404,7 +411,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
               <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
             ) : (
               <div className="grid gap-3">
-                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} isDraftMode initialPricingId={pricingId} />
+                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} isDraftMode initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
               </div>
             )}
           </div>
@@ -412,7 +419,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "completed" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} initialPricingId={pricingId} />
+            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} storeProducts={safeStoreProducts} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} initialPricingId={pricingId} fishPricesRaw={fishPricesRaw} />
           </div>
         )}
       </div>

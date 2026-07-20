@@ -744,3 +744,35 @@ export async function duplicateOrderOrDraft(
     return { error: `فشل النسخ: ${error.message || "حدث خطأ غير متوقع"}` };
   }
 }
+
+export async function getFishPrices(): Promise<string> {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: {
+        target_section: { target: "system", section: "fish_prices" }
+      }
+    });
+    return (setting?.config as any)?.rawText || "";
+  } catch (error) {
+    console.error("Error getting fish prices:", error);
+    return "";
+  }
+}
+
+export async function saveFishPrices(rawText: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await prisma.uISystemSetting.upsert({
+      where: {
+        target_section: { target: "system", section: "fish_prices" }
+      },
+      update: { config: { rawText } },
+      create: { target: "system", section: "fish_prices", config: { rawText } }
+    });
+    revalidatePath("/abo1stor3hlaa2kbr8-47/orders/pending");
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error saving fish prices:", error);
+    return { error: error.message || "فشل حفظ أسعار السمك اليومية" };
+  }
+}
+
