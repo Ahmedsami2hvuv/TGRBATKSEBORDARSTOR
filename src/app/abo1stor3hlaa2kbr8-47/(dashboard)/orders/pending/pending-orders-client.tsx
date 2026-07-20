@@ -3153,12 +3153,99 @@ export default function PendingOrdersClient({
 
   if (orders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center w-full">
          <div className="h-20 w-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
             <DynamicIcon icon={icons?.ui_package} fallback="📦" width={40} height={40} className="text-slate-300" />
          </div>
          <h3 className="text-lg font-black text-slate-900 dark:text-white">لا توجد طلبات معلقة</h3>
          <p className="text-sm font-bold text-slate-500 mt-1">جميع الطلبات تم تجهيزها أو إسنادها بنجاح.</p>
+
+         {showFishPricesModal && (
+           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+             <div className="absolute inset-0" onClick={handleCloseFishPricesModal} />
+             <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+               <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
+                 <div className="text-right">
+                   <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
+                   <p className="text-[9px] opacity-80">أدخل اسم السمكة متبوعاً بسعر الشراء وسعر البيع اليومي.</p>
+                 </div>
+                 <button 
+                   type="button" 
+                   onClick={handleCloseFishPricesModal} 
+                   className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
+                 >✕</button>
+               </div>
+               
+               <div className="p-6 text-right space-y-4">
+                 <div>
+                   <label className="text-[10px] font-black text-slate-500 mb-1.5 block">قائمة أسعار السمك</label>
+                   <textarea
+                     value={fishPricesText}
+                     onChange={(e) => setFishPricesText(e.target.value)}
+                     rows={8}
+                     className="w-full bg-slate-50 dark:bg-black/20 rounded-2xl p-4 text-xs font-mono font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                     placeholder="مثال:&#10;سلمون 6 6.5&#10;حمام3 10 11&#10;زبيدي 12 14"
+                   />
+                 </div>
+
+                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-3 rounded-xl space-y-1">
+                   <p className="text-[10px] font-black text-amber-700 dark:text-amber-400">💡 تعليمات الإدخال:</p>
+                   <ul className="text-[9px] text-amber-600/90 dark:text-amber-400/90 list-disc pr-4 space-y-0.5 font-bold">
+                     <li>كل نوع سمكة في سطر منفصل.</li>
+                     <li>اكتب اسم السمكة ثم مسافة ثم سعر الشراء ثم مسافة ثم سعر البيع (بالألف، مثال: 6 تعني 6 آلاف).</li>
+                     <li>إذا كانت البيعة لأكثر من كيلو (سعر ثابت)، اكتب الرقم متصلاً بالاسم، مثل: <span className="font-mono">حمام3 10 11</span></li>
+                   </ul>
+                 </div>
+
+                 {fishPricesSaveError && (
+                   <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 p-2.5 rounded-xl text-center">{fishPricesSaveError}</p>
+                 )}
+
+                 <div className="flex gap-2.5 pt-2">
+                   <button
+                     type="button"
+                     disabled={isSavingFishPrices}
+                     onClick={async () => {
+                       setIsSavingFishPrices(true);
+                       setFishPricesSaveError(null);
+                       try {
+                         const { saveFishPrices } = await import("./pricing-actions");
+                         const res = await saveFishPrices(fishPricesText);
+                         if (res.error) {
+                           setFishPricesSaveError(res.error);
+                         } else if (res.ok) {
+                           handleCloseFishPricesModal();
+                           router.refresh();
+                         }
+                       } catch (err: any) {
+                         setFishPricesSaveError(err.message || "حدث خطأ غير متوقع");
+                       } finally {
+                         setIsSavingFishPrices(false);
+                       }
+                     }}
+                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+                   >
+                     {isSavingFishPrices ? (
+                       <>
+                         <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                         جاري الحفظ...
+                       </>
+                     ) : (
+                       <>💾 حفظ الأسعار</>
+                     )}
+                   </button>
+                   <button
+                     type="button"
+                     onClick={handleCloseFishPricesModal}
+                     className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
+                   >
+                     إلغاء
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
       </div>
     );
   }
