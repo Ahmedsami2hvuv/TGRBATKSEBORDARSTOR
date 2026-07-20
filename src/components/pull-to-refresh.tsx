@@ -19,28 +19,24 @@ export function PullToRefresh() {
   }, [isRefreshing]);
 
   useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      // نتحقق من أن التمرير قريب من أعلى الصفحة (أو سالب في iOS)
+    // التابع المشترك لبداية السحب
+    const startPull = (clientY: number) => {
       const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
       if (scrollTop <= 10 && !isRefreshingRef.current) {
-        startY.current = e.touches[0].pageY;
+        startY.current = clientY;
         isPulling.current = true;
       }
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    // التابع المشترك لحركة السحب
+    const movePull = (clientY: number, preventDefaultFn: () => void) => {
       if (!isPulling.current || isRefreshingRef.current) return;
 
-      const currentY = e.touches[0].pageY;
-      const pullDistance = currentY - startY.current;
+      const pullDistance = clientY - startY.current;
 
       if (pullDistance > 0) {
-        // منع سلوك المتصفح الافتراضي لكي نتحكم بالحركة ونعرض السهم
-        if (e.cancelable) {
-          e.preventDefault();
-        }
+        preventDefaultFn();
 
-        // تطبيق معامل مقاومة (Resistance) لكي يكون السحب واقعياً وسلساً
         const resistance = 0.4;
         const rawDistance = pullDistance * resistance;
         // نحدد أقصى مسافة سحب بـ 100 بكسل
@@ -51,13 +47,13 @@ export function PullToRefresh() {
         setPullProgress(Math.min(distance / 70, 1.5)); // حد التفعيل هو 70 بكسل
         setIsVisible(true);
       } else {
-        // إذا سحب لأعلى أثناء العملية، نلغي السحب
         isPulling.current = false;
         resetPull();
       }
     };
 
-    const handleTouchEnd = () => {
+    // التابع المشترك لنهاية السحب
+    const endPull = () => {
       if (!isPulling.current || isRefreshingRef.current) return;
       isPulling.current = false;
 
@@ -86,15 +82,64 @@ export function PullToRefresh() {
       }, 300);
     };
 
-    // تسجيل المستمعين مع passive: false للسماح بمنع السلوك الافتراضي للمتصفح أثناء السحب
+    // أحداث اللمس (الهاتف والتابلت)
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        startPull(e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        movePull(e.touches[0].clientY, () => {
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+        });
+      }
+    };
+
+    const handleTouchEnd = () => {
+      endPull();
+    };
+
+    // أحداث الماوس (الكمبيوتر واللابتوب)
+    const handleMouseDown = (e: MouseEvent) => {
+      // نتحقق من أن الضغط بالزر الأيسر للماوس فقط (button === 0)
+      if (e.button === 0) {
+        startPull(e.clientY);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      movePull(e.clientY, () => {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      });
+    };
+
+    const handleMouseUp = () => {
+      endPull();
+    };
+
+    // تسجيل المستمعين مع passive: false للـ touchmove و mousemove للسماح بمنع السلوك الافتراضي للمتصفح
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    window.addEventListener("mousedown", handleMouseDown, { passive: true });
+    window.addEventListener("mousemove", handleMouseMove, { passive: false });
+    window.addEventListener("mouseup", handleMouseUp, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
+
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
