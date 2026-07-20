@@ -49,29 +49,25 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
   ];
 
   const now = new Date();
-  const shiftStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0, 0);
-  if (now < shiftStart) shiftStart.setDate(shiftStart.getDate() - 1);
+  const ymdNow = formatYMDLocal(now);
+  let shiftStart = new Date(`${ymdNow}T06:00:00+03:00`);
+  if (now < shiftStart) {
+    shiftStart = new Date(shiftStart.getTime() - 24 * 60 * 60 * 1000);
+  }
   const defaultDay = formatYMDLocal(shiftStart);
   
   const selectedDayIso = (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam)) ? dayParam : defaultDay;
-  const parts = selectedDayIso.split("-").map(Number);
-  const selectedDayDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-  const from = new Date(selectedDayDate.getFullYear(), selectedDayDate.getMonth(), selectedDayDate.getDate(), 6, 0, 0, 0);
-  const to = new Date(from);
-  to.setDate(to.getDate() + 1);
-  to.setMilliseconds(to.getMilliseconds() - 1);
+  const from = new Date(`${selectedDayIso}T06:00:00+03:00`);
+  const to = new Date(from.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   const dayList = Array.from({ length: 21 }, (_, i) => {
-    const d = new Date(shiftStart);
-    d.setDate(d.getDate() - i);
+    const d = new Date(shiftStart.getTime() - i * 24 * 60 * 60 * 1000);
     return formatYMDLocal(d);
   });
 
   // جلب الطلبات لآخر 21 يوم لتحديد علامات اللحم والسمك في القائمة الجانبية
-  const earliestDayDate = new Date(shiftStart);
-  earliestDayDate.setDate(earliestDayDate.getDate() - 20);
-  const rangeFrom = new Date(earliestDayDate.getFullYear(), earliestDayDate.getMonth(), earliestDayDate.getDate(), 6, 0, 0, 0);
+  const rangeFrom = new Date(from.getTime() - 20 * 24 * 60 * 60 * 1000);
 
   const [orders, sidebarOrders] = await Promise.all([
     prisma.order.findMany({
@@ -97,9 +93,12 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
 
   const dayIndicators: Record<string, { hasMeat: boolean; hasFish: boolean }> = {};
   sidebarOrders.forEach(order => {
-    const d = new Date(order.createdAt);
-    if (d.getHours() < 6) d.setDate(d.getDate() - 1);
-    const dayKey = formatYMDLocal(d);
+    const d = order.createdAt;
+    const baghdadTime = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Baghdad" }));
+    if (baghdadTime.getHours() < 6) {
+      baghdadTime.setDate(baghdadTime.getDate() - 1);
+    }
+    const dayKey = formatYMDLocal(baghdadTime);
 
     if (!dayIndicators[dayKey]) dayIndicators[dayKey] = { hasMeat: false, hasFish: false };
     if (dayIndicators[dayKey].hasMeat && dayIndicators[dayKey].hasFish) return;

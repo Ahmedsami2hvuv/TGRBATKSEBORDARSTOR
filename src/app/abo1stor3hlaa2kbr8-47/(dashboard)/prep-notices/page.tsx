@@ -60,7 +60,7 @@ export default async function AdminPrepNoticesPage() {
               <li key={n.id} className="py-3">
                 <p className={ad.listTitle}>{n.title}</p>
                 <p className="text-xs text-slate-500">
-                  {n.preparer.name} — {n.createdAt.toLocaleString("ar-IQ-u-nu-latn")}{" "}
+                  {n.preparer.name} — {n.createdAt.toLocaleString("ar-IQ-u-nu-latn", { timeZone: "Asia/Baghdad" })}{" "}
                   {n.dismissedAt ? (
                     <span className="text-emerald-700">(تم الإخفاء من عند المجهز)</span>
                   ) : (

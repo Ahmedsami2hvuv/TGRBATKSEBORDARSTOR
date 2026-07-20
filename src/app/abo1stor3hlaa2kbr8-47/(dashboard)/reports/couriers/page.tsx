@@ -282,31 +282,24 @@ export default async function CombinedReportPage({ searchParams }: Props) {
 
 
     const today = new Date();
-    // نحدد اليوم الافتراضي بناءً على نوبة العمل (تبدأ 6:00 صباحاً)
-    let shiftStartToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 0, 0, 0);
+    // نحدد اليوم الافتراضي بناءً على نوبة العمل (تبدأ 6:00 صباحاً بتوقيت بغداد)
+    const ymdToday = formatYMDLocal(today);
+    let shiftStartToday = new Date(`${ymdToday}T06:00:00+03:00`);
     if (today < shiftStartToday) {
-      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
+      shiftStartToday = new Date(shiftStartToday.getTime() - 24 * 60 * 60 * 1000);
     }
     const defaultDay = formatYMDLocal(shiftStartToday);
     const selectedDayIso = parseSelectedDay(sp.day) || defaultDay;
 
-    const [year, month, date] = selectedDayIso.split("-").map(Number);
-    const selectedDate = new Date(year, month - 1, date);
-    
-    const from = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 6, 0, 0, 0);
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
-    to.setMilliseconds(to.getMilliseconds() - 1);
+    const from = new Date(`${selectedDayIso}T06:00:00+03:00`);
+    const to = new Date(from.getTime() + 24 * 60 * 60 * 1000 - 1);
 
     const dayList = Array.from({ length: 21 }, (_, index) => {
-      const d = new Date(shiftStartToday);
-      d.setDate(d.getDate() - index);
+      const d = new Date(shiftStartToday.getTime() - index * 24 * 60 * 60 * 1000);
       return formatYMDLocal(d);
     });
 
-    const earliestDayDate = new Date(from);
-    earliestDayDate.setDate(earliestDayDate.getDate() - 20);
-    const rangeFrom = earliestDayDate;
+    const rangeFrom = new Date(from.getTime() - 20 * 24 * 60 * 60 * 1000);
 
     // جلب البيانات المتوازي (تم إزالة الإكراميات)
     const [ordersDelivery, ordersPrep, sidebarPrepOrders] = await Promise.all([
@@ -424,9 +417,12 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     // --- معالجة وحساب بيانات التجهيز ---
     const dayIndicators: Record<string, { hasMeat: boolean; hasFish: boolean }> = {};
     sidebarPrepOrders.forEach(order => {
-      const d = new Date(order.createdAt);
-      if (d.getHours() < 6) d.setDate(d.getDate() - 1);
-      const dayKey = formatYMDLocal(d);
+      const d = order.createdAt;
+      const baghdadTime = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Baghdad" }));
+      if (baghdadTime.getHours() < 6) {
+        baghdadTime.setDate(baghdadTime.getDate() - 1);
+      }
+      const dayKey = formatYMDLocal(baghdadTime);
 
       if (!dayIndicators[dayKey]) dayIndicators[dayKey] = { hasMeat: false, hasFish: false };
       if (dayIndicators[dayKey].hasMeat && dayIndicators[dayKey].hasFish) return;

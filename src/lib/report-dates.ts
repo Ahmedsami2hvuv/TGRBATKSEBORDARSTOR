@@ -6,50 +6,47 @@ function parseYMD(s: string): Date | null {
   const y = Number(m[1]);
   const mo = Number(m[2]) - 1;
   const d = Number(m[3]);
-  const dt = new Date(y, mo, d);
-  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+  const dt = new Date(`${s.trim()}T00:00:00+03:00`);
+  if (Number.isNaN(dt.getTime())) return null;
   return dt;
 }
 
 export function formatYMDLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Baghdad" });
 }
 
 function startOfDayLocal(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  const ymd = formatYMDLocal(d);
+  return new Date(`${ymd}T00:00:00+03:00`);
 }
 
 function endOfDayLocal(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  const ymd = formatYMDLocal(d);
+  return new Date(`${ymd}T23:59:59.999+03:00`);
 }
 
 function startOfShiftDayLocal(d: Date, hour: number): Date {
-  const shiftStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 0, 0, 0);
+  const ymd = formatYMDLocal(d);
+  const shiftStart = new Date(`${ymd}T${String(hour).padStart(2, "0")}:00:00+03:00`);
   if (d < shiftStart) {
-    shiftStart.setDate(shiftStart.getDate() - 1);
+    return new Date(shiftStart.getTime() - 24 * 60 * 60 * 1000);
   }
   return shiftStart;
 }
 
 function endOfShiftDayLocal(d: Date, hour: number): Date {
   const shiftStart = startOfShiftDayLocal(d, hour);
-  const nextShiftStart = new Date(shiftStart);
-  nextShiftStart.setDate(nextShiftStart.getDate() + 1);
-  return new Date(nextShiftStart.getTime() - 1);
+  return new Date(shiftStart.getTime() + 24 * 60 * 60 * 1000 - 1);
 }
 
 function startOfShiftDateLocal(d: Date, hour: number): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 0, 0, 0);
+  const ymd = formatYMDLocal(d);
+  return new Date(`${ymd}T${String(hour).padStart(2, "0")}:00:00+03:00`);
 }
 
 function endOfShiftDateLocal(d: Date, hour: number): Date {
   const shiftStart = startOfShiftDateLocal(d, hour);
-  const nextShiftStart = new Date(shiftStart);
-  nextShiftStart.setDate(nextShiftStart.getDate() + 1);
-  return new Date(nextShiftStart.getTime() - 1);
+  return new Date(shiftStart.getTime() + 24 * 60 * 60 * 1000 - 1);
 }
 
 export type ReportDateRangeDefaults = "last30" | "today" | "month";
@@ -81,10 +78,14 @@ export function parseDateRangeFromSearchParams(
 
   if (!fromParam) {
     if (defaults === "month") {
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+      const todayYmd = formatYMDLocal(today);
+      const [y, m] = todayYmd.split("-");
+      const monthStart = new Date(`${y}-${m}-01T00:00:00+03:00`);
       fromInput = formatYMDLocal(shiftHour > 0 ? startOfShiftDateLocal(monthStart, shiftHour) : startOfDayLocal(monthStart));
     } else if (defaults === "last30") {
-      const prior = new Date(today);
+      const todayBaghdadStr = today.toLocaleString("en-US", { timeZone: "Asia/Baghdad" });
+      const todayBaghdad = new Date(todayBaghdadStr);
+      const prior = new Date(todayBaghdad);
       prior.setDate(prior.getDate() - 29);
       fromInput = formatYMDLocal(shiftHour > 0 ? startOfShiftDateLocal(prior, shiftHour) : startOfDayLocal(prior));
     }

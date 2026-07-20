@@ -38,7 +38,12 @@ type InvoiceReportRow = {
 };
 
 function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return date.toLocaleTimeString("en-US", {
+    timeZone: "Asia/Baghdad",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -50,14 +55,13 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
   const today = new Date();
   const defaultDay = formatYMDLocal(today);
   const selectedDayIso = dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) ? dayParam : defaultDay;
-  const parts = selectedDayIso.split("-").map(Number);
-  const selectedDayDate = new Date(parts[0], parts[1] - 1, parts[2]);
-  const from = new Date(selectedDayDate.getFullYear(), selectedDayDate.getMonth(), selectedDayDate.getDate(), 0, 0, 0, 0);
-  const to = new Date(from);
-  to.setHours(23, 59, 59, 999);
+  const from = new Date(`${selectedDayIso}T00:00:00+03:00`);
+  const to = new Date(`${selectedDayIso}T23:59:59.999+03:00`);
 
+  const todayBaghdadStr = today.toLocaleString("en-US", { timeZone: "Asia/Baghdad" });
+  const todayBaghdad = new Date(todayBaghdadStr);
   const dayList = Array.from({ length: 21 }, (_, i) => {
-    const d = new Date(today);
+    const d = new Date(todayBaghdad);
     d.setDate(d.getDate() - i);
     return formatYMDLocal(d);
   });

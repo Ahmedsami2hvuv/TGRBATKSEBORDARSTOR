@@ -107,7 +107,11 @@ export default async function PreparationProfitsPage({ searchParams }: Props) {
                 <td className="px-3 py-2">{r.preparerName}</td>
                 <td className="px-3 py-2 font-mono tabular-nums">{r.profitAlf.toFixed(2)}</td>
                 <td className="px-3 py-2 text-xs text-slate-600">
-                  {r.createdAt.toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "short", timeStyle: "short" })}
+                  {r.createdAt.toLocaleString("ar-IQ-u-nu-latn", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                    timeZone: "Asia/Baghdad"
+                  })}
                 </td>
               </tr>
             ))}
