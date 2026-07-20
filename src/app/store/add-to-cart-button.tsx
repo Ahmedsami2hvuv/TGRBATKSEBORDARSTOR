@@ -51,9 +51,9 @@ export function AddToCartButton({ product }: { product: any }) {
   }
 
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex flex-col md:flex-row items-center gap-2 w-full">
       {/* أزرار التحكم بالكمية */}
-      <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-2xl p-0.5 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm shrink-0 select-none">
+      <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-2xl p-0.5 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm w-full md:w-auto shrink-0 select-none">
         <button
           type="button"
           onClick={(e) => {
@@ -86,7 +86,7 @@ export function AddToCartButton({ product }: { product: any }) {
       {/* زر إضافة للسلة */}
       <button
         onClick={addToCart}
-        className={`flex-1 py-3 rounded-2xl font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 transform active:scale-90 ${
+        className={`w-full md:flex-1 py-3 rounded-2xl font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 transform active:scale-90 ${
           added
             ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-none"
             : "bg-slate-900 text-white hover:bg-violet-600 shadow-lg shadow-slate-200 dark:shadow-none"
@@ -100,7 +100,7 @@ export function AddToCartButton({ product }: { product: any }) {
         ) : (
           <>
             <span>🛒</span>
-            إضافة
+            إضافة للسلة
           </>
         )}
       </button>
