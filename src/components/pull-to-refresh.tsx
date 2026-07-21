@@ -23,10 +23,43 @@ export function PullToRefresh() {
   }, [isRefreshing]);
 
   useEffect(() => {
+    // دالة للتحقق مما إذا كان العنصر يقع داخل حاوية تمرير فرعية أو مودال عائم
+    const isInsideScrollableContainer = (target: EventTarget | null): boolean => {
+      if (!target) return false;
+      
+      // إذا كان التمرير متجمداً في الصفحة بالكامل، فهناك مودال مفتوح بالتأكيد
+      if (document.body.style.overflow === "hidden") return true;
+
+      let el = target as HTMLElement | null;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        const isScrollable = overflowY === "auto" || overflowY === "scroll";
+        const isFixedOrAbsolute = style.position === "fixed" || style.position === "absolute";
+        
+        // نستثني المكون الحالي للـ PullToRefresh نفسه
+        if (el.className && typeof el.className === "string" && el.className.includes("fixed") && el.className.includes("top-[-50px]")) {
+          el = el.parentElement;
+          continue;
+        }
+
+        if (isScrollable || isFixedOrAbsolute) {
+          return true;
+        }
+        el = el.parentElement;
+      }
+      return false;
+    };
+
     // ----------------------------------------------------
     // أولاً: معالجة أحداث اللمس للهواتف والتابلت
     // ----------------------------------------------------
     const handleTouchStart = (e: TouchEvent) => {
+      // إذا كان اللمس داخل حاوية تمرير فرعية أو مودال، نتجاهله تماماً
+      if (e.target && isInsideScrollableContainer(e.target)) {
+        return;
+      }
+
       const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
       if (scrollTop <= 10 && !isRefreshingRef.current) {
         startY.current = e.touches[0].clientY;
@@ -74,6 +107,11 @@ export function PullToRefresh() {
     // ثانياً: معالجة أحداث عجلة الماوس والـ Touchpad للكمبيوتر
     // ----------------------------------------------------
     const handleWheel = (e: WheelEvent) => {
+      // إذا كان التمرير داخل حاوية فرعية أو مودال، نتجاهله تماماً
+      if (e.target && isInsideScrollableContainer(e.target)) {
+        return;
+      }
+
       const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
       
       // إذا كان المستخدم في أعلى الصفحة وقام بالتمرير للأعلى (deltaY < 0 تعني التمرير للأعلى)
