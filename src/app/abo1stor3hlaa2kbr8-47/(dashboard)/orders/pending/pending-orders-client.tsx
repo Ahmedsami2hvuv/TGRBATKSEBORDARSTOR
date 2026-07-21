@@ -3026,6 +3026,7 @@ export default function PendingOrdersClient({
   const [showFishPricesModal, setShowFishPricesModal] = useState(initialShowFishPrices);
   const [isSavingFishPrices, setIsSavingFishPrices] = useState(false);
   const [fishPricesSaveError, setFishPricesSaveError] = useState<string | null>(null);
+  const [fishPricesText, setFishPricesText] = useState(fishPricesRaw || "");
 
   // إعداد حقول الإدخال والـ Refs للسمك
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -3055,6 +3056,7 @@ export default function PendingOrdersClient({
 
   useEffect(() => {
     if (showFishPricesModal) {
+      setFishPricesText(fishPricesRaw || "");
       const parsedList: FishPriceItem[] = [];
       const lines = (fishPricesRaw || "").split("\n");
       lines.forEach((line, idx) => {
