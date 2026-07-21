@@ -3024,9 +3024,25 @@ export default function PendingOrdersClient({
   const [activeAssignPreparerOrderId, setActiveAssignPreparerOrderId] = useState<string | null>(null);
 
   const [showFishPricesModal, setShowFishPricesModal] = useState(initialShowFishPrices);
-  const [fishPricesText, setFishPricesText] = useState(fishPricesRaw || "");
   const [isSavingFishPrices, setIsSavingFishPrices] = useState(false);
   const [fishPricesSaveError, setFishPricesSaveError] = useState<string | null>(null);
+
+  // إعداد حقول الإدخال والـ Refs للسمك
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const buyInputRef = useRef<HTMLInputElement>(null);
+  const sellInputRef = useRef<HTMLInputElement>(null);
+
+  const [newFishName, setNewFishName] = useState("");
+  const [newFishBuy, setNewFishBuy] = useState("");
+  const [newFishSell, setNewFishSell] = useState("");
+
+  interface FishPriceItem {
+    id: string;
+    name: string;
+    buyPrice: string;
+    sellPrice: string;
+  }
+  const [fishList, setFishList] = useState<FishPriceItem[]>([]);
 
   const handleCloseFishPricesModal = () => {
     setShowFishPricesModal(false);
@@ -3034,6 +3050,86 @@ export default function PendingOrdersClient({
     if (url.searchParams.has("fishPrices")) {
       url.searchParams.delete("fishPrices");
       router.replace(url.pathname + url.search);
+    }
+  };
+
+  useEffect(() => {
+    if (showFishPricesModal) {
+      const parsedList: FishPriceItem[] = [];
+      const lines = (fishPricesRaw || "").split("\n");
+      lines.forEach((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        
+        const parts = trimmed.split(/\s+/);
+        if (parts.length >= 3) {
+          const sellPrice = parts[parts.length - 1];
+          const buyPrice = parts[parts.length - 2];
+          const name = parts.slice(0, parts.length - 2).join(" ");
+          parsedList.push({
+            id: `init-${idx}-${Date.now()}`,
+            name,
+            buyPrice,
+            sellPrice
+          });
+        } else if (parts.length === 2) {
+          parsedList.push({
+            id: `init-${idx}-${Date.now()}`,
+            name: parts[0],
+            buyPrice: parts[1],
+            sellPrice: parts[1]
+          });
+        }
+      });
+      setFishList(parsedList);
+      
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 300);
+    }
+  }, [showFishPricesModal, fishPricesRaw]);
+
+  const handleAddFish = () => {
+    if (!newFishName.trim() || !newFishBuy.trim() || !newFishSell.trim()) return;
+    
+    const newItem: FishPriceItem = {
+      id: Date.now().toString(),
+      name: newFishName.trim(),
+      buyPrice: newFishBuy.trim(),
+      sellPrice: newFishSell.trim()
+    };
+    
+    setFishList(prev => [...prev, newItem]);
+    setNewFishName("");
+    setNewFishBuy("");
+    setNewFishSell("");
+    
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 10);
+  };
+
+  const handleRemoveFish = (id: string) => {
+    setFishList(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleSaveAllPrices = async () => {
+    setIsSavingFishPrices(true);
+    setFishPricesSaveError(null);
+    const rawText = fishList.map(item => `${item.name} ${item.buyPrice} ${item.sellPrice}`).join("\n");
+    try {
+      const { saveFishPrices } = await import("./pricing-actions");
+      const res = await saveFishPrices(rawText);
+      if (res.error) {
+        setFishPricesSaveError(res.error);
+      } else if (res.ok) {
+        handleCloseFishPricesModal();
+        router.refresh();
+      }
+    } catch (err: any) {
+      setFishPricesSaveError(err.message || "حدث خطأ غير متوقع");
+    } finally {
+      setIsSavingFishPrices(false);
     }
   };
 
@@ -3167,7 +3263,7 @@ export default function PendingOrdersClient({
                <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
                  <div className="text-right">
                    <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
-                   <p className="text-[9px] opacity-80">أدخل اسم السمكة متبوعاً بسعر الشراء وسعر البيع اليومي.</p>
+                   <p className="text-[9px] opacity-80">أدخل اسم السمكة ومربعات الأسعار، واضغط Enter للتنقل والحفظ التلقائي السريع.</p>
                  </div>
                  <button 
                    type="button" 
