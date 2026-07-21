@@ -3091,7 +3091,13 @@ export default function PendingOrdersClient({
     }
   }, [showFishPricesModal, fishPricesRaw]);
 
-  const handleAddFish = () => {
+  useEffect(() => {
+    if (initialShowFishPrices) {
+      setShowFishPricesModal(true);
+    }
+  }, [initialShowFishPrices]);
+
+  const handleAddFish = async () => {
     if (!newFishName.trim() || !newFishBuy.trim() || !newFishSell.trim()) return;
     
     const newItem: FishPriceItem = {
@@ -3101,18 +3107,39 @@ export default function PendingOrdersClient({
       sellPrice: newFishSell.trim()
     };
     
-    setFishList(prev => [...prev, newItem]);
+    const updatedList = [...fishList, newItem];
+    setFishList(updatedList);
+    
     setNewFishName("");
     setNewFishBuy("");
     setNewFishSell("");
+    
+    try {
+      const rawText = updatedList.map(item => `${item.name} ${item.buyPrice} ${item.sellPrice}`).join("\n");
+      const { saveFishPrices } = await import("./pricing-actions");
+      await saveFishPrices(rawText);
+      router.refresh();
+    } catch (err) {
+      console.error("خطأ في الحفظ التلقائي للسمك:", err);
+    }
     
     setTimeout(() => {
       nameInputRef.current?.focus();
     }, 10);
   };
 
-  const handleRemoveFish = (id: string) => {
-    setFishList(prev => prev.filter(item => item.id !== id));
+  const handleRemoveFish = async (id: string) => {
+    const updatedList = fishList.filter(item => item.id !== id);
+    setFishList(updatedList);
+    
+    try {
+      const rawText = updatedList.map(item => `${item.name} ${item.buyPrice} ${item.sellPrice}`).join("\n");
+      const { saveFishPrices } = await import("./pricing-actions");
+      await saveFishPrices(rawText);
+      router.refresh();
+    } catch (err) {
+      console.error("خطأ في الحفظ التلقائي للسمك بعد الحذف:", err);
+    }
   };
 
   const handleSaveAllPrices = async () => {
@@ -3391,25 +3418,10 @@ export default function PendingOrdersClient({
                   <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
-                      disabled={isSavingFishPrices}
-                      onClick={handleSaveAllPrices}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
-                    >
-                      {isSavingFishPrices ? (
-                        <>
-                          <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          جاري الحفظ...
-                        </>
-                      ) : (
-                        <>💾 حفظ الأسعار</>
-                      )}
-                    </button>
-                    <button
-                      type="button"
                       onClick={handleCloseFishPricesModal}
-                      className="px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black transition active:scale-95"
+                      className="w-full h-12 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-black transition active:scale-95 flex items-center justify-center gap-1"
                     >
-                      إلغاء
+                      👍 تم الانتهاء (إغلاق)
                     </button>
                   </div>
                 </div>
@@ -4182,29 +4194,14 @@ export default function PendingOrdersClient({
                   )}
 
           <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      type="button"
-                      disabled={isSavingFishPrices}
-                      onClick={handleSaveAllPrices}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
-                    >
-                      {isSavingFishPrices ? (
-                        <>
-                          <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          جاري الحفظ...
-                        </>
-                      ) : (
-                        <>💾 حفظ الأسعار</>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCloseFishPricesModal}
-                      className="px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black transition active:scale-95"
-                    >
-                      إلغاء
-                    </button>
-                  </div>
+            <button
+              type="button"
+              onClick={handleCloseFishPricesModal}
+              className="w-full h-12 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-black transition active:scale-95 flex items-center justify-center gap-1"
+            >
+              👍 تم الانتهاء (إغلاق)
+            </button>
+          </div>
                 </div>
               </div>
             </div>
