@@ -3258,92 +3258,164 @@ export default function PendingOrdersClient({
          <h3 className="text-lg font-black text-slate-900 dark:text-white">لا توجد طلبات معلقة</h3>
          <p className="text-sm font-bold text-slate-500 mt-1">جميع الطلبات تم تجهيزها أو إسنادها بنجاح.</p>
 
-         {showFishPricesModal && (
-           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
-             <div className="absolute inset-0" onClick={handleCloseFishPricesModal} />
-             <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
-               <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
-                 <div className="text-right">
-                   <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
-                   <p className="text-[9px] opacity-80">أدخل اسم السمكة ومربعات الأسعار، واضغط Enter للتنقل والحفظ التلقائي السريع.</p>
-                 </div>
-                 <button 
-                   type="button" 
-                   onClick={handleCloseFishPricesModal} 
-                   className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
-                 >✕</button>
-               </div>
-               
-               <div className="p-6 text-right space-y-4">
-                 <div>
-                   <label className="text-[10px] font-black text-slate-500 mb-1.5 block">قائمة أسعار السمك</label>
-                   <textarea
-                     value={fishPricesText}
-                     onChange={(e) => setFishPricesText(e.target.value)}
-                     rows={8}
-                     className="w-full bg-slate-50 dark:bg-black/20 rounded-2xl p-4 text-xs font-mono font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
-                     placeholder="مثال:&#10;سلمون 6 6.5&#10;حمام3 10 11&#10;زبيدي 12 14"
-                   />
-                 </div>
+          {showFishPricesModal && (
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+              <div className="absolute inset-0" onClick={handleCloseFishPricesModal} />
+              <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+                <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
+                  <div className="text-right">
+                    <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
+                    <p className="text-[9px] opacity-80">أدخل اسم السمكة ومربعات الأسعار، واضغط Enter للتنقل والحفظ التلقائي السريع.</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={handleCloseFishPricesModal} 
+                    className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
+                  >✕</button>
+                </div>
+                
+                <div className="p-6 text-right space-y-4 max-h-[75vh] overflow-y-auto">
+                  {/* قسم إضافة سمكة جديدة */}
+                  <div className="bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-slate-100 dark:border-white/5 space-y-3">
+                    <span className="text-[10px] font-black text-slate-500 block mb-1">➕ إضافة سمكة جديدة</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">اسم السمكة</label>
+                        <input
+                          ref={nameInputRef}
+                          type="text"
+                          value={newFishName}
+                          onChange={(e) => setNewFishName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              buyInputRef.current?.focus();
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: سلمون"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">سعر الشراء (بالألف)</label>
+                        <input
+                          ref={buyInputRef}
+                          type="text"
+                          value={newFishBuy}
+                          onChange={(e) => setNewFishBuy(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              sellInputRef.current?.focus();
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: 6"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">سعر البيع (بالألف)</label>
+                        <input
+                          ref={sellInputRef}
+                          type="text"
+                          value={newFishSell}
+                          onChange={(e) => setNewFishSell(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (newFishName.trim() && newFishBuy.trim() && newFishSell.trim()) {
+                                handleAddFish();
+                              }
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: 6.5"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddFish}
+                      disabled={!newFishName.trim() || !newFishBuy.trim() || !newFishSell.trim()}
+                      className="w-full py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black transition-all active:scale-95 flex items-center justify-center gap-1"
+                    >
+                      ➕ إدراج في القائمة
+                    </button>
+                  </div>
 
-                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-3 rounded-xl space-y-1">
-                   <p className="text-[10px] font-black text-amber-700 dark:text-amber-400">💡 تعليمات الإدخال:</p>
-                   <ul className="text-[9px] text-amber-600/90 dark:text-amber-400/90 list-disc pr-4 space-y-0.5 font-bold">
-                     <li>كل نوع سمكة في سطر منفصل.</li>
-                     <li>اكتب اسم السمكة ثم مسافة ثم سعر الشراء ثم مسافة ثم سعر البيع (بالألف، مثال: 6 تعني 6 آلاف).</li>
-                     <li>إذا كانت البيعة لأكثر من كيلو (سعر ثابت)، اكتب الرقم متصلاً بالاسم، مثل: <span className="font-mono">حمام3 10 11</span></li>
-                   </ul>
-                 </div>
+                  {/* قائمة الأسماك الحالية */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-500 block">🐟 قائمة الأسماك المضافة ({fishList.length})</span>
+                    {fishList.length === 0 ? (
+                      <div className="text-center py-6 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] font-bold">
+                        لا توجد أسماك مضافة حالياً. استخدم الحقول أعلاه للإضافة.
+                      </div>
+                    ) : (
+                      <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden max-h-48 overflow-y-auto">
+                        <table className="w-full text-xs text-right border-collapse">
+                          <thead>
+                            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-500 border-b border-slate-150 dark:border-slate-800">
+                              <th className="p-2 font-black">اسم السمكة</th>
+                              <th className="p-2 font-black">سعر الشراء</th>
+                              <th className="p-2 font-black">سعر البيع</th>
+                              <th className="p-2 font-black text-center w-12">حذف</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {fishList.map((item) => (
+                              <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-black/10">
+                                <td className="p-2 font-bold text-slate-800 dark:text-slate-200">{item.name}</td>
+                                <td className="p-2 font-bold text-emerald-600 dark:text-emerald-400">{item.buyPrice} أ.د</td>
+                                <td className="p-2 font-bold text-indigo-600 dark:text-indigo-400">{item.sellPrice} أ.د</td>
+                                <td className="p-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveFish(item.id)}
+                                    className="h-6 w-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 flex items-center justify-center mx-auto transition"
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
 
-                 {fishPricesSaveError && (
-                   <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 p-2.5 rounded-xl text-center">{fishPricesSaveError}</p>
-                 )}
+                  {fishPricesSaveError && (
+                    <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 p-2.5 rounded-xl text-center">{fishPricesSaveError}</p>
+                  )}
 
-                 <div className="flex gap-2.5 pt-2">
-                   <button
-                     type="button"
-                     disabled={isSavingFishPrices}
-                     onClick={async () => {
-                       setIsSavingFishPrices(true);
-                       setFishPricesSaveError(null);
-                       try {
-                         const { saveFishPrices } = await import("./pricing-actions");
-                         const res = await saveFishPrices(fishPricesText);
-                         if (res.error) {
-                           setFishPricesSaveError(res.error);
-                         } else if (res.ok) {
-                           handleCloseFishPricesModal();
-                           router.refresh();
-                         }
-                       } catch (err: any) {
-                         setFishPricesSaveError(err.message || "حدث خطأ غير متوقع");
-                       } finally {
-                         setIsSavingFishPrices(false);
-                       }
-                     }}
-                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
-                   >
-                     {isSavingFishPrices ? (
-                       <>
-                         <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                         جاري الحفظ...
-                       </>
-                     ) : (
-                       <>💾 حفظ الأسعار</>
-                     )}
-                   </button>
-                   <button
-                     type="button"
-                     onClick={handleCloseFishPricesModal}
-                     className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
-                   >
-                     إلغاء
-                   </button>
-                 </div>
-               </div>
-             </div>
-           </div>
-         )}
+                  <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      disabled={isSavingFishPrices}
+                      onClick={handleSaveAllPrices}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      {isSavingFishPrices ? (
+                        <>
+                          <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          جاري الحفظ...
+                        </>
+                      ) : (
+                        <>💾 حفظ الأسعار</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseFishPricesModal}
+                      className="px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black transition active:scale-95"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     );
   }
@@ -3982,89 +4054,161 @@ export default function PendingOrdersClient({
       {showFishPricesModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
           <div className="absolute inset-0" onClick={handleCloseFishPricesModal} />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
             <div className="bg-gradient-to-r from-sky-600 to-indigo-600 p-4 text-white flex items-center justify-between gap-3">
-              <div className="text-right">
-                <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
-                <p className="text-[9px] opacity-80">أدخل اسم السمكة متبوعاً بسعر الشراء وسعر البيع اليومي.</p>
-              </div>
-              <button 
-                type="button" 
-                onClick={handleCloseFishPricesModal} 
-                className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
-              >✕</button>
-            </div>
-            
-            <div className="p-6 text-right space-y-4">
+          <div className="text-right">
+                    <h3 className="text-sm font-black flex items-center gap-1.5">🐟 أسعار السمك اليومية</h3>
+                    <p className="text-[9px] opacity-80">أدخل اسم السمكة ومربعات الأسعار، واضغط Enter للتنقل والحفظ التلقائي السريع.</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={handleCloseFishPricesModal} 
+                    className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0"
+                  >✕</button>
+                </div>
+                
+            <div className="p-6 text-right space-y-4 max-h-[75vh] overflow-y-auto">
+                  {/* قسم إضافة سمكة جديدة */}
+          <div className="bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-slate-100 dark:border-white/5 space-y-3">
+                    <span className="text-[10px] font-black text-slate-500 block mb-1">➕ إضافة سمكة جديدة</span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
-                <label className="text-[10px] font-black text-slate-500 mb-1.5 block">قائمة أسعار السمك</label>
-                <textarea
-                  value={fishPricesText}
-                  onChange={(e) => setFishPricesText(e.target.value)}
-                  rows={8}
-                  className="w-full bg-slate-50 dark:bg-black/20 rounded-2xl p-4 text-xs font-mono font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500"
-                  placeholder="مثال:&#10;سلمون 6 6.5&#10;حمام3 10 11&#10;زبيدي 12 14"
-                />
-              </div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">اسم السمكة</label>
+                        <input
+                          ref={nameInputRef}
+                          type="text"
+                          value={newFishName}
+                          onChange={(e) => setNewFishName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              buyInputRef.current?.focus();
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: سلمون"
+                        />
+                      </div>
+              <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">سعر الشراء (بالألف)</label>
+                        <input
+                          ref={buyInputRef}
+                          type="text"
+                          value={newFishBuy}
+                          onChange={(e) => setNewFishBuy(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              sellInputRef.current?.focus();
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: 6"
+                        />
+                      </div>
+              <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">سعر البيع (بالألف)</label>
+                        <input
+                          ref={sellInputRef}
+                          type="text"
+                          value={newFishSell}
+                          onChange={(e) => setNewFishSell(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (newFishName.trim() && newFishBuy.trim() && newFishSell.trim()) {
+                                handleAddFish();
+                              }
+                            }
+                          }}
+                          className="w-full bg-white dark:bg-slate-900 rounded-xl px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 ring-indigo-500 text-slate-900 dark:text-white"
+                          placeholder="مثال: 6.5"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddFish}
+                      disabled={!newFishName.trim() || !newFishBuy.trim() || !newFishSell.trim()}
+                      className="w-full py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black transition-all active:scale-95 flex items-center justify-center gap-1"
+                    >
+                      ➕ إدراج في القائمة
+                    </button>
+                  </div>
 
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-3 rounded-xl space-y-1">
-                <p className="text-[10px] font-black text-amber-700 dark:text-amber-400">💡 تعليمات الإدخال:</p>
-                <ul className="text-[9px] text-amber-600/90 dark:text-amber-400/90 list-disc pr-4 space-y-0.5 font-bold">
-                  <li>كل نوع سمكة في سطر منفصل.</li>
-                  <li>اكتب اسم السمكة ثم مسافة ثم سعر الشراء ثم مسافة ثم سعر البيع (بالألف، مثال: 6 تعني 6 آلاف).</li>
-                  <li>إذا كانت البيعة لأكثر من كيلو (سعر ثابت)، اكتب الرقم متصلاً بالاسم، مثل: <span className="font-mono">حمام3 10 11</span></li>
-                </ul>
-              </div>
+                  {/* قائمة الأسماك الحالية */}
+          <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-500 block">🐟 قائمة الأسماك المضافة ({fishList.length})</span>
+                    {fishList.length === 0 ? (
+              <div className="text-center py-6 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] font-bold">
+                        لا توجد أسماك مضافة حالياً. استخدم الحقول أعلاه للإضافة.
+                      </div>
+                    ) : (
+              <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden max-h-48 overflow-y-auto">
+                        <table className="w-full text-xs text-right border-collapse">
+                          <thead>
+                              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-500 border-b border-slate-150 dark:border-slate-800">
+                                <th className="p-2 font-black">اسم السمكة</th>
+                                <th className="p-2 font-black">سعر الشراء</th>
+                                <th className="p-2 font-black">سعر البيع</th>
+                                <th className="p-2 font-black text-center w-12">حذف</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {fishList.map((item) => (
+                                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-black/10">
+                                  <td className="p-2 font-bold text-slate-800 dark:text-slate-200">{item.name}</td>
+                                  <td className="p-2 font-bold text-emerald-600 dark:text-emerald-400">{item.buyPrice} أ.د</td>
+                                  <td className="p-2 font-bold text-indigo-600 dark:text-indigo-400">{item.sellPrice} أ.د</td>
+                                  <td className="p-2 text-center">
+                                    <button
+                                    type="button"
+                                    onClick={() => handleRemoveFish(item.id)}
+                                    className="h-6 w-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 flex items-center justify-center mx-auto transition"
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                                </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
 
-              {fishPricesSaveError && (
-                <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 p-2.5 rounded-xl text-center">{fishPricesSaveError}</p>
-              )}
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  disabled={isSavingFishPrices}
-                  onClick={async () => {
-                    setIsSavingFishPrices(true);
-                    setFishPricesSaveError(null);
-                    try {
-                      const { saveFishPrices } = await import("./pricing-actions");
-                      const res = await saveFishPrices(fishPricesText);
-                      if (res.error) {
-                        setFishPricesSaveError(res.error);
-                      } else if (res.ok) {
-                        handleCloseFishPricesModal();
-                        router.refresh();
-                      }
-                    } catch (err: any) {
-                      setFishPricesSaveError(err.message || "حدث خطأ غير متوقع");
-                    } finally {
-                      setIsSavingFishPrices(false);
-                    }
-                  }}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-755 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
-                >
-                  {isSavingFishPrices ? (
-                    <>
-                      <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      جاري الحفظ...
-                    </>
-                  ) : (
-                    <>💾 حفظ الأسعار</>
+                  {fishPricesSaveError && (
+                    <p className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/25 p-2.5 rounded-xl text-center">{fishPricesSaveError}</p>
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseFishPricesModal}
-                  className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
-                >
-                  إلغاء
-                </button>
+
+          <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      disabled={isSavingFishPrices}
+                      onClick={handleSaveAllPrices}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-80 text-white py-3 rounded-2xl text-xs font-black shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      {isSavingFishPrices ? (
+                        <>
+                          <span className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          جاري الحفظ...
+                        </>
+                      ) : (
+                        <>💾 حفظ الأسعار</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseFishPricesModal}
+                      className="px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black transition active:scale-95"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
     </div>
   );
 }
