@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 
-import { updateRegionAction } from "./actions";
+import { deleteRegionAction, updateRegionAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 
@@ -41,6 +41,24 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`هل أنت متأكد من حذف منطقة "${name}"؟`)) return;
+    setLoading(true);
+    try {
+      const result = await deleteRegionAction(id);
+      if (result.success) {
+        setRegions(regions.filter(r => r.id !== id));
+        setEditingId(null);
+      } else {
+        alert("فشل الحذف: " + result.message);
+      }
+    } catch (err) {
+      alert("خطأ في الاتصال بالسيرفر");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-4 relative">
@@ -61,11 +79,22 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
           <div key={region.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-start">
             {editingId === region.id ? (
               <div className="flex flex-col gap-2 w-full">
-                <input value={editName} onChange={e => setEditName(e.target.value)} className="border p-1 rounded text-sm" />
-                <input value={editPrice} onChange={e => setEditPrice(e.target.value)} className="border p-1 rounded text-sm" type="number" />
-                <div className="flex gap-2">
-                  <button onClick={() => saveEdit(region.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">حفظ</button>
-                  <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+                <label className="text-xs font-bold text-gray-600">اسم المنطقة</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="text-xs font-bold text-gray-600">سعر التوصيل (بالآلاف)</label>
+                <input value={editPrice} onChange={e => setEditPrice(e.target.value)} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500" type="number" />
+                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-100">
+                  <div className="flex gap-2">
+                    <button onClick={() => saveEdit(region.id)} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                      {loading ? "حفظ..." : "حفظ"}
+                    </button>
+                    <button onClick={() => setEditingId(null)} disabled={loading} className="bg-slate-400 hover:bg-slate-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                      إلغاء
+                    </button>
+                  </div>
+                  <button onClick={() => handleDelete(region.id, region.name)} disabled={loading} className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors">
+                    🗑️ حذف
+                  </button>
                 </div>
               </div>
             ) : (

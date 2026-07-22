@@ -166,3 +166,19 @@ export async function updateRegionAction(id: string, name: string, price: number
   }
 }
 
+// دالة حذف المنطقة
+export async function deleteRegionAction(id: string) {
+  try {
+    await prisma.regionWaypoint.deleteMany({
+      where: { regionId: id },
+    });
+    await prisma.region.delete({
+      where: { id },
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/regions`);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, message: error.message || "تعذر حذف المنطقة" };
+  }
+}
+
