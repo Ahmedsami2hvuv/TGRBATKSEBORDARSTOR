@@ -84,7 +84,7 @@ export function PreparerSiteOrderDraftClient({
   const [showSlowSavingHint, setShowSlowSavingHint] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [noProfit, setNoProfit] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -253,7 +253,9 @@ export function PreparerSiteOrderDraftClient({
       <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
         <div
           onClick={() => setIsFormOpen((prev) => !prev)}
-          className="bg-violet-600/5 px-4 py-3.5 border-b border-violet-100 dark:border-white/5 flex items-center justify-between cursor-pointer select-none hover:bg-violet-600/10 transition"
+          className={`bg-violet-600/5 px-4 py-3.5 flex items-center justify-between cursor-pointer select-none hover:bg-violet-600/10 transition ${
+            isFormOpen ? "border-b border-violet-100 dark:border-white/5" : ""
+          }`}
         >
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">1) إضافة طلب جديد</h2>
