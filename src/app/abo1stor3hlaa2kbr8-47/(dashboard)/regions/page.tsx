@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { ImportRegionsButton } from "./import-button";
+import { RegionForm } from "./region-form";
 import { RegionsList } from "./regions-list";
 import { getGlobalIcons } from "@/lib/icon-settings";
 
@@ -32,7 +33,10 @@ export default async function RegionsPage() {
             </div>
             <p className={`mt-1 ${ad.lead}`}>إدارة مناطق التوصيل وأسعارها.</p>
           </div>
-          <ImportRegionsButton icons={icons} />
+          <div className="flex items-center gap-3">
+            <RegionForm />
+            <ImportRegionsButton icons={icons} />
+          </div>
         </div>
 
         {/* عرض القائمة مع ميزة البحث والتعديل */}
