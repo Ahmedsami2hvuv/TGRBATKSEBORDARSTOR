@@ -84,6 +84,7 @@ export function PreparerSiteOrderDraftClient({
   const [showSlowSavingHint, setShowSlowSavingHint] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [noProfit, setNoProfit] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(true);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -194,6 +195,7 @@ export function PreparerSiteOrderDraftClient({
       setRawListText(t);
       setQ(flex.title);
       setSelected(null);
+      setIsFormOpen(false);
       void resolveRegionAfterParse(t, flex.title, flex.products);
       return;
     }
@@ -210,6 +212,7 @@ export function PreparerSiteOrderDraftClient({
       setRawListText(t);
       setQ(title);
       setSelected(null);
+      setIsFormOpen(false);
       void resolveRegionAfterParse(t, title, site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
       return;
     }
@@ -248,42 +251,55 @@ export function PreparerSiteOrderDraftClient({
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-24">
       <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
-        <div className="bg-violet-600/5 px-4 py-3 border-b border-violet-100 dark:border-white/5 flex items-center justify-between">
-           <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">1) إضافة طلب جديد</h2>
-           <p className="text-[10px] font-bold text-violet-600/70 dark:text-violet-400/70">المجهز: {preparerName.trim() || "—"}</p>
-        </div>
-        <div className="p-4">
-          <textarea
-            value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
-            rows={6}
-            dir="rtl"
-            placeholder={PASTE_HELP}
-            className={`${inputClass} min-h-[8rem] resize-y font-mono text-sm leading-relaxed dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
-          />
-          <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => setNoProfit(p => !p)}>
-            <div className="flex flex-col text-right">
-              <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
-              <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
-            </div>
-            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${noProfit ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
-            </div>
+        <div
+          onClick={() => setIsFormOpen((prev) => !prev)}
+          className="bg-violet-600/5 px-4 py-3.5 border-b border-violet-100 dark:border-white/5 flex items-center justify-between cursor-pointer select-none hover:bg-violet-600/10 transition"
+        >
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">1) إضافة طلب جديد</h2>
+            <span className="text-[11px] font-bold text-violet-600/70 dark:text-violet-400/70">({preparerName.trim() || "—"})</span>
           </div>
           <button
             type="button"
-            onClick={runParse}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-200/50 transition hover:bg-violet-700 active:scale-95 dark:shadow-none"
+            className="flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black text-white shadow-sm transition hover:bg-violet-700 active:scale-95"
           >
-            <DynamicIcon iconKey="ui_search" config={icons} className="h-4 w-4" fallback={null} />
-            تحليل القائمة
+            <span>{isFormOpen ? "إغلاق ✕" : "فتح إضافة طلب ➕"}</span>
           </button>
-          {parseError ? (
-            <div className="mt-3 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" role="alert">
-              {parseError}
-            </div>
-          ) : null}
         </div>
+        {isFormOpen && (
+          <div className="p-4 animate-in slide-in-from-top-2 duration-200">
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              rows={6}
+              dir="rtl"
+              placeholder={PASTE_HELP}
+              className={`${inputClass} min-h-[8rem] resize-y font-mono text-sm leading-relaxed dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
+            />
+            <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => setNoProfit(p => !p)}>
+              <div className="flex flex-col text-right">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
+                <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
+              </div>
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${noProfit ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={runParse}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-200/50 transition hover:bg-violet-700 active:scale-95 dark:shadow-none"
+            >
+              <DynamicIcon iconKey="ui_search" config={icons} className="h-4 w-4" fallback={null} />
+              تحليل القائمة
+            </button>
+            {parseError ? (
+              <div className="mt-3 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" role="alert">
+                {parseError}
+              </div>
+            ) : null}
+          </div>
+        )}
       </section>
 
       {products.length > 0 && regionGate === "need_pick" && !selected ? (
