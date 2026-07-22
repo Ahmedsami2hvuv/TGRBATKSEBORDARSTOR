@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { ImportRegionsButton } from "./import-button";
 import { RegionForm } from "./region-form";
 import { RegionsList } from "./regions-list";
 import { getGlobalIcons } from "@/lib/icon-settings";
@@ -35,7 +34,6 @@ export default async function RegionsPage() {
           </div>
           <div className="flex items-center gap-3">
             <RegionForm />
-            <ImportRegionsButton icons={icons} />
           </div>
         </div>
 

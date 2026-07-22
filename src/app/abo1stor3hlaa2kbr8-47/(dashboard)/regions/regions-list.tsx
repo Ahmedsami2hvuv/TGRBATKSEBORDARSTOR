@@ -41,25 +41,6 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
     }
   };
 
-  const runFix = async () => {
-    if (!confirm("هل تريد حقاً تحويل كافة الأسعار في قاعدة البيانات للنظام الجديد؟ سيتم تحويل القيم مثل 3000 إلى 3 ليصبح النظام بالآلاف مباشرة.")) return;
-    setLoading(true);
-    try {
-      const { fixAllDatabaseDeliveryPrices } = await import("./actions");
-      const result = await fixAllDatabaseDeliveryPrices();
-      if (result.success) {
-        alert("تم إصلاح البيانات بنجاح. يرجى تحديث الصفحة.");
-        window.location.reload();
-      } else {
-        alert("فشل الإصلاح: " + result.message);
-      }
-    } catch (err) {
-      alert("خطأ في الاتصال");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-4 relative">
@@ -73,13 +54,6 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
            <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-5 h-5" />
         </div>
-        <button
-          onClick={runFix}
-          disabled={loading}
-          className="px-4 py-3 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50 flex items-center gap-2"
-        >
-          {loading ? "جاري الإصلاح..." : <><DynamicIcon iconKey="ui_settings" config={icons} fallback="🛠️" className="w-4 h-4" /> إصلاح كافة الأسعار</>}
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
