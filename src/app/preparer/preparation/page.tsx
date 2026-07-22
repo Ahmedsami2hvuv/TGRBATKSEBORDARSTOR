@@ -6,6 +6,7 @@ import { serializePrisma } from "@/lib/serialize-prisma";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
+import { OpenAddOrderButton } from "./open-add-order-button";
 
 export const dynamic = "force-dynamic";
 
@@ -78,9 +79,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           <ModalAwareNavButton href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
             ← الطلبات
           </ModalAwareNavButton>
-          <FullscreenWalletLauncher href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100" title="طلب يدوي">
-            ➕ طلب يدوي
-          </FullscreenWalletLauncher>
+          <OpenAddOrderButton />
           <ModalAwareNavButton href={preparerPath("/preparer/preparation/completed", auth)} className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100">
             📁 الطلبات المكتملة
           </ModalAwareNavButton>

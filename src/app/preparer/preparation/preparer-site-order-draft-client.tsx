@@ -91,6 +91,20 @@ export function PreparerSiteOrderDraftClient({
   }, []);
 
   useEffect(() => {
+    const handleOpen = () => {
+      setIsFormOpen(true);
+      setTimeout(() => {
+        const el = document.getElementById("add-new-order-section");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+    };
+    window.addEventListener("open-add-order-form", handleOpen);
+    return () => window.removeEventListener("open-add-order-form", handleOpen);
+  }, []);
+
+  useEffect(() => {
     if (q.trim().length < 2) {
       setHits([]);
       return;
@@ -250,7 +264,7 @@ export function PreparerSiteOrderDraftClient({
 
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-24">
-      <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+      <section id="add-new-order-section" className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
         <div
           onClick={() => setIsFormOpen((prev) => !prev)}
           className={`bg-violet-600/5 px-4 py-3.5 flex items-center justify-between cursor-pointer select-none hover:bg-violet-600/10 transition ${
