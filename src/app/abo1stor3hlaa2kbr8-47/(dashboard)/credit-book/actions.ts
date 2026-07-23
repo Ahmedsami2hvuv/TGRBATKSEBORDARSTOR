@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { computeMandoubAdminTotalAllTimeDinar, computeMandoubWalletRemainAllTimeDinar } from "@/lib/mandoub-wallet-carry";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
+import { ensureMissingPreparerMoneyEvents } from "@/lib/preparer-shop-order-money-totals";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
@@ -31,10 +32,14 @@ export interface PartnerWithBalance {
 
 // دالة مساعدة لحساب الديون التلقائية للمحلات (الطلبات غير المسددة)
 async function getShopAutoDebt(shopId: string): Promise<number> {
+  // ضمان وجود المعاملات المالية للمجهز للطلبات التي أنشأها أو سعرها المجهز
+  await ensureMissingPreparerMoneyEvents(undefined, shopId);
+
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
     select: { hideFromCreditBook: true }
   });
+
   if (!shop || shop.hideFromCreditBook) return 0;
 
   const orders = await prisma.order.findMany({

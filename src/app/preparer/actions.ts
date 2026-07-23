@@ -819,9 +819,25 @@ export async function submitPreparerOrder(
       },
     });
 
+    if (subtotalParsed.value.gt(0)) {
+      await prisma.orderCourierMoneyEvent.create({
+        data: {
+          orderId: order.id,
+          amountDinar: subtotalParsed.value,
+          kind: "pickup_out",
+          recordedByCompanyPreparerId: v.preparerId,
+          expectedDinar: subtotalParsed.value,
+          matchesExpected: true,
+          mismatchReason: "",
+          mismatchNote: "تسديد تلقائي من المجهز عند إرسال الطلبية",
+        },
+      }).catch((err) => console.error("Failed to auto-create OrderCourierMoneyEvent on preparer submission:", err));
+    }
+
     await syncPhoneProfileFromOrder(order.id);
     void notifyTelegramNewOrder(order.id);
     await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
 
     revalidatePath("/preparer");
     void notifyTelegramNewPreparerShoppingOrder(order.id);
@@ -1052,12 +1068,48 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
         },
       });
 
+      if (subtotalDinar.gt(0)) {
+        const targetPrepId = order.submittedByCompanyPreparerId || v.preparerId;
+        const existingEvent = await tx.orderCourierMoneyEvent.findFirst({
+          where: {
+            orderId,
+            kind: "pickup_out",
+            recordedByCompanyPreparerId: targetPrepId,
+            deletedAt: null,
+          },
+        });
+
+        if (!existingEvent) {
+          await tx.orderCourierMoneyEvent.create({
+            data: {
+              orderId,
+              amountDinar: subtotalDinar,
+              kind: "pickup_out",
+              recordedByCompanyPreparerId: targetPrepId,
+              expectedDinar: subtotalDinar,
+              matchesExpected: true,
+              mismatchReason: "",
+              mismatchNote: "تسديد تلقائي من المجهز عند حفظ التسعير",
+            },
+          });
+        } else if (!existingEvent.amountDinar.equals(subtotalDinar)) {
+          await tx.orderCourierMoneyEvent.update({
+            where: { id: existingEvent.id },
+            data: {
+              amountDinar: subtotalDinar,
+              expectedDinar: subtotalDinar,
+            },
+          });
+        }
+      }
+
       // إذا كان هناك مسودة مرتبطة، نقوم بتحديث حالتها
       await tx.companyPreparerShoppingDraft.updateMany({
         where: { sentOrderId: orderId, status: { in: ["draft", "priced"] } },
         data: { status: "sent" },
       });
     });
+
 
     await prisma.companyPreparerWorkLog.create({
       data: {

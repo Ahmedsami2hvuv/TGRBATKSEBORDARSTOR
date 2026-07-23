@@ -47,3 +47,63 @@ export async function sumOrderMoneyEventsForShopIds(
     remainingNet: sumDeliveryIn.minus(sumPickupOut),
   };
 }
+
+/**
+ * مزامنة تلقائية: أي طلبية مجهزة (submittedByCompanyPreparerId != null) ولها سعر orderSubtotal > 0
+ * ولم يُسجل لها معاملة صادر (pickup_out) باسم المجهز، يتم إنشاؤها فوراً في قاعدة البيانات.
+ */
+export async function ensureMissingPreparerMoneyEvents(preparerId?: string, shopId?: string) {
+  try {
+    const whereCondition: any = {
+      submittedByCompanyPreparerId: preparerId ? preparerId : { not: null },
+      orderSubtotal: { gt: 0 },
+      ...(shopId ? { shopId } : {}),
+    };
+
+    const preparerOrders = await prisma.order.findMany({
+      where: whereCondition,
+      select: {
+        id: true,
+        orderSubtotal: true,
+        submittedByCompanyPreparerId: true,
+        moneyEvents: {
+          where: {
+            kind: MONEY_KIND_PICKUP,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            recordedByCompanyPreparerId: true,
+          },
+        },
+      },
+    });
+
+    for (const order of preparerOrders) {
+      const pId = order.submittedByCompanyPreparerId;
+      if (!pId) continue;
+
+      const hasPreparerPickup = order.moneyEvents.some(
+        (me) => me.recordedByCompanyPreparerId === pId
+      );
+
+      if (!hasPreparerPickup && order.orderSubtotal) {
+        await prisma.orderCourierMoneyEvent.create({
+          data: {
+            orderId: order.id,
+            amountDinar: order.orderSubtotal,
+            kind: MONEY_KIND_PICKUP,
+            recordedByCompanyPreparerId: pId,
+            expectedDinar: order.orderSubtotal,
+            matchesExpected: true,
+            mismatchReason: "",
+            mismatchNote: "تسديد صادر آلي من المجهز عند المزامنة",
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("ensureMissingPreparerMoneyEvents error:", err);
+  }
+}
+

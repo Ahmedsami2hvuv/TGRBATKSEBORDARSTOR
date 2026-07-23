@@ -9,8 +9,10 @@ import { PreparerOrderDetailSection } from "../../preparer-order-detail-section"
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { ensureMissingPreparerMoneyEvents } from "@/lib/preparer-shop-order-money-totals";
 
 export const dynamic = "force-dynamic";
+
 
 type Props = {
   params: Promise<{ orderId: string }>;
@@ -65,10 +67,14 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     );
   }
 
+  // ضمان مزامنة حركات المجهز النقدية لهذا الطلب ومحلات المجهز
+  await ensureMissingPreparerMoneyEvents(preparer.id);
+
   const orderRaw = await prisma.order.findUnique({
     where: { id: orderId },
     include: mandoubOrderDetailInclude,
   });
+
 
   if (!orderRaw) {
     return (
