@@ -184,6 +184,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
         status: { in: ["assigned", "delivering", "delivered", "archived"] },
       },
       select: {
+        id: true,
         assignedCourierId: true,
         status: true,
         updatedAt: true,
@@ -233,6 +234,30 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
     const totalOrders = metrics.ordersDelivered || 0;
 
     await prisma.$transaction(async (tx) => {
+      // 1. تثبيت حركات التوصيل المالية للطلبات المسلمة السابقة لمنع ظهور أرباحها مستقبلاً
+      for (const o of orders) {
+        if (["delivered", "archived"].includes(o.status)) {
+          const hasDeliveryEv = o.moneyEvents.some(
+            (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null
+          );
+          if (!hasDeliveryEv) {
+            const earning = o.courierEarningDinar ?? new Decimal(0);
+            const expected = o.deliveryPrice ?? new Decimal(0);
+            await tx.orderCourierMoneyEvent.create({
+              data: {
+                orderId: (o as any).id || (o as any).orderId,
+                courierId: id,
+                kind: MONEY_KIND_DELIVERY,
+                amountDinar: earning,
+                expectedDinar: expected,
+                matchesExpected: true,
+                createdAt: o.createdAt <= periodEndAt ? o.createdAt : periodEndAt,
+              },
+            }).catch(() => {});
+          }
+        }
+      }
+
       await tx.courierProfitHistory.create({
         data: {
           courierId: id,

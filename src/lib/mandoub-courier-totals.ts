@@ -91,8 +91,8 @@ export function computeMandoubTotalsForCourier(
       if (deliveryEv) {
         skipForBaseline = deliveryEv.createdAt <= baseline;
       } else {
-        const refDate = o.customerPaymentReceivedAt ?? o.updatedAt ?? o.createdAt;
-        skipForBaseline = refDate <= baseline;
+        const refDate = o.customerPaymentReceivedAt ?? o.createdAt;
+        skipForBaseline = refDate <= baseline || o.createdAt <= baseline;
       }
     }
 
