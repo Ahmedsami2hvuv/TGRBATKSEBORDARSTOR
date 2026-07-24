@@ -589,18 +589,28 @@ export async function assignPendingOrderToCourier(
         });
       }
 
+      const defaultPrepId = draft.preparerId || null;
+      const defaultPrepName = draft.preparer?.name || null;
+
       const enrichedProducts = mergedProducts.map(p => {
         const buyNum = Number(p.buyAlf || 0);
         const sellNum = Number(p.sellAlf || 0);
         const priced = buyNum > 0 && sellNum > 0;
+        const isFulfilledByAdmin = !!p.isFulfilledByAdmin;
+        const assignedPreparerId = isFulfilledByAdmin ? null : (p.assignedPreparerId || p.pricedById || defaultPrepId);
+        const assignedPreparerName = isFulfilledByAdmin 
+          ? "تجهيز الإدارة 🏛️" 
+          : (p.assignedPreparerName || (assignedPreparerId === defaultPrepId ? defaultPrepName : null));
+
         return {
           line: String(p.line || "").trim(),
           buyAlf: priced ? buyNum : 0,
           sellAlf: priced ? sellNum : 0,
-          isFulfilledByAdmin: priced ? !!p.isFulfilledByAdmin : true,
-          assignedPreparerId: priced ? p.assignedPreparerId : null,
-          assignedPreparerName: priced ? p.assignedPreparerName : "تجهيز الإدارة 🏛️",
-          pricedBy: priced ? (p.pricedBy || "تجهيز الإدارة 🏛️") : "تجهيز الإدارة 🏛️"
+          isFulfilledByAdmin,
+          assignedPreparerId,
+          assignedPreparerName,
+          pricedBy: p.pricedBy || (isFulfilledByAdmin ? "تجهيز الإدارة 🏛️" : (assignedPreparerName || "تجهيز تسوق")),
+          pricedById: p.pricedById || assignedPreparerId
         };
       });
 

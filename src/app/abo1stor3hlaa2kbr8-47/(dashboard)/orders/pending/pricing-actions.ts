@@ -217,25 +217,72 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     select: { id: true, name: true, walletEmployeeId: true }
   });
   const preparerNameById = new Map(allPreparers.map((p) => [p.id, p.name]));
+  const preparerIdByName = new Map(allPreparers.map((p) => [p.name.trim(), p.id]));
+
+  const fallbackPreparerId = isDraft ? draftData?.preparerId : originalOrder?.submittedByCompanyPreparerId;
+  const fallbackPreparerName = fallbackPreparerId ? preparerNameById.get(fallbackPreparerId) ?? null : null;
 
   // --- 5. تجميع المنتجات حسب المجهز الحقيقي (assignedPreparer) أو حسب سعرها ---
-  const enrichedProducts = finalProducts.map((p) => ({
-    ...p,
-    assignedPreparerName: p.assignedPreparerId && !p.assignedPreparerName
-      ? preparerNameById.get(p.assignedPreparerId) ?? null
-      : p.assignedPreparerName,
-  }));
+  const enrichedProducts = finalProducts.map((p) => {
+    if (p.isFulfilledByAdmin) {
+      return {
+        ...p,
+        assignedPreparerId: null,
+        assignedPreparerName: "تجهيز الإدارة 🏛️",
+        pricedBy: p.pricedBy || "تجهيز الإدارة 🏛️",
+      };
+    }
+
+    let prepId = p.assignedPreparerId || p.pricedById || null;
+    let prepName = p.assignedPreparerName || null;
+
+    if (!prepId && prepName && prepName !== "تجهيز الإدارة 🏛️" && prepName !== "الإدارة") {
+      prepId = preparerIdByName.get(prepName.trim()) || null;
+    }
+    if (!prepId && p.pricedBy && p.pricedBy !== "الإدارة" && p.pricedBy !== "تجهيز الإدارة 🏛️") {
+      prepId = preparerIdByName.get(p.pricedBy.trim()) || null;
+    }
+
+    if (!prepId && fallbackPreparerId) {
+      prepId = fallbackPreparerId;
+    }
+
+    if (prepId && !prepName) {
+      prepName = preparerNameById.get(prepId) ?? fallbackPreparerName;
+    }
+
+    return {
+      ...p,
+      assignedPreparerId: prepId,
+      assignedPreparerName: prepName || (prepId ? preparerNameById.get(prepId) ?? null : null),
+    };
+  });
 
   const preparerMap = new Map<string, { preparerId: string | null; preparerName: string; products: any[]; totalBuyAlf: number }>();
   for (const p of enrichedProducts) {
-    const assignedPreparerId = typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() ? p.assignedPreparerId.trim() : null;
-    const assignedPreparerName = typeof p.assignedPreparerName === "string" && p.assignedPreparerName.trim()
-      ? p.assignedPreparerName.trim()
-      : null;
-    const pricedByName = typeof p.pricedBy === "string" && p.pricedBy.trim() ? p.pricedBy.trim() : null;
-    const preparerName = assignedPreparerName || pricedByName || "تجهيز الإدارة 🏛️";
+    if (p.isFulfilledByAdmin) {
+      const key = "admin:fulfillment";
+      if (!preparerMap.has(key)) {
+        preparerMap.set(key, {
+          preparerId: null,
+          preparerName: "تجهيز الإدارة 🏛️",
+          products: [],
+          totalBuyAlf: 0,
+        });
+      }
+      const entry = preparerMap.get(key)!;
+      entry.products.push(p);
+      entry.totalBuyAlf += p.buyAlf;
+      continue;
+    }
 
-    const key = assignedPreparerId ? `id:${assignedPreparerId}` : `name:${preparerName}`;
+    const assignedPreparerId = p.assignedPreparerId;
+    const assignedPreparerName = p.assignedPreparerName || (assignedPreparerId ? preparerNameById.get(assignedPreparerId) : null);
+    const pricedByName = typeof p.pricedBy === "string" && p.pricedBy.trim() && p.pricedBy !== "الإدارة" ? p.pricedBy.trim() : null;
+    
+    let preparerName = assignedPreparerName || pricedByName || fallbackPreparerName || "تجهيز الإدارة 🏛️";
+
+    const key = assignedPreparerId ? `id:${assignedPreparerId}` : (preparerName !== "تجهيز الإدارة 🏛️" ? `name:${preparerName}` : "admin:fulfillment");
     if (!preparerMap.has(key)) {
       preparerMap.set(key, {
         preparerId: assignedPreparerId,

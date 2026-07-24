@@ -705,14 +705,22 @@ ${productsText}`;
       return;
     }
     const next = [...products];
+    const currentProd = next[editingIndex];
+    const isExplicitAdmin = isAdminFulfilled;
+    const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
+    const finalPrepName = isExplicitAdmin
+      ? "تجهيز الإدارة 🏛️"
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+
     next[editingIndex] = {
-      ...next[editingIndex],
+      ...currentProd,
       buyAlf: bNum.toString(),
       sellAlf: sNum.toString(),
-      isFulfilledByAdmin: isAdminFulfilled,
-      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
-      assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
-      pricedBy: "الإدارة"
+      isFulfilledByAdmin: isExplicitAdmin,
+      assignedPreparerId: finalPrepId,
+      assignedPreparerName: finalPrepName,
+      pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
+      pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
     };
     setProducts(next);
 
@@ -750,14 +758,22 @@ ${productsText}`;
     const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
     if (bNum <= 0 || sellVal <= 0) return;
     const next = [...products];
+    const currentProd = next[editingIndex];
+    const isExplicitAdmin = isAdminFulfilled;
+    const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
+    const finalPrepName = isExplicitAdmin
+      ? "تجهيز الإدارة 🏛️"
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+
     next[editingIndex] = {
-      ...next[editingIndex],
+      ...currentProd,
       buyAlf: bNum.toString(),
       sellAlf: sellVal.toString(),
-      isFulfilledByAdmin: isAdminFulfilled,
-      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
-      assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
-      pricedBy: "الإدارة"
+      isFulfilledByAdmin: isExplicitAdmin,
+      assignedPreparerId: finalPrepId,
+      assignedPreparerName: finalPrepName,
+      pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
+      pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
     };
     setProducts(next);
 
@@ -1725,14 +1741,22 @@ ${productsText}`;
                     const sNum = parseFloat(normalizeNumerals(sellText)) || 0;
                     if (bNum > 0 && sNum > 0) {
                       const next = [...products];
+                      const currentProd = next[editingIndex];
+                      const isExplicitAdmin = isAdminFulfilled;
+                      const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
+                      const finalPrepName = isExplicitAdmin
+                        ? "تجهيز الإدارة 🏛️"
+                        : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+
                       next[editingIndex] = {
-                        ...next[editingIndex],
+                        ...currentProd,
                         buyAlf: bNum.toString(),
                         sellAlf: sNum.toString(),
-                        isFulfilledByAdmin: isAdminFulfilled,
-                        assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
-                        assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
-                        pricedBy: "الإدارة"
+                        isFulfilledByAdmin: isExplicitAdmin,
+                        assignedPreparerId: finalPrepId,
+                        assignedPreparerName: finalPrepName,
+                        pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
+                        pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
                       };
                       setProducts(next);
                     }
