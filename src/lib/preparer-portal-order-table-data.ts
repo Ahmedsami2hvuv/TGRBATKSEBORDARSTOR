@@ -277,6 +277,8 @@ export async function loadPreparerPortalOrderTableData(args: {
       adminPickupSumDinar,
       deliverySumDinar: courierDelivery,
       preparerDeliverySumDinar: preparerDelivery,
+      isPreparationOrder: Boolean(o.submittedByCompanyPreparerId) || Boolean(o.preparerShoppingJson) || (typeof o.orderType === "string" && o.orderType.includes("تجهيز")) || (o as any).submissionSource === "preparer",
+      hasPreparerPaid: preparerPickup > 0 || preparerDelivery > 0 || o.moneyEvents?.some((e) => e.deletedAt == null && e.recordedByCompanyPreparerId != null) || false,
 
       // Unified fast-access fields - Safe access
       audioUrl: safeStringTrim((o as any).voiceNoteUrl) || null,

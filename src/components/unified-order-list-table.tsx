@@ -144,6 +144,14 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
           {formatDinarAsAlf(preparerDelivery)}
         </span>
       ) : null}
+      {row.hasPreparerPaid || showPreparerPickup || showPreparerDelivery ? (
+        <span
+          className={`${pillBase} bg-amber-500 text-slate-950 font-black ring-amber-600 shadow-sm`}
+          title="تم تسجيل دفع في هذا الطلب بواسطة المجهز"
+        >
+          💳 دُفع من المجهز
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -512,6 +520,12 @@ export function UnifiedOrderListTable({
                         {o.assignedCourierName?.trim() && o.assignedCourierName !== "—" ? (
                           <div className="mb-1 text-[11px] font-black text-emerald-800 sm:text-xs">
                             {o.assignedCourierName}
+                          </div>
+                        ) : null}
+                        {o.hasPreparerPaid ? (
+                          <div className="mb-1 inline-flex items-center gap-1 rounded-lg bg-amber-500 text-slate-950 px-2 py-0.5 text-[10px] font-black shadow-sm ring-1 ring-amber-600">
+                            <span>💳</span>
+                            <span>دُفع بواسطة المجهز</span>
                           </div>
                         ) : null}
 

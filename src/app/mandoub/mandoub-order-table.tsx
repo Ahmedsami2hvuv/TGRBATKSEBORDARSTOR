@@ -63,6 +63,10 @@ export type MandoubRow = {
   priceWithDebtLabel?: string;
   /** دفع للعميل (المجهز للطلب) مكتمل */
   pickupComplete?: boolean;
+  /** هل هذا طلب تجهيز وتسعير (طلب تجهيز) */
+  isPreparationOrder?: boolean;
+  /** هل تم تسجيل عملية دفع من قبل المجهز في هذا الطلب */
+  hasPreparerPaid?: boolean;
   /** معرف المندوب المسند */
   assignedCourierId?: string | null;
   /** سعر الطلب (بدون توصيل) بالدينار */

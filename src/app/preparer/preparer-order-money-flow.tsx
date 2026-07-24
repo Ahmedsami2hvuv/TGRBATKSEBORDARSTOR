@@ -90,6 +90,7 @@ export function PreparerOrderMoneyFlow({
   preparerId,
   icons,
   couriers,
+  isPreparationOrder,
 }: {
   orderId: string;
   orderNumber: number;
@@ -105,6 +106,7 @@ export function PreparerOrderMoneyFlow({
   preparerId: string;
   icons?: GlobalIconsConfig | null;
   couriers?: { id: string; name: string }[];
+  isPreparationOrder?: boolean;
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -170,9 +172,8 @@ export function PreparerOrderMoneyFlow({
     totalAmountDinar != null && Math.abs(deliverySum - totalAmountDinar) < AMOUNT_EPS;
 
   /** أزرار عائمة واضحة (دفع للعميل / استلام من الزبون). */
-  // في صفحة المجهز نُظهر الأزرار حتى لو كانت الطلبية «جديدة»، وحتى لو لم يُسند مندوب بعد
-  // (تكون معطّلة عند عدم وجود مندوب مسند).
-  const showPickupFab = hasOrderSubtotal && !pickupComplete;
+  // لطلبات التجهيز والتسعير لا نُظهر زر "دفع للعميل" لأنها مسددة بالمنتجات
+  const showPickupFab = hasOrderSubtotal && !pickupComplete && !isPreparationOrder;
   const showDeliveryFab = hasTotalAmount && !deliveryComplete;
 
   // حسب طلبك: إلغاء زر «استلام الطلب» من واجهة المجهز.
