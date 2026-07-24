@@ -782,11 +782,6 @@ export function PreparerOrderDetailSection({
   /** دائماً تخطيط المجهز الجديد — لا نقرأ layoutOrder من الإعدادات (قد يُعيد الشكل القديم من لوحة التصميم) */
   const layout = [...PREPARER_ORDER_DETAIL_LAYOUT];
 
-  const preparerPaidEvents = order.moneyEvents.filter((e) => e.deletedAt == null && e.recordedByCompanyPreparerId != null);
-  const hasPreparerPaid = preparerPaidEvents.length > 0;
-  const preparerTotalPaidDinar = preparerPaidEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
-  const preparerName = preparerPaidEvents[0]?.recordedByCompanyPreparer?.name?.trim() || order.submittedByCompanyPreparer?.name?.trim() || "";
-
   return (
     <section
       style={customStyle}
@@ -796,26 +791,6 @@ export function PreparerOrderDetailSection({
         !uiSettings && missingCustomerLocation ? "border-sky-200 bg-rose-50/30 ring-2 ring-rose-200" : (!uiSettings ? `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}` : "")
       }`}
     >
-      {hasPreparerPaid && (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-amber-400 bg-amber-500/15 p-3.5 shadow-sm text-slate-900 dark:text-white">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-xl font-black text-slate-950 shadow-sm">
-              💳
-            </span>
-            <div>
-              <p className="text-sm font-black text-amber-950 dark:text-amber-300">
-                تم تسجيل عملية دفع في هذا الطلب بواسطة المجهز
-              </p>
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                المبلغ المسجل: {formatDinarAsAlfWithUnit(preparerTotalPaidDinar)} {preparerName ? `(${preparerName})` : ""}
-              </p>
-            </div>
-          </div>
-          <span className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-black text-white shadow-sm">
-            دُفع بواسطة المجهز
-          </span>
-        </div>
-      )}
       {reversePickup ? null : null}
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-2">
         <div className="min-w-0">
