@@ -803,6 +803,26 @@ export async function handleTelegramAdminPrivateMessage(message: {
 
     if (session.step === "add_preparer_name") {
       const prep = await prisma.companyPreparer.create({ data: { name: txt, active: true } });
+      await prisma.creditBookPartner.upsert({
+        where: {
+          type_externalId: {
+            type: "preparer",
+            externalId: prep.id
+          }
+        },
+        create: {
+          name: `${prep.name} (مجهز)`,
+          phone: prep.phone || null,
+          type: "preparer",
+          externalId: prep.id,
+        },
+        update: {
+          name: `${prep.name} (مجهز)`,
+          phone: prep.phone || null,
+          type: "preparer"
+        }
+      }).catch(err => console.error("Failed to auto-create CreditBookPartner for preparer in telegram:", err));
+
       await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
       await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة المجهز <b>${prep.name}</b> بنجاح!`, {
         inline_keyboard: [[{ text: "👤 عرض المجهز", callback_data: `prd:${prep.id}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]

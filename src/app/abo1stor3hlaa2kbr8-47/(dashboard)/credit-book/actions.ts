@@ -174,6 +174,13 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     } catch (cleanErr) {
       console.error("[Prisma] Clean up failed:", cleanErr);
     }
+
+    // مزامنة صامتة وتلقائية للأطراف (المجهزين والمناديب والمحلات والموردين) لضمان دخول المجهزين الجدد تلقائياً في دفتر الديون
+    try {
+      await syncSystemPartners();
+    } catch (syncErr) {
+      console.error("[CreditBook] Auto sync system partners failed:", syncErr);
+    }
     // تحديث صامت وتلقائي للملاحظات القديمة في قاعدة البيانات لتأخذ التنسيق والترتيب الجديد لمرة واحدة
     try {
       const oldNotesTxs = await prisma.creditBookTransaction.findMany({
@@ -1689,30 +1696,40 @@ export async function syncSystemPartners() {
       console.error("Failed to ensure accumulated salaries root partner in sync:", rootErr);
     }
 
-    // أ) استيراد المناديب
+    // جلب جميع الشركاء الموجودين دفعة واحدة لتفادي تكرار الاستعلامات في الحلقات
+    const existingPartners = await prisma.creditBookPartner.findMany({
+      select: { id: true, name: true, phone: true, type: true, externalId: true }
+    });
+
+    const partnerMap = new Map<string, typeof existingPartners[0]>();
+    for (const p of existingPartners) {
+      if (p.externalId) {
+        let cleanType = p.type;
+        if (cleanType.startsWith("deleted_")) {
+          cleanType = cleanType.replace("deleted_", "");
+        }
+        partnerMap.set(`${cleanType}_${p.externalId}`, p);
+      }
+    }
+
+    // أ) استيراد ومزامنة المناديب
     const couriers = await prisma.courier.findMany({ where: { blocked: false } });
     for (const courier of couriers) {
-      const exists = await prisma.creditBookPartner.findFirst({
-        where: {
-          externalId: courier.id,
-          OR: [
-            { type: "courier" },
-            { type: { startsWith: "deleted_courier" } }
-          ]
-        },
-      });
+      const key = `courier_${courier.id}`;
+      const exists = partnerMap.get(key);
+      const expectedName = `${courier.name} (مندوب)`;
+
       if (!exists) {
         await prisma.creditBookPartner.create({
           data: {
-            name: `${courier.name} (مندوب)`,
+            name: expectedName,
             phone: courier.phone,
             type: "courier",
             externalId: courier.id,
           },
-        });
+        }).catch(e => console.error("Err create courier partner", e));
         importedCount++;
-      } else {
-        const expectedName = `${courier.name} (مندوب)`;
+      } else if (!exists.type.startsWith("deleted_")) {
         if (exists.name !== expectedName || exists.phone !== courier.phone) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
@@ -1721,35 +1738,29 @@ export async function syncSystemPartners() {
               phone: courier.phone,
               updatedAt: new Date()
             }
-          });
+          }).catch(e => console.error("Err update courier partner", e));
         }
       }
     }
 
-    // ب) استيراد المجهزين
+    // ب) استيراد ومزامنة المجهزين (CompanyPreparer)
     const preparers = await prisma.companyPreparer.findMany();
     for (const prep of preparers) {
-      const exists = await prisma.creditBookPartner.findFirst({
-        where: {
-          externalId: prep.id,
-          OR: [
-            { type: "preparer" },
-            { type: { startsWith: "deleted_preparer" } }
-          ]
-        },
-      });
+      const key = `preparer_${prep.id}`;
+      const exists = partnerMap.get(key);
+      const expectedName = `${prep.name} (مجهز)`;
+
       if (!exists) {
         await prisma.creditBookPartner.create({
           data: {
-            name: `${prep.name} (مجهز)`,
+            name: expectedName,
             phone: prep.phone,
             type: "preparer",
             externalId: prep.id,
           },
-        });
+        }).catch(e => console.error("Err create preparer partner", e));
         importedCount++;
-      } else {
-        const expectedName = `${prep.name} (مجهز)`;
+      } else if (!exists.type.startsWith("deleted_")) {
         if (exists.name !== expectedName || exists.phone !== prep.phone) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
@@ -1758,23 +1769,18 @@ export async function syncSystemPartners() {
               phone: prep.phone,
               updatedAt: new Date()
             }
-          });
+          }).catch(e => console.error("Err update preparer partner", e));
         }
       }
     }
 
-    // ج) استيراد المحلات
+    // ج) استيراد ومزامنة المحلات
     const shops = await prisma.shop.findMany();
     for (const shop of shops) {
-      const exists = await prisma.creditBookPartner.findFirst({
-        where: {
-          externalId: shop.id,
-          OR: [
-            { type: "shop" },
-            { type: { startsWith: "deleted_shop" } }
-          ]
-        },
-      });
+      const key = `shop_${shop.id}`;
+      const exists = partnerMap.get(key);
+      const expectedName = `${shop.name} (محل/مجهز)`;
+
       if (shop.hideFromCreditBook) {
         if (exists && !exists.type.startsWith("deleted_")) {
           await prisma.creditBookPartner.update({
@@ -1783,23 +1789,23 @@ export async function syncSystemPartners() {
               type: "deleted_shop",
               updatedAt: new Date()
             }
-          });
+          }).catch(e => console.error("Err hide shop partner", e));
           importedCount++;
         }
         continue;
       }
+
       if (!exists) {
         await prisma.creditBookPartner.create({
           data: {
-            name: `${shop.name} (محل/مجهز)`,
+            name: expectedName,
             phone: shop.phone || null,
             type: "shop",
             externalId: shop.id,
           },
-        });
+        }).catch(e => console.error("Err create shop partner", e));
         importedCount++;
-      } else {
-        const expectedName = `${shop.name} (محل/مجهز)`;
+      } else if (!exists.type.startsWith("deleted_")) {
         if (exists.name !== expectedName || (exists.phone || null) !== (shop.phone || null)) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
@@ -1808,44 +1814,38 @@ export async function syncSystemPartners() {
               phone: shop.phone || null,
               updatedAt: new Date()
             }
-          });
+          }).catch(e => console.error("Err update shop partner", e));
         }
       }
     }
 
-    // د) استيراد الزبائن
-    const customers = await prisma.customer.findMany({ take: 300 });
-    for (const cust of customers) {
-      const exists = await prisma.creditBookPartner.findFirst({
-        where: {
-          externalId: cust.id,
-          OR: [
-            { type: "customer" },
-            { type: { startsWith: "deleted_customer" } }
-          ]
-        },
-      });
+    // د) استيراد ومزامنة الموردين (StoreSupplier)
+    const suppliers = await prisma.storeSupplier.findMany();
+    for (const supp of suppliers) {
+      const key = `supplier_${supp.id}`;
+      const exists = partnerMap.get(key);
+      const expectedName = `${supp.name} (مورد)`;
+
       if (!exists) {
         await prisma.creditBookPartner.create({
           data: {
-            name: `${cust.name} (زبون)`,
-            phone: cust.phone,
-            type: "customer",
-            externalId: cust.id,
+            name: expectedName,
+            phone: supp.phone || null,
+            type: "supplier",
+            externalId: supp.id,
           },
-        });
+        }).catch(e => console.error("Err create supplier partner", e));
         importedCount++;
-      } else {
-        const expectedName = `${cust.name} (زبون)`;
-        if (exists.name !== expectedName || exists.phone !== cust.phone) {
+      } else if (!exists.type.startsWith("deleted_")) {
+        if (exists.name !== expectedName || (exists.phone || null) !== (supp.phone || null)) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
             data: {
               name: expectedName,
-              phone: cust.phone,
+              phone: supp.phone || null,
               updatedAt: new Date()
             }
-          });
+          }).catch(e => console.error("Err update supplier partner", e));
         }
       }
     }

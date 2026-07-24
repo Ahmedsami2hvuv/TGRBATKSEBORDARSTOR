@@ -37,7 +37,7 @@ export async function createCompanyPreparer(_prev: PreparerFormState, formData: 
 
   if (!name) return { error: "اسم المجهز مطلوب." };
 
-  await prisma.companyPreparer.create({
+  const preparer = await prisma.companyPreparer.create({
     data: {
       name,
       phone,
@@ -54,7 +54,29 @@ export async function createCompanyPreparer(_prev: PreparerFormState, formData: 
     }
   });
 
+  // إنشاء حساب الشريك فوراً في دفتر الديون
+  await prisma.creditBookPartner.upsert({
+    where: {
+      type_externalId: {
+        type: "preparer",
+        externalId: preparer.id
+      }
+    },
+    create: {
+      name: `${preparer.name} (مجهز)`,
+      phone: preparer.phone || null,
+      type: "preparer",
+      externalId: preparer.id,
+    },
+    update: {
+      name: `${preparer.name} (مجهز)`,
+      phone: preparer.phone || null,
+      type: "preparer"
+    }
+  }).catch(err => console.error("Failed to auto-create CreditBookPartner for preparer:", err));
+
   revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/credit-book`);
   return { ok: true };
 }
 
@@ -170,7 +192,29 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
     }
   });
 
+  // تحديث حساب الشريك فوراً في دفتر الديون
+  await prisma.creditBookPartner.upsert({
+    where: {
+      type_externalId: {
+        type: "preparer",
+        externalId: id
+      }
+    },
+    create: {
+      name: `${name} (مجهز)`,
+      phone: phone || null,
+      type: "preparer",
+      externalId: id,
+    },
+    update: {
+      name: `${name} (مجهز)`,
+      phone: phone || null,
+      type: "preparer"
+    }
+  }).catch(err => console.error("Failed to auto-update CreditBookPartner for preparer:", err));
+
   revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/credit-book`);
   return { ok: true };
 }
 
