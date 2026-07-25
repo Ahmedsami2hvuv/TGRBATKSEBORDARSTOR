@@ -223,15 +223,19 @@ export function OrderViewContent({
           <TwoWayOrderActionButtons
             orderId={order.id}
             orderNumber={order.orderNumber}
+            orderStatus={order.status}
             routeMode={order.routeMode}
             senderName={order.routeMode === "double" ? "المرسل" : order.shop.name}
             senderPhone={order.customerPhone}
             senderAlternatePhone={order.alternatePhone}
             senderRegionName={order.customerRegion?.name}
+            senderHasLocation={!!order.customerLocationUrl}
+            senderGpsUploaded={!!order.customerLocationSetByCourierAt}
             recipientName="المستلم"
             recipientPhone={order.secondCustomerPhone || (order.routeMode === "double" ? null : order.customerPhone)}
             recipientAlternatePhone={order.secondCustomerAlternatePhone}
             recipientRegionName={order.secondCustomerRegion?.name}
+            recipientHasLocation={!!order.secondCustomerLocationUrl}
             subtotal={order.orderSubtotal ? String(order.orderSubtotal) : "0"}
             delivery={order.deliveryPrice ? String(order.deliveryPrice) : "0"}
             total={order.totalAmount ? String(order.totalAmount) : "0"}

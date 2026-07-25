@@ -264,6 +264,16 @@ export async function saveTwoWayWhatsappTemplateSettings(
     const notifyRecipientTemplate = formString(formData, "notifyRecipientTemplate");
     const chatSenderTemplate = formString(formData, "chatSenderTemplate");
     const chatRecipientTemplate = formString(formData, "chatRecipientTemplate");
+    const buttonRulesRaw = formString(formData, "buttonRulesJson");
+
+    let buttonRules;
+    if (buttonRulesRaw) {
+      try {
+        buttonRules = JSON.parse(buttonRulesRaw);
+      } catch (e) {
+        console.error("Failed to parse buttonRulesJson", e);
+      }
+    }
 
     await saveTwoWayTemplates({
       locationSenderTemplate,
@@ -272,6 +282,7 @@ export async function saveTwoWayWhatsappTemplateSettings(
       notifyRecipientTemplate,
       chatSenderTemplate,
       chatRecipientTemplate,
+      buttonRules,
     });
 
     revalidatePath(`${SECRET_ADMIN_PATH}/settings`);

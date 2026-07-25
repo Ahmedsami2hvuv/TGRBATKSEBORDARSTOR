@@ -12,6 +12,21 @@ export const TWO_WAY_TEMPLATE_VARIABLES = [
   "{notes}",
 ] as const;
 
+export type LocationCondition = "all" | "has_location" | "no_location" | "gps_uploaded";
+export type OrderStatusCondition = "pending" | "assigned" | "delivering" | "delivered" | "cancelled" | "archived";
+export type TargetParty = "sender_1" | "sender_2" | "recipient_1" | "recipient_2" | "any";
+
+export type TwoWayButtonRule = {
+  id: string;
+  title: string;
+  targetParty: TargetParty;
+  actionType: "whatsapp" | "call" | "location_request" | "notify";
+  template: string;
+  locationConditions: LocationCondition[];
+  statusConditions: OrderStatusCondition[];
+  active: boolean;
+};
+
 export type TwoWayTemplatesConfig = {
   locationSenderTemplate: string;
   locationRecipientTemplate: string;
@@ -19,6 +34,7 @@ export type TwoWayTemplatesConfig = {
   notifyRecipientTemplate: string;
   chatSenderTemplate: string;
   chatRecipientTemplate: string;
+  buttonRules?: TwoWayButtonRule[];
 };
 
 export function getDefaultTwoWayLocationSenderTemplate(): string {
@@ -73,6 +89,111 @@ export function getDefaultTwoWayChatRecipientTemplate(): string {
   ].join("\n");
 }
 
+export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
+  return [
+    {
+      id: "btn_loc_sender_1",
+      title: "طلب لوكيشن المرسل الأول",
+      targetParty: "sender_1",
+      actionType: "location_request",
+      template: getDefaultTwoWayLocationSenderTemplate(),
+      locationConditions: ["no_location", "all"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_loc_sender_2",
+      title: "طلب لوكيشن المرسل الثاني",
+      targetParty: "sender_2",
+      actionType: "location_request",
+      template: getDefaultTwoWayLocationSenderTemplate(),
+      locationConditions: ["no_location", "all"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_loc_rec_1",
+      title: "طلب لوكيشن المستلم الأول",
+      targetParty: "recipient_1",
+      actionType: "location_request",
+      template: getDefaultTwoWayLocationRecipientTemplate(),
+      locationConditions: ["no_location", "all"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_loc_rec_2",
+      title: "طلب لوكيشن المستلم الثاني",
+      targetParty: "recipient_2",
+      actionType: "location_request",
+      template: getDefaultTwoWayLocationRecipientTemplate(),
+      locationConditions: ["no_location", "all"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_not_sender_1",
+      title: "تبليغ المرسل الأول",
+      targetParty: "sender_1",
+      actionType: "notify",
+      template: getDefaultTwoWayNotifySenderTemplate(),
+      locationConditions: ["all", "has_location"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_not_sender_2",
+      title: "تبليغ المرسل الثاني",
+      targetParty: "sender_2",
+      actionType: "notify",
+      template: getDefaultTwoWayNotifySenderTemplate(),
+      locationConditions: ["all", "has_location"],
+      statusConditions: ["pending", "assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_not_rec_1",
+      title: "تبليغ المستلم الأول",
+      targetParty: "recipient_1",
+      actionType: "notify",
+      template: getDefaultTwoWayNotifyRecipientTemplate(),
+      locationConditions: ["all", "has_location"],
+      statusConditions: ["assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_not_rec_2",
+      title: "تبليغ المستلم الثاني",
+      targetParty: "recipient_2",
+      actionType: "notify",
+      template: getDefaultTwoWayNotifyRecipientTemplate(),
+      locationConditions: ["all", "has_location"],
+      statusConditions: ["assigned", "delivering"],
+      active: true,
+    },
+    {
+      id: "btn_chat_sender_1",
+      title: "مراسلة المرسل الأول",
+      targetParty: "sender_1",
+      actionType: "whatsapp",
+      template: getDefaultTwoWayChatSenderTemplate(),
+      locationConditions: ["all"],
+      statusConditions: ["pending", "assigned", "delivering", "delivered", "cancelled"],
+      active: true,
+    },
+    {
+      id: "btn_chat_rec_1",
+      title: "مراسلة المستلم الأول",
+      targetParty: "recipient_1",
+      actionType: "whatsapp",
+      template: getDefaultTwoWayChatRecipientTemplate(),
+      locationConditions: ["all"],
+      statusConditions: ["pending", "assigned", "delivering", "delivered", "cancelled"],
+      active: true,
+    },
+  ];
+}
+
 export function renderTwoWayTemplate(input: {
   template: string;
   orderNumber?: string | number;
@@ -108,4 +229,45 @@ export function renderTwoWayTemplate(input: {
   });
 
   return text;
+}
+
+/**
+ * فحص شروط إظهار الزر طبقاً لحالة الطلب وحالة اللوكيشن للطرف
+ */
+export function shouldShowButtonRule(
+  rule: TwoWayButtonRule,
+  currentOrderStatus: string,
+  partyLocationStatus: { hasLocation: boolean; gpsUploaded: boolean }
+): boolean {
+  if (!rule.active) return false;
+
+  // 1. فحص حالة الطلب
+  const normalizedStatus = (currentOrderStatus || "pending").toLowerCase();
+  if (rule.statusConditions && rule.statusConditions.length > 0) {
+    if (!rule.statusConditions.includes(normalizedStatus as OrderStatusCondition)) {
+      return false;
+    }
+  }
+
+  // 2. فحص حالة اللوكيشن
+  if (rule.locationConditions && rule.locationConditions.length > 0) {
+    if (rule.locationConditions.includes("all")) {
+      return true;
+    }
+
+    let match = false;
+    if (rule.locationConditions.includes("has_location") && partyLocationStatus.hasLocation) {
+      match = true;
+    }
+    if (rule.locationConditions.includes("no_location") && !partyLocationStatus.hasLocation) {
+      match = true;
+    }
+    if (rule.locationConditions.includes("gps_uploaded") && partyLocationStatus.gpsUploaded) {
+      match = true;
+    }
+
+    return match;
+  }
+
+  return true;
 }

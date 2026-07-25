@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import {
   type TwoWayTemplatesConfig,
+  type TwoWayButtonRule,
   getDefaultTwoWayLocationSenderTemplate,
   getDefaultTwoWayLocationRecipientTemplate,
   getDefaultTwoWayNotifySenderTemplate,
   getDefaultTwoWayNotifyRecipientTemplate,
   getDefaultTwoWayChatSenderTemplate,
   getDefaultTwoWayChatRecipientTemplate,
+  getDefaultTwoWayButtonRules,
 } from "./two-way-whatsapp-helpers";
 
 export * from "./two-way-whatsapp-helpers";
@@ -18,6 +20,7 @@ const SECTION_TWO_WAY_NOTIFY_SENDER = "whatsapp_twoway_notify_sender_template";
 const SECTION_TWO_WAY_NOTIFY_RECIPIENT = "whatsapp_twoway_notify_recipient_template";
 const SECTION_TWO_WAY_CHAT_SENDER = "whatsapp_twoway_chat_sender_template";
 const SECTION_TWO_WAY_CHAT_RECIPIENT = "whatsapp_twoway_chat_recipient_template";
+const SECTION_TWO_WAY_BUTTON_RULES = "whatsapp_twoway_button_rules";
 
 export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
   try {
@@ -32,18 +35,23 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
             SECTION_TWO_WAY_NOTIFY_RECIPIENT,
             SECTION_TWO_WAY_CHAT_SENDER,
             SECTION_TWO_WAY_CHAT_RECIPIENT,
+            SECTION_TWO_WAY_BUTTON_RULES,
           ],
         },
       },
     });
 
-    const map = new Map<string, string>();
+    const map = new Map<string, any>();
     for (const r of rows) {
-      const cfg = r.config as { text?: string } | null;
-      if (cfg?.text) {
+      const cfg = r.config as any;
+      if (cfg?.text !== undefined) {
         map.set(r.section, cfg.text);
+      } else if (cfg?.rules !== undefined) {
+        map.set(r.section, cfg.rules);
       }
     }
+
+    const savedRules = map.get(SECTION_TWO_WAY_BUTTON_RULES);
 
     return {
       locationSenderTemplate: map.get(SECTION_TWO_WAY_LOCATION_SENDER) || getDefaultTwoWayLocationSenderTemplate(),
@@ -52,6 +60,7 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
       notifyRecipientTemplate: map.get(SECTION_TWO_WAY_NOTIFY_RECIPIENT) || getDefaultTwoWayNotifyRecipientTemplate(),
       chatSenderTemplate: map.get(SECTION_TWO_WAY_CHAT_SENDER) || getDefaultTwoWayChatSenderTemplate(),
       chatRecipientTemplate: map.get(SECTION_TWO_WAY_CHAT_RECIPIENT) || getDefaultTwoWayChatRecipientTemplate(),
+      buttonRules: Array.isArray(savedRules) && savedRules.length > 0 ? savedRules : getDefaultTwoWayButtonRules(),
     };
   } catch {
     return {
@@ -61,6 +70,7 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
       notifyRecipientTemplate: getDefaultTwoWayNotifyRecipientTemplate(),
       chatSenderTemplate: getDefaultTwoWayChatSenderTemplate(),
       chatRecipientTemplate: getDefaultTwoWayChatRecipientTemplate(),
+      buttonRules: getDefaultTwoWayButtonRules(),
     };
   }
 }
@@ -130,6 +140,16 @@ export async function saveTwoWayTemplates(config: Partial<TwoWayTemplatesConfig>
         where: { target_section: { target: TARGET, section: SECTION_TWO_WAY_CHAT_RECIPIENT } },
         create: { target: TARGET, section: SECTION_TWO_WAY_CHAT_RECIPIENT, config: { text: val } },
         update: { config: { text: val } },
+      })
+    );
+  }
+
+  if (config.buttonRules !== undefined) {
+    tasks.push(
+      prisma.uISystemSetting.upsert({
+        where: { target_section: { target: TARGET, section: SECTION_TWO_WAY_BUTTON_RULES } },
+        create: { target: TARGET, section: SECTION_TWO_WAY_BUTTON_RULES, config: { rules: config.buttonRules } },
+        update: { config: { rules: config.buttonRules } },
       })
     );
   }

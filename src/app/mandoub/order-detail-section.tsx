@@ -847,15 +847,19 @@ export function OrderDetailSection({
             <TwoWayOrderActionButtons
               orderId={order.id}
               orderNumber={order.orderNumber}
+              orderStatus={order.status}
               routeMode={order.routeMode || "double"}
               senderName="المرسل"
               senderPhone={order.customerPhone}
               senderAlternatePhone={mergedAlternate}
               senderRegionName={order.customerRegion?.name}
+              senderHasLocation={!missingCustomerLocation}
+              senderGpsUploaded={Boolean(order.customerLocationSetByCourierAt)}
               recipientName="المستلم"
               recipientPhone={order.secondCustomerPhone || order.customerPhone}
               recipientAlternatePhone={mergedSecondAlternate}
               recipientRegionName={order.secondCustomerRegion?.name}
+              recipientHasLocation={!!secondLocMerged}
               subtotal={order.orderSubtotal != null ? Number(order.orderSubtotal) : "0"}
               delivery={order.deliveryPrice != null ? Number(order.deliveryPrice) : "0"}
               total={order.totalAmount != null ? Number(order.totalAmount) : "0"}
