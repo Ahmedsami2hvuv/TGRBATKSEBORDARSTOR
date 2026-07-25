@@ -10,13 +10,16 @@ import {
 } from "@/lib/whatsapp";
 import {
   renderTwoWayTemplate,
+  shouldShowButtonRule,
   getDefaultTwoWayLocationSenderTemplate,
   getDefaultTwoWayLocationRecipientTemplate,
   getDefaultTwoWayNotifySenderTemplate,
   getDefaultTwoWayNotifyRecipientTemplate,
   getDefaultTwoWayChatSenderTemplate,
   getDefaultTwoWayChatRecipientTemplate,
+  getDefaultTwoWayButtonRules,
   type TwoWayTemplatesConfig,
+  type TwoWayButtonRule,
 } from "@/lib/two-way-whatsapp-helpers";
 
 export type TwoWayOrderActionButtonsProps = {
@@ -29,17 +32,22 @@ export type TwoWayOrderActionButtonsProps = {
   senderPhone?: string | null;
   senderAlternatePhone?: string | null;
   senderRegionName?: string | null;
+  senderHasLocation?: boolean;
+  senderGpsUploaded?: boolean;
   // بيانات المستلم
   recipientName?: string;
   recipientPhone?: string | null;
   recipientAlternatePhone?: string | null;
   recipientRegionName?: string | null;
+  recipientHasLocation?: boolean;
+  recipientGpsUploaded?: boolean;
   // المبالغ والملاحظات
   subtotal?: string | number | null;
   delivery?: string | number | null;
   total?: string | number | null;
   notes?: string | null;
   // القوالب والقواعد الديناميكية من صفحة الإعدادات
+  buttonRules?: TwoWayButtonRule[];
   twoWayTemplates?: Partial<TwoWayTemplatesConfig> | null;
 };
 
@@ -52,18 +60,24 @@ const LONG_PRESS_DURATION = 750;
 
 export function TwoWayOrderActionButtons({
   orderNumber,
+  orderStatus = "pending",
   senderName = "المرسل",
   senderPhone,
   senderAlternatePhone,
   senderRegionName,
+  senderHasLocation = false,
+  senderGpsUploaded = false,
   recipientName = "المستلم",
   recipientPhone,
   recipientAlternatePhone,
   recipientRegionName,
+  recipientHasLocation = false,
+  recipientGpsUploaded = false,
   subtotal = "0",
   delivery = "0",
   total = "0",
   notes = "",
+  buttonRules,
   twoWayTemplates,
 }: TwoWayOrderActionButtonsProps) {
   const [mounted, setMounted] = useState(false);
@@ -80,17 +94,19 @@ export function TwoWayOrderActionButtons({
   const dragRef = useRef({ startX: 0, startY: 0, origLeft: 0, origTop: 0, moved: false });
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // القوالب المحملة ديناميكياً
-  const [dynTemplates, setDynTemplates] = useState<Partial<TwoWayTemplatesConfig> | null>(twoWayTemplates || null);
+  // القوالب والقواعد المحملة
+  const [dynConfig, setDynConfig] = useState<Partial<TwoWayTemplatesConfig> | null>(
+    twoWayTemplates || (buttonRules ? { buttonRules } : null)
+  );
 
   useEffect(() => {
     setMounted(true);
-    if (!twoWayTemplates) {
+    if (!twoWayTemplates && !buttonRules) {
       fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
     }
-    // استرجاع الإعدادات المحفوظة
+
     try {
       const savedPos = localStorage.getItem(FAB_POS_STORAGE_KEY);
       if (savedPos) setPos(JSON.parse(savedPos));
@@ -112,9 +128,17 @@ export function TwoWayOrderActionButtons({
         top: Math.max(16, (window.innerHeight || 640) - 180),
       });
     }
-  }, [twoWayTemplates]);
+  }, [twoWayTemplates, buttonRules]);
 
   if (!mounted || pos.left === -1) return null;
+
+  // قواعد الأزرار المطبقة فعلياً
+  const currentRules =
+    dynConfig?.buttonRules && dynConfig.buttonRules.length > 0
+      ? dynConfig.buttonRules
+      : buttonRules && buttonRules.length > 0
+      ? buttonRules
+      : getDefaultTwoWayButtonRules();
 
   // التحكم بالسحب والتحريك والنقر المطول
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -129,7 +153,6 @@ export function TwoWayOrderActionButtons({
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setIsDragging(true);
 
-    // بدء مؤقت الضغط المطول
     longPressTimer.current = setTimeout(() => {
       setIsDragging(false);
       setIsConfiguring(true);
@@ -195,22 +218,117 @@ export function TwoWayOrderActionButtons({
     setIsConfiguring(false);
   };
 
-  // توليد وصياغة النص المبرمج من صفحة الإعدادات
-  const getRenderedMessage = (type: "chat" | "location" | "notify", isSender: boolean): string => {
-    const activeTpl = twoWayTemplates || dynTemplates;
-    let tpl = "";
-    if (type === "chat") {
-      tpl = isSender
-        ? activeTpl?.chatSenderTemplate || getDefaultTwoWayChatSenderTemplate()
-        : activeTpl?.chatRecipientTemplate || getDefaultTwoWayChatRecipientTemplate();
-    } else if (type === "location") {
-      tpl = isSender
-        ? activeTpl?.locationSenderTemplate || getDefaultTwoWayLocationSenderTemplate()
-        : activeTpl?.locationRecipientTemplate || getDefaultTwoWayLocationRecipientTemplate();
-    } else if (type === "notify") {
-      tpl = isSender
-        ? activeTpl?.notifySenderTemplate || getDefaultTwoWayNotifySenderTemplate()
-        : activeTpl?.notifyRecipientTemplate || getDefaultTwoWayNotifyRecipientTemplate();
+  // -------------------------------------------------------------
+  // الفلترة والتصفية الذكية بناءً على شروط الإعدادات (Order Status + Customer Location)
+  // -------------------------------------------------------------
+  const sPhone1 = digitsOnly(senderPhone || "");
+  const sPhone2 = digitsOnly(senderAlternatePhone || "");
+  const rPhone1 = digitsOnly(recipientPhone || "");
+  const rPhone2 = digitsOnly(recipientAlternatePhone || "");
+
+  const allPossibleParties = [
+    {
+      partyKey: "sender_1" as const,
+      phone: sPhone1,
+      label: sPhone2 ? "المرسل (رقم 1)" : "المرسل",
+      isSender: true,
+      locStatus: { hasLocation: senderHasLocation, gpsUploaded: senderGpsUploaded },
+    },
+    {
+      partyKey: "sender_2" as const,
+      phone: sPhone2 !== sPhone1 ? sPhone2 : "",
+      label: "المرسل (رقم 2)",
+      isSender: true,
+      locStatus: { hasLocation: senderHasLocation, gpsUploaded: senderGpsUploaded },
+    },
+    {
+      partyKey: "recipient_1" as const,
+      phone: rPhone1,
+      label: rPhone2 ? "المستلم (رقم 1)" : "المستلم",
+      isSender: false,
+      locStatus: { hasLocation: recipientHasLocation, gpsUploaded: recipientGpsUploaded },
+    },
+    {
+      partyKey: "recipient_2" as const,
+      phone: rPhone2 !== rPhone1 ? rPhone2 : "",
+      label: "المستلم (رقم 2)",
+      isSender: false,
+      locStatus: { hasLocation: recipientHasLocation, gpsUploaded: recipientGpsUploaded },
+    },
+  ].filter((p) => !!p.phone);
+
+  // دالة فحص استحقاق الطرف لزر/إجراء معين
+  const isPartyAllowedForAction = (
+    partyKey: "sender_1" | "sender_2" | "recipient_1" | "recipient_2",
+    actionType: "whatsapp" | "call" | "location_request" | "notify",
+    locStatus: { hasLocation: boolean; gpsUploaded: boolean }
+  ): { allowed: boolean; template?: string } => {
+    // نحدد القواعد المطابقة لهذا الإجراء والطرف
+    const matchingRules = currentRules.filter((r) => {
+      if (!r.active) return false;
+      if (r.actionType !== actionType) return false;
+      if (r.targetParty !== "any" && r.targetParty !== partyKey) return false;
+      return true;
+    });
+
+    if (matchingRules.length === 0) {
+      // إذا لم توجد قاعدة تخصيص افتراضية للطرف تفترض السماح كـ fallback
+      return { allowed: actionType === "chat" || actionType === "call" };
+    }
+
+    for (const rule of matchingRules) {
+      if (shouldShowButtonRule(rule, orderStatus, locStatus)) {
+        return { allowed: true, template: rule.template };
+      }
+    }
+
+    return { allowed: false };
+  };
+
+  // قائمة الأشخاص المتاحين لكل نوع إجراء بالتحديد
+  const getAllowedContactsForAction = (actionType: "chat" | "call" | "location" | "notify") => {
+    const actType = actionType === "chat" ? "whatsapp" : actionType === "location" ? "location_request" : actionType;
+
+    return allPossibleParties.filter((party) => {
+      const res = isPartyAllowedForAction(party.partyKey, actType, party.locStatus);
+      return res.allowed;
+    });
+  };
+
+  const allowedChats = getAllowedContactsForAction("chat");
+  const allowedCalls = getAllowedContactsForAction("call");
+  const allowedLocations = getAllowedContactsForAction("location");
+  const allowedNotifies = getAllowedContactsForAction("notify");
+
+  // توليد وصياغة النص المبرمج من صفحة الإعدادات لكل نوع وجبهة
+  const getRenderedMessage = (
+    type: "chat" | "location" | "notify",
+    partyKey: "sender_1" | "sender_2" | "recipient_1" | "recipient_2",
+    isSender: boolean
+  ): string => {
+    const actType = type === "chat" ? "whatsapp" : type === "location" ? "location_request" : type;
+    const locStatus = isSender
+      ? { hasLocation: senderHasLocation, gpsUploaded: senderGpsUploaded }
+      : { hasLocation: recipientHasLocation, gpsUploaded: recipientGpsUploaded };
+
+    const check = isPartyAllowedForAction(partyKey, actType, locStatus);
+    let tpl = check.template || "";
+
+    if (!tpl) {
+      const activeTpl = twoWayTemplates || dynConfig;
+      if (type === "chat") {
+        tpl = isSender
+          ? activeTpl?.chatSenderTemplate || getDefaultTwoWayChatSenderTemplate()
+          : activeTpl?.chatRecipientTemplate || getDefaultTwoWayChatRecipientTemplate();
+      } else if (type === "location") {
+        tpl = isSender
+          ? activeTpl?.locationSenderTemplate || getDefaultTwoWayLocationSenderTemplate()
+          : activeTpl?.locationRecipientTemplate || getDefaultTwoWayLocationRecipientTemplate();
+      } else if (type === "notify") {
+        tpl = isSender
+          ? activeTpl?.notifySenderTemplate || getDefaultTwoWayNotifySenderTemplate()
+          : activeTpl?.notifyRecipientTemplate || getDefaultTwoWayNotifyRecipientTemplate();
+      }
     }
 
     return renderTwoWayTemplate({
@@ -230,7 +348,11 @@ export function TwoWayOrderActionButtons({
   };
 
   // التنفيذ الفوري عند النقر على الشخص المحدد
-  const handleExecuteTarget = (targetPhoneRaw: string | null | undefined, isSender: boolean) => {
+  const handleExecuteTarget = (
+    partyKey: "sender_1" | "sender_2" | "recipient_1" | "recipient_2",
+    targetPhoneRaw: string,
+    isSender: boolean
+  ) => {
     const cleanPhone = digitsOnly(targetPhoneRaw || "");
     if (!cleanPhone || !activeAction) return;
 
@@ -240,57 +362,11 @@ export function TwoWayOrderActionButtons({
       return;
     }
 
-    const message = getRenderedMessage(activeAction, isSender);
+    const message = getRenderedMessage(activeAction, partyKey, isSender);
     const url = whatsappMeUrl(cleanPhone, message);
     openUrlFromUserGesture(url);
     closeAll();
   };
-
-  // الهواتف المتاحة لكل جهة
-  const sPhone1 = digitsOnly(senderPhone || "");
-  const sPhone2 = digitsOnly(senderAlternatePhone || "");
-  const rPhone1 = digitsOnly(recipientPhone || "");
-  const rPhone2 = digitsOnly(recipientAlternatePhone || "");
-
-  const contactsList: Array<{
-    id: string;
-    phone: string;
-    label: string;
-    isSender: boolean;
-  }> = [];
-
-  if (sPhone1) {
-    contactsList.push({
-      id: "s1",
-      phone: sPhone1,
-      label: sPhone2 ? "المرسل (رقم 1)" : "المرسل",
-      isSender: true,
-    });
-  }
-  if (sPhone2 && sPhone2 !== sPhone1) {
-    contactsList.push({
-      id: "s2",
-      phone: sPhone2,
-      label: "المرسل (رقم 2)",
-      isSender: true,
-    });
-  }
-  if (rPhone1) {
-    contactsList.push({
-      id: "r1",
-      phone: rPhone1,
-      label: rPhone2 ? "المستلم (رقم 1)" : "المستلم",
-      isSender: false,
-    });
-  }
-  if (rPhone2 && rPhone2 !== rPhone1) {
-    contactsList.push({
-      id: "r2",
-      phone: rPhone2,
-      label: "المستلم (رقم 2)",
-      isSender: false,
-    });
-  }
 
   const actionTitles = {
     chat: "مراسلة واتساب",
@@ -298,6 +374,8 @@ export function TwoWayOrderActionButtons({
     location: "طلب لوكيشن",
     notify: "تبليغ زبون",
   };
+
+  const currentActiveContacts = activeAction ? getAllowedContactsForAction(activeAction) : [];
 
   const fabContent = (
     <>
@@ -428,7 +506,7 @@ export function TwoWayOrderActionButtons({
         </div>
       )}
 
-      {/* --- القائمة المنبثقة المختصرة للأزرار الأربعة مع إبعاد زر الإغلاق الأحمر --- */}
+      {/* --- القائمة المنبثقة المختصرة للأزرار مع الفلترة الذكية القاطعة --- */}
       {isOpen && !isConfiguring && (
         <div
           style={{
@@ -450,57 +528,74 @@ export function TwoWayOrderActionButtons({
           </div>
 
           {!activeAction ? (
-            // العرض الأول: الأزرار الأربعة الأساسية
+            // العرض الأول: الأزرار المتاحة المنطبقة عليها الشروط فقط
             <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveAction("chat")}
-                className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-right text-emerald-950 font-black text-xs hover:bg-emerald-100 transition active:scale-95 shadow-2xs"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">💬</span>
-                  <span>مراسلة (واتساب)</span>
-                </div>
-                <span className="text-[10px] opacity-60">←</span>
-              </button>
+              {allowedChats.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveAction("chat")}
+                  className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-right text-emerald-950 font-black text-xs hover:bg-emerald-100 transition active:scale-95 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">💬</span>
+                    <span>مراسلة (واتساب)</span>
+                  </div>
+                  <span className="text-[10px] opacity-60">←</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setActiveAction("call")}
-                className="flex items-center justify-between rounded-2xl border border-sky-200 bg-sky-50/80 p-3 text-right text-sky-950 font-black text-xs hover:bg-sky-100 transition active:scale-95 shadow-2xs"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📞</span>
-                  <span>اتصال هاتفي</span>
-                </div>
-                <span className="text-[10px] opacity-60">←</span>
-              </button>
+              {allowedCalls.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveAction("call")}
+                  className="flex items-center justify-between rounded-2xl border border-sky-200 bg-sky-50/80 p-3 text-right text-sky-950 font-black text-xs hover:bg-sky-100 transition active:scale-95 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📞</span>
+                    <span>اتصال هاتفي</span>
+                  </div>
+                  <span className="text-[10px] opacity-60">←</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setActiveAction("location")}
-                className="flex items-center justify-between rounded-2xl border border-teal-200 bg-teal-50/80 p-3 text-right text-teal-950 font-black text-xs hover:bg-teal-100 transition active:scale-95 shadow-2xs"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📍</span>
-                  <span>طلب لوكيشن</span>
-                </div>
-                <span className="text-[10px] opacity-60">←</span>
-              </button>
+              {allowedLocations.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveAction("location")}
+                  className="flex items-center justify-between rounded-2xl border border-teal-200 bg-teal-50/80 p-3 text-right text-teal-950 font-black text-xs hover:bg-teal-100 transition active:scale-95 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📍</span>
+                    <span>طلب لوكيشن</span>
+                  </div>
+                  <span className="text-[10px] opacity-60">←</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setActiveAction("notify")}
-                className="flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-right text-indigo-950 font-black text-xs hover:bg-indigo-100 transition active:scale-95 shadow-2xs"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🔔</span>
-                  <span>تبليغ زبون</span>
-                </div>
-                <span className="text-[10px] opacity-60">←</span>
-              </button>
+              {allowedNotifies.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveAction("notify")}
+                  className="flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-right text-indigo-950 font-black text-xs hover:bg-indigo-100 transition active:scale-95 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🔔</span>
+                    <span>تبليغ زبون</span>
+                  </div>
+                  <span className="text-[10px] opacity-60">←</span>
+                </button>
+              )}
 
-              {/* زر الإغلاق الأحمر - إبعاده مسافة محترمة لتفادي المزعج والضغط الخاطئ */}
+              {allowedChats.length === 0 &&
+                allowedCalls.length === 0 &&
+                allowedLocations.length === 0 &&
+                allowedNotifies.length === 0 && (
+                  <p className="text-center text-xs font-bold text-slate-400 py-3">
+                    لا توجد أزرار مفعّلة تنطبق على حالة الطلب أو اللوكيشن الحالية.
+                  </p>
+                )}
+
+              {/* زر الإغلاق الأحمر - إبعاده مسافة محترمة */}
               <div className="pt-2 border-t border-slate-100 mt-1">
                 <button
                   type="button"
@@ -512,7 +607,7 @@ export function TwoWayOrderActionButtons({
               </div>
             </div>
           ) : (
-            // العرض الثاني: اختيار الشخص الفوري مباشرة دون خطوات معقدة
+            // العرض الثاني: اختيار الشخص الفوري المنطبق عليه شرط الإجراء فقط
             <div className="space-y-3 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center justify-between bg-slate-100 p-2 rounded-xl">
                 <span className="text-[11px] font-black text-slate-800">
@@ -528,12 +623,12 @@ export function TwoWayOrderActionButtons({
               </div>
 
               <div className="flex flex-col gap-2">
-                {contactsList.length > 0 ? (
-                  contactsList.map((contact) => (
+                {currentActiveContacts.length > 0 ? (
+                  currentActiveContacts.map((contact) => (
                     <button
-                      key={contact.id}
+                      key={contact.partyKey}
                       type="button"
-                      onClick={() => handleExecuteTarget(contact.phone, contact.isSender)}
+                      onClick={() => handleExecuteTarget(contact.partyKey, contact.phone, contact.isSender)}
                       className={`w-full py-3 px-4 rounded-xl font-black text-xs text-center shadow-md active:scale-95 transition-all ${
                         contact.isSender
                           ? "bg-white text-slate-900 border-2 border-indigo-600 hover:bg-indigo-50"
@@ -545,12 +640,12 @@ export function TwoWayOrderActionButtons({
                   ))
                 ) : (
                   <p className="text-center text-xs font-bold text-slate-400 py-3">
-                    لا توجد أرقام هواتف مسجلة على هذا الطلب.
+                    لا يوجد أشخاص ينطبق عليهم هذا الإجراء وشروطه في الوقت الحالي.
                   </p>
                 )}
               </div>
 
-              {/* زر الإغلاق الأحمر - مسافة واضحة أسفل الخيارات */}
+              {/* زر الإغلاق الأحمر */}
               <div className="pt-2 border-t border-slate-100">
                 <button
                   type="button"
