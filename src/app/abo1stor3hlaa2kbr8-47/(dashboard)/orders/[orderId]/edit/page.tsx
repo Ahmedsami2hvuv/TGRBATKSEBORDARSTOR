@@ -237,6 +237,9 @@ export default async function EditOrderPage({ params }: Props) {
           defaultCustomerLocationUploadedByName={order.customerLocationUploadedByName}
           defaultVoiceNoteUrl={order.voiceNoteUrl}
           defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
+          defaultPurchasePrice={
+            order.purchasePrice != null ? dinarDecimalToAlfInputString(order.purchasePrice) : ""
+          }
           defaultOrderSubtotal={
             order.orderSubtotal != null ? dinarDecimalToAlfInputString(order.orderSubtotal) : ""
           }

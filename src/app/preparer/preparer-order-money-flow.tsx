@@ -82,6 +82,7 @@ export function PreparerOrderMoneyFlow({
   courierName,
   assignedCourierId,
   orderStatus,
+  purchasePriceDinar,
   orderSubtotalDinar,
   totalAmountDinar,
   moneyEvents,
@@ -98,6 +99,7 @@ export function PreparerOrderMoneyFlow({
   /** بدون مندوب مسند لا يُقبل تسجيل الصادر/الوارد من السيرفر */
   assignedCourierId: string | null;
   orderStatus: string;
+  purchasePriceDinar?: number | null;
   orderSubtotalDinar: number | null;
   totalAmountDinar: number | null;
   moneyEvents: MoneyEventUi[];
@@ -152,22 +154,24 @@ export function PreparerOrderMoneyFlow({
     [moneyEvents],
   );
 
+  const effectivePickupDinar = purchasePriceDinar ?? orderSubtotalDinar;
+
   const pickupRemaining = useMemo(() => {
-    if (orderSubtotalDinar == null) return null;
-    return orderSubtotalDinar - pickupSum;
-  }, [orderSubtotalDinar, pickupSum]);
+    if (effectivePickupDinar == null) return null;
+    return effectivePickupDinar - pickupSum;
+  }, [effectivePickupDinar, pickupSum]);
   const deliveryRemaining = useMemo(() => {
     if (totalAmountDinar == null) return null;
     return totalAmountDinar - deliverySum;
   }, [totalAmountDinar, deliverySum]);
 
-  const hasOrderSubtotal = orderSubtotalDinar != null;
+  const hasOrderSubtotal = effectivePickupDinar != null;
   const hasTotalAmount = totalAmountDinar != null;
   const hasAssignedCourier = Boolean(assignedCourierId?.trim());
 
   const AMOUNT_EPS = 1e-3;
   const pickupComplete =
-    orderSubtotalDinar != null && Math.abs(pickupSum - orderSubtotalDinar) < AMOUNT_EPS;
+    effectivePickupDinar != null && Math.abs(pickupSum - effectivePickupDinar) < AMOUNT_EPS;
   const deliveryComplete =
     totalAmountDinar != null && Math.abs(deliverySum - totalAmountDinar) < AMOUNT_EPS;
 
@@ -238,12 +242,12 @@ export function PreparerOrderMoneyFlow({
             orderId={orderId}
             auth={auth}
             nextUrl={nextUrl}
-            expectedAlfHint={orderSubtotalDinar != null ? dinarDecimalToAlfInputString(orderSubtotalDinar) : ""}
+            expectedAlfHint={effectivePickupDinar != null ? dinarDecimalToAlfInputString(effectivePickupDinar) : ""}
             remainingAlfHint={pickupRemaining != null ? dinarDecimalToAlfInputString(pickupRemaining) : ""}
             advanceToDelivering={pickupAdvanceToDelivering}
             pickupRemainingDinar={pickupRemaining}
             pickupSumDinar={pickupSum}
-            orderSubtotalDinar={orderSubtotalDinar}
+            orderSubtotalDinar={effectivePickupDinar}
             formAction={pickupAction}
             pending={pickupPending}
             error={pickupState.error}

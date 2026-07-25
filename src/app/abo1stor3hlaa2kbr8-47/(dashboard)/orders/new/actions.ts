@@ -286,6 +286,15 @@ export async function createAdminOrder(
   );
   if (!subtotalParsed.ok) return { error: "سعر الطلب غير صالح." };
 
+  const purchasePriceRaw = String(formData.get("purchasePrice") ?? "").trim();
+  let purchasePriceDecimal: Decimal | null = null;
+  if (purchasePriceRaw !== "") {
+    const pParsed = parseAlfInputToDinarDecimalRequired(purchasePriceRaw);
+    if (pParsed.ok) {
+      purchasePriceDecimal = pParsed.value;
+    }
+  }
+
   const [shop, firstRegion] = await Promise.all([
     prisma.shop.findUnique({ where: { id: targetShopId }, include: { region: true } }),
     prisma.region.findUnique({ where: { id: firstRegionIdRaw } }),
@@ -391,6 +400,7 @@ export async function createAdminOrder(
       secondCustomerLandmark: routeMode === "double" ? secondLandmark : "",
       secondCustomerDoorPhotoUrl: routeMode === "double" ? (secondDoorUrl || null) : null,
       orderSubtotal: subtotalParsed.value,
+      purchasePrice: purchasePriceDecimal,
       deliveryPrice: delivery,
       customerOldDebt: oldDebt,
       totalAmount: total,

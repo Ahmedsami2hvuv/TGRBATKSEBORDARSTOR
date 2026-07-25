@@ -192,14 +192,17 @@ export async function updateOrderAdmin(
     // لم نعد نجبر وقت الطلب لكي لا يفشل التحديث، يمكن تركه فارغاً.
   }
 
+  const pur = parseOptionalAlfInputToDinar(String(formData.get("purchasePrice") ?? ""));
   const sub = parseOptionalAlfInputToDinar(String(formData.get("orderSubtotal") ?? ""));
   const del = parseOptionalAlfInputToDinar(String(formData.get("deliveryPrice") ?? ""));
   const tot = parseOptionalAlfInputToDinar(String(formData.get("totalAmount") ?? ""));
 
+  if (!pur.ok) return { error: "سعر الشراء غير صالح" };
   if (!sub.ok) return { error: "سعر الطلب غير صالح" };
   if (!del.ok) return { error: "سعر التوصيل غير صالح" };
   if (!tot.ok) return { error: "المجموع غير صالح" };
 
+  const purVal = pur.value;
   const subVal = sub.value;
   const delVal = del.value;
   const totVal = tot.value;
@@ -299,6 +302,7 @@ export async function updateOrderAdmin(
       secondCustomerRegion: secondCustomerRegionId ? { connect: { id: secondCustomerRegionId } } : { disconnect: true },
 
       orderSubtotal: subVal,
+      purchasePrice: purVal,
       deliveryPrice: delVal,
       totalAmount: totalFromSubDel,
       orderNoteTime,

@@ -128,6 +128,12 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
       todayPrepProductsProfit = todayPrepProductsProfit.plus(productsProfitDinar);
       todayPrepWagesProfit = todayPrepWagesProfit.plus(wagesProfitDinar);
     }
+
+    if (o.purchasePrice && o.orderSubtotal && o.orderSubtotal.gt(o.purchasePrice)) {
+      const diffProfit = o.orderSubtotal.minus(o.purchasePrice);
+      todayPrepProfit = todayPrepProfit.plus(diffProfit);
+      todayPrepProductsProfit = todayPrepProductsProfit.plus(diffProfit);
+    }
   }
 
   // --- حسابات الإجمالي الشامل ---
@@ -167,6 +173,11 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
       const wagesProfitDinar = new Decimal(numOrZero(j?.extraAlf) * ALF_PER_DINAR);
       const profitDinar = productsProfitDinar.plus(wagesProfitDinar);
       totalPrepProfit = totalPrepProfit.plus(profitDinar);
+    }
+
+    if (o.purchasePrice && o.orderSubtotal && o.orderSubtotal.gt(o.purchasePrice)) {
+      const diffProfit = o.orderSubtotal.minus(o.purchasePrice);
+      totalPrepProfit = totalPrepProfit.plus(diffProfit);
     }
   }
 

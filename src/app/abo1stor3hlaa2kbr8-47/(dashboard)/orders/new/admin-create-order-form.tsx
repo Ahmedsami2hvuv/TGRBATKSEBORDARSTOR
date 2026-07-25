@@ -111,7 +111,17 @@ export function AdminCreateOrderForm({
 
  const [orderType, setOrderType] = useState("");
  const [orderSubtotal, setOrderSubtotal] = useState("");
+ const [purchasePrice, setPurchasePrice] = useState("");
  const [orderNoteTime, setOrderNoteTime] = useState("");
+
+ const calculatedProfit = useMemo(() => {
+   const p = parseFloat(purchasePrice);
+   const s = parseFloat(orderSubtotal);
+   if (!isNaN(p) && !isNaN(s) && s > p && purchasePrice.trim() !== "") {
+     return s - p;
+   }
+   return null;
+ }, [purchasePrice, orderSubtotal]);
  const [summary, setSummary] = useState("");
  const [assignedCourierId, setAssignedCourierId] = useState("");
  const [courierSearch, setCourierSearch] = useState("");
@@ -1235,33 +1245,6 @@ export function AdminCreateOrderForm({
     </button>
   </div>
  )}
-
-                 {/* نوع الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                    <span className={ad.label}>نوع الطلب</span>
-                    {suggestions.types.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                        {suggestions.types.map((type, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setOrderType(type)}
-                            className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                   <input
-                     name="orderType"
-                     required
-                     className={ad.input}
-                     placeholder="مثال: مستلزمات"
-                     value={orderType}
-                     onChange={(e) => setOrderType(e.target.value)}
-                   />
-                 </label>
 
                  {/* سعر الطلب */}
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

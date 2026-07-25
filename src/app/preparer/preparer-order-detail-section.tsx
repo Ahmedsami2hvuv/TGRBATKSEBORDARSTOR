@@ -750,6 +750,7 @@ export function PreparerOrderDetailSection({
             courierName={order.courier?.name?.trim() || "—"}
             assignedCourierId={order.assignedCourierId}
             orderStatus={order.status}
+            purchasePriceDinar={order.purchasePrice != null ? Number(order.purchasePrice) : null}
             orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null}
             totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
             moneyEvents={order.moneyEvents.map((e) => ({

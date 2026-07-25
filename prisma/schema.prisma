@@ -451,6 +451,7 @@ model Order {
   customerRegionId                      String?
   deliveryPrice                         Decimal?                 @db.Decimal(10, 2)
   orderSubtotal                         Decimal?                 @db.Decimal(10, 2)
+  purchasePrice                         Decimal?                 @db.Decimal(10, 2)
   totalAmount                           Decimal?                 @db.Decimal(10, 2)
   customerOldDebt                       Decimal?                 @db.Decimal(10, 2) @default(0)
   customerPhone                         String                   @default("")

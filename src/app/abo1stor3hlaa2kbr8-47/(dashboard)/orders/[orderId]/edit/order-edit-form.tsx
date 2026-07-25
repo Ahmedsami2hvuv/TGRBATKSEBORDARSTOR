@@ -128,6 +128,7 @@ export function OrderEditForm({
   defaultCustomerLocationUploadedByName,
   defaultVoiceNoteUrl,
   defaultAdminVoiceNoteUrl,
+  defaultPurchasePrice = "",
   defaultOrderSubtotal,
   defaultDeliveryPrice,
   defaultTotalAmount,
@@ -168,6 +169,7 @@ export function OrderEditForm({
   defaultCustomerLocationUploadedByName?: string | null;
   defaultVoiceNoteUrl: string | null;
   defaultAdminVoiceNoteUrl: string | null;
+  defaultPurchasePrice?: string;
   defaultOrderSubtotal: string;
   defaultDeliveryPrice: string;
   defaultTotalAmount: string;
@@ -211,7 +213,17 @@ export function OrderEditForm({
   const [confirmClearLoc, setConfirmClearLoc] = useState(false);
   const [confirmReplaceLoc, setConfirmReplaceLoc] = useState(false);
   const router = useRouter();
+  const [purchasePrice, setPurchasePrice] = useState(defaultPurchasePrice);
   const [orderSubtotal, setOrderSubtotal] = useState(defaultOrderSubtotal);
+
+  const calculatedProfit = useMemo(() => {
+    const p = parseFloat(purchasePrice);
+    const s = parseFloat(orderSubtotal);
+    if (!isNaN(p) && !isNaN(s) && s > p && purchasePrice.trim() !== "") {
+      return s - p;
+    }
+    return null;
+  }, [purchasePrice, orderSubtotal]);
   const [deliveryPrice, setDeliveryPrice] = useState(defaultDeliveryPrice);
   const [totalAmount, setTotalAmount] = useState(defaultTotalAmount);
   const [summaryText, setSummaryText] = useState(defaultSummary);
@@ -643,16 +655,28 @@ export function OrderEditForm({
         />
       </label>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 w-fit">
-        <label className="flex flex-col gap-1 text-sm w-28 sm:w-32">
-          <span className="text-xs font-bold text-slate-700">سعر الطلب</span>
-          <input
-            name="orderSubtotal"
-            value={orderSubtotal}
-            onChange={(e) => onOrderSubtotalChange(e.target.value)}
-            className={`${ad.input} font-mono tabular-nums text-center`}
-          />
-        </label>
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-3.5">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm w-28 sm:w-36">
+            <span className="text-xs font-bold text-slate-700">سعر الشراء (للمحل)</span>
+            <input
+              name="purchasePrice"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              placeholder="0"
+              className={`${ad.input} font-mono tabular-nums text-center`}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm w-28 sm:w-36">
+            <span className="text-xs font-bold text-slate-700">سعر البيع (للزبون)</span>
+            <input
+              name="orderSubtotal"
+              value={orderSubtotal}
+              onChange={(e) => onOrderSubtotalChange(e.target.value)}
+              className={`${ad.input} font-mono tabular-nums text-center`}
+            />
+          </label>
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-xs font-bold text-slate-700 text-center">التوصيل</span>
           <div className="flex items-center gap-1.5">
@@ -695,6 +719,7 @@ export function OrderEditForm({
             className={`${ad.input} bg-slate-100 font-mono font-black tabular-nums text-center text-sky-900`}
           />
         </label>
+      </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

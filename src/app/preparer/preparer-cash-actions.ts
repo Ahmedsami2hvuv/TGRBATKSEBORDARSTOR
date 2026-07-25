@@ -123,8 +123,8 @@ export async function submitPreparerPickupMoney(
   // ولكن غالباً المجهز يدفع للمحل قبل إسناد المندوب أحياناً، لذا سنتأكد من المعالجة داخل الـ try catch
 
   try {
-    const expected = a.order.orderSubtotal;
-    if (expected == null) return { error: "سعر الطلب غير محدد في النظام." };
+    const expected = a.order.purchasePrice ?? a.order.orderSubtotal;
+    if (expected == null) return { error: "سعر الشراء أو الطلب غير محدد في النظام." };
 
     const agg = await prisma.orderCourierMoneyEvent.aggregate({
       where: { orderId, kind: MONEY_KIND_PICKUP, deletedAt: null },
