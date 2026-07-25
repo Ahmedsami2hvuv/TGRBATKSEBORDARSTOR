@@ -126,6 +126,10 @@ export function MandoubFloatingBar(props: Props) {
     });
   }, [rows, props]);
 
+  if (props.isDoubleRoute || !!props.secondCustomerPhone) {
+    return null;
+  }
+
   return (
     <OrderFabDock
       storageKey={STORAGE_KEY}
