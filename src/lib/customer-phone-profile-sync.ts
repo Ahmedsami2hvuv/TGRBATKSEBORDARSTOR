@@ -71,7 +71,7 @@ export async function syncSecondDoorPhotoToOrdersByPhoneRegion(input: {
   });
 }
 
-/** يقرأ الطلب بعد التحديث ويحدّث مرجع (رقم + منطقة الزبون). */
+/** يقرأ الطلب بعد التحديث ويحدّث مرجع (رقم + منطقة الزبون)، ويرفد الطلب بالتلقائيات إن كانت فارغة. */
 export async function syncPhoneProfileFromOrder(
   orderId: string,
   options?: { forceClearLocation?: boolean; forceClearLandmark?: boolean },
@@ -82,6 +82,39 @@ export async function syncPhoneProfileFromOrder(
   if (!o) return;
   const phone = normalizeIraqMobileLocal11(o.customerPhone) ?? "";
   if (!phone || !o.customerRegionId) return;
+
+  const existingProfile = await prisma.customerPhoneProfile.findUnique({
+    where: { phone_regionId: { phone, regionId: o.customerRegionId } },
+  });
+
+  // تعبئة الطلب تلقائياً إن كانت حقوله فارغة والبروفايل يحتوي عليها
+  if (existingProfile) {
+    const patch: any = {};
+    if (!o.customerDoorPhotoUrl?.trim() && existingProfile.photoUrl?.trim()) {
+      patch.customerDoorPhotoUrl = existingProfile.photoUrl.trim();
+    }
+    if (!o.customerLocationUrl?.trim() && existingProfile.locationUrl?.trim() && !options?.forceClearLocation) {
+      patch.customerLocationUrl = existingProfile.locationUrl.trim();
+    }
+    if (!o.customerLandmark?.trim() && existingProfile.landmark?.trim() && !options?.forceClearLandmark) {
+      patch.customerLandmark = existingProfile.landmark.trim();
+    }
+    if (!o.alternatePhone?.trim() && existingProfile.alternatePhone?.trim()) {
+      patch.alternatePhone = existingProfile.alternatePhone.trim();
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: patch,
+      });
+      // تحديث الكائن المحلي
+      if (patch.customerDoorPhotoUrl) (o as any).customerDoorPhotoUrl = patch.customerDoorPhotoUrl;
+      if (patch.customerLocationUrl) (o as any).customerLocationUrl = patch.customerLocationUrl;
+      if (patch.customerLandmark) (o as any).customerLandmark = patch.customerLandmark;
+      if (patch.alternatePhone) (o as any).alternatePhone = patch.alternatePhone;
+    }
+  }
 
   /** مصدر الحقول هو الطلب + منطقته فقط — لا ننسخ من `Customer` لتفادي خلط مناطق مختلفة لنفس الرقم. */
   const door = o.customerDoorPhotoUrl?.trim() || "";
@@ -121,6 +154,37 @@ export async function syncSecondPhoneProfileFromOrder(
   if (!o?.secondCustomerPhone?.trim() || !o.secondCustomerRegionId) return;
   const phone = normalizeIraqMobileLocal11(o.secondCustomerPhone) ?? "";
   if (!phone) return;
+
+  const existingProfile = await prisma.customerPhoneProfile.findUnique({
+    where: { phone_regionId: { phone, regionId: o.secondCustomerRegionId } },
+  });
+
+  if (existingProfile) {
+    const patch: any = {};
+    if (!o.secondCustomerDoorPhotoUrl?.trim() && existingProfile.photoUrl?.trim()) {
+      patch.secondCustomerDoorPhotoUrl = existingProfile.photoUrl.trim();
+    }
+    if (!o.secondCustomerLocationUrl?.trim() && existingProfile.locationUrl?.trim() && !options?.forceClearLocation) {
+      patch.secondCustomerLocationUrl = existingProfile.locationUrl.trim();
+    }
+    if (!o.secondCustomerLandmark?.trim() && existingProfile.landmark?.trim() && !options?.forceClearLandmark) {
+      patch.secondCustomerLandmark = existingProfile.landmark.trim();
+    }
+    if (!o.secondCustomerAlternatePhone?.trim() && existingProfile.alternatePhone?.trim()) {
+      patch.secondCustomerAlternatePhone = existingProfile.alternatePhone.trim();
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: patch,
+      });
+      if (patch.secondCustomerDoorPhotoUrl) (o as any).secondCustomerDoorPhotoUrl = patch.secondCustomerDoorPhotoUrl;
+      if (patch.secondCustomerLocationUrl) (o as any).secondCustomerLocationUrl = patch.secondCustomerLocationUrl;
+      if (patch.secondCustomerLandmark) (o as any).secondCustomerLandmark = patch.secondCustomerLandmark;
+      if (patch.secondCustomerAlternatePhone) (o as any).secondCustomerAlternatePhone = patch.secondCustomerAlternatePhone;
+    }
+  }
 
   await upsertCustomerPhoneProfileFromOrderSnapshot({
     phone,

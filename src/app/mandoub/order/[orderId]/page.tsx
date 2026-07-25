@@ -146,74 +146,44 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
 
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
   let customerPhoneProfile = null;
-  if (customerPhoneNorm) {
-    if (order.customerRegionId) {
-      customerPhoneProfile = await prisma.customerPhoneProfile.findUnique({
-        where: {
-          phone_regionId: {
-            phone: customerPhoneNorm,
-            regionId: order.customerRegionId,
-          },
+  if (customerPhoneNorm && order.customerRegionId) {
+    customerPhoneProfile = await prisma.customerPhoneProfile.findUnique({
+      where: {
+        phone_regionId: {
+          phone: customerPhoneNorm,
+          regionId: order.customerRegionId,
         },
-        select: {
-          id: true,
-          photoUrl: true,
-          locationUrl: true,
-          landmark: true,
-          alternatePhone: true,
-        },
-      });
-    }
-    if (!customerPhoneProfile) {
-      customerPhoneProfile = await prisma.customerPhoneProfile.findFirst({
-        where: { phone: customerPhoneNorm },
-        orderBy: { locationUrl: "desc" }, // Prioritize profiles with locations
-        select: {
-          id: true,
-          photoUrl: true,
-          locationUrl: true,
-          landmark: true,
-          alternatePhone: true,
-        },
-      });
-    }
+      },
+      select: {
+        id: true,
+        photoUrl: true,
+        locationUrl: true,
+        landmark: true,
+        alternatePhone: true,
+      },
+    });
   }
 
   const secondPhoneNorm = order.secondCustomerPhone
     ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
     : null;
   let secondPhoneProfile = null;
-  if (secondPhoneNorm) {
-    if (order.secondCustomerRegionId) {
-      secondPhoneProfile = await prisma.customerPhoneProfile.findUnique({
-        where: {
-          phone_regionId: {
-            phone: secondPhoneNorm,
-            regionId: order.secondCustomerRegionId,
-          },
+  if (secondPhoneNorm && order.secondCustomerRegionId) {
+    secondPhoneProfile = await prisma.customerPhoneProfile.findUnique({
+      where: {
+        phone_regionId: {
+          phone: secondPhoneNorm,
+          regionId: order.secondCustomerRegionId,
         },
-        select: {
-          id: true,
-          photoUrl: true,
-          locationUrl: true,
-          landmark: true,
-          alternatePhone: true,
-        },
-      });
-    }
-    if (!secondPhoneProfile) {
-      secondPhoneProfile = await prisma.customerPhoneProfile.findFirst({
-        where: { phone: secondPhoneNorm },
-        orderBy: { locationUrl: "desc" },
-        select: {
-          id: true,
-          photoUrl: true,
-          locationUrl: true,
-          landmark: true,
-          alternatePhone: true,
-        },
-      });
-    }
+      },
+      select: {
+        id: true,
+        photoUrl: true,
+        locationUrl: true,
+        landmark: true,
+        alternatePhone: true,
+      },
+    });
   }
 
   const [smartHintLine, secondSmartHintLine] = await Promise.all([

@@ -401,8 +401,8 @@ export async function updateMandoubCustomerDetails(
         ...clearCourierGpsFlag,
         ...secondCustomerPatch,
       });
-      await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
-      if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
+      await syncPhoneProfileFromOrder(orderId);
+      if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
       revalidateMandoubPaths(nextRaw, orderId);
       redirect(safeMandoubReturn(nextRaw));
     }
@@ -428,8 +428,8 @@ export async function updateMandoubCustomerDetails(
       ...clearCourierGpsFlag,
       ...secondCustomerPatch,
     });
-    await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
-    if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
+    await syncPhoneProfileFromOrder(orderId);
+    if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
     revalidateMandoubPaths(nextRaw, orderId);
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -444,8 +444,8 @@ export async function updateMandoubCustomerDetails(
     ...secondCustomerPatch,
   });
 
-  await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
-  if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
+  await syncPhoneProfileFromOrder(orderId);
+  if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
   revalidateMandoubPaths(nextRaw, orderId);
   redirect(safeMandoubReturn(nextRaw));
 }
