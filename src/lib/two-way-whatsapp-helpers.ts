@@ -208,6 +208,7 @@ export function renderTwoWayTemplate(input: {
   total?: string | number;
   notes?: string;
 }): string {
+  if (!input.template || !input.template.trim()) return "";
   let text = input.template.trim();
   const replacements: Record<string, string> = {
     "{orderNumber}": String(input.orderNumber || ""),

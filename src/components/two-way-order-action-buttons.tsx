@@ -312,22 +312,22 @@ export function TwoWayOrderActionButtons({
       : { hasLocation: recipientHasLocation, gpsUploaded: recipientGpsUploaded };
 
     const check = isPartyAllowedForAction(partyKey, actType, locStatus);
-    let tpl = check.template || "";
+    let tpl = check.template !== undefined ? check.template : undefined;
 
-    if (!tpl) {
+    if (tpl === undefined) {
       const activeTpl = twoWayTemplates || dynConfig;
       if (type === "chat") {
         tpl = isSender
-          ? activeTpl?.chatSenderTemplate || getDefaultTwoWayChatSenderTemplate()
-          : activeTpl?.chatRecipientTemplate || getDefaultTwoWayChatRecipientTemplate();
+          ? activeTpl?.chatSenderTemplate ?? ""
+          : activeTpl?.chatRecipientTemplate ?? "";
       } else if (type === "location") {
         tpl = isSender
-          ? activeTpl?.locationSenderTemplate || getDefaultTwoWayLocationSenderTemplate()
-          : activeTpl?.locationRecipientTemplate || getDefaultTwoWayLocationRecipientTemplate();
+          ? activeTpl?.locationSenderTemplate ?? ""
+          : activeTpl?.locationRecipientTemplate ?? "";
       } else if (type === "notify") {
         tpl = isSender
-          ? activeTpl?.notifySenderTemplate || getDefaultTwoWayNotifySenderTemplate()
-          : activeTpl?.notifyRecipientTemplate || getDefaultTwoWayNotifyRecipientTemplate();
+          ? activeTpl?.notifySenderTemplate ?? ""
+          : activeTpl?.notifyRecipientTemplate ?? "";
       }
     }
 
