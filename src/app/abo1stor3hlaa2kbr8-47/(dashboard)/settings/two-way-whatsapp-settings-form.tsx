@@ -101,17 +101,22 @@ export function TwoWayWhatsappSettingsForm({
     setButtonRules((prev) =>
       prev.map((r) => {
         if (r.id !== ruleId) return r;
-        let next = [...r.locationConditions];
+        let next = Array.isArray(r.locationConditions) ? [...r.locationConditions] : ["all"];
+        
         if (condition === "all") {
           next = ["all"];
         } else {
+          // إلغاء خيار الكل كلياً عند اختيار أي حالة خاصة
           next = next.filter((c) => c !== "all");
           if (next.includes(condition)) {
             next = next.filter((c) => c !== condition);
           } else {
             next.push(condition);
           }
-          if (next.length === 0) next = ["all"];
+          // إذا أصبحت المصفوفة فارغة تماماً تعود إلى الكل تلقائياً
+          if (next.length === 0) {
+            next = ["all"];
+          }
         }
         return { ...r, locationConditions: next };
       })
