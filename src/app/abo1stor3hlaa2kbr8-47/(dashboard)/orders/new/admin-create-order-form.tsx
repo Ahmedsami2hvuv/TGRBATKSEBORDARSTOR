@@ -957,7 +957,19 @@ export function AdminCreateOrderForm({
 
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <label className="flex flex-col gap-1 text-sm">
-                     <span className={ad.label}>سعر الطلب</span>
+                     <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
+                      <input
+                        name="purchasePrice"
+                        className={ad.input}
+                        placeholder="مثال: 15"
+                        inputMode="decimal"
+                        value={purchasePrice}
+                        onChange={(e) => setPurchasePrice(e.target.value)}
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className={ad.label}>سعر البيع (للزبون)</span>
                      {suggestions.subtotals.length > 0 && (
                        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
                          {suggestions.subtotals.map((sub, idx) => (
@@ -1249,7 +1261,19 @@ export function AdminCreateOrderForm({
                  {/* سعر الطلب */}
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <label className="flex flex-col gap-1 text-sm">
-                     <span className={ad.label}>سعر الطلب</span>
+                     <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
+                      <input
+                        name="purchasePrice"
+                        className={ad.input}
+                        placeholder="مثال: 15"
+                        inputMode="decimal"
+                        value={purchasePrice}
+                        onChange={(e) => setPurchasePrice(e.target.value)}
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className={ad.label}>سعر البيع (للزبون)</span>
                       {suggestions.subtotals.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-1 px-1">
                           {suggestions.subtotals.map((sub, idx) => (
