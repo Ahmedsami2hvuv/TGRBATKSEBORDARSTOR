@@ -589,18 +589,15 @@ export async function assignPendingOrderToCourier(
         });
       }
 
-      const defaultPrepId = draft.preparerId || null;
-      const defaultPrepName = draft.preparer?.name || null;
-
       const enrichedProducts = mergedProducts.map(p => {
         const buyNum = Number(p.buyAlf || 0);
         const sellNum = Number(p.sellAlf || 0);
         const priced = buyNum > 0 && sellNum > 0;
         const isFulfilledByAdmin = !!p.isFulfilledByAdmin;
-        const assignedPreparerId = isFulfilledByAdmin ? null : (p.assignedPreparerId || p.pricedById || defaultPrepId);
+        const assignedPreparerId = isFulfilledByAdmin ? null : (p.assignedPreparerId || p.pricedById || null);
         const assignedPreparerName = isFulfilledByAdmin 
           ? "تجهيز الإدارة 🏛️" 
-          : (p.assignedPreparerName || (assignedPreparerId === defaultPrepId ? defaultPrepName : null));
+          : (p.assignedPreparerName || (assignedPreparerId ? (draft.preparerId === assignedPreparerId ? draft.preparer?.name : null) : "تجهيز الإدارة 🏛️"));
 
         return {
           line: String(p.line || "").trim(),
@@ -609,7 +606,7 @@ export async function assignPendingOrderToCourier(
           isFulfilledByAdmin,
           assignedPreparerId,
           assignedPreparerName,
-          pricedBy: p.pricedBy || (isFulfilledByAdmin ? "تجهيز الإدارة 🏛️" : (assignedPreparerName || "تجهيز تسوق")),
+          pricedBy: p.pricedBy || (isFulfilledByAdmin ? "تجهيز الإدارة 🏛️" : assignedPreparerName),
           pricedById: p.pricedById || assignedPreparerId
         };
       });

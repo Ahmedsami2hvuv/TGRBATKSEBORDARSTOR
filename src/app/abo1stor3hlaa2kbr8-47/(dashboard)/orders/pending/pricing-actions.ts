@@ -233,8 +233,12 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       };
     }
 
-    let prepId = p.assignedPreparerId || p.pricedById || null;
-    let prepName = p.assignedPreparerName || null;
+    let prepId = (typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim())
+      ? p.assignedPreparerId.trim()
+      : ((typeof p.pricedById === "string" && p.pricedById.trim()) ? p.pricedById.trim() : null);
+    let prepName = typeof p.assignedPreparerName === "string" && p.assignedPreparerName.trim()
+      ? p.assignedPreparerName.trim()
+      : null;
 
     if (!prepId && prepName && prepName !== "تجهيز الإدارة 🏛️" && prepName !== "الإدارة") {
       prepId = preparerIdByName.get(prepName.trim()) || null;
@@ -243,18 +247,14 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       prepId = preparerIdByName.get(p.pricedBy.trim()) || null;
     }
 
-    if (!prepId && fallbackPreparerId) {
-      prepId = fallbackPreparerId;
-    }
-
     if (prepId && !prepName) {
-      prepName = preparerNameById.get(prepId) ?? fallbackPreparerName;
+      prepName = preparerNameById.get(prepId) ?? null;
     }
 
     return {
       ...p,
       assignedPreparerId: prepId,
-      assignedPreparerName: prepName || (prepId ? preparerNameById.get(prepId) ?? null : null),
+      assignedPreparerName: prepName || (prepId ? preparerNameById.get(prepId) ?? null : "تجهيز الإدارة 🏛️"),
     };
   });
 
