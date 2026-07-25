@@ -7,6 +7,7 @@ import { SettingsBlocks } from "./settings-blocks";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate, getNewOrderAlertWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { getTwoWayTemplates } from "@/lib/two-way-whatsapp-settings";
 import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
@@ -39,6 +40,14 @@ export default async function SettingsPage() {
       prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
       Promise.resolve(null),
       getSidebarConfig().catch(e => { console.error("Sidebar Config Error:", e); return null; }),
+      getTwoWayTemplates().catch(() => ({
+        locationSenderTemplate: "",
+        locationRecipientTemplate: "",
+        notifySenderTemplate: "",
+        notifyRecipientTemplate: "",
+        chatSenderTemplate: "",
+        chatRecipientTemplate: "",
+      })),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -63,6 +72,7 @@ export default async function SettingsPage() {
     globalSettings,
     backgroundsConfig,
     sidebarConfig,
+    twoWayTemplates,
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -87,6 +97,7 @@ export default async function SettingsPage() {
           customerOrderTemplate={customerOrderTemplate as string}
           telegramNewOrderTemplate={telegramNewOrderTemplate as string}
           newOrderAlertTemplate={newOrderAlertTemplate as string}
+          twoWayTemplatesInitial={twoWayTemplates as any}
           chatEnabledInitial={!!chatEnabled}
           trackingEnabledInitial={!!trackingEnabled}
           mandoubFeaturesInitial={mandoubFeatures as any}

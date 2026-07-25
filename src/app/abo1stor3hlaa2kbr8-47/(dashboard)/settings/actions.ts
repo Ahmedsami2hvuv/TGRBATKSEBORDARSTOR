@@ -248,6 +248,40 @@ export async function saveWhatsappTemplateSettings(
   }
 }
 
+export async function saveTwoWayWhatsappTemplateSettings(
+  _prev: WhatsappTemplateSettingsState,
+  formData: FormData,
+): Promise<WhatsappTemplateSettingsState> {
+  try {
+    if (!(await isAdminSession())) {
+      return { error: "غير مصرّح." };
+    }
+    const { saveTwoWayTemplates } = await import("@/lib/two-way-whatsapp-settings");
+    
+    const locationSenderTemplate = formString(formData, "locationSenderTemplate");
+    const locationRecipientTemplate = formString(formData, "locationRecipientTemplate");
+    const notifySenderTemplate = formString(formData, "notifySenderTemplate");
+    const notifyRecipientTemplate = formString(formData, "notifyRecipientTemplate");
+    const chatSenderTemplate = formString(formData, "chatSenderTemplate");
+    const chatRecipientTemplate = formString(formData, "chatRecipientTemplate");
+
+    await saveTwoWayTemplates({
+      locationSenderTemplate,
+      locationRecipientTemplate,
+      notifySenderTemplate,
+      notifyRecipientTemplate,
+      chatSenderTemplate,
+      chatRecipientTemplate,
+    });
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error saving two-way WhatsApp templates:", error);
+    return { error: "حدث خطأ: " + (error.message || "خطأ غير معروف") };
+  }
+}
+
 export async function saveNotificationSettings(
   _prev: NotificationSettingsFormState,
   formData: FormData,

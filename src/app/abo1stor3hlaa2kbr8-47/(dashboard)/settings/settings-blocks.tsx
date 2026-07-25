@@ -10,6 +10,8 @@ import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
+import { TwoWayWhatsappSettingsForm } from "./two-way-whatsapp-settings-form";
+import type { TwoWayTemplatesConfig } from "@/lib/two-way-whatsapp-settings";
 import { saveChatSettingsAction, saveRoleFeaturesAction, saveTrackingSettingsAction } from "./actions";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
@@ -53,6 +55,7 @@ export function SettingsBlocks({
   customerOrderTemplate,
   telegramNewOrderTemplate,
   newOrderAlertTemplate,
+  twoWayTemplatesInitial,
   chatEnabledInitial,
   trackingEnabledInitial,
   mandoubFeaturesInitial,
@@ -571,10 +574,17 @@ export function SettingsBlocks({
     },
     {
       id: "whatsapp",
-      title: "إعدادات واتساب 📱",
-      subtitle: "النماذج والأزرار.",
+      title: "إعدادات واتساب العامة 📱",
+      subtitle: "قوالب مشاركة المحلات والزبائن والإشعارات.",
       tone: "emerald",
       content: <WhatsappTemplateSettingsForm initialEmployeeTemplate={employeeShareTemplate} initialCustomerTemplate={customerOrderTemplate} initialTelegramTemplate={telegramNewOrderTemplate} initialNewOrderAlertTemplate={newOrderAlertTemplate} />
+    },
+    {
+      id: "whatsapp-twoway",
+      title: "أزرار ونماذج ذو وجهتين ⇄",
+      subtitle: "قوالب أزرار التواصل للمرسل والمستلم.",
+      tone: "indigo",
+      content: <TwoWayWhatsappSettingsForm initialTemplates={twoWayTemplatesInitial} />
     },
     {
       id: "notifications",
@@ -595,7 +605,7 @@ export function SettingsBlocks({
     telegramBots, telegramSaving, availableFonts, currentFont, newAdminId,
     newAdminName, telegramAdminsInitial, telegramAdminIds, mandoubFeatures,
     roleFeaturesSaving, preparerFeatures, globalProfitMargin, howToShopUrl,
-    employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, newOrderAlertTemplate,
+    employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, newOrderAlertTemplate, twoWayTemplatesInitial,
     notificationInitial, loading, sidebarConfig
   ]);
 

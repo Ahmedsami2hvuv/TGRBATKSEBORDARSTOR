@@ -36,6 +36,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { FontSizeContext } from "@/components/font-size-provider";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
+import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -828,6 +829,28 @@ export function OrderDetailSection({
         )}
 
         <Suspense fallback={null}><MandoubLocFlashBanner /></Suspense>
+
+        {isDoubleRoute && (
+          <div className="mb-4">
+            <TwoWayOrderActionButtons
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              routeMode={order.routeMode || "double"}
+              senderName="المرسل"
+              senderPhone={order.customerPhone}
+              senderAlternatePhone={mergedAlternate}
+              senderRegionName={order.customerRegion?.name}
+              recipientName="المستلم"
+              recipientPhone={order.secondCustomerPhone || order.customerPhone}
+              recipientAlternatePhone={mergedSecondAlternate}
+              recipientRegionName={order.secondCustomerRegion?.name}
+              subtotal={order.orderSubtotal != null ? Number(order.orderSubtotal) : "0"}
+              delivery={order.deliveryPrice != null ? Number(order.deliveryPrice) : "0"}
+              total={order.totalAmount != null ? Number(order.totalAmount) : "0"}
+              notes={order.summary}
+            />
+          </div>
+        )}
 
         <MandoubFloatingBar
           orderId={order.id}

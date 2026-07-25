@@ -10,6 +10,7 @@ import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
@@ -216,6 +217,27 @@ export function OrderViewContent({
 
 
       <div className="mt-5 space-y-6 sm:space-y-8">
+        
+        {/* --- ⇄ TWO WAY ORDER ACTION BUTTONS --- */}
+        {isDoubleRoute && (
+          <TwoWayOrderActionButtons
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            routeMode={order.routeMode}
+            senderName={order.routeMode === "double" ? "المرسل" : order.shop.name}
+            senderPhone={order.customerPhone}
+            senderAlternatePhone={order.alternatePhone}
+            senderRegionName={order.customerRegion?.name}
+            recipientName="المستلم"
+            recipientPhone={order.secondCustomerPhone || (order.routeMode === "double" ? null : order.customerPhone)}
+            recipientAlternatePhone={order.secondCustomerAlternatePhone}
+            recipientRegionName={order.secondCustomerRegion?.name}
+            subtotal={order.orderSubtotal ? String(order.orderSubtotal) : "0"}
+            delivery={order.deliveryPrice ? String(order.deliveryPrice) : "0"}
+            total={order.totalAmount ? String(order.totalAmount) : "0"}
+            notes={order.summary}
+          />
+        )}
         
         {/* --- SENDER / SHOP --- */}
         <div className={gridInfoPhoto}>
