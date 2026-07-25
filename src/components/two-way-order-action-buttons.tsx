@@ -379,55 +379,43 @@ export function TwoWayOrderActionButtons({
 
   const fabContent = (
     <>
-      {/* الزر العائم المصمم بنفس الديزاين القديم بالكامل */}
-      <div
-        style={{
-          position: "fixed",
-          left: `${pos.left}px`,
-          top: `${pos.top}px`,
-          zIndex: 9999,
-          touchAction: "none",
-        }}
-        className="group select-none"
-      >
+      {/* الزر العائم المصمم بنفس الديزاين القديم بالكامل (يختفي عند فتح القائمة) */}
+      {!isOpen && (
         <div
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          className={`flex h-[56px] w-[56px] cursor-grab items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:cursor-grabbing ${
-            isOpen ? "bg-rose-500" : "bg-indigo-600"
-          }`}
           style={{
-            transform: `scale(${scale})`,
-            opacity: opacity,
-            transition: isDragging ? "none" : "transform 0.2s, background-color 0.3s, opacity 0.3s",
+            position: "fixed",
+            left: `${pos.left}px`,
+            top: `${pos.top}px`,
+            zIndex: 9999,
+            touchAction: "none",
           }}
+          className="group select-none"
         >
-          {isOpen ? (
-            <svg
-              className="h-8 w-8 text-white animate-in spin-in-90 duration-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
+          <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            className="flex h-[56px] w-[56px] cursor-grab items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:cursor-grabbing bg-indigo-600 hover:bg-indigo-700"
+            style={{
+              transform: `scale(${scale})`,
+              opacity: opacity,
+              transition: isDragging ? "none" : "transform 0.2s, background-color 0.3s, opacity 0.3s",
+            }}
+          >
             <div className="flex flex-col items-center justify-center leading-none text-white">
               <span className="text-xl font-bold">⇄</span>
               <span className="text-[9px] font-extrabold mt-0.5">أزرار</span>
             </div>
+          </div>
+
+          {/* تلميح السحب والتحريك */}
+          {!isConfiguring && (
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[9px] font-black text-white opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+              اسحب للتحريك | اضغط مطولاً للإعدادات
+            </div>
           )}
         </div>
-
-        {/* تلميح السحب والتحريك */}
-        {!isOpen && !isConfiguring && (
-          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[9px] font-black text-white opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
-            اسحب للتحريك | اضغط مطولاً للإعدادات
-          </div>
-        )}
-      </div>
+      )}
 
       {/* خلفية التعتيم والإغلاق عند فتح المنيو أو الإعدادات */}
       {(isOpen || isConfiguring) && (
