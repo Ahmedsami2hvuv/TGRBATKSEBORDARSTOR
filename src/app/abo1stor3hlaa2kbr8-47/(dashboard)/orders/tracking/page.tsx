@@ -301,7 +301,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         hasDebt: hasDebt,
         priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
         customerPhone: o.customerPhone || "—",
-        customerAlternatePhone: o.alternatePhone || o.secondCustomerPhone || "—",
+        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
         courierName: o.courier?.name ?? "—",
         orderNoteTime: o.orderNoteTime,
         missingCustomerLocation: !hasCustomerLocationUrl(

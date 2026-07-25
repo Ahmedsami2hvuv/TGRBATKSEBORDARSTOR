@@ -178,6 +178,8 @@ export function OrderDetailSection({
     order.customer?.customerDoorPhotoUrl,
     phoneProfile?.photoUrl
   );
+  const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
+
   const mergedCustomerLocationUrl = getCleanValue(
     order.customerLocationUrl,
     order.customer?.customerLocationUrl,
@@ -188,22 +190,30 @@ export function OrderDetailSection({
     order.customer?.customerLandmark,
     phoneProfile?.landmark
   );
-  const mergedAlternate = getCleanValue(
-    order.secondCustomerPhone,
-    order.alternatePhone,
-    order.customer?.alternatePhone,
-    phoneProfile?.alternatePhone
-  );
+  const mergedAlternate = isDoubleRoute
+    ? getCleanValue(
+        order.alternatePhone,
+        order.customer?.alternatePhone,
+        phoneProfile?.alternatePhone
+      )
+    : getCleanValue(
+        order.secondCustomerPhone,
+        order.alternatePhone,
+        order.customer?.alternatePhone,
+        phoneProfile?.alternatePhone
+      );
 
   const secondLocMerged = getCleanValue(order.secondCustomerLocationUrl, secondPhoneProfile?.locationUrl);
   const secondDoorMerged = getCleanValue(order.secondCustomerDoorPhotoUrl, secondPhoneProfile?.photoUrl);
   const secondLandmarkMerged = getCleanValue(order.secondCustomerLandmark, secondPhoneProfile?.landmark);
-  const mergedSecondAlternate = getCleanValue(secondPhoneProfile?.alternatePhone);
+  const mergedSecondAlternate = getCleanValue(
+    order.secondCustomerAlternatePhone,
+    secondPhoneProfile?.alternatePhone
+  );
   const secondDoorCaptionName =
     secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
       ? order.secondCustomerDoorPhotoUploadedByName
       : null;
-  const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
   const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
@@ -212,7 +222,9 @@ export function OrderDetailSection({
   const isFromProfileLandmark = !getCleanValue(order.customerLandmark, order.customer?.customerLandmark) && !!getCleanValue(phoneProfile?.landmark);
   const isFromProfileLocation = !getCleanValue(order.customerLocationUrl, order.customer?.customerLocationUrl) && !!getCleanValue(phoneProfile?.locationUrl);
   const isFromProfilePhoto = !getCleanValue(order.customerDoorPhotoUrl, order.customer?.customerDoorPhotoUrl) && !!getCleanValue(phoneProfile?.photoUrl);
-  const isFromProfileAlternate = !getCleanValue(order.secondCustomerPhone, order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone);
+  const isFromProfileAlternate = isDoubleRoute
+    ? (!getCleanValue(order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone))
+    : (!getCleanValue(order.secondCustomerPhone, order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone));
 
   const isFromSecondProfileLandmark = !getCleanValue(order.secondCustomerLandmark) && !!getCleanValue(secondPhoneProfile?.landmark);
   const isFromSecondProfileLocation = !getCleanValue(order.secondCustomerLocationUrl) && !!getCleanValue(secondPhoneProfile?.locationUrl);

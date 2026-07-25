@@ -208,9 +208,12 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         }
       }
 
+      const isDoubleRoute = o.routeMode === "double" || !!o.secondCustomerPhone;
       const customerLocationUrl = o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl || "";
       const customerLandmark = o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "";
-      const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
+      const customerAlternatePhone = isDoubleRoute
+        ? (o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "")
+        : (o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "");
 
       // حساب رابط طلب الموقع الجغرافي ورابط تبليغ الزبون
       const requestLocationBtn = waButtons.find(b => 
