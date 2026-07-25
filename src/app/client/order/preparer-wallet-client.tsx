@@ -200,7 +200,15 @@ export function PreparerWalletClient({
                     <p className={`text-base font-black sm:text-lg ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`}>{dirLabel} · {formatDinarAsAlfWithUnit(line.amountDinar)}</p>
                     <span className={`text-[10px] font-bold ${!deleted ? "text-slate-600 dark:text-slate-400" : "text-slate-400"}`}>({dateStr})</span>
                   </div>
-                  <p className={`mt-0.5 truncate text-sm font-bold ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>{line.source === "order" ? `طلب ${line.orderNumber} — ${line.shopName}` : (line.miscLabel ?? "—")}</p>
+                  <div className={`mt-1 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>
+                    {line.source === "order" ? (
+                      `طلب ${line.orderNumber} — ${line.shopName}`
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800 px-2.5 py-1 text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 shadow-xs">
+                        ✍️ السبب: {line.miscLabel ?? "—"}
+                      </span>
+                    )}
+                  </div>
                   {line.balanceAfter !== undefined && !deleted && (
                     <div className="mt-1 flex items-center gap-1.5">
                       <span className="rounded bg-slate-950/10 px-1.5 py-0.5 text-[10px] font-bold text-slate-800 dark:bg-white/10 dark:text-slate-200">المتبقي: {formatDinarAsAlfWithUnit(line.balanceAfter)}</span>

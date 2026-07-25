@@ -2303,7 +2303,7 @@ async function processCourierWalletSessionMessage(
       if (parsed.ok) {
         cachedPayload.amount = parsed.value;
         await upsertCourierSession(telegramUserId, chatId, session.step, null, JSON.stringify(cachedPayload));
-        await sendTelegramHtmlToChat(chatId, `✅ المبلغ: <b>${formatDinarAsAlf(new Decimal(parsed.value))}</b>\nأرسل الآن <b>اسم المعاملة</b> (بيان):`, botToken);
+        await sendTelegramHtmlToChat(chatId, `✅ المبلغ: <b>${formatDinarAsAlf(new Decimal(parsed.value))}</b>\nأرسل الآن <b>سبب المعاملة</b> (بيان/ملاحظة):`, botToken);
         return true;
       } else {
         await sendTelegramHtmlToChat(chatId, "❌ المبلغ غير صحيح. أرسل الرقم بالآلاف (مثلاً 10):", botToken);

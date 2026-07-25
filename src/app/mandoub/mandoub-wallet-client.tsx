@@ -498,7 +498,7 @@ export function MandoubWalletClient({
               </select>
             )}
             <input name="amountAlf" required inputMode="decimal" placeholder="المبلغ..." className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-black text-xl text-center shadow-inner" />
-            <input name={transferOpen ? "handoverLocation" : "label"} required placeholder={transferOpen ? "مكان التسليم..." : "اسم المعاملة..."} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-bold text-sm shadow-inner" />
+            <input name={transferOpen ? "handoverLocation" : "label"} required placeholder={transferOpen ? "مكان التسليم..." : "السبب (مثال: تسديد، كروة، إكرامية...)"} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-bold text-sm shadow-inner" />
             <button
               type="submit"
               disabled={createPending || miscSubmitPending}
@@ -571,13 +571,17 @@ export function MandoubWalletClient({
                   </span>
                 </div>
 
-                <p className={`flex items-center gap-1 mt-0.5 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>
+                <div className={`mt-1 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>
                   {line.source === "order" ? (
-                    <>
+                    <p className="flex items-center gap-1">
                       <DynamicIcon icon={icons?.ui_number} fallback="🔢" width={14} height={14} /> {line.orderNumber} — {orderAreaLabel}
-                    </>
-                  ) : (line.miscLabel ?? "—")}
-                </p>
+                    </p>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800 px-2.5 py-1 text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 shadow-xs">
+                      ✍️ السبب: {line.miscLabel ?? "—"}
+                    </span>
+                  )}
+                </div>
                 {line.balanceAdmin !== undefined && !deleted && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md border ${

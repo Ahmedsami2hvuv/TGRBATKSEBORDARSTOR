@@ -292,13 +292,13 @@ export function PreparerWalletTransferSection({
               />
             </label>
             <label className="block text-sm font-bold text-neutral-950">
-              اسم المعاملة <span className="text-rose-600">*</span>
+              السبب <span className="text-rose-600">*</span>
               <input
                 name="label"
                 required
                 maxLength={200}
                 autoComplete="off"
-                placeholder="مثال: تحويل من الإدارة، تسديد لزبون…"
+                placeholder="سبب المعاملة (مثال: تسديد لزبون، شراء مستلزمات...)"
                 className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2 text-base font-medium text-neutral-950 placeholder:text-neutral-500"
               />
             </label>
