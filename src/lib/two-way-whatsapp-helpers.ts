@@ -74,19 +74,11 @@ export function getDefaultTwoWayNotifyRecipientTemplate(): string {
 }
 
 export function getDefaultTwoWayChatSenderTemplate(): string {
-  return [
-    "السلام عليكم،",
-    "تواصل بخصوص الطلب رقم {orderNumber} (الوجهة الأولى - المرسل).",
-    "يرجى التأكيد.",
-  ].join("\n");
+  return "";
 }
 
 export function getDefaultTwoWayChatRecipientTemplate(): string {
-  return [
-    "السلام عليكم،",
-    "تواصل بخصوص الطلب رقم {orderNumber} (الوجهة الثانية - المستلم).",
-    "يرجى التأكيد.",
-  ].join("\n");
+  return "";
 }
 
 export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
@@ -176,7 +168,7 @@ export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
       title: "مراسلة المرسل الأول",
       targetParty: "sender_1",
       actionType: "whatsapp",
-      template: getDefaultTwoWayChatSenderTemplate(),
+      template: "",
       locationConditions: ["all"],
       statusConditions: ["pending", "assigned", "delivering", "delivered", "cancelled"],
       active: true,
@@ -186,7 +178,7 @@ export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
       title: "مراسلة المستلم الأول",
       targetParty: "recipient_1",
       actionType: "whatsapp",
-      template: getDefaultTwoWayChatRecipientTemplate(),
+      template: "",
       locationConditions: ["all"],
       statusConditions: ["pending", "assigned", "delivering", "delivered", "cancelled"],
       active: true,

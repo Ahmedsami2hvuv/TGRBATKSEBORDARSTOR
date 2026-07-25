@@ -165,7 +165,7 @@ export function TwoWayOrderActionButtons({
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
 
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
       dragRef.current.moved = true;
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
@@ -195,6 +195,14 @@ export function TwoWayOrderActionButtons({
         setIsOpen((prev) => !prev);
         setActiveAction(null);
       }
+    }
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!dragRef.current.moved && !isConfiguring) {
+      setIsOpen((prev) => !prev);
+      setActiveAction(null);
     }
   };
 
@@ -395,6 +403,7 @@ export function TwoWayOrderActionButtons({
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
+            onClick={handleButtonClick}
             className="flex h-[56px] w-[56px] cursor-grab items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:cursor-grabbing bg-indigo-600 hover:bg-indigo-700"
             style={{
               transform: `scale(${scale})`,
@@ -403,7 +412,7 @@ export function TwoWayOrderActionButtons({
             }}
           >
             <svg
-              className="h-7 w-7 text-white drop-shadow-xs"
+              className="h-7 w-7 text-white drop-shadow-xs pointer-events-none"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -420,7 +429,7 @@ export function TwoWayOrderActionButtons({
 
           {/* تلميح السحب والتحريك */}
           {!isConfiguring && (
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[9px] font-black text-white opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[9px] font-black text-white opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
               اسحب للتحريك | اضغط مطولاً للإعدادات
             </div>
           )}
