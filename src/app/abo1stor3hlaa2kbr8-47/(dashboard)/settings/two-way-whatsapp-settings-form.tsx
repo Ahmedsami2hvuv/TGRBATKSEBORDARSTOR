@@ -10,7 +10,7 @@ import {
   getDefaultTwoWayNotifyRecipientTemplate,
   getDefaultTwoWayChatSenderTemplate,
   getDefaultTwoWayChatRecipientTemplate,
-} from "@/lib/two-way-whatsapp-settings";
+} from "@/lib/two-way-whatsapp-helpers";
 import {
   saveTwoWayWhatsappTemplateSettings,
   type WhatsappTemplateSettingsState,

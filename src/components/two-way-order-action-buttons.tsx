@@ -17,7 +17,7 @@ import {
   getDefaultTwoWayNotifyRecipientTemplate,
   getDefaultTwoWayChatSenderTemplate,
   getDefaultTwoWayChatRecipientTemplate,
-} from "@/lib/two-way-whatsapp-settings";
+} from "@/lib/two-way-whatsapp-helpers";
 
 export type TwoWayOrderActionButtonsProps = {
   orderId: string;

@@ -1,4 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import {
+  type TwoWayTemplatesConfig,
+  getDefaultTwoWayLocationSenderTemplate,
+  getDefaultTwoWayLocationRecipientTemplate,
+  getDefaultTwoWayNotifySenderTemplate,
+  getDefaultTwoWayNotifyRecipientTemplate,
+  getDefaultTwoWayChatSenderTemplate,
+  getDefaultTwoWayChatRecipientTemplate,
+} from "./two-way-whatsapp-helpers";
+
+export * from "./two-way-whatsapp-helpers";
 
 const TARGET = "admin";
 const SECTION_TWO_WAY_LOCATION_SENDER = "whatsapp_twoway_location_sender_template";
@@ -7,81 +18,6 @@ const SECTION_TWO_WAY_NOTIFY_SENDER = "whatsapp_twoway_notify_sender_template";
 const SECTION_TWO_WAY_NOTIFY_RECIPIENT = "whatsapp_twoway_notify_recipient_template";
 const SECTION_TWO_WAY_CHAT_SENDER = "whatsapp_twoway_chat_sender_template";
 const SECTION_TWO_WAY_CHAT_RECIPIENT = "whatsapp_twoway_chat_recipient_template";
-
-export const TWO_WAY_TEMPLATE_VARIABLES = [
-  "{orderNumber}",
-  "{senderName}",
-  "{senderPhone}",
-  "{recipientName}",
-  "{recipientPhone}",
-  "{senderRegion}",
-  "{recipientRegion}",
-  "{subtotal}",
-  "{delivery}",
-  "{total}",
-  "{notes}",
-] as const;
-
-export type TwoWayTemplatesConfig = {
-  locationSenderTemplate: string;
-  locationRecipientTemplate: string;
-  notifySenderTemplate: string;
-  notifyRecipientTemplate: string;
-  chatSenderTemplate: string;
-  chatRecipientTemplate: string;
-};
-
-export function getDefaultTwoWayLocationSenderTemplate(): string {
-  return [
-    "مرحباً (المرسل)،",
-    "نرجو تزويدنا بموقعك الجغرافي (اللوكيشن) لاستلام الطلبية رقم {orderNumber}.",
-    "منطقة الاستلام: {senderRegion}",
-    "شكراً لتعاونكم مع شركة أبو الأكبر للتوصيل.",
-  ].join("\n");
-}
-
-export function getDefaultTwoWayLocationRecipientTemplate(): string {
-  return [
-    "مرحباً (المستلم)،",
-    "نرجو تزويدنا بموقعك الجغرافي (اللوكيشن) لتوصيل الطلبية رقم {orderNumber}.",
-    "منطقة التوصيل: {recipientRegion}",
-    "شكراً لتعاونكم مع شركة أبو الأكبر للتوصيل.",
-  ].join("\n");
-}
-
-export function getDefaultTwoWayNotifySenderTemplate(): string {
-  return [
-    "مرحباً (المرسل)،",
-    "نحيطكم علماً بأنه تم استلام الطلبية رقم {orderNumber} من موقعكم بنجاح وهي في الطريق للتوصيل إلى: {recipientRegion}.",
-    "شكراً لاختياركم شركة أبو الأكبر للتوصيل.",
-  ].join("\n");
-}
-
-export function getDefaultTwoWayNotifyRecipientTemplate(): string {
-  return [
-    "مرحباً (المستلم)،",
-    "المندوب في الطريق إليك لتسليم الطلبية رقم {orderNumber}.",
-    "منطقة التوصيل: {recipientRegion}",
-    "المبلغ الكلي المطلوب: {total} د.ع",
-    "يرجى التواجد واستلام الطلبية.",
-  ].join("\n");
-}
-
-export function getDefaultTwoWayChatSenderTemplate(): string {
-  return [
-    "السلام عليكم،",
-    "تواصل بخصوص الطلب رقم {orderNumber} (الوجهة الأولى - المرسل).",
-    "يرجى التأكيد.",
-  ].join("\n");
-}
-
-export function getDefaultTwoWayChatRecipientTemplate(): string {
-  return [
-    "السلام عليكم،",
-    "تواصل بخصوص الطلب رقم {orderNumber} (الوجهة الثانية - المستلم).",
-    "يرجى التأكيد.",
-  ].join("\n");
-}
 
 export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
   try {
