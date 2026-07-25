@@ -32,6 +32,8 @@ type Props = {
   shopPhone: string;
   customerPhone: string;
   customerAlternatePhone?: string;
+  secondCustomerPhone?: string;
+  secondCustomerAlternatePhone?: string;
   /** إن وُجد يظهر خيار ثالث في واتساب/اتصال: محل، زبون، مجهز */
   preparerPhone?: string;
   orderStatus: string;
@@ -87,6 +89,8 @@ export function MandoubFloatingBar(props: Props) {
     order_number: String(props.orderNumber),
     customer_phone: props.customerPhone,
     customer_phone2: props.customerAlternatePhone ?? "",
+    second_customer_phone: props.secondCustomerPhone ?? "",
+    second_customer_phone2: props.secondCustomerAlternatePhone ?? "",
     shop_phone: props.shopPhone,
   };
 
@@ -130,6 +134,8 @@ export function MandoubFloatingBar(props: Props) {
       shopPhone={props.shopPhone}
       customerPhone={props.customerPhone}
       customerAlternatePhone={props.customerAlternatePhone}
+      secondCustomerPhone={props.secondCustomerPhone}
+      secondCustomerAlternatePhone={props.secondCustomerAlternatePhone}
       preparerPhone={props.preparerPhone?.trim() || undefined}
       customWaButtons={customWaButtons}
       hideWhenPreparerEditOpen={props.hideWhenPreparerEditOpen}

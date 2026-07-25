@@ -50,6 +50,8 @@ export type OrderFabDockProps = {
   shopPhone: string;
   customerPhone: string;
   customerAlternatePhone?: string;
+  secondCustomerPhone?: string;
+  secondCustomerAlternatePhone?: string;
   preparerPhone?: string;
   editUrl?: string;
   customWaButtons?: Array<{
@@ -71,6 +73,8 @@ export function OrderFabDock(props: OrderFabDockProps) {
     shopPhone,
     customerPhone,
     customerAlternatePhone,
+    secondCustomerPhone,
+    secondCustomerAlternatePhone,
     customWaButtons,
     hideAllButtons = false,
     showCallBtn = true,
@@ -95,7 +99,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
           recipient?: string;
         };
         contacts: Array<{
-          type: "shop" | "customer" | "customer2";
+          type: string;
           phone: string;
           label: string;
         }>;
@@ -194,48 +198,98 @@ export function OrderFabDock(props: OrderFabDockProps) {
       .filter(Boolean);
 
     const availableContacts: Array<{
-      type: "shop" | "customer" | "customer2";
+      type: string;
       phone: string;
       label: string;
     }> = [];
 
-    if (allowedRecipients.includes("shop") && shopPhone?.trim()) {
-      availableContacts.push({
-        type: "shop",
-        phone: shopPhone.trim(),
-        label: isDoubleRoute ? "المرسل" : "المحل (العميل)",
-      });
-    }
-    if (allowedRecipients.includes("customer") && customerPhone?.trim()) {
-      const hasAlt = !!customerAlternatePhone?.trim();
-      availableContacts.push({
-        type: "customer",
-        phone: customerPhone.trim(),
-        label: isDoubleRoute ? (hasAlt ? "المستلم الأول" : "المستلم") : (hasAlt ? "الزبون الأول" : "الزبون"),
-      });
-      if (hasAlt) {
+    if (isDoubleRoute) {
+      // في الطلب بوجهتين: المحل/المرسل = زبون الوجهة الأولى، المستلم = زبون الوجهة الثانية
+      if (allowedRecipients.includes("shop") || allowedRecipients.includes("sender")) {
+        if (customerPhone?.trim()) {
+          availableContacts.push({
+            type: "sender1",
+            phone: customerPhone.trim(),
+            label: customerAlternatePhone?.trim() ? "المرسل (رقم 1)" : "المرسل",
+          });
+        }
+        if (customerAlternatePhone?.trim()) {
+          availableContacts.push({
+            type: "sender2",
+            phone: customerAlternatePhone.trim(),
+            label: "المرسل (رقم 2)",
+          });
+        }
+      }
+
+      if (allowedRecipients.includes("customer") || allowedRecipients.includes("receiver") || allowedRecipients.includes("recipient")) {
+        if (secondCustomerPhone?.trim()) {
+          availableContacts.push({
+            type: "receiver1",
+            phone: secondCustomerPhone.trim(),
+            label: secondCustomerAlternatePhone?.trim() ? "المستلم (رقم 1)" : "المستلم",
+          });
+        }
+        if (secondCustomerAlternatePhone?.trim()) {
+          availableContacts.push({
+            type: "receiver2",
+            phone: secondCustomerAlternatePhone.trim(),
+            label: "المستلم (رقم 2)",
+          });
+        }
+      }
+
+      if (allowedRecipients.includes("customer2") && secondCustomerAlternatePhone?.trim() && !availableContacts.some(c => c.phone === secondCustomerAlternatePhone.trim())) {
+        availableContacts.push({
+          type: "receiver2",
+          phone: secondCustomerAlternatePhone.trim(),
+          label: "المستلم (رقم 2)",
+        });
+      }
+    } else {
+      // طلب عادي غبر بوجهتين (محل + زبون)
+      if (allowedRecipients.includes("shop") && shopPhone?.trim()) {
+        availableContacts.push({
+          type: "shop",
+          phone: shopPhone.trim(),
+          label: "المحل (العميل)",
+        });
+      }
+      if (allowedRecipients.includes("customer") && customerPhone?.trim()) {
+        const hasAlt = !!customerAlternatePhone?.trim();
+        availableContacts.push({
+          type: "customer",
+          phone: customerPhone.trim(),
+          label: hasAlt ? "الزبون الأول" : "الزبون",
+        });
+        if (hasAlt) {
+          availableContacts.push({
+            type: "customer2",
+            phone: customerAlternatePhone.trim(),
+            label: "الزبون الثاني",
+          });
+        }
+      }
+      if (allowedRecipients.includes("customer2") && customerAlternatePhone?.trim() && !availableContacts.some(c => c.type === "customer2")) {
         availableContacts.push({
           type: "customer2",
           phone: customerAlternatePhone.trim(),
-          label: isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني",
+          label: "الزبون الثاني",
         });
       }
     }
-    if (allowedRecipients.includes("customer2") && customerAlternatePhone?.trim() && !availableContacts.some(c => c.type === "customer2")) {
-      availableContacts.push({
-        type: "customer2",
-        phone: customerAlternatePhone.trim(),
-        label: isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني",
-      });
-    }
 
-    // إذا لم يتوفر أي هاتف مطابق، نضع الزبون الأول لتجنب تعطل الإرسال
-    if (availableContacts.length === 0 && customerPhone?.trim()) {
-      availableContacts.push({
-        type: "customer",
-        phone: customerPhone.trim(),
-        label: isDoubleRoute ? "المستلم" : "الزبون الأول",
-      });
+    // إذا لم يتوفر أي هاتف مطابق، نضع الهاتف الأول المتاح لتجنب تعطل الإرسال
+    if (availableContacts.length === 0) {
+      if (isDoubleRoute) {
+        if (secondCustomerPhone?.trim()) {
+          availableContacts.push({ type: "receiver1", phone: secondCustomerPhone.trim(), label: "المستلم" });
+        } else if (customerPhone?.trim()) {
+          availableContacts.push({ type: "sender1", phone: customerPhone.trim(), label: "المرسل" });
+        }
+      } else if (customerPhone?.trim()) {
+        availableContacts.push({ type: "customer", phone: customerPhone.trim(), label: "الزبون الأول" });
+      }
     }
 
     if (availableContacts.length === 1) {
@@ -274,6 +328,58 @@ export function OrderFabDock(props: OrderFabDockProps) {
   const isOnTopHalf = pos.top < window.innerHeight / 2;
   const menuClass = isOnTopHalf ? "top-full mt-4" : "bottom-full mb-4";
   const animationClass = isOnTopHalf ? "slide-in-from-top-4" : "slide-in-from-bottom-4";
+
+  // إعداد قائمة الهواتف المتاحة في خيار الاتصال الهاتفي ومراسلة الواتساب الرئيسية
+  const mainContacts: Array<{ phone: string; label: string; isShop?: boolean }> = [];
+
+  if (isDoubleRoute) {
+    if (customerPhone?.trim()) {
+      mainContacts.push({
+        phone: customerPhone.trim(),
+        label: customerAlternatePhone?.trim() ? "المرسل (رقم 1)" : "المرسل",
+        isShop: true,
+      });
+    }
+    if (customerAlternatePhone?.trim()) {
+      mainContacts.push({
+        phone: customerAlternatePhone.trim(),
+        label: "المرسل (رقم 2)",
+        isShop: true,
+      });
+    }
+    if (secondCustomerPhone?.trim()) {
+      mainContacts.push({
+        phone: secondCustomerPhone.trim(),
+        label: secondCustomerAlternatePhone?.trim() ? "المستلم (رقم 1)" : "المستلم",
+      });
+    }
+    if (secondCustomerAlternatePhone?.trim()) {
+      mainContacts.push({
+        phone: secondCustomerAlternatePhone.trim(),
+        label: "المستلم (رقم 2)",
+      });
+    }
+  } else {
+    if (shopPhone?.trim()) {
+      mainContacts.push({
+        phone: shopPhone.trim(),
+        label: "المحل (العميل)",
+        isShop: true,
+      });
+    }
+    if (customerPhone?.trim()) {
+      mainContacts.push({
+        phone: customerPhone.trim(),
+        label: customerAlternatePhone?.trim() ? "الزبون الأول" : "الزبون",
+      });
+    }
+    if (customerAlternatePhone?.trim()) {
+      mainContacts.push({
+        phone: customerAlternatePhone.trim(),
+        label: "الزبون الثاني",
+      });
+    }
+  }
 
   const fabContent = (
     <div
@@ -336,15 +442,15 @@ export function OrderFabDock(props: OrderFabDockProps) {
         <div className={`absolute ${menuClass} flex flex-col gap-2 animate-in fade-in zoom-in duration-200 ${isOnLeftSide ? 'left-0' : 'right-0'}`} style={{ width: 'max-content' }}>
           {typeof activeMenu === "object" && activeMenu.type === "custom" ? (
             // عرض جهات الاتصال الخاصة بالزر المخصص فقط
-            activeMenu.contacts.map((contact) => (
+            activeMenu.contacts.map((contact, idx) => (
               <button
-                key={contact.type}
+                key={`${contact.type}-${idx}`}
                 onClick={() => {
                   openUrlFromUserGesture(whatsappMeUrl(contact.phone, activeMenu.btn.messages[0] || ""));
                   closeAll();
                 }}
-                className={`flex h-12 w-40 items-center justify-center rounded-xl shadow-2xl font-black active:scale-95 text-sm ${
-                  contact.type === "shop"
+                className={`flex h-12 w-44 items-center justify-center rounded-xl shadow-2xl font-black active:scale-95 text-sm ${
+                  contact.type.startsWith("sender") || contact.type === "shop"
                     ? "bg-white text-slate-800 border-2 border-indigo-600"
                     : "bg-indigo-600 text-white"
                 }`}
@@ -354,72 +460,25 @@ export function OrderFabDock(props: OrderFabDockProps) {
             ))
           ) : (
             // الاتصال ومراسلة واتساب العادية الافتراضية
-            <>
-              {customerAlternatePhone?.trim() ? (
-                <>
-                  <button
-                    onClick={() => {
-                      const phone = isDoubleRoute ? customerPhone : shopPhone;
-                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                      closeAll();
-                    }}
-                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
-                  >
-                    {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
-                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                      closeAll();
-                    }}
-                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
-                  >
-                    {isDoubleRoute ? "المستلم الأول" : "الزبون الأول"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const phone = isDoubleRoute ? "" : customerAlternatePhone;
-                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                      closeAll();
-                    }}
-                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
-                  >
-                    {isDoubleRoute ? "المستلم الثاني" : "الزبون الثاني"}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      const phone = isDoubleRoute ? customerPhone : shopPhone;
-                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                      closeAll();
-                    }}
-                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
-                  >
-                    {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
-                      if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-                      else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-                      closeAll();
-                    }}
-                    className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
-                  >
-                    {isDoubleRoute ? "المستلم" : "الزبون"}
-                  </button>
-                </>
-              )}
-            </>
+            mainContacts.map((contact, idx) => (
+              <button
+                key={`${contact.phone}-${idx}`}
+                onClick={() => {
+                  if (activeMenu === "call") openUrlFromUserGesture(telHref(contact.phone));
+                  else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(contact.phone));
+                  closeAll();
+                }}
+                className={`flex h-12 w-44 items-center justify-center rounded-xl shadow-2xl font-black active:scale-95 text-sm ${
+                  contact.isShop
+                    ? "bg-white text-slate-800 border-2 border-indigo-600"
+                    : "bg-indigo-600 text-white"
+                }`}
+              >
+                {contact.label}
+              </button>
+            ))
           )}
-          <button onClick={() => setActiveMenu(null)} className="flex h-12 w-40 items-center justify-center rounded-xl text-white bg-slate-800/90 shadow-lg font-bold text-sm active:scale-95 mt-1">رجوع للخلف</button>
+          <button onClick={() => setActiveMenu(null)} className="flex h-12 w-44 items-center justify-center rounded-xl text-white bg-slate-800/90 shadow-lg font-bold text-sm active:scale-95 mt-1">رجوع للخلف</button>
         </div>
       )}
 

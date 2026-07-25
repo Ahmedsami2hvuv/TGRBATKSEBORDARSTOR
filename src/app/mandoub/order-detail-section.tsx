@@ -834,6 +834,8 @@ export function OrderDetailSection({
           shopPhone={shopContactPhone}
           customerPhone={order.customerPhone}
           customerAlternatePhone={mergedAlternate || ""}
+          secondCustomerPhone={order.secondCustomerPhone || ""}
+          secondCustomerAlternatePhone={mergedSecondAlternate || ""}
           preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
           orderStatus={order.status}
           orderNumber={order.orderNumber}

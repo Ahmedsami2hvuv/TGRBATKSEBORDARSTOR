@@ -413,7 +413,7 @@ export function OrderViewContent({
               <>
                  {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor2)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                 <div className="mt-2 space-y-2">
-                  {/* NEED SECOND CUSTOMER DOOR PHOTO UPLOADER HERE. WE'LL LEAVE IT READ ONLY FOR NOW */}
+                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.secondCustomerDoorPhotoUrl} isSecondCustomer />
                   <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                 </div>
               </>
@@ -558,7 +558,9 @@ export function OrderViewContent({
         orderId={order.id}
         shopPhone={submitterPhone}
         customerPhone={order.customerPhone}
-        customerAlternatePhone={isDoubleRoute ? (order.secondCustomerPhone ?? undefined) : (order.alternatePhone ?? undefined)}
+        customerAlternatePhone={order.alternatePhone ?? undefined}
+        secondCustomerPhone={order.secondCustomerPhone ?? undefined}
+        secondCustomerAlternatePhone={order.secondCustomerAlternatePhone ?? undefined}
         customWaButtons={customWaButtons}
         editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
         isDoubleRoute={isDoubleRoute}
