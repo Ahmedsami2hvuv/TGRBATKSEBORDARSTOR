@@ -15,6 +15,7 @@ import {
   getDefaultTwoWayNotifyRecipientTemplate,
   getDefaultTwoWayChatSenderTemplate,
   getDefaultTwoWayChatRecipientTemplate,
+  type TwoWayTemplatesConfig,
 } from "@/lib/two-way-whatsapp-helpers";
 
 export type TwoWayOrderActionButtonsProps = {
@@ -41,6 +42,8 @@ export type TwoWayOrderActionButtonsProps = {
   delivery?: string | number | null;
   total?: string | number | null;
   notes?: string | null;
+  // القوالب والقواعد الديناميكية من صفحة الإعدادات
+  twoWayTemplates?: Partial<TwoWayTemplatesConfig> | null;
 };
 
 const FAB_POS_STORAGE_KEY = "mandoub_two_way_fab_position";
@@ -63,6 +66,7 @@ export function TwoWayOrderActionButtons({
   delivery = "0",
   total = "0",
   notes = "",
+  twoWayTemplates,
 }: TwoWayOrderActionButtonsProps) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -74,8 +78,16 @@ export function TwoWayOrderActionButtons({
 
   const dragRef = useRef({ startX: 0, startY: 0, origLeft: 0, origTop: 0, moved: false });
 
+  // القوالب المحملة ديناميكياً
+  const [dynTemplates, setDynTemplates] = useState<Partial<TwoWayTemplatesConfig> | null>(twoWayTemplates || null);
+
   useEffect(() => {
     setMounted(true);
+    if (!twoWayTemplates) {
+      fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
+        .then((r) => r.ok ? r.json() : null)
+        .catch(() => null);
+    }
     const saved = typeof window !== "undefined" ? localStorage.getItem(FAB_POS_STORAGE_KEY) : null;
     if (saved) {
       try {
@@ -88,7 +100,7 @@ export function TwoWayOrderActionButtons({
       left: Math.max(16, (typeof window !== "undefined" ? window.innerWidth : 360) - FAB_SIZE - 20),
       top: Math.max(16, (typeof window !== "undefined" ? window.innerHeight : 640) - 180),
     });
-  }, []);
+  }, [twoWayTemplates]);
 
   if (!mounted || pos.left === -1) return null;
 
@@ -137,15 +149,22 @@ export function TwoWayOrderActionButtons({
     setActiveAction(null);
   };
 
-  // توليد وصياغة النص لكل قالب جهة
+  // توليد وصياغة النص المبرمج من صفحة الإعدادات لكل نوع وجبهة
   const getRenderedMessage = (type: "chat" | "location" | "notify", isSender: boolean): string => {
+    const activeTpl = twoWayTemplates || dynTemplates;
     let tpl = "";
     if (type === "chat") {
-      tpl = isSender ? getDefaultTwoWayChatSenderTemplate() : getDefaultTwoWayChatRecipientTemplate();
+      tpl = isSender
+        ? (activeTpl?.chatSenderTemplate || getDefaultTwoWayChatSenderTemplate())
+        : (activeTpl?.chatRecipientTemplate || getDefaultTwoWayChatRecipientTemplate());
     } else if (type === "location") {
-      tpl = isSender ? getDefaultTwoWayLocationSenderTemplate() : getDefaultTwoWayLocationRecipientTemplate();
+      tpl = isSender
+        ? (activeTpl?.locationSenderTemplate || getDefaultTwoWayLocationSenderTemplate())
+        : (activeTpl?.locationRecipientTemplate || getDefaultTwoWayLocationRecipientTemplate());
     } else if (type === "notify") {
-      tpl = isSender ? getDefaultTwoWayNotifySenderTemplate() : getDefaultTwoWayNotifyRecipientTemplate();
+      tpl = isSender
+        ? (activeTpl?.notifySenderTemplate || getDefaultTwoWayNotifySenderTemplate())
+        : (activeTpl?.notifyRecipientTemplate || getDefaultTwoWayNotifyRecipientTemplate());
     }
 
     return renderTwoWayTemplate({

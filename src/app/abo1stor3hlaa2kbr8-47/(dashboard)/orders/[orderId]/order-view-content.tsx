@@ -98,6 +98,7 @@ export function OrderViewContent({
   preparers = [],
   customWaButtons,
   storeProducts = [],
+  twoWayTemplates,
 }: {
   order: OrderViewModel;
   preparers?: { id: string; name: string }[];
@@ -108,6 +109,7 @@ export function OrderViewContent({
     messages: string[];
   }>;
   storeProducts?: any[];
+  twoWayTemplates?: any;
 }) {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -240,6 +242,7 @@ export function OrderViewContent({
             delivery={order.deliveryPrice ? String(order.deliveryPrice) : "0"}
             total={order.totalAmount ? String(order.totalAmount) : "0"}
             notes={order.summary}
+            twoWayTemplates={twoWayTemplates}
           />
         )}
         

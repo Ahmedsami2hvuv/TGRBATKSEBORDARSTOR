@@ -21,6 +21,7 @@ import {
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { computeSmartHint } from "@/lib/smart-hint-logic";
 import { haversineMeters } from "@/lib/geo-distance";
+import { getTwoWayTemplates } from "@/lib/two-way-whatsapp-settings";
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -55,7 +56,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
  const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
- const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw, storeProducts] = await Promise.all([
+ const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw, storeProducts, twoWayTemplates] = await Promise.all([
  prisma.companyPreparer.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
  prisma.mandoubWaButtonSetting.findMany({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
  customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
@@ -85,7 +86,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
        }
      }
    }
- })
+ }),
+ getTwoWayTemplates().catch(() => null),
  ]);
 
  const customerLocationUrlEffective = order.customerLocationUrl || customerProfile?.locationUrl || "";
@@ -178,6 +180,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const safePreparers = JSON.parse(JSON.stringify(preparers));
  const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
  const safeStoreProducts = JSON.parse(JSON.stringify(storeProducts));
+ const safeTwoWayTemplates = twoWayTemplates ? JSON.parse(JSON.stringify(twoWayTemplates)) : null;
 
  return (
  <div className="space-y-4">
@@ -189,7 +192,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
      <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
    </>
  ) : null}
- <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} />
+ <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} twoWayTemplates={safeTwoWayTemplates} />
  <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
  </div>
  );
