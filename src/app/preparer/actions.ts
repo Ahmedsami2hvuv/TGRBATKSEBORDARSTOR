@@ -819,21 +819,6 @@ export async function submitPreparerOrder(
       },
     });
 
-    if (subtotalParsed.value.gt(0)) {
-      await prisma.orderCourierMoneyEvent.create({
-        data: {
-          orderId: order.id,
-          amountDinar: subtotalParsed.value,
-          kind: "pickup_out",
-          recordedByCompanyPreparerId: v.preparerId,
-          expectedDinar: subtotalParsed.value,
-          matchesExpected: true,
-          mismatchReason: "",
-          mismatchNote: "تسديد تلقائي من المجهز عند إرسال الطلبية",
-        },
-      }).catch((err) => console.error("Failed to auto-create OrderCourierMoneyEvent on preparer submission:", err));
-    }
-
     await syncPhoneProfileFromOrder(order.id);
     void notifyTelegramNewOrder(order.id);
     await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
