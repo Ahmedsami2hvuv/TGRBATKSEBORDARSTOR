@@ -959,7 +959,7 @@ async function completeCourierPickupTx(
   mismatchNote: string,
   botToken?: string,
 ): Promise<void> {
-  const expected = order.orderSubtotal;
+  const expected = order.purchasePrice ?? order.orderSubtotal;
   if (expected == null) return;
   await prisma.$transaction(async (tx) => {
     await tx.orderCourierMoneyEvent.create({

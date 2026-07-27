@@ -185,7 +185,7 @@ export async function loadPreparerPortalOrderTableData(args: {
 
   const rows: MandoubRow[] = filteredByPrepf.map((o) => {
     const regionLine = safeStringTrim(o.customerRegion?.name) || "—";
-    const price = o.totalAmount;
+    const price = o.purchasePrice != null ? Number(o.purchasePrice) : (o.totalAmount != null ? Number(o.totalAmount) : null);
     const del = o.deliveryPrice;
     const status = safeString(o.status) || "pending";
     const statusClass = orderStatusBadgeClassPrepaid(status, Boolean(o.prepaidAll));

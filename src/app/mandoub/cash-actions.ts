@@ -111,9 +111,10 @@ export async function submitMandoubPickupMoney(
   const doubleStaff = order.routeMode === "double" && order.submissionSource === "staff_portal";
   const prepJson = order.preparerShoppingJson as any;
   const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
-  const expected = order.orderSubtotal != null ? new Decimal(Number(order.orderSubtotal) - staffProfit) : null;
+  const baseSubtotal = order.purchasePrice ?? order.orderSubtotal;
+  const expected = baseSubtotal != null ? new Decimal(Number(baseSubtotal) - staffProfit) : null;
   if (expected == null) {
-    return { error: "سعر الطلب غير محدد في النظام." };
+    return { error: "سعر الشراء أو الطلب غير محدد في النظام." };
   }
 
   const agg = await prisma.orderCourierMoneyEvent.aggregate({

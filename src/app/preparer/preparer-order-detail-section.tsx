@@ -413,25 +413,53 @@ export function PreparerOrderDetailSection({
                 <span className="text-sm font-bold text-sky-900">نوع المركبة المفضل: {vehicleLabel}</span>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
-              <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
-              <span className="text-sm font-bold text-slate-700 sm:text-base">سعر الطلب بدون توصيل: </span>
-              <span>{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)}` : "—"}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
-              <DynamicIcon iconKey="ui_courier" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
-              <span className="text-sm font-bold text-slate-700 sm:text-base">سعر التوصيل: </span>
-              <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)}` : "—"}</span>
-            </div>
-            <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
-              <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
-                <DynamicIcon iconKey="wallet_remain" config={icons} className="h-4 w-4" fallback={null} />
-                <span>سعر الطلب الكلي</span>
-              </div>
-              <p className="mt-1 font-mono text-2xl font-black tabular-nums text-violet-950 sm:text-3xl">
-                {order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"}
-              </p>
-            </div>
+            {order.purchasePrice != null ? (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-emerald-950 sm:text-xl">
+                  <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-emerald-600" fallback={null} />
+                  <span className="text-sm font-bold text-emerald-900 sm:text-base">سعر الشراء (للمحل/السوق): </span>
+                  <span className="rounded-lg border border-emerald-300 bg-emerald-100 px-2 py-0.5 font-bold text-emerald-950">
+                    {formatDinarAsAlf(order.purchasePrice)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                  <DynamicIcon iconKey="ui_courier" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
+                  <span className="text-sm font-bold text-slate-700 sm:text-base">سعر التوصيل: </span>
+                  <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)}` : "—"}</span>
+                </div>
+                <div className="rounded-lg border border-emerald-500/55 bg-emerald-500/15 px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] sm:px-5 sm:py-4">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-950 sm:text-base">
+                    <DynamicIcon iconKey="wallet_remain" config={icons} className="h-4 w-4 text-emerald-700" fallback={null} />
+                    <span>سعر الشراء الكلي مع التوصيل</span>
+                  </div>
+                  <p className="mt-1 font-mono text-2xl font-black tabular-nums text-emerald-950 sm:text-3xl">
+                    {formatDinarAsAlf(Number(order.purchasePrice) + Number(order.deliveryPrice ?? 0))}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                  <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
+                  <span className="text-sm font-bold text-slate-700 sm:text-base">سعر الطلب بدون توصيل: </span>
+                  <span>{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)}` : "—"}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                  <DynamicIcon iconKey="ui_courier" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
+                  <span className="text-sm font-bold text-slate-700 sm:text-base">سعر التوصيل: </span>
+                  <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)}` : "—"}</span>
+                </div>
+                <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] sm:px-5 sm:py-4">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
+                    <DynamicIcon iconKey="wallet_remain" config={icons} className="h-4 w-4" fallback={null} />
+                    <span>سعر الطلب الكلي</span>
+                  </div>
+                  <p className="mt-1 font-mono text-2xl font-black tabular-nums text-violet-950 sm:text-3xl">
+                    {order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         );
       }

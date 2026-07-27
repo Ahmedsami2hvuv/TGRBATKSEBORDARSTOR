@@ -90,6 +90,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   const order: MandoubOrderDetailPayload = {
     ...orderRaw,
     orderSubtotal: orderRaw.orderSubtotal ? Number(orderRaw.orderSubtotal) : null,
+    purchasePrice: orderRaw.purchasePrice ? Number(orderRaw.purchasePrice) : null,
     deliveryPrice: orderRaw.deliveryPrice ? Number(orderRaw.deliveryPrice) : null,
     totalAmount: orderRaw.totalAmount ? Number(orderRaw.totalAmount) : null,
     courierEarningDinar: orderRaw.courierEarningDinar ? Number(orderRaw.courierEarningDinar) : null,

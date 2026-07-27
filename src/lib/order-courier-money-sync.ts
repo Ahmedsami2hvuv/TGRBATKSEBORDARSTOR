@@ -43,7 +43,7 @@ export async function syncOrderCourierMoneyExpectations(
   }
 
   const pickupExpected =
-    order.orderSubtotal != null ? order.orderSubtotal : null;
+    order.purchasePrice != null ? order.purchasePrice : (order.orderSubtotal != null ? order.orderSubtotal : null);
   const deliveryExpected =
     order.totalAmount != null ? order.totalAmount : null;
 

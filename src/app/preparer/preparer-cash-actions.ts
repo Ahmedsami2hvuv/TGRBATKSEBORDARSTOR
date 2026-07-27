@@ -66,6 +66,7 @@ async function loadPreparerAndAssertAccess(input: {
       id: true,
       status: true,
       orderSubtotal: true,
+      purchasePrice: true,
       totalAmount: true,
       deliveryPrice: true,
       assignedCourierId: true,
