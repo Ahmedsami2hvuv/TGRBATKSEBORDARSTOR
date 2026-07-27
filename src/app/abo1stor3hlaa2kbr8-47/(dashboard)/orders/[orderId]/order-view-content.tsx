@@ -284,7 +284,7 @@ export function OrderViewContent({
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
-                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المرسل ↗</a>
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المرسل ↗</a>
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
                   ) : (
@@ -301,7 +301,7 @@ export function OrderViewContent({
                       <p className="text-xs font-semibold text-slate-500">{order.shop.region.name}</p>
                     )}
                     <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
-                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
                   </>
                 }
               </>
@@ -363,7 +363,7 @@ export function OrderViewContent({
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <div className="space-y-1">
-                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المستلم ↗</a>
+                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المستلم ↗</a>
                       <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                     </div>
                   ) : (
@@ -412,7 +412,7 @@ export function OrderViewContent({
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
-                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن الزبون ↗</a>
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن الزبون ↗</a>
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
                   ) : (

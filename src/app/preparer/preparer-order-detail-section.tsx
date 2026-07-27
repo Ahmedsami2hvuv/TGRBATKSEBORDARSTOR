@@ -62,9 +62,9 @@ function isSmartHintValid(text?: string | null): boolean {
 }
 
 const locBtnEmerald =
-  "inline-flex min-h-[34px] max-w-full items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 sm:px-3 sm:text-[13px]";
+  "inline-flex min-h-[44px] sm:min-h-[48px] max-w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm sm:text-base font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5";
 const locBtnSecond =
-  "inline-flex min-h-[34px] max-w-full items-center justify-center rounded-lg bg-violet-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-violet-700 sm:px-3 sm:text-[13px]";
+  "inline-flex min-h-[44px] sm:min-h-[48px] max-w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-2.5 text-sm sm:text-base font-black text-white shadow-md hover:bg-violet-700 active:scale-95 transition-all gap-1.5";
 
 const gridInfoPhoto =
   "grid grid-cols-[minmax(0,1fr)_minmax(0,12rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.32fr)] sm:gap-6";

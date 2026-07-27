@@ -64,7 +64,7 @@ function getCleanValue(...values: (string | null | undefined)[]) {
 }
 
 const locBtnEmerald =
-  "inline-flex min-h-[34px] max-w-full items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 sm:px-3 sm:text-[13px]";
+  "inline-flex min-h-[44px] sm:min-h-[48px] max-w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm sm:text-base font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5";
 const contactBtnBase = "inline-flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold shadow-sm transition-colors sm:px-2.5 sm:py-1.5 sm:text-xs";
 const callBtnClass = `${contactBtnBase} bg-sky-600 text-white hover:bg-sky-700`;
 const waBtnClass = `${contactBtnBase} bg-emerald-600 text-white hover:bg-emerald-700`;
@@ -304,8 +304,8 @@ export function OrderDetailSection({
 
                 <div className="pt-1.5">
                   {order.shop.locationUrl?.trim() ? (
-                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm max-w-full">
-                      📍 موقع المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md max-w-full">
+                      📍 موقع المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                     </a>
                   ) : (
                     <div className="inline-block p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
@@ -387,13 +387,13 @@ export function OrderDetailSection({
                                 href={mergedCustomerLocationUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
+                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
                                 style={{
                                   fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
-                                  height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
+                                  height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                                 }}
                               >
-                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                               </a>
                             ) : (
                               <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} fontSizeConfig={activeConfig} />
@@ -504,13 +504,13 @@ export function OrderDetailSection({
                               href={secondLocMerged} 
                               target="_blank" 
                               rel="noopener noreferrer" 
-                              className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
+                              className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
                               style={{
                                 fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
-                                height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
+                                height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                               }}
                             >
-                              📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                              📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                             </a>
                           ) : (
                             <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" fontSizeConfig={activeConfig} />

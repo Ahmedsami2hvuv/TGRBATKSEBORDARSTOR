@@ -142,10 +142,10 @@ export function MandoubUploadLocationInline({
         onClick={onUploadLocation}
         disabled={pending || locating}
         aria-busy={pending || locating}
-        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 px-3 text-[11px] font-black text-white hover:from-amber-600 hover:to-orange-700 transition-all shadow-sm disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 px-4 text-xs sm:text-sm font-black text-white hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all shadow-md disabled:cursor-wait disabled:opacity-70"
         style={{
           fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-          height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+          height: fontSizeConfig ? `${Math.max(44, fontSizeConfig.locationBtnSize + 22)}px` : undefined
         }}
         title="رفع موقعك الحالي كلوكيشن للزبون — يظهر طلب إذن الموقع من المتصفح"
       >
