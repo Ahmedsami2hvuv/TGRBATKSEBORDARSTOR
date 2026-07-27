@@ -69,6 +69,8 @@ export type MandoubRow = {
   hasPreparerPaid?: boolean;
   /** معرف المندوب المسند */
   assignedCourierId?: string | null;
+  /** سعر الشراء بالدينار (إن وجد) */
+  purchasePriceDinar?: number | null;
   /** سعر الطلب (بدون توصيل) بالدينار */
   orderSubtotalDinar?: number | null;
   /** سعر التوصيل بالدينار */

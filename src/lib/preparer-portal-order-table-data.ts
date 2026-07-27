@@ -219,6 +219,7 @@ export async function loadPreparerPortalOrderTableData(args: {
     const preparerPickupSumDinar = preparerPickup;
     const adminPickupSumDinar = adminPickup;
 
+    const purchasePriceDinar = o.purchasePrice ? Number(o.purchasePrice) : null;
     const orderSubtotalDinar = o.orderSubtotal ? Number(o.orderSubtotal) : null;
     const totalAmountDinar = o.totalAmount ? Number(o.totalAmount) : null;
     const pickupComplete = orderSubtotalDinar != null && Math.abs(pickupSumDinar + preparerPickupSumDinar + adminPickupSumDinar - orderSubtotalDinar) < 1e-3;
@@ -270,6 +271,7 @@ export async function loadPreparerPortalOrderTableData(args: {
         (e) => e.deletedAt && isManualDeletionReason(e.deletedReason),
       ) || false,
       pickupComplete,
+      purchasePriceDinar,
       orderSubtotalDinar,
       totalAmountDinar,
       pickupSumDinar,

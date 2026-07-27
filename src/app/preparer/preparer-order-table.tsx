@@ -292,33 +292,37 @@ export function PreparerOrderTable({
                   <DynamicIcon iconKey="ui_close" config={icons} className="h-4 w-4" fallback={<span>✕</span>} />
                 </button>
               </div>
-              <PickupMoneyForm
-                orderId={payOrder.id}
-                auth={auth}
-                nextUrl={`/preparer?p=${preparerAuth.p}&exp=${preparerAuth.exp}&s=${preparerAuth.s}&tab=${tab}&q=${qSearch}`}
-                forDarkModalSurface
-                expectedAlfHint={payOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(payOrder.orderSubtotalDinar) : ""}
-                remainingAlfHint={
-                  payOrder.orderSubtotalDinar != null
-                    ? dinarDecimalToAlfInputString(payOrder.orderSubtotalDinar - (payOrder.pickupSumDinar || 0))
-                    : ""
-                }
-                advanceToDelivering={false}
-                pickupRemainingDinar={
-                  payOrder.orderSubtotalDinar != null ? payOrder.orderSubtotalDinar - (payOrder.pickupSumDinar || 0) : null
-                }
-                pickupSumDinar={payOrder.pickupSumDinar || 0}
-                orderSubtotalDinar={payOrder.orderSubtotalDinar}
-                formAction={payAction}
-                pending={payPending}
-                error={payState.error}
-                onClose={() => setPayOrder(null)}
-                // الخيارات الجديدة
-                couriers={couriers}
-                currentCourierId={payOrder.assignedCourierId}
-                orderStatus={payOrder.orderStatus}
-                hideContainer={true}
-              />
+              {(() => {
+                const effectivePickupDinar = payOrder.purchasePriceDinar ?? payOrder.orderSubtotalDinar;
+                return (
+                  <PickupMoneyForm
+                    orderId={payOrder.id}
+                    auth={auth}
+                    nextUrl={`/preparer?p=${preparerAuth.p}&exp=${preparerAuth.exp}&s=${preparerAuth.s}&tab=${tab}&q=${qSearch}`}
+                    forDarkModalSurface
+                    expectedAlfHint={effectivePickupDinar != null ? dinarDecimalToAlfInputString(effectivePickupDinar) : ""}
+                    remainingAlfHint={
+                      effectivePickupDinar != null
+                        ? dinarDecimalToAlfInputString(effectivePickupDinar - (payOrder.pickupSumDinar || 0))
+                        : ""
+                    }
+                    advanceToDelivering={false}
+                    pickupRemainingDinar={
+                      effectivePickupDinar != null ? effectivePickupDinar - (payOrder.pickupSumDinar || 0) : null
+                    }
+                    pickupSumDinar={payOrder.pickupSumDinar || 0}
+                    orderSubtotalDinar={effectivePickupDinar}
+                    formAction={payAction}
+                    pending={payPending}
+                    error={payState.error}
+                    onClose={() => setPayOrder(null)}
+                    couriers={couriers}
+                    currentCourierId={payOrder.assignedCourierId}
+                    orderStatus={payOrder.orderStatus}
+                    hideContainer={true}
+                  />
+                );
+              })()}
             </div>
           </div>,
           document.body,
