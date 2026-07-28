@@ -57,25 +57,52 @@ export async function savePricingProgress(id: string, isDraft: boolean, products
       const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id } });
       if (!draft) return { error: "المسودة غير موجودة" };
 
-      // التأكد من حفظ بيانات المجهز لكل منتج
+      // الحفاظ على التخصيص الدقيق لكل منتج دون فرض preparerId افتراضي إذا لم يكن مسنداً
       const productsWithPreparer = safeProducts.map(p => ({
         ...p,
-        assignedPreparerId: p.assignedPreparerId || draft.preparerId,
-        assignedPreparerName: p.assignedPreparerName || (draft.preparer?.name || null)
+        line: String(p.line || "").trim(),
+        assignedPreparerId: typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() ? p.assignedPreparerId.trim() : null,
+        assignedPreparerName: typeof p.assignedPreparerName === "string" && p.assignedPreparerName.trim() ? p.assignedPreparerName.trim() : null
       }));
 
-      const nextData = { ...(draft.data as any || {}), products: productsWithPreparer };
-      if (noProfit !== undefined) {
-        nextData.noProfit = noProfit;
+      // البحث عن كل المسودات التابعة للمجموعة لضمان المزامنة الشاملة لجميع المجهزين
+      const groupId = (draft.data as any)?.groupId;
+      let relatedIds = [id];
+      if (groupId) {
+        const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+        const ids = draftsWithGroup.map(d => d.id);
+        if (ids.length > 0) relatedIds = ids;
+      } else if (draft.customerPhone && draft.titleLine) {
+        const relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+          where: {
+            customerPhone: draft.customerPhone,
+            titleLine: draft.titleLine,
+            status: { in: ["draft", "priced"] }
+          },
+          select: { id: true }
+        });
+        if (relatedDrafts.length > 0) {
+          relatedIds = relatedDrafts.map(d => d.id);
+        }
       }
 
-      await prisma.companyPreparerShoppingDraft.update({
-        where: { id },
-        data: {
-          data: nextData,
-          placesCount
+      for (const rId of relatedIds) {
+        const rDraft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: rId } });
+        if (!rDraft) continue;
+
+        const nextData = { ...(rDraft.data as any || {}), products: productsWithPreparer };
+        if (noProfit !== undefined) {
+          nextData.noProfit = noProfit;
         }
-      });
+
+        await prisma.companyPreparerShoppingDraft.update({
+          where: { id: rId },
+          data: {
+            data: nextData,
+            placesCount
+          }
+        });
+      }
     } else {
       const order = await prisma.order.findUnique({
         where: { id },
