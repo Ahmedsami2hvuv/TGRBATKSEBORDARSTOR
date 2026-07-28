@@ -25,6 +25,11 @@ const OneSignalInitializer = dynamic(
   { ssr: false },
 );
 
+const GlobalConfirmDialog = dynamic(
+  () => import("@/components/global-confirm-dialog").then((m) => m.GlobalConfirmDialog),
+  { ssr: false },
+);
+
 type ClientRuntimeProps = {
   children: React.ReactNode;
   mandoubFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
@@ -117,6 +122,7 @@ export function ClientRuntime({
 
       <PwaRoutePreserver />
       <PwaServiceWorkerRegister />
+      <GlobalConfirmDialog />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />
     </>

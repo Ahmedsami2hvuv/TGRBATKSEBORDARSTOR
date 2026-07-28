@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getBackgroundsAction, addBackgroundAction, deleteBackgroundAction, setSystemDefaultBackgroundAction } from "./background-actions";
+import { customConfirm, customAlert } from "@/components/global-confirm-dialog";
 
 export function AdminBackgroundsSettings() {
   const [backgrounds, setBackgrounds] = useState<any[]>([]);
@@ -145,13 +146,20 @@ export function AdminBackgroundsSettings() {
 
   // حذف خلفية
   const handleDelete = async (id: string, url: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه الخلفية نهائياً؟")) return;
+    const confirmed = await customConfirm({
+      title: "تأكيد حذف الخلفية",
+      message: "هل أنت متأكد من حذف هذه الخلفية نهائياً؟",
+      confirmText: "حذف نهائي",
+      cancelText: "إلغاء الأمر",
+      type: "danger",
+    });
+    if (!confirmed) return;
 
     const res = await deleteBackgroundAction(id);
     if (res.error) {
-      alert(res.error);
+      await customAlert(res.error);
     } else {
-      alert("تم الحذف بنجاح");
+      await customAlert("تم الحذف بنجاح");
       // إذا كانت هي المفعلة حالياً نقوم بإزالتها
       if (activeBgUrl === url || systemDefaultBgUrl === url) {
         localStorage.removeItem("kse_user_background_url");

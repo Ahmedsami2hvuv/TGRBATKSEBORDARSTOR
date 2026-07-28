@@ -7,6 +7,7 @@ import { ad } from "@/lib/admin-ui";
 import { deleteRegionAction, updateRegionAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { customConfirm, customAlert } from "@/components/global-confirm-dialog";
 
 export function RegionsList({ initialRegions, icons }: { initialRegions: any[], icons: GlobalIconsConfig | null }) {
   const [search, setSearch] = useState("");
@@ -32,17 +33,25 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
         setRegions(regions.map(r => r.id === id ? { ...r, name: editName, deliveryPrice: editPrice } : r));
         setEditingId(null);
       } else {
-        alert("فشل الحفظ: " + result.message);
+        await customAlert("فشل الحفظ: " + result.message);
       }
     } catch (err) {
-      alert("خطأ في الاتصال بالسيرفر");
+      await customAlert("خطأ في الاتصال بالسيرفر");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`هل أنت متأكد من حذف منطقة "${name}"؟`)) return;
+    const confirmed = await customConfirm({
+      title: "تأكيد حذف المنطقة",
+      message: `هل أنت متأكد من حذف منطقة "${name}"؟`,
+      confirmText: "حذف المنطقة",
+      cancelText: "إلغاء الأمر",
+      type: "danger",
+    });
+    if (!confirmed) return;
+
     setLoading(true);
     try {
       const result = await deleteRegionAction(id);
@@ -50,10 +59,10 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
         setRegions(regions.filter(r => r.id !== id));
         setEditingId(null);
       } else {
-        alert("فشل الحذف: " + result.message);
+        await customAlert("فشل الحذف: " + result.message);
       }
     } catch (err) {
-      alert("خطأ في الاتصال بالسيرفر");
+      await customAlert("خطأ في الاتصال بالسيرفر");
     } finally {
       setLoading(false);
     }
