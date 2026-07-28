@@ -578,7 +578,7 @@ export function MandoubWalletClient({
                     </p>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800 px-2.5 py-1 text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 shadow-xs">
-                      ✍️ السبب: {line.miscLabel ?? "—"}
+                      🏷️ {line.miscLabel ?? "—"}
                     </span>
                   )}
                 </div>
