@@ -233,7 +233,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
 
     const newCarryOver = 0;
     const totalProfitDinar = (metrics.sumEarnings + tipSum) || 0;
-    const totalOrders = metrics.ordersDelivered || 0;
+    const totalOrders = metrics.ordersInPeriod || 0;
 
     await prisma.$transaction(async (tx) => {
       // 1. تثبيت حركات التوصيل المالية للطلبات المسلمة السابقة لمنع ظهور أرباحها مستقبلاً
@@ -245,6 +245,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
           if (!hasDeliveryEv) {
             const earning = o.courierEarningDinar ?? new Decimal(0);
             const expected = o.deliveryPrice ?? new Decimal(0);
+            const eventDate = o.customerPaymentReceivedAt ?? o.updatedAt ?? periodEndAt;
             await tx.orderCourierMoneyEvent.create({
               data: {
                 orderId: (o as any).id || (o as any).orderId,
@@ -253,7 +254,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
                 amountDinar: earning,
                 expectedDinar: expected,
                 matchesExpected: true,
-                createdAt: o.createdAt <= periodEndAt ? o.createdAt : periodEndAt,
+                createdAt: eventDate <= periodEndAt ? eventDate : periodEndAt,
               },
             }).catch(() => {});
           }

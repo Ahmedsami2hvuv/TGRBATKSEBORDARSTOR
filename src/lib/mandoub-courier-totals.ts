@@ -36,6 +36,8 @@ export type MandoubCourierOrderMetrics = {
   ordersAssigned: number;
   ordersDelivering: number;
   ordersDelivered: number;
+  /** عدد الطلبات المسلمة والمحسوبة في هذه الفترة للتصفير */
+  ordersInPeriod: number;
 };
 
 /**
@@ -52,6 +54,7 @@ export function computeMandoubTotalsForCourier(
   let ordersAssigned = 0;
   let ordersDelivering = 0;
   let ordersDelivered = 0;
+  let ordersInPeriod = 0;
 
   for (const o of orders) {
     if (o.status === "assigned") ordersAssigned++;
@@ -84,21 +87,23 @@ export function computeMandoubTotalsForCourier(
         );
       }
     }
-    if (earning == null) continue;
 
     let skipForBaseline = false;
     if (baseline) {
       if (deliveryEv) {
         skipForBaseline = deliveryEv.createdAt <= baseline;
       } else {
-        const refDate = o.customerPaymentReceivedAt ?? o.createdAt;
-        skipForBaseline = refDate <= baseline || o.createdAt <= baseline;
+        const refDate = o.customerPaymentReceivedAt ?? o.updatedAt ?? o.createdAt;
+        skipForBaseline = refDate <= baseline;
       }
     }
 
     if (!skipForBaseline) {
-      const val = typeof earning.toNumber === "function" ? earning.toNumber() : Number(earning);
-      sumEarnings += val;
+      ordersInPeriod++;
+      if (earning != null) {
+        const val = typeof earning.toNumber === "function" ? earning.toNumber() : Number(earning);
+        sumEarnings += val;
+      }
     }
   }
 
@@ -107,5 +112,6 @@ export function computeMandoubTotalsForCourier(
     ordersAssigned,
     ordersDelivering,
     ordersDelivered,
+    ordersInPeriod,
   };
 }
