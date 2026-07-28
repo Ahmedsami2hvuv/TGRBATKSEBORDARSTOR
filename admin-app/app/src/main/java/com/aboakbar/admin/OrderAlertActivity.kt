@@ -146,6 +146,10 @@ class OrderAlertActivity : Activity() {
         findViewById<Button>(R.id.btnAssignOrder).setOnClickListener {
             layoutMainButtons.visibility = View.GONE
             layoutAssign.visibility = View.VISIBLE
+            val cgCouriers = findViewById<ChipGroup>(R.id.cgCouriers)
+            if (cgCouriers.childCount == 0) {
+                fetchCouriers()
+            }
         }
 
         findViewById<Button>(R.id.btnCancelAssign).setOnClickListener {
@@ -157,11 +161,40 @@ class OrderAlertActivity : Activity() {
     }
 
     private fun fetchCouriers() {
+        if (adminToken.isNullOrEmpty()) {
+            try {
+                val cookieManager = android.webkit.CookieManager.getInstance()
+                val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
+                for (url in urls) {
+                    val cookies = cookieManager.getCookie(url)
+                    if (!cookies.isNullOrEmpty()) {
+                        val cookieArray = cookies.split(";")
+                        for (cookie in cookieArray) {
+                            val parts = cookie.trim().split("=")
+                            if (parts.size >= 2 && parts[0] == "admin_token") {
+                                val token = parts[1]
+                                if (token.isNotEmpty()) {
+                                    adminToken = token
+                                    getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                                        .edit().putString("admin_token", adminToken).apply()
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    if (!adminToken.isNullOrEmpty()) break
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         if (adminToken.isNullOrEmpty()) return
 
         val request = Request.Builder()
             .url("$BASE_URL/couriers")
             .header("Authorization", "Bearer $adminToken")
+            .addHeader("Cookie", "admin_token=$adminToken")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -210,6 +243,25 @@ class OrderAlertActivity : Activity() {
 
     private fun sendOrderAction(action: String, courierId: String?) {
         if (adminToken.isNullOrEmpty()) {
+            try {
+                val cookieManager = android.webkit.CookieManager.getInstance()
+                val cookies = cookieManager.getCookie("https://aboakbr.com")
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && parts[0] == "admin_token") {
+                            adminToken = parts[1]
+                            break
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        if (adminToken.isNullOrEmpty()) {
             Toast.makeText(this, "عفواً، لا يوجد جلسة تسجيل دخول نشطة", Toast.LENGTH_SHORT).show()
             return
         }
@@ -226,6 +278,7 @@ class OrderAlertActivity : Activity() {
             .url("$BASE_URL/order-action")
             .post(body)
             .header("Authorization", "Bearer $adminToken")
+            .addHeader("Cookie", "admin_token=$adminToken")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
