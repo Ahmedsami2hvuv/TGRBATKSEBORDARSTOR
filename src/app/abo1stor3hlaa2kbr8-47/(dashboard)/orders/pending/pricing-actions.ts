@@ -618,21 +618,24 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       finalOrderNumber = updated.orderNumber;
     }
 
-    // --- 9. تسجيل القيود المالية وتصحيح التكرار ---
+    // --- 9. تسجيل القيود المالية وتصحيح التكرار الذكي للمجهزين ---
     if (!skipWallet) {
       const preparerWalletLabelTitle = customerRegion?.name || String(draftData?.titleLine ?? "").trim() || "المنطقة";
 
-      await tx.employeeWalletMiscEntry.updateMany({
+      // 1. جلب كافة القيود الحالية غير المحذوفة المنسوبة لطلب المجهز
+      const existingEntries = await tx.employeeWalletMiscEntry.findMany({
         where: {
           label: { contains: `طلب #${finalOrderNumber}` },
           deletedAt: null
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedReason: "manual_admin",
-          deletedByDisplayName: "تحديث الأسعار من الإدارة"
         }
       });
+
+      // 2. تجميع استحقاقات المجهزين الجدد من preparerInvoices
+      const targetEntriesByEmployee = new Map<string, {
+        preparerName: string;
+        amountDinar: Decimal;
+        label: string;
+      }>();
 
       for (const inv of preparerInvoices) {
         if (inv.preparerName === "تجهيز الإدارة 🏛️") continue;
@@ -645,13 +648,84 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
           (sum: number, p: any) => sum + (isMeatProduct(p.line) || p.isFulfilledByAdmin ? 0 : Number(p.buyAlf || 0)),
           0,
         );
+
         if (preparer && preparer.walletEmployeeId && chargeBuyAlf > 0) {
+          const empId = preparer.walletEmployeeId;
+          const amountDinar = new Decimal(chargeBuyAlf).mul(ALF_PER_DINAR);
+          const label = `فاتورة تجهيز طلب #${finalOrderNumber} (${preparerWalletLabelTitle})`;
+
+          targetEntriesByEmployee.set(empId, {
+            preparerName: inv.preparerName,
+            amountDinar,
+            label,
+          });
+        }
+      }
+
+      // 3. مقارنة القيود القديمة للتأكد هل تغير سعر الشراء أو المجهز المنسوب له
+      const processedEmployeeIds = new Set<string>();
+
+      for (const entry of existingEntries) {
+        const empId = entry.employeeId;
+        const target = targetEntriesByEmployee.get(empId);
+
+        if (!target) {
+          // المجهز لم يعد مسنداً إليه أي منتج بسعر شراء -> نقوم بالحذف المنطقي للقيد القديم
+          await tx.employeeWalletMiscEntry.update({
+            where: { id: entry.id },
+            data: {
+              deletedAt: new Date(),
+              deletedReason: "manual_admin",
+              deletedByDisplayName: "تحديث الأسعار من الإدارة (إزالة المجهز)"
+            }
+          });
+        } else {
+          processedEmployeeIds.add(empId);
+
+          // التحقق مما إذا كان مبلغ سعر الشراء الإجمالي للمجهز متساوياً تماماً مع المبلغ السابق
+          const isSameAmount = entry.amountDinar.equals(target.amountDinar);
+
+          if (isSameAmount) {
+            // سعر الشراء لم يتغير (التعديل كان على سعر البيع فقط أو لا تغيير بسعر الشراء)!
+            // نحتفظ بالقيد القديم كما هو دون مسحه أو إنشاء قيد جديد بآيدي وتاريخ جديدين
+            if (entry.label !== target.label) {
+              await tx.employeeWalletMiscEntry.update({
+                where: { id: entry.id },
+                data: { label: target.label }
+              });
+            }
+          } else {
+            // سعر الشراء للمجهز تغير بالفعل، يلغى القيد القديم وينزل قيد جديد بالسعر التعديلي الجديد
+            await tx.employeeWalletMiscEntry.update({
+              where: { id: entry.id },
+              data: {
+                deletedAt: new Date(),
+                deletedReason: "manual_admin",
+                deletedByDisplayName: "تحديث الأسعار من الإدارة (تغيير سعر الشراء)"
+              }
+            });
+
+            await tx.employeeWalletMiscEntry.create({
+              data: {
+                employee: { connect: { id: empId } },
+                direction: CourierWalletMiscDirection.give,
+                amountDinar: target.amountDinar,
+                label: target.label
+              }
+            });
+          }
+        }
+      }
+
+      // 4. إنشاء قيود للمجهزين الجدد الذين لم يكن لديهم قيد سابق في هذا الطلب
+      for (const [empId, target] of targetEntriesByEmployee.entries()) {
+        if (!processedEmployeeIds.has(empId)) {
           await tx.employeeWalletMiscEntry.create({
             data: {
-              employee: { connect: { id: preparer.walletEmployeeId } },
+              employee: { connect: { id: empId } },
               direction: CourierWalletMiscDirection.give,
-              amountDinar: new Decimal(chargeBuyAlf).mul(ALF_PER_DINAR),
-              label: `فاتورة تجهيز طلب #${finalOrderNumber} (${preparerWalletLabelTitle})`
+              amountDinar: target.amountDinar,
+              label: target.label
             }
           });
         }
