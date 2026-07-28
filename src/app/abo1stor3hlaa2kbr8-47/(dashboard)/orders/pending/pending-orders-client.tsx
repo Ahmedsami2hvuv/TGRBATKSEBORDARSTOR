@@ -1474,24 +1474,7 @@ ${productsText}`;
                           if (!details) return null;
                           return (
                             <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const next = [...products];
-                                next[i] = {
-                                  ...next[i],
-                                  sellAlf: details.salePrice.toString(),
-                                  buyAlf: (parseFloat(normalizeNumerals(next[i].buyAlf || "0")) > 0) ? next[i].buyAlf : details.purchasePrice.toString()
-                                };
-                                setProducts(next);
-                                if (editingIndex === i) {
-                                  setSellText(details.salePrice.toString());
-                                  if (!(parseFloat(normalizeNumerals(buyText || "0")) > 0)) {
-                                    setBuyText(details.purchasePrice.toString());
-                                  }
-                                }
-                              }}
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50/80 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 hover:bg-violet-100 hover:text-violet-800 transition cursor-pointer shrink-0 mr-1 inline-block"
-                              title="انقر لاعتماده كسعر بيع بالطلبية"
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50/80 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 shrink-0 mr-1 inline-block pointer-events-none"
                             >
                               🏪 متجر: {details.salePrice}
                             </span>
