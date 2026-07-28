@@ -408,6 +408,8 @@ export function OrderPricingPanel({
   const [showReassign, setShowReassign] = useState(false);
   const [selectedProductIndexes, setSelectedProductIndexes] = useState<number[]>([]);
   const [productAssigneeId, setProductAssigneeId] = useState("");
+  const [isSavingAssign, setIsSavingAssign] = useState(false);
+  const [assignSuccessMsg, setAssignSuccessMsg] = useState("");
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [showAutoCourier, setShowAutoCourier] = useState(false);
@@ -830,8 +832,10 @@ ${productsText}`;
     setProductAssigneeId("");
   };
 
-  const assignSelectedProductsToPreparer = () => {
-    if (!productAssigneeId) return;
+  const assignSelectedProductsToPreparer = async () => {
+    if (!productAssigneeId || isSavingAssign) return;
+    setIsSavingAssign(true);
+    setAssignSuccessMsg("");
     const next = [...products];
     const prep = preparers.find(p => p.id === productAssigneeId);
     selectedProductIndexes.forEach(idx => {
@@ -845,6 +849,16 @@ ${productsText}`;
     setProducts(next);
     clearSelection();
     hasChangedRef.current = true;
+
+    try {
+      await savePricingProgress(orderId, !!isDraft, next, placesCount, !!noProfit);
+      setAssignSuccessMsg(`تم حفظ إسناد المنتجات لـ (${prep?.name || "المجهز"}) في قاعدة البيانات تلقائياً ✅`);
+      setTimeout(() => setAssignSuccessMsg(""), 5000);
+    } catch (e) {
+      console.error("خطأ أثناء الحفظ التلقائي لإسناد المنتجات للمجهز:", e);
+    } finally {
+      setIsSavingAssign(false);
+    }
   };
 
   async function handleAiSort() {
@@ -1398,17 +1412,25 @@ ${productsText}`;
         <div className="flex-1 overflow-y-auto px-1 custom-scrollbar pb-32">
           {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); window.location.reload(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
+          {assignSuccessMsg && (
+            <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-black rounded-xl text-center animate-in fade-in">
+              {assignSuccessMsg}
+            </div>
+          )}
+
           {selectedProductIndexes.length > 0 && (
              <div className="rounded-xl bg-sky-900 p-2 shadow-lg mb-4">
                <div className="flex flex-col gap-1.5">
                  <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
                  <div className="flex gap-1">
-                   <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white p-1.5 text-[10px] font-black outline-none text-slate-900">
+                   <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} disabled={isSavingAssign} className="flex-1 rounded-lg border-none bg-white p-1.5 text-[10px] font-black outline-none text-slate-900">
                      <option value="">اختر المجهز</option>
                      {preparers.map((prep) => <option key={prep.id} value={prep.id}>{prep.name}</option>)}
                    </select>
-                   <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white">تطبيق</button>
-                   <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200">إلغاء</button>
+                   <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId || isSavingAssign} className="rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 px-3 text-[10px] font-black text-white transition flex items-center justify-center gap-1">
+                     {isSavingAssign ? "جاري الحفظ..." : "تطبيق"}
+                   </button>
+                   <button type="button" onClick={clearSelection} disabled={isSavingAssign} className="text-[9px] font-bold text-sky-200">إلغاء</button>
                  </div>
                </div>
              </div>
