@@ -85,6 +85,14 @@ if (!result.ok) {
 
 if (result.ok) {
   console.log("[prisma] Database updated successfully.");
+  try {
+    console.log("[prisma] Enabling RLS on all public tables in Supabase...");
+    const rlsSql = `DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', r.tablename); END LOOP; END $$;`;
+    runCapture(`npx prisma db execute --stdin`, { ...env, PRISMA_STDIN: rlsSql });
+    console.log("[prisma] RLS enabled on all tables successfully.");
+  } catch (e) {
+    console.warn("[prisma] Failed to execute RLS SQL:", e.message);
+  }
 } else {
   console.error("**************************************************");
   console.error("⚠️ WARNING: PRISMA DB UPDATE FAILED DUE TO TIMEOUT");
