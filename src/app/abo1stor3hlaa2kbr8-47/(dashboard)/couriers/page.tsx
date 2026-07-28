@@ -26,12 +26,73 @@ export default async function AdminCouriersPage() {
   try {
     const [couriersRaw, iconsRaw] = await Promise.all([
       prisma.courier.findMany({
-        orderBy: { name: "asc" },
+        include: {
+          _count: {
+            select: {
+              orders: true,
+              moneyEvents: true,
+              miscWalletEntries: true,
+              walletTransfersOut: true,
+              walletTransfersIn: true,
+            },
+          },
+          orders: {
+            take: 1,
+            orderBy: { updatedAt: "desc" },
+            select: { updatedAt: true, createdAt: true },
+          },
+          moneyEvents: {
+            take: 1,
+            orderBy: { createdAt: "desc" },
+            select: { createdAt: true },
+          },
+          miscWalletEntries: {
+            take: 1,
+            orderBy: { createdAt: "desc" },
+            select: { createdAt: true },
+          },
+        },
       }),
       getGlobalIcons(),
     ]);
 
-    const couriers = serializePrisma(couriersRaw);
+    const couriersProcessed = couriersRaw.map((c) => {
+      const totalActivities =
+        c._count.orders +
+        c._count.moneyEvents +
+        c._count.miscWalletEntries +
+        c._count.walletTransfersOut +
+        c._count.walletTransfersIn;
+
+      const dates = [
+        c.orders[0]?.updatedAt,
+        c.orders[0]?.createdAt,
+        c.moneyEvents[0]?.createdAt,
+        c.miscWalletEntries[0]?.createdAt,
+      ]
+        .filter(Boolean)
+        .map((d) => new Date(d!).getTime());
+
+      const latestActivityTime = totalActivities > 0 && dates.length > 0 ? Math.max(...dates) : 0;
+
+      return {
+        ...c,
+        hasActivity: totalActivities > 0,
+        totalActivities,
+        latestActivityTime,
+      };
+    });
+
+    couriersProcessed.sort((a, b) => {
+      if (a.hasActivity && !b.hasActivity) return -1;
+      if (!a.hasActivity && b.hasActivity) return 1;
+      if (a.hasActivity && b.hasActivity) {
+        return b.latestActivityTime - a.latestActivityTime;
+      }
+      return a.name.localeCompare(b.name, "ar");
+    });
+
+    const couriers = serializePrisma(couriersProcessed);
     const icons = serializePrisma(iconsRaw);
     const baseUrl = getPublicAppUrl();
 
@@ -97,8 +158,19 @@ export default async function AdminCouriersPage() {
                     className="flex flex-wrap items-start justify-between gap-3 py-4"
                   >
                     <div>
-                      <p className={ad.listTitle}>{c.name}</p>
-                      <p className={`${ad.listMuted} tabular-nums`}>{c.phone}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={ad.listTitle}>{c.name}</p>
+                        {c.hasActivity ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                            نشط ({c.totalActivities} حركة)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-500/20">
+                            بدون حركات
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${ad.listMuted} tabular-nums mt-0.5`}>{c.phone}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <a
                           href={whatsappAppUrl(c.phone, shareText)}
