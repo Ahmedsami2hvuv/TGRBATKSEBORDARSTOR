@@ -1960,8 +1960,8 @@ ${productsText}`;
 
       {showOptionsMenu && (
         <>
-          <div className="fixed inset-0 z-[1900]" onClick={() => setShowOptionsMenu(false)} />
-          <div className="fixed left-3 top-[4.5rem] w-80 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
+          <div className="fixed inset-0 z-[9990] bg-black/50 backdrop-blur-[2px]" onClick={() => setShowOptionsMenu(false)} />
+          <div className="fixed left-1/2 -translate-x-1/2 sm:left-3 sm:translate-x-0 top-14 sm:top-[4.5rem] w-[calc(100vw-1.5rem)] sm:w-80 max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-700/80 rounded-3xl p-4 shadow-2xl z-[9999] text-right space-y-3.5 animate-in fade-in zoom-in-95 duration-200 custom-scrollbar" dir="rtl">
             
             {/* 1. حقل البحث مدمج هنا وجانبه زر تجهيز الإدارة */}
             <div className="flex items-center gap-2 mb-1">
