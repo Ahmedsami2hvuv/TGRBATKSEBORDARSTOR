@@ -5,55 +5,50 @@ import { StoreSlider } from "./_components/store-slider";
 
 export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع التصفح
 
-import { FALLBACK_STORE_DATA } from "@/data/fallback-store-data";
-
 async function CategoriesGrid() {
-  let categories: { id: string; name: string; photoUrl: string }[] = [];
   try {
-    categories = await prisma.storeCategory.findMany({
+    const categories = await prisma.storeCategory.findMany({
       where: { active: true },
       orderBy: { sequence: "desc" },
       select: { id: true, name: true, photoUrl: true },
     });
+
+    if (categories.length === 0) return null;
+
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            href={`/store/c/${cat.id}`}
+            prefetch={false}
+            className="group block bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none hover:shadow-violet-200/50 dark:hover:border-violet-800 transition-all duration-500 hover:-translate-y-2"
+          >
+            <div className="relative aspect-square mb-6 overflow-hidden rounded-[2rem] bg-slate-100 dark:bg-slate-800/50">
+              {cat.photoUrl ? (
+                <img
+                  src={cat.photoUrl}
+                  alt={cat.name}
+                  className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-700">
+                  <span className="text-5xl">📦</span>
+                </div>
+              )}
+            </div>
+            <div className="text-center pb-2">
+              <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors">
+                {cat.name}
+              </h3>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
   } catch (error) {
-    console.error("Failed to fetch categories from DB, using fallback", error);
+    return <div className="text-center p-10 text-slate-500">جاري تحميل الأقسام...</div>;
   }
-
-  if (!categories || categories.length === 0) {
-    categories = FALLBACK_STORE_DATA.map(c => ({ id: c.id, name: c.name, photoUrl: c.photoUrl }));
-  }
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-      {categories.map((cat) => (
-        <Link
-          key={cat.id}
-          href={`/store/c/${cat.id}`}
-          prefetch={false}
-          className="group block bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none hover:shadow-violet-200/50 dark:hover:border-violet-800 transition-all duration-500 hover:-translate-y-2"
-        >
-          <div className="relative aspect-square mb-6 overflow-hidden rounded-[2rem] bg-slate-100 dark:bg-slate-800/50">
-            {cat.photoUrl ? (
-              <img
-                src={cat.photoUrl}
-                alt={cat.name}
-                className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-700">
-                <span className="text-5xl">📦</span>
-              </div>
-            )}
-          </div>
-          <div className="text-center pb-2">
-            <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors">
-              {cat.name}
-            </h3>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
 }
 
 // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
