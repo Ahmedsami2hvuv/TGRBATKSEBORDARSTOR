@@ -38,6 +38,8 @@ async function getCachedProductsByBranch(branchId: string) {
   });
 }
 
+import { FALLBACK_STORE_DATA } from "@/data/fallback-store-data";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const branchId = searchParams.get("branchId");
@@ -48,13 +50,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    let products;
+    let products: any[] = [];
 
     if (branchId && !ids) {
-      // استخدام الـ Cache للطلبات العامة للفرع (الأكثر تكراراً)
       products = await getCachedProductsByBranch(branchId);
     } else {
-      // جلب مباشر للمعرفات المحددة (مثل المفضلة) لأنها متغيرة جداً
       const where: any = { active: true };
       if (branchId) where.branchId = branchId;
       if (ids) {
@@ -79,16 +79,33 @@ export async function GET(request: Request) {
       });
     }
 
+    if (!products || products.length === 0) {
+      // Fallback matching
+      const allFallbackProducts = FALLBACK_STORE_DATA.flatMap(c => c.branches.flatMap(b => b.products));
+      if (branchId) {
+        products = allFallbackProducts.filter(p => p.branchId === branchId || p.branchId.includes(branchId));
+      } else if (ids) {
+        const idArray = ids.split(",").map(id => id.trim());
+        products = allFallbackProducts.filter(p => idArray.includes(p.id));
+      }
+    }
+
     const formattedProducts = products.map(p => ({
       ...p,
       salePrice: Number(p.salePrice),
       photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
-      variants: p.variants?.map(v => ({ ...v, salePrice: Number(v.salePrice) }))
+      variants: p.variants?.map((v: any) => ({ ...v, salePrice: Number(v.salePrice) })) || []
     }));
 
     return NextResponse.json(formattedProducts);
   } catch (error) {
     console.error("API Store Products Error:", error);
-    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+    // Fallback response on error
+    const allFallbackProducts = FALLBACK_STORE_DATA.flatMap(c => c.branches.flatMap(b => b.products));
+    let fallback = allFallbackProducts;
+    if (branchId) {
+      fallback = allFallbackProducts.filter(p => p.branchId === branchId);
+    }
+    return NextResponse.json(fallback);
   }
 }
