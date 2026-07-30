@@ -18,7 +18,7 @@ import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
-// import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
+import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { CourierWalletMiscDirection } from "@prisma/client";
 import {
   notifyStaffOrderPickedUp,
@@ -623,7 +623,7 @@ export async function softDeleteMandoubMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
-    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   revalidatePath(`/mandoub/order/${ev.orderId}`);
@@ -662,7 +662,7 @@ export async function softDeleteMandoubMoneyEventAdmin(
         deletedByDisplayName: "لوحة الإدارة",
       },
     });
-    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   const oid = ev.orderId;

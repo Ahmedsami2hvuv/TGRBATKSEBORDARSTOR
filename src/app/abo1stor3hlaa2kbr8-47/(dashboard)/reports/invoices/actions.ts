@@ -6,6 +6,7 @@ import { OrderCourierMoneyDeletionReason } from "@prisma/client";
 import { ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE } from "@/lib/mandoub-cash-constants";
 import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
+import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -51,13 +52,16 @@ async function softDeleteWalletLedgerRowCore(
       where: { id: parsed.id, deletedAt: null },
     });
     if (!ev) return { ok: false, error: "معاملة الطلب غير موجودة أو مُلغاة." };
-    await prisma.orderCourierMoneyEvent.update({
-      where: { id: parsed.id },
-      data: {
-        deletedAt: new Date(),
-        deletedReason: OrderCourierMoneyDeletionReason.manual_admin,
-        deletedByDisplayName: "لوحة الإدارة — تقارير الفواتير",
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.orderCourierMoneyEvent.update({
+        where: { id: parsed.id },
+        data: {
+          deletedAt: new Date(),
+          deletedReason: OrderCourierMoneyDeletionReason.manual_admin,
+          deletedByDisplayName: "لوحة الإدارة — تقارير الفواتير",
+        },
+      });
+      await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
     });
     return { ok: true, orderId: ev.orderId };
   }
