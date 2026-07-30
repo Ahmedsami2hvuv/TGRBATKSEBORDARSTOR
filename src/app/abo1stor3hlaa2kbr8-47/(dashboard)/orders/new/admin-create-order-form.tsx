@@ -942,9 +942,7 @@ export function AdminCreateOrderForm({
         );
       })}
     </div>
-    </div>
   </div>
-
   </div>
   </div>
   )}
