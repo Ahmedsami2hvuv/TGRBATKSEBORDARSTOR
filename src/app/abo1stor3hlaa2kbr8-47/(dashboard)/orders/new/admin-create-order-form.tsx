@@ -165,6 +165,7 @@ export function AdminCreateOrderForm({
  const [parseError, setParseError] = useState<string | null>(null);
  const [titleLine, setTitleLine] = useState("");
  const [products, setProducts] = useState<string[]>([]);
+ const [productAssignments, setProductAssignments] = useState<Record<number, string>>({});
  const [rawListText, setRawListText] = useState("");
  const [prepCustomerPhone, setPrepCustomerPhone] = useState("");
  const [prepOrderTime, setPrepOrderTime] = useState("فوري");
@@ -483,6 +484,7 @@ export function AdminCreateOrderForm({
  const title = (site.address || site.landmark || "طلب موقع").trim();
  setTitleLine(title);
  setProducts(site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
+ setProductAssignments({});
  setPrepCustomerPhone(phone);
  setRawListText(t);
  setPrepRegionQ(title);
@@ -494,6 +496,7 @@ export function AdminCreateOrderForm({
  if (flex) {
  setTitleLine(flex.title);
  setProducts([...flex.products]);
+ setProductAssignments({});
  setPrepCustomerPhone(flex.phone);
  setRawListText(t);
  setPrepRegionQ(flex.title);
@@ -706,6 +709,7 @@ export function AdminCreateOrderForm({
  <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
  <input type="hidden" name="rawListText" value={rawListText} />
  <input type="hidden" name="productsCsv" value={products.join("\n")} />
+ <input type="hidden" name="productAssignmentsJson" value={JSON.stringify(productAssignments)} />
  <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
  <input type="hidden" name="customerRegionId" value={prepSelectedRegion?.id ?? ""} />
  <input type="hidden" name="firstCustomerRegionId" value={prepSelectedRegion?.id ?? ""} />
@@ -751,7 +755,7 @@ export function AdminCreateOrderForm({
  </label>
 
  <div className="pt-2 border-t border-sky-100">
- <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين</span>
+ <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين المشمولين</span>
  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
  {preparers.map((p) => {
  const isSelected = selectedPreparerIds.includes(p.id);

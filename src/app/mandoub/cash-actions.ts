@@ -604,11 +604,7 @@ export async function softDeleteMandoubMoneyEvent(
     return { error: "المعاملة غير موجودة." };
   }
 
-  const isAssignedCourier = ev.order.assignedCourierId === v.courierId;
-  const isOwnerCourier = ev.courierId === v.courierId;
-  if (!isAssignedCourier && !isOwnerCourier) {
-    return { error: "لا تملك صلاحية حذف هذه المعاملة." };
-  }
+
 
   const courierRow = await prisma.courier.findUnique({
     where: { id: v.courierId },

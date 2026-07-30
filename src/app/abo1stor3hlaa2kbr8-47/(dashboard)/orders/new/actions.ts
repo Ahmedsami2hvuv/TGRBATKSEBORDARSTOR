@@ -166,13 +166,34 @@ export async function createAdminOrder(
       return { error: `عذراً، الرقم ${phoneLocal} محظور عالمياً ولا يمكن إنشاء طلب له.` };
     }
 
+    const productAssignmentsRaw = String(formData.get("productAssignmentsJson") ?? "").trim();
+    let productAssignments: Record<number, string> = {};
+    if (productAssignmentsRaw) {
+      try {
+        productAssignments = JSON.parse(productAssignmentsRaw);
+      } catch (e) {}
+    }
+
     const lines = productsCsv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const products = lines.map((line) => ({ line, buyAlf: null, sellAlf: null, pricedBy: null }));
+    const allProducts = lines.map((line, idx) => ({
+      line,
+      buyAlf: null,
+      sellAlf: null,
+      pricedBy: null,
+      assignedPreparerId: productAssignments[idx] || "all",
+    }));
 
     const groupId = randomBytes(8).toString("hex");
 
     const createdDraftIds: string[] = [];
     for (const preparerId of preparerIds) {
+      // فلترة المنتجات الخاصة بهذا المجهز: المنتجات المسندة له صراحةً أو المسندة للكل (all)
+      const preparerProducts = allProducts.filter(
+        (p) => p.assignedPreparerId === "all" || p.assignedPreparerId === preparerId
+      );
+
+      const productsToSave = preparerProducts.length > 0 ? preparerProducts : allProducts;
+
       const draft = await prisma.companyPreparerShoppingDraft.create({
         data: {
           preparerId,
@@ -186,13 +207,14 @@ export async function createAdminOrder(
           orderTime: orderNoteTime,
           data: {
             version: 1,
-            products,
+            products: productsToSave,
             groupId,
             fromAdminId: "admin",
             fromAdminName: "الإدارة",
             autoCourierId: selectedCourier?.id || null,
             autoCourierName: selectedCourier?.name || null,
             noProfit: formData.get("noProfit") === "true",
+            productAssignments,
           },
         },
         select: { id: true },

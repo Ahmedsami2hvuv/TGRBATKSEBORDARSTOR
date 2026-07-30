@@ -222,7 +222,22 @@ export async function assignOrderToPreparer(
     console.error("Failed to sync removed preparers:", err);
   }
 
+  const productAssignmentsRaw = String(formData.get("productAssignmentsJson") ?? "").trim();
+  let productAssignments: Record<number, string> = {};
+  if (productAssignmentsRaw) {
+    try {
+      productAssignments = JSON.parse(productAssignmentsRaw);
+    } catch (e) {}
+  }
+
   for (const preparerId of preparerIds) {
+    // تصفية المنتجات لهذا المجهز تحديداً
+    const preparerProducts = mergedProducts.filter((p: any, idx: number) => {
+      const assigned = p.assignedPreparerId || productAssignments[idx] || "all";
+      return assigned === "all" || assigned === preparerId;
+    });
+    const productsToSaveForPrep = preparerProducts.length > 0 ? preparerProducts : mergedProducts;
+
     const existing = await prisma.companyPreparerShoppingDraft.findFirst({
       where: {
         preparerId,
@@ -241,7 +256,7 @@ export async function assignOrderToPreparer(
                 data: { 
                     ...existingData, 
                     groupId: finalGroupId, 
-                    products: mergedProducts,
+                    products: productsToSaveForPrep,
                     assignedPreparerId: preparerId,
                     assignedPreparerName: (await prisma.companyPreparer.findUnique({ where: { id: preparerId } }))?.name || null
                 } 
@@ -260,7 +275,7 @@ export async function assignOrderToPreparer(
                 data: {
                     ...( (await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: unassignedDraftToUse } }))?.data as any || {} ),
                     groupId: finalGroupId,
-                    products: mergedProducts,
+                    products: productsToSaveForPrep,
                     assignedPreparerId: preparerId,
                     assignedPreparerName: preparer?.name || null,
                 }
@@ -283,6 +298,14 @@ export async function assignOrderToPreparer(
             sentOrderId,
             data: {
                version: 1,
+               products: productsToSaveForPrep,
+               groupId: finalGroupId,
+               assignedPreparerId: preparerId,
+               assignedPreparerName: preparer?.name || null,
+            }
+          }
+        });
+    }
                groupId: finalGroupId,
                products: mergedProducts,
                assignedPreparerId: preparerId,
