@@ -801,7 +801,7 @@ export function PreparerOrderDetailSection({
             preparerId={preparerId}
             icons={icons}
             couriers={couriers}
-            isPreparationOrder={Boolean(order.submittedByCompanyPreparerId || order.preparerShoppingJson || order.orderType?.includes("تجهيز"))}
+            isPreparationOrder={Boolean(order.preparerShoppingJson || order.orderType?.includes("تجهيز"))}
           />
         );
       default: return null;

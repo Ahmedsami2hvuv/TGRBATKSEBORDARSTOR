@@ -207,7 +207,7 @@ export function PreparerOrderTable({
           );
         }}
         renderBelowOrderId={(o) => {
-          const isPrepOrder = Boolean(o.isPreparationOrder || (o as any).submittedByCompanyPreparerId || (o.orderType && o.orderType.includes("تجهيز")));
+          const isPrepOrder = Boolean(o.isPreparationOrder || (o as any).preparerShoppingJson || (o.orderType && o.orderType.includes("تجهيز")));
           const showPay = o.orderSubtotalDinar != null && !o.pickupComplete && !isPrepOrder;
           if (!showPay) return null;
           return (
