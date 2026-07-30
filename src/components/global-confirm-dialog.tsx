@@ -16,6 +16,8 @@ type DialogState = (ConfirmOptions & {
 }) | null;
 
 let globalShowConfirm: ((options: ConfirmOptions) => Promise<boolean>) | null = null;
+let isConfirmOpen = false;
+let isConfirmedPass = false;
 
 /**
  * دالة عالمية قابلة للاستدعاء من أي مكان بالموقع لإظهار نافذة التأكيد المخصصة
@@ -25,7 +27,6 @@ export function customConfirm(options: string | ConfirmOptions): Promise<boolean
   if (globalShowConfirm) {
     return globalShowConfirm(opts);
   }
-  // في حال استدعائها قبل تهيئة الواجهة
   return Promise.resolve(true);
 }
 
@@ -59,45 +60,57 @@ export function GlobalConfirmDialog() {
   useEffect(() => {
     globalShowConfirm = handleOpen;
 
-    // استبدال نافذة المتصفح الافتراضية بنظيرتها المخصصة في بيئة العميل
     const originalConfirm = window.confirm;
     const originalAlert = window.alert;
 
     window.confirm = (msg?: string): boolean => {
+      // إذا تمت الموافقة السابقة لتوّها من النقر على زر موافق
+      if (isConfirmedPass) {
+        isConfirmedPass = false;
+        return true;
+      }
+
+      // إذا كانت هناك نافذة تأكيد مفتوحة حالياً، نمنع فتح نافذة ثانية نهائياً
+      if (isConfirmOpen) {
+        return false;
+      }
+
       const activeEl = document.activeElement as HTMLElement | null;
       const targetForm = activeEl ? (activeEl.closest("form") as HTMLFormElement | null) : null;
       const targetBtn = activeEl && (activeEl.tagName === "BUTTON" || activeEl.tagName === "A" || activeEl.getAttribute("role") === "button") ? activeEl : null;
       const targetElement = targetForm || targetBtn || activeEl;
 
-      // إذا كان هذا العنصر تمت الموافقة عليه لتوّه من خلال الضغط على "موافق" في المودال المخصص
-      if (targetElement && targetElement.dataset.customConfirmed === "true") {
-        delete targetElement.dataset.customConfirmed;
-        return true;
-      }
+      isConfirmOpen = true;
 
-      // إظهار نافذة التأكيد المخصصة التابعة للموقع
       customConfirm({
         title: "تأكيد الإجراء",
         message: msg || "هل أنت متأكد من المتابعة؟",
         type: "warning",
       }).then((confirmed) => {
+        isConfirmOpen = false;
         if (confirmed) {
-          if (targetElement) {
-            targetElement.dataset.customConfirmed = "true";
-            if (targetElement instanceof HTMLFormElement) {
-              if (typeof targetElement.requestSubmit === "function") {
-                targetElement.requestSubmit();
-              } else {
-                targetElement.submit();
-              }
-            } else if (typeof targetElement.click === "function") {
-              targetElement.click();
+          isConfirmedPass = true;
+          if (targetForm) {
+            const submitBtn = targetForm.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+            if (submitBtn && submitBtn !== activeEl) {
+              submitBtn.click();
+            } else if (typeof targetForm.requestSubmit === "function") {
+              targetForm.requestSubmit();
+            } else {
+              targetForm.submit();
             }
+          } else if (targetBtn) {
+            targetBtn.click();
+          } else if (targetElement && typeof targetElement.click === "function") {
+            targetElement.click();
           }
+          // تنظيف الشفرة المؤقتة بعد المهلة
+          setTimeout(() => {
+            isConfirmedPass = false;
+          }, 600);
         }
       });
 
-      // إرجاع false لمنع التنفيذ الأولي غير المتزامن حتى يضغط المستخدم موافق في المودال
       return false;
     };
 

@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useActionState, useEffect, useState, useMemo, useRef } from "react";
+import { useActionState, useEffect, useState, useMemo, useRef, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { customConfirm, customAlert } from "@/components/global-confirm-dialog";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -2305,69 +2306,86 @@ function RejectButton({ orderId, icons }: { orderId: string, icons?: GlobalIcons
 
 /** زر حذف الطلب نهائياً (رفض الطلب) */
 function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, isDraft: boolean, onSuccess?: () => void, icons?: GlobalIconsConfig | null }) {
-  const bound = deleteOrderPermanently.bind(null);
-  const [state, formAction, pending] = useActionState(bound, {} as any);
+  const [pending, startTransition] = useTransition();
 
-  useEffect(() => { if (state.ok && onSuccess) onSuccess(); }, [state.ok, onSuccess]);
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const confirmed = await customConfirm({
+      title: "تأكيد رفض وحذف الطلب",
+      message: "هل أنت متأكد من رفض الطلب وحذفه نهائياً؟",
+      confirmText: "تأكيد الرفض والحذف",
+      cancelText: "إلغاء الأمر",
+      type: "danger",
+    });
+
+    if (!confirmed) return;
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("id", id);
+      formData.append("isDraft", String(isDraft));
+      const res = await deleteOrderPermanently({}, formData);
+      if (res?.ok || res?.success || !res?.error) {
+        if (onSuccess) onSuccess();
+        else window.location.reload();
+      } else {
+        await customAlert(res.error || "حدث خطأ أثناء مسح الطلب");
+      }
+    });
+  };
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        if (!window.confirm("هل أنت متأكد من رفض الطلب؟")) {
-          e.preventDefault();
-        }
-      }}
-      className="inline-block"
+    <button
+      type="button"
+      onClick={handleDelete}
+      disabled={pending}
+      title="رفض الطلب"
+      className="flex items-center justify-center h-10 w-10 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer disabled:opacity-40"
     >
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="isDraft" value={String(isDraft)} />
-      <button
-        type="submit"
-        disabled={pending}
-        title="رفض الطلب"
-        className="flex items-center justify-center h-10 w-10 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 shrink-0"
-      >
-        <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={16} height={16} />
-      </button>
-    </form>
+      <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={16} height={16} />
+    </button>
   );
 }
 
 /** زر إرجاع الطلب المكتمل التجهيز إلى قيد التجهيز */
 function RevertPreparedOrderButton({ id, onSuccess }: { id: string; onSuccess?: () => void }) {
-  const bound = revertPreparedOrderToPreparing.bind(null);
-  const [state, formAction, pending] = useActionState(bound, {} as any);
+  const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state.ok) {
-      if (onSuccess) onSuccess();
-      else window.location.reload();
-    } else if (state.error) {
-      alert(state.error);
-    }
-  }, [state.ok, state.error, onSuccess]);
+  const handleRevert = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const confirmed = await customConfirm({
+      title: "إرجاع الطلب للتجهيز",
+      message: "هل أنت متأكد من إرجاع هذا الطلب إلى قيد التجهيز؟",
+      confirmText: "إرجاع للتجهيز",
+      cancelText: "إلغاء الأمر",
+      type: "warning",
+    });
+
+    if (!confirmed) return;
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("orderId", id);
+      const res = await revertPreparedOrderToPreparing({}, formData);
+      if (res?.ok || !res?.error) {
+        if (onSuccess) onSuccess();
+        else window.location.reload();
+      } else {
+        await customAlert(res.error || "حدث خطأ أثناء الإرجاع");
+      }
+    });
+  };
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        if (!window.confirm("هل أنت متأكد من إرجاع هذا الطلب إلى قيد التجهيز؟")) {
-          e.preventDefault();
-        }
-      }}
-      className="inline-block"
+    <button
+      type="button"
+      onClick={handleRevert}
+      disabled={pending}
+      title="إرجاع الطلب إلى قيد التجهيز"
+      className="flex items-center justify-center gap-1.5 px-3 h-8 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-950/10 text-amber-700 dark:text-amber-400 text-xs font-black shadow-sm active:scale-95 transition-all shrink-0 cursor-pointer disabled:opacity-40"
     >
-      <input type="hidden" name="orderId" value={id} />
-      <button
-        type="submit"
-        disabled={pending}
-        title="إرجاع الطلب إلى قيد التجهيز"
-        className="flex items-center justify-center gap-1.5 px-3 h-8 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-950/10 text-amber-700 dark:text-amber-400 text-xs font-black shadow-sm active:scale-95 transition-all shrink-0 cursor-pointer"
-      >
-        <span>🔄 إرجاع للتجهيز</span>
-      </button>
-    </form>
+      <span>{pending ? "جاري الإرجاع..." : "🔄 إرجاع للتجهيز"}</span>
+    </button>
   );
 }
 
