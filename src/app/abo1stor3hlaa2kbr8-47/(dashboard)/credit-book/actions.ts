@@ -10,7 +10,6 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { syncOrderCourierMoneyExpectations } from "@/lib/order-courier-money-sync";
-import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external" | "supplier";
@@ -2038,17 +2037,14 @@ export async function deleteAdminPaymentEvent(eventId: string) {
       return { success: false, error: "المعاملة غير موجودة" };
     }
 
-    // حذف ناعم للحدث المالي وإعادة ضبط الطلب
-    await prisma.$transaction(async (tx) => {
-      await tx.orderCourierMoneyEvent.update({
-        where: { id: eventId },
-        data: {
-          deletedAt: new Date(),
-          deletedReason: "manual_admin",
-          deletedByDisplayName: "الإدارة"
-        }
-      });
-      await syncOrderStatusFromActiveMoneyEvents(tx, event.orderId);
+    // حذف ناعم للحدث المالي
+    await prisma.orderCourierMoneyEvent.update({
+      where: { id: eventId },
+      data: {
+        deletedAt: new Date(),
+        deletedReason: "manual_admin",
+        deletedByDisplayName: "الإدارة"
+      }
     });
 
     // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة

@@ -98,7 +98,7 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     orderMoneyEvents,
     uiSettings,
   ] = await Promise.all([
-    prisma.employeeWalletMiscEntry.findMany({ where: { employeeId: employee.id, deletedAt: null }, orderBy: { createdAt: "desc" } }),
+    prisma.employeeWalletMiscEntry.findMany({ where: { employeeId: employee.id }, orderBy: { createdAt: "desc" } }),
     prisma.walletPeerTransfer.findMany({
       where: {
         status: { in: ["pending", "rejected"] },

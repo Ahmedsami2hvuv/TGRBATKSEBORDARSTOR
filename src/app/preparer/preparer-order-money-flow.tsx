@@ -315,7 +315,7 @@ export function PreparerOrderMoneyFlow({
       </div>
 
       <ul className="space-y-3">
-        {moneyEvents.filter((ev) => ev.deletedAt == null).map((ev) => {
+        {moneyEvents.map((ev) => {
           const deleted = ev.deletedAt != null;
           const manualDel = isManualDeletionReasonClient(ev.deletedReason);
           const dirLabel = ev.kind === MONEY_KIND_PICKUP ? "صادر" : "وارد";
@@ -323,7 +323,10 @@ export function PreparerOrderMoneyFlow({
           if (ev.mismatchReason?.trim()) noteParts.push(ev.mismatchReason.trim());
           if (ev.mismatchNote?.trim()) noteParts.push(ev.mismatchNote.trim());
           const noteLine = noteParts.length > 0 ? noteParts.join(" — ") : "—";
-          const canDeleteFromPreparerUi = true;
+          const recordedByAnyPreparer = ev.recordedByCompanyPreparerId != null;
+          const recordedByThisPreparer =
+            recordedByAnyPreparer && ev.recordedByCompanyPreparerId === preparerId;
+          const canDeleteFromPreparerUi = recordedByThisPreparer;
 
           return (
             <li key={ev.id}>

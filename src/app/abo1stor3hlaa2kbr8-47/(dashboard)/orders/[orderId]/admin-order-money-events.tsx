@@ -130,7 +130,7 @@ export function AdminOrderMoneyEvents({
         </p>
       ) : (
         <ul className="space-y-4">
-          {localEvents.filter((ev) => ev.deletedAt == null).map((ev) => {
+          {localEvents.map((ev) => {
             const deleted = ev.deletedAt != null;
             const manualDel = isManualDeletionReason(ev.deletedReason);
             const dirLabel = ev.kind === MONEY_KIND_PICKUP ? "صادر" : "وارد";

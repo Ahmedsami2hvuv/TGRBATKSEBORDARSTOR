@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { Decimal } from "@prisma/client/runtime/library";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -13,7 +12,7 @@ import {
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
-import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
+// import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 
 export type PreparerCashState = { error?: string };
@@ -344,14 +343,9 @@ export async function softDeletePreparerMoneyEvent(
   _prev: PreparerCashState,
   formData: FormData,
 ): Promise<PreparerCashState> {
-  const cookieStore = await cookies();
-  let p = String(formData.get("p") ?? "");
-  let exp = String(formData.get("exp") ?? "");
-  let s = String(formData.get("s") ?? "");
-  if (!p) p = cookieStore.get("preparer_p")?.value || "";
-  if (!exp) exp = cookieStore.get("preparer_exp")?.value || "";
-  if (!s) s = cookieStore.get("preparer_s")?.value || "";
-
+  const p = String(formData.get("p") ?? "");
+  const exp = String(formData.get("exp") ?? "");
+  const s = String(formData.get("s") ?? "");
   const eventId = String(formData.get("eventId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/preparer");
 
@@ -375,6 +369,18 @@ export async function softDeletePreparerMoneyEvent(
   const allowed = preparer.shopLinks.some((l) => l.shopId === ev.order.shopId);
   if (!allowed) return { error: "لا صلاحية." };
 
+  if (ev.recordedByCompanyPreparerId == null) {
+    return { error: "لا يمكن حذف معاملة سجّلها المندوب — من لوحة المندوب أو الإدارة." };
+  }
+  if (ev.recordedByCompanyPreparerId !== preparer.id) {
+    return { error: "سجّلها مجهز آخر — لا يمكنك حذفها من حسابك." };
+  }
+
+  const hoursPassed = (Date.now() - ev.createdAt.getTime()) / (1000 * 60 * 60);
+  if (hoursPassed > 4) {
+    return { error: "لا يمكن حذف المعاملة بعد مرور 4 ساعات." };
+  }
+
   const deletedBy = `مجهز: ${preparer.name.trim() || "مجهز"}`;
 
   await prisma.$transaction(async (tx) => {
@@ -386,7 +392,7 @@ export async function softDeletePreparerMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
-    await syncOrderStatusFromActiveMoneyEvents(tx, ev.order.id);
+    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.order.id);
   });
 
   revalidatePreparerPaths(nextRaw);

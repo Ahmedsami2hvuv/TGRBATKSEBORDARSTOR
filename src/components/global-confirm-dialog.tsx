@@ -26,7 +26,7 @@ export function customConfirm(options: string | ConfirmOptions): Promise<boolean
     return globalShowConfirm(opts);
   }
   // في حال استدعائها قبل تهيئة الواجهة
-  return Promise.resolve(window.confirm(opts.message));
+  return Promise.resolve(true);
 }
 
 /**
@@ -64,13 +64,40 @@ export function GlobalConfirmDialog() {
     const originalAlert = window.alert;
 
     window.confirm = (msg?: string): boolean => {
-      // إظهار المودال للمستخدم
+      const activeEl = document.activeElement as HTMLElement | null;
+      const targetForm = activeEl ? (activeEl.closest("form") as HTMLFormElement | null) : null;
+      const targetBtn = activeEl && (activeEl.tagName === "BUTTON" || activeEl.tagName === "A" || activeEl.getAttribute("role") === "button") ? activeEl : null;
+      const targetElement = targetForm || targetBtn || activeEl;
+
+      // إذا كان هذا العنصر تمت الموافقة عليه لتوّه من خلال الضغط على "موافق" في المودال المخصص
+      if (targetElement && targetElement.dataset.customConfirmed === "true") {
+        delete targetElement.dataset.customConfirmed;
+        return true;
+      }
+
+      // إظهار نافذة التأكيد المخصصة التابعة للموقع
       customConfirm({
         title: "تأكيد الإجراء",
         message: msg || "هل أنت متأكد من المتابعة؟",
         type: "warning",
+      }).then((confirmed) => {
+        if (confirmed) {
+          if (targetElement) {
+            targetElement.dataset.customConfirmed = "true";
+            if (targetElement instanceof HTMLFormElement) {
+              if (typeof targetElement.requestSubmit === "function") {
+                targetElement.requestSubmit();
+              } else {
+                targetElement.submit();
+              }
+            } else if (typeof targetElement.click === "function") {
+              targetElement.click();
+            }
+          }
+        }
       });
-      // لإيقاف السلوك التلقائي المباشر في المتصفح حتى يتم التعامل معه
+
+      // إرجاع false لمنع التنفيذ الأولي غير المتزامن حتى يضغط المستخدم موافق في المودال
       return false;
     };
 
@@ -92,7 +119,7 @@ export function GlobalConfirmDialog() {
         dialog.resolve(result);
         setDialog(null);
       }
-    }, 200);
+    }, 150);
   };
 
   useEffect(() => {
@@ -175,7 +202,7 @@ export function GlobalConfirmDialog() {
               <button
                 type="button"
                 onClick={() => handleClose(false)}
-                className="flex-1 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 shadow-sm"
+                className="flex-1 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 shadow-sm cursor-pointer"
               >
                 {dialog.cancelText || "إلغاء الأمر"}
               </button>
@@ -183,7 +210,7 @@ export function GlobalConfirmDialog() {
             <button
               type="button"
               onClick={() => handleClose(true)}
-              className={`flex-1 rounded-2xl px-4 py-3 text-sm font-black text-white transition-all active:scale-95 shadow-lg ${
+              className={`flex-1 rounded-2xl px-4 py-3 text-sm font-black text-white transition-all active:scale-95 shadow-lg cursor-pointer ${
                 isDanger
                   ? "bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-rose-500/25"
                   : isWarning

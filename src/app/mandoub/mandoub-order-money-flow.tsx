@@ -189,12 +189,6 @@ export function MandoubOrderMoneyFlow({
         المعاملات المالية (الصادر والوارد)
       </h3>
 
-      {deleteState.error && (
-        <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm font-bold text-rose-800">
-          ⚠️ {deleteState.error}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-4 mb-6">
           {/* أزرار أخذت / أعطيت الثابتة (الصادر والوارد) */}
           <div className="grid grid-cols-2 gap-3">
@@ -304,7 +298,7 @@ export function MandoubOrderMoneyFlow({
       />
 
       <ul className="space-y-3">
-        {mergedEvents.filter((ev) => ev.deletedAt == null).map((ev) => {
+        {mergedEvents.map((ev) => {
           const deleted = ev.deletedAt != null;
           const isPending = (ev as any).isPendingSync;
           const manualDel = isManualDeletionReasonClient(ev.deletedReason);
@@ -313,7 +307,8 @@ export function MandoubOrderMoneyFlow({
           if (ev.mismatchReason?.trim()) noteParts.push(ev.mismatchReason.trim());
           if (ev.mismatchNote?.trim()) noteParts.push(ev.mismatchNote.trim());
           const noteLine = noteParts.length > 0 ? noteParts.join(" — ") : "—";
-          const canDeleteFromMandoubUi = !isPending;
+          const recordedByPreparer = ev.recordedByCompanyPreparerId != null;
+          const canDeleteFromMandoubUi = !recordedByPreparer && !isPending;
 
           const diff = ev.expectedDinar != null ? ev.amountDinar - ev.expectedDinar : 0;
           const hasMismatch = ev.expectedDinar != null && Math.abs(diff) > 0.01;

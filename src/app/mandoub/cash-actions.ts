@@ -18,7 +18,7 @@ import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
-import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
+// import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { CourierWalletMiscDirection } from "@prisma/client";
 import {
   notifyStaffOrderPickedUp,
@@ -532,14 +532,9 @@ export async function softDeleteMandoubMiscWalletEntry(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const cookieStore = await cookies();
-  let c = String(formData.get("c") ?? "");
-  let exp = String(formData.get("exp") ?? "");
-  let s = String(formData.get("s") ?? "");
-  if (!c) c = cookieStore.get("mandoub_c")?.value || "";
-  if (!exp) exp = cookieStore.get("mandoub_exp")?.value || "";
-  if (!s) s = cookieStore.get("mandoub_s")?.value || "";
-
+  const c = String(formData.get("c") ?? "");
+  const exp = String(formData.get("exp") ?? "");
+  const s = String(formData.get("s") ?? "");
   const entryId = String(formData.get("miscEntryId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
 
@@ -584,14 +579,9 @@ export async function softDeleteMandoubMoneyEvent(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const cookieStore = await cookies();
-  let c = String(formData.get("c") ?? "");
-  let exp = String(formData.get("exp") ?? "");
-  let s = String(formData.get("s") ?? "");
-  if (!c) c = cookieStore.get("mandoub_c")?.value || "";
-  if (!exp) exp = cookieStore.get("mandoub_exp")?.value || "";
-  if (!s) s = cookieStore.get("mandoub_s")?.value || "";
-
+  const c = String(formData.get("c") ?? "");
+  const exp = String(formData.get("exp") ?? "");
+  const s = String(formData.get("s") ?? "");
   const eventId = String(formData.get("eventId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
 
@@ -607,14 +597,15 @@ export async function softDeleteMandoubMoneyEvent(
   }
 
   const ev = await prisma.orderCourierMoneyEvent.findFirst({
-    where: { id: eventId, deletedAt: null },
+    where: { id: eventId, courierId: v.courierId, deletedAt: null },
     include: { order: true },
   });
   if (!ev) {
     return { error: "المعاملة غير موجودة." };
   }
-
-
+  if (ev.recordedByCompanyPreparerId != null) {
+    return { error: "لا يمكن حذف معاملة سجّلها المجهز من لوحة المندوب." };
+  }
 
   const courierRow = await prisma.courier.findUnique({
     where: { id: v.courierId },
@@ -632,7 +623,7 @@ export async function softDeleteMandoubMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
-    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   revalidatePath(`/mandoub/order/${ev.orderId}`);
@@ -671,7 +662,7 @@ export async function softDeleteMandoubMoneyEventAdmin(
         deletedByDisplayName: "لوحة الإدارة",
       },
     });
-    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   const oid = ev.orderId;

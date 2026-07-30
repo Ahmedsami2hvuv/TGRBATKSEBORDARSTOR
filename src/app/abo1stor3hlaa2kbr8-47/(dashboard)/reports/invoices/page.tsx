@@ -69,7 +69,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
 
   const [orderEvents, courierEntries, employeeEntries, walletTransfers] = await Promise.all([
     prisma.orderCourierMoneyEvent.findMany({
-      where: { createdAt: { gte: from, lte: to }, deletedAt: null },
+      where: { createdAt: { gte: from, lte: to } },
       include: {
         order: {
           include: {
@@ -83,12 +83,12 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       orderBy: { createdAt: "desc" },
     }),
     prisma.courierWalletMiscEntry.findMany({
-      where: { createdAt: { gte: from, lte: to }, deletedAt: null },
+      where: { createdAt: { gte: from, lte: to } },
       include: { courier: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.employeeWalletMiscEntry.findMany({
-      where: { createdAt: { gte: from, lte: to }, deletedAt: null },
+      where: { createdAt: { gte: from, lte: to } },
       include: { employee: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     }),

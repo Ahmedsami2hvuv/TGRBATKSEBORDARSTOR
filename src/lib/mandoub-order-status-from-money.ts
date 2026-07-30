@@ -50,8 +50,6 @@ export async function syncOrderStatusFromActiveMoneyEvents(
         status: "delivered",
         courierEarningDinar: earning,
         courierEarningForCourierId: earningFor,
-        customerPaymentReceivedAt: order.customerPaymentReceivedAt ?? new Date(),
-        shopCostPaidAt: order.shopCostPaidAt ?? new Date(),
       },
     });
     return;
@@ -62,24 +60,17 @@ export async function syncOrderStatusFromActiveMoneyEvents(
       where: { id: orderId },
       data: {
         status: "delivering",
-        customerPaymentReceivedAt: null,
-        shopCostPaidAt: order.shopCostPaidAt ?? new Date(),
-        courierEarningDinar: null,
-        courierEarningForCourierId: null,
       },
     });
     return;
   }
 
   if (!hasPickup && hasDelivery) {
+    // وارد بدون صادر (بيانات نادرة) — أقرب حالة قبل «تم التسليم» الكامل
     await tx.order.update({
       where: { id: orderId },
       data: {
         status: "delivering",
-        customerPaymentReceivedAt: order.customerPaymentReceivedAt ?? new Date(),
-        shopCostPaidAt: null,
-        courierEarningDinar: null,
-        courierEarningForCourierId: null,
       },
     });
     return;
@@ -90,10 +81,6 @@ export async function syncOrderStatusFromActiveMoneyEvents(
     where: { id: orderId },
     data: {
       status: nextStatus,
-      customerPaymentReceivedAt: null,
-      shopCostPaidAt: null,
-      courierEarningDinar: null,
-      courierEarningForCourierId: null,
     },
   });
 }
