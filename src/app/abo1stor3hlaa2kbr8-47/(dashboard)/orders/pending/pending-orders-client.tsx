@@ -713,7 +713,9 @@ ${productsText}`;
     const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
     const finalPrepName = isExplicitAdmin
       ? "تجهيز الإدارة 🏛️"
-      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
+
+    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
 
     next[editingIndex] = {
       ...currentProd,
@@ -721,9 +723,9 @@ ${productsText}`;
       sellAlf: sNum.toString(),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
-      assignedPreparerName: finalPrepName,
-      pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
-      pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
+      assignedPreparerName: resolvedName,
+      pricedBy: resolvedName,
+      pricedById: finalPrepId
     };
     setProducts(next);
 
@@ -766,7 +768,9 @@ ${productsText}`;
     const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
     const finalPrepName = isExplicitAdmin
       ? "تجهيز الإدارة 🏛️"
-      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
+
+    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
 
     next[editingIndex] = {
       ...currentProd,
@@ -774,9 +778,9 @@ ${productsText}`;
       sellAlf: sellVal.toString(),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
-      assignedPreparerName: finalPrepName,
-      pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
-      pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
+      assignedPreparerName: resolvedName,
+      pricedBy: resolvedName,
+      pricedById: finalPrepId
     };
     setProducts(next);
 
@@ -839,11 +843,14 @@ ${productsText}`;
     setAssignSuccessMsg("");
     const next = [...products];
     const prep = preparers.find(p => p.id === productAssigneeId);
+    const targetName = prep?.name || "";
     selectedProductIndexes.forEach(idx => {
       next[idx] = {
         ...next[idx],
         assignedPreparerId: productAssigneeId,
-        assignedPreparerName: prep?.name || "",
+        assignedPreparerName: targetName,
+        pricedBy: targetName,
+        pricedById: productAssigneeId,
         isFulfilledByAdmin: false
       };
     });
@@ -1752,7 +1759,9 @@ ${productsText}`;
                       const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
                       const finalPrepName = isExplicitAdmin
                         ? "تجهيز الإدارة 🏛️"
-                        : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : null));
+                        : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
+
+                      const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
 
                       next[editingIndex] = {
                         ...currentProd,
@@ -1760,9 +1769,9 @@ ${productsText}`;
                         sellAlf: sNum.toString(),
                         isFulfilledByAdmin: isExplicitAdmin,
                         assignedPreparerId: finalPrepId,
-                        assignedPreparerName: finalPrepName,
-                        pricedBy: isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" ? currentProd.pricedBy : "الإدارة"),
-                        pricedById: isExplicitAdmin ? null : (currentProd.pricedById || finalPrepId || null)
+                        assignedPreparerName: resolvedName,
+                        pricedBy: resolvedName,
+                        pricedById: finalPrepId
                       };
                       setProducts(next);
                     }

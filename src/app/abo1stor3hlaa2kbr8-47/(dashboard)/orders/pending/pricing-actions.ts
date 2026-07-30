@@ -303,11 +303,11 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       continue;
     }
 
-    const assignedPreparerId = p.assignedPreparerId;
+    const assignedPreparerId = p.assignedPreparerId || null;
     const assignedPreparerName = p.assignedPreparerName || (assignedPreparerId ? preparerNameById.get(assignedPreparerId) : null);
-    const pricedByName = typeof p.pricedBy === "string" && p.pricedBy.trim() && p.pricedBy !== "الإدارة" ? p.pricedBy.trim() : null;
+    const pricedByName = typeof p.pricedBy === "string" && p.pricedBy.trim() && p.pricedBy !== "الإدارة" && p.pricedBy !== "تجهيز الإدارة 🏛️" ? p.pricedBy.trim() : null;
     
-    let preparerName = assignedPreparerName || pricedByName || fallbackPreparerName || "تجهيز الإدارة 🏛️";
+    let preparerName = assignedPreparerName || pricedByName || (assignedPreparerId ? preparerNameById.get(assignedPreparerId) : null) || "تجهيز الإدارة 🏛️";
 
     const key = assignedPreparerId ? `id:${assignedPreparerId}` : (preparerName !== "تجهيز الإدارة 🏛️" ? `name:${preparerName}` : "admin:fulfillment");
     if (!preparerMap.has(key)) {
