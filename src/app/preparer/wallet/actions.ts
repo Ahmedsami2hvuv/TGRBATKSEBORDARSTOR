@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
@@ -63,9 +64,14 @@ export async function softDeleteEmployeeWalletMiscEntryFromCompanyPreparer(
   _prev: EmployeeWalletMiscState,
   formData: FormData
 ): Promise<EmployeeWalletMiscState> {
-  const p = String(formData.get("p") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
+  const cookieStore = await cookies();
+  let p = String(formData.get("p") ?? "");
+  let exp = String(formData.get("exp") ?? "");
+  let s = String(formData.get("s") ?? "");
+  if (!p) p = cookieStore.get("preparer_p")?.value || "";
+  if (!exp) exp = cookieStore.get("preparer_exp")?.value || "";
+  if (!s) s = cookieStore.get("preparer_s")?.value || "";
+
   const v = verifyCompanyPreparerPortalQuery(p, exp, s);
   if (!v.ok) return { error: "الرابط غير صالح." };
 

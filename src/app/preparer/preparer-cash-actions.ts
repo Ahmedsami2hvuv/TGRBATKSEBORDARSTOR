@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { Decimal } from "@prisma/client/runtime/library";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -343,9 +344,14 @@ export async function softDeletePreparerMoneyEvent(
   _prev: PreparerCashState,
   formData: FormData,
 ): Promise<PreparerCashState> {
-  const p = String(formData.get("p") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
+  const cookieStore = await cookies();
+  let p = String(formData.get("p") ?? "");
+  let exp = String(formData.get("exp") ?? "");
+  let s = String(formData.get("s") ?? "");
+  if (!p) p = cookieStore.get("preparer_p")?.value || "";
+  if (!exp) exp = cookieStore.get("preparer_exp")?.value || "";
+  if (!s) s = cookieStore.get("preparer_s")?.value || "";
+
   const eventId = String(formData.get("eventId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/preparer");
 

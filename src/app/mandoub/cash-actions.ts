@@ -532,9 +532,14 @@ export async function softDeleteMandoubMiscWalletEntry(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const c = String(formData.get("c") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
+  const cookieStore = await cookies();
+  let c = String(formData.get("c") ?? "");
+  let exp = String(formData.get("exp") ?? "");
+  let s = String(formData.get("s") ?? "");
+  if (!c) c = cookieStore.get("mandoub_c")?.value || "";
+  if (!exp) exp = cookieStore.get("mandoub_exp")?.value || "";
+  if (!s) s = cookieStore.get("mandoub_s")?.value || "";
+
   const entryId = String(formData.get("miscEntryId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
 
@@ -579,9 +584,14 @@ export async function softDeleteMandoubMoneyEvent(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const c = String(formData.get("c") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
+  const cookieStore = await cookies();
+  let c = String(formData.get("c") ?? "");
+  let exp = String(formData.get("exp") ?? "");
+  let s = String(formData.get("s") ?? "");
+  if (!c) c = cookieStore.get("mandoub_c")?.value || "";
+  if (!exp) exp = cookieStore.get("mandoub_exp")?.value || "";
+  if (!s) s = cookieStore.get("mandoub_s")?.value || "";
+
   const eventId = String(formData.get("eventId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
 
