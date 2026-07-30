@@ -832,6 +832,7 @@ export function AdminCreateOrderForm({
                 });
                 return next;
               });
+              setCheckedProductIndices([]);
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
               checkedProductIndices.length > 0
@@ -857,6 +858,7 @@ export function AdminCreateOrderForm({
                   });
                   return next;
                 });
+                setCheckedProductIndices([]);
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-black transition shadow-xs cursor-pointer ${
                 checkedProductIndices.length > 0
