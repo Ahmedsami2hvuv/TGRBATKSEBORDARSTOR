@@ -306,15 +306,6 @@ export async function assignOrderToPreparer(
           }
         });
     }
-               groupId: finalGroupId,
-               products: mergedProducts,
-               assignedPreparerId: preparerId,
-               assignedPreparerName: preparer?.name || null,
-               fromAdminAction: true
-            }
-          }
-        });
-    }
 
     const notice = await prisma.companyPreparerPrepNotice.create({
       data: {
