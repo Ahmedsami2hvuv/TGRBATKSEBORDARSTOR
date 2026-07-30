@@ -446,11 +446,23 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
     // --- 8. إنشاء الطلب النهائي أو تحديثه ---
     if (isDraft) {
-      // التحقق من وجود طلب مرتبط بالمسودة مسبقاً
-      if (draftData!.sentOrderId) {
-        // تحديث الطلب الموجود بدلاً من إنشاء جديد
+      // البحث عن أي طلب مرتبط بهذه المسودة أو بأي مسودة شقيقة ضمن نفس المجموعة
+      let existingSentOrderId = draftData!.sentOrderId || null;
+      const draftGroupId = (draftData!.data as any)?.groupId;
+      if (!existingSentOrderId && draftGroupId) {
+        const siblings = await tx.$queryRaw<{ sentOrderId: string }[]>`
+          SELECT "sentOrderId" FROM "CompanyPreparerShoppingDraft" 
+          WHERE data->>'groupId' = ${draftGroupId} AND "sentOrderId" IS NOT NULL LIMIT 1
+        `;
+        if (siblings.length > 0 && siblings[0]?.sentOrderId) {
+          existingSentOrderId = siblings[0].sentOrderId;
+        }
+      }
+
+      if (existingSentOrderId) {
+        // تحديث الطلب الموجود بدلاً من إنشاء طلب مكرر جديد
         const updated = await tx.order.update({
-          where: { id: draftData!.sentOrderId },
+          where: { id: existingSentOrderId },
           data: {
             shop: { connect: { id: shop!.id } },
             orderType: resolvedOrderType,
