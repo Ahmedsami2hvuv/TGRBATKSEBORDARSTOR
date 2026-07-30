@@ -315,7 +315,7 @@ export function PreparerOrderMoneyFlow({
       </div>
 
       <ul className="space-y-3">
-        {moneyEvents.map((ev) => {
+        {moneyEvents.filter((ev) => ev.deletedAt == null).map((ev) => {
           const deleted = ev.deletedAt != null;
           const manualDel = isManualDeletionReasonClient(ev.deletedReason);
           const dirLabel = ev.kind === MONEY_KIND_PICKUP ? "صادر" : "وارد";

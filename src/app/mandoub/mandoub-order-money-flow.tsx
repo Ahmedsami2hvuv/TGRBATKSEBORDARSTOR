@@ -298,7 +298,7 @@ export function MandoubOrderMoneyFlow({
       />
 
       <ul className="space-y-3">
-        {mergedEvents.map((ev) => {
+        {mergedEvents.filter((ev) => ev.deletedAt == null).map((ev) => {
           const deleted = ev.deletedAt != null;
           const isPending = (ev as any).isPendingSync;
           const manualDel = isManualDeletionReasonClient(ev.deletedReason);

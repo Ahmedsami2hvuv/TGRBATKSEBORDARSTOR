@@ -165,6 +165,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
     prisma.courierWalletMiscEntry.findMany({
       where: {
         courierId: courier.id,
+        deletedAt: null,
       },
       orderBy: { createdAt: "desc" },
     }),
