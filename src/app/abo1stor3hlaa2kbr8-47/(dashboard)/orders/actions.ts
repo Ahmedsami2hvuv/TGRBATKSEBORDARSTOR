@@ -231,13 +231,6 @@ export async function assignOrderToPreparer(
   }
 
   for (const preparerId of preparerIds) {
-    // تصفية المنتجات لهذا المجهز تحديداً
-    const preparerProducts = mergedProducts.filter((p: any, idx: number) => {
-      const assigned = p.assignedPreparerId || productAssignments[idx] || "all";
-      return assigned === "all" || assigned === preparerId;
-    });
-    const productsToSaveForPrep = preparerProducts.length > 0 ? preparerProducts : mergedProducts;
-
     const existing = await prisma.companyPreparerShoppingDraft.findFirst({
       where: {
         preparerId,
@@ -248,7 +241,7 @@ export async function assignOrderToPreparer(
     });
 
     if (existing) {
-        // تحديث المسودة الموجودة بالمجموعة الجديدة والمنتجات المدمجة
+        // تحديث المسودة الموجودة بالمجموعة الجديدة والمنتجات المدمجة بالكامل
         const existingData = (existing.data as any) || {};
         await prisma.companyPreparerShoppingDraft.update({
             where: { id: existing.id },
@@ -256,7 +249,7 @@ export async function assignOrderToPreparer(
                 data: { 
                     ...existingData, 
                     groupId: finalGroupId, 
-                    products: productsToSaveForPrep,
+                    products: mergedProducts,
                     assignedPreparerId: preparerId,
                     assignedPreparerName: (await prisma.companyPreparer.findUnique({ where: { id: preparerId } }))?.name || null
                 } 
@@ -275,7 +268,7 @@ export async function assignOrderToPreparer(
                 data: {
                     ...( (await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: unassignedDraftToUse } }))?.data as any || {} ),
                     groupId: finalGroupId,
-                    products: productsToSaveForPrep,
+                    products: mergedProducts,
                     assignedPreparerId: preparerId,
                     assignedPreparerName: preparer?.name || null,
                 }
@@ -298,7 +291,7 @@ export async function assignOrderToPreparer(
             sentOrderId,
             data: {
                version: 1,
-               products: productsToSaveForPrep,
+               products: mergedProducts,
                groupId: finalGroupId,
                assignedPreparerId: preparerId,
                assignedPreparerName: preparer?.name || null,

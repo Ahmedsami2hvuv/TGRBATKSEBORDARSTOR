@@ -175,25 +175,21 @@ export async function createAdminOrder(
     }
 
     const lines = productsCsv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const allProducts = lines.map((line, idx) => ({
-      line,
-      buyAlf: null,
-      sellAlf: null,
-      pricedBy: null,
-      assignedPreparerId: productAssignments[idx] || "all",
-    }));
+    const allProducts = lines.map((line, idx) => {
+      const assignedId = productAssignments[idx] || "all";
+      return {
+        line,
+        buyAlf: null,
+        sellAlf: null,
+        pricedBy: null,
+        assignedPreparerId: assignedId,
+      };
+    });
 
     const groupId = randomBytes(8).toString("hex");
 
     const createdDraftIds: string[] = [];
     for (const preparerId of preparerIds) {
-      // فلترة المنتجات الخاصة بهذا المجهز: المنتجات المسندة له صراحةً أو المسندة للكل (all)
-      const preparerProducts = allProducts.filter(
-        (p) => p.assignedPreparerId === "all" || p.assignedPreparerId === preparerId
-      );
-
-      const productsToSave = preparerProducts.length > 0 ? preparerProducts : allProducts;
-
       const draft = await prisma.companyPreparerShoppingDraft.create({
         data: {
           preparerId,
@@ -207,7 +203,7 @@ export async function createAdminOrder(
           orderTime: orderNoteTime,
           data: {
             version: 1,
-            products: productsToSave,
+            products: allProducts,
             groupId,
             fromAdminId: "admin",
             fromAdminName: "الإدارة",
