@@ -166,6 +166,7 @@ export function AdminCreateOrderForm({
  const [titleLine, setTitleLine] = useState("");
  const [products, setProducts] = useState<string[]>([]);
  const [productAssignments, setProductAssignments] = useState<Record<number, string>>({});
+ const [checkedProductIndices, setCheckedProductIndices] = useState<number[]>([]);
  const [rawListText, setRawListText] = useState("");
  const [prepCustomerPhone, setPrepCustomerPhone] = useState("");
  const [prepOrderTime, setPrepOrderTime] = useState("فوري");
@@ -485,6 +486,7 @@ export function AdminCreateOrderForm({
  setTitleLine(title);
  setProducts(site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
  setProductAssignments({});
+ setCheckedProductIndices([]);
  setPrepCustomerPhone(phone);
  setRawListText(t);
  setPrepRegionQ(title);
@@ -497,6 +499,7 @@ export function AdminCreateOrderForm({
  setTitleLine(flex.title);
  setProducts([...flex.products]);
  setProductAssignments({});
+ setCheckedProductIndices([]);
  setPrepCustomerPhone(flex.phone);
  setRawListText(t);
  setPrepRegionQ(flex.title);
@@ -686,7 +689,7 @@ export function AdminCreateOrderForm({
  placeholder="الصق رسالة الموقع أو قائمة واتساب..."
  className={`${ad.input} font-mono text-sm`}
  />
-  <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10 animate-in fade-in" onClick={() => setNoProfit(p => !p)}>
+<div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10 animate-in fade-in" onClick={() => setNoProfit(p => !p)}>
     <div className="flex flex-col text-right">
       <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
       <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
@@ -755,49 +758,158 @@ export function AdminCreateOrderForm({
  </label>
 
  <div className="pt-2 border-t border-sky-100">
- <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين المشمولين</span>
- <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
- {preparers.map((p) => {
- const isSelected = selectedPreparerIds.includes(p.id);
- return (
- <label key={p.id} className={`flex items-center gap-1.5 p-1.5 rounded-lg border cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-200' : 'border-slate-200 bg-white'}`}>
- <input
- type="checkbox"
- checked={isSelected}
- onChange={() => togglePreparer(p.id)}
- className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500"
- />
- <span className="text-[10px] font-bold text-slate-700 truncate">{p.name}</span>
- </label>
- );
- })}
- </div>
- {selectedPreparerIds.length === 0 && (
- <p className="mt-2 text-[10px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
- )}
- </div>
+  <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين المشمولين</span>
+  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+  {preparers.map((p) => {
+  const isSelected = selectedPreparerIds.includes(p.id);
+  return (
+  <label key={p.id} className={`flex items-center gap-1.5 p-1.5 rounded-lg border cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-200' : 'border-slate-200 bg-white'}`}>
+  <input
+  type="checkbox"
+  checked={isSelected}
+  onChange={() => togglePreparer(p.id)}
+  className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500"
+  />
+  <span className="text-[10px] font-bold text-slate-700 truncate">{p.name}</span>
+  </label>
+  );
+  })}
+  </div>
+  {selectedPreparerIds.length === 0 && (
+  <p className="mt-2 text-[10px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
+  )}
+  </div>
 
-  {/* --- قسم تحديد المجهز لكل منتج --- */}
-  <div className="pt-3 border-t border-sky-200">
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-1.5">
-        <span className="text-sm font-black text-violet-900">📦 تحديد المجهز لكل منتج</span>
-        <span className="text-[10px] bg-violet-100 text-violet-800 px-2 py-0.5 rounded-full font-bold">ميزة اختيارية</span>
+  <div className="pt-4 border-t-2 border-violet-200">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+      <div className="flex items-center gap-2">
+        <span className="text-base font-black text-violet-950 flex items-center gap-1.5">
+          <span>📦</span> تحديد وتوزيع المنتجات للمجهزين
+        </span>
+        <span className="text-xs bg-violet-600 text-white px-2.5 py-0.5 rounded-full font-bold">
+          {products.length} منتج
+        </span>
       </div>
-      <span className="text-[11px] text-slate-500 font-medium">({products.length} منتج)</span>
-    </div>
-    <p className="text-[11px] text-slate-600 mb-3">
-      يمكنك تحديد المجهز الخاص بكل منتج من المنتجات أدناه، ليظهر فقط عنده عند رفع الطلب:
-    </p>
 
-    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (checkedProductIndices.length === products.length) {
+              setCheckedProductIndices([]);
+            } else {
+              setCheckedProductIndices(products.map((_, i) => i));
+            }
+          }}
+          className="text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+        >
+          {checkedProductIndices.length === products.length ? "إلغاء تحديد الكل ✕" : "☑️ تحديد كل المنتجات"}
+        </button>
+      </div>
+    </div>
+
+    <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-violet-50 via-purple-50 to-sky-50 border-2 border-violet-300 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="text-xs font-black text-violet-900">
+          {checkedProductIndices.length > 0 ? (
+            <span className="flex items-center gap-1.5">
+              <span>🎯</span> تم تحديد <span className="text-violet-700 underline text-sm font-black px-1 bg-white rounded border border-violet-200">{checkedProductIndices.length}</span> منتج — اضغط اسم المجهز لتخصيصها له فوراً:
+            </span>
+          ) : (
+            <span className="text-slate-600">حدد المنتجات بوضع صح (☑️) ثم اختر المجهز لإسنادها بضغطة واحدة:</span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={checkedProductIndices.length === 0}
+            onClick={() => {
+              setProductAssignments((prev) => {
+                const next = { ...prev };
+                checkedProductIndices.forEach((idx) => {
+                  delete next[idx];
+                });
+                return next;
+              });
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+              checkedProductIndices.length > 0
+                ? "bg-slate-800 text-white hover:bg-slate-900"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            الكل (جميع المجهزين)
+          </button>
+          {(selectedPreparerIds.length > 0
+            ? preparers.filter((p) => selectedPreparerIds.includes(p.id))
+            : preparers
+          ).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              disabled={checkedProductIndices.length === 0}
+              onClick={() => {
+                setProductAssignments((prev) => {
+                  const next = { ...prev };
+                  checkedProductIndices.forEach((idx) => {
+                    next[idx] = p.id;
+                  });
+                  return next;
+                });
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition shadow-xs cursor-pointer ${
+                checkedProductIndices.length > 0
+                  ? "bg-violet-600 text-white hover:bg-violet-700 active:scale-95"
+                  : "bg-violet-100 text-violet-300 cursor-not-allowed"
+              }`}
+            >
+              إسناد لـ {p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div className="space-y-2.5">
       {products.map((prod, idx) => {
+        const isChecked = checkedProductIndices.includes(idx);
         const assignedPrepId = productAssignments[idx] || "all";
+
         return (
-          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-sky-100 bg-white shadow-xs transition hover:border-sky-300">
-            <span className="text-xs font-bold text-slate-800 truncate flex-1">{idx + 1}. {prod}</span>
-            <div className="flex items-center gap-2 shrink-0">
-              <label className="text-[10px] font-bold text-slate-500">المجهز:</label>
+          <div
+            key={idx}
+            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border-2 transition-all ${
+              isChecked
+                ? "border-violet-500 bg-violet-50/70 shadow-md ring-2 ring-violet-200"
+                : "border-slate-200 bg-white hover:border-violet-300 hover:bg-slate-50/50"
+            }`}
+          >
+            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => {
+                  setCheckedProductIndices((prev) =>
+                    prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+                  );
+                }}
+                className="w-5 h-5 rounded-lg text-violet-600 focus:ring-violet-500 cursor-pointer shrink-0 mt-0.5 sm:mt-0"
+              />
+              <span
+                onClick={() => {
+                  setCheckedProductIndices((prev) =>
+                    prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+                  );
+                }}
+                className="text-sm font-black text-slate-800 cursor-pointer break-words leading-snug select-none"
+              >
+                {idx + 1}. {prod}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <span className="text-xs font-bold text-slate-500">المجهز المسند:</span>
               <select
                 value={assignedPrepId}
                 onChange={(e) => {
@@ -809,7 +921,11 @@ export function AdminCreateOrderForm({
                     return next;
                   });
                 }}
-                className="text-xs font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 outline-none"
+                className={`text-xs font-black border-2 rounded-xl px-3 py-1.5 outline-none transition cursor-pointer ${
+                  assignedPrepId === "all"
+                    ? "bg-slate-100 text-slate-700 border-slate-300"
+                    : "bg-violet-600 text-white border-violet-700 font-bold shadow-xs"
+                }`}
               >
                 <option value="all">الكل (جميع المجهزين)</option>
                 {(selectedPreparerIds.length > 0
@@ -825,6 +941,7 @@ export function AdminCreateOrderForm({
           </div>
         );
       })}
+    </div>
     </div>
   </div>
 
