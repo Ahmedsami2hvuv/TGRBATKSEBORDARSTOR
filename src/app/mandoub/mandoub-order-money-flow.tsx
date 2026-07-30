@@ -307,8 +307,7 @@ export function MandoubOrderMoneyFlow({
           if (ev.mismatchReason?.trim()) noteParts.push(ev.mismatchReason.trim());
           if (ev.mismatchNote?.trim()) noteParts.push(ev.mismatchNote.trim());
           const noteLine = noteParts.length > 0 ? noteParts.join(" — ") : "—";
-          const recordedByPreparer = ev.recordedByCompanyPreparerId != null;
-          const canDeleteFromMandoubUi = !recordedByPreparer && !isPending;
+          const canDeleteFromMandoubUi = (canRecordMoney || ev.courierId === auth.c) && !isPending;
 
           const diff = ev.expectedDinar != null ? ev.amountDinar - ev.expectedDinar : 0;
           const hasMismatch = ev.expectedDinar != null && Math.abs(diff) > 0.01;

@@ -597,14 +597,17 @@ export async function softDeleteMandoubMoneyEvent(
   }
 
   const ev = await prisma.orderCourierMoneyEvent.findFirst({
-    where: { id: eventId, courierId: v.courierId, deletedAt: null },
+    where: { id: eventId, deletedAt: null },
     include: { order: true },
   });
   if (!ev) {
     return { error: "المعاملة غير موجودة." };
   }
-  if (ev.recordedByCompanyPreparerId != null) {
-    return { error: "لا يمكن حذف معاملة سجّلها المجهز من لوحة المندوب." };
+
+  const isAssignedCourier = ev.order.assignedCourierId === v.courierId;
+  const isOwnerCourier = ev.courierId === v.courierId;
+  if (!isAssignedCourier && !isOwnerCourier) {
+    return { error: "لا تملك صلاحية حذف هذه المعاملة." };
   }
 
   const courierRow = await prisma.courier.findUnique({

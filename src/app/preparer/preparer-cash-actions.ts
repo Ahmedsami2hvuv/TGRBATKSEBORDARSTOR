@@ -369,18 +369,6 @@ export async function softDeletePreparerMoneyEvent(
   const allowed = preparer.shopLinks.some((l) => l.shopId === ev.order.shopId);
   if (!allowed) return { error: "لا صلاحية." };
 
-  if (ev.recordedByCompanyPreparerId == null) {
-    return { error: "لا يمكن حذف معاملة سجّلها المندوب — من لوحة المندوب أو الإدارة." };
-  }
-  if (ev.recordedByCompanyPreparerId !== preparer.id) {
-    return { error: "سجّلها مجهز آخر — لا يمكنك حذفها من حسابك." };
-  }
-
-  const hoursPassed = (Date.now() - ev.createdAt.getTime()) / (1000 * 60 * 60);
-  if (hoursPassed > 4) {
-    return { error: "لا يمكن حذف المعاملة بعد مرور 4 ساعات." };
-  }
-
   const deletedBy = `مجهز: ${preparer.name.trim() || "مجهز"}`;
 
   await prisma.$transaction(async (tx) => {

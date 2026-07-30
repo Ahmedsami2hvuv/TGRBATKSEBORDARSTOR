@@ -323,10 +323,7 @@ export function PreparerOrderMoneyFlow({
           if (ev.mismatchReason?.trim()) noteParts.push(ev.mismatchReason.trim());
           if (ev.mismatchNote?.trim()) noteParts.push(ev.mismatchNote.trim());
           const noteLine = noteParts.length > 0 ? noteParts.join(" — ") : "—";
-          const recordedByAnyPreparer = ev.recordedByCompanyPreparerId != null;
-          const recordedByThisPreparer =
-            recordedByAnyPreparer && ev.recordedByCompanyPreparerId === preparerId;
-          const canDeleteFromPreparerUi = recordedByThisPreparer;
+          const canDeleteFromPreparerUi = true;
 
           return (
             <li key={ev.id}>
