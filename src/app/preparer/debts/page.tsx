@@ -94,15 +94,17 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
     take: 200, // حد أقصى للنتائج لضمان سرعة الاستجابة
   });
 
-  const debtOrders = orders.map(o => {
-    const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
-    const subtotal = Number(o.orderSubtotal || 0);
-    return {
-      ...o,
-      totalPaid,
-      debtAmount: subtotal - totalPaid,
-    };
-  });
+  const debtOrders = orders
+    .map(o => {
+      const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
+      const subtotal = Number(o.orderSubtotal || 0);
+      return {
+        ...o,
+        totalPaid,
+        debtAmount: subtotal - totalPaid,
+      };
+    })
+    .filter(o => o.debtAmount > 0);
 
   const totalDebtsSum = debtOrders.reduce((sum, o) => sum + o.debtAmount, 0);
 

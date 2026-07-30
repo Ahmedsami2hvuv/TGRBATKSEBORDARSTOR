@@ -66,6 +66,7 @@ export async function upsertMandoubWaButton(
 
   const statuses = formData.getAll("statuses").map((v) => (typeof v === "string" ? v : "")).filter(Boolean);
   const statusesCsv = statuses.join(",");
+  const showNextToLocation = formData.get("showNextToLocation") === "true" || formData.get("showNextToLocation") === "on";
 
   if (!label) return { error: "اسم الزر مطلوب." };
   const internalName = name || buildAutoInternalName(label);
@@ -86,6 +87,7 @@ export async function upsertMandoubWaButton(
     statusesCsv,
     customerLocationRule,
     visibilityScope,
+    showNextToLocation,
     isActive: true,
   };
 
@@ -155,6 +157,7 @@ export async function duplicateMandoubWaButton(
       statusesCsv: row.statusesCsv,
       customerLocationRule: row.customerLocationRule,
       visibilityScope: row.visibilityScope,
+      showNextToLocation: row.showNextToLocation ?? false,
       isActive: true,
     },
   });

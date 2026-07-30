@@ -241,9 +241,10 @@ export function DebtListContainer({
       </div>
 
       {filteredOrders.length === 0 ? (
-        <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-16 text-center text-slate-400 border-2 border-dashed border-slate-200">
-          <div className="text-4xl mb-4">🔍</div>
-          <p className="text-lg font-black">لا توجد ديون معروضة حالياً</p>
+        <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-12 text-center text-slate-400 border-2 border-dashed border-slate-200">
+          <div className="text-4xl mb-3">✨</div>
+          <p className="text-lg font-black text-slate-700">لا توجد ديون غير مسددة حالياً</p>
+          <p className="text-xs font-bold text-slate-400 mt-1">جميع المستحقات والمعاملات مسددة بالكامل</p>
         </div>
       ) : (
         <div className="space-y-4">

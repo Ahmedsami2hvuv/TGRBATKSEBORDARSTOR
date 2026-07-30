@@ -15,6 +15,7 @@ export async function GET() {
         statusesCsv: true,
         customerLocationRule: true,
         recipient: true,
+        showNextToLocation: true,
       },
     });
 

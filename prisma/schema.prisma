@@ -537,6 +537,7 @@ model MandoubWaButtonSetting {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   visibilityScope      String   @default("all")
+  showNextToLocation   Boolean  @default(false)
 
   @@index([isActive])
 }

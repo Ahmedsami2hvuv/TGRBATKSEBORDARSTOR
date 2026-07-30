@@ -34,6 +34,7 @@ type Props = {
     customerLocationRule: string;
     isActive: boolean;
     recipient: string;
+    showNextToLocation?: boolean;
   };
 };
 
@@ -47,6 +48,7 @@ export function WaButtonDetailClient({ row }: Props) {
   );
   const [label, setLabel] = useState(row.label);
   const [iconKey, setIconKey] = useState(row.iconKey);
+  const [showNextToLocation, setShowNextToLocation] = useState(row.showNextToLocation ?? false);
   const [statuses, setStatuses] = useState<string[]>(() => parseStatusesCsv(row.statusesCsv));
   const [visibilityScopes, setVisibilityScopes] = useState<VisibilityScope[]>(() =>
     parseVisibilityScopesCsv(row.visibilityScope)
@@ -316,6 +318,26 @@ export function WaButtonDetailClient({ row }: Props) {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/20 p-3.5">
+              <p className="text-xs font-bold text-emerald-900 border-b border-emerald-100 pb-1.5 flex items-center gap-1.5">
+                <span>📍 موقع الإظهار المباشر</span>
+              </p>
+              <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-800 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  name="showNextToLocation"
+                  value="true"
+                  checked={showNextToLocation}
+                  onChange={(e) => setShowNextToLocation(e.target.checked)}
+                  className="rounded border-emerald-400 text-emerald-600 focus:ring-emerald-200 h-4 w-4"
+                />
+                <span>إظهار بجانب زر رفع/لصق لوكيشن</span>
+              </label>
+              <p className="text-[11px] text-slate-500">
+                عند تحديد هذا الخيار، سيظهر هذا الزر بنصف الحجم بجانب زر رفع اللوكيشن في تفاصيل الطلبية لدى المندوب والإدارة.
+              </p>
             </div>
 
             <div className="space-y-3 rounded-xl border border-sky-100 bg-sky-50/10 p-3.5">

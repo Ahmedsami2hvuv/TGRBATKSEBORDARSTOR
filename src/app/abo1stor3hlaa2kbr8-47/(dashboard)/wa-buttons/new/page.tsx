@@ -236,6 +236,22 @@ export default function NewWaButtonPage() {
                 اختر جهات الاتصال المسموح بظهورها عند نقر هذا الزر. إذا اخترت جهة واحدة، فسيتم الإرسال إليها مباشرة دون تخيير المندوب.
               </p>
             </div>
+
+            <div className="space-y-2 pt-2 border-t border-sky-100/60 bg-emerald-50/20 p-3 rounded-xl border border-emerald-100">
+              <p className="text-xs font-bold text-emerald-900">5. موقع الإظهار المباشر (Location Placement)</p>
+              <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-800 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  name="showNextToLocation"
+                  value="true"
+                  className="rounded border-emerald-400 text-emerald-600 focus:ring-emerald-200 h-4 w-4"
+                />
+                <span>إظهار بجانب زر رفع/لصق لوكيشن 📍</span>
+              </label>
+              <p className="text-[11px] text-slate-500">
+                عند تحديد هذا الخيار، سيظهر هذا الزر بنصف الحجم بجانب زر رفع اللوكيشن في تفاصيل الطلبية لدى المندوب والإدارة.
+              </p>
+            </div>
           </div>
 
           {state.error ? <p className={ad.error}>{state.error}</p> : null}

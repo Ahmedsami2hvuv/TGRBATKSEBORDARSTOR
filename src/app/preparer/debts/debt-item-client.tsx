@@ -56,11 +56,15 @@ export function DebtItemClient({
       if (res.ok) {
         setIsPaying(false);
         setShowSuccess(true);
-        // لا نخفيها محلياً الآن بناءً على طلب المستخدم لتبقى ظاهرة كـ "مسددة"
+        const paidAmountNum = Number(amountAlf) || 0;
+        const isFullyPaidNow = paidAmountNum >= order.debtAmount;
         setTimeout(() => {
           setShowSuccess(false);
+          if (isFullyPaidNow) {
+            onHide(order.id);
+          }
           window.location.reload();
-        }, 2000);
+        }, 1200);
       } else if (res.error) {
         alert(res.error);
       }
