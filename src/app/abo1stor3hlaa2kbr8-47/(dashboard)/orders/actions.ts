@@ -489,8 +489,15 @@ export async function deleteOrderPermanently(
           }
       }
     } else {
-      await prisma.companyPreparerShoppingDraft.deleteMany({ where: { sentOrderId: id } });
-      await prisma.order.delete({ where: { id } });
+      await prisma.$transaction(async (tx) => {
+        await tx.companyPreparerShoppingDraft.deleteMany({ where: { sentOrderId: id } });
+        await tx.orderCourierMoneyEvent.deleteMany({ where: { orderId: id } });
+        await tx.orderChangeLog.deleteMany({ where: { orderId: id } });
+        await tx.portalChatMessage.deleteMany({ where: { orderId: id } });
+        await tx.courierTip.deleteMany({ where: { orderId: id } });
+        await tx.preparerHiddenDebt.deleteMany({ where: { orderId: id } });
+        await tx.order.delete({ where: { id } });
+      });
     }
   } catch (e: any) {
     console.error("Delete order permanently error:", e);
@@ -1095,13 +1102,14 @@ export async function bulkDeleteOrdersPermanently(
         }
       }
     } else {
-      // حذف المسودات المرتبطة أولاً
-      await prisma.companyPreparerShoppingDraft.deleteMany({
-        where: { sentOrderId: { in: orderIds } }
-      });
-      // ثم حذف الطلبات نفسها
-      await prisma.order.deleteMany({
-        where: { id: { in: orderIds }, status: "pending" }
+      await prisma.$transaction(async (tx) => {
+        await tx.companyPreparerShoppingDraft.deleteMany({ where: { sentOrderId: { in: orderIds } } });
+        await tx.orderCourierMoneyEvent.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.orderChangeLog.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.portalChatMessage.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.courierTip.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.preparerHiddenDebt.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.order.deleteMany({ where: { id: { in: orderIds } } });
       });
     }
 
