@@ -776,10 +776,62 @@ export function AdminCreateOrderForm({
  <p className="mt-2 text-[10px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
  )}
  </div>
- </div>
- </div>
- )}
- </div>
+
+  {/* --- قسم تحديد المجهز لكل منتج --- */}
+  <div className="pt-3 border-t border-sky-200">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-black text-violet-900">📦 تحديد المجهز لكل منتج</span>
+        <span className="text-[10px] bg-violet-100 text-violet-800 px-2 py-0.5 rounded-full font-bold">ميزة اختيارية</span>
+      </div>
+      <span className="text-[11px] text-slate-500 font-medium">({products.length} منتج)</span>
+    </div>
+    <p className="text-[11px] text-slate-600 mb-3">
+      يمكنك تحديد المجهز الخاص بكل منتج من المنتجات أدناه، ليظهر فقط عنده عند رفع الطلب:
+    </p>
+
+    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+      {products.map((prod, idx) => {
+        const assignedPrepId = productAssignments[idx] || "all";
+        return (
+          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-sky-100 bg-white shadow-xs transition hover:border-sky-300">
+            <span className="text-xs font-bold text-slate-800 truncate flex-1">{idx + 1}. {prod}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-[10px] font-bold text-slate-500">المجهز:</label>
+              <select
+                value={assignedPrepId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setProductAssignments((prev) => {
+                    const next = { ...prev };
+                    if (val === "all") delete next[idx];
+                    else next[idx] = val;
+                    return next;
+                  });
+                }}
+                className="text-xs font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 outline-none"
+              >
+                <option value="all">الكل (جميع المجهزين)</option>
+                {(selectedPreparerIds.length > 0
+                  ? preparers.filter((p) => selectedPreparerIds.includes(p.id))
+                  : preparers
+                ).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+
+  </div>
+  </div>
+  )}
+  </div>
  ) : (
  <div className="space-y-4">
  {submissionMode === "admin_one_face" && (
