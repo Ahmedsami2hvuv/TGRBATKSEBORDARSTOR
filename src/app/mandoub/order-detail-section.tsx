@@ -396,7 +396,28 @@ export function OrderDetailSection({
                                 📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                               </a>
                             ) : (
-                              <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} fontSizeConfig={activeConfig} />
+                              <MandoubUploadLocationInline 
+                                orderId={order.id} 
+                                auth={auth} 
+                                nextUrl={nextUrl} 
+                                fontSizeConfig={activeConfig}
+                                customerPhone={order.customerPhone}
+                                customerPhone2={order.customerPhone2 || undefined}
+                                shopPhone={order.shopPhone || undefined}
+                                orderStatus={order.status}
+                                templateVars={{
+                                  clientshop: order.clientName || "",
+                                  city: order.regionLine || "",
+                                  total_price: String(order.totalPrice || ""),
+                                  delivery: order.courierName || "",
+                                  location_url: mergedCustomerLocationUrl || "",
+                                  landmark: order.nearestLandmark || "",
+                                  order_number: String(order.orderNumber || ""),
+                                  customer_phone: order.customerPhone || "",
+                                  customer_phone2: order.customerPhone2 || "",
+                                  shop_phone: order.shopPhone || "",
+                                }}
+                              />
                             )}
                           </>
                         )}
@@ -513,7 +534,29 @@ export function OrderDetailSection({
                               📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                             </a>
                           ) : (
-                            <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" fontSizeConfig={activeConfig} />
+                            <MandoubUploadLocationInline 
+                              orderId={order.id} 
+                              auth={auth} 
+                              nextUrl={nextUrl} 
+                              target="second" 
+                              fontSizeConfig={activeConfig}
+                              customerPhone={order.secondCustomerPhone || order.customerPhone}
+                              customerPhone2={order.customerPhone2 || undefined}
+                              shopPhone={order.shopPhone || undefined}
+                              orderStatus={order.status}
+                              templateVars={{
+                                clientshop: order.clientName || "",
+                                city: order.secondCustomerRegionName || order.regionLine || "",
+                                total_price: String(order.totalPrice || ""),
+                                delivery: order.courierName || "",
+                                location_url: mergedCustomerLocationUrl || "",
+                                landmark: order.secondCustomerNearestLandmark || order.nearestLandmark || "",
+                                order_number: String(order.orderNumber || ""),
+                                customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                                customer_phone2: order.customerPhone2 || "",
+                                shop_phone: order.shopPhone || "",
+                              }}
+                            />
                           )}
                         </div>
                       )}

@@ -26,7 +26,25 @@ function IconLink() {
   );
 }
 
-export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orderId: string; target?: "first" | "second" }) {
+import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
+
+export function AdminCustomerLocationQuick({
+  orderId,
+  target = "first",
+  customerPhone,
+  customerPhone2,
+  shopPhone,
+  orderStatus,
+  templateVars,
+}: {
+  orderId: string;
+  target?: "first" | "second";
+  customerPhone?: string;
+  customerPhone2?: string;
+  shopPhone?: string;
+  orderStatus?: string;
+  templateVars?: Record<string, string>;
+}) {
   const [gpsState, gpsAction, gpsPending] = useActionState(
     uploadCustomerLocationFromView.bind(null, orderId),
     initial,
@@ -81,16 +99,16 @@ export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orde
         <input type="hidden" name="target" value={target} />
       </form>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={pending || locating}
           onClick={requestLocation}
           aria-busy={pending || locating}
-          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-3 py-2 text-xs font-black text-white shadow-md transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
+          className="flex-1 min-w-[120px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-2.5 py-2 text-xs font-black text-white shadow-md transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
         >
           <IconMapPin />
-          {locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}
+          <span>{locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}</span>
         </button>
 
         <button
@@ -100,15 +118,27 @@ export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orde
             setShowPaste(!showPaste);
             setClientError("");
           }}
-          className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-xs font-black shadow-md transition disabled:opacity-70 ${
+          className={`flex-1 min-w-[110px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 px-2.5 py-2 text-xs font-black shadow-md transition disabled:opacity-70 ${
             showPaste 
               ? "border-sky-300 bg-gradient-to-br from-sky-600 to-indigo-700 text-white" 
               : "border-sky-200 bg-gradient-to-br from-sky-500 to-indigo-600 text-white hover:from-sky-600 hover:to-indigo-700"
           }`}
         >
           <IconLink />
-          لصق لكيشن
+          <span>لصق لكيشن</span>
         </button>
+
+        {/* أزرار الواتساب المخصصة للموقع (طلب لوكيشن) */}
+        <div className="flex-1 min-w-[120px]">
+          <WaLocationCustomButtons
+            userRole="admin"
+            customerPhone={customerPhone}
+            customerPhone2={customerPhone2}
+            shopPhone={shopPhone}
+            orderStatus={orderStatus}
+            templateVars={templateVars}
+          />
+        </div>
       </div>
 
       {showPaste && (

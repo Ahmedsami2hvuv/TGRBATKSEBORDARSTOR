@@ -21,18 +21,30 @@ function IconMapPin() {
 /**
  * رفع لوكيشن الزبون من موقع المندوب الحالي — يُعرض مكان خانة اللوكيشن عندما لا يوجد رابط بعد.
  */
+import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
+
 export function MandoubUploadLocationInline({
   orderId,
   auth,
   nextUrl,
   target = "first",
   fontSizeConfig,
+  customerPhone,
+  customerPhone2,
+  shopPhone,
+  orderStatus,
+  templateVars,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   target?: "first" | "second";
   fontSizeConfig?: any;
+  customerPhone?: string;
+  customerPhone2?: string;
+  shopPhone?: string;
+  orderStatus?: string;
+  templateVars?: Record<string, string>;
 }) {
   const [state, formAction, pending] = useActionState(
     setMandoubCustomerLocationFromGeolocation,
@@ -137,27 +149,42 @@ export function MandoubUploadLocationInline({
           {err}
         </p>
       ) : null}
-      <button
-        type="button"
-        onClick={onUploadLocation}
-        disabled={pending || locating}
-        aria-busy={pending || locating}
-        className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 px-4 text-xs sm:text-sm font-black text-white hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all shadow-md disabled:cursor-wait disabled:opacity-70"
-        style={{
-          fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-          height: fontSizeConfig ? `${Math.max(44, fontSizeConfig.locationBtnSize + 22)}px` : undefined
-        }}
-        title="رفع موقعك الحالي كلوكيشن للزبون — يظهر طلب إذن الموقع من المتصفح"
-      >
-        <IconMapPin />
-        <span>
-          {locating
-            ? "جلب الموقع…"
-            : pending
-              ? "جاري الحفظ…"
-              : "رفع لوكيشن"}
-        </span>
-      </button>
+
+      <div className="flex flex-wrap items-center gap-2 w-full">
+        <button
+          type="button"
+          onClick={onUploadLocation}
+          disabled={pending || locating}
+          aria-busy={pending || locating}
+          className="flex-1 min-w-[120px] inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 px-3 text-xs sm:text-sm font-black text-white hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all shadow-md disabled:cursor-wait disabled:opacity-70"
+          style={{
+            fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
+            height: fontSizeConfig ? `${Math.max(44, fontSizeConfig.locationBtnSize + 22)}px` : undefined
+          }}
+          title="رفع موقعك الحالي كلوكيشن للزبون — يظهر طلب إذن الموقع من المتصفح"
+        >
+          <IconMapPin />
+          <span className="truncate">
+            {locating
+              ? "جلب الموقع…"
+              : pending
+                ? "جاري الحفظ…"
+                : "رفع لوكيشن"}
+          </span>
+        </button>
+
+        {/* أزرار الواتساب المخصصة للموقع للمندوب */}
+        <div className="flex-1 min-w-[120px]">
+          <WaLocationCustomButtons
+            userRole="mandoub"
+            customerPhone={customerPhone}
+            customerPhone2={customerPhone2}
+            shopPhone={shopPhone}
+            orderStatus={orderStatus}
+            templateVars={templateVars}
+          />
+        </div>
+      </div>
     </div>
   );
 }

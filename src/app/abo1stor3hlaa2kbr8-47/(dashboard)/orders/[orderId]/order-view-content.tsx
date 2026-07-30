@@ -288,7 +288,27 @@ export function OrderViewContent({
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
                   ) : (
-                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                    <div className="mt-2">
+                      <AdminCustomerLocationQuick 
+                        orderId={order.id} 
+                        customerPhone={order.customerPhone}
+                        customerPhone2={order.customerPhone2 || undefined}
+                        shopPhone={order.shop?.phone || undefined}
+                        orderStatus={order.status}
+                        templateVars={{
+                          clientshop: order.shop?.name || "",
+                          city: order.shop?.region?.name || "",
+                          total_price: String(order.totalPrice || ""),
+                          delivery: order.courier?.name || "",
+                          location_url: order.customerLocationUrl || "",
+                          landmark: order.customerLandmark || "",
+                          order_number: String(order.orderNumber || ""),
+                          customer_phone: order.customerPhone || "",
+                          customer_phone2: order.customerPhone2 || "",
+                          shop_phone: order.shop?.phone || "",
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               </>
@@ -367,7 +387,28 @@ export function OrderViewContent({
                       <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                     </div>
                   ) : (
-                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} target="second" /></div>
+                    <div className="mt-2">
+                      <AdminCustomerLocationQuick 
+                        orderId={order.id} 
+                        target="second" 
+                        customerPhone={order.secondCustomerPhone || order.customerPhone}
+                        customerPhone2={order.customerPhone2 || undefined}
+                        shopPhone={order.shop?.phone || undefined}
+                        orderStatus={order.status}
+                        templateVars={{
+                          clientshop: order.shop?.name || "",
+                          city: order.secondCustomerRegion?.name || "",
+                          total_price: String(order.totalPrice || ""),
+                          delivery: order.courier?.name || "",
+                          location_url: order.secondCustomerLocationUrl || "",
+                          landmark: order.secondCustomerLandmark || "",
+                          order_number: String(order.orderNumber || ""),
+                          customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                          customer_phone2: order.customerPhone2 || "",
+                          shop_phone: order.shop?.phone || "",
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               </>
@@ -416,7 +457,27 @@ export function OrderViewContent({
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
                   ) : (
-                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                    <div className="mt-2">
+                      <AdminCustomerLocationQuick 
+                        orderId={order.id} 
+                        customerPhone={order.customerPhone}
+                        customerPhone2={order.customerPhone2 || undefined}
+                        shopPhone={order.shop?.phone || undefined}
+                        orderStatus={order.status}
+                        templateVars={{
+                          clientshop: order.shop?.name || "",
+                          city: order.customerRegion?.name || "",
+                          total_price: String(order.totalPrice || ""),
+                          delivery: order.courier?.name || "",
+                          location_url: order.customerLocationUrl || "",
+                          landmark: order.customerLandmark || "",
+                          order_number: String(order.orderNumber || ""),
+                          customer_phone: order.customerPhone || "",
+                          customer_phone2: order.customerPhone2 || "",
+                          shop_phone: order.shop?.phone || "",
+                        }}
+                      />
+                    </div>
                   )}
                   <div className="flex flex-wrap gap-2">
                     <AdminCustomerOrderHistory
