@@ -110,9 +110,6 @@ export function ProductCard({
             <h2 className="text-sm md:text-xl font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors line-clamp-1 flex-1 text-right">
               {product.name}
             </h2>
-            <div className="text-xs md:text-lg font-black text-violet-600 dark:text-violet-400 shrink-0">
-              {currentPrice.toLocaleString()}
-            </div>
           </div>
 
           <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-1.5 md:mb-6 line-clamp-1 md:line-clamp-2 md:h-10 text-right">
@@ -200,9 +197,6 @@ export function ProductCard({
                 <div className="flex justify-between items-start gap-4">
                   <div className="text-right flex-1">
                     <h2 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{product.name}</h2>
-                    <p className="text-violet-600 dark:text-violet-400 font-black text-xl md:text-2xl mt-2">
-                      {currentPrice.toLocaleString()}
-                    </p>
                   </div>
                   <button
                     onClick={toggleFavorite}
@@ -234,7 +228,6 @@ export function ProductCard({
                           }`}
                         >
                           {v.name}
-                          <span className="block text-[10px] opacity-80">{Number(v.salePrice).toLocaleString()} </span>
                         </button>
                       ))}
                     </div>

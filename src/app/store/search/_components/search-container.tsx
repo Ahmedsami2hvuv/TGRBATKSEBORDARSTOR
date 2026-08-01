@@ -140,18 +140,7 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-black text-slate-400 mb-2 block">ترتيب حسب</label>
-                <select
-                  className="w-full p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-sm dark:text-white"
-                  onChange={(e) => handleParamChange("sort", e.target.value)}
-                  value={searchParams.get("sort") || ""}
-                >
-                  <option value="">الافتراضي</option>
-                  <option value="price_asc">السعر: من الأقل</option>
-                  <option value="price_desc">السعر: من الأعلى</option>
-                </select>
-              </div>
+
 
               <button
                 onClick={() => router.push(pathname)}
@@ -207,13 +196,7 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
                     <h3 className="text-sm md:text-lg font-black text-slate-900 dark:text-white mb-1 line-clamp-1">{product.name}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold mb-2 md:mb-4 line-clamp-1 md:line-clamp-2">{product.description || "لا يوجد وصف"}</p>
 
-                    <div className="mt-auto pt-2 md:pt-4 border-t border-slate-50 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2">
-                      <div>
-                        <span className="text-sm md:text-2xl font-black text-violet-600 dark:text-violet-400">
-                          {Number(product.salePrice).toLocaleString()}
-                        </span>
-                        <span className="text-[8px] md:text-[10px] font-black text-slate-400 mr-1 uppercase">د.ع</span>
-                      </div>
+                    <div className="mt-auto pt-2 md:pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-end">
                       <AddToCartButton product={{
                         id: product.id,
                         name: product.name,

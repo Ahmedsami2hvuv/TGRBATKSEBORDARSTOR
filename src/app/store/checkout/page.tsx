@@ -281,34 +281,16 @@ function CheckoutContent() {
             <h2 className="text-2xl font-black mb-8">ملخص الطلب</h2>
 
             <div className="space-y-4 mb-8">
-              {cart.map((item) => {
-                const itemTotal = item.price * item.quantity;
-                return (
-                  <div key={item.id} className="flex justify-between items-center text-slate-400">
-                    <span className="font-bold">{item.name} × {item.quantity}</span>
-                    <span className="font-black text-white">{fmtAlf(itemTotal)}</span>
-                  </div>
-                );
-              })}
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-slate-400">
+                  <span className="font-bold">{item.name} × {item.quantity}</span>
+                </div>
+              ))}
             </div>
 
             <div className="border-t border-slate-800 pt-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-black text-violet-400">مجموع المنتجات</span>
-                <span className="text-2xl font-black text-white tabular-nums">{fmtAlf(subtotal)}</span>
-              </div>
-              {deliveryPrice > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-black text-violet-400">سعر التوصيل</span>
-                  <span className="text-2xl font-black text-white tabular-nums">{fmtAlf(deliveryPrice)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center border-t border-slate-800 pt-4 mt-2">
-                <span className="text-xl font-black text-white">المجموع الكلي</span>
-                <span className="text-3xl font-black text-violet-400 tabular-nums">{fmtAlf(subtotal + deliveryPrice)}</span>
-              </div>
-              <p className="text-center text-sm font-bold text-slate-400 leading-relaxed">
-                {deliveryPrice > 0 ? "السعر النهائي شامل التوصيل" : "السعر الكلي بدون التجهيز والتوصيل"}
+              <p className="text-center text-sm font-bold text-violet-300 leading-relaxed">
+                يتم تحديد السعر الكلي والتوصيل عند التجهيز بواسطة المندوب/الكادر.
               </p>
             </div>
 

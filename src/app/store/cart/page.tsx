@@ -60,11 +60,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-black text-slate-900 dark:text-white">{item.name}</h3>
-                  {item.isCustom ? (
-                    <p className="text-amber-600 font-bold text-sm">يتم التسعير عند التجهيز</p>
-                  ) : (
-                    <p className="text-violet-600 font-bold">{Number(item.price).toLocaleString()} د.ع</p>
-                  )}
+                  <p className="text-amber-600 font-bold text-xs">يتم التسعير عند التجهيز</p>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
                   <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-lg shadow-sm font-bold text-slate-600">-</button>
@@ -78,8 +74,7 @@ export default function CartPage() {
 
           <div className="bg-slate-900 text-white p-8 rounded-[3rem] shadow-xl shadow-slate-200 dark:shadow-none space-y-6">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400 font-bold">المجموع الفرعي</span>
-              <span className="text-2xl font-black">{subtotal.toLocaleString()} د.ع</span>
+              <span className="text-slate-300 font-bold text-sm">التسعير الإجمالي: يتم تحديده عند التجهيز والتوصيل</span>
             </div>
 
             <div className="pt-4">
