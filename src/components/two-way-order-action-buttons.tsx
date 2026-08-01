@@ -93,6 +93,7 @@ export function TwoWayOrderActionButtons({
 
   const dragRef = useRef({ startX: 0, startY: 0, origLeft: 0, origTop: 0, moved: false });
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const lastToggleTimeRef = useRef<number>(0);
 
   // القوالب والقواعد المحملة
   const [dynConfig, setDynConfig] = useState<Partial<TwoWayTemplatesConfig> | null>(
@@ -139,8 +140,6 @@ export function TwoWayOrderActionButtons({
       : buttonRules && buttonRules.length > 0
       ? buttonRules
       : getDefaultTwoWayButtonRules();
-
-  const lastToggleTimeRef = useRef<number>(0);
 
   const toggleOpen = () => {
     const now = Date.now();
