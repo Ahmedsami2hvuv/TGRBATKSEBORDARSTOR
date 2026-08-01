@@ -93,7 +93,6 @@ export function TwoWayOrderActionButtons({
 
   const dragRef = useRef({ startX: 0, startY: 0, origLeft: 0, origTop: 0, moved: false });
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const lastToggleTimeRef = useRef<number>(0);
   const openTimeRef = useRef<number>(0);
 
   // القوالب والقواعد المحملة
@@ -142,15 +141,6 @@ export function TwoWayOrderActionButtons({
       ? buttonRules
       : getDefaultTwoWayButtonRules();
 
-  const toggleOpen = () => {
-    const now = Date.now();
-    if (now - lastToggleTimeRef.current < 400) return;
-    lastToggleTimeRef.current = now;
-    openTimeRef.current = now;
-    setIsOpen((prev) => !prev);
-    setActiveAction(null);
-  };
-
   // التحكم بالسحب والتحريك والنقر المطول
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isOpen || isConfiguring) return;
@@ -161,7 +151,6 @@ export function TwoWayOrderActionButtons({
       origTop: pos.top,
       moved: false,
     };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setIsDragging(true);
 
     longPressTimer.current = setTimeout(() => {
@@ -176,35 +165,28 @@ export function TwoWayOrderActionButtons({
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
 
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
       dragRef.current.moved = true;
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
+      const nextLeft = Math.max(10, Math.min(window.innerWidth - FAB_SIZE - 10, dragRef.current.origLeft + dx));
+      const nextTop = Math.max(10, Math.min(window.innerHeight - FAB_SIZE - 10, dragRef.current.origTop + dy));
+      setPos({ left: nextLeft, top: nextTop });
     }
-    const nextLeft = Math.max(10, Math.min(window.innerWidth - FAB_SIZE - 10, dragRef.current.origLeft + dx));
-    const nextTop = Math.max(10, Math.min(window.innerHeight - FAB_SIZE - 10, dragRef.current.origTop + dy));
-    setPos({ left: nextLeft, top: nextTop });
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    if (!isDragging) return;
+    const moved = dragRef.current.moved;
     setIsDragging(false);
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch { /* ignore */ }
 
-    if (dragRef.current.moved) {
+    if (moved) {
       localStorage.setItem(FAB_POS_STORAGE_KEY, JSON.stringify(pos));
-    } else {
-      if (!isConfiguring) {
-        toggleOpen();
-      }
     }
   };
 
@@ -212,7 +194,9 @@ export function TwoWayOrderActionButtons({
     e.stopPropagation();
     e.preventDefault();
     if (!dragRef.current.moved && !isConfiguring) {
-      toggleOpen();
+      openTimeRef.current = Date.now();
+      setIsOpen((prev) => !prev);
+      setActiveAction(null);
     }
   };
 
@@ -412,12 +396,13 @@ export function TwoWayOrderActionButtons({
           }}
           className="group select-none"
         >
-          <div
+          <button
+            type="button"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onClick={handleButtonClick}
-            className="flex h-[56px] w-[56px] cursor-pointer touch-none select-none items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:scale-95 bg-indigo-600 hover:bg-indigo-700"
+            className="flex h-[56px] w-[56px] cursor-pointer touch-none select-none items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:scale-95 bg-indigo-600 hover:bg-indigo-700 outline-none focus:outline-none"
             style={{
               transform: `scale(${scale})`,
               opacity: opacity,
@@ -440,7 +425,7 @@ export function TwoWayOrderActionButtons({
               <line x1="16" y1="13" x2="8" y2="13" />
               <line x1="16" y1="17" x2="8" y2="17" />
             </svg>
-          </div>
+          </button>
 
           {/* تلميح السحب والتحريك */}
           {!isConfiguring && (
