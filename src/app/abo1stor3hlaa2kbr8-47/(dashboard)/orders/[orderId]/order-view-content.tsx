@@ -211,7 +211,15 @@ export function OrderViewContent({
             {parsedShoppingJson !== null && (
               <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</Link>
             )}
-            {order.status === "pending" && <Link href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`} className="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">إسناد للمندوب</Link>}
+            {order.status !== "cancelled" && order.status !== "archived" && (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors"
+              >
+                <span>📦</span>
+                {order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}
+              </Link>
+            )}
           </div>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${statusBadgeClass}`}>{STATUS_AR[order.status] ?? order.status}</span></div>

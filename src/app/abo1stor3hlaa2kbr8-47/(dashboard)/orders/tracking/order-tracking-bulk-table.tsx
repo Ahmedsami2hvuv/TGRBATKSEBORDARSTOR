@@ -382,15 +382,18 @@ export function OrderTrackingBulkTable({
         showStatusDotInSelectCol={false}
         renderOrderIdBadge={() => null}
         renderBelowOrderId={(row) => {
-          if (row.orderStatus !== "pending") return null;
+          if (row.orderStatus === "cancelled" || row.orderStatus === "archived") return null;
+          const isAssigned = row.orderStatus !== "pending" || Boolean(row.courierName && row.courierName !== "—");
           return (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setAssignOrder(row);
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
-              title="إسناد سريع"
+              className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5 ${
+                isAssigned ? "border-violet-300 hover:border-violet-500" : "border-emerald-100 hover:border-emerald-400"
+              }`}
+              title={isAssigned ? "تغيير المندوب" : "إسناد سريع"}
             >
               <DynamicIcon
                 iconKey="preparer_delegate"
