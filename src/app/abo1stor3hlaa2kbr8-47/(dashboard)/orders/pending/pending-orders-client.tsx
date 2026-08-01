@@ -622,7 +622,7 @@ ${productsText}`;
         buyInputRef.current?.focus();
       }, 100);
     }
-  }, [editingIndex, products]);
+  }, [editingIndex]);
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, { ok: false });
@@ -701,12 +701,13 @@ ${productsText}`;
 
   const applyPricingPanel = () => {
     if (editingIndex === null) return;
-    const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
-    const sNum = parseFloat(normalizeNumerals(sellText)) || 0;
-    if (bNum <= 0 || sNum <= 0) {
-      setPricingErr("يرجى إدخال أسعار صحيحة");
-      return;
+    let bNum = parseFloat(normalizeNumerals(buyText)) || 0;
+    let sNum = parseFloat(normalizeNumerals(sellText)) || 0;
+
+    if (bNum > 0 && sNum <= 0) {
+      sNum = calculateAutoSellPrice(products[editingIndex]?.line || "", bNum, noProfit);
     }
+
     const next = [...products];
     const currentProd = next[editingIndex];
     const isExplicitAdmin = isAdminFulfilled;
@@ -719,8 +720,8 @@ ${productsText}`;
 
     next[editingIndex] = {
       ...currentProd,
-      buyAlf: bNum.toString(),
-      sellAlf: sNum.toString(),
+      buyAlf: bNum > 0 ? bNum.toString() : (currentProd.buyAlf || "0"),
+      sellAlf: sNum > 0 ? sNum.toString() : (currentProd.sellAlf || "0"),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
       assignedPreparerName: resolvedName,
@@ -728,8 +729,11 @@ ${productsText}`;
       pricedById: finalPrepId
     };
     setProducts(next);
+    hasChangedRef.current = true;
 
-    const nextUnpriced = getNextUnpricedIndex(editingIndex, next);
+    savePricingProgress(orderId, !!isDraft, next, placesCount, noProfit);
+
+    const nextUnpriced = (bNum > 0 && sNum > 0) ? getNextUnpricedIndex(editingIndex, next) : null;
     if (nextUnpriced !== null) {
       setEditingIndex(nextUnpriced);
     } else {
@@ -1750,31 +1754,7 @@ ${productsText}`;
                 <button
                   type="button"
                   onClick={() => {
-                    const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
-                    const sNum = parseFloat(normalizeNumerals(sellText)) || 0;
-                    if (bNum > 0 && sNum > 0) {
-                      const next = [...products];
-                      const currentProd = next[editingIndex];
-                      const isExplicitAdmin = isAdminFulfilled;
-                      const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
-                      const finalPrepName = isExplicitAdmin
-                        ? "تجهيز الإدارة 🏛️"
-                        : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
-
-                      const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
-
-                      next[editingIndex] = {
-                        ...currentProd,
-                        buyAlf: bNum.toString(),
-                        sellAlf: sNum.toString(),
-                        isFulfilledByAdmin: isExplicitAdmin,
-                        assignedPreparerId: finalPrepId,
-                        assignedPreparerName: resolvedName,
-                        pricedBy: resolvedName,
-                        pricedById: finalPrepId
-                      };
-                      setProducts(next);
-                    }
+                    applyPricingPanel();
                     cancelPricingPanel();
                   }}
                   className="rounded-2xl bg-sky-600 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"

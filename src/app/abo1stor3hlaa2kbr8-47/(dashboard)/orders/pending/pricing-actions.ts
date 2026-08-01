@@ -95,11 +95,13 @@ export async function savePricingProgress(id: string, isDraft: boolean, products
           nextData.noProfit = noProfit;
         }
 
+        const newRawListText = productsWithPreparer.map(p => p.line).filter(Boolean).join("\n");
         await prisma.companyPreparerShoppingDraft.update({
           where: { id: rId },
           data: {
             data: nextData,
-            placesCount
+            placesCount,
+            ...(newRawListText ? { rawListText: newRawListText } : {})
           }
         });
       }
