@@ -94,6 +94,7 @@ export function TwoWayOrderActionButtons({
   const dragRef = useRef({ startX: 0, startY: 0, origLeft: 0, origTop: 0, moved: false });
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const lastToggleTimeRef = useRef<number>(0);
+  const openTimeRef = useRef<number>(0);
 
   // القوالب والقواعد المحملة
   const [dynConfig, setDynConfig] = useState<Partial<TwoWayTemplatesConfig> | null>(
@@ -143,8 +144,9 @@ export function TwoWayOrderActionButtons({
 
   const toggleOpen = () => {
     const now = Date.now();
-    if (now - lastToggleTimeRef.current < 350) return;
+    if (now - lastToggleTimeRef.current < 400) return;
     lastToggleTimeRef.current = now;
+    openTimeRef.current = now;
     setIsOpen((prev) => !prev);
     setActiveAction(null);
   };
@@ -214,7 +216,10 @@ export function TwoWayOrderActionButtons({
     }
   };
 
-  const closeAll = () => {
+  const closeAll = (force = false) => {
+    if (!force && Date.now() - openTimeRef.current < 400) {
+      return;
+    }
     setIsOpen(false);
     setActiveAction(null);
     setIsConfiguring(false);
@@ -616,7 +621,7 @@ export function TwoWayOrderActionButtons({
               <div className="pt-2 border-t border-slate-100 mt-1">
                 <button
                   type="button"
-                  onClick={closeAll}
+                  onClick={() => closeAll(true)}
                   className="w-full py-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-extrabold text-xs hover:bg-rose-100 active:scale-95 transition"
                 >
                   ✕ إغلاق القائمة
@@ -666,7 +671,7 @@ export function TwoWayOrderActionButtons({
               <div className="pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={closeAll}
+                  onClick={() => closeAll(true)}
                   className="w-full py-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-extrabold text-xs hover:bg-rose-100 active:scale-95 transition"
                 >
                   ✕ إغلاق القائمة
