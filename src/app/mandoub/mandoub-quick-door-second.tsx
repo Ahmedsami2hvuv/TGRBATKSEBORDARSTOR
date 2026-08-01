@@ -61,15 +61,11 @@ export function MandoubQuickDoorSecondCapture({
   }
 
   const handleCamClick = () => {
-    if (window.confirm("تنبيه: هل تريد التقاط صورة (ثانية) لباب الزبون؟")) {
-      camInputRef.current?.click();
-    }
+    camInputRef.current?.click();
   };
 
   const handleGalClick = () => {
-    if (window.confirm("هل تريد اختيار صورة (ثانية) لباب الزبون من المعرض؟")) {
-      galInputRef.current?.click();
-    }
+    galInputRef.current?.click();
   };
 
   return (

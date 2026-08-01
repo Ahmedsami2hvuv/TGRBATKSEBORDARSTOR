@@ -92,12 +92,10 @@ export function MandoubDoorPhotoForm({
             type="button"
             disabled={busy}
             onClick={() => {
-              if (window.confirm("هل تريد التقاط صورة لباب المحل حقاً؟")) {
-                const el = inputRef.current;
-                if (!el) return;
-                el.setAttribute("capture", "environment");
-                el.click();
-              }
+              const el = inputRef.current;
+              if (!el) return;
+              el.setAttribute("capture", "environment");
+              el.click();
             }}
             className={btnCam}
           >
@@ -108,12 +106,10 @@ export function MandoubDoorPhotoForm({
             type="button"
             disabled={busy}
             onClick={() => {
-              if (window.confirm("هل تريد تحديث صورة باب المحل حقاً؟")) {
-                const el = inputRef.current;
-                if (!el) return;
-                el.removeAttribute("capture");
-                el.click();
-              }
+              const el = inputRef.current;
+              if (!el) return;
+              el.removeAttribute("capture");
+              el.click();
             }}
             className={btnGal}
           >
