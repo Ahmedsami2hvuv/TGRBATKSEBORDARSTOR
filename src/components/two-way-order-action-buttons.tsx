@@ -140,6 +140,16 @@ export function TwoWayOrderActionButtons({
       ? buttonRules
       : getDefaultTwoWayButtonRules();
 
+  const lastToggleTimeRef = useRef<number>(0);
+
+  const toggleOpen = () => {
+    const now = Date.now();
+    if (now - lastToggleTimeRef.current < 350) return;
+    lastToggleTimeRef.current = now;
+    setIsOpen((prev) => !prev);
+    setActiveAction(null);
+  };
+
   // التحكم بالسحب والتحريك والنقر المطول
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isOpen || isConfiguring) return;
@@ -165,7 +175,7 @@ export function TwoWayOrderActionButtons({
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
 
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       dragRef.current.moved = true;
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
@@ -192,17 +202,16 @@ export function TwoWayOrderActionButtons({
       localStorage.setItem(FAB_POS_STORAGE_KEY, JSON.stringify(pos));
     } else {
       if (!isConfiguring) {
-        setIsOpen((prev) => !prev);
-        setActiveAction(null);
+        toggleOpen();
       }
     }
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!dragRef.current.moved && !isConfiguring) {
-      setIsOpen((prev) => !prev);
-      setActiveAction(null);
+      toggleOpen();
     }
   };
 
@@ -404,11 +413,13 @@ export function TwoWayOrderActionButtons({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onClick={handleButtonClick}
-            className="flex h-[56px] w-[56px] cursor-grab items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:cursor-grabbing bg-indigo-600 hover:bg-indigo-700"
+            className="flex h-[56px] w-[56px] cursor-pointer touch-none select-none items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:scale-95 bg-indigo-600 hover:bg-indigo-700"
             style={{
               transform: `scale(${scale})`,
               opacity: opacity,
               transition: isDragging ? "none" : "transform 0.2s, background-color 0.3s, opacity 0.3s",
+              WebkitUserSelect: "none",
+              WebkitTouchCallout: "none",
             }}
           >
             <svg
