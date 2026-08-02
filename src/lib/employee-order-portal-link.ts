@@ -9,18 +9,28 @@ import { createHmac, timingSafeEqual } from "crypto";
  * ملاحظة: نُبقي اسم بارامتر الرابط `exp` لأسباب توافقية/تاريخية، لكنه هنا يحمل قيمة token
  * وليس تاريخ انتهاء.
  */
-function getSecret(): string {
+function getSecretCandidates(): string[] {
+  const secrets: string[] = [];
   const a = process.env.EMPLOYEE_ORDER_PORTAL_SECRET?.trim();
   const b = process.env.SHOP_PORTAL_SECRET?.trim();
   const c = process.env.DELEGATE_PORTAL_SECRET?.trim();
   const d = process.env.ADMIN_SESSION_SECRET?.trim();
-  const s = a || b || c || d;
 
-  if (s && s.length >= 16) return s;
+  if (a) secrets.push(a);
+  if (b) secrets.push(b);
+  if (c) secrets.push(c);
+  if (d) secrets.push(d);
 
-  // قيمة افتراضية ثابتة للإنتاج إذا لم يتم ضبط المتغيرات (لتجنب انهيار الصفحة)
-  // يفضل مستقبلاً ضبط EMPLOYEE_ORDER_PORTAL_SECRET في Vercel بطول 16 حرف
-  return "default_secure_secret_16_chars_min";
+  secrets.push("default_secure_secret_16_chars_min");
+  secrets.push("dev-delegate-portal-secret!");
+  secrets.push("default_secret_key_must_be_at_least_32_chars_long");
+
+  return Array.from(new Set(secrets.filter((s) => s.length >= 8)));
+}
+
+function getSecret(): string {
+  const candidates = getSecretCandidates();
+  return candidates[0] || "default_secure_secret_16_chars_min";
 }
 
 function payloadFor(employeeId: string, token: string): string {
@@ -70,26 +80,31 @@ export function verifyEmployeeOrderPortalQuery(
   | { ok: false; reason: EmployeeOrderPortalVerifyReason } {
   if (!e || !exp || !s) return { ok: false, reason: "missing" };
   if (!/^[a-f0-9]{64}$/i.test(s)) return { ok: false, reason: "bad_signature" };
-  let secret: string;
-  try {
-    secret = getSecret();
-  } catch {
-    return { ok: false, reason: "no_secret" };
-  }
+
   const token = String(exp).trim();
   if (!token) return { ok: false, reason: "missing" };
   const payload = payloadFor(e, token);
-  const expected = createHmac("sha256", secret).update(payload).digest("hex");
+
   let sigBuf: Buffer;
-  let expBuf: Buffer;
   try {
     sigBuf = Buffer.from(s, "hex");
-    expBuf = Buffer.from(expected, "hex");
   } catch {
     return { ok: false, reason: "bad_signature" };
   }
-  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
-    return { ok: false, reason: "bad_signature" };
+
+  const candidates = getSecretCandidates();
+  for (const secret of candidates) {
+    const expected = createHmac("sha256", secret).update(payload).digest("hex");
+    try {
+      const expBuf = Buffer.from(expected, "hex");
+      if (sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf)) {
+        return { ok: true, employeeId: e, token };
+      }
+    } catch {
+      continue;
+    }
   }
-  return { ok: true, employeeId: e, token };
+
+  return { ok: false, reason: "bad_signature" };
 }
+

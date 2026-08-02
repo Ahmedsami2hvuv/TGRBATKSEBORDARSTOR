@@ -99,7 +99,9 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
 
       if (e && exp && s) {
         const v = verifyEmployeeOrderPortalQuery(e, exp, s);
-        return { ok: v.ok, employeeId: v.employeeId, url: urlStr };
+        if (v.ok) {
+          return { ok: true, employeeId: v.employeeId, url: urlStr };
+        }
       }
     } catch (err) {
       return null;

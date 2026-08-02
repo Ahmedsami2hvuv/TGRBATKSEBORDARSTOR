@@ -156,9 +156,13 @@ export default async function ClientOrderPage(props: Props) {
 
     if (!employee) {
       return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
-          <div className="kse-app-inner mx-auto max-w-md text-center">
-             <p className="text-lg font-bold">الموظف غير موجود</p>
+        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
+          <div className="kse-app-inner mx-auto max-w-md">
+            <div className="kse-glass-dark rounded-3xl border border-rose-200 p-8 text-center shadow-lg bg-white/90 backdrop-blur-md">
+              <div className="mb-4 text-5xl">👤</div>
+              <h2 className="text-xl font-bold text-rose-700 mb-2">حساب الموظف غير موجود</h2>
+              <p className="text-sm text-slate-600">يرجى التأكد من الموظف المسؤول أو إدارتك للحصول على الرابط المحدث.</p>
+            </div>
           </div>
         </div>
       );
@@ -166,9 +170,15 @@ export default async function ClientOrderPage(props: Props) {
 
     if (employee.orderPortalToken !== v.token) {
       return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
-          <div className="kse-app-inner mx-auto max-w-md text-center">
-            <p className="text-lg font-bold text-rose-700">الرابط غير صالح (توكن قديم)</p>
+        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
+          <div className="kse-app-inner mx-auto max-w-md">
+            <div className="kse-glass-dark rounded-3xl border border-amber-300 p-8 text-center shadow-xl bg-white/90 backdrop-blur-md">
+              <div className="mb-4 text-5xl">🔄</div>
+              <h2 className="text-2xl font-black text-amber-800 mb-3">تم تحديث رابط المحل</h2>
+              <p className="text-base font-medium text-slate-700 leading-relaxed mb-6">
+                هذا الرابط قديم تم استبداله برابط جديد ومؤمن. يمكنك طلب الرابط الجديد مباشرة من تليجرام أو من لوحة إدارة المحل.
+              </p>
+            </div>
           </div>
         </div>
       );
