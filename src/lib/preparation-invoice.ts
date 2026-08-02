@@ -7,9 +7,16 @@ export type InvoiceProductLine = {
   sellAlf: number;
 };
 
+/** تنسيق المبلغ المالي الصادر للزبون والفاتورة المخزنة في خانة الملاحظات التلقائية */
+export function formatAlfForCustomer(val: number): string {
+  if (val == null || isNaN(val)) return "0";
+  if (val < 1) {
+    return String(Math.round(val * 1000));
+  }
+  return val.toFixed(3);
+}
+
 function fmtAlf(n: number): string {
-  // استخدام التنسيق المطلوب (أرقام فقط أو مع كسر بسيط بدون كلمة  إذا كان ممكناً، لكن المعتمد حالياً هو formatDinarAsAlf)
-  // لتلبية طلب المستخدم "مثروم نص ك 9" سنقوم بإرجاع الرقم فقط إذا كان صحيحاً
   if (Number.isInteger(n)) return String(n);
   return String(n);
 }
@@ -40,25 +47,25 @@ export function buildCustomerInvoiceText(params: {
   let run = 0;
   for (const row of lines) {
     const s = row.sellAlf;
-    parts.push(`– ${row.line} بـ ${s}`);
+    parts.push(`– ${row.line} بـ ${formatAlfForCustomer(s)}`);
     run += s;
-    parts.push(`• ${run} 💵`);
+    parts.push(`• ${formatAlfForCustomer(run)} 💵`);
   }
 
-  parts.push(`– 📦 التجهيز: من ${placesCount} محلات بـ ${extraAlf}`);
+  parts.push(`– 📦 التجهيز: من ${placesCount} محلات بـ ${formatAlfForCustomer(extraAlf)}`);
   run += extraAlf;
-  parts.push(`• ${run} 💵`);
+  parts.push(`• ${formatAlfForCustomer(run)} 💵`);
 
   const withoutDelivery = run;
 
-  parts.push(`– 🚚: بـ ${deliveryAlf}`);
+  parts.push(`– 🚚: بـ ${formatAlfForCustomer(deliveryAlf)}`);
   run += deliveryAlf;
-  parts.push(`• ${run} 💵`);
+  parts.push(`• ${formatAlfForCustomer(run)} 💵`);
 
   parts.push("-----------------------------------");
   parts.push("✨ المجموع الكلي: ✨");
-  parts.push(`بدون التوصيل = ${withoutDelivery} 💵`);
-  parts.push(`مــــع التوصيل = ${run} 💵`);
+  parts.push(`بدون التوصيل = ${formatAlfForCustomer(withoutDelivery)} 💵`);
+  parts.push(`مــــع التوصيل = ${formatAlfForCustomer(run)} 💵`);
   parts.push("شكراً لاختياركم أبو الأكبر للتوصيل! ❤️");
 
   return parts.join("\n");
@@ -66,12 +73,12 @@ export function buildCustomerInvoiceText(params: {
 
 /** سطر لكل منتج في خانة ملاحظات الطلب: الاسم والسعر فقط. */
 export function buildShoppingOrderProductNotesLines(lines: InvoiceProductLine[]): string {
-  return lines.map((r) => `${r.line.trim()}  ${r.sellAlf}`).join("\n");
+  return lines.map((r) => `${r.line.trim()}  ${formatAlfForCustomer(r.sellAlf)}`).join("\n");
 }
 
-/** ملخص شراء للمجهز (للحقول الداخلية) - تم التعديل لإخفاء سعر الشراء عن المندوب في الملخص العام */
+/** ملخص شراء للمجهز (للحقول الداخلية وخانة الملاحظات التلقائية) */
 export function buildPreparerPurchaseSummaryText(lines: InvoiceProductLine[]): string {
-  return lines.map((r) => `• ${r.line.trim()}  ${r.sellAlf}`).join("\n");
+  return lines.map((r) => `• ${r.line.trim()}  ${formatAlfForCustomer(r.sellAlf)}`).join("\n");
 }
 
 export function resolveDynamicOrderType(products: { line: string }[], defaultType: string = "تجهيز تسوق"): string {
@@ -88,3 +95,4 @@ export function resolveDynamicOrderType(products: { line: string }[], defaultTyp
   }
   return defaultType;
 }
+
