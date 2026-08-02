@@ -791,7 +791,21 @@ export function AdminCreateOrderForm({
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const unassignedIndices = products
+              .map((_, i) => i)
+              .filter((i) => !productAssignments[i] || productAssignments[i] === "all");
+            setCheckedProductIndices(unassignedIndices);
+          }}
+          className="text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs active:scale-95"
+          title="تحديد المنتجات التي لم يتم إسنادها لمجهز محدد بعد"
+        >
+          <span>⚡</span> تحديد الباقيات
+        </button>
+
         <button
           type="button"
           onClick={() => {
@@ -801,7 +815,7 @@ export function AdminCreateOrderForm({
               setCheckedProductIndices(products.map((_, i) => i));
             }
           }}
-          className="text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
+          className="text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition cursor-pointer shadow-xs active:scale-95"
         >
           {checkedProductIndices.length === products.length ? "إلغاء تحديد الكل ✕" : "☑️ تحديد كل المنتجات"}
         </button>
