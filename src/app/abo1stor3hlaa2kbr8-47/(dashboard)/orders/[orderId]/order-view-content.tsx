@@ -29,7 +29,7 @@ import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
 import { AdminCustomerOrderHistory } from "./admin-customer-order-history";
 import { OrderFabDock } from "@/components/order-fab-dock";
-import { NotesCopyButton } from "@/components/notes-copy-button";
+import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -643,10 +643,11 @@ export function OrderViewContent({
             )}
 
             {hasNotes && (
-              <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4 pe-16">
-                <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
-                <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{normalizeOrderSummaryText(order.summary)}</div>
-              </div>
+              <ClickableNotesCard text={order.summary ?? ""}>
+                <div className="whitespace-pre-wrap p-4 pt-9 text-sm font-bold text-slate-800 leading-relaxed">
+                  {normalizeOrderSummaryText(order.summary)}
+                </div>
+              </ClickableNotesCard>
             )}
           </div>
         );

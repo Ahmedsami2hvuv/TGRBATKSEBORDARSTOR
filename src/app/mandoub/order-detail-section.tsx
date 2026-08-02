@@ -24,7 +24,8 @@ import { MandoubOrderMoneyFlow } from "./mandoub-order-money-flow";
 import { MandoubOrderImageQuick } from "./mandoub-order-image-quick";
 import { MandoubQuickDoorCapture } from "./mandoub-quick-door";
 import { MandoubQuickDoorSecondCapture } from "./mandoub-quick-door-second";
-import { NotesCopyButton } from "@/components/notes-copy-button";
+import { ClickableNotesCard } from "@/components/clickable-notes-card";
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
@@ -758,10 +759,11 @@ export function OrderDetailSection({
                 </div>
               )}
               {hasSummary && showNotes && (
-                <div className="relative rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/10 p-5 shadow-inner">
-                  <div className="absolute end-4 top-4"><NotesCopyButton text={order.summary ?? ""} /></div>
-                  <div className="whitespace-pre-wrap text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed pr-1">{order.summary}</div>
-                </div>
+                <ClickableNotesCard text={order.summary ?? ""}>
+                  <div className="whitespace-pre-wrap p-5 pt-9 text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed pr-1">
+                    {normalizeOrderSummaryText(order.summary)}
+                  </div>
+                </ClickableNotesCard>
               )}
             </div>
           </div>

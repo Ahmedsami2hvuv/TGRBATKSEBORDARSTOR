@@ -17,7 +17,8 @@ import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { PreparerOrderMoneyFlow } from "./preparer-order-money-flow";
 import { PreparerDetailPhotoUploadRow } from "./preparer-order-detail-photo-buttons";
-import { NotesCopyButton } from "@/components/notes-copy-button";
+import { ClickableNotesCard } from "@/components/clickable-notes-card";
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -468,18 +469,17 @@ export function PreparerOrderDetailSection({
         const text = order.summary?.trim() || "";
         if (!text) return null;
         return (
-          <div key="preparer_notes" className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4" style={blockStyle}>
-            <div className="absolute end-3 top-3">
-              <NotesCopyButton text={text} />
+          <ClickableNotesCard key="preparer_notes" text={text}>
+            <div className="p-4 pt-9" style={blockStyle}>
+              <div className="mb-2 flex items-center gap-2">
+                <DynamicIcon iconKey="ui_note" config={icons} className="h-5 w-5 text-amber-800" fallback={null} />
+                <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات (الفاتورة)</h3>
+              </div>
+              <div className="whitespace-pre-wrap text-base font-bold leading-relaxed text-slate-800">
+                {normalizeOrderSummaryText(text)}
+              </div>
             </div>
-            <div className="mb-2 flex items-center gap-2 pe-24">
-              <DynamicIcon iconKey="ui_note" config={icons} className="h-5 w-5 text-amber-800" fallback={null} />
-              <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات</h3>
-            </div>
-            <div className="whitespace-pre-wrap text-base font-bold leading-relaxed text-slate-800">
-              {text}
-            </div>
-          </div>
+          </ClickableNotesCard>
         );
       }
       case "preparer_order_image": {

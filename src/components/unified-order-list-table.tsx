@@ -8,6 +8,7 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
+import { ClickableNotesCard } from "@/components/clickable-notes-card";
 
 /** مكون مشغل الصوت المصغر */
 function MiniAudioPlayer({ url }: { url: string }) {
@@ -553,10 +554,12 @@ export function UnifiedOrderListTable({
                             </div>
 
                             {showNotes === o.id && o.summary && (
-                              <CenterModal title="ملاحظات الطلب" onClose={() => setShowNotes(null)}>
-                                <div className="text-base font-bold text-slate-800 leading-relaxed whitespace-pre-wrap p-2">
-                                  {normalizeOrderSummaryText(o.summary)}
-                                </div>
+                              <CenterModal title="ملاحظات الطلب (انقر للنسخ)" onClose={() => setShowNotes(null)}>
+                                <ClickableNotesCard text={o.summary}>
+                                  <div className="text-base font-bold text-slate-800 leading-relaxed whitespace-pre-wrap p-4 pt-9">
+                                    {normalizeOrderSummaryText(o.summary)}
+                                  </div>
+                                </ClickableNotesCard>
                               </CenterModal>
                             )}
                           </div>
