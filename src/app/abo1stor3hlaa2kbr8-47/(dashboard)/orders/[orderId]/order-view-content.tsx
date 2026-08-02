@@ -10,6 +10,7 @@ import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -644,7 +645,7 @@ export function OrderViewContent({
             {hasNotes && (
               <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4 pe-16">
                 <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
-                <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary}</div>
+                <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{normalizeOrderSummaryText(order.summary)}</div>
               </div>
             )}
           </div>

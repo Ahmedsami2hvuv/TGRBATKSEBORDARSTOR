@@ -81,6 +81,27 @@ export function buildPreparerPurchaseSummaryText(lines: InvoiceProductLine[]): s
   return lines.map((r) => `• ${r.line.trim()}  ${formatAlfForCustomer(r.sellAlf)}`).join("\n");
 }
 
+/** معالجة وتنسيق أي نص ملخص مجهزين قديم أو جديد لتظهر الأسعار بالشكل الدقيق المفهوم للزبون */
+export function normalizeOrderSummaryText(rawText: string | null | undefined): string {
+  if (!rawText) return "";
+  return rawText
+    .split("\n")
+    .map((line) => {
+      // البحث عن الأسطر التي تبدأ بنقطة المجهز • ومتبوعة باسم المنتج والسعر في نهاية السطر
+      const match = line.match(/^(\s*•\s*)(.+?)\s+([\d.]+)\s*$/);
+      if (match) {
+        const prefix = match[1];
+        const productName = match[2].trim();
+        const priceNum = parseFloat(match[3]);
+        if (!isNaN(priceNum)) {
+          return `${prefix}${productName}  ${formatAlfForCustomer(priceNum)}`;
+        }
+      }
+      return line;
+    })
+    .join("\n");
+}
+
 export function resolveDynamicOrderType(products: { line: string }[], defaultType: string = "تجهيز تسوق"): string {
   if (!products || products.length === 0) return defaultType;
   if (products.length === 1) {

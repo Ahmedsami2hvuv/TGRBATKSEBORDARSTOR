@@ -8,6 +8,7 @@ import { customConfirm, customAlert } from "@/components/global-confirm-dialog";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import {
   assignPendingOrderToCourier,
   assignOrderToPreparer,
@@ -3230,7 +3231,8 @@ export default function PendingOrdersClient({
   };
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+    const formattedText = normalizeOrderSummaryText(text);
+    navigator.clipboard.writeText(formattedText).then(() => {
       setCopiedOrderId(id);
       setTimeout(() => {
         setCopiedOrderId(null);

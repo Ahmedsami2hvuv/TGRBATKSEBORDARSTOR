@@ -7,6 +7,7 @@ import { formatBaghdadDateFriendly, getBaghdadDateString, formatBaghdadDateTime 
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { formatDinarAsAlf } from "@/lib/money-alf";
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 
 /** مكون مشغل الصوت المصغر */
 function MiniAudioPlayer({ url }: { url: string }) {
@@ -554,7 +555,7 @@ export function UnifiedOrderListTable({
                             {showNotes === o.id && o.summary && (
                               <CenterModal title="ملاحظات الطلب" onClose={() => setShowNotes(null)}>
                                 <div className="text-base font-bold text-slate-800 leading-relaxed whitespace-pre-wrap p-2">
-                                  {o.summary}
+                                  {normalizeOrderSummaryText(o.summary)}
                                 </div>
                               </CenterModal>
                             )}
