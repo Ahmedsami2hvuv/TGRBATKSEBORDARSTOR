@@ -4,17 +4,17 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 let datasourceUrl = process.env.DATABASE_URL;
 
-if (datasourceUrl && process.env.NODE_ENV === "production") {
+if (datasourceUrl) {
   try {
     const url = new URL(datasourceUrl);
-    // Limit connections per lambda to 5 to prevent pool exhaustion while allowing concurrent queries
+    // ضبط حد الاتصالات والمهلة لمنع استنزاف الاتصالات في Vercel Serverless
     if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "5");
+      url.searchParams.set("connection_limit", "10");
     }
     if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "20");
+      url.searchParams.set("pool_timeout", "15");
     }
-    // Enable pgbouncer mode if using the Supabase transaction pooler (port 6543)
+    // تفعيل وضع pgbouncer إذا كان منفذ سوبابيس هو 6543
     if (url.port === "6543" && !url.searchParams.has("pgbouncer")) {
       url.searchParams.set("pgbouncer", "true");
     }
@@ -34,4 +34,6 @@ export const prisma =
         : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// إبقاء كائن PrismaClient موحداً في الذاكرة لتجنب إعادة إنشاء اتصالات جديدة في كل طلب
+globalForPrisma.prisma = prisma;
+
