@@ -111,6 +111,16 @@ body.has-custom-bg.dark .min-h-screen.bg-black {
   background-color: transparent !important;
 }
 
+/* طبقة تعتيم غامقة للخلفية المخصصة في الوضع الداكن لحماية العين وضمان القراءة */
+body.has-custom-bg.dark::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-color: rgba(6, 9, 14, 0.82) !important;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* جعل الكروت والصناديق البيضاء والرمادية شبه شفافة بنعومة لتتناسق مع الخلفية المخصصة */
 body.has-custom-bg :not(.min-h-screen).bg-white,
 body.has-custom-bg :not(.min-h-screen).bg-slate-50,
@@ -142,9 +152,10 @@ body.has-custom-bg.dark .bg-slate-900\/90,
 body.has-custom-bg.dark .bg-[#09090b]\/95,
 body.has-custom-bg.dark .kse-glass-card,
 body.has-custom-bg.dark .kse-glass-dark {
-  background-color: rgba(19, 20, 24, 0.6) !important;
-  backdrop-filter: blur(16px) saturate(125%) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(15, 20, 28, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* جعل القائمة الجانبية تدعم الخلفية المخصصة وتغلفها بطبقة شفافة ناعمة لضمان القراءة */
@@ -474,12 +485,13 @@ body.has-custom-bg.dark [class*="absolute"] {
 .dark body input::placeholder,
 .dark body textarea::placeholder,
 .dark body .animate-placeholder::placeholder {
-  color: rgba(226, 232, 240, 0.65) !important;
-  -webkit-text-fill-color: rgba(226, 232, 240, 0.65) !important;
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+  opacity: 0.9 !important;
 }
 
 .dark body .bg-white {
-  background-color: rgba(15, 17, 21, 0.92) !important;
+  background-color: rgba(15, 20, 28, 0.95) !important;
 }
 .dark body .bg-slate-50, 
 .dark body .bg-sky-50, 
@@ -492,7 +504,7 @@ body.has-custom-bg.dark [class*="absolute"] {
 .dark body .bg-teal-50,
 .dark body .bg-cyan-50,
 .dark body .bg-gray-50 {
-  background-color: rgba(22, 25, 32, 0.92) !important;
+  background-color: rgba(20, 26, 36, 0.95) !important;
 }
 .dark body .bg-slate-100, 
 .dark body .bg-sky-100, 
@@ -501,10 +513,10 @@ body.has-custom-bg.dark [class*="absolute"] {
 .dark body .bg-rose-100,
 .dark body .bg-indigo-100,
 .dark body .bg-gray-100 {
-  background-color: rgba(30, 34, 45, 0.85) !important;
+  background-color: rgba(28, 35, 48, 0.9) !important;
 }
 
-/* Invert dark text colors to light high-contrast text for dark mode */
+/* Invert dark text colors to high-contrast crisp white for dark mode */
 .dark body .text-slate-950,
 .dark body .text-slate-900,
 .dark body .text-slate-800,
@@ -520,8 +532,15 @@ body.has-custom-bg.dark [class*="absolute"] {
 .dark body .text-neutral-950,
 .dark body .text-neutral-900,
 .dark body .text-neutral-800,
-.dark body .text-black {
-  color: #f8fafc !important;
+.dark body .text-black,
+.dark body h1,
+.dark body h2,
+.dark body h3,
+.dark body h4,
+.dark body h5,
+.dark body h6 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .dark body .text-slate-600,
@@ -537,12 +556,13 @@ body.has-custom-bg.dark [class*="absolute"] {
 .dark body .text-neutral-600,
 .dark body .text-neutral-500,
 .dark body .text-neutral-400,
+.dark .dark\:text-slate-300,
 .dark .dark\:text-slate-400,
 .dark .dark\:text-slate-500,
 .dark .dark\:text-slate-600,
 .dark .dark\:text-gray-400,
 .dark .dark\:text-gray-500 {
-  color: #cbd5e1 !important;
+  color: #e2e8f0 !important; /* لون ناصع فضي عالي التباين */
 }
 
 .dark body .text-sky-950,
