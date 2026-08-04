@@ -313,7 +313,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       } catch (error) {
         console.error("خطأ أثناء الفحص الدوري لحالة التنبيه القوي:", error);
       }
-    }, 2000);
+    }, 5000);
 
     return () => {
       clearInterval(intervalId);
