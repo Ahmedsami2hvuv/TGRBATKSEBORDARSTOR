@@ -30,13 +30,6 @@ export function PwaRoutePreserver() {
       if (shouldPreservePath(pathname)) {
         window.localStorage.setItem(STORAGE_KEY, currentPath);
       }
-
-      if (pathname === "/") {
-        const storedRoute = window.localStorage.getItem(STORAGE_KEY);
-        if (storedRoute && storedRoute !== "/" && storedRoute !== currentPath) {
-          router.replace(storedRoute);
-        }
-      }
     };
 
     const originalPushState = window.history.pushState;
