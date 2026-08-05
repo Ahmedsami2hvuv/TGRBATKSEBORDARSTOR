@@ -100,12 +100,14 @@ export function OrderDetailSection({
   courierSettings,
   isModal = false,
   customWaButtons,
+  courierName,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   viewerCourierId?: string;
+  courierName?: string | null;
   phoneProfile?: any;
   secondPhoneProfile?: PhoneProfileFallback;
   smartHintLine?: string | null;
@@ -222,7 +224,7 @@ export function OrderDetailSection({
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
 
-  const currentCourierName = order.courier?.name || (order as any).courierName || (courierSettings as any)?.name || "";
+  const currentCourierName = courierName || order.courier?.name || (order as any).courierName || (courierSettings as any)?.name || "";
   const currentTotalPriceStr = String(
     (order as any).totalAmount ?? (order as any).totalPrice ?? (Number((order as any).orderSubtotal || 0) + Number((order as any).deliveryPrice || 0)) ?? ""
   );

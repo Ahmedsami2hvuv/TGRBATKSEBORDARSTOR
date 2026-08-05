@@ -297,6 +297,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             auth={baseAuth}
             nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}${modalOnly ? "&view=modal" : ""}`}
             viewerCourierId={v.courierId}
+            courierName={courier.name}
             phoneProfile={customerPhoneProfile ?? undefined}
             secondPhoneProfile={secondPhoneProfile ?? undefined}
             customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}

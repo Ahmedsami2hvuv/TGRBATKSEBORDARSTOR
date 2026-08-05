@@ -751,6 +751,7 @@ export function MandoubOrderTable({
                 }}
                 isModal={true}
                 customWaButtons={customWaButtons}
+                courierName={courierName}
               />
             </div>
           </div>,
