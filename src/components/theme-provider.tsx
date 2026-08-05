@@ -15,15 +15,19 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("auto");
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kse-theme") as ThemeMode | null;
+      if (saved === "light" || saved === "dark" || saved === "auto") {
+        return saved;
+      }
+    }
+    return "auto";
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("kse-theme") as ThemeMode | null;
-    if (saved === "light" || saved === "dark" || saved === "auto") {
-      setThemeState(saved);
-    }
   }, []);
 
   const setTheme = (mode: ThemeMode) => {

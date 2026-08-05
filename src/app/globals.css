@@ -490,29 +490,29 @@ body.has-custom-bg.dark [class*="absolute"] {
   opacity: 0.9 !important;
 }
 
-.dark body .bg-white {
+.dark body .bg-white:not([class*="dark:bg-"]) {
   background-color: rgba(15, 20, 28, 0.95) !important;
 }
-.dark body .bg-slate-50, 
-.dark body .bg-sky-50, 
-.dark body .bg-emerald-50, 
-.dark body .bg-rose-50,
-.dark body .bg-amber-50,
-.dark body .bg-indigo-50,
-.dark body .bg-violet-50,
-.dark body .bg-purple-50,
-.dark body .bg-teal-50,
-.dark body .bg-cyan-50,
-.dark body .bg-gray-50 {
+.dark body .bg-slate-50:not([class*="dark:bg-"]), 
+.dark body .bg-sky-50:not([class*="dark:bg-"]), 
+.dark body .bg-emerald-50:not([class*="dark:bg-"]), 
+.dark body .bg-rose-50:not([class*="dark:bg-"]),
+.dark body .bg-amber-50:not([class*="dark:bg-"]),
+.dark body .bg-indigo-50:not([class*="dark:bg-"]),
+.dark body .bg-violet-50:not([class*="dark:bg-"]),
+.dark body .bg-purple-50:not([class*="dark:bg-"]),
+.dark body .bg-teal-50:not([class*="dark:bg-"]),
+.dark body .bg-cyan-50:not([class*="dark:bg-"]),
+.dark body .bg-gray-50:not([class*="dark:bg-"]) {
   background-color: rgba(20, 26, 36, 0.95) !important;
 }
-.dark body .bg-slate-100, 
-.dark body .bg-sky-100, 
-.dark body .bg-emerald-100,
-.dark body .bg-amber-100,
-.dark body .bg-rose-100,
-.dark body .bg-indigo-100,
-.dark body .bg-gray-100 {
+.dark body .bg-slate-100:not([class*="dark:bg-"]), 
+.dark body .bg-sky-100:not([class*="dark:bg-"]), 
+.dark body .bg-emerald-100:not([class*="dark:bg-"]),
+.dark body .bg-amber-100:not([class*="dark:bg-"]),
+.dark body .bg-rose-100:not([class*="dark:bg-"]),
+.dark body .bg-indigo-100:not([class*="dark:bg-"]),
+.dark body .bg-gray-100:not([class*="dark:bg-"]) {
   background-color: rgba(28, 35, 48, 0.9) !important;
 }
 

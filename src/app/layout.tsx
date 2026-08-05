@@ -70,6 +70,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('kse-theme');
+                  var isDark = false;
+                  if (saved === 'dark') {
+                    isDark = true;
+                  } else if (saved === 'light') {
+                    isDark = false;
+                  } else {
+                    var hour = new Date().getHours();
+                    isDark = (hour >= 18 || hour < 6);
+                  }
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <style dangerouslySetInnerHTML={{ __html: `
           ${fontFaceCss}
           :root {
