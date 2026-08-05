@@ -31,6 +31,7 @@ export function MandoubOrdersSection({
   availableForAssignment,
   telegramLink,
   cashInHandStr,
+  customWaButtons,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
@@ -42,6 +43,7 @@ export function MandoubOrdersSection({
   availableForAssignment: boolean;
   telegramLink: string | null;
   cashInHandStr: string;
+  customWaButtons?: any[];
 }) {
   const [query, setQuery] = useState("");
   const searchParams = useSearchParams();
