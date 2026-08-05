@@ -36,6 +36,7 @@ export default async function WaButtonDetailPage({
         customerLocationRule: row.customerLocationRule,
         isActive: row.isActive,
         recipient: row.recipient,
+        showNextToLocation: row.showNextToLocation ?? false,
       }}
     />
   );

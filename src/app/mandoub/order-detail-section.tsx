@@ -407,16 +407,16 @@ export function OrderDetailSection({
                                 shopPhone={order.shopPhone || undefined}
                                 orderStatus={order.status}
                                 templateVars={{
-                                  clientshop: order.clientName || "",
-                                  city: order.regionLine || "",
+                                  clientshop: order.shop?.name || order.clientName || "",
+                                  city: order.customerRegion?.name || order.regionLine || "",
                                   total_price: String(order.totalPrice || ""),
-                                  delivery: order.courierName || "",
+                                  delivery: order.courier?.name || order.courierName || "",
                                   location_url: mergedCustomerLocationUrl || "",
-                                  landmark: order.nearestLandmark || "",
+                                  landmark: order.customerLandmark || order.nearestLandmark || "",
                                   order_number: String(order.orderNumber || ""),
                                   customer_phone: order.customerPhone || "",
                                   customer_phone2: order.customerPhone2 || "",
-                                  shop_phone: order.shopPhone || "",
+                                  shop_phone: order.shop?.phone || order.shopPhone || "",
                                 }}
                               />
                             )}
@@ -546,16 +546,16 @@ export function OrderDetailSection({
                               shopPhone={order.shopPhone || undefined}
                               orderStatus={order.status}
                               templateVars={{
-                                clientshop: order.clientName || "",
-                                city: order.secondCustomerRegionName || order.regionLine || "",
+                                clientshop: order.shop?.name || order.clientName || "",
+                                city: order.secondCustomerRegion?.name || order.secondCustomerRegionName || order.regionLine || "",
                                 total_price: String(order.totalPrice || ""),
-                                delivery: order.courierName || "",
+                                delivery: order.courier?.name || order.courierName || "",
                                 location_url: mergedCustomerLocationUrl || "",
-                                landmark: order.secondCustomerNearestLandmark || order.nearestLandmark || "",
+                                landmark: order.secondCustomerLandmark || order.secondCustomerNearestLandmark || order.nearestLandmark || "",
                                 order_number: String(order.orderNumber || ""),
                                 customer_phone: order.secondCustomerPhone || order.customerPhone || "",
                                 customer_phone2: order.customerPhone2 || "",
-                                shop_phone: order.shopPhone || "",
+                                shop_phone: order.shop?.phone || order.shopPhone || "",
                               }}
                             />
                           )}

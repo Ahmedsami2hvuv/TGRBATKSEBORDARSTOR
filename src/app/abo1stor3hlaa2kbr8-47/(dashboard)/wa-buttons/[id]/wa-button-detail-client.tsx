@@ -49,6 +49,10 @@ export function WaButtonDetailClient({ row }: Props) {
   const [label, setLabel] = useState(row.label);
   const [iconKey, setIconKey] = useState(row.iconKey);
   const [showNextToLocation, setShowNextToLocation] = useState(row.showNextToLocation ?? false);
+
+  useEffect(() => {
+    setShowNextToLocation(row.showNextToLocation ?? false);
+  }, [row.showNextToLocation]);
   const [statuses, setStatuses] = useState<string[]>(() => parseStatusesCsv(row.statusesCsv));
   const [visibilityScopes, setVisibilityScopes] = useState<VisibilityScope[]>(() =>
     parseVisibilityScopesCsv(row.visibilityScope)
@@ -219,6 +223,7 @@ export function WaButtonDetailClient({ row }: Props) {
             <input type="hidden" name="id" value={row.id} />
             <input type="hidden" name="name" value={row.name} />
             <input type="hidden" name="recipient" value={recipients.join(",")} />
+            <input type="hidden" name="showNextToLocation" value={showNextToLocation ? "true" : "false"} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
