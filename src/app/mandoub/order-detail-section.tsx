@@ -222,6 +222,11 @@ export function OrderDetailSection({
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
 
+  const currentCourierName = order.courier?.name || (order as any).courierName || (courierSettings as any)?.name || "";
+  const currentTotalPriceStr = String(
+    (order as any).totalAmount ?? (order as any).totalPrice ?? (Number((order as any).orderSubtotal || 0) + Number((order as any).deliveryPrice || 0)) ?? ""
+  );
+
   const isFromProfileLandmark = !getCleanValue(order.customerLandmark, order.customer?.customerLandmark) && !!getCleanValue(phoneProfile?.landmark);
   const isFromProfileLocation = !getCleanValue(order.customerLocationUrl, order.customer?.customerLocationUrl) && !!getCleanValue(phoneProfile?.locationUrl);
   const isFromProfilePhoto = !getCleanValue(order.customerDoorPhotoUrl, order.customer?.customerDoorPhotoUrl) && !!getCleanValue(phoneProfile?.photoUrl);
@@ -409,10 +414,14 @@ export function OrderDetailSection({
                                 shopPhone={order.shopPhone || undefined}
                                 orderStatus={order.status}
                                 templateVars={{
-                                  clientshop: order.shop?.name || order.clientName || "",
-                                  city: order.customerRegion?.name || order.regionLine || "",
-                                  total_price: String(order.totalPrice || ""),
-                                  delivery: order.courier?.name || order.courierName || "",
+                                  clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
+                                  city: order.customerRegion?.name || order.regionLine || "—",
+                                  total_price: currentTotalPriceStr,
+                                  total: currentTotalPriceStr,
+                                  delivery: currentCourierName,
+                                  courier: currentCourierName,
+                                  courierName: currentCourierName,
+                                  deliveryName: currentCourierName,
                                   location_url: mergedCustomerLocationUrl || "",
                                   landmark: order.customerLandmark || order.nearestLandmark || "",
                                   order_number: String(order.orderNumber || ""),
@@ -549,10 +558,14 @@ export function OrderDetailSection({
                               shopPhone={order.shopPhone || undefined}
                               orderStatus={order.status}
                               templateVars={{
-                                clientshop: order.shop?.name || order.clientName || "",
-                                city: order.secondCustomerRegion?.name || order.secondCustomerRegionName || order.regionLine || "",
-                                total_price: String(order.totalPrice || ""),
-                                delivery: order.courier?.name || order.courierName || "",
+                                clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
+                                city: order.secondCustomerRegion?.name || order.secondCustomerRegionName || order.regionLine || "—",
+                                total_price: currentTotalPriceStr,
+                                total: currentTotalPriceStr,
+                                delivery: currentCourierName,
+                                courier: currentCourierName,
+                                courierName: currentCourierName,
+                                deliveryName: currentCourierName,
                                 location_url: mergedCustomerLocationUrl || "",
                                 landmark: order.secondCustomerLandmark || order.secondCustomerNearestLandmark || order.nearestLandmark || "",
                                 order_number: String(order.orderNumber || ""),
@@ -913,6 +926,7 @@ export function OrderDetailSection({
               delivery={order.deliveryPrice != null ? Number(order.deliveryPrice) : "0"}
               total={order.totalAmount != null ? Number(order.totalAmount) : "0"}
               notes={order.summary}
+              deliveryName={currentCourierName}
             />
           </div>
         )}
@@ -929,8 +943,8 @@ export function OrderDetailSection({
           orderNumber={order.orderNumber}
           shopName={order.shop.name}
           city={order.customerRegion?.name ?? ""}
-          totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""}
-          deliveryName={order.courier?.name ?? ""}
+          totalPrice={currentTotalPriceStr}
+          deliveryName={currentCourierName}
           customerLocationUrl={mergedCustomerLocationUrl}
           customerLandmark={mergedLandmark}
           hasCustomerLocation={!missingCustomerLocation}

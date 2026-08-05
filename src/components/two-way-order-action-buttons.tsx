@@ -46,6 +46,7 @@ export type TwoWayOrderActionButtonsProps = {
   delivery?: string | number | null;
   total?: string | number | null;
   notes?: string | null;
+  deliveryName?: string | null;
   // القوالب والقواعد الديناميكية من صفحة الإعدادات
   buttonRules?: TwoWayButtonRule[];
   twoWayTemplates?: Partial<TwoWayTemplatesConfig> | null;
@@ -73,10 +74,11 @@ export function TwoWayOrderActionButtons({
   recipientRegionName,
   recipientHasLocation = false,
   recipientGpsUploaded = false,
-  subtotal = "0",
-  delivery = "0",
-  total = "0",
-  notes = "",
+  subtotal,
+  delivery,
+  total,
+  notes,
+  deliveryName,
   buttonRules,
   twoWayTemplates,
 }: TwoWayOrderActionButtonsProps) {
@@ -349,6 +351,7 @@ export function TwoWayOrderActionButtons({
       delivery: delivery || "0",
       total: total || "0",
       notes: notes || "",
+      deliveryName: deliveryName || "",
     });
   };
 

@@ -48,10 +48,23 @@ export function getDefaultTwoWayLocationSenderTemplate(): string {
 
 export function getDefaultTwoWayLocationRecipientTemplate(): string {
   return [
-    "مرحباً (المستلم)،",
-    "نرجو تزويدنا بموقعك الجغرافي (اللوكيشن) لتوصيل الطلبية رقم {orderNumber}.",
-    "منطقة التوصيل: {recipientRegion}",
-    "شكراً لتعاونكم مع شركة أبو الأكبر للتوصيل.",
+    "السلام عليكم 👋",
+    "وياكم كابتن {{{delivery}}} 👨🏻✈️",
+    "من خدمة أبو الأكبر للتوصيل 🚚",
+    "عدكم طلبية من {{{clientshop}}} 🏪",
+    "متجهة لمنطقة {{{city}}} 📍",
+    "المبلغ الكلي هو {{{total_price}}} 💰",
+    "يا ريت ترسلون الموقع 📲",
+    "بأسرع وقت ممكن ⚡",
+    ".",
+    "وبالنسبة للدفع 💵،",
+    "تكدرون تدفعون عبر:📲",
+    "💳 ماستر كارد:",
+    "1973159153",
+    "باسم: (أحمد سامي)",
+    "📱 زين كاش:",
+    "07733921468",
+    "باسم: (أحمد سامي)",
   ].join("\n");
 }
 
@@ -186,6 +199,8 @@ export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
   ];
 }
 
+import { applyMandoubWaTemplate } from "./mandoub-wa-button-template";
+
 export function renderTwoWayTemplate(input: {
   template: string;
   orderNumber?: string | number;
@@ -199,20 +214,47 @@ export function renderTwoWayTemplate(input: {
   delivery?: string | number;
   total?: string | number;
   notes?: string;
+  deliveryName?: string;
+  courierName?: string;
 }): string {
   if (!input.template || !input.template.trim()) return "";
-  let text = input.template.trim();
+  const tpl = input.template.trim();
+
+  const deliveryStr =
+    input.deliveryName ||
+    input.courierName ||
+    (typeof input.delivery === "string" && isNaN(Number(input.delivery)) ? input.delivery : "") ||
+    "";
+  const totalStr = input.total != null && input.total !== "" ? String(input.total) : "";
+  const shopStr = input.senderName || "";
+  const regionStr = input.recipientRegion || "";
+
+  // التطبيق الأولي للمتغيرات الشائعة
+  let text = applyMandoubWaTemplate(tpl, {
+    delivery: deliveryStr,
+    courier: deliveryStr,
+    clientshop: shopStr,
+    shop: shopStr,
+    city: regionStr,
+    region: regionStr,
+    total_price: totalStr,
+    total: totalStr,
+    order_number: String(input.orderNumber || ""),
+    customer_phone: input.recipientPhone || "",
+    shop_phone: input.senderPhone || "",
+  });
+
   const replacements: Record<string, string> = {
     "{orderNumber}": String(input.orderNumber || ""),
-    "{senderName}": input.senderName || "المرسل",
+    "{senderName}": shopStr || "المرسل",
     "{senderPhone}": input.senderPhone || "",
     "{recipientName}": input.recipientName || "المستلم",
     "{recipientPhone}": input.recipientPhone || "",
     "{senderRegion}": input.senderRegion || "غير مسمى",
-    "{recipientRegion}": input.recipientRegion || "غير مسمى",
+    "{recipientRegion}": regionStr || "غير مسمى",
     "{subtotal}": String(input.subtotal || "0"),
-    "{delivery}": String(input.delivery || "0"),
-    "{total}": String(input.total || "0"),
+    "{delivery}": deliveryStr || String(input.delivery || "0"),
+    "{total}": totalStr || String(input.total || "0"),
     "{notes}": input.notes || "لا يوجد",
     "\\n": "\n",
   };
