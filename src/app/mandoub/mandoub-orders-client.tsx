@@ -184,6 +184,7 @@ export function MandoubOrdersSection({
         setIsSortingMode={setIsSortingMode}
         showSearch={showSearch}
         setShowSearch={setShowSearch}
+        customWaButtons={customWaButtons}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

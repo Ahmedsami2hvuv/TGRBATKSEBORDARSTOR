@@ -167,9 +167,15 @@ export default async function MandoubPage({ searchParams }: Props) {
       ? tabRaw
       : "all";
 
-  const courier = await prisma.courier.findUnique({
-    where: { id: v.courierId },
-  });
+  const [courier, waButtonsRaw] = await Promise.all([
+    prisma.courier.findUnique({
+      where: { id: v.courierId },
+    }),
+    prisma.mandoubWaButtonSetting.findMany({
+      where: { isActive: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
 
   if (!courier || courier.blocked) {
     return (
@@ -990,6 +996,7 @@ export default async function MandoubPage({ searchParams }: Props) {
               availableForAssignment={courier.availableForAssignment}
               telegramLink={telegramLink}
               cashInHandStr={cashInHandStr}
+              customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}
             />
           </section>
         </div>

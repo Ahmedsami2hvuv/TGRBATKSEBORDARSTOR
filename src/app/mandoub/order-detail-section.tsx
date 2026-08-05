@@ -99,6 +99,7 @@ export function OrderDetailSection({
   icons,
   courierSettings,
   isModal = false,
+  customWaButtons,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
@@ -113,14 +114,15 @@ export function OrderDetailSection({
   icons?: GlobalIconsConfig | null;
   routeHistory?: { lat: number; lng: number; recordedAt: string }[];
   courierSettings?: {
-    showDoorBtn: boolean;
-    showLocationBtn: boolean;
-    showCallBtn: boolean;
-    showWhatsAppBtn: boolean;
-    showNotesBtn: boolean;
-    showVoiceNotesBtn: boolean;
+    showDoorBtn?: boolean;
+    showLocationBtn?: boolean;
+    showCallBtn?: boolean;
+    showWhatsAppBtn?: boolean;
+    showNotesBtn?: boolean;
+    showVoiceNotesBtn?: boolean;
   };
   isModal?: boolean;
+  customWaButtons?: any[];
 }) {
   const fontSizeContext = useContext(FontSizeContext);
   const fontSizeConfig = fontSizeContext?.config;
@@ -418,6 +420,7 @@ export function OrderDetailSection({
                                   customer_phone2: order.customerPhone2 || "",
                                   shop_phone: order.shop?.phone || order.shopPhone || "",
                                 }}
+                                customWaButtons={customWaButtons}
                               />
                             )}
                           </>
@@ -557,6 +560,7 @@ export function OrderDetailSection({
                                 customer_phone2: order.customerPhone2 || "",
                                 shop_phone: order.shop?.phone || order.shopPhone || "",
                               }}
+                              customWaButtons={customWaButtons}
                             />
                           )}
                         </div>

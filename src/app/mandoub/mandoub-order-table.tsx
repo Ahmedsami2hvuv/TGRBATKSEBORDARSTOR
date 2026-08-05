@@ -132,6 +132,7 @@ export type MandoubRow = {
   phoneProfile?: any;
   secondPhoneProfile?: any;
   otherRegionsProfiles?: any[];
+  customWaButtons?: any[];
 };
 
 
@@ -168,6 +169,7 @@ export function MandoubOrderTable({
   setIsSortingMode,
   showSearch,
   setShowSearch,
+  customWaButtons,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -177,12 +179,13 @@ export function MandoubOrderTable({
   listOrdersStampSig: string;
   walletData: any;
   courierName: string;
-  showQuickSelect: boolean;
-  setShowQuickSelect: (v: boolean) => void;
-  isSortingMode: boolean;
-  setIsSortingMode: (v: boolean) => void;
-  showSearch: boolean;
-  setShowSearch: (v: boolean) => void;
+  showQuickSelect?: boolean;
+  setShowQuickSelect?: (b: boolean) => void;
+  isSortingMode?: boolean;
+  setIsSortingMode?: (b: boolean) => void;
+  showSearch?: boolean;
+  setShowSearch?: (b: boolean) => void;
+  customWaButtons?: any[];
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -747,6 +750,7 @@ export function MandoubOrderTable({
                   showVoiceNotesBtn: true,
                 }}
                 isModal={true}
+                customWaButtons={customWaButtons}
               />
             </div>
           </div>,

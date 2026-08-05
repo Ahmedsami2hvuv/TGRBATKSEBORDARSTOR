@@ -115,7 +115,13 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
   if (baseAuth.exp) baseQuery.set("exp", baseAuth.exp);
   if (baseAuth.s) baseQuery.set("s", baseAuth.s);
 
-  const order = await findMandoubOrderForCourier(orderId, v.courierId);
+  const [order, waButtonsRaw] = await Promise.all([
+    findMandoubOrderForCourier(orderId, v.courierId),
+    prisma.mandoubWaButtonSetting.findMany({
+      where: { isActive: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
 
   if (order) {
     const doubleStaff = (order.routeMode === "double" || !!order.secondCustomerPhone) && order.submissionSource === "staff_portal";
@@ -293,6 +299,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
             secondPhoneProfile={secondPhoneProfile ?? undefined}
+            customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}
             smartHintLine={smartHintLine || "—"}
             secondSmartHintLine={secondSmartHintLine || "—"}
             uiSettings={uiSettings}

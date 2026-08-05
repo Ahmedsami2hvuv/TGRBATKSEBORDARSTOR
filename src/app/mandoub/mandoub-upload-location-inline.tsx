@@ -34,6 +34,7 @@ export function MandoubUploadLocationInline({
   shopPhone,
   orderStatus,
   templateVars,
+  customWaButtons,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -45,6 +46,7 @@ export function MandoubUploadLocationInline({
   shopPhone?: string;
   orderStatus?: string;
   templateVars?: Record<string, string>;
+  customWaButtons?: any[];
 }) {
   const [state, formAction, pending] = useActionState(
     setMandoubCustomerLocationFromGeolocation,
@@ -182,6 +184,7 @@ export function MandoubUploadLocationInline({
             shopPhone={shopPhone}
             orderStatus={orderStatus}
             templateVars={templateVars}
+            customButtons={customWaButtons}
           />
         </div>
       </div>
