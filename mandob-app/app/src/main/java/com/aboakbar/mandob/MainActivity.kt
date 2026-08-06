@@ -34,13 +34,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSubmit: Button
     private lateinit var progressBar: ProgressBar
 
-    private val PREFS_NAME = "AboAkbarMandobPrefs"
+    private val PREFS_NAME = "AboAkbarPrefs"
     private val KEY_MANDOB_URL = "mandob_url"
     private val KEY_MANDOB_ID = "mandob_id"
+    private val KEY_TOKEN = "admin_token"
     private val FILECHOOSER_RESULTCODE = 1
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
     private var cameraPhotoUri: Uri? = null
     private var lastCssInjectionTime = 0L
+    private var lastTokenSyncTime = 0L
     private var fadeOutRunnable: Runnable? = null
 
     // التطبيق الخاص بالمندوبين
@@ -269,6 +271,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                syncTokenFromCookies()
                 swipeRefreshLayout.isRefreshing = false
             }
 
@@ -477,6 +480,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        syncTokenFromCookies()
         try {
             webView.onResume()
             webView.resumeTimers()
@@ -667,52 +671,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAutoStartPermission() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val isAutoStartPrompted = sharedPreferences.getBoolean("autostart_prompted", false)
-        
-        if (!isAutoStartPrompted) {
-            val manufacturer = Build.MANUFACTURER.lowercase()
-            if (manufacturer.contains("xiaomi") || manufacturer.contains("oppo") || 
-                manufacturer.contains("vivo") || manufacturer.contains("huawei")) {
-                
-                sharedPreferences.edit().putBoolean("autostart_prompted", true).apply()
-                
-                try {
-                    val intent = Intent()
-                    when {
-                        manufacturer.contains("xiaomi") -> {
-                            intent.component = android.content.ComponentName(
-                                "com.miui.securitycenter",
-                                "com.miui.permcenter.autostart.AutoStartManagementActivity"
-                            )
-                        }
-                        manufacturer.contains("oppo") -> {
-                            intent.component = android.content.ComponentName(
-                                "com.coloros.safecenter",
-                                "com.coloros.safecenter.permission.startup.StartupAppListActivity"
-                            )
-                        }
-                        manufacturer.contains("vivo") -> {
-                            intent.component = android.content.ComponentName(
-                                "com.vivo.permissionmanager",
-                                "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
-                            )
-                        }
-                        manufacturer.contains("huawei") -> {
-                            intent.component = android.content.ComponentName(
-                                "com.huawei.systemmanager",
-                                "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
-                            )
-                        }
-                    }
-                    startActivity(intent)
-                    Toast.makeText(this, "يرجى تفعيل (التشغيل التلقائي / Auto-start) لتطبيق المندوب لضمان وصول الإشعارات فوراً في الخلفية", Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    // تجاهل
-                }
-            }
-        }
+        // ... (كود موجود)
     }
 
-    
+    private fun syncTokenFromCookies() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTokenSyncTime < 15000) {
+            return
+        }
+        lastTokenSyncTime = currentTime
+
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val urls = arrayOf("https://aboakbr.com", "https://d.ksebstor.site", "https://aboakbar.vercel.app")
+            var token: String? = null
+            for (url in urls) {
+                val cookies = cookieManager.getCookie(url)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && (parts[0] == "admin_token" || parts[0] == "token")) {
+                            val extractedToken = parts[1]
+                            if (extractedToken.isNotEmpty() && extractedToken != "undefined") {
+                                token = extractedToken
+                                break
+                            }
+                        }
+                    }
+                }
+                if (token != null) break
+            }
+
+            if (!token.isNullOrEmpty()) {
+                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
+                if (savedToken != token) {
+                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                }
+            }
+        } catch (e: Exception) {
+            // تجاهل
+        }
+    }
 }

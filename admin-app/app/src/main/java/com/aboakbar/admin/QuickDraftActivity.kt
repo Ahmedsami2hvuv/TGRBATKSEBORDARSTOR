@@ -351,19 +351,29 @@ class QuickDraftActivity : AppCompatActivity() {
 
         if (token.isNullOrEmpty()) {
             try {
+                // محاولة جلب التوكن من ملفات الارتباط (Cookies) الخاصة بالـ WebView
                 val cookieManager = CookieManager.getInstance()
-                val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app", "http://aboakbr.com", "http://aboakbar.vercel.app")
+                
+                // قائمة النطاقات المحتملة
+                val urls = arrayOf(
+                    "https://aboakbr.com", 
+                    "https://aboakbar.vercel.app", 
+                    "https://d.ksebstor.site",
+                    "http://aboakbr.com", 
+                    "http://aboakbar.vercel.app"
+                )
+                
                 for (url in urls) {
                     val cookies = cookieManager.getCookie(url)
                     if (!cookies.isNullOrEmpty()) {
                         val cookieArray = cookies.split(";")
                         for (cookie in cookieArray) {
                             val parts = cookie.trim().split("=")
-                            if (parts.size >= 2 && parts[0] == "admin_token") {
+                            if (parts.size >= 2 && (parts[0] == "admin_token" || parts[0] == "token")) {
                                 val extractedToken = parts[1]
-                                if (extractedToken.isNotEmpty()) {
+                                if (extractedToken.isNotEmpty() && extractedToken != "undefined" && extractedToken != "null") {
                                     token = extractedToken
-                                    // حفظ التوكن في SharedPreferences للمرات القادمة
+                                    // حفظ التوكن في SharedPreferences للمرات القادمة لسرعة الوصول
                                     sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
                                     break
                                 }
@@ -373,7 +383,7 @@ class QuickDraftActivity : AppCompatActivity() {
                     if (!token.isNullOrEmpty()) break
                 }
             } catch (e: Exception) {
-                // تجاهل
+                // تجاهل الأخطاء
             }
         }
         return token

@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var cameraImagePath: String? = null
 
     private var currentToken: String? = null
+    private var lastTokenSyncTime = 0L
 
     private val BACKEND_URL = "https://aboakbr.com"
 
@@ -248,6 +249,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                syncTokenFromCookies()
                 injectPerformanceCss(view)
             }
 
@@ -555,6 +557,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        syncTokenFromCookies()
         try {
             webView.onResume()
             webView.resumeTimers()
@@ -760,43 +763,55 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectPerformanceCss(view: WebView?) {
-        val css = """
-            * {
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                box-shadow: none !important;
-                text-shadow: none !important;
-                transition: none !important;
-                animation: none !important;
-            }
-            .kse-glass-card, [class*="glass"], [class*="card"] {
-                background-color: #ffffff !important;
-                border-color: #e2e8f0 !important;
-            }
-            .dark .kse-glass-card, .dark [class*="glass"], .dark [class*="card"] {
-                background-color: #09090b !important;
-                border-color: #27272a !important;
-            }
-            .kse-app-bg::before, .kse-app-bg::after {
-                display: none !important;
-            }
-            body {
-                background-color: #ffffff !important;
-            }
-            .dark body {
-                background-color: #09090b !important;
-            }
-        """.trimIndent().replace("\n", " ")
+        // ... (كود موجود)
+    }
 
-        val js = "javascript:(function() {" +
-                "var parent = document.getElementsByTagName('head').item(0);" +
-                "var style = document.createElement('style');" +
-                "style.type = 'text/css';" +
-                "style.innerHTML = '$css';" +
-                "parent.appendChild(style);" +
-                "})()"
-        view?.post {
-            view.loadUrl(js)
+    private fun syncTokenFromCookies() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTokenSyncTime < 15000) {
+            return
+        }
+        lastTokenSyncTime = currentTime
+
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val urls = arrayOf("https://aboakbr.com", "https://d.ksebstor.site", "https://aboakbar.vercel.app")
+            var se: String? = null
+            var exp: String? = null
+            var sig: String? = null
+            
+            for (url in urls) {
+                val cookies = cookieManager.getCookie(url)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2) {
+                            when (parts[0]) {
+                                "employee_se" -> se = parts[1]
+                                "employee_exp" -> exp = parts[1]
+                                "employee_sig" -> sig = parts[1]
+                            }
+                        }
+                    }
+                }
+                if (!se.isNullOrEmpty() && !exp.isNullOrEmpty() && !sig.isNullOrEmpty()) break
+            }
+
+            if (!se.isNullOrEmpty() && !exp.isNullOrEmpty() && !sig.isNullOrEmpty()) {
+                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedSe = sharedPreferences.getString("se", null)
+                
+                if (savedSe != se) {
+                    sharedPreferences.edit()
+                        .putString("se", se)
+                        .putString("exp", exp)
+                        .putString("sig", sig)
+                        .apply()
+                }
+            }
+        } catch (e: Exception) {
+            // تجاهل
         }
     }
 }

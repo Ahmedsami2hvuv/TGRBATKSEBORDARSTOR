@@ -751,6 +751,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // مزامنة التوكن فوراً عند العودة للتطبيق لضمان عمل QuickDraftActivity
+        syncTokenFromCookies()
+        
         try {
             webView.onResume()
             webView.resumeTimers()

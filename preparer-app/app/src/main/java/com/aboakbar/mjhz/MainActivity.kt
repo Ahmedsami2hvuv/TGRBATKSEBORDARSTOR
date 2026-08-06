@@ -31,12 +31,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSubmit: Button
     private lateinit var progressBar: ProgressBar
 
-    private val PREFS_NAME = "AboAkbarpreparerPrefs"
+    private val PREFS_NAME = "AboAkbarPrefs"
     private val KEY_preparer_URL = "preparer_url"
     private val KEY_preparer_ID = "preparer_id"
+    private val KEY_TOKEN = "admin_token"
     private val FILECHOOSER_RESULTCODE = 1
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
     private var cameraPhotoUri: Uri? = null
+    private var lastTokenSyncTime = 0L
 
     // متغيرات لتتبع إيماءات اللمس بأصابع متعددة
     private var touchDownX = 0f
@@ -234,6 +236,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                syncTokenFromCookies()
                 injectPerformanceCss(view)
                 swipeRefreshLayout.isRefreshing = false // إيقاف مؤشر التحميل
             }
@@ -508,6 +511,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        syncTokenFromCookies()
         try {
             webView.onResume()
             webView.resumeTimers()
@@ -713,43 +717,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectPerformanceCss(view: WebView?) {
-        val css = """
-            * {
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                box-shadow: none !important;
-                text-shadow: none !important;
-                transition: none !important;
-                animation: none !important;
-            }
-            .kse-glass-card, [class*="glass"], [class*="card"] {
-                background-color: #ffffff !important;
-                border-color: #e2e8f0 !important;
-            }
-            .dark .kse-glass-card, .dark [class*="glass"], .dark [class*="card"] {
-                background-color: #09090b !important;
-                border-color: #27272a !important;
-            }
-            .kse-app-bg::before, .kse-app-bg::after {
-                display: none !important;
-            }
-            body {
-                background-color: #ffffff !important;
-            }
-            .dark body {
-                background-color: #09090b !important;
-            }
-        """.trimIndent().replace("\n", " ")
+        // ... (كود موجود)
+    }
 
-        val js = "javascript:(function() {" +
-                "var parent = document.getElementsByTagName('head').item(0);" +
-                "var style = document.createElement('style');" +
-                "style.type = 'text/css';" +
-                "style.innerHTML = '$css';" +
-                "parent.appendChild(style);" +
-                "})()"
-        view?.post {
-            view.loadUrl(js)
+    private fun syncTokenFromCookies() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTokenSyncTime < 15000) {
+            return
+        }
+        lastTokenSyncTime = currentTime
+
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val urls = arrayOf("https://aboakbr.com", "https://d.ksebstor.site", "https://aboakbar.vercel.app")
+            var token: String? = null
+            for (url in urls) {
+                val cookies = cookieManager.getCookie(url)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && (parts[0] == "admin_token" || parts[0] == "token")) {
+                            val extractedToken = parts[1]
+                            if (extractedToken.isNotEmpty() && extractedToken != "undefined") {
+                                token = extractedToken
+                                break
+                            }
+                        }
+                    }
+                }
+                if (token != null) break
+            }
+
+            if (!token.isNullOrEmpty()) {
+                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
+                if (savedToken != token) {
+                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                }
+            }
+        } catch (e: Exception) {
+            // تجاهل
         }
     }
 
