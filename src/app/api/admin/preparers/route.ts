@@ -5,7 +5,15 @@ import { verifyAdminToken } from "@/lib/auth";
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("Authorization");
-    const token = authHeader?.split(" ")[1];
+    let token = authHeader?.split(" ")[1];
+    
+    if (!token) {
+      const cookieHeader = request.headers.get("cookie");
+      if (cookieHeader) {
+        const match = cookieHeader.match(/admin_token=([^;]+)/);
+        if (match) token = match[1];
+      }
+    }
     
     if (!token || !(await verifyAdminToken(token))) {
       return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
