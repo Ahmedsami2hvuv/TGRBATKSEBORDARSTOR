@@ -17,8 +17,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-import android.webkit.CookieManager
-
 class QuickDraftActivity : AppCompatActivity() {
 
     private lateinit var tvSelectedText: TextView
@@ -35,6 +33,7 @@ class QuickDraftActivity : AppCompatActivity() {
     private lateinit var chipGroupRegions: com.google.android.material.chip.ChipGroup
     private lateinit var autoCompleteRegions: android.widget.AutoCompleteTextView
     private lateinit var btnBack: Button
+    private lateinit var btnSubmitFinal: Button
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
@@ -102,39 +101,9 @@ class QuickDraftActivity : AppCompatActivity() {
         fetchPreparers()
     }
 
-    private fun getAdminToken(): String? {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var token = sharedPreferences.getString(KEY_TOKEN, null)
-
-        if (token.isNullOrEmpty()) {
-            try {
-                val cookieManager = CookieManager.getInstance()
-                val urls = arrayOf("https://aboakbr.com", "https://d.ksebstor.site", "https://aboakbar.vercel.app")
-                for (url in urls) {
-                    val cookies = cookieManager.getCookie(url)
-                    if (!cookies.isNullOrEmpty()) {
-                        val cookieArray = cookies.split(";")
-                        for (cookie in cookieArray) {
-                            val parts = cookie.trim().split("=")
-                            if (parts.size >= 2 && (parts[0] == "admin_token" || parts[0] == "token")) {
-                                val extractedToken = parts[1]
-                                if (extractedToken.isNotEmpty() && extractedToken != "undefined") {
-                                    token = extractedToken
-                                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
-                                    break
-                                }
-                            }
-                        }
-                    }
-                    if (!token.isNullOrEmpty()) break
-                }
-            } catch (e: Exception) {}
-        }
-        return token
-    }
-
     private fun fetchPreparers() {
-        val token = getAdminToken()
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val token = sharedPreferences.getString(KEY_TOKEN, null)
 
         if (token.isNullOrEmpty()) {
             Toast.makeText(this, "يجب تسجيل الدخول كآدمن أولاً", Toast.LENGTH_LONG).show()
@@ -217,7 +186,8 @@ class QuickDraftActivity : AppCompatActivity() {
             return
         }
 
-        val token = getAdminToken()
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val token = sharedPreferences.getString(KEY_TOKEN, null)
 
         if (token.isNullOrEmpty()) {
             Toast.makeText(this, "يجب تسجيل الدخول كآدمن أولاً", Toast.LENGTH_LONG).show()

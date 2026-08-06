@@ -1005,7 +1005,17 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val cookieManager = CookieManager.getInstance()
-            val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
+            cookieManager.flush()
+            val urls = arrayOf(
+                "https://aboakbr.com",
+                "http://aboakbr.com",
+                "https://www.aboakbr.com",
+                "http://www.aboakbr.com",
+                "https://aboakbar.vercel.app",
+                "http://aboakbar.vercel.app",
+                "https://d.ksebstor.site",
+                "http://d.ksebstor.site"
+            )
             var token: String? = null
             for (url in urls) {
                 val cookies = cookieManager.getCookie(url)

@@ -17,8 +17,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-import android.webkit.CookieManager
-
 class QuickDraftActivity : AppCompatActivity() {
 
     private lateinit var tvSelectedText: TextView
@@ -101,53 +99,13 @@ class QuickDraftActivity : AppCompatActivity() {
         fetchPreparers()
     }
 
-    private fun getAuthHeaders(): Map<String, String>? {
+    private fun fetchPreparers() {
         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var se = sharedPreferences.getString("se", null)
-        var exp = sharedPreferences.getString("exp", null)
-        var sig = sharedPreferences.getString("sig", null)
+        val se = sharedPreferences.getString("se", null)
+        val exp = sharedPreferences.getString("exp", null)
+        val sig = sharedPreferences.getString("sig", null)
 
         if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) {
-            try {
-                val cookieManager = CookieManager.getInstance()
-                val urls = arrayOf("https://aboakbr.com", "https://d.ksebstor.site", "https://aboakbar.vercel.app")
-                for (url in urls) {
-                    val cookies = cookieManager.getCookie(url)
-                    if (!cookies.isNullOrEmpty()) {
-                        val cookieArray = cookies.split(";")
-                        for (cookie in cookieArray) {
-                            val parts = cookie.trim().split("=")
-                            if (parts.size >= 2) {
-                                when (parts[0]) {
-                                    "employee_se" -> se = parts[1]
-                                    "employee_exp" -> exp = parts[1]
-                                    "employee_sig" -> sig = parts[1]
-                                }
-                            }
-                        }
-                    }
-                    if (!se.isNullOrEmpty() && !exp.isNullOrEmpty() && !sig.isNullOrEmpty()) {
-                        // حفظ في التفضيلات للمرات القادمة
-                        sharedPreferences.edit()
-                            .putString("se", se)
-                            .putString("exp", exp)
-                            .putString("sig", sig)
-                            .apply()
-                        break
-                    }
-                }
-            } catch (e: Exception) {}
-        }
-
-        if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) return null
-
-        return mapOf("x-employee-se" to se!!, "x-employee-exp" to exp!!, "x-employee-sig" to sig!!)
-    }
-
-    private fun fetchPreparers() {
-        val headers = getAuthHeaders()
-
-        if (headers == null) {
             Toast.makeText(this, "يرجى تسجيل الدخول إلى بوابتك أولاً في التطبيق الرئيسي", Toast.LENGTH_LONG).show()
             finish()
             return
@@ -155,12 +113,13 @@ class QuickDraftActivity : AppCompatActivity() {
 
         showLoading(true)
 
-        val requestBuilder = Request.Builder()
+        val request = Request.Builder()
             .url("$BACKEND_URL/api/employee/preparers")
-        
-        headers.forEach { (key, value) -> requestBuilder.header(key, value) }
-        
-        val request = requestBuilder.get().build()
+            .header("x-employee-se", se)
+            .header("x-employee-exp", exp)
+            .header("x-employee-sig", sig)
+            .get()
+            .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -224,9 +183,13 @@ class QuickDraftActivity : AppCompatActivity() {
             }
         }
 
-        val headers = getAuthHeaders()
+        // نسمح بأن يكون المجهز غير مسند (عام) ولكن يُفضل تحديد مجهز
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val se = sharedPreferences.getString("se", null)
+        val exp = sharedPreferences.getString("exp", null)
+        val sig = sharedPreferences.getString("sig", null)
 
-        if (headers == null) {
+        if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) {
             Toast.makeText(this, "يرجى تسجيل الدخول إلى بوابتك أولاً في التطبيق الرئيسي", Toast.LENGTH_LONG).show()
             return
         }
@@ -273,13 +236,13 @@ class QuickDraftActivity : AppCompatActivity() {
         showLoading(true)
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val requestBuilder = Request.Builder()
+        val request = Request.Builder()
             .url("$BACKEND_URL/api/employee/quick-draft")
+            .header("x-employee-se", se)
+            .header("x-employee-exp", exp)
+            .header("x-employee-sig", sig)
             .post(body)
-        
-        headers.forEach { (key, value) -> requestBuilder.header(key, value) }
-
-        val request = requestBuilder.build()
+            .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
