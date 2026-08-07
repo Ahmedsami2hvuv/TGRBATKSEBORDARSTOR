@@ -41,7 +41,6 @@ type PageProps = { searchParams: Promise<{ tab?: string; assignOrder?: string; p
 export default async function PendingOrdersPage({ searchParams }: PageProps) {
   try {
     const sp = await searchParams;
-    const activeTab = sp.tab ?? "new";
     const assignOrder = (sp.assignOrder ?? "").trim();
     const pricingId = (sp.pricing ?? "").trim();
     const showFishPrices = sp.fishPrices === "true";
@@ -366,6 +365,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
     const newRows = serializePrisma(newOrders.map(mapOrderToRow));
     const preparedRows = serializePrisma(preparedOrders.map(mapOrderToRow));
+
+    const assignOrderInPrepared = Boolean(assignOrder && preparedRows.some(r => r.id === assignOrder));
+    const activeTab = sp.tab ?? (assignOrderInPrepared ? "completed" : "new");
 
     const groupedDraftRows: PendingOrderRow[] = [];
     const processedDraftIds = new Set<string>();

@@ -63,6 +63,18 @@ body {
   background: transparent;
   color: var(--foreground);
   transition: background-color 0.3s ease, color 0.3s ease;
+  overscroll-behavior-y: none;
+}
+
+/* حماية النوافذ المنبثقة والشيتات من ظاهرة الرفرش بالسحب Pull-to-Refresh */
+[role="dialog"],
+[aria-modal="true"],
+.modal-surface,
+.sheet-surface,
+.fixed {
+  overscroll-behavior: contain !important;
+  overscroll-behavior-y: contain !important;
+  touch-action: pan-x pan-y;
 }
 
 /* Hide scrollbar for elements with .no-scrollbar */

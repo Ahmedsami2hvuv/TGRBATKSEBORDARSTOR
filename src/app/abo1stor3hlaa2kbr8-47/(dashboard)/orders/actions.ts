@@ -846,6 +846,65 @@ export async function assignPendingOrderToCourier(
   }
 }
 
+export async function quickAssignOrderCourier(
+  orderId: string,
+  courierId: string | null,
+  directReceipt = false
+): Promise<{ ok?: boolean; error?: string; courierName?: string }> {
+  if (!orderId) return { error: "معرف الطلب مفقود." };
+
+  try {
+    const existing = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!existing) return { error: "الطلب غير موجود." };
+
+    let courierName: string | undefined = undefined;
+
+    if (courierId) {
+      const c = await prisma.courier.findUnique({ where: { id: courierId } });
+      if (!c) return { error: "المندوب المحدد غير موجود." };
+      if (c.blocked || c.hiddenFromReports) {
+        return { error: "المندوب غير متاح للإسناد (محظور أو مخفي)." };
+      }
+      courierName = c.name;
+    }
+
+    const updatedStatus = courierId
+      ? (directReceipt ? "delivering" : (existing.status === "pending" ? "assigned" : existing.status))
+      : "pending";
+
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        courier: courierId ? { connect: { id: courierId } } : { disconnect: true },
+        status: updatedStatus,
+        customerPaymentReceivedAt: directReceipt ? new Date() : (courierId ? existing.customerPaymentReceivedAt : null),
+      },
+      include: {
+        courier: { select: { name: true } }
+      }
+    });
+
+    if (courierId) {
+      try {
+        await pushNotifyCourierNewAssignment(courierId, updated.orderNumber, updated.id);
+      } catch (e) {
+        console.error("Failed to push notify courier:", e);
+      }
+    }
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+    revalidatePath("/mandoub");
+
+    return { ok: true, courierName: updated.courier?.name };
+  } catch (e: any) {
+    console.error("Error in quickAssignOrderCourier:", e);
+    return { error: e.message || "حدث خطأ أثناء تغيير المندوب." };
+  }
+}
+
+
 export async function rejectPendingOrder(
   _prev: RejectOrderState,
   formData: FormData,

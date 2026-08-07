@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { ad } from "@/lib/admin-ui";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
+import { quickAssignOrderCourier } from "../actions";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -100,6 +102,7 @@ export function OrderViewContent({
   customWaButtons,
   storeProducts = [],
   twoWayTemplates,
+  couriers = [],
 }: {
   order: OrderViewModel;
   preparers?: { id: string; name: string }[];
@@ -111,9 +114,42 @@ export function OrderViewContent({
   }>;
   storeProducts?: any[];
   twoWayTemplates?: any;
+  couriers?: { id: string; name: string; phone?: string }[];
 }) {
+  const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  // حالات مودال تغيير المندوب المباشر
+  const [showAssignCourierModal, setShowAssignCourierModal] = useState(false);
+  const [directReceipt, setDirectReceipt] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [selectedCourierId, setSelectedCourierId] = useState<string | null>(null);
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
+
+  const handleAssignCourier = async (courierId: string | null) => {
+    setAssignLoading(true);
+    setSelectedCourierId(courierId);
+    try {
+      const res = await quickAssignOrderCourier(order.id, courierId, directReceipt);
+      if (res.error) {
+        alert(res.error);
+      } else {
+        setShowAssignCourierModal(false);
+        const msg = courierId 
+          ? `✅ تم تغيير المندوب بنجاح إلى: ${res.courierName || "المندوب الجديد"}` 
+          : `✅ تم سحب الطلبية وإلغاء إسناد المندوب بنجاح.`;
+        setToastSuccess(msg);
+        router.refresh();
+        setTimeout(() => setToastSuccess(null), 5000);
+      }
+    } catch (e: any) {
+      alert("حدث خطأ غير متوقع: " + (e.message || e));
+    } finally {
+      setAssignLoading(false);
+      setSelectedCourierId(null);
+    }
+  };
 
   const imgOrder = resolvePublicAssetSrc(order.imageUrl);
   const voiceSrc = resolvePublicAssetSrc(order.voiceNoteUrl);
@@ -213,13 +249,14 @@ export function OrderViewContent({
               <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</Link>
             )}
             {order.status !== "cancelled" && order.status !== "archived" && (
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`}
-                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowAssignCourierModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
               >
                 <span>📦</span>
-                {order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}
-              </Link>
+                {order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}
+              </button>
             )}
           </div>
         </div>
@@ -532,9 +569,21 @@ export function OrderViewContent({
         {/* قسم المندوب - مضاف حديثاً بناءً على طلبك */}
         {order.courier && (
           <div className="rounded-2xl border-2 border-purple-200 bg-purple-50/40 p-5 shadow-sm">
-             <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🚚</span>
-                <h3 className="text-lg font-black text-purple-900">المندوب المسجل على الطلب</h3>
+             <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🚚</span>
+                  <h3 className="text-lg font-black text-purple-900">المندوب المسجل على الطلب</h3>
+                </div>
+                {order.status !== "cancelled" && order.status !== "archived" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignCourierModal(true)}
+                    className="inline-flex items-center gap-1 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+                  >
+                    <span>🔄</span>
+                    تغيير المندوب
+                  </button>
+                )}
              </div>
              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -672,6 +721,109 @@ export function OrderViewContent({
           imageUrl={previewImageUrl}
           onClose={() => setPreviewImageUrl(null)}
         />
+      )}
+
+      {/* توست التأكيد الإيجابي الأخضر لنجاح تغيير المندوب */}
+      {toastSuccess && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 rounded-2xl bg-emerald-900 text-white px-5 py-3.5 shadow-2xl border-2 border-emerald-400 animate-in slide-in-from-top duration-300">
+          <span className="text-2xl">🎉</span>
+          <span className="font-black text-sm sm:text-base">{toastSuccess}</span>
+          <button onClick={() => setToastSuccess(null)} className="mr-2 text-white/80 hover:text-white font-bold text-lg">✕</button>
+        </div>
+      )}
+
+      {/* --- MODAL FOR CHANGING / ASSIGNING COURIER --- */}
+      {showAssignCourierModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">
+                  {order.courier ? "🔄 تغيير المندوب للطلب" : "📦 إسناد الطلب للمندوب"}
+                </h3>
+                <p className="text-sm font-bold text-slate-500">الطلب #{order.orderNumber}</p>
+              </div>
+              <button
+                onClick={() => setShowAssignCourierModal(false)}
+                className="h-10 w-10 rounded-full bg-slate-100 text-xl font-bold text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5">
+              <input
+                type="checkbox"
+                id="direct-receipt-check-modal"
+                checked={directReceipt}
+                onChange={(e) => setDirectReceipt(e.target.checked)}
+                className="h-5 w-5 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
+              <label htmlFor="direct-receipt-check-modal" className="text-sm font-black text-emerald-950 cursor-pointer select-none">
+                استلام مباشر للمندوب (تخطي الموافقة) ⚡
+              </label>
+            </div>
+
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+              {order.courier && (
+                <button
+                  disabled={assignLoading}
+                  onClick={() => handleAssignCourier(null)}
+                  className="w-full flex items-center justify-between rounded-2xl border-2 border-rose-200 bg-rose-50/70 p-3 text-rose-950 hover:bg-rose-100 transition-colors font-bold text-sm"
+                >
+                  <span>🚫 إلغاء إسناد المندوب (حذف المندوب الحالي)</span>
+                  {assignLoading && selectedCourierId === null && <span className="animate-spin">⏳</span>}
+                </button>
+              )}
+
+              {couriers && couriers.length > 0 ? (
+                couriers.map((c) => {
+                  const isCurrent = order.courier?.name === c.name;
+                  return (
+                    <button
+                      key={c.id}
+                      disabled={assignLoading}
+                      onClick={() => handleAssignCourier(c.id)}
+                      className={`w-full flex items-center justify-between rounded-2xl border-2 p-3.5 text-right transition-all font-bold cursor-pointer ${
+                        isCurrent
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-300"
+                          : "border-slate-200 bg-slate-50/70 text-slate-800 hover:border-sky-400 hover:bg-sky-50/80"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xl">{isCurrent ? "✅" : "🚚"}</span>
+                        <div>
+                          <p className="font-black text-base text-slate-900">{c.name}</p>
+                          {c.phone && <p className="text-xs text-slate-500 font-mono [direction:ltr]">{c.phone}</p>}
+                        </div>
+                      </div>
+                      {isCurrent ? (
+                        <span className="text-xs font-black text-emerald-700 bg-emerald-200/80 px-2.5 py-1 rounded-lg">المسند حالياً</span>
+                      ) : (
+                        assignLoading && selectedCourierId === c.id ? (
+                          <span className="animate-spin text-sky-600 text-lg">⏳</span>
+                        ) : (
+                          <span className="text-xs text-sky-700 bg-white border border-sky-200 px-2.5 py-1 rounded-lg">اختيار 👈</span>
+                        )
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="text-center py-4 text-sm font-bold text-slate-500">لا يوجد مندوبون متاحون حالياً.</p>
+              )}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setShowAssignCourierModal(false)}
+                className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-300 transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

@@ -229,6 +229,22 @@ export function MandoubOrderTable({
     }
   }, [auth.c]);
 
+  // حماية وتجميد الـ Pull-To-Refresh لمنع رفرش الصفحة عند سحب النوافذ المنبثقة للأجهزة الذكية
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(pickupOrder || deliveryOrder || activeOrderId);
+    if (!isAnyModalOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehaviorY;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehaviorY = "none";
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehaviorY = prevOverscroll;
+    };
+  }, [pickupOrder, deliveryOrder, activeOrderId]);
+
   // حفظ الترتيب المخصص
   const saveSortOrder = (newOrder: string[]) => {
     setCustomSortIds(newOrder);
