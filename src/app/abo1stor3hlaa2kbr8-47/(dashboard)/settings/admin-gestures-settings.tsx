@@ -7,6 +7,10 @@ export function AdminGesturesSettings() {
 
   const getGestureKeys = () => {
     const keys: string[] = [];
+    // النقرات السريعة الفورية
+    [2, 3, 4, 5].forEach((fingers) => {
+      keys.push(`tap_${fingers}`);
+    });
     // النقرات المطولة
     [2, 3, 4, 5].forEach((fingers) => {
       keys.push(`long_press_${fingers}`);
@@ -61,13 +65,23 @@ export function AdminGesturesSettings() {
 
   const gestureOptions: { key: string; label: string }[] = [];
 
+  // النقرات السريعة المباشرة
   [2, 3, 4, 5].forEach((fingers) => {
     gestureOptions.push({
-      key: `long_press_${fingers}`,
-      label: `النقر المطول بـ ${fingers} أصابع (ثانيتين)`,
+      key: `tap_${fingers}`,
+      label: `⚡ النقر الفوري السريع بـ ${fingers} أصابع (نقرة مباشرة)`,
     });
   });
 
+  // النقرات المطولة
+  [2, 3, 4, 5].forEach((fingers) => {
+    gestureOptions.push({
+      key: `long_press_${fingers}`,
+      label: `⏳ النقر المطول بـ ${fingers} أصابع (ثانيتين)`,
+    });
+  });
+
+  // السحبات
   const directions = [
     { id: "right", label: "لليمين ➡️" },
     { id: "left", label: "لليسار ⬅️" },
@@ -79,7 +93,7 @@ export function AdminGesturesSettings() {
     directions.forEach((dir) => {
       gestureOptions.push({
         key: `swipe_${fingers}_${dir.id}`,
-        label: `السحب بـ ${fingers} أصابع ${dir.label}`,
+        label: `👆 السحب بـ ${fingers} أصابع ${dir.label}`,
       });
     });
   });
@@ -107,6 +121,7 @@ export function AdminGesturesSettings() {
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-white outline-none focus:border-sky-500 dark:focus:border-[#00f3ff] transition"
             >
               <option value="none">🚫 لا شيء (تعطيل الحركة)</option>
+              <option value="reload_page">🔄 تحديث الصفحة</option>
               <option value="open_dashboard">🏠 الذهاب للوحة الرئيسية</option>
               <option value="open_orders">📦 فتح الطلبات الجديدة</option>
               <option value="open_credit_book">💸 فتح سجل الديون والمحاسبين</option>
@@ -118,7 +133,6 @@ export function AdminGesturesSettings() {
               <option value="open_whatsapp">💬 فتح واتساب الإدارة</option>
               <option value="open_telegram">✈️ فتح تليجرام الإدارة</option>
               <option value="open_camera">📷 فتح الكاميرا فوراً</option>
-              <option value="reload_page">🔄 تحديث الصفحة</option>
               <option value="privacy_mode">👁️ إخفاء / إظهار الأرقام المالية (وضع الخصوصية)</option>
               <option value="text_zoom_in">🔍 تكبير نصوص الصفحة (1%)</option>
               <option value="text_zoom_out">📉 تصغير نصوص الصفحة (1%)</option>

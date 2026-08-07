@@ -87,6 +87,8 @@ class MainActivity : AppCompatActivity() {
     private var touchDownX = 0f
     private var touchDownY = 0f
     private var activePointerCount = 0
+    private var touchStartTime = 0L
+    private var maxFingersDetected = 0
     private var longPressRunnable: Runnable? = null
     private val gestureHandler = Handler(Looper.getMainLooper())
 
@@ -1070,13 +1072,17 @@ class MainActivity : AppCompatActivity() {
                 touchDownX = ev.x
                 touchDownY = ev.y
                 activePointerCount = 1
+                touchStartTime = System.currentTimeMillis()
+                maxFingersDetected = 1
             }
             android.view.MotionEvent.ACTION_POINTER_DOWN -> {
                 activePointerCount = ev.pointerCount
                 if (activePointerCount >= 2 && activePointerCount <= 5) {
                     isMultiTouchDetected = true
+                    maxFingersDetected = Math.max(maxFingersDetected, activePointerCount)
                     touchDownX = ev.getX(0)
                     touchDownY = ev.getY(0)
+                    touchStartTime = System.currentTimeMillis()
                     
                     // بدء مؤقت النقر المطول بـ 2 أو 3 أو 4 أو 5 أصابع
                     startLongPressTimer(activePointerCount)
@@ -1090,7 +1096,7 @@ class MainActivity : AppCompatActivity() {
                     val deltaX = currentX - touchDownX
                     val deltaY = currentY - touchDownY
                     
-                    val swipeThreshold = 150f // حد مسافة السحب بالبكسل
+                    val swipeThreshold = 70f // حد مسافة السحب بالبكسل خفيف وسريع الاستجابة (70px)
                     
                     if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) {
                         // إلغاء مؤقت النقر المطول لأن المستخدم يقوم بالسحب
@@ -1112,10 +1118,25 @@ class MainActivity : AppCompatActivity() {
             }
             android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_POINTER_UP -> {
                 cancelLongPressTimer()
-                activePointerCount = ev.pointerCount - 1
+                val duration = System.currentTimeMillis() - touchStartTime
+                
+                // إذا تم اللمس بالأصابع المحددة ولم يتم سحب الشاشة أو انتهاء المهلة، واعُتبرت نقرة سريعة (أقل من 500ms)
+                if (isMultiTouchDetected && !isGestureExecuted && maxFingersDetected >= 2 && maxFingersDetected <= 5 && duration < 500) {
+                    isGestureExecuted = true
+                    val gestureKey = "tap_${maxFingersDetected}"
+                    executeGestureAction(gestureKey)
+                }
+                
+                if (ev.pointerCount <= 1) {
+                    isMultiTouchDetected = false
+                    maxFingersDetected = 0
+                }
+                activePointerCount = Math.max(0, ev.pointerCount - 1)
             }
             android.view.MotionEvent.ACTION_CANCEL -> {
                 cancelLongPressTimer()
+                isMultiTouchDetected = false
+                maxFingersDetected = 0
                 activePointerCount = 0
             }
         }
@@ -1184,6 +1205,11 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {}
 
         when (action) {
+            "reload_page" -> {
+                webView.post {
+                    webView.reload()
+                }
+            }
             "open_whatsapp" -> {
                 try {
                     val intent = Intent(Intent.ACTION_VIEW)
