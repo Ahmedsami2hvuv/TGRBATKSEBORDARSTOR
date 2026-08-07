@@ -826,6 +826,7 @@ export async function submitPreparerOrder(
 
     revalidatePath("/preparer");
     void notifyTelegramNewPreparerShoppingOrder(order.id);
+    await recordPreparerWorkLog(v.preparerId, "submit_order");
     return { ok: true, orderNumber: order.orderNumber };
   } catch (e) {
     console.error("Submit Order Error:", e);
@@ -1805,6 +1806,9 @@ export async function payOrderDebtAction(
     revalidatePath("/preparer/debts");
     revalidatePath("/preparer/wallet");
     revalidatePath("/abo1stor3hlaa2kbr8-47/preparers");
+    if (preparerId) {
+      await recordPreparerWorkLog(preparerId, "pay_order_debt");
+    }
     return { ok: true };
   } catch (e) {
     console.error("payOrderDebtAction error:", e);
@@ -2006,6 +2010,7 @@ export async function createPreparerDebtAction(
 
     revalidatePath("/preparer/debts");
     revalidatePath("/preparer/wallet");
+    await recordPreparerWorkLog(preparer.id, "create_debt");
     return { ok: true };
   } catch (e: any) {
     console.error("createPreparerDebtAction error:", e);
@@ -2015,7 +2020,24 @@ export async function createPreparerDebtAction(
 
 
 
-// دالة لتحديد اسم الشفت الحالي للعملية
+// دالة مساعدة موحدة لتسجيل حركة المجهز وتحديد الشفت الصاحي فوراً
+export async function recordPreparerWorkLog(preparerId: string, actionType: string) {
+  if (!preparerId) return;
+  try {
+    const shiftName = await determineShiftName(preparerId, new Date());
+    await prisma.companyPreparerWorkLog.create({
+      data: {
+        preparerId,
+        actionType,
+        shiftName
+      }
+    });
+  } catch (err) {
+    console.error("Failed to record preparer work log:", err);
+  }
+}
+
+// دالة لتحديد اسم الشفت الحالي للعملية وضمان عدم ضياع أي حركة على مدار الـ 24 ساعة
 async function determineShiftName(preparerId: string, time: Date): Promise<string> {
   await ensurePreparerSalaryConfigColumnsIfMissing();
 
@@ -2023,7 +2045,6 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
     where: { id: preparerId },
     select: { shift1Start: true, shift1End: true, shift2Start: true, shift2End: true }
   });
-  if (!preparer) return "";
 
   const logTime = getIraqTime(time);
   const logMinutes = logTime.hours * 60 + logTime.minutes;
@@ -2033,18 +2054,18 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
     return h * 60 + m;
   };
 
-  const s1Start = parseTimeToMinutes(preparer.shift1Start || "08:00");
-  const s1End = parseTimeToMinutes(preparer.shift1End || "13:00");
-  const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
-  const s2End = parseTimeToMinutes(preparer.shift2End || "21:00");
+  const s1End = parseTimeToMinutes(preparer?.shift1End || "13:00");
+  const s2Start = parseTimeToMinutes(preparer?.shift2Start || "15:30");
 
-  if (logMinutes >= s1Start && logMinutes <= s1End) {
+  // تحديد منتصف الوقت الفاصل بين الشفت الأول والشفت الثاني
+  const midpoint = Math.floor((s1End + s2Start) / 2);
+
+  // أي حركة قبل النقطة الفاصلة تعتبر شفت صباحي، وأي حركة من النقطة الفاصلة تعتبر شفت مسائي
+  if (logMinutes < midpoint) {
     return "shift1";
-  }
-  if (logMinutes >= s2Start && logMinutes <= s2End) {
+  } else {
     return "shift2";
   }
-  return "";
 }
 
 // دالة احتساب الشفتات المستحقة
@@ -2096,10 +2117,9 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
     return h * 60 + m;
   };
 
-  const s1Start = parseTimeToMinutes(preparer.shift1Start || "08:00");
   const s1End = parseTimeToMinutes(preparer.shift1End || "13:00");
   const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
-  const s2End = parseTimeToMinutes(preparer.shift2End || "21:00");
+  const midpoint = Math.floor((s1End + s2Start) / 2);
 
   const dayMap = new Map<string, { morning: boolean; evening: boolean }>();
 
@@ -2116,8 +2136,11 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       isEvening = true;
     } else {
       const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
-      isMorning = logMinutes >= s1Start && logMinutes <= s1End;
-      isEvening = logMinutes >= s2Start && logMinutes <= s2End;
+      if (logMinutes < midpoint) {
+        isMorning = true;
+      } else {
+        isEvening = true;
+      }
     }
 
     if (isMorning || isEvening) {
