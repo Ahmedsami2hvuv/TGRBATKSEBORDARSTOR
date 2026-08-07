@@ -218,6 +218,33 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
   return { ok: true };
 }
 
+export async function addManualShiftForPreparerAction(
+  _prev: PreparerFormState,
+  formData: FormData
+): Promise<PreparerFormState> {
+  const denied = await requireAdmin(); if (denied) return denied;
+  const preparerId = String(formData.get("preparerId") ?? "").trim();
+  const shiftName = String(formData.get("shiftName") ?? "shift1").trim();
+
+  if (!preparerId) return { error: "معرف المجهز مفقود." };
+
+  try {
+    await prisma.companyPreparerWorkLog.create({
+      data: {
+        preparerId,
+        actionType: "manual_admin_add",
+        shiftName: shiftName === "shift2" ? "shift2" : "shift1"
+      }
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
+    revalidatePath("/preparer/salary");
+    return { ok: true };
+  } catch (e: any) {
+    console.error("addManualShiftForPreparerAction error:", e);
+    return { error: "فشل إضافة الشفت اليدوي." };
+  }
+}
+
 export async function renewCompanyPreparerPortalToken(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   await prisma.companyPreparer.update({ where: { id }, data: { portalToken: randomUUID() } });

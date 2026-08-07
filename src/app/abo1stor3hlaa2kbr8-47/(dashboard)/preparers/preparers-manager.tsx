@@ -6,6 +6,7 @@ import { ad } from "@/lib/admin-ui";
 import {
   createCompanyPreparer,
   payDailySalaryForCompanyPreparer,
+  addManualShiftForPreparerAction,
   setPreparerBranchDelegations,
   setPreparerMonthlySalaryResetConfig,
   updateCompanyPreparer,
@@ -423,6 +424,7 @@ function PreparerCard({
   const [uState, updateAction, uPending] = useActionState(updateCompanyPreparer, initial);
   const [delegState, delegAction, delegPending] = useActionState(setPreparerBranchDelegations, initial);
   const [salaryState, salaryAction, salaryPending] = useActionState(payDailySalaryForCompanyPreparer, initial);
+  const [manualShiftState, manualShiftAction, manualShiftPending] = useActionState(addManualShiftForPreparerAction, initial);
   const [resetState, resetAction, resetPending] = useActionState(setPreparerMonthlySalaryResetConfig, initial);
   const [dState, deleteAction, dPending] = useActionState(deleteCompanyPreparer, initial);
 
@@ -579,6 +581,41 @@ function PreparerCard({
 
           {activeTab === "salary" && (
             <div className="space-y-6">
+              <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-slate-900">إضافة شفت يدوي للمجهز</p>
+                    <p className="text-xs font-bold text-slate-400">إضافة مستحقات شفت لم تسجل سابقاً (صباحي / مسائي)</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <form action={manualShiftAction}>
+                      <input type="hidden" name="preparerId" value={row.id} />
+                      <input type="hidden" name="shiftName" value="shift1" />
+                      <button
+                        type="submit"
+                        disabled={manualShiftPending}
+                        className="h-11 rounded-2xl bg-amber-500 px-4 text-xs font-black text-white shadow-md transition hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {manualShiftPending ? "..." : "➕ إضافة شفت صباحي (+5)"}
+                      </button>
+                    </form>
+                    <form action={manualShiftAction}>
+                      <input type="hidden" name="preparerId" value={row.id} />
+                      <input type="hidden" name="shiftName" value="shift2" />
+                      <button
+                        type="submit"
+                        disabled={manualShiftPending}
+                        className="h-11 rounded-2xl bg-purple-600 px-4 text-xs font-black text-white shadow-md transition hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {manualShiftPending ? "..." : "➕ إضافة شفت مسائي (+5)"}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+                {manualShiftState?.error && <p className="mt-2 text-xs font-black text-rose-600">{manualShiftState.error}</p>}
+                {manualShiftState?.ok && <p className="mt-2 text-xs font-black text-emerald-600">تمت إضافة الشفت بنجاح!</p>}
+              </div>
+
               <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
