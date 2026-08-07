@@ -81,6 +81,22 @@ export function PreparerOrderTable({
     {},
   );
 
+  // حماية وتجميد الـ Pull-To-Refresh لمنع رفرش الصفحة عند سحب النوافذ المنبثقة للأجهزة الذكية
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(payOrder || assignOrder || activeOrderId);
+    if (!isAnyModalOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehaviorY;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehaviorY = "none";
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehaviorY = prevOverscroll;
+    };
+  }, [payOrder, assignOrder, activeOrderId]);
+
   const prevBulkPending = useRef(false);
 
   const pendingIds = useMemo(
@@ -435,6 +451,7 @@ export function PreparerOrderTable({
                   preparerId={auth.p}
                   icons={icons}
                   couriers={couriers}
+                  isModal={true}
                 />
               </div>
             </div>
