@@ -258,32 +258,41 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         ...p,
         assignedPreparerId: null,
         assignedPreparerName: "تجهيز الإدارة 🏛️",
-        pricedBy: p.pricedBy || "تجهيز الإدارة 🏛️",
+        pricedBy: "تجهيز الإدارة 🏛️",
+        pricedById: null,
       };
     }
 
-    let prepId = (typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim())
+    let prepId = (typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() && p.assignedPreparerId !== "all")
       ? p.assignedPreparerId.trim()
-      : ((typeof p.pricedById === "string" && p.pricedById.trim()) ? p.pricedById.trim() : null);
-    let prepName = typeof p.assignedPreparerName === "string" && p.assignedPreparerName.trim()
+      : ((typeof p.pricedById === "string" && p.pricedById.trim() && p.pricedById !== "all") ? p.pricedById.trim() : null);
+    let prepName = typeof p.assignedPreparerName === "string" && p.assignedPreparerName.trim() && p.assignedPreparerName !== "تجهيز الإدارة 🏛️" && p.assignedPreparerName !== "الإدارة"
       ? p.assignedPreparerName.trim()
       : null;
 
-    if (!prepId && prepName && prepName !== "تجهيز الإدارة 🏛️" && prepName !== "الإدارة") {
-      prepId = preparerIdByName.get(prepName.trim()) || null;
+    if (!prepId && prepName) {
+      prepId = preparerIdByName.get(prepName) || null;
     }
     if (!prepId && p.pricedBy && p.pricedBy !== "الإدارة" && p.pricedBy !== "تجهيز الإدارة 🏛️") {
       prepId = preparerIdByName.get(p.pricedBy.trim()) || null;
     }
 
-    if (prepId && !prepName) {
-      prepName = preparerNameById.get(prepId) ?? null;
+    if (!prepId && fallbackPreparerId) {
+      prepId = fallbackPreparerId;
     }
+
+    if (prepId && (!prepName || prepName === "تجهيز الإدارة 🏛️")) {
+      prepName = preparerNameById.get(prepId) ?? fallbackPreparerName ?? null;
+    }
+
+    const finalName = prepName || fallbackPreparerName || "تجهيز الإدارة 🏛️";
 
     return {
       ...p,
       assignedPreparerId: prepId,
-      assignedPreparerName: prepName || (prepId ? preparerNameById.get(prepId) ?? null : "تجهيز الإدارة 🏛️"),
+      assignedPreparerName: finalName,
+      pricedBy: p.pricedBy && p.pricedBy !== "تجهيز الإدارة 🏛️" && p.pricedBy !== "الإدارة" ? p.pricedBy : finalName,
+      pricedById: prepId || p.pricedById || null,
     };
   });
 

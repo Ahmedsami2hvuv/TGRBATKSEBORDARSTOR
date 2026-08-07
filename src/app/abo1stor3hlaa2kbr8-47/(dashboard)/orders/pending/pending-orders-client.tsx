@@ -712,12 +712,23 @@ ${productsText}`;
     const next = [...products];
     const currentProd = next[editingIndex];
     const isExplicitAdmin = isAdminFulfilled;
-    const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
+
+    const fallbackId = initialPreparerIds && initialPreparerIds.length > 0 ? initialPreparerIds[0] : null;
+    const fallbackName = fallbackId ? findPreparerName(fallbackId) : null;
+
+    const finalPrepId = isExplicitAdmin
+      ? null
+      : ((currentProd.assignedPreparerId && currentProd.assignedPreparerId !== "all")
+          ? currentProd.assignedPreparerId
+          : ((currentProd.pricedById && currentProd.pricedById !== "all")
+              ? currentProd.pricedById
+              : fallbackId));
+
     const finalPrepName = isExplicitAdmin
       ? "تجهيز الإدارة 🏛️"
-      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null) || fallbackName);
 
-    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
+    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || fallbackName || "تجهيز الإدارة 🏛️");
 
     next[editingIndex] = {
       ...currentProd,
@@ -770,12 +781,23 @@ ${productsText}`;
     const next = [...products];
     const currentProd = next[editingIndex];
     const isExplicitAdmin = isAdminFulfilled;
-    const finalPrepId = isExplicitAdmin ? null : (currentProd.assignedPreparerId || currentProd.pricedById || null);
+
+    const fallbackId = initialPreparerIds && initialPreparerIds.length > 0 ? initialPreparerIds[0] : null;
+    const fallbackName = fallbackId ? findPreparerName(fallbackId) : null;
+
+    const finalPrepId = isExplicitAdmin
+      ? null
+      : ((currentProd.assignedPreparerId && currentProd.assignedPreparerId !== "all")
+          ? currentProd.assignedPreparerId
+          : ((currentProd.pricedById && currentProd.pricedById !== "all")
+              ? currentProd.pricedById
+              : fallbackId));
+
     const finalPrepName = isExplicitAdmin
       ? "تجهيز الإدارة 🏛️"
-      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null));
+      : (currentProd.assignedPreparerName || (finalPrepId ? findPreparerName(finalPrepId) : null) || (currentProd.pricedBy && currentProd.pricedBy !== "الإدارة" && currentProd.pricedBy !== "تجهيز الإدارة 🏛️" ? currentProd.pricedBy : null) || fallbackName);
 
-    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || "تجهيز الإدارة 🏛️");
+    const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || fallbackName || "تجهيز الإدارة 🏛️");
 
     next[editingIndex] = {
       ...currentProd,

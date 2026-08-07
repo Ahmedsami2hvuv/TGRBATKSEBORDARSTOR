@@ -601,10 +601,14 @@ export async function assignPendingOrderToCourier(
         const sellNum = Number(p.sellAlf || 0);
         const priced = buyNum > 0 && sellNum > 0;
         const isFulfilledByAdmin = !!p.isFulfilledByAdmin;
-        const assignedPreparerId = isFulfilledByAdmin ? null : (p.assignedPreparerId || p.pricedById || null);
-        const assignedPreparerName = isFulfilledByAdmin 
+        
+        let assignedPreparerId = isFulfilledByAdmin 
+          ? null 
+          : ((p.assignedPreparerId && p.assignedPreparerId !== "all") ? p.assignedPreparerId : ((p.pricedById && p.pricedById !== "all") ? p.pricedById : (draft.preparerId || null)));
+        
+        let assignedPreparerName = isFulfilledByAdmin 
           ? "تجهيز الإدارة 🏛️" 
-          : (p.assignedPreparerName || (assignedPreparerId ? (draft.preparerId === assignedPreparerId ? draft.preparer?.name : null) : "تجهيز الإدارة 🏛️"));
+          : (p.assignedPreparerName || (assignedPreparerId && draft.preparerId === assignedPreparerId ? draft.preparer?.name : null) || draft.preparer?.name || "تجهيز الإدارة 🏛️");
 
         return {
           line: String(p.line || "").trim(),
@@ -613,7 +617,7 @@ export async function assignPendingOrderToCourier(
           isFulfilledByAdmin,
           assignedPreparerId,
           assignedPreparerName,
-          pricedBy: p.pricedBy || (isFulfilledByAdmin ? "تجهيز الإدارة 🏛️" : assignedPreparerName),
+          pricedBy: p.pricedBy && p.pricedBy !== "تجهيز الإدارة 🏛️" && p.pricedBy !== "الإدارة" ? p.pricedBy : (isFulfilledByAdmin ? "تجهيز الإدارة 🏛️" : assignedPreparerName),
           pricedById: p.pricedById || assignedPreparerId
         };
       });
