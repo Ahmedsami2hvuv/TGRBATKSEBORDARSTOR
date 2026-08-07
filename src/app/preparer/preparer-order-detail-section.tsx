@@ -103,6 +103,7 @@ type PhoneProfileFallback = {
 export function PreparerOrderDetailSection({
   order,
   closeHref,
+  onCloseModal,
   auth,
   nextUrl,
   preparerId,
@@ -120,6 +121,7 @@ export function PreparerOrderDetailSection({
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
+  onCloseModal?: () => void;
   auth: { p: string; exp: string; s: string };
   nextUrl: string;
   preparerId: string;
@@ -839,7 +841,7 @@ export function PreparerOrderDetailSection({
           </div>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">
-          <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />
+          <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
           {canEditPricing && pricingEditHref ? (
             <Link href={pricingEditHref} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors">
               <DynamicIcon

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import {
   bulkAssignOrdersByPreparer,
@@ -14,6 +14,7 @@ import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { PreparerOrderDetailSection } from "./preparer-order-detail-section";
 
 function buildPreparerOrderDetailHref(
   auth: { p: string; exp: string; s: string },
@@ -54,6 +55,19 @@ export function PreparerOrderTable({
 }) {
   const preparerAuth = auth;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeOrderParam = searchParams?.get("activeOrderId");
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(activeOrderParam || null);
+
+  useEffect(() => {
+    setActiveOrderId(activeOrderParam);
+  }, [activeOrderParam]);
+
+  const activeOrderData = useMemo(() => {
+    if (!activeOrderId) return null;
+    return rows.find((r) => r.id === activeOrderId) || null;
+  }, [rows, activeOrderId]);
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
   const [bulkState, bulkAction, bulkPending] = useActionState(
@@ -169,8 +183,10 @@ export function PreparerOrderTable({
         onToggleAll={toggleAllPending}
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
-          const href = buildPreparerOrderDetailHref(auth, tab, qSearch, id);
-          router.push(href);
+          setActiveOrderId(id);
+          const p = new URLSearchParams(window.location.search);
+          p.set("activeOrderId", id);
+          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
         }}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد الكل"
@@ -350,6 +366,81 @@ export function PreparerOrderTable({
           </div>
         </form>
       )}
+
+      {activeOrderData &&
+        createPortal(
+          <div className="fixed inset-0 z-[120] flex flex-col bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
+            <div className="sticky top-0 z-[130] flex items-center justify-between border-b border-sky-200/80 bg-white/95 px-4 py-3 shadow-md backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveOrderId(null);
+                    const p = new URLSearchParams(window.location.search);
+                    p.delete("activeOrderId");
+                    const newUrl = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+                    window.history.pushState({}, "", newUrl);
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-rose-100 hover:text-rose-700 active:scale-95 dark:bg-slate-800 dark:text-slate-200"
+                  title="إغلاق النافذة"
+                >
+                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+                </button>
+                <div>
+                  <p className="text-base font-black text-slate-900 dark:text-white">تفاصيل طلب #{activeOrderData.shortId}</p>
+                  <p className="text-xs font-bold text-slate-500">{activeOrderData.shopName}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5">
+              <div className="mx-auto max-w-2xl bg-white p-4 rounded-2xl shadow-xl dark:bg-slate-900">
+                <PreparerOrderDetailSection
+                  order={{
+                    ...activeOrderData as any,
+                    orderNoteTime: activeOrderData.orderNoteTime || activeOrderData.timeLine,
+                    orderSubtotal: activeOrderData.orderSubtotalDinar,
+                    deliveryPrice: activeOrderData.deliveryPriceDinar,
+                    totalAmount: activeOrderData.totalAmountDinar,
+                    status: activeOrderData.orderStatus,
+                    orderNumber: Number(activeOrderData.shortId),
+                    customerLandmark: activeOrderData.landmarkLine,
+                    secondCustomerLandmark: activeOrderData.secondCustomerLandmark,
+                    moneyEvents: activeOrderData.moneyEvents || [],
+                    shop: {
+                       name: activeOrderData.shopName,
+                       phone: activeOrderData.shopPhone,
+                       photoUrl: activeOrderData.shopDoorPhotoUrl,
+                       locationUrl: activeOrderData.shopLocationUrl,
+                       region: { name: activeOrderData.shopRegionName || "—" },
+                       ownerName: activeOrderData.submitterName,
+                    } as any,
+                    customerRegion: { name: activeOrderData.regionLine } as any,
+                    secondCustomerRegion: { name: activeOrderData.secondCustomerRegionName || "—" } as any,
+                    customer: {
+                       name: activeOrderData.customerName,
+                    } as any,
+                    submittedBy: { name: activeOrderData.submitterName } as any,
+                    routeMode: activeOrderData.routeMode,
+                  } as any}
+                  closeHref="#"
+                  onCloseModal={() => {
+                    setActiveOrderId(null);
+                    const p = new URLSearchParams(window.location.search);
+                    p.delete("activeOrderId");
+                    const newUrl = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+                    window.history.pushState({}, "", newUrl);
+                  }}
+                  auth={auth}
+                  nextUrl="#"
+                  preparerId={auth.p}
+                  icons={icons}
+                  couriers={couriers}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
