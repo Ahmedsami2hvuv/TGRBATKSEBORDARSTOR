@@ -175,7 +175,26 @@ export default function AIConfigClient({
 
   return (
     <div className="space-y-6">
-      {/* ملخص القوة الذكية */}
+      {/* ملخص القوة الذكية وميزة صور الأبواب */}
+      <div className="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-emerald-500/10 border border-sky-200 dark:border-sky-800/40 p-6 rounded-[2.5rem] shadow-sm mb-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-sky-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-sky-500/20">
+            🚪
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-black text-slate-800 dark:text-white">
+              نظام فحص وتحسين صور أبواب الزبائن بالذكاء الاصطناعي 📸
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed">
+              عند رفع المندوب لصورة الباب، يقوم النظام بفحص جودة الصورة تلقائياً. إذا كانت الصورة واضحة لا يتم تغييرها. أما إذا كانت مظلمة (تصوير ليلي) أو بها غواش وفوكس غير واضح، يتم توضيحها وضبط إضاءتها تلقائياً.
+            </p>
+            <div className="inline-flex items-center gap-2 mt-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-xl text-xs font-black border border-emerald-500/20">
+              <span>✨ الميزة مفعلة وتستخدم التناوب التلقائي بين كل المفاتيح أدناه</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-[#131418] p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
           <p className="text-[10px] font-black text-slate-400">إجمالي المفاتيح</p>
