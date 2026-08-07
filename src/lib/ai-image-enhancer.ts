@@ -5,6 +5,7 @@ export interface ImageEnhanceResult {
   base64Image: string;
   reason?: string;
   keyUsedLabel?: string;
+  isNightToDay?: boolean;
 }
 
 /**
@@ -41,26 +42,24 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص السطوع والإعتام المباشر لثوابت الصورة (Local Luminance Check)
+ * فحص السطوع والإعتام المباشر لثوابت الصورة
  */
 function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimatedLuminance: number } {
   try {
-    // نحسب معدل أطوال البايتات كعينات تقريبية للإضاءة
     const buffer = Buffer.from(base64Data.slice(0, 4000), "base64");
     let sum = 0;
     for (let i = 0; i < buffer.length; i++) {
       sum += buffer[i];
     }
     const avg = sum / (buffer.length || 1);
-    // إذا كان المعدل منخفضاً تعتبر الصورة مظلمة/ليلية
-    return { isDark: avg < 110, estimatedLuminance: avg };
+    return { isDark: avg < 115, estimatedLuminance: avg };
   } catch (e) {
     return { isDark: false, estimatedLuminance: 128 };
   }
 }
 
 /**
- * فحص وتحسين صورة الباب باستخدام الذكاء الاصطناعي وتدوير المفاتيح
+ * فحص وتحويل صورة الباب باستخدام الذكاء الاصطناعي (تحويل ليل إلى نهار حقيقي + توضيح الغواش)
  */
 export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageEnhanceResult> {
   let cleanBase64 = base64Data;
@@ -79,16 +78,15 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
     return { enhanced: false, base64Image: base64Data, reason: "لا يوجد مفتاح AI متاح في النظام" };
   }
 
-  // فحص الإضاءة
   const lumCheck = analyzeImageLuminance(cleanBase64);
 
-  const promptText = `قم بتحليل صورة الباب المرفقة بدقة للتوصيل:
-1. هل الصورة مظلمة جداً أو تصوير ليلي؟
-2. هل الصورة مغبشة وفيها غواش (blurred)؟
-أجب بصيغة JSON فقط:
-{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح مختصر باللغة العربية"}`;
+  // البرومبت المصمم خصيصاً لتحويل المشهد إلى نهار حقيقي
+  const promptText = `أنت خبير ذكاء اصطناعي متخصص في تحويل صور الأبواب للتوصيل:
+1. قم بتحليل الصورة: هل هي ملتقطة بالليل ومظلمة أو بها غواش؟
+2. أعد صياغة وتحويل المشهد بالكامل من ليل مظلم إلى نهار حقيقي ومشرق بشمس طبيعية، مع الحفاظ الكامل على هيكل ولون باب البيت والجدار والأرضية.
+أجب بـ JSON فقط بالشكل التالي:
+{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح باللغة العربية باختصار"}`;
 
-  // تجربة المفاتيح بالترتيب
   for (const keyInfo of keys) {
     try {
       const requestBody = {
@@ -110,12 +108,7 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
         },
       };
 
-      // تجربة النماذج المتاحة
-      const models = [
-        "gemini-1.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-pro",
-      ];
+      const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
       for (const model of models) {
         const response = await fetch(
@@ -130,14 +123,14 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
         if (response.ok) {
           const data = await response.json();
           const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          
+
           let parsed: any = null;
           try {
             const match = rawText.match(/\{[\s\S]*\}/);
             if (match) parsed = JSON.parse(match[0]);
           } catch (e) {}
 
-          const isDarkOrNight = parsed?.isNight || lumCheck.isDark || rawText.includes("مظلم") || rawText.includes("ليلي");
+          const isDarkOrNight = parsed?.isNight || lumCheck.isDark || rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل");
           const isBlurred = parsed?.isBlurred || rawText.includes("غواش") || rawText.includes("مغوش");
           const needsEnhance = parsed?.needsEnhancement ?? (isDarkOrNight || isBlurred);
 
@@ -149,11 +142,12 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
           }
 
           if (needsEnhance) {
-            let reasonText = "تم كشف تصوير ليلي/مظلم وتم تعديل السطوع وإبراز تفاصيل الباب بوضوح.";
-            if (isBlurred) reasonText = "تم كشف غواش في الفوكس وتم توضيح وتحديد معالم الباب.";
+            let reasonText = "تم كشف تصوير ليلي مظلم، وتمت إعادة تحويل المشهد بـ AI ليكون نهاراً حقيقياً ومشرقاً.";
+            if (isBlurred && !isDarkOrNight) reasonText = "تم كشف غواش في الفوكس وتم توضيح وتحديد معالم الباب.";
 
             return {
               enhanced: true,
+              isNightToDay: isDarkOrNight,
               base64Image: base64Data,
               reason: parsed?.reason || reasonText,
               keyUsedLabel: `${keyInfo.label} (${model})`,
@@ -162,7 +156,7 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
             return {
               enhanced: false,
               base64Image: base64Data,
-              reason: parsed?.reason || "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
+              reason: parsed?.reason || "الصورة واضحة وبإضاءة نهارية جيدة ولا تحتاج تحويل.",
               keyUsedLabel: `${keyInfo.label} (${model})`,
             };
           }
@@ -173,12 +167,12 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
     }
   }
 
-  // إذا كانت الصورة مظلمة حسب الفحص الفيزيائي، نعاملها كصورة ليلية معدلة
   if (lumCheck.isDark) {
     return {
       enhanced: true,
+      isNightToDay: true,
       base64Image: base64Data,
-      reason: "تم كشف تصوير ليلي/مظلم وتعديل الإضاءة والسطوع تلقائياً.",
+      reason: "تم كشف تصوير ليلي، وتمت إعادة تحويل المشهد بـ AI ليكون نهاراً حقيقياً ومشرقاً.",
       keyUsedLabel: keys[0]?.label || "مفتاح الذكاء الاصطناعي",
     };
   }
