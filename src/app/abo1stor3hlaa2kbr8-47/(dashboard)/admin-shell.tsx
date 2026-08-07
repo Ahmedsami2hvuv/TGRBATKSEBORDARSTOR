@@ -362,42 +362,7 @@ export function AdminShell({
     };
   }, []);
 
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      const mainEl = document.querySelector('main');
-      const isAtTop = (!mainEl || mainEl.scrollTop <= 5) && window.scrollY === 0;
-      
-      if (isAtTop && e.deltaY < 0) {
-        if (pullTimeoutRef.current) {
-          clearTimeout(pullTimeoutRef.current);
-        }
 
-        accumulatedDeltaRef.current += Math.abs(e.deltaY);
-        
-        const threshold = 220;
-        const progress = Math.min(100, (accumulatedDeltaRef.current / threshold) * 100);
-        
-        setPullProgress(progress);
-        setShowIndicator(true);
-
-        if (accumulatedDeltaRef.current >= threshold) {
-          window.location.reload();
-        } else {
-          pullTimeoutRef.current = setTimeout(() => {
-            setShowIndicator(false);
-            setPullProgress(0);
-            accumulatedDeltaRef.current = 0;
-          }, 800);
-        }
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: true });
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      if (pullTimeoutRef.current) clearTimeout(pullTimeoutRef.current);
-    };
-  }, []);
 
   const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 

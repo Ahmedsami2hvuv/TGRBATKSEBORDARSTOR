@@ -124,16 +124,8 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         loginLayout = findViewById(R.id.loginLayout)
 
-        // إعداد السحب للتحديث
-        swipeRefreshLayout.setOnRefreshListener {
-            webView.reload()
-        }
-
-        // تمكين السحب للتحديث بشكل دائم عندما يكون WebView عند بداية الصفحة
-        swipeRefreshLayout.isEnabled = true
-        swipeRefreshLayout.setOnChildScrollUpCallback { parent, child ->
-            webView.canScrollVertically(-1)
-        }
+        // تعطيل السحب للتحديث التلقائي لمنع إعادة تحميل الصفحة عند سحب المودال أو الخروج من الطلبيات
+        swipeRefreshLayout.isEnabled = false
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility)
