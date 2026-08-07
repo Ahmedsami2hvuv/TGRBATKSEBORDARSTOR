@@ -7,8 +7,16 @@ export function AdminGestureHandler() {
     const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
     // تعريف الدالة العالمية لتنفيذ إجراءات الإيماءات للمدير
-    (window as any).executeGestureActionFromAndroid = (action: string) => {
-      console.log("تأكيد تنفيذ الإجراء للمدير:", action);
+    (window as any).executeGestureActionFromAndroid = (action: string, gestureKey?: string) => {
+      console.log("تأكيد تنفيذ الإجراء للمدير:", action, gestureKey);
+
+      if (action === "custom_url") {
+        const customUrl = gestureKey ? (localStorage.getItem(`gesture_custom_url_${gestureKey}`) || "") : "";
+        if (customUrl) {
+          window.location.href = customUrl;
+          return;
+        }
+      }
 
       switch (action) {
         case "open_dashboard":
@@ -59,7 +67,6 @@ export function AdminGestureHandler() {
     };
 
     // كاشف إيماءات الأصابع التفاعلي المباشر بالويب (Web Touch Gesture Listener)
-    // يضمن العمل المباشر 100% فوراً دون الحاجة لتحديث تطبيق الأندرويد APK
     let touchStartX = 0;
     let touchStartY = 0;
     let maxFingers = 0;
@@ -95,7 +102,7 @@ export function AdminGestureHandler() {
         const currentY = e.touches[0].clientY;
         const deltaX = currentX - touchStartX;
         const deltaY = currentY - touchStartY;
-        const swipeThreshold = 50; // مسافة خفيفة جداً لسهولة الاستجابة 50px
+        const swipeThreshold = 50;
 
         if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) {
           if (longPressTimer) clearTimeout(longPressTimer);
@@ -114,7 +121,6 @@ export function AdminGestureHandler() {
 
       if (remainingFingers === 0) {
         const duration = Date.now() - touchStartTime;
-        // إذا تم النقر والسحب لم يكن مسافة كبيرة، واعُتبرت نقرة سريعة خفيفة (أقل من 600ms)
         if (!isGestureExecuted && maxFingers >= 2 && maxFingers <= 5 && duration < 600) {
           isGestureExecuted = true;
           triggerGesture(`tap_${maxFingers}`);
@@ -134,7 +140,14 @@ export function AdminGestureHandler() {
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           try { navigator.vibrate(80); } catch (e) {}
         }
-        (window as any).executeGestureActionFromAndroid?.(action);
+        if (action === "custom_url") {
+          const customUrl = localStorage.getItem(`gesture_custom_url_${gestureKey}`) || "";
+          if (customUrl) {
+            window.location.href = customUrl;
+            return;
+          }
+        }
+        (window as any).executeGestureActionFromAndroid?.(action, gestureKey);
       }
     }
 

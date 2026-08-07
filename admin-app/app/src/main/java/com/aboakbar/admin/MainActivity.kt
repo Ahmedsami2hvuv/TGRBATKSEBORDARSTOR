@@ -1053,12 +1053,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // واجهة جافا سكريبت لاستقبال تفضيلات الإيماءات من صفحة الويب للمدير
+    // واجهة جافا سكريبت لاستقبال تفضيلات الإيماءات والروابط المخصصة من صفحة الويب للمدير
     inner class AndroidGesturesInterface {
         @JavascriptInterface
         fun saveGestureAction(gestureKey: String, actionValue: String) {
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putString("gesture_$gestureKey", actionValue).apply()
+        }
+
+        @JavascriptInterface
+        fun saveCustomGestureUrl(gestureKey: String, urlValue: String) {
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString("gesture_custom_url_$gestureKey", urlValue).apply()
         }
     }
 
@@ -1205,6 +1211,19 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {}
 
         when (action) {
+            "custom_url" -> {
+                val customUrl = sharedPreferences.getString("gesture_custom_url_$gestureKey", "") ?: ""
+                if (customUrl.isNotEmpty()) {
+                    webView.post {
+                        if (customUrl.startsWith("http://") || customUrl.startsWith("https://")) {
+                            webView.loadUrl(customUrl)
+                        } else {
+                            val fullUrl = if (customUrl.startsWith("/")) "$BACKEND_URL$customUrl" else "$BACKEND_URL/$customUrl"
+                            webView.loadUrl(fullUrl)
+                        }
+                    }
+                }
+            }
             "reload_page" -> {
                 webView.post {
                     webView.reload()
