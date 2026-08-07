@@ -437,6 +437,7 @@ export default function AIConfigClient({
 
 function DoorTestWidget() {
   const [testing, setTesting] = useState(false);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -449,6 +450,8 @@ function DoorTestWidget() {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
+      setOriginalImage(base64);
+
       try {
         const res = await fetch("/api/ai/enhance-door", {
           method: "POST",
@@ -467,19 +470,19 @@ function DoorTestWidget() {
   }
 
   return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-sky-100 dark:border-sky-900/30 p-4 rounded-2xl my-3">
+    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-sky-100 dark:border-sky-900/30 p-5 rounded-3xl my-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
-            <span>🧪 تجربة واختبار صورة باب الآن</span>
+            <span>🧪 تجربة ومعاينة النتيجة البصرية للصورة</span>
           </h4>
           <p className="text-[11px] text-slate-500 font-bold mt-0.5">
-            ارفع أي صورة من جهازك ليقوم الذكاء الاصطناعي بتحليلها فوراً وتوضيح النتيجة لك.
+            ارفع أي صورة مظلمة أو مغبشة لتشاهد فرق التوضيح والسطوع بصرياً أمامك مباشرة.
           </p>
         </div>
 
-        <label className="cursor-pointer bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md shadow-sky-500/20 transition flex items-center gap-2 shrink-0">
-          <span>{testing ? "جاري التقييم والتحسين..." : "اختر صورة لتجربتها 📸"}</span>
+        <label className="cursor-pointer bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 active:scale-95 text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-sky-500/20 transition flex items-center gap-2 shrink-0">
+          <span>{testing ? "جاري المعالجة البصرية والتوضيح..." : "اختر صورة لتجربتها ومعاينتها 📸"}</span>
           <input
             type="file"
             accept="image/*"
@@ -491,24 +494,53 @@ function DoorTestWidget() {
       </div>
 
       {result && (
-        <div className="mt-4 pt-3 border-t border-sky-100 dark:border-sky-900/30">
+        <div className="mt-5 pt-4 border-t border-sky-100 dark:border-sky-900/30 space-y-4">
           {result.error ? (
             <p className="text-xs font-bold text-rose-500">❌ {result.error}</p>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${result.enhanced ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
-                  {result.enhanced ? "⚡ الصورة تمت معالجتها وتعديلها" : "✅ الصورة واضحة وسليمة (لم تتطلب تعديل)"}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`px-3 py-1.5 rounded-xl text-xs font-black border ${result.enhanced ? "bg-amber-500/10 text-amber-700 border-amber-500/20" : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"}`}>
+                  {result.enhanced ? "⚡ الصورة تم كشفها كصورة تحتاج توضيح وتم تحسينها" : "✅ الصورة واضحة وضوح ممتاز"}
                 </span>
                 {result.keyUsedLabel && (
-                  <span className="text-[10px] text-slate-400 font-bold">
-                    المفتاح المستخدم: {result.keyUsedLabel}
+                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-lg font-bold">
+                    المفتاح المستعمل: {result.keyUsedLabel}
                   </span>
                 )}
               </div>
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                💬 **النتيجة والتوضيح من AI**: {result.reason}
-              </p>
+
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  💬 **النتيجة والتقييم**: {result.reason}
+                </p>
+              </div>
+
+              {/* المعاينة البصرية قبل وبعد */}
+              {originalImage && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-black text-slate-500 text-center">📷 الصورة قبل التعديل (الأصلية)</p>
+                    <div className="aspect-video relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-black/5 flex items-center justify-center">
+                      <img src={originalImage} alt="قبل التعديل" className="w-full h-full object-contain" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 text-center flex items-center justify-center gap-1">
+                      <span>✨ الصورة بعد تحسين السطوع والفوكس التلقائي</span>
+                    </p>
+                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-md bg-slate-900 flex items-center justify-center">
+                      <img
+                        src={result.base64Image || originalImage}
+                        alt="بعد التعديل"
+                        className="w-full h-full object-contain"
+                        style={result.enhanced ? { filter: "brightness(1.55) contrast(1.25) saturate(1.1) drop-shadow(0 0 1px rgba(255,255,255,0.4))" } : {}}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
