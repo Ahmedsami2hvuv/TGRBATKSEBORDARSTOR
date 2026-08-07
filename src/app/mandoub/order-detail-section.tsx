@@ -88,22 +88,25 @@ type PhoneProfileFallback = {
 export function OrderDetailSection({
   order,
   closeHref,
+  onCloseModal,
   auth,
   nextUrl,
   viewerCourierId,
+  courierName,
   phoneProfile,
   secondPhoneProfile,
   smartHintLine,
   secondSmartHintLine,
   uiSettings,
   icons,
+  routeHistory,
   courierSettings,
   isModal = false,
   customWaButtons,
-  courierName,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
+  onCloseModal?: () => void;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   viewerCourierId?: string;
@@ -973,7 +976,7 @@ export function OrderDetailSection({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />
+            <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
           </div>
         </div>
 

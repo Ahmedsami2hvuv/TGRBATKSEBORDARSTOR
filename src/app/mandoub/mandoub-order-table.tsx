@@ -685,10 +685,11 @@ export function MandoubOrderTable({
             <div className="sticky top-0 z-[120] flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 p-3 shadow-md backdrop-blur-md">
               <button
                 onClick={() => {
+                  setActiveOrderId(null);
                   const p = new URLSearchParams(window.location.search);
                   p.delete("activeOrderId");
-                  // نستخدم window.location.href لضمان العودة الحقيقية للصفحة الرئيسية وتجنب إغلاق التطبيق في المتصفحات المساعدة
-                  window.location.href = window.location.pathname + "?" + p.toString();
+                  const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+                  window.history.pushState({}, "", newPath);
                 }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
               >
@@ -734,6 +735,13 @@ export function MandoubOrderTable({
                 }}
                 auth={auth}
                 closeHref="#"
+                onCloseModal={() => {
+                  setActiveOrderId(null);
+                  const p = new URLSearchParams(window.location.search);
+                  p.delete("activeOrderId");
+                  const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+                  window.history.pushState({}, "", newPath);
+                }}
                 nextUrl={detailsNextUrl}
                 viewerCourierId={auth.c}
                 phoneProfile={activeOrderData.phoneProfile}
