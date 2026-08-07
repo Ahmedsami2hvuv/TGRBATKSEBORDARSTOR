@@ -8,7 +8,15 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 /** يستمع إليه `MandoubCustomerEditForm` لتبديل إظهار نموذج التعديل (فتح / إخفاء) */
 export const MANDOUB_ORDER_EDIT_TOGGLE = "mandoub-order-edit-toggle";
 
-export function MandoubOrderDetailActions({ closeHref, orderId }: { closeHref: string; orderId: string }) {
+export function MandoubOrderDetailActions({
+  closeHref,
+  orderId,
+  onCloseModal,
+}: {
+  closeHref: string;
+  orderId: string;
+  onCloseModal?: () => void;
+}) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const router = useRouter();
 
@@ -17,12 +25,17 @@ export function MandoubOrderDetailActions({ closeHref, orderId }: { closeHref: s
   }, []);
 
   const handleClose = () => {
+    if (onCloseModal) {
+      onCloseModal();
+      return;
+    }
     if (closeHref && closeHref !== "#") {
       window.location.href = closeHref;
     } else {
       const p = new URLSearchParams(window.location.search);
       p.delete("activeOrderId");
-      window.location.href = window.location.pathname + "?" + p.toString();
+      const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+      window.history.pushState({}, "", newPath);
     }
   };
 
