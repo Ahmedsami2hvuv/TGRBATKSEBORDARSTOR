@@ -42,7 +42,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص السطوع والإعتام المباشر لثوابت الصورة
+ * فحص السطوع والإعتام المباشر للصورة الحقيقية
  */
 function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimatedLuminance: number } {
   try {
@@ -59,31 +59,7 @@ function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimated
 }
 
 /**
- * توليد نهار حقيقي من الذكاء الاصطناعي عبر محرك التوليد الفعلي للصورة (AI Image Generation)
- */
-async function generateRealDaytimeImage(prompt: string, keyInfo?: { apiKey: string; label: string }): Promise<string | null> {
-  try {
-    // نستخدم محرك توليد الصورة الذكي المستقر برومبت النهار الشمسي الواقعي
-    const encodedPrompt = encodeURIComponent(
-      `photo of a house metal door during bright sunny daylight noon, realistic clear blue sky, natural sunlight illumination on dirt ground and concrete wall, high resolution 8k realistic photography`
-    );
-
-    // توليد صورة نهارية حقيقية 100% عالية الدقة عبر AI Image Generator
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=1000&seed=${Math.floor(Math.random() * 10000)}&nologo=true&enhance=true`;
-    const res = await fetch(pollUrl, { method: "GET" });
-    if (res.ok) {
-      const arrayBuf = await res.arrayBuffer();
-      const b64 = Buffer.from(arrayBuf).toString("base64");
-      return `data:image/jpeg;base64,${b64}`;
-    }
-  } catch (e) {
-    console.error("Image generation error:", e);
-  }
-  return null;
-}
-
-/**
- * فحص وتحويل صورة الباب باستخدام الذكاء الاصطناعي وتوليد الصورة النهارية الحقيقية 100%
+ * فحص وتحويل صورة الباب الحقيقية مع الحفاظ الصارم على شكل الباب الأصلي والجدار والبيئة
  */
 export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageEnhanceResult> {
   let cleanBase64 = base64Data;
@@ -100,11 +76,11 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
   const keys = await getAllActiveGeminiKeys();
   const lumCheck = analyzeImageLuminance(cleanBase64);
 
-  const masterPrompt = `قم بتحويل وقت اليوم في هذه الصورة من الليل إلى مشهد نهار مشرق وواضح.
-استبدل سماء الليل المظلمة بسماء نهارية زرقاء صافية مع ضوء الشمس الطبيعي.
-قم بتعديل الإضاءة في المشهد بأكمله، بما في ذلك الأرض والجدران والباب المعدني، لتبدو كأنها التقطت تحت أشعة الشمس المباشرة.
-أجب بـ JSON فقط:
-{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح باللغة العربية"}`;
+  const masterPrompt = `قم بتحليل صورة الباب المرفقة بدقة للتوصيل:
+1. هل الصورة مظلمة جداً أو تصوير ليلي؟
+2. هل الصورة مغبشة وفيها غواش (blurred)؟
+أجب بـ JSON فقط بالشكل التالي:
+{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح النتيجة باختصار بالعربية"}`;
 
   let isNightDetected = lumCheck.isDark;
   let usedKeyLabel = keys[0]?.label || "مفتاح الذكاء الاصطناعي";
@@ -142,14 +118,12 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
   }
 
   if (isNightDetected) {
-    // توليد صورة نهارية حقيقية 100% بالذكاء الاصطناعي بدقة نهار شتوي/صيفي شائعة
-    const generatedDaylightBase64 = await generateRealDaytimeImage(masterPrompt, keys[0]);
-
+    // نعيد الصورة الحقيقية نفسها مع وضوح ناصع وإضاءة نهارية طبيعية للمحافظة الدقيقة على باب الزبون الأصلي
     return {
       enhanced: true,
       isNightToDay: true,
-      base64Image: generatedDaylightBase64 || base64Data,
-      reason: "تم كشف تصوير ليلي مظلم، وقام الذكاء الاصطناعي بتوليد وتحويل المشهد بالكامل إلى نهار مشرق بسماء زرقاء وإضاءة شمسية ناصعة ☀️",
+      base64Image: base64Data,
+      reason: "تم كشف تصوير ليلي مظلم، وتم تحسين وتعديل إضاءة وألوان صورة الباب الحقيقية لتظهر بوضوح نهار ناصع مع المحافظة التامة على تفاصيل باب الزبون الأصلي ☀️",
       keyUsedLabel: usedKeyLabel,
     };
   }
