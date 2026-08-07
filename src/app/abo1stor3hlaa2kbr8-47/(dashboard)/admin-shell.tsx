@@ -12,6 +12,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { FloatingAdminMenu } from "@/components/floating-admin-menu";
+import { AdminGestureHandler } from "./admin-gesture-handler";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -535,10 +536,13 @@ export function AdminShell({
 
   return (
     <div
-      className={`kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col ${
+      dir="rtl"
+      lang="ar"
+      className={`kse-app-bg relative flex min-h-screen text-slate-800 dark:text-slate-100 ${
         !isLg && navOpen ? "overflow-hidden" : ""
       } lg:overflow-visible`}
     >
+      <AdminGestureHandler />
       {showIndicator && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-[#131418]/95 backdrop-blur-md shadow-lg border border-slate-200/50 dark:border-slate-800/50 transition-all duration-300 transform translate-y-0 scale-100">
           <div className="flex items-center gap-2.5">

@@ -82,6 +82,14 @@ class MainActivity : AppCompatActivity() {
     private var lastCssInjectionTime = 0L
     private var lastTokenSyncTime = 0L
 
+    private var isGestureExecuted = false
+    private var isMultiTouchDetected = false
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var activePointerCount = 0
+    private var longPressRunnable: Runnable? = null
+    private val gestureHandler = Handler(Looper.getMainLooper())
+
     private val BACKEND_URL = "https://aboakbr.com"
     private val ADMIN_DASHBOARD_URL = "$BACKEND_URL/abo1stor3hlaa2kbr8-47"
 
@@ -119,18 +127,10 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً وبدء اللمس من الثلث العلوي للشاشة (35% من الارتفاع)
-        // لمنع التحديث العشوائي عند تحريك الزر العائم أو سحب القوائم في منتصف وأسفل الشاشة
-        webView.setOnTouchListener { v, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val isAtTop = !webView.canScrollVertically(-1)
-                val touchY = event.y
-                val viewHeight = v.height
-                val threshold = viewHeight * 0.35f // 35% من الارتفاع (الثلث العلوي تقريباً)
-                
-                swipeRefreshLayout.isEnabled = (isAtTop && touchY <= threshold)
-            }
-            false // إرجاع false للسماح للـ WebView بمعالجة اللمس بشكل طبيعي
+        // تمكين السحب للتحديث بشكل دائم عندما يكون WebView عند بداية الصفحة
+        swipeRefreshLayout.isEnabled = true
+        swipeRefreshLayout.setOnChildScrollUpCallback { parent, child ->
+            webView.canScrollVertically(-1)
         }
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
@@ -263,7 +263,7 @@ class MainActivity : AppCompatActivity() {
         settings.displayZoomControls = false
 
         // تحسين أداء اللمس والتمرير الفوري
-        webView.overScrollMode = View.OVER_SCROLL_NEVER
+        webView.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
         webView.isVerticalFadingEdgeEnabled = false
         webView.isHorizontalFadingEdgeEnabled = false
         webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
@@ -276,6 +276,9 @@ class MainActivity : AppCompatActivity() {
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
         cookieManager.setAcceptThirdPartyCookies(webView, true)
+
+        // تسجيل واجهة جافا سكريبت لإيماءات أصابع المدير
+        webView.addJavascriptInterface(AndroidGesturesInterface(), "AndroidGestures")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
@@ -339,6 +342,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
+                swipeRefreshLayout.isRefreshing = false
             }
 
             override fun onReceivedError(
@@ -1044,6 +1048,176 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             // تجاهل
+        }
+    }
+
+    // واجهة جافا سكريبت لاستقبال تفضيلات الإيماءات من صفحة الويب للمدير
+    inner class AndroidGesturesInterface {
+        @JavascriptInterface
+        fun saveGestureAction(gestureKey: String, actionValue: String) {
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString("gesture_$gestureKey", actionValue).apply()
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        val actionMasked = ev.actionMasked
+        
+        when (actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                isGestureExecuted = false
+                isMultiTouchDetected = false
+                touchDownX = ev.x
+                touchDownY = ev.y
+                activePointerCount = 1
+            }
+            android.view.MotionEvent.ACTION_POINTER_DOWN -> {
+                activePointerCount = ev.pointerCount
+                if (activePointerCount >= 2 && activePointerCount <= 5) {
+                    isMultiTouchDetected = true
+                    touchDownX = ev.getX(0)
+                    touchDownY = ev.getY(0)
+                    
+                    // بدء مؤقت النقر المطول بـ 2 أو 3 أو 4 أو 5 أصابع
+                    startLongPressTimer(activePointerCount)
+                }
+            }
+            android.view.MotionEvent.ACTION_MOVE -> {
+                val fingers = ev.pointerCount
+                if (isMultiTouchDetected && !isGestureExecuted && fingers >= 2 && fingers <= 5) {
+                    val currentX = ev.getX(0)
+                    val currentY = ev.getY(0)
+                    val deltaX = currentX - touchDownX
+                    val deltaY = currentY - touchDownY
+                    
+                    val swipeThreshold = 150f // حد مسافة السحب بالبكسل
+                    
+                    if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) {
+                        // إلغاء مؤقت النقر المطول لأن المستخدم يقوم بالسحب
+                        cancelLongPressTimer()
+                        
+                        isGestureExecuted = true
+                        
+                        // تحديد اتجاه السحب
+                        val dir = if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                            if (deltaX > 0) "right" else "left"
+                        } else {
+                            if (deltaY > 0) "down" else "up"
+                        }
+                        
+                        val gestureKey = "swipe_${fingers}_$dir"
+                        executeGestureAction(gestureKey)
+                    }
+                }
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_POINTER_UP -> {
+                cancelLongPressTimer()
+                activePointerCount = ev.pointerCount - 1
+            }
+            android.view.MotionEvent.ACTION_CANCEL -> {
+                cancelLongPressTimer()
+                activePointerCount = 0
+            }
+        }
+        
+        // إذا تم تنفيذ إيماءة مخصصة بنجاح، نقوم بإلغاء الحدث للـ WebView لمنع أي نقرات بالخطأ
+        if (isGestureExecuted) {
+            val cancelEvent = android.view.MotionEvent.obtain(ev)
+            cancelEvent.action = android.view.MotionEvent.ACTION_CANCEL
+            super.dispatchTouchEvent(cancelEvent)
+            cancelEvent.recycle()
+            isGestureExecuted = false
+            return true
+        }
+        
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun startLongPressTimer(pointerCount: Int) {
+        cancelLongPressTimer()
+        if (pointerCount < 2 || pointerCount > 5) return
+        
+        val gestureKey = "long_press_$pointerCount"
+        
+        longPressRunnable = Runnable {
+            isGestureExecuted = true
+            executeGestureAction(gestureKey)
+            
+            // اهتزاز خفيف للتأكيد
+            try {
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(android.os.VibrationEffect.createOneShot(100, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(100)
+                }
+            } catch (e: Exception) {}
+        }
+        
+        // تشغيل الحدث بعد ثانيتين
+        longPressRunnable?.let { gestureHandler.postDelayed(it, 2000) }
+    }
+
+    private fun cancelLongPressTimer() {
+        longPressRunnable?.let {
+            gestureHandler.removeCallbacks(it)
+        }
+        longPressRunnable = null
+    }
+
+    private fun executeGestureAction(gestureKey: String) {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val action = sharedPreferences.getString("gesture_$gestureKey", "none") ?: "none"
+        
+        if (action == "none") return
+        
+        // اهتزاز خفيف لإعلام المستخدم بنجاح تشغيل الإيماءة
+        try {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(80)
+            }
+        } catch (e: Exception) {}
+
+        when (action) {
+            "open_whatsapp" -> {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("مرحباً إدارة أبو الأكبر"))
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "واتساب غير مثبت", Toast.LENGTH_SHORT).show()
+                }
+            }
+            "open_telegram" -> {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/Reozaki_94"))
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "تيليجرام غير مثبت", Toast.LENGTH_SHORT).show()
+                }
+            }
+            "open_camera" -> {
+                try {
+                    val intent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "تعذر فتح الكاميرا", Toast.LENGTH_SHORT).show()
+                }
+            }
+            else -> {
+                // إرسال الإجراء للـ WebView
+                webView.post {
+                    webView.loadUrl("javascript:if(window.executeGestureActionFromAndroid){window.executeGestureActionFromAndroid('$action');}")
+                }
+            }
         }
     }
 

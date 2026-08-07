@@ -22,6 +22,7 @@ import { FloatingMenuSettings } from "./floating-menu-settings";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 import { AdminBackgroundsSettings } from "./admin-backgrounds-settings";
+import { AdminGesturesSettings } from "./admin-gestures-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -187,6 +188,13 @@ export function SettingsBlocks({
 
   // Blocks Configuration
   const blocks = useMemo(() => [
+    {
+      id: "admin-gestures",
+      title: "إيماءات وحركات الأصابع 🖐️",
+      subtitle: "تخصيص حركات أصابعك على الشاشة لتنفيذ إجراءات سريعة فورية داخل تطبيق المدير.",
+      tone: "emerald",
+      content: <AdminGesturesSettings />
+    },
     {
       id: "floating-menu",
       title: "القائمة الدائرية 🔘",
