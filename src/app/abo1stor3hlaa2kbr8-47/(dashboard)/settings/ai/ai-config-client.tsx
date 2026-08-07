@@ -181,13 +181,16 @@ export default function AIConfigClient({
           <div className="w-12 h-12 rounded-2xl bg-sky-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-sky-500/20">
             🚪
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2 flex-1">
             <h3 className="text-lg font-black text-slate-800 dark:text-white">
               نظام فحص وتحسين صور أبواب الزبائن بالذكاء الاصطناعي 📸
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed">
               عند رفع المندوب لصورة الباب، يقوم النظام بفحص جودة الصورة تلقائياً. إذا كانت الصورة واضحة لا يتم تغييرها. أما إذا كانت مظلمة (تصوير ليلي) أو بها غواش وفوكس غير واضح، يتم توضيحها وضبط إضاءتها تلقائياً.
             </p>
+
+            <DoorTestWidget />
+
             <div className="inline-flex items-center gap-2 mt-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-xl text-xs font-black border border-emerald-500/20">
               <span>✨ الميزة مفعلة وتستخدم التناوب التلقائي بين كل المفاتيح أدناه</span>
             </div>
@@ -431,3 +434,86 @@ export default function AIConfigClient({
     </div>
   );
 }
+
+function DoorTestWidget() {
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setTesting(true);
+    setResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      try {
+        const res = await fetch("/api/ai/enhance-door", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64 }),
+        });
+        const data = await res.json();
+        setResult(data);
+      } catch (err: any) {
+        setResult({ error: "حدث خطأ أثناء اختبار الصورة" });
+      } finally {
+        setTesting(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-sky-100 dark:border-sky-900/30 p-4 rounded-2xl my-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+            <span>🧪 تجربة واختبار صورة باب الآن</span>
+          </h4>
+          <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+            ارفع أي صورة من جهازك ليقوم الذكاء الاصطناعي بتحليلها فوراً وتوضيح النتيجة لك.
+          </p>
+        </div>
+
+        <label className="cursor-pointer bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md shadow-sky-500/20 transition flex items-center gap-2 shrink-0">
+          <span>{testing ? "جاري التقييم والتحسين..." : "اختر صورة لتجربتها 📸"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            disabled={testing}
+            className="hidden"
+          />
+        </label>
+      </div>
+
+      {result && (
+        <div className="mt-4 pt-3 border-t border-sky-100 dark:border-sky-900/30">
+          {result.error ? (
+            <p className="text-xs font-bold text-rose-500">❌ {result.error}</p>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${result.enhanced ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                  {result.enhanced ? "⚡ الصورة تمت معالجتها وتعديلها" : "✅ الصورة واضحة وسليمة (لم تتطلب تعديل)"}
+                </span>
+                {result.keyUsedLabel && (
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    المفتاح المستخدم: {result.keyUsedLabel}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                💬 **النتيجة والتوضيح من AI**: {result.reason}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
