@@ -189,6 +189,14 @@ export function SettingsBlocks({
   // Blocks Configuration
   const blocks = useMemo(() => [
     {
+      id: "ai-settings",
+      title: "إعدادات الذكاء الصناعي 🤖",
+      subtitle: "إدارة مفاتيح الـ API لـ Gemini وميزة فحص وتحسين صور أبواب الزبائن بالذكاء الاصطناعي.",
+      tone: "sky",
+      isExternalLink: true,
+      href: `${SECRET_ADMIN_PATH}/settings/ai`,
+    },
+    {
       id: "admin-gestures",
       title: "إيماءات وحركات الأصابع 🖐️",
       subtitle: "تخصيص حركات أصابعك على الشاشة لتنفيذ إجراءات سريعة فورية داخل تطبيق المدير.",
