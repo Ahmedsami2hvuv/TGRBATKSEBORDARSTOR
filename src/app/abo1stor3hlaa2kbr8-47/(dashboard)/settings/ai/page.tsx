@@ -1,27 +1,31 @@
 import { prisma } from "@/lib/prisma";
 import AIConfigClient from "./ai-config-client";
-import { getAIPortalTrainingConfig, syncDatabaseSchema } from "./actions";
+import { getAIPortalTrainingConfig, getAIDoorEnhanceFeatureStatus, syncDatabaseSchema } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AISettingsPage() {
   try {
-    // محاولة جلب الإعدادات من الموديل الجديد
     const aiConfigs = await prisma.aIConfig.findMany({
       orderBy: { createdAt: 'desc' }
     });
     const trainingConfig = await getAIPortalTrainingConfig();
+    const isDoorEnhanceEnabled = await getAIDoorEnhanceFeatureStatus();
 
     return (
-      <div className="p-6 max-w-4xl mx-auto font-cairo">
+      <div className="p-6 max-w-5xl mx-auto font-cairo">
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-800 dark:text-white">إعدادات الذكاء الصناعي 🤖</h1>
+          <h1 className="text-3xl font-black text-slate-800 dark:text-white">إعدادات الذكاء الاصطناعي 🤖</h1>
           <p className="text-slate-500 dark:text-slate-400 font-bold mt-2">
-            قم بإدارة مفاتيح الـ API لـ Gemini و ChatGPT و Groq لزيادة حصة الاستخدام اليومية.
+            إدارة مفاتيح API لـ Gemini وميزات فحص وتصحيح صور الأبواب والتحكم الكامل بصلاحيات المناديب.
           </p>
         </div>
 
-        <AIConfigClient initialConfigs={aiConfigs} initialTrainingConfig={trainingConfig} />
+        <AIConfigClient
+          initialConfigs={aiConfigs}
+          initialTrainingConfig={trainingConfig}
+          initialDoorEnhanceStatus={isDoorEnhanceEnabled}
+        />
       </div>
     );
   } catch (error) {

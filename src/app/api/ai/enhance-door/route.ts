@@ -4,13 +4,13 @@ import { enhanceDoorImageWithAI } from "@/lib/ai-image-enhancer";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { imageBase64 } = body;
+    const { imageBase64, isTestMode } = body;
 
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return NextResponse.json({ error: "الصورة غير موجودة أو غير صالحة" }, { status: 400 });
     }
 
-    const result = await enhanceDoorImageWithAI(imageBase64);
+    const result = await enhanceDoorImageWithAI(imageBase64, isTestMode !== false);
 
     return NextResponse.json({
       success: true,

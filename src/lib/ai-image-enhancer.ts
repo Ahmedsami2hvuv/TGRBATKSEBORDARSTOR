@@ -61,7 +61,19 @@ function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimated
 /**
  * فحص وتحويل صورة الباب الحقيقية مع الحفاظ الصارم على شكل الباب الأصلي والجدار والبيئة
  */
-export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageEnhanceResult> {
+export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
+  // فحص هل الميزة مفعلة للمناديب أم معطلة
+  if (!isTestMode) {
+    try {
+      const { getAIDoorEnhanceFeatureStatus } = await import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/ai/actions");
+      const isEnabled = await getAIDoorEnhanceFeatureStatus();
+      if (!isEnabled) {
+        // الميزة معطلة عن المناديب: نعيد الصورة الأصلية فوراً بدون أي تعديل أو تأخير
+        return { enhanced: false, base64Image: base64Data, reason: "الميزة موقوفة للمناديب" };
+      }
+    } catch (e) {}
+  }
+
   let cleanBase64 = base64Data;
   let mimeType = "image/jpeg";
 

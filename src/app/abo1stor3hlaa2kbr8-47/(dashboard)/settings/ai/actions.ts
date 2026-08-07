@@ -217,10 +217,51 @@ export async function updateAIConfig(id: string, formData: FormData) {
   }
 }
 
+export async function getAIDoorEnhanceFeatureStatus(): Promise<boolean> {
+  try {
+    const row = await prisma.uISystemSetting.findUnique({
+      where: {
+        target_section: {
+          target: "global",
+          section: "ai_door_enhance_status",
+        },
+      },
+    });
+    return row?.config ? (row.config as any).enabled === true : false;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function toggleAIDoorEnhanceFeatureStatus(currentStatus: boolean) {
+  try {
+    const nextStatus = !currentStatus;
+    await prisma.uISystemSetting.upsert({
+      where: {
+        target_section: {
+          target: "global",
+          section: "ai_door_enhance_status",
+        },
+      },
+      create: {
+        target: "global",
+        section: "ai_door_enhance_status",
+        config: { enabled: nextStatus } as any,
+      },
+      update: {
+        config: { enabled: nextStatus } as any,
+      },
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings/ai`);
+    return { ok: true, enabled: nextStatus };
+  } catch (error: any) {
+    return { ok: false, error: "فشل تغيير حالة التفعيل." };
+  }
+}
+
 // أكشن طوارئ لمزامنة قاعدة البيانات برمجياً
 export async function syncDatabaseSchema() {
   try {
-    // هذا الأمر سيقوم بمزامنة الموديلات الجديدة مع قاعدة البيانات في ريلوي
     const { stdout, stderr } = await execPromise("npx prisma db push");
     console.log("Prisma Sync Stdout:", stdout);
     if (stderr) console.error("Prisma Sync Stderr:", stderr);
