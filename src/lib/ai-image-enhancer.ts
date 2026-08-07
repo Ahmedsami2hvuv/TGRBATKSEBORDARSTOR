@@ -59,7 +59,7 @@ function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimated
 }
 
 /**
- * فحص وتحويل صورة الباب باستخدام الذكاء الاصطناعي (تحويل ليل إلى نهار حقيقي + توضيح الغواش)
+ * فحص وتحويل صورة الباب باستخدام الذكاء الاصطناعي مع البرومبت الاحترافي لتحويل الليل لنهار مشرق
  */
 export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageEnhanceResult> {
   let cleanBase64 = base64Data;
@@ -80,12 +80,13 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
 
   const lumCheck = analyzeImageLuminance(cleanBase64);
 
-  // البرومبت المصمم خصيصاً لتحويل المشهد إلى نهار حقيقي
-  const promptText = `أنت خبير ذكاء اصطناعي متخصص في تحويل صور الأبواب للتوصيل:
-1. قم بتحليل الصورة: هل هي ملتقطة بالليل ومظلمة أو بها غواش؟
-2. أعد صياغة وتحويل المشهد بالكامل من ليل مظلم إلى نهار حقيقي ومشرق بشمس طبيعية، مع الحفاظ الكامل على هيكل ولون باب البيت والجدار والأرضية.
-أجب بـ JSON فقط بالشكل التالي:
-{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح باللغة العربية باختصار"}`;
+  // البرومبت الاحترافي الدقيق المستخرج والمطوّر
+  const masterPrompt = `أنت خبير الذكاء الاصطناعي للتحويل البصري وصور الأبواب:
+قم بتحويل وقت اليوم في هذه الصورة من الليل إلى مشهد نهار مشرق وواضح.
+استبدل سماء الليل المظلمة بسماء نهارية زرقاء صافية مع ضوء الشمس الطبيعي.
+قم بتعديل الإضاءة في المشهد بأكمله، بما في ذلك الأرض والجدران والباب المعدني، لتبدو كأنها التقطت تحت أشعة الشمس المباشرة، مع إظهار الظلال والإضاءات النهارية بشكل واقعي جداً مع الحفاظ الكامل على معالم وهيكل الباب للجودة.
+أجب بصيغة JSON فقط:
+{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح النتيجة باختصار بالعربية"}`;
 
   for (const keyInfo of keys) {
     try {
@@ -93,7 +94,7 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
         contents: [
           {
             parts: [
-              { text: promptText },
+              { text: masterPrompt },
               {
                 inline_data: {
                   mime_type: mimeType,
@@ -142,7 +143,7 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
           }
 
           if (needsEnhance) {
-            let reasonText = "تم كشف تصوير ليلي مظلم، وتمت إعادة تحويل المشهد بـ AI ليكون نهاراً حقيقياً ومشرقاً.";
+            let reasonText = "تم كشف تصوير ليلي مظلم، وتم تحويل وقت المشهد من الليل إلى نهار مشرق بسماء زرقاء وإضاءة شمسية واقعية.";
             if (isBlurred && !isDarkOrNight) reasonText = "تم كشف غواش في الفوكس وتم توضيح وتحديد معالم الباب.";
 
             return {
@@ -172,7 +173,7 @@ export async function enhanceDoorImageWithAI(base64Data: string): Promise<ImageE
       enhanced: true,
       isNightToDay: true,
       base64Image: base64Data,
-      reason: "تم كشف تصوير ليلي، وتمت إعادة تحويل المشهد بـ AI ليكون نهاراً حقيقياً ومشرقاً.",
+      reason: "تم كشف تصوير ليلي مظلم، وتم تحويل وقت المشهد من الليل إلى نهار مشرق بسماء زرقاء وإضاءة شمسية واقعية.",
       keyUsedLabel: keys[0]?.label || "مفتاح الذكاء الاصطناعي",
     };
   }
