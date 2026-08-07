@@ -527,18 +527,14 @@ function DoorTestWidget() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1">
-                      <span>☀️ الصورة بعد تحويل المشهد إلى نهار حقيقي بـ AI</span>
+                    <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 text-center flex items-center justify-center gap-1">
+                      <span>☀️ الصورة النهارية الحقيقية المولَّدة بـ الذكاء الاصطناعي</span>
                     </p>
-                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-amber-500 shadow-xl bg-gradient-to-b from-sky-300 via-sky-100 to-amber-50 flex items-center justify-center">
+                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-2xl bg-slate-900 flex items-center justify-center">
                       <img
-                        src={result.base64Image || originalImage}
-                        alt="بعد تحويل النهار"
-                        className="w-full h-full object-contain transition-all duration-500"
-                        style={result.enhanced ? {
-                          filter: "brightness(2.1) contrast(1.4) saturate(1.35) sepia(0.08) hue-rotate(-10deg) drop-shadow(0 0 12px rgba(255, 235, 170, 0.7))",
-                          backgroundColor: "#93c5fd"
-                        } : {}}
+                        src={result.base64Image}
+                        alt="صورة نهارية حقيقية مولدة بالذكاء الاصطناعي"
+                        className="w-full h-full object-cover transition-all duration-500"
                       />
                     </div>
                   </div>
