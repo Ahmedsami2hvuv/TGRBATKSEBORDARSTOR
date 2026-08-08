@@ -71,11 +71,13 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
-قم بتحليل الصورة المرفقة بدقة وأجب بصيغة JSON فقط:
+قم بتحليل الصورة المرفقة بدقة. إذا كانت الصورة ليلية أو مظلمة، قم بوصف المشهد كما لو كان في النهار بوضوح عالٍ جداً، مع التركيز على لون الباب وتفاصيل المنطقة المحيطة.
+أجب بصيغة JSON فقط كما يلي:
 {
   "isNight": true/false,
   "isBlurred": true/false,
-  "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية"
+  "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية",
+  "daytimeDescription": "وصف تفصيلي للمشهد في وضح النهار (فقط إذا كانت الصورة ليلية)"
 }`;
 
   let lastGoogleErrorMessage = "";
