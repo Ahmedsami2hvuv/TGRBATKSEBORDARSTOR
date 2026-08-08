@@ -200,7 +200,16 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                   }
                 } else {
                   const errText = await imagenResponse.text();
-                  console.error("Imagen Error:", errText);
+                  console.error("Imagen Error Details:", errText);
+                  let errorJson: any = {};
+                  try { errorJson = JSON.parse(errText); } catch(e) {}
+
+                  return {
+                    enhanced: false,
+                    base64Image: base64Data,
+                    reason: `❌ خطأ من Google Vertex: ${errorJson?.error?.message || errText.slice(0, 100)}`,
+                    keyUsedLabel: "Vertex AI Error",
+                  };
                 }
               }
             } catch (e) {
