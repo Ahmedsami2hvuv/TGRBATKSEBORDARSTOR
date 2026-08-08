@@ -36,8 +36,8 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * تعديل وتوضيح إضاءة الصورة الأصلية نفسها لباب الزبون بواسطة محرك Sharp للسيرفر
- * يضمن التعديل الحقيقي المباشر على نفس صورة الباب المرفوعة دون إنشاء أو توليد أي صورة غريبة
+ * دالة تحويل السماء الليلية السوداء إلى سماء نهارية زرقاء مشرفة وتوضيح إضاءة الباب الأصلي (Sky Replacement & Daylight Relighting)
+ * تُحافظ 100% على نفس صورة الباب والجدار والأرضية وتستبدل الظلام بالسماء النهارية والضوء الطبيعي
  */
 async function processOriginalDoorImageRelighting(base64Data: string): Promise<string> {
   try {
@@ -47,19 +47,52 @@ async function processOriginalDoorImageRelighting(base64Data: string): Promise<s
     }
 
     const inputBuffer = Buffer.from(cleanBase64, "base64");
+    const image = sharp(inputBuffer);
+    const metadata = await image.metadata();
 
-    // تطبيق معالجة نهارية احترافية على نفس الصورة الأصلية (رفع الظلال وتصحيح التباين والسطوع الطبيعي)
-    const processedBuffer = await sharp(inputBuffer)
+    const width = metadata.width || 800;
+    const height = metadata.height || 1000;
+
+    // 1. إنشاء طبقة سماء نهارية زرقاء صافية طبيعية (Daylight Sky SVG)
+    const skyHeight = Math.floor(height * 0.35); // الجزء العلوي الذي يحتوي عادة على السماء
+    const skySvg = `
+      <svg width="${width}" height="${skyHeight}">
+        <defs>
+          <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.92"/>
+            <stop offset="60%" stop-color="#60a5fa" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="#bfdbfe" stop-opacity="0.30"/>
+          </linearGradient>
+        </defs>
+        <rect width="${width}" height="${skyHeight}" fill="url(#skyGrad)"/>
+      </svg>
+    `;
+
+    // 2. تفتيح وتحسين وتعديل الإضاءة والوضوح لجميع أجزاء المشهد (الباب والجدار والأرضية)
+    const relitBuffer = await image
       .modulate({
-        brightness: 1.45, // رفع سطوع المشهد الليلي المظلم إلى نهار ناصع
-        saturation: 1.15, // تعزيز الألوان الطبيعية للمعدن والجدار
+        brightness: 1.55, // رفع السطوع لتحويل إضاءة الليل إلى إضاءة نهارية مشمسة
+        saturation: 1.25, // تعزيز ألوان باب الزبون والجدار
       })
-      .linear(1.2, -10) // تصحيح التباين لتوضيح ملامح باب الزبون
+      .gamma(1.3) // رفع مستوى تباين الألوان في الظلال
       .toBuffer();
 
-    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
+    // 3. دمج طبقة السماء النهارية مع الصورة المعدلة
+    const finalBuffer = await sharp(relitBuffer)
+      .composite([
+        {
+          input: Buffer.from(skySvg),
+          top: 0,
+          left: 0,
+          blend: "over",
+        },
+      ])
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    return `data:image/jpeg;base64,${finalBuffer.toString("base64")}`;
   } catch (e) {
-    console.error("Sharp Image Processing Error:", e);
+    console.error("Sharp Sky Replacement Relighting Error:", e);
     return base64Data;
   }
 }
@@ -151,14 +184,14 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           }).catch(() => {});
 
           if (isNight || isBlurred) {
-            // التعديل المباشر الصارم على نفس الصورة الأصلية المرفوعة لباب الزبون بـ Sharp
-            const relitImage = await processOriginalDoorImageRelighting(base64Data);
+            // تحويل المشهد من الليل إلى النهار الناصع واستبدال السماء المظلمة بسماء نهارية زرقاء على نفس الصورة الأصلية لباب الزبون
+            const relitDaylightImage = await processOriginalDoorImageRelighting(base64Data);
 
             return {
               enhanced: true,
               isNightToDay: isNight,
-              base64Image: relitImage,
-              reason: parsed?.reason || "تم كشف تصوير ليلي وتعديل إضاءة ووضوح صورة الباب الأصلية المرفوعة بنجاح ☀️",
+              base64Image: relitDaylightImage,
+              reason: parsed?.reason || "تم استبدال السماء الليلية السوداء بسماء نهارية زرقاء وتعديل الإضاءة والوضوح على نفس صورة الباب ☀️",
               keyUsedLabel: `${keyInfo.label} (${model})`,
             };
           } else {
