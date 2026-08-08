@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import sharp from "sharp";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -10,7 +9,7 @@ export interface ImageEnhanceResult {
 }
 
 /**
- * جلب مفاتيح Gemini المفعلة
+ * جلب مفاتيح Gemini المفعلة المضافة صراحة في قاعدة البيانات
  */
 export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id: string }>> {
   try {
@@ -36,37 +35,8 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * دالة توضيح وتعديل نفس صورة البيت المرفوعة حصراً (Same Photo Relighting & Sharp Restoration)
- * تضمن الحفاظ 100% على نفس البيت الحقيقي، نفس المظلة الخضراء، ونفس الجدار والطابوق والنباتات دون أي توليد صورة جديدة من الصفر
- */
-async function processOriginalHouseImageRelighting(base64Data: string): Promise<string> {
-  try {
-    let cleanBase64 = base64Data;
-    if (base64Data.startsWith("data:")) {
-      cleanBase64 = base64Data.split(";base64,")[1] || base64Data;
-    }
-
-    const inputBuffer = Buffer.from(cleanBase64, "base64");
-
-    // تعديل الإضاءة والوضوح والتباين الطبيعي لنفس الصورة الحقيقية للبيت والمظلة الخضراء
-    const processedBuffer = await sharp(inputBuffer)
-      .modulate({
-        brightness: 1.4, // رفع الإضاءة والظلال الليلية إلى إضاءة نهارية ناصعة
-        saturation: 1.2, // إبراز لون المظلة الخضراء والزرع والجدار الطابوقي
-      })
-      .linear(1.15, -8) // توضيح التباين وإزالة العتمة
-      .jpeg({ quality: 95 })
-      .toBuffer();
-
-    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
-  } catch (e) {
-    console.error("Sharp House Processing Error:", e);
-    return base64Data;
-  }
-}
-
-/**
- * فحص وتعديل صورة البيت بالذكاء الاصطناعي مع الحفاظ 100% على نفس البيت والمظلة الخضراء والجدار
+ * فحص وتقييم صورة الباب عبر Gemini Vision API حصراً 100%
+ * بدون أي رفع إنارة أو تعديل سطوع محلي نهائياً، مع إبقاء الصورة بنقائها الطبيعي الأصلي 100%
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -80,7 +50,14 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const keys = await getAllActiveGeminiKeys();
-  let usedLabel = keys[0]?.label || "Gemini Vision AI";
+  if (keys.length === 0) {
+    return {
+      enhanced: false,
+      base64Image: base64Data,
+      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح Gemini في الإعدادات لاستخدام الذكاء الاصطناعي.",
+      keyUsedLabel: "بدون مفتاح",
+    };
+  }
 
   let cleanBase64 = base64Data;
   let mimeType = "image/jpeg";
@@ -93,64 +70,78 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  // 1. تحليل الصورة بواسطة Gemini Vision
-  let isNightDetected = true;
-  let analysisReason = "تم كشف تصوير ليلي مظلم للمشهد بـ Gemini، وتعديل إضاءة ووضوح نفس صورة البيت الأصلية ☀️";
+  const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
+قم بتحليل الصورة المرفقة بدقة وأجب بصيغة JSON فقط:
+{
+  "isNight": true/false,
+  "isBlurred": true/false,
+  "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية"
+}`;
 
-  if (keys.length > 0) {
-    const keyInfo = keys[0];
-    usedLabel = keyInfo.label;
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyInfo.apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: "هل هذه الصورة تصوير ليلي أو مظلمة؟ أجب بـ JSON: {\"isNight\": true/false, \"reason\": \"السبب\"}" },
-                  { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                ],
-              },
-            ],
-          }),
+  let lastGoogleErrorMessage = "";
+  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+
+  for (const keyInfo of keys) {
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyInfo.apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: masterPrompt },
+                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+          let parsed: any = null;
+          try {
+            const match = rawText.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+          } catch (e) {}
+
+          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
+          const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+
+          prisma.aIConfig.update({
+            where: { id: keyInfo.id },
+            data: { usedToday: { increment: 1 } },
+          }).catch(() => {});
+
+          // الاعتماد الصارم الحصري على تقرير Gemini Vision مع إبقاء الصورة الأصلية 100% بدون أي رفع إنارة كودي نهائياً
+          return {
+            enhanced: isNight || isBlurred,
+            isNightToDay: isNight,
+            base64Image: base64Data, // الصورة الأصلية بنقائها التام 100% دون أي تعديل سطوع أو رفع إنارة
+            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini Vision API بنجاح",
+            keyUsedLabel: `${keyInfo.label} (${model})`,
+          };
+        } else {
+          const errJson = await response.json().catch(() => ({}));
+          lastGoogleErrorMessage = errJson?.error?.message || `كود الخطأ: ${response.status}`;
         }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        let parsed: any = null;
-        try {
-          const match = rawText.match(/\{[\s\S]*\}/);
-          if (match) parsed = JSON.parse(match[0]);
-        } catch (e) {}
-
-        if (parsed?.reason) analysisReason = parsed.reason;
-        if (parsed?.isNight !== undefined) isNightDetected = parsed.isNight;
+      } catch (err: any) {
+        lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
       }
-    } catch (e) {}
-  }
-
-  // 2. إذا كانت الصورة ليلية، نوضح نفس الصورة الحقيقية للبيت والمظلة الخضراء والجدار دون أي توليد عشوائي من الصفر
-  if (isNightDetected) {
-    const relitHouseImage = await processOriginalHouseImageRelighting(base64Data);
-
-    return {
-      enhanced: true,
-      isNightToDay: true,
-      base64Image: relitHouseImage,
-      reason: `تحليل Gemini: (${analysisReason})، وتوضيح إضاءة نفس البيت الحقيقي والمظلة والجدار ☀️`,
-      keyUsedLabel: usedLabel,
-    };
+    }
   }
 
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
-    keyUsedLabel: usedLabel,
+    reason: `❌ استجابة Gemini API: ${lastGoogleErrorMessage}`,
+    keyUsedLabel: keys[0]?.label,
   };
 }
