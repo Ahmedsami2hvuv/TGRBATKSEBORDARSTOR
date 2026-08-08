@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import sharp from "sharp";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -35,29 +36,37 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * محرك تحويل صورة الباب من الليل إلى النهار الحقيقي بالذكاء الاصطناعي البصري (Realistic AI Night-to-Day Restorer Engine)
+ * دالة توضيح وتعديل نفس صورة البيت المرفوعة حصراً (Same Photo Relighting & Sharp Restoration)
+ * تضمن الحفاظ 100% على نفس البيت الحقيقي، نفس المظلة الخضراء، ونفس الجدار والطابوق والنباتات دون أي توليد صورة جديدة من الصفر
  */
-async function generateDaylightSceneFromNightPhoto(base64Data: string): Promise<string> {
+async function processOriginalHouseImageRelighting(base64Data: string): Promise<string> {
   try {
-    const promptText = encodeURIComponent(
-      "photorealistic image of a middle eastern house courtyard with green shading canopy and brick wall under bright direct midday sunlight, clear blue sky, natural daylight shadows, 8k"
-    );
-
-    // استدعاء محرك الصور البصري الفائق وتوليد المشهد النهاري عالي الدقة
-    const res = await fetch(`https://image.pollinations.ai/prompt/${promptText}?width=800&height=1000&seed=${Math.floor(Math.random() * 10000)}&nologo=true&enhance=true`);
-    if (res.ok) {
-      const arrayBuf = await res.arrayBuffer();
-      const b64 = Buffer.from(arrayBuf).toString("base64");
-      return `data:image/jpeg;base64,${b64}`;
+    let cleanBase64 = base64Data;
+    if (base64Data.startsWith("data:")) {
+      cleanBase64 = base64Data.split(";base64,")[1] || base64Data;
     }
-  } catch (err) {
-    console.error("Error generating daylight scene:", err);
+
+    const inputBuffer = Buffer.from(cleanBase64, "base64");
+
+    // تعديل الإضاءة والوضوح والتباين الطبيعي لنفس الصورة الحقيقية للبيت والمظلة الخضراء
+    const processedBuffer = await sharp(inputBuffer)
+      .modulate({
+        brightness: 1.4, // رفع الإضاءة والظلال الليلية إلى إضاءة نهارية ناصعة
+        saturation: 1.2, // إبراز لون المظلة الخضراء والزرع والجدار الطابوقي
+      })
+      .linear(1.15, -8) // توضيح التباين وإزالة العتمة
+      .jpeg({ quality: 95 })
+      .toBuffer();
+
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
+  } catch (e) {
+    console.error("Sharp House Processing Error:", e);
+    return base64Data;
   }
-  return base64Data;
 }
 
 /**
- * فحص وتعديل صورة الباب بالذكاء الاصطناعي مع إرجاع المشهد النهاري الجديد 100%
+ * فحص وتعديل صورة البيت بالذكاء الاصطناعي مع الحفاظ 100% على نفس البيت والمظلة الخضراء والجدار
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -86,7 +95,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
   // 1. تحليل الصورة بواسطة Gemini Vision
   let isNightDetected = true;
-  let analysisReason = "تم كشف تصوير ليلي مظلم في المشهد، وتوليد المشهد النهاري الناصع بالذكاء الاصطناعي ☀️";
+  let analysisReason = "تم كشف تصوير ليلي مظلم للمشهد بـ Gemini، وتعديل إضاءة ووضوح نفس صورة البيت الأصلية ☀️";
 
   if (keys.length > 0) {
     const keyInfo = keys[0];
@@ -125,15 +134,15 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     } catch (e) {}
   }
 
-  // 2. إذا كانت الصورة ليلية، نولد ونُرجع المشهد النهاري المشرق بالسماء الزرقاء والشمس الناصعة
+  // 2. إذا كانت الصورة ليلية، نوضح نفس الصورة الحقيقية للبيت والمظلة الخضراء والجدار دون أي توليد عشوائي من الصفر
   if (isNightDetected) {
-    const daylightImage = await generateDaylightSceneFromNightPhoto(base64Data);
+    const relitHouseImage = await processOriginalHouseImageRelighting(base64Data);
 
     return {
       enhanced: true,
       isNightToDay: true,
-      base64Image: daylightImage,
-      reason: `تم تحليل المشهد بـ Gemini: (${analysisReason})، وإعادة توليد وتحويل الصورة إلى نهار ناصع بسماء زرقاء وشمس طبيعية ☀️`,
+      base64Image: relitHouseImage,
+      reason: `تحليل Gemini: (${analysisReason})، وتوضيح إضاءة نفس البيت الحقيقي والمظلة والجدار ☀️`,
       keyUsedLabel: usedLabel,
     };
   }
@@ -141,7 +150,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "الصورة واضحة وبإضاءة نهارية ولا تحتاج تحويل.",
+    reason: "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
     keyUsedLabel: usedLabel,
   };
 }
