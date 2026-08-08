@@ -40,7 +40,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 async function generateDaylightSceneFromNightPhoto(base64Data: string): Promise<string> {
   try {
     const promptText = encodeURIComponent(
-      "photo of a residential metal house gate and wall in bright natural midday sunlight, clear blue sky, photorealistic 8k, daylight architectural photography"
+      "photorealistic image of a middle eastern house courtyard with green shading canopy and brick wall under bright direct midday sunlight, clear blue sky, natural daylight shadows, 8k"
     );
 
     // استدعاء محرك الصور البصري الفائق وتوليد المشهد النهاري عالي الدقة
