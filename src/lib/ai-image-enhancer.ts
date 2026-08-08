@@ -81,7 +81,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro"];
+  const models = ["gemini-1.5-flash", "gemini-2.0-flash"];
 
   for (const keyInfo of keys) {
     for (const model of models) {
@@ -184,7 +184,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: `❌ استجابة Gemini API: ${lastGoogleErrorMessage}`,
+    reason: "عذراً، تعذر معالجة الصورة حالياً بسبب قيود في مفتاح الـ API. تم الإبقاء على الصورة الأصلية لضمان استمرار العمل.",
     keyUsedLabel: keys[0]?.label,
   };
 }
