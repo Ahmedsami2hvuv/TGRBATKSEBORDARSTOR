@@ -589,13 +589,13 @@ function DoorTestWidget() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1">
-                      <span>☀️ صورة الباب المعدلة نهارياً بالذكاء الاصطناعي (AI Night-to-Day)</span>
+                    <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 text-center flex items-center justify-center gap-1">
+                      <span>📷 الصورة المرفوعة بنقائها وألوانها الأصلية 100% (بدون أي رفع إنارة)</span>
                     </p>
-                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-amber-500 shadow-xl bg-slate-900 flex items-center justify-center">
+                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-xl bg-slate-900 flex items-center justify-center">
                       <img
-                        src={result.base64Image || originalImage}
-                        alt="صورة الباب المعدلة نهارياً بالذكاء الاصطناعي"
+                        src={originalImage || result.base64Image}
+                        alt="الصورة الأصلية بنقائها التام"
                         className="w-full h-full object-contain transition-all duration-500"
                       />
                     </div>
