@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import sharp from "sharp";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -82,7 +81,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+  const models = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-thinking-exp"];
 
   for (const keyInfo of keys) {
     for (const model of models) {
@@ -128,56 +127,40 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           if (isNight) {
             try {
               // محاولة استدعاء Imagen 3 لتحويل الليل إلى نهار حقيقي (Image-to-Image) 🎨
+              // سنستخدم مسار التوليد المخصص للصور من كوكل
               const imagenResponse = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${keyInfo.apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${keyInfo.apiKey}`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    instances: [
-                      {
-                        prompt: "Transform this dark night photo of a house door into a bright, sunny daytime photo. Keep all architectural details, colors of the door, and the surrounding plants exactly the same but make it look like a clear sunny day at noon.",
-                        image: {
-                          bytesBase64Encoded: cleanBase64
-                        }
-                      }
-                    ],
-                    parameters: {
-                      sampleCount: 1
-                    }
+                    contents: [{
+                      parts: [
+                        { text: "Transform this dark night photo of a house door into a bright, sunny daytime photo. The output must be the transformed image itself. Maintain all architectural details, colors, and objects, but change the lighting to a clear sunny day at noon." },
+                        { inline_data: { mime_type: mimeType, data: cleanBase64 } }
+                      ]
+                    }]
                   }),
                 }
               );
 
               if (imagenResponse.ok) {
                 const imgData = await imagenResponse.json();
-                const generatedBase64 = imgData?.predictions?.[0]?.bytesBase64Encoded;
-                if (generatedBase64) {
-                  finalBase64 = `data:${mimeType};base64,${generatedBase64}`;
+                // في بعض الإصدارات، يرجع الصورة كـ part في الـ candidates
+                const generatedPart = imgData?.candidates?.[0]?.content?.parts?.find((p: any) => p.inline_data || p.file_data);
+                if (generatedPart?.inline_data?.data) {
+                  finalBase64 = `data:${generatedPart.inline_data.mime_type || mimeType};base64,${generatedPart.inline_data.data}`;
                   return {
                     enhanced: true,
                     isNightToDay: true,
                     base64Image: finalBase64,
-                    reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام Imagen 3.0",
-                    keyUsedLabel: `${keyInfo.label} (Imagen 3)`,
+                    reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام ذكاء Imagen الاصطناعي",
+                    keyUsedLabel: `${keyInfo.label} (Imagen AI)`,
                   };
                 }
               }
-
-              // إذا فشل Imagen، نستخدم المعالجة المتقدمة بـ Sharp كبديل ذكي
-              const buffer = Buffer.from(cleanBase64, "base64");
-              const processedBuffer = await sharp(buffer)
-                .modulate({
-                  brightness: 2.3,
-                  saturation: 1.6
-                })
-                .gamma(1.4)
-                .clahe({ width: 40, height: 40, maxSlope: 6 })
-                .toBuffer();
-
-              finalBase64 = `data:${mimeType};base64,${processedBuffer.toString("base64")}`;
             } catch (e) {
-              console.error("Error during imagen or sharp processing:", e);
+              console.error("Error during imagen processing:", e);
             }
           }
 
