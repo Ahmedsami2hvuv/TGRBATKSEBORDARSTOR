@@ -191,9 +191,70 @@ export default function AIConfigClient({
 
   return (
     <div className="space-y-6">
-              <span>✨ الميزة مفعلة وتستخدم التناوب التلقائي بين كل المفاتيح أدناه</span>
+      {/* ملخص الميزة وزر التحكم الصارم للمناديب */}
+      <div className="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-emerald-500/10 border-2 border-sky-200 dark:border-sky-800/50 p-6 sm:p-8 rounded-[2.5rem] shadow-sm mb-6 space-y-6">
+        
+        {/* هيدر الميزة مع زر التفعيل/التعطيل المباشر */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-sky-200/60 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-3xl bg-sky-500 text-white flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-sky-500/30">
+              🚪
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">
+                ميزة فحص وتصحيح صور أبواب الزبائن بالذكاء الاصطناعي 📸
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mt-1">
+                يمكنك تشغيل الميزة أو إيقافها عن المناديب بكبسة زر واحدة ليعمل المناديب براحتهم.
+              </p>
             </div>
           </div>
+
+          {/* زر التفعيل/التعطيل للمناديب */}
+          <button
+            onClick={handleToggleDoorEnhance}
+            disabled={loading === "toggle-door"}
+            className={`px-6 py-3.5 rounded-2xl font-black text-sm transition-all duration-300 shadow-lg flex items-center gap-3 active:scale-95 border ${
+              doorEnhanceEnabled
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-emerald-500/20"
+                : "bg-rose-600 hover:bg-rose-700 text-white border-rose-500 shadow-rose-500/20"
+            }`}
+          >
+            <span className="text-xl">{doorEnhanceEnabled ? "✅" : "🛑"}</span>
+            <span>
+              {loading === "toggle-door"
+                ? "جاري التحديث..."
+                : doorEnhanceEnabled
+                ? "الميزة مفعلة للمناديب"
+                : "الميزة معطلة عن المناديب (موقوفة)"}
+            </span>
+          </button>
+        </div>
+
+        {/* حالة التفعيل والشرح للمستخدم */}
+        <div className="space-y-3">
+          <div className={`p-4 rounded-2xl border text-xs font-bold leading-relaxed flex items-center gap-3 ${
+            doorEnhanceEnabled
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-amber-50 text-amber-800 border-amber-200"
+          }`}>
+            <span className="text-xl shrink-0">{doorEnhanceEnabled ? "🚀" : "🔒"}</span>
+            <div>
+              <p className="font-black text-sm">
+                {doorEnhanceEnabled
+                  ? "الميزة مفعّلة حالياً للمناديب!"
+                  : "الميزة موقوفة تماماً عن المناديب حالياً!"}
+              </p>
+              <p className="mt-0.5 opacity-90">
+                {doorEnhanceEnabled
+                  ? "سيتم فحص صور الأبواب المرفوعة من تطبيق المناديب وحفظها بتنسيقها الجيد."
+                  : "المناديب يرفعون الصور بشكل طبيعي 100% وبدون أي تدخل من الذكاء الاصطناعي، ويمكنك تجربة واختبار الميزة هنا براحتك."}
+              </p>
+            </div>
+          </div>
+
+          {/* أداة التجربة الحية في الصفحة */}
+          <DoorTestWidget />
         </div>
       </div>
 
