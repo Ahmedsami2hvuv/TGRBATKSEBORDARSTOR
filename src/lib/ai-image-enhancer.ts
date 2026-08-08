@@ -173,7 +173,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                     body: JSON.stringify({
                       instances: [
                         {
-                          prompt: "A high-quality, clear, daytime photo of this house entrance. Transform the current night lighting into bright natural sunlight at noon. Maintain exactly the same door, walls, plants, and architectural details. No changes except lighting.",
+                          prompt: "قم بتحويل وقت اليوم في هذه الصورة من الليل إلى مشهد نهار مشرق وواضح. استبدل سماء الليل المظلمة بسماء نهارية زرقاء صافية مع ضوء الشمس الطبيعي. قم بتعديل الإضاءة في المشهد بأكمله، بما في ذلك الأرض والجدران والباب المعدني، لتبدو كأنها التقطت تحت أشعة الشمس المباشرة، مع إظهار الظلال والإضاءات النهارية بشكل واقعي. Transform this night scene into a bright, clear daytime photo with direct sunlight, blue sky, and realistic daytime shadows.",
                           image: {
                             bytesBase64Encoded: cleanBase64
                           }
