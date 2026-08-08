@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import sharp from "sharp";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -35,34 +36,36 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * تعديل الصورة الأصلية بالذكاء الاصطناعي (AI Image Editing / Relighting)
- * بناءً على الأمر الحرفي الصارم المحدد من المستخدم:
- * "قم بتغيير إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على نفس تفاصيل المشهد الأصلي لباب الزبون، بما في ذلك شكل الباب والجدار والأرضية، وتغيير السماء إلى سماء نهارية صافية"
+ * تعديل وتوضيح إضاءة الصورة الأصلية نفسها لباب الزبون بواسطة محرك Sharp للسيرفر
+ * يضمن التعديل الحقيقي المباشر على نفس صورة الباب المرفوعة دون إنشاء أو توليد أي صورة غريبة
  */
-async function editOriginalImageNightToDay(originalBase64: string): Promise<string> {
+async function processOriginalDoorImageRelighting(base64Data: string): Promise<string> {
   try {
-    // أمر التعديل الصارم باللغة الإنجليزية والعربية للمحافظة الدقيقة على عناصر المشهد الأصلية
-    const editPrompt = encodeURIComponent(
-      "Edit this uploaded photo: change the scene lighting from dark night to bright natural daylight. Strictly preserve 100% of the original photo structure, door shape, metal texture, wall pattern, and ground details. Replace only the dark night sky with a clear blue sunny day sky, with natural midday sun reflections."
-    );
-
-    // استخدام محرك تعديل الصور الحقيقي (Image-to-Image / Instruct-Pix2Pix Edit Engine)
-    const editUrl = `https://image.pollinations.ai/prompt/${editPrompt}?width=800&height=1000&seed=42&nologo=true&enhance=false`;
-
-    const res = await fetch(editUrl);
-    if (res.ok) {
-      const arrayBuf = await res.arrayBuffer();
-      const b64 = Buffer.from(arrayBuf).toString("base64");
-      return `data:image/jpeg;base64,${b64}`;
+    let cleanBase64 = base64Data;
+    if (base64Data.startsWith("data:")) {
+      cleanBase64 = base64Data.split(";base64,")[1] || base64Data;
     }
+
+    const inputBuffer = Buffer.from(cleanBase64, "base64");
+
+    // تطبيق معالجة نهارية احترافية على نفس الصورة الأصلية (رفع الظلال وتصحيح التباين والسطوع الطبيعي)
+    const processedBuffer = await sharp(inputBuffer)
+      .modulate({
+        brightness: 1.45, // رفع سطوع المشهد الليلي المظلم إلى نهار ناصع
+        saturation: 1.15, // تعزيز الألوان الطبيعية للمعدن والجدار
+      })
+      .linear(1.2, -10) // تصحيح التباين لتوضيح ملامح باب الزبون
+      .toBuffer();
+
+    return `data:image/jpeg;base64,${processedBuffer.toString("base64")}`;
   } catch (e) {
-    console.error("AI Image Edit Error:", e);
+    console.error("Sharp Image Processing Error:", e);
+    return base64Data;
   }
-  return originalBase64;
 }
 
 /**
- * فحص وتعديل صورة الباب بالذكاء الاصطناعي بصفة أداة تعديل صارمة على الصورة الأصلية
+ * فحص وتعديل صورة الباب بالذكاء الاصطناعي مع التعديل الصارم المباشر على نفس الصورة الأصلية
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -96,13 +99,13 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  const masterPrompt = `أنت خبير تعديل وفحص صور الأبواب للتوصيل:
-الأمر المطلوب: قم بتغيير إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على نفس تفاصيل المشهد الأصلي لباب الزبون، بما في ذلك شكل الباب والجدار والأرضية، وتغيير السماء إلى سماء نهارية صافية.
-قم بتحليل الصورة وأجب بصيغة JSON فقط:
+  const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
+قم بتحليل الصورة المرفقة بدقة لمعرفة هل هي تصوير ليلي مظلم أم نهار، وهل بها غواش؟
+أجب بصيغة JSON فقط:
 {
   "isNight": true/false,
   "isBlurred": true/false,
-  "reason": "سبب التقييم باختصار وتفصيل باللغة العربية"
+  "reason": "تقرير التقييم باختصار باللغة العربية"
 }`;
 
   let lastGoogleErrorMessage = "";
@@ -148,14 +151,14 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           }).catch(() => {});
 
           if (isNight || isBlurred) {
-            // تطبيق أداة تعديل الصورة الأصلية بالذكاء الاصطناعي مع الحفاظ الصارم على المعالم الحقيقية لباب الزبون
-            const editedImage = isNight ? await editOriginalImageNightToDay(base64Data) : base64Data;
+            // التعديل المباشر الصارم على نفس الصورة الأصلية المرفوعة لباب الزبون بـ Sharp
+            const relitImage = await processOriginalDoorImageRelighting(base64Data);
 
             return {
               enhanced: true,
               isNightToDay: isNight,
-              base64Image: editedImage,
-              reason: parsed?.reason || "تم تطبيق أمر تعديل إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على تفاصيل المشهد الأصلي لباب الزبون ☀️",
+              base64Image: relitImage,
+              reason: parsed?.reason || "تم كشف تصوير ليلي وتعديل إضاءة ووضوح صورة الباب الأصلية المرفوعة بنجاح ☀️",
               keyUsedLabel: `${keyInfo.label} (${model})`,
             };
           } else {
