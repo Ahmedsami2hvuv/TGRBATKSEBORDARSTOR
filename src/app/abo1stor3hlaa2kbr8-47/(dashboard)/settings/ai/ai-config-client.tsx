@@ -597,7 +597,15 @@ function DoorTestWidget() {
                         src={result.base64Image}
                         alt="صورة المشهد النهارية المعدلة بالذكاء الاصطناعي"
                         className="w-full h-full object-contain transition-all duration-500"
+                        style={{
+                          filter: result.enhanced
+                            ? 'brightness(1.8) contrast(1.4) saturate(1.3) sepia(0.1) drop-shadow(0 0 5px rgba(255,200,0,0.3))'
+                            : 'none'
+                        }}
                       />
+                      {result.enhanced && (
+                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-amber-500/10 to-transparent mix-blend-overlay" />
+                      )}
                     </div>
                   </div>
                 </div>
