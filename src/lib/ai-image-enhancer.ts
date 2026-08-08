@@ -9,7 +9,7 @@ export interface ImageEnhanceResult {
 }
 
 /**
- * جلب مفاتيح Gemini المفعلة المضافة صراحة في قاعدة البيانات حصراً
+ * جلب مفاتيح Gemini المفعلة المضافة صراحة في قاعدة البيانات
  */
 export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id: string }>> {
   try {
@@ -35,7 +35,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص صورة الباب بالذكاء الاصطناعي مع إظهار تفاصيل استجابة جوجل الصريحة
+ * فحص وتقييم صورة الباب بالذكاء الاصطناعي (Gemini Vision) دون أي لعب أو تعديل إضاءة زائف
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -70,16 +70,15 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
-قم بتحليل الصورة المرفقة وأجب بـ JSON فقط:
+قم بتحليل الصورة المرفقة بدقة وأجب بصيغة JSON فقط دون أي نصوص أخرى:
 {
   "isNight": true/false,
   "isBlurred": true/false,
-  "reason": "سبب التقييم باختصار باللغة العربية"
+  "reason": "سبب التقييم باختصار وتفصيل باللغة العربية"
 }`;
 
   let lastGoogleErrorMessage = "";
-
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
   for (const keyInfo of keys) {
     for (const model of models) {
@@ -112,7 +111,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             if (match) parsed = JSON.parse(match[0]);
           } catch (e) {}
 
-          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي"));
+          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
           const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
 
           prisma.aIConfig.update({
@@ -120,30 +119,19 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             data: { usedToday: { increment: 1 } },
           }).catch(() => {});
 
-          if (isNight || isBlurred) {
-            return {
-              enhanced: true,
-              isNightToDay: isNight,
-              base64Image: base64Data,
-              reason: parsed?.reason || (isNight ? "صورة ليلية مظلمة بحاجة لتعديل المشهد" : "صورة بها غواش في الفوكس"),
-              keyUsedLabel: `${keyInfo.label} (${model})`,
-            };
-          } else {
-            return {
-              enhanced: false,
-              base64Image: base64Data,
-              reason: parsed?.reason || "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
-              keyUsedLabel: `${keyInfo.label} (${model})`,
-            };
-          }
+          return {
+            enhanced: isNight || isBlurred,
+            isNightToDay: isNight,
+            base64Image: base64Data, // الصورة الأصلية بنقائها التام وبدون أي لعب أو فلاتر تشويهية
+            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini Vision",
+            keyUsedLabel: `${keyInfo.label} (${model})`,
+          };
         } else {
           const errJson = await response.json().catch(() => ({}));
           lastGoogleErrorMessage = errJson?.error?.message || `كود الخطأ: ${response.status}`;
-          console.error(`Gemini API Error for key ${keyInfo.label} on ${model}:`, errJson);
         }
       } catch (err: any) {
-        lastGoogleErrorMessage = err.message || "خطأ اتصال في الشبكة";
-        console.error(`Fetch error for key ${keyInfo.label}:`, err);
+        lastGoogleErrorMessage = err.message || "خطأ في الشبكة";
       }
     }
   }
