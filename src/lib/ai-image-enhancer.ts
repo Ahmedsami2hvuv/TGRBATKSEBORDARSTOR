@@ -157,7 +157,9 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             try {
               // محاولة استخدام Vertex AI Imagen 3 لتحويل الليل إلى نهار حقيقي ☀️
               const accessToken = await getGoogleAccessToken();
-              if (accessToken) {
+              if (!accessToken) {
+                lastGoogleErrorMessage = "فشل في توليد Access Token للـ Service Account. تأكد من صحة بيانات ملف الـ JSON.";
+              } else {
                 const projectId = vertexKey.project_id;
                 const location = "us-central1";
                 const imagenResponse = await fetch(
@@ -203,17 +205,12 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                   console.error("Imagen Error Details:", errText);
                   let errorJson: any = {};
                   try { errorJson = JSON.parse(errText); } catch(e) {}
-
-                  return {
-                    enhanced: false,
-                    base64Image: base64Data,
-                    reason: `❌ خطأ من Google Vertex: ${errorJson?.error?.message || errText.slice(0, 100)}`,
-                    keyUsedLabel: "Vertex AI Error",
-                  };
+                  lastGoogleErrorMessage = `خطأ من Imagen: ${errorJson?.error?.message || errText.slice(0, 100)}`;
                 }
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error("Error during Vertex AI processing:", e);
+              lastGoogleErrorMessage = `خطأ في المعالجة البرمجية لـ Vertex: ${e.message}`;
             }
           }
 
@@ -234,7 +231,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "عذراً، تعذر معالجة الصورة حالياً بسبب قيود في مفتاح الـ API. تم الإبقاء على الصورة الأصلية لضمان استمرار العمل.",
-    keyUsedLabel: keys[0]?.label,
+    reason: `عذراً، تعذر معالجة الصورة. آخر خطأ من جوجل: ${lastGoogleErrorMessage || "غير معروف"}. تم الإبقاء على الصورة الأصلية.`,
+    keyUsedLabel: keys[0]?.label || "بدون مفتاح",
   };
 }
