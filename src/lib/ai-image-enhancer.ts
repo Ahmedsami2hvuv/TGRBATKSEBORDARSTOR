@@ -35,10 +35,9 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص صورة الباب بالذكاء الاصطناعي حصراً عند وجود مفاتيح مضافة وبطريقة صارمة
+ * فحص صورة الباب بالذكاء الاصطناعي مع إظهار تفاصيل استجابة جوجل الصريحة
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
-  // 1. فحص تفعيل الميزة للمناديب
   if (!isTestMode) {
     try {
       const { getAIDoorEnhanceFeatureStatus } = await import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/ai/actions");
@@ -49,7 +48,6 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     } catch (e) {}
   }
 
-  // 2. جلب مفاتيح قاعدة البيانات فقط
   const keys = await getAllActiveGeminiKeys();
   if (keys.length === 0) {
     return {
@@ -79,75 +77,81 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   "reason": "سبب التقييم باختصار باللغة العربية"
 }`;
 
-  // تجربة المفاتيح المضافة حصراً
+  let lastGoogleErrorMessage = "";
+
+  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+
   for (const keyInfo of keys) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyInfo.apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: masterPrompt },
-                  { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                ],
-              },
-            ],
-          }),
-        }
-      );
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyInfo.apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: masterPrompt },
+                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-        let parsed: any = null;
-        try {
-          const match = rawText.match(/\{[\s\S]*\}/);
-          if (match) parsed = JSON.parse(match[0]);
-        } catch (e) {}
+          let parsed: any = null;
+          try {
+            const match = rawText.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+          } catch (e) {}
 
-        const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي"));
-        const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي"));
+          const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
 
-        // تحديث عدد الاستخدام اليومي للمفتاح الحقيقي
-        prisma.aIConfig.update({
-          where: { id: keyInfo.id },
-          data: { usedToday: { increment: 1 } },
-        }).catch(() => {});
+          prisma.aIConfig.update({
+            where: { id: keyInfo.id },
+            data: { usedToday: { increment: 1 } },
+          }).catch(() => {});
 
-        if (isNight || isBlurred) {
-          return {
-            enhanced: true,
-            isNightToDay: isNight,
-            base64Image: base64Data,
-            reason: parsed?.reason || (isNight ? "صورة ليلية مظلمة بحاجة لتعديل المشهد" : "صورة بها غواش"),
-            keyUsedLabel: keyInfo.label,
-          };
+          if (isNight || isBlurred) {
+            return {
+              enhanced: true,
+              isNightToDay: isNight,
+              base64Image: base64Data,
+              reason: parsed?.reason || (isNight ? "صورة ليلية مظلمة بحاجة لتعديل المشهد" : "صورة بها غواش في الفوكس"),
+              keyUsedLabel: `${keyInfo.label} (${model})`,
+            };
+          } else {
+            return {
+              enhanced: false,
+              base64Image: base64Data,
+              reason: parsed?.reason || "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
+              keyUsedLabel: `${keyInfo.label} (${model})`,
+            };
+          }
         } else {
-          return {
-            enhanced: false,
-            base64Image: base64Data,
-            reason: parsed?.reason || "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
-            keyUsedLabel: keyInfo.label,
-          };
+          const errJson = await response.json().catch(() => ({}));
+          lastGoogleErrorMessage = errJson?.error?.message || `كود الخطأ: ${response.status}`;
+          console.error(`Gemini API Error for key ${keyInfo.label} on ${model}:`, errJson);
         }
-      } else {
-        const errJson = await response.json().catch(() => ({}));
-        console.error(`Gemini API Error for key ${keyInfo.label}:`, errJson);
+      } catch (err: any) {
+        lastGoogleErrorMessage = err.message || "خطأ اتصال في الشبكة";
+        console.error(`Fetch error for key ${keyInfo.label}:`, err);
       }
-    } catch (err) {
-      console.error(`Fetch error for key ${keyInfo.label}:`, err);
     }
   }
 
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "❌ فشل الاتصال بمفاتيح Gemini المضافة. تأكد من صحة الـ API Key في الإعدادات.",
+    reason: `❌ استجابة جوجل: ${lastGoogleErrorMessage}`,
     keyUsedLabel: keys[0]?.label,
   };
 }
