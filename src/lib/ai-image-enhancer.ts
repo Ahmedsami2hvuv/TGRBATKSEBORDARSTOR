@@ -9,9 +9,9 @@ export interface ImageEnhanceResult {
 }
 
 /**
- * جلب مفاتيح Gemini المفعلة
+ * جلب مفاتيح Gemini المفعلة المضافة صراحة في قاعدة البيانات حصراً
  */
-export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id?: string }>> {
+export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id: string }>> {
   try {
     const configs = await prisma.aIConfig.findMany({
       where: {
@@ -23,18 +23,11 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
       },
     });
 
-    const keys = configs.map((c) => ({
+    return configs.map((c) => ({
       apiKey: c.apiKey.trim(),
       label: c.label || `مفتاح Gemini (${c.id.slice(0, 5)})`,
       id: c.id,
     }));
-
-    const envKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (envKey && !keys.some((k) => k.apiKey === envKey.trim())) {
-      keys.push({ apiKey: envKey.trim(), label: "مفتاح النظام الافتراضي", id: "env_key" });
-    }
-
-    return keys;
   } catch (err) {
     console.error("Error fetching AIConfig keys:", err);
     return [];
@@ -42,36 +35,29 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص السطوع والإعتام المباشر للصورة الحقيقية
- */
-function analyzeImageLuminance(base64Data: string): { isDark: boolean; estimatedLuminance: number } {
-  try {
-    const buffer = Buffer.from(base64Data.slice(0, 4000), "base64");
-    let sum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      sum += buffer[i];
-    }
-    const avg = sum / (buffer.length || 1);
-    return { isDark: avg < 115, estimatedLuminance: avg };
-  } catch (e) {
-    return { isDark: false, estimatedLuminance: 128 };
-  }
-}
-
-/**
- * فحص وتحويل صورة الباب الحقيقية مع الحفاظ الصارم على شكل الباب الأصلي والجدار والبيئة
+ * فحص صورة الباب بالذكاء الاصطناعي حصراً عند وجود مفاتيح مضافة وبطريقة صارمة
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
-  // فحص هل الميزة مفعلة للمناديب أم معطلة
+  // 1. فحص تفعيل الميزة للمناديب
   if (!isTestMode) {
     try {
       const { getAIDoorEnhanceFeatureStatus } = await import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/ai/actions");
       const isEnabled = await getAIDoorEnhanceFeatureStatus();
       if (!isEnabled) {
-        // الميزة معطلة عن المناديب: نعيد الصورة الأصلية فوراً بدون أي تعديل أو تأخير
         return { enhanced: false, base64Image: base64Data, reason: "الميزة موقوفة للمناديب" };
       }
     } catch (e) {}
+  }
+
+  // 2. جلب مفاتيح قاعدة البيانات فقط
+  const keys = await getAllActiveGeminiKeys();
+  if (keys.length === 0) {
+    return {
+      enhanced: false,
+      base64Image: base64Data,
+      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح Gemini في الإعدادات لاستخدام الذكاء الاصطناعي.",
+      keyUsedLabel: "بدون مفتاح",
+    };
   }
 
   let cleanBase64 = base64Data;
@@ -85,21 +71,16 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  const keys = await getAllActiveGeminiKeys();
-  const lumCheck = analyzeImageLuminance(cleanBase64);
+  const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
+قم بتحليل الصورة المرفقة وأجب بـ JSON فقط:
+{
+  "isNight": true/false,
+  "isBlurred": true/false,
+  "reason": "سبب التقييم باختصار باللغة العربية"
+}`;
 
-  const masterPrompt = `قم بتحليل صورة الباب المرفقة بدقة للتوصيل:
-1. هل الصورة مظلمة جداً أو تصوير ليلي؟
-2. هل الصورة مغبشة وفيها غواش (blurred)؟
-أجب بـ JSON فقط بالشكل التالي:
-{"needsEnhancement": true/false, "isNight": true/false, "isBlurred": true/false, "reason": "شرح النتيجة باختصار بالعربية"}`;
-
-  let isNightDetected = lumCheck.isDark;
-  let usedKeyLabel = keys[0]?.label || "مفتاح الذكاء الاصطناعي";
-
-  if (keys.length > 0) {
-    const keyInfo = keys[0];
-    usedKeyLabel = keyInfo.label;
+  // تجربة المفاتيح المضافة حصراً
+  for (const keyInfo of keys) {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyInfo.apiKey}`,
@@ -122,28 +103,51 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
       if (response.ok) {
         const data = await response.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        if (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل") || rawText.includes("true")) {
-          isNightDetected = true;
-        }
-      }
-    } catch (e) {}
-  }
 
-  if (isNightDetected) {
-    // نعيد الصورة الحقيقية نفسها مع وضوح ناصع وإضاءة نهارية طبيعية للمحافظة الدقيقة على باب الزبون الأصلي
-    return {
-      enhanced: true,
-      isNightToDay: true,
-      base64Image: base64Data,
-      reason: "تم كشف تصوير ليلي مظلم، وتم تحسين وتعديل إضاءة وألوان صورة الباب الحقيقية لتظهر بوضوح نهار ناصع مع المحافظة التامة على تفاصيل باب الزبون الأصلي ☀️",
-      keyUsedLabel: usedKeyLabel,
-    };
+        let parsed: any = null;
+        try {
+          const match = rawText.match(/\{[\s\S]*\}/);
+          if (match) parsed = JSON.parse(match[0]);
+        } catch (e) {}
+
+        const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي"));
+        const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+
+        // تحديث عدد الاستخدام اليومي للمفتاح الحقيقي
+        prisma.aIConfig.update({
+          where: { id: keyInfo.id },
+          data: { usedToday: { increment: 1 } },
+        }).catch(() => {});
+
+        if (isNight || isBlurred) {
+          return {
+            enhanced: true,
+            isNightToDay: isNight,
+            base64Image: base64Data,
+            reason: parsed?.reason || (isNight ? "صورة ليلية مظلمة بحاجة لتعديل المشهد" : "صورة بها غواش"),
+            keyUsedLabel: keyInfo.label,
+          };
+        } else {
+          return {
+            enhanced: false,
+            base64Image: base64Data,
+            reason: parsed?.reason || "الصورة واضحة وبإضاءة جيدة ولا تحتاج تعديل.",
+            keyUsedLabel: keyInfo.label,
+          };
+        }
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        console.error(`Gemini API Error for key ${keyInfo.label}:`, errJson);
+      }
+    } catch (err) {
+      console.error(`Fetch error for key ${keyInfo.label}:`, err);
+    }
   }
 
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "الصورة واضحة وبإضاءة نهارية ولا تحتاج تحويل.",
-    keyUsedLabel: usedKeyLabel,
+    reason: "❌ فشل الاتصال بمفاتيح Gemini المضافة. تأكد من صحة الـ API Key في الإعدادات.",
+    keyUsedLabel: keys[0]?.label,
   };
 }
