@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import * as jose from "jose";
+import vertexKey from "./vertex-key.json";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -35,8 +37,42 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص وتقييم صورة الباب عبر Gemini Vision API حصراً 100%
- * بدون أي رفع إنارة أو تعديل سطوع محلي نهائياً، مع إبقاء الصورة بنقائها الطبيعي الأصلي 100%
+ * جلب Access Token لـ Google Cloud باستخدام Service Account ومكتبة jose
+ */
+async function getGoogleAccessToken() {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const privateKey = await jose.importPKCS8(vertexKey.private_key, "RS256");
+
+    const jwt = await new jose.SignJWT({
+      scope: "https://www.googleapis.com/auth/cloud-platform",
+    })
+      .setProtectedHeader({ alg: "RS256" })
+      .setIssuedAt(now)
+      .setIssuer(vertexKey.client_email)
+      .setAudience("https://oauth2.googleapis.com/token")
+      .setExpirationTime(now + 3600)
+      .sign(privateKey);
+
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: jwt,
+      }),
+    });
+
+    const data = await res.json();
+    return data.access_token;
+  } catch (err) {
+    console.error("Error generating Access Token:", err);
+    return null;
+  }
+}
+
+/**
+ * فحص وتقييم صورة الباب عبر Gemini Vision API أو Vertex AI Imagen 3
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -50,14 +86,6 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const keys = await getAllActiveGeminiKeys();
-  if (keys.length === 0) {
-    return {
-      enhanced: false,
-      base64Image: base64Data,
-      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح Gemini في الإعدادات لاستخدام الذكاء الاصطناعي.",
-      keyUsedLabel: "بدون مفتاح",
-    };
-  }
 
   let cleanBase64 = base64Data;
   let mimeType = "image/jpeg";
@@ -83,6 +111,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   let lastGoogleErrorMessage = "";
   const models = ["gemini-1.5-flash", "gemini-2.0-flash"];
 
+  // أولاً: استخدام Gemini للتحليل ومعرفة هل هي ليل أم لا
   for (const keyInfo of keys) {
     for (const model of models) {
       try {
@@ -126,41 +155,56 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
           if (isNight) {
             try {
-              // محاولة استدعاء Imagen 3 لتحويل الليل إلى نهار حقيقي (Image-to-Image) 🎨
-              // سنستخدم مسار التوليد المخصص للصور من كوكل
-              const imagenResponse = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${keyInfo.apiKey}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    contents: [{
-                      parts: [
-                        { text: "Transform this dark night photo of a house door into a bright, sunny daytime photo. The output must be the transformed image itself. Maintain all architectural details, colors, and objects, but change the lighting to a clear sunny day at noon." },
-                        { inline_data: { mime_type: mimeType, data: cleanBase64 } }
-                      ]
-                    }]
-                  }),
-                }
-              );
+              // محاولة استخدام Vertex AI Imagen 3 لتحويل الليل إلى نهار حقيقي ☀️
+              const accessToken = await getGoogleAccessToken();
+              if (accessToken) {
+                const projectId = vertexKey.project_id;
+                const location = "us-central1";
+                const imagenResponse = await fetch(
+                  `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/imagen-3.0-generate-001:predict`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                      instances: [
+                        {
+                          prompt: "A high-quality, clear, daytime photo of this house entrance. Transform the current night lighting into bright natural sunlight at noon. Maintain exactly the same door, walls, plants, and architectural details. No changes except lighting.",
+                          image: {
+                            bytesBase64Encoded: cleanBase64
+                          }
+                        }
+                      ],
+                      parameters: {
+                        sampleCount: 1,
+                        aspectRatio: "1:1"
+                      }
+                    }),
+                  }
+                );
 
-              if (imagenResponse.ok) {
-                const imgData = await imagenResponse.json();
-                // في بعض الإصدارات، يرجع الصورة كـ part في الـ candidates
-                const generatedPart = imgData?.candidates?.[0]?.content?.parts?.find((p: any) => p.inline_data || p.file_data);
-                if (generatedPart?.inline_data?.data) {
-                  finalBase64 = `data:${generatedPart.inline_data.mime_type || mimeType};base64,${generatedPart.inline_data.data}`;
-                  return {
-                    enhanced: true,
-                    isNightToDay: true,
-                    base64Image: finalBase64,
-                    reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام ذكاء Imagen الاصطناعي",
-                    keyUsedLabel: `${keyInfo.label} (Imagen AI)`,
-                  };
+                if (imagenResponse.ok) {
+                  const imgData = await imagenResponse.json();
+                  const generatedBase64 = imgData?.predictions?.[0]?.bytesBase64Encoded;
+                  if (generatedBase64) {
+                    finalBase64 = `data:${mimeType};base64,${generatedBase64}`;
+                    return {
+                      enhanced: true,
+                      isNightToDay: true,
+                      base64Image: finalBase64,
+                      reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام Vertex AI Imagen 3",
+                      keyUsedLabel: "Vertex AI (Imagen 3)",
+                    };
+                  }
+                } else {
+                  const errText = await imagenResponse.text();
+                  console.error("Imagen Error:", errText);
                 }
               }
             } catch (e) {
-              console.error("Error during imagen processing:", e);
+              console.error("Error during Vertex AI processing:", e);
             }
           }
 
@@ -171,9 +215,6 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini Vision API بنجاح",
             keyUsedLabel: `${keyInfo.label} (${model})`,
           };
-        } else {
-          const errJson = await response.json().catch(() => ({}));
-          lastGoogleErrorMessage = errJson?.error?.message || `كود الخطأ: ${response.status}`;
         }
       } catch (err: any) {
         lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
