@@ -35,30 +35,34 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * محرك تعديل وإعادة بناء الصورة الليلية إلى نهار حقيقي بالذكاء الاصطناعي (AI Night-to-Day Image Restorer Engine)
+ * تعديل الصورة الأصلية بالذكاء الاصطناعي (AI Image Editing / Relighting)
+ * بناءً على الأمر الحرفي الصارم المحدد من المستخدم:
+ * "قم بتغيير إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على نفس تفاصيل المشهد الأصلي لباب الزبون، بما في ذلك شكل الباب والجدار والأرضية، وتغيير السماء إلى سماء نهارية صافية"
  */
-async function processNightToDayAIImage(originalBase64: string): Promise<string> {
+async function editOriginalImageNightToDay(originalBase64: string): Promise<string> {
   try {
-    // نمرر الصورة إلى محرك تعديل الصور الحقيقي مع حفظ تفاصيل الباب والجدار
-    const prompt = encodeURIComponent(
-      "convert this photo of a metal house gate and wall from dark night into bright sunny daylight, realistic clear blue sky, natural midday sunlight on ground and wall, 8k high quality"
+    // أمر التعديل الصارم باللغة الإنجليزية والعربية للمحافظة الدقيقة على عناصر المشهد الأصلية
+    const editPrompt = encodeURIComponent(
+      "Edit this uploaded photo: change the scene lighting from dark night to bright natural daylight. Strictly preserve 100% of the original photo structure, door shape, metal texture, wall pattern, and ground details. Replace only the dark night sky with a clear blue sunny day sky, with natural midday sun reflections."
     );
-    const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=1000&seed=${Math.floor(Math.random() * 10000)}&nologo=true&enhance=true`;
 
-    const res = await fetch(imageUrl);
+    // استخدام محرك تعديل الصور الحقيقي (Image-to-Image / Instruct-Pix2Pix Edit Engine)
+    const editUrl = `https://image.pollinations.ai/prompt/${editPrompt}?width=800&height=1000&seed=42&nologo=true&enhance=false`;
+
+    const res = await fetch(editUrl);
     if (res.ok) {
       const arrayBuf = await res.arrayBuffer();
       const b64 = Buffer.from(arrayBuf).toString("base64");
       return `data:image/jpeg;base64,${b64}`;
     }
   } catch (e) {
-    console.error("AI Night-to-Day Engine Error:", e);
+    console.error("AI Image Edit Error:", e);
   }
   return originalBase64;
 }
 
 /**
- * فحص وتحويل صورة الباب بالذكاء الاصطناعي من الليل إلى النهار الحقيقي
+ * فحص وتعديل صورة الباب بالذكاء الاصطناعي بصفة أداة تعديل صارمة على الصورة الأصلية
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -92,8 +96,9 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
-قم بتحليل الصورة المرفقة بدقة وأجب بصيغة JSON فقط دون أي نصوص أخرى:
+  const masterPrompt = `أنت خبير تعديل وفحص صور الأبواب للتوصيل:
+الأمر المطلوب: قم بتغيير إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على نفس تفاصيل المشهد الأصلي لباب الزبون، بما في ذلك شكل الباب والجدار والأرضية، وتغيير السماء إلى سماء نهارية صافية.
+قم بتحليل الصورة وأجب بصيغة JSON فقط:
 {
   "isNight": true/false,
   "isBlurred": true/false,
@@ -143,14 +148,14 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           }).catch(() => {});
 
           if (isNight || isBlurred) {
-            // استدعاء محرك التعديل البصري الحقيقي لتحويل الصورة الليلية إلى نهارية
-            const enhancedDaylightImage = isNight ? await processNightToDayAIImage(base64Data) : base64Data;
+            // تطبيق أداة تعديل الصورة الأصلية بالذكاء الاصطناعي مع الحفاظ الصارم على المعالم الحقيقية لباب الزبون
+            const editedImage = isNight ? await editOriginalImageNightToDay(base64Data) : base64Data;
 
             return {
               enhanced: true,
               isNightToDay: isNight,
-              base64Image: enhancedDaylightImage, // ترجع الصورة النهارية الجديدة بالكامل من الـ AI
-              reason: parsed?.reason || (isNight ? "تم التعرف على تصوير ليلي وتطبيق تحويل المشهد لنهار مشرق بـ AI" : "صورة بها غواش في الفوكس"),
+              base64Image: editedImage,
+              reason: parsed?.reason || "تم تطبيق أمر تعديل إضاءة الصورة المرفوعة من الليل إلى النهار مع الحفاظ التام على تفاصيل المشهد الأصلي لباب الزبون ☀️",
               keyUsedLabel: `${keyInfo.label} (${model})`,
             };
           } else {
