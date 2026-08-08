@@ -152,13 +152,13 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           }).catch(() => {});
 
           let finalBase64 = base64Data;
+          let imagenStatus = "";
 
           if (isNight) {
             try {
-              // محاولة استخدام Vertex AI Imagen 3 لتحويل الليل إلى نهار حقيقي ☀️
               const accessToken = await getGoogleAccessToken();
               if (!accessToken) {
-                lastGoogleErrorMessage = "فشل في توليد Access Token للـ Service Account. تأكد من صحة بيانات ملف الـ JSON.";
+                imagenStatus = " (فشل التوثيق مع Vertex AI)";
               } else {
                 const projectId = vertexKey.project_id;
                 const location = "us-central1";
@@ -201,16 +201,12 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                     };
                   }
                 } else {
-                  const errText = await imagenResponse.text();
-                  console.error("Imagen Error Details:", errText);
-                  let errorJson: any = {};
-                  try { errorJson = JSON.parse(errText); } catch(e) {}
-                  lastGoogleErrorMessage = `خطأ من Imagen: ${errorJson?.error?.message || errText.slice(0, 100)}`;
+                  const errJson = await imagenResponse.json().catch(() => ({}));
+                  imagenStatus = ` (خطأ Imagen: ${errJson?.error?.message || imagenResponse.status})`;
                 }
               }
             } catch (e: any) {
-              console.error("Error during Vertex AI processing:", e);
-              lastGoogleErrorMessage = `خطأ في المعالجة البرمجية لـ Vertex: ${e.message}`;
+              imagenStatus = ` (خطأ برمجي في Vertex: ${e.message})`;
             }
           }
 
@@ -218,9 +214,12 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             enhanced: isNight || isBlurred,
             isNightToDay: isNight,
             base64Image: finalBase64,
-            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini Vision API بنجاح",
+            reason: (parsed?.reason || rawText || "تم تحليل الصورة بنجاح") + imagenStatus,
             keyUsedLabel: `${keyInfo.label} (${model})`,
           };
+        } else {
+          const errJson = await response.json().catch(() => ({}));
+          lastGoogleErrorMessage = `Gemini (${model}): ${errJson?.error?.message || response.statusText || response.status}`;
         }
       } catch (err: any) {
         lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
