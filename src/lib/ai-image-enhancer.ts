@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import sharp from "sharp";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -124,15 +125,20 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
           let finalBase64 = base64Data;
 
-          // إذا كانت الصورة ليلية، سنقوم بعمل معالجة بصرية لجعلها تبدو نهارية وواضحة
           if (isNight) {
             try {
-              // سنستخدم Sharp أو معالجة Canvas إذا كانت متوفرة، ولكن هنا سنطبق تفتيح برمجي للـ Base64
-              // بما أننا في بيئة Node.js، سنقوم بإرجاع الصورة مع وسم إضافي للمتصفح ليقوم بتفتيحها أو نستخدم معالجة بسيطة
-              // كخيار احترافي، سنقوم بإضافة تعليق للذكاء الاصطناعي ليعالجها أو نستخدم مكتبة معالجة صور
-              // حالياً، سنقوم بتعديل النتيجة لتشمل تعليمات التوضيح
+              const buffer = Buffer.from(cleanBase64, "base64");
+              const processedBuffer = await sharp(buffer)
+                .modulate({
+                  brightness: 1.8,
+                  saturation: 1.2
+                })
+                .clahe({ width: 25, height: 25 })
+                .toBuffer();
+
+              finalBase64 = `data:${mimeType};base64,${processedBuffer.toString("base64")}`;
             } catch (e) {
-              console.error("Error during image processing:", e);
+              console.error("Error during sharp processing:", e);
             }
           }
 
