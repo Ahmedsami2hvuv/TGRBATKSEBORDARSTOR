@@ -589,13 +589,13 @@ function DoorTestWidget() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 text-center flex items-center justify-center gap-1">
-                      <span>👁️ نتيجة تقييم وتصنيف الذكاء الاصطناعي (Gemini Vision)</span>
+                    <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1">
+                      <span>☀️ صورة الباب المعدلة نهارياً بالذكاء الاصطناعي (AI Night-to-Day)</span>
                     </p>
-                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-xl bg-slate-900 flex items-center justify-center">
+                    <div className="aspect-video relative rounded-2xl overflow-hidden border-2 border-amber-500 shadow-xl bg-slate-900 flex items-center justify-center">
                       <img
-                        src={originalImage || result.base64Image}
-                        alt="الصورة بنقائها الطبيعي"
+                        src={result.base64Image || originalImage}
+                        alt="صورة الباب المعدلة نهارياً بالذكاء الاصطناعي"
                         className="w-full h-full object-contain transition-all duration-500"
                       />
                     </div>
