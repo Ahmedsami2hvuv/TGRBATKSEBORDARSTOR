@@ -127,18 +127,57 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
           if (isNight) {
             try {
+              // محاولة استدعاء Imagen 3 لتحويل الليل إلى نهار حقيقي (Image-to-Image) 🎨
+              const imagenResponse = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${keyInfo.apiKey}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    instances: [
+                      {
+                        prompt: "Transform this dark night photo of a house door into a bright, sunny daytime photo. Keep all architectural details, colors of the door, and the surrounding plants exactly the same but make it look like a clear sunny day at noon.",
+                        image: {
+                          bytesBase64Encoded: cleanBase64
+                        }
+                      }
+                    ],
+                    parameters: {
+                      sampleCount: 1
+                    }
+                  }),
+                }
+              );
+
+              if (imagenResponse.ok) {
+                const imgData = await imagenResponse.json();
+                const generatedBase64 = imgData?.predictions?.[0]?.bytesBase64Encoded;
+                if (generatedBase64) {
+                  finalBase64 = `data:${mimeType};base64,${generatedBase64}`;
+                  return {
+                    enhanced: true,
+                    isNightToDay: true,
+                    base64Image: finalBase64,
+                    reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام Imagen 3.0",
+                    keyUsedLabel: `${keyInfo.label} (Imagen 3)`,
+                  };
+                }
+              }
+
+              // إذا فشل Imagen، نستخدم المعالجة المتقدمة بـ Sharp كبديل ذكي
               const buffer = Buffer.from(cleanBase64, "base64");
               const processedBuffer = await sharp(buffer)
                 .modulate({
-                  brightness: 1.8,
-                  saturation: 1.2
+                  brightness: 2.3,
+                  saturation: 1.6
                 })
-                .clahe({ width: 25, height: 25 })
+                .gamma(1.4)
+                .clahe({ width: 40, height: 40, maxSlope: 6 })
                 .toBuffer();
 
               finalBase64 = `data:${mimeType};base64,${processedBuffer.toString("base64")}`;
             } catch (e) {
-              console.error("Error during sharp processing:", e);
+              console.error("Error during imagen or sharp processing:", e);
             }
           }
 
