@@ -31,7 +31,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 
     const envKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (envKey && !keys.some((k) => k.apiKey === envKey.trim())) {
-      keys.push({ apiKey: envKey.trim(), label: "مفتاح النظام الافتراضي" });
+      keys.push({ apiKey: envKey.trim(), label: "مفتاح النظام الافتراضي", id: "env_key" });
     }
 
     return keys;
