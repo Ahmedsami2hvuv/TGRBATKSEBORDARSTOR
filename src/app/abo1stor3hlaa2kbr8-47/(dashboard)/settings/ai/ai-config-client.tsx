@@ -298,8 +298,9 @@ export default function AIConfigClient({
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 mr-2">المزود</label>
               <select name="provider" className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500">
+                <option value="gemini_image_edit">Google Gemini (مخصص لتعديل وتوليد الصور 🖼️)</option>
+                <option value="gemini">Google Gemini (عام)</option>
                 <option value="removebg">Remove.bg (إزالة الخلفية)</option>
-                <option value="gemini">Google Gemini</option>
                 <option value="openai">OpenAI (ChatGPT)</option>
                 <option value="groq">Groq (Llama 3)</option>
                 <option value="deepseek">DeepSeek</option>

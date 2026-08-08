@@ -15,7 +15,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
   try {
     const configs = await prisma.aIConfig.findMany({
       where: {
-        provider: { in: ["gemini", "GEMINI"] },
+        provider: { in: ["gemini_image_edit", "gemini", "GEMINI"] },
         isActive: true,
       },
       orderBy: {
