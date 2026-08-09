@@ -35,7 +35,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص وتقييم صورة الباب عبر Gemini Vision API المباشر بمسار v1beta الرسمي المعتمد
+ * فحص وتقييم صورة الباب عبر Gemini 1.5 Flash المباشر المستقر 100%
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -78,65 +78,60 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  // المسارات الرسمية المعتمدة لـ v1beta في جوجل API
-  const endpoints = [
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-  ];
+  // المسار الرسمي المستقر المعتمد حصراً لـ gemini-1.5-flash
+  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
   for (const keyInfo of keys) {
-    for (const ep of endpoints) {
-      try {
-        const response = await fetch(
-          `${ep}?key=${keyInfo.apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: masterPrompt },
-                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                  ],
-                },
-              ],
-            }),
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-          let parsed: any = null;
-          try {
-            const match = rawText.match(/\{[\s\S]*\}/);
-            if (match) parsed = JSON.parse(match[0]);
-          } catch (e) {}
-
-          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
-          const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
-
-          prisma.aIConfig.update({
-            where: { id: keyInfo.id },
-            data: { usedToday: { increment: 1 } },
-          }).catch(() => {});
-
-          return {
-            enhanced: false,
-            isNightToDay: isNight,
-            base64Image: base64Data,
-            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح ☀️",
-            keyUsedLabel: `${keyInfo.label} (${ep.split("/models/")[1]?.split(":")[0]})`,
-          };
-        } else {
-          const errJson = await response.json().catch(() => ({}));
-          lastGoogleErrorMessage = errJson?.error?.message || response.statusText || `كود الخطأ: ${response.status}`;
+    try {
+      const response = await fetch(
+        `${endpoint}?key=${keyInfo.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: masterPrompt },
+                  { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                ],
+              },
+            ],
+          }),
         }
-      } catch (err: any) {
-        lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        let parsed: any = null;
+        try {
+          const match = rawText.match(/\{[\s\S]*\}/);
+          if (match) parsed = JSON.parse(match[0]);
+        } catch (e) {}
+
+        const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
+        const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+
+        prisma.aIConfig.update({
+          where: { id: keyInfo.id },
+          data: { usedToday: { increment: 1 } },
+        }).catch(() => {});
+
+        return {
+          enhanced: false,
+          isNightToDay: isNight,
+          base64Image: base64Data,
+          reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح ☀️",
+          keyUsedLabel: `${keyInfo.label} (gemini-1.5-flash)`,
+        };
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        lastGoogleErrorMessage = errJson?.error?.message || response.statusText || `كود الخطأ: ${response.status}`;
       }
+    } catch (err: any) {
+      lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
     }
   }
 
