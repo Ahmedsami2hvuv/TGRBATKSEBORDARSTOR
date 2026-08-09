@@ -1,6 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import * as jose from "jose";
-import vertexKey from "./vertex-key.json";
 
 export interface ImageEnhanceResult {
   enhanced: boolean;
@@ -37,42 +35,8 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * جلب Access Token لـ Google Cloud باستخدام Service Account ومكتبة jose
- */
-async function getGoogleAccessToken() {
-  try {
-    const now = Math.floor(Date.now() / 1000);
-    const privateKey = await jose.importPKCS8(vertexKey.private_key, "RS256");
-
-    const jwt = await new jose.SignJWT({
-      scope: "https://www.googleapis.com/auth/cloud-platform",
-    })
-      .setProtectedHeader({ alg: "RS256" })
-      .setIssuedAt(now)
-      .setIssuer(vertexKey.client_email)
-      .setAudience("https://oauth2.googleapis.com/token")
-      .setExpirationTime(now + 3600)
-      .sign(privateKey);
-
-    const res = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion: jwt,
-      }),
-    });
-
-    const data = await res.json();
-    return data.access_token;
-  } catch (err) {
-    console.error("Error generating Access Token:", err);
-    return null;
-  }
-}
-
-/**
- * فحص وتقييم صورة الباب عبر Gemini Vision API أو Vertex AI Imagen 3
+ * فحص وتقييم صورة الباب عبر Gemini Vision API الحقيقي المباشر
+ * بدون أي ادعاء زائف أو رفع إنارة أو خيارات أمان مضللة
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -86,6 +50,14 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const keys = await getAllActiveGeminiKeys();
+  if (keys.length === 0) {
+    return {
+      enhanced: false,
+      base64Image: base64Data,
+      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح Gemini في الإعدادات لاستخدام الذكاء الاصطناعي.",
+      keyUsedLabel: "بدون مفتاح",
+    };
+  }
 
   let cleanBase64 = base64Data;
   let mimeType = "image/jpeg";
@@ -99,19 +71,16 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   }
 
   const masterPrompt = `أنت خبير فحص صور الأبواب للتوصيل:
-قم بتحليل الصورة المرفقة بدقة. إذا كانت الصورة ليلية أو مظلمة، قم بوصف المشهد كما لو كان في النهار بوضوح عالٍ جداً، مع التركيز على لون الباب وتفاصيل المنطقة المحيطة.
-أجب بصيغة JSON فقط كما يلي:
+قم بتحليل الصورة المرفقة وأجب بصيغة JSON فقط:
 {
   "isNight": true/false,
   "isBlurred": true/false,
-  "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية",
-  "daytimeDescription": "وصف تفصيلي للمشهد في وضح النهار (فقط إذا كانت الصورة ليلية)"
+  "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية"
 }`;
 
   let lastGoogleErrorMessage = "";
   const models = ["gemini-1.5-flash", "gemini-2.0-flash"];
 
-  // أولاً: استخدام Gemini للتحليل ومعرفة هل هي ليل أم لا
   for (const keyInfo of keys) {
     for (const model of models) {
       try {
@@ -151,70 +120,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             data: { usedToday: { increment: 1 } },
           }).catch(() => {});
 
-          let finalBase64 = base64Data;
-          let imagenStatus = "";
-
-          if (isNight) {
-            try {
-              const accessToken = await getGoogleAccessToken();
-              if (!accessToken) {
-                imagenStatus = " (فشل التوثيق مع Vertex AI)";
-              } else {
-                const projectId = vertexKey.project_id;
-                const location = "us-central1";
-                const imagenResponse = await fetch(
-                  `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/imagen-3.0-generate-001:predict`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "Authorization": `Bearer ${accessToken}`
-                    },
-                    body: JSON.stringify({
-                      instances: [
-                        {
-                          prompt: "قم بتحويل وقت اليوم في هذه الصورة من الليل إلى مشهد نهار مشرق وواضح. استبدل سماء الليل المظلمة بسماء نهارية زرقاء صافية مع ضوء الشمس الطبيعي. قم بتعديل الإضاءة في المشهد بأكمله، بما في ذلك الأرض والجدران والباب المعدني، لتبدو كأنها التقطت تحت أشعة الشمس المباشرة، مع إظهار الظلال والإضاءات النهارية بشكل واقعي. Transform this night scene into a bright, clear daytime photo with direct sunlight, blue sky, and realistic daytime shadows.",
-                          image: {
-                            bytesBase64Encoded: cleanBase64
-                          }
-                        }
-                      ],
-                      parameters: {
-                        sampleCount: 1,
-                        aspectRatio: "1:1"
-                      }
-                    }),
-                  }
-                );
-
-                if (imagenResponse.ok) {
-                  const imgData = await imagenResponse.json();
-                  const generatedBase64 = imgData?.predictions?.[0]?.bytesBase64Encoded;
-                  if (generatedBase64) {
-                    finalBase64 = `data:${mimeType};base64,${generatedBase64}`;
-                    return {
-                      enhanced: true,
-                      isNightToDay: true,
-                      base64Image: finalBase64,
-                      reason: "☀️ تم تحويل المشهد من ليل إلى نهار حقيقي باستخدام Vertex AI Imagen 3",
-                      keyUsedLabel: "Vertex AI (Imagen 3)",
-                    };
-                  }
-                } else {
-                  const errJson = await imagenResponse.json().catch(() => ({}));
-                  imagenStatus = ` (خطأ Imagen: ${errJson?.error?.message || imagenResponse.status})`;
-                }
-              }
-            } catch (e: any) {
-              imagenStatus = ` (خطأ برمجي في Vertex: ${e.message})`;
-            }
-          }
-
           return {
-            enhanced: isNight || isBlurred,
+            enhanced: false, // لا تفعيل لأي تعديل زائف
             isNightToDay: isNight,
-            base64Image: finalBase64,
-            reason: (parsed?.reason || rawText || "تم تحليل الصورة بنجاح") + imagenStatus,
+            base64Image: base64Data, // الصورة الأصلية كما هي بدون مساس
+            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح",
             keyUsedLabel: `${keyInfo.label} (${model})`,
           };
         } else {
@@ -227,27 +137,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  // خيار أمان نهائي: إذا فشل كل شيء (بسبب الحصة أو غيره)، نقوم بمعالجة بصرية محلية ذكية لضمان جودة الصورة للموظف
-  try {
-    const { getAIDoorEnhanceFeatureStatus } = await import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/ai/actions");
-    const isEnabled = await getAIDoorEnhanceFeatureStatus();
-
-    if (isEnabled || isTestMode) {
-      // هنا سنقوم بإرجاع الصورة مع وسم يخبر الواجهة بأنها "تحتاج توضيح بصري"
-      // أو نقوم بتطبيق تفتيح ذكي جداً هنا قبل الإرجاع لكي لا تظهر الرسالة المزعجة
-      return {
-        enhanced: true,
-        base64Image: base64Data, // سنعتمد على التوضيح في الواجهة أو نضيف معالجة بسيطة هنا
-        reason: "✨ تم تحسين وضوح الصورة بصرياً لضمان رؤية تفاصيل الباب بوضوح (معالجة نانو بنانا الذكية).",
-        keyUsedLabel: "Nano Banana AI",
-      };
-    }
-  } catch (e) {}
-
+  // في حالة فشل كل المفاتيح، يُرجع الخطأ الحقيقي فقط دون أي ادعاء زائف
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: "تم الإبقاء على الصورة الأصلية لضمان استقرار النظام.",
-    keyUsedLabel: keys[0]?.label || "النظام المحلي",
+    reason: `❌ فشل الاتصال بـ Gemini API: ${lastGoogleErrorMessage}`,
+    keyUsedLabel: keys[0]?.label,
   };
 }
