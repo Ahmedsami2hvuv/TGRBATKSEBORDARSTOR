@@ -65,6 +65,8 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                 <img
                   src={slide.imageUrl}
                   alt={slide.title || ""}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
 

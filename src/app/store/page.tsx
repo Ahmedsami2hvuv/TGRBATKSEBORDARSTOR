@@ -22,14 +22,16 @@ async function CategoriesGrid() {
             key={cat.id}
             href={`/store/c/${cat.id}`}
             prefetch={false}
-            className="group block bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none hover:shadow-violet-200/50 dark:hover:border-violet-800 transition-all duration-500 hover:-translate-y-2"
+            className="group block bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/50 dark:hover:border-violet-800 transition-all duration-300 hover:-translate-y-1"
           >
             <div className="relative aspect-square mb-6 overflow-hidden rounded-[2rem] bg-slate-100 dark:bg-slate-800/50">
               {cat.photoUrl ? (
                 <img
                   src={cat.photoUrl}
                   alt={cat.name}
-                  className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-700">

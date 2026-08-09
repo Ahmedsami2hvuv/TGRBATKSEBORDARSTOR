@@ -146,7 +146,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
                <div className="w-20 h-20 md:w-28 md:h-28 rounded-3xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-700">
                  {branch.photoUrl ? (
-                   <img src={branch.photoUrl} alt={branch.name} className="w-full h-full object-cover" />
+                   <img src={branch.photoUrl} alt={branch.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                  ) : (
                    <div className="w-full h-full flex items-center justify-center text-3xl">🛍️</div>
                  )}
@@ -175,8 +175,8 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
                   prefetch={false}
                   className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all text-center group"
                 >
-                  <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden">
-                     {child.photoUrl ? <img src={child.photoUrl} className="w-full h-full object-cover" /> : "📂"}
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-xl group-hover:scale-105 transition-transform overflow-hidden">
+                     {child.photoUrl ? <img src={child.photoUrl} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : "📂"}
                   </div>
                   <span className="text-sm font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors">{child.name}</span>
                 </Link>

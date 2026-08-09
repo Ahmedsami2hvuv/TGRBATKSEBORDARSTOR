@@ -81,7 +81,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
           <section className="flex flex-col md:flex-row items-center gap-4 md:gap-8 p-6 md:p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
             <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-700">
               {category.photoUrl ? (
-                <img src={category.photoUrl} alt={category.name} className="w-full h-full object-cover" />
+                <img src={category.photoUrl} alt={category.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-4xl">📁</div>
               )}
@@ -113,11 +113,11 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
                   key={branch.id}
                   href={`/store/b/${branch.id}`}
                   prefetch={false}
-                  className="group block bg-white dark:bg-slate-900 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:-translate-y-2 transition-all duration-300"
+                  className="group block bg-white dark:bg-slate-900 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="relative aspect-video mb-4 overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800">
                     {branch.photoUrl ? (
-                      <img src={branch.photoUrl} alt={branch.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                      <img src={branch.photoUrl} alt={branch.name} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
                     )}
