@@ -79,7 +79,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
+  const models = ["gemini-1.5-flash"];
 
   for (const keyInfo of keys) {
     for (const model of models) {
