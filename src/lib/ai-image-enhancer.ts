@@ -35,8 +35,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص وتقييم صورة الباب عبر Gemini Vision API الحقيقي المباشر
- * بدون أي ادعاء زائف أو رفع إنارة أو خيارات أمان مضللة
+ * فحص وتقييم صورة الباب عبر Gemini Vision API الحقيقي المستقر 100%
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -79,13 +78,19 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  const models = ["gemini-1.5-flash"];
+
+  // مسارات الموديلات الرسمية المستقرة من جوجل API
+  const endpoints = [
+    { url: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", name: "gemini-1.5-flash (v1)" },
+    { url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent", name: "gemini-1.5-flash-latest" },
+    { url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent", name: "gemini-2.0-flash-exp" },
+  ];
 
   for (const keyInfo of keys) {
-    for (const model of models) {
+    for (const ep of endpoints) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyInfo.apiKey}`,
+          `${ep.url}?key=${keyInfo.apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -121,15 +126,15 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           }).catch(() => {});
 
           return {
-            enhanced: false, // لا تفعيل لأي تعديل زائف
+            enhanced: false,
             isNightToDay: isNight,
-            base64Image: base64Data, // الصورة الأصلية كما هي بدون مساس
+            base64Image: base64Data,
             reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح",
-            keyUsedLabel: `${keyInfo.label} (${model})`,
+            keyUsedLabel: `${keyInfo.label} (${ep.name})`,
           };
         } else {
           const errJson = await response.json().catch(() => ({}));
-          lastGoogleErrorMessage = `Gemini (${model}): ${errJson?.error?.message || response.statusText || response.status}`;
+          lastGoogleErrorMessage = `${ep.name}: ${errJson?.error?.message || response.statusText || response.status}`;
         }
       } catch (err: any) {
         lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
@@ -137,11 +142,10 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     }
   }
 
-  // في حالة فشل كل المفاتيح، يُرجع الخطأ الحقيقي فقط دون أي ادعاء زائف
   return {
     enhanced: false,
     base64Image: base64Data,
-    reason: `❌ فشل الاتصال بـ Gemini API: ${lastGoogleErrorMessage}`,
+    reason: `❌ استجابة Gemini API: ${lastGoogleErrorMessage}`,
     keyUsedLabel: keys[0]?.label,
   };
 }

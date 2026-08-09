@@ -59,12 +59,12 @@ export function ProductCard({
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className="group bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/40 dark:shadow-none overflow-hidden flex flex-col hover:border-violet-400 dark:hover:border-violet-600 hover:-translate-y-4 hover:scale-110 hover:z-30 hover:shadow-[0_20px_50px_rgba(139,92,246,0.3)] transition-all duration-500 cursor-pointer relative"
+        className="group bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-md shadow-slate-200/40 dark:shadow-none overflow-hidden flex flex-col hover:border-violet-400 dark:hover:border-violet-600 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 cursor-pointer relative"
       >
         {/* زر المفضلة - واضح وبارز بتصميم فخم */}
         <button
           onClick={toggleFavorite}
-          className="absolute top-3 left-3 z-20 w-9 h-9 bg-white/90 dark:bg-slate-850/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-700/50"
+          className="absolute top-3 left-3 z-20 w-9 h-9 bg-white/90 dark:bg-slate-850/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all border border-slate-100 dark:border-slate-700/50"
         >
           <span className={`text-sm md:text-lg ${isFavorite ? "text-rose-500" : "text-slate-400 hover:text-rose-400"}`}>
             <DynamicIcon
@@ -81,7 +81,9 @@ export function ProductCard({
               <img
                 src={photos[0]}
                 alt={product.name}
-                className="w-full h-auto max-h-[250px] object-contain transition-transform duration-700 group-hover:scale-105 relative z-10 p-2"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-auto max-h-[250px] object-contain transition-transform duration-300 group-hover:scale-105 relative z-10 p-2"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
@@ -154,6 +156,7 @@ export function ProductCard({
                 <div className="relative w-full flex flex-col items-center group/img">
                   <img
                     src={photos[activePhotoIndex]}
+                    decoding="async"
                     className="w-full h-auto object-contain relative z-10"
                     style={{ maxHeight: 'none' }}
                     alt={product.name}
