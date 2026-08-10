@@ -136,7 +136,10 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             `${googleEndpoint}?key=${keyInfo.apiKey}`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                "x-goog-api-key": keyInfo.apiKey
+              },
               body: JSON.stringify({
                 contents: [
                   {
