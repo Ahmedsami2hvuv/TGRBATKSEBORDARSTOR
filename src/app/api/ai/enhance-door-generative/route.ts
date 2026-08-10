@@ -41,32 +41,32 @@ export async function POST(req: Request) {
 
     console.log("Starting Replicate Prediction...");
     
-    const startResponse = await fetch("https://api.replicate.com/v1/predictions", {
+    const replicateResponse = await fetch("https://api.replicate.com/v1/models/lucataco/sdxl-controlnet-depth/predictions", {
       method: "POST",
       headers: {
-        Authorization: `Token ${replicateToken}`,
+        "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: REPLICATE_SDXL_VERSION,
         input: {
           image: formattedImage,
           prompt: prompt,
           negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details",
+          condition_scale: 0.5,
           num_outputs: 1,
           scheduler: "K_EULER",
           num_inference_steps: 30,
           guidance_scale: 7.5
         }
-      })
+      }),
     });
 
-    if (!startResponse.ok) {
-      const err = await startResponse.json();
+    if (!replicateResponse.ok) {
+      const err = await replicateResponse.json();
       throw new Error(`خطأ في تشغيل Replicate: ${err.detail || JSON.stringify(err)}`);
     }
 
-    const prediction = await startResponse.json();
+    const prediction = await replicateResponse.json();
     let predictionUrl = prediction.urls.get;
     let status = prediction.status;
     let finalOutputUrl = null;
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       
       const pollResponse = await fetch(predictionUrl, {
         headers: {
-          Authorization: `Bearer ${replicateToken}`,
+          "Authorization": `Token ${replicateToken}`,
         }
       });
       
