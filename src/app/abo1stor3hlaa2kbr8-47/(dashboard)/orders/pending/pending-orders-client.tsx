@@ -3927,9 +3927,9 @@ export default function PendingOrdersClient({
       )}
 
       {activeAssignOrderId && (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[1100] flex items-start justify-center pt-4 sm:pt-12 p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
            <div className="absolute inset-0" onClick={() => setActiveAssignOrderId(null)} />
-           <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
+           <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200 my-auto sm:my-0">
              {(() => {
                 const o = orders.find(x => x.id === activeAssignOrderId);
                 if (!o) return null;
