@@ -137,8 +137,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                 }
               ],
               temperature: 0.1,
-              max_tokens: 1024,
-              ...(isProviderOpenRouter ? { response_format: { type: "json_object" } } : {})
+              max_tokens: 1024
             }),
           });
         } else {
