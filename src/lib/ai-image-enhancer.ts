@@ -35,7 +35,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص وتقييم صورة الباب عبر Gemini API مع مرونة التجربة الذكية للمسارات (Endpoints) لتجاوز خطأ Not Found
+ * فحص وتقييم صورة الباب عبر Gemini المباشر المستقر وتوضيح أخطاء التقييد
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -78,92 +78,83 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 }`;
 
   let lastGoogleErrorMessage = "";
-  let isQuotaExceeded = false;
+  let isQuotaError = false;
+  let isNotFoundError = false;
   
-  // المصفوفة الذكية للمسارات الرسمية المعتمدة (سيتم تجربتها بالترتيب لتجاوز أي Not Found)
-  const endpoints = [
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
-    "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent"
-  ];
+  // نعتمد مسار واحد أساسي وثابت من جوجل وهو gemini-1.5-flash
+  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
   for (const keyInfo of keys) {
-    for (const ep of endpoints) {
-      try {
-        const response = await fetch(
-          `${ep}?key=${keyInfo.apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: masterPrompt },
-                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                  ],
-                },
-              ],
-            }),
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-          let parsed: any = null;
-          try {
-            const match = rawText.match(/\{[\s\S]*\}/);
-            if (match) parsed = JSON.parse(match[0]);
-          } catch (e) {}
-
-          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
-          const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
-
-          prisma.aIConfig.update({
-            where: { id: keyInfo.id },
-            data: { usedToday: { increment: 1 } },
-          }).catch(() => {});
-
-          const modelNameMatch = ep.match(/models\/(gemini-.*?):/);
-          const modelName = modelNameMatch ? modelNameMatch[1] : "gemini";
-
-          return {
-            enhanced: false,
-            isNightToDay: isNight,
-            base64Image: base64Data,
-            reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح ☀️",
-            keyUsedLabel: `${keyInfo.label} (${modelName})`,
-          };
-        } else {
-          const errJson = await response.json().catch(() => ({}));
-          const errMsg = errJson?.error?.message || response.statusText || "";
-          
-          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || response.status === 429) {
-            isQuotaExceeded = true;
-            lastGoogleErrorMessage = "نفدت الحصة المجانية (Quota) لهذا المفتاح من جوجل!";
-            // إذا كان الخطأ بسبب الحصة، نتوقف عن تجربة المسارات الأخرى لهذا المفتاح
-            break; 
-          } else {
-            // خطأ Not Found أو غيره، نسجله ونكمل لتجربة المسار التالي
-            lastGoogleErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
-          }
+    try {
+      const response = await fetch(
+        `${endpoint}?key=${keyInfo.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: masterPrompt },
+                  { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                ],
+              },
+            ],
+          }),
         }
-      } catch (err: any) {
-        lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        let parsed: any = null;
+        try {
+          const match = rawText.match(/\{[\s\S]*\}/);
+          if (match) parsed = JSON.parse(match[0]);
+        } catch (e) {}
+
+        const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
+        const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+
+        prisma.aIConfig.update({
+          where: { id: keyInfo.id },
+          data: { usedToday: { increment: 1 } },
+        }).catch(() => {});
+
+        return {
+          enhanced: false,
+          isNightToDay: isNight,
+          base64Image: base64Data,
+          reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح ☀️",
+          keyUsedLabel: `${keyInfo.label} (gemini-1.5-flash)`,
+        };
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        const errMsg = errJson?.error?.message || response.statusText || "";
+        
+        if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || response.status === 429) {
+          isQuotaError = true;
+          break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
+        } else if (errMsg.toLowerCase().includes("not found")) {
+          isNotFoundError = true;
+          break; // خروج لإنهاء المحاولة على هذا المفتاح المقيد
+        } else {
+          lastGoogleErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+        }
       }
+    } catch (err: any) {
+      lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
     }
-    
-    // إذا واجهنا خطأ حصة، نخرج من تجربة باقي المفاتيح إذا كان لدينا مفتاح واحد (أو يمكننا تركه ليجرب المفتاح التالي إذا كان لدى المستخدم عدة مفاتيح)
-    // في حالتنا، الدوران على المفاتيح سيكمل لتجربة مفتاح آخر لو وجد.
   }
 
-  // رسالة ذكية إذا كان الخطأ من الحصة
+  // ترجمة ذكية وواضحة جداً للمستخدم بناءً على نوع الخطأ الصادر من مفتاحه
   let finalReason = `❌ استجابة جوجل: ${lastGoogleErrorMessage}`;
-  if (isQuotaExceeded) {
-    finalReason = "❌ تنبيه: حسابك في جوجل استنفد الحصة المجانية بالكامل! (Quota Exceeded). الحل: قم بإنشاء مفتاح API جديد من حساب Gmail مختلف تماماً لم يتم استخدامه من قبل، وأضفه هنا.";
+  
+  if (isQuotaError) {
+    finalReason = "❌ تنبيه: حساب جوجل استنفد الحصة المجانية بالكامل! (Quota Exceeded). الحل: إنشاء مفتاح جديد من جيميل آخر.";
+  } else if (isNotFoundError) {
+    finalReason = "❌ تنبيه: مفتاح جوجل هذا مقيد ولا يملك صلاحية للوصول لموديلات الذكاء الاصطناعي (Not Found). الحل: تأكد من تفعيل خدمة (Generative Language API) أو استخدام جيميل جديد.";
   }
 
   return {
