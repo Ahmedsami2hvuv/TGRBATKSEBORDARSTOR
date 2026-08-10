@@ -142,10 +142,8 @@ export function OrderDetailSection({
   useEffect(() => {
     if (!isModal) return;
 
-    const originalOverflow = document.body.style.overflow;
     const originalMinHeight = document.documentElement.style.minHeight;
     const originalScrollBehavior = document.documentElement.style.scrollBehavior;
-    const originalScrollY = window.scrollY;
 
     // تعطيل التمرير السلس مؤقتاً لتجنب التأثيرات البصرية
     document.documentElement.style.scrollBehavior = "auto";
@@ -163,10 +161,9 @@ export function OrderDetailSection({
 
     return () => {
       // استعادة الإعدادات الأصلية
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = "";
       document.documentElement.style.minHeight = originalMinHeight;
       document.documentElement.style.scrollBehavior = originalScrollBehavior;
-      window.scrollTo(0, originalScrollY);
     };
   }, [isModal]);
 

@@ -86,14 +86,12 @@ export function PreparerOrderTable({
     const isAnyModalOpen = Boolean(payOrder || assignOrder || activeOrderId);
     if (!isAnyModalOpen) return;
 
-    const prevOverflow = document.body.style.overflow;
-    const prevOverscroll = document.body.style.overscrollBehaviorY;
     document.body.style.overflow = "hidden";
     document.body.style.overscrollBehaviorY = "none";
 
     return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.overscrollBehaviorY = prevOverscroll;
+      document.body.style.overflow = "";
+      document.body.style.overscrollBehaviorY = "";
     };
   }, [payOrder, assignOrder, activeOrderId]);
 
