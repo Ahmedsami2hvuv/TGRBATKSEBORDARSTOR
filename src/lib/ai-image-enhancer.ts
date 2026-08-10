@@ -9,13 +9,13 @@ export interface ImageEnhanceResult {
 }
 
 /**
- * جلب مفاتيح Gemini المفعلة المضافة صراحة في قاعدة البيانات
+ * جلب مفاتيح الذكاء الاصطناعي المفعلة المضافة صراحة في قاعدة البيانات
  */
-export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id: string }>> {
+export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; label: string; id: string; provider: string }>> {
   try {
     const configs = await prisma.aIConfig.findMany({
       where: {
-        provider: { in: ["gemini_image_edit", "gemini", "GEMINI", "nanobanana"] },
+        provider: { in: ["gemini_image_edit", "gemini", "GEMINI", "nanobanana", "openrouter"] },
         isActive: true,
       },
       orderBy: {
@@ -25,8 +25,9 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 
     return configs.map((c) => ({
       apiKey: c.apiKey.trim(),
-      label: c.label || `مفتاح Gemini (${c.id.slice(0, 5)})`,
+      label: c.label || `مفتاح (${c.id.slice(0, 5)})`,
       id: c.id,
+      provider: c.provider,
     }));
   } catch (err) {
     console.error("Error fetching AIConfig keys:", err);
@@ -35,7 +36,7 @@ export async function getAllActiveGeminiKeys(): Promise<Array<{ apiKey: string; 
 }
 
 /**
- * فحص وتقييم صورة الباب عبر Gemini المباشر المستقر وتوضيح أخطاء التقييد
+ * فحص وتقييم صورة الباب عبر الذكاء الاصطناعي المباشر (دعم Google API + OpenRouter)
  */
 export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boolean = false): Promise<ImageEnhanceResult> {
   if (!isTestMode) {
@@ -53,7 +54,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     return {
       enhanced: false,
       base64Image: base64Data,
-      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح Gemini في الإعدادات لاستخدام الذكاء الاصطناعي.",
+      reason: "❌ لا يوجد أي مفتاح API مضاف في النظام! يرجى إضافة مفتاح في الإعدادات لاستخدام الذكاء الاصطناعي.",
       keyUsedLabel: "بدون مفتاح",
     };
   }
@@ -77,36 +78,73 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   "reason": "تقرير تشخيص تقييم الصورة باختصار باللغة العربية"
 }`;
 
-  let lastGoogleErrorMessage = "";
+  let lastErrorMessage = "";
   let isQuotaError = false;
   let isNotFoundError = false;
   
-  // نعتمد مسار واحد أساسي وثابت من جوجل وهو gemini-1.5-flash
-  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  const googleEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
 
   for (const keyInfo of keys) {
     try {
-      const response = await fetch(
-        `${endpoint}?key=${keyInfo.apiKey}`,
-        {
+      let response: Response;
+      let isProviderOpenRouter = keyInfo.provider === "openrouter";
+
+      if (isProviderOpenRouter) {
+        // الاتصال عبر OpenRouter (يدعم Gemini وغيرها بصيغة موحدة)
+        response = await fetch(openRouterEndpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${keyInfo.apiKey}`,
+            "HTTP-Referer": "https://aboakbr.com", // موقعك
+            "X-Title": "Abo Akbr System",
+          },
           body: JSON.stringify({
-            contents: [
+            // استخدام الموديل المجاني السريع والرائع للرؤية من جوجل عبر اوبن راوتر
+            model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+            messages: [
               {
-                parts: [
-                  { text: masterPrompt },
-                  { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                ],
-              },
+                role: "user",
+                content: [
+                  { type: "text", text: masterPrompt },
+                  { type: "image_url", image_url: { url: `data:${mimeType};base64,${cleanBase64}` } }
+                ]
+              }
             ],
+            response_format: { type: "json_object" }
           }),
-        }
-      );
+        });
+      } else {
+        // الاتصال الافتراضي عبر Google AI Studio المباشر
+        response = await fetch(
+          `${googleEndpoint}?key=${keyInfo.apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: masterPrompt },
+                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
+      }
 
       if (response.ok) {
         const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        
+        let rawText = "";
+        if (isProviderOpenRouter) {
+          rawText = data?.choices?.[0]?.message?.content || "";
+        } else {
+          rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        }
 
         let parsed: any = null;
         try {
@@ -126,35 +164,35 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           enhanced: false,
           isNightToDay: isNight,
           base64Image: base64Data,
-          reason: parsed?.reason || rawText || "تم تحليل الصورة بـ Gemini API بنجاح ☀️",
-          keyUsedLabel: `${keyInfo.label} (gemini-1.5-flash)`,
+          reason: parsed?.reason || rawText || "تم تحليل الصورة بالذكاء الاصطناعي بنجاح ☀️",
+          keyUsedLabel: `${keyInfo.label} (${isProviderOpenRouter ? 'OpenRouter Gemini' : 'Google API'})`,
         };
       } else {
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson?.error?.message || response.statusText || "";
         
-        if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || response.status === 429) {
+        if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || errMsg.toLowerCase().includes("credit") || response.status === 429 || response.status === 402) {
           isQuotaError = true;
           break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
         } else if (errMsg.toLowerCase().includes("not found")) {
           isNotFoundError = true;
           break; // خروج لإنهاء المحاولة على هذا المفتاح المقيد
         } else {
-          lastGoogleErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+          lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
         }
       }
     } catch (err: any) {
-      lastGoogleErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
+      lastErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
     }
   }
 
-  // ترجمة ذكية وواضحة جداً للمستخدم بناءً على نوع الخطأ الصادر من مفتاحه
-  let finalReason = `❌ استجابة جوجل: ${lastGoogleErrorMessage}`;
+  // ترجمة ذكية وواضحة جداً للمستخدم بناءً على نوع الخطأ الصادر
+  let finalReason = `❌ استجابة السيرفر: ${lastErrorMessage}`;
   
   if (isQuotaError) {
-    finalReason = "❌ تنبيه: حساب جوجل استنفد الحصة المجانية بالكامل! (Quota Exceeded). الحل: إنشاء مفتاح جديد من جيميل آخر.";
+    finalReason = "❌ تنبيه: حسابك استنفد الرصيد أو الحصة المجانية بالكامل! (Quota Exceeded). الحل: إنشاء مفتاح جديد أو استخدام مفتاح OpenRouter.";
   } else if (isNotFoundError) {
-    finalReason = "❌ تنبيه: مفتاح جوجل هذا مقيد ولا يملك صلاحية للوصول لموديلات الذكاء الاصطناعي (Not Found). الحل: تأكد من تفعيل خدمة (Generative Language API) أو استخدام جيميل جديد.";
+    finalReason = "❌ تنبيه: مفتاح جوجل هذا مقيد ولا يملك صلاحية للوصول للموديلات (Not Found). الحل: استخدم مفتاح OpenRouter الجديد.";
   }
 
   return {
