@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAIPortalTrainings } from "@/lib/db/ai-config";
+import { getAllActiveGeminiKeys } from "@/lib/ai-image-enhancer";
 
 const REPLICATE_SDXL_VERSION = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     // جلب مفتاح Replicate من الداتا بيس
-    const configs = await getAIPortalTrainings();
+    const configs = await getAllActiveGeminiKeys();
     const replicateKeyInfo = configs.find(
       (k) => k.provider === "replicate" && k.isActive
     );
