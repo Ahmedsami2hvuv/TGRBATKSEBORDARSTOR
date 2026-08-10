@@ -135,7 +135,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                   ]
                 }
               ],
-              response_format: { type: "json_object" }
+              ...(isProviderOpenRouter ? { response_format: { type: "json_object" } } : {})
             }),
           });
         } else {
