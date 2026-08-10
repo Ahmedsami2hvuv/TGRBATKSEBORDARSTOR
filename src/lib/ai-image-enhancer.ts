@@ -80,6 +80,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
   let lastErrorMessage = "";
   let isQuotaError = false;
+  let isNotFoundError = false;
   
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
   const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
