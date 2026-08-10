@@ -532,24 +532,52 @@ function DoorTestWidget() {
     setIsCopied(false);
 
     const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      setOriginalImage(base64);
+    reader.onload = async (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        // تقليص حجم الصورة إلى أقصى حد 1024 بكسل لتفادي خطأ CUDA Out of Memory
+        const MAX_WIDTH = 1024;
+        const MAX_HEIGHT = 1024;
+        let width = img.width;
+        let height = img.height;
 
-      try {
-        const res = await fetch("/api/ai/enhance-door-generative", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageBase64: base64 }),
-        });
-        const data = await res.json();
-        setResult(data);
-      } catch (err: any) {
-        console.error("Fetch Error:", err);
-        setResult({ error: "حدث خطأ أثناء اختبار الصورة" });
-      } finally {
-        setTesting(false);
-      }
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const base64 = canvas.toDataURL('image/jpeg', 0.85);
+        setOriginalImage(base64);
+
+        try {
+          const res = await fetch("/api/ai/enhance-door-generative", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: base64 }),
+          });
+          const data = await res.json();
+          setResult(data);
+        } catch (err: any) {
+          console.error("Fetch Error:", err);
+          setResult({ error: "حدث خطأ أثناء اختبار الصورة" });
+        } finally {
+          setTesting(false);
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   }
