@@ -82,7 +82,6 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   let isQuotaError = false;
   let isNotFoundError = false;
   
-  const googleEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
 
   // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب (تم تحديثها للأسماء الرسمية الفعالة)
@@ -93,9 +92,17 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     "google/gemini-1.5-flash"
   ];
 
+  // موديلات جوجل الرسمية لضمان الاستقرار والعمل على كافة أنواع المفاتيح القديمة والجديدة
+  const googleModels = [
+    "gemini-1.5-flash-latest",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash"
+  ];
+
   for (const keyInfo of keys) {
     let isProviderOpenRouter = keyInfo.provider === "openrouter";
-    let modelsToTry = isProviderOpenRouter ? openRouterModels : ["gemini-1.5-flash"];
+    let modelsToTry = isProviderOpenRouter ? openRouterModels : googleModels;
 
     for (const currentModel of modelsToTry) {
       try {
@@ -127,6 +134,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           });
         } else {
           // الاتصال الافتراضي عبر Google AI Studio المباشر
+          const googleEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
           response = await fetch(
             `${googleEndpoint}?key=${keyInfo.apiKey}`,
             {
