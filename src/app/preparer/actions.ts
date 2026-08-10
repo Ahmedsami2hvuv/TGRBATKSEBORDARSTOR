@@ -9,6 +9,7 @@ import { ALF_PER_DINAR, formatDinarAsAlfWithUnit, parseAlfInputToDinarDecimalReq
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
+  buildCombinedOrderSummaryText,
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateAutoSellPrice, isMeatProduct, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
@@ -431,9 +432,13 @@ export async function submitPreparerShoppingDraft(
         };
     });
 
-    // --- بناء وصف الطلب المقسم حسب المجهزين ---
-    const summaryParts = preparerInvoices.map(inv => {
-        return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
+    // --- بناء وصف الطلب المقسم حسب المجهزين مع كلفة التجهيز والتوصيل ---
+    const deliveryAlf = Number(delivery) / ALF_PER_DINAR;
+    const summaryCombined = buildCombinedOrderSummaryText({
+      preparerInvoices,
+      placesCount,
+      extraAlf,
+      deliveryAlf,
     });
 
     let resolvedOrderType = draftData?.orderType || "تجهيز تسوق";
@@ -455,7 +460,7 @@ export async function submitPreparerShoppingDraft(
             deliveryPrice: delivery,
             totalAmount: total,
             submissionSource: "company_preparer",
-            summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+            summary: summaryCombined,
             preparerShoppingJson: {
               version: 1,
               products,
@@ -492,7 +497,7 @@ export async function submitPreparerShoppingDraft(
             totalAmount: total,
             submissionSource: "company_preparer",
             submittedByCompanyPreparerId: null,
-            summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+            summary: summaryCombined,
             preparerShoppingJson: {
               version: 1,
               products,
@@ -530,7 +535,7 @@ export async function submitPreparerShoppingDraft(
           totalAmount: total,
           submissionSource: "company_preparer",
           submittedByCompanyPreparerId: null,
-          summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+          summary: summaryCombined,
           preparerShoppingJson: {
             version: 1,
             products,
@@ -999,10 +1004,13 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       invoiceText: buildPreparerPurchaseSummaryText(entry.products),
     }));
 
-    const summaryParts = preparerInvoices.map((inv) => {
-      return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
+    const deliveryAlf = (order.deliveryPrice ? Number(order.deliveryPrice) : 0) / ALF_PER_DINAR;
+    const summary = buildCombinedOrderSummaryText({
+      preparerInvoices,
+      placesCount: (orderPrepJson?.placesCount as number) || 1,
+      extraAlf: (orderPrepJson?.extraAlf as number) || 0,
+      deliveryAlf,
     });
-    const summary = formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n"));
     const oldProducts = (orderPrepJson?.products as any[]) || [];
     const oldDynamicOrderType = resolveDynamicOrderType(oldProducts, "تجهيز تسوق");
     let resolvedOrderType = order.orderType;

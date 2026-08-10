@@ -52,13 +52,13 @@ export function buildCustomerInvoiceText(params: {
     parts.push(`• ${formatAlfForCustomer(run)} 💵`);
   }
 
-  parts.push(`– 📦 التجهيز: من ${placesCount} محلات بـ ${formatAlfForCustomer(extraAlf)}`);
+  parts.push(`– 📦 كلفة تجهيز من ${placesCount} محلات بـ ${formatAlfForCustomer(extraAlf)}`);
   run += extraAlf;
   parts.push(`• ${formatAlfForCustomer(run)} 💵`);
 
   const withoutDelivery = run;
 
-  parts.push(`– 🚚: بـ ${formatAlfForCustomer(deliveryAlf)}`);
+  parts.push(`– 🚚 كلفة توصيل بـ ${formatAlfForCustomer(deliveryAlf)}`);
   run += deliveryAlf;
   parts.push(`• ${formatAlfForCustomer(run)} 💵`);
 
@@ -79,6 +79,35 @@ export function buildShoppingOrderProductNotesLines(lines: InvoiceProductLine[])
 /** ملخص شراء للمجهز (للحقول الداخلية وخانة الملاحظات التلقائية) */
 export function buildPreparerPurchaseSummaryText(lines: InvoiceProductLine[]): string {
   return lines.map((r) => `• ${r.line.trim()}  ${formatAlfForCustomer(r.sellAlf)}`).join("\n");
+}
+
+/** بناء نص الفاتورة المجمعة (الملاحظات التلقائية) مع كلفة التجهيز وكلفة التوصيل */
+export function buildCombinedOrderSummaryText(params: {
+  preparerInvoices: { preparerName: string; invoiceText: string }[];
+  placesCount: number;
+  extraAlf: number;
+  deliveryAlf: number;
+}): string {
+  const { preparerInvoices, placesCount, extraAlf, deliveryAlf } = params;
+  const CUSTOMER_NOTE_BORDER = "═══════════════";
+
+  const summaryParts = preparerInvoices.map((inv) => {
+    return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
+  });
+
+  const prepText = `كلفة تجهيز من ${placesCount} محلات بـ ${formatAlfForCustomer(extraAlf)}`;
+  const deliveryText = `كلفة توصيل بـ ${formatAlfForCustomer(deliveryAlf)}`;
+
+  return [
+    CUSTOMER_NOTE_BORDER,
+    "المنتجات المجهزة (حسب المجهز)",
+    CUSTOMER_NOTE_BORDER,
+    summaryParts.join("\n\n═══════════════\n\n"),
+    CUSTOMER_NOTE_BORDER,
+    prepText,
+    deliveryText,
+    CUSTOMER_NOTE_BORDER,
+  ].join("\n");
 }
 
 /** معالجة وتنسيق أي نص ملخص مجهزين قديم أو جديد لتظهر الأسعار بالشكل الدقيق المفهوم للزبون */

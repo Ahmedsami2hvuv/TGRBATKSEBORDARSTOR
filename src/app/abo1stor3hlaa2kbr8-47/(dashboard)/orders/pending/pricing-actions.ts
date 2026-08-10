@@ -7,6 +7,7 @@ import { ALF_PER_DINAR } from "@/lib/money-alf";
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
+  buildCombinedOrderSummaryText,
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
@@ -344,18 +345,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     invoiceText: buildPreparerPurchaseSummaryText(entry.products)
   }));
 
-  // --- 6. بناء نص الملاحظات الرئيسي للطلب ---
-  const summaryParts = preparerInvoices.map(inv => {
-    return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
-  });
-  const CUSTOMER_NOTE_BORDER = "═══════════════";
-  const summaryCombined = [
-    CUSTOMER_NOTE_BORDER,
-    "المنتجات المجهزة (حسب المجهز)",
-    CUSTOMER_NOTE_BORDER,
-    summaryParts.join("\n\n═══════════════\n\n"),
-    CUSTOMER_NOTE_BORDER
-  ].join("\n");
+  // --- 6. تحضير كتل نص المنتجات المجهزة ---
 
   // --- 7. جلب بيانات المتجر والتوصيل ---
   let shop = null;
@@ -424,6 +414,13 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
   const oldDebt = await getCustomerOldDebt({ customerId, phone });
   const totalDinar = subtotalDinar.plus(deliveryDinar).plus(oldDebt);
   const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
+
+  const summaryCombined = buildCombinedOrderSummaryText({
+    preparerInvoices,
+    placesCount,
+    extraAlf,
+    deliveryAlf,
+  });
 
   let existingOrderType = "تجهيز تسوق";
   let oldProducts: any[] = [];

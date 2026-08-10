@@ -17,6 +17,7 @@ import { ALF_PER_DINAR } from "@/lib/money-alf";
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
+  buildCombinedOrderSummaryText,
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
@@ -638,13 +639,17 @@ export async function assignPendingOrderToCourier(
       const totalDinar = subtotalDinar.plus(deliveryDinar);
       const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
 
-      const summaryCombined = [
-        "═══════════════",
-        "المنتجات المجهزة (حسب المجهز)",
-        "═══════════════",
-        `[ تجهيز: تجهيز الإدارة 🏛️ ]\n${buildPreparerPurchaseSummaryText(enrichedProducts)}`,
-        "═══════════════"
-      ].join("\n");
+      const summaryCombined = buildCombinedOrderSummaryText({
+        preparerInvoices: [
+          {
+            preparerName: "تجهيز الإدارة 🏛️",
+            invoiceText: buildPreparerPurchaseSummaryText(enrichedProducts),
+          },
+        ],
+        placesCount: draft.placesCount || 1,
+        extraAlf,
+        deliveryAlf,
+      });
 
       let finalOrderId: string;
       let finalOrderNumber: number;
