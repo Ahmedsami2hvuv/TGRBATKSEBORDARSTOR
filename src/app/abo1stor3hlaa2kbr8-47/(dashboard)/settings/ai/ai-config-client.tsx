@@ -503,6 +503,22 @@ function DoorTestWidget() {
   const [testing, setTesting] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [consoleErrors, setConsoleErrors] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
+
+  useEffect(() => {
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      try {
+        const errorMsg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(" ");
+        setConsoleErrors(prev => [...prev, errorMsg]);
+      } catch(e) {}
+      originalConsoleError.apply(console, args);
+    };
+    return () => {
+      console.error = originalConsoleError;
+    };
+  }, []);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -510,6 +526,8 @@ function DoorTestWidget() {
 
     setTesting(true);
     setResult(null);
+    setConsoleErrors([]);
+    setIsCopied(false);
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -525,6 +543,7 @@ function DoorTestWidget() {
         const data = await res.json();
         setResult(data);
       } catch (err: any) {
+        console.error("Fetch Error:", err);
         setResult({ error: "حدث خطأ أثناء اختبار الصورة" });
       } finally {
         setTesting(false);
@@ -532,6 +551,13 @@ function DoorTestWidget() {
     };
     reader.readAsDataURL(file);
   }
+
+  const handleCopyErrors = () => {
+    const textToCopy = `=== سبب الخطأ ===\n${result?.reason || result?.error || 'لا يوجد'}\n\n=== أخطاء الكونسل ===\n${consoleErrors.length > 0 ? consoleErrors.join("\n") : 'لا توجد أخطاء في الكونسل'}`;
+    navigator.clipboard.writeText(textToCopy);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   return (
     <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-sky-100 dark:border-sky-900/30 p-5 rounded-3xl my-3 shadow-sm">
@@ -574,10 +600,17 @@ function DoorTestWidget() {
                 )}
               </div>
 
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 relative group">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-200 pr-10">
                   💬 **النتيجة والتقييم**: {result.reason}
                 </p>
+                <button 
+                  onClick={handleCopyErrors}
+                  className="absolute top-2 right-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-2 py-1.5 rounded-xl text-[10px] font-black transition shadow-sm flex items-center gap-1"
+                  title="نسخ النتيجة مع أخطاء الكونسل للمبرمج"
+                >
+                  {isCopied ? "✅ تم النسخ" : "📋 نسخ الأخطاء"}
+                </button>
               </div>
 
               {/* المعاينة البصرية قبل وبعد */}
