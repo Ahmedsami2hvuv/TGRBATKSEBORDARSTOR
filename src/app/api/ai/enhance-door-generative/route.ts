@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const replicateToken = replicateKeyInfo.apiKey;
 
     // 1. بدء عملية الرسم التوليدي (Prediction)
-    const prompt = "make it bright daytime, clear blue sky, highly detailed, realistic, perfect lighting, sunny, vivid colors, keeping the original door structure exactly the same";
+    const prompt = "exact same image but during bright sunny daylight. Keep all objects, shapes, and structural details exactly the same. Only change the lighting to daytime, highly detailed, realistic lighting, clear sky.";
     
     // تجهيز الصورة Base64 (قد تحتوي على data:image/jpeg;base64, تأكد من وجودها)
     const formattedImage = imageBase64.startsWith('data:image') 
@@ -50,8 +50,8 @@ export async function POST(req: Request) {
         input: {
           image: formattedImage,
           prompt: prompt,
-          negative_prompt: "night, dark, blurry, distorted, changing structure",
-          prompt_strength: 0.65, // قوة التغيير: يحافظ على الهيكل ويغير الإضاءة بقوة
+          negative_prompt: "do not change objects, do not change shapes, do not remove items, no hallucinations, night, dark, artificial lights",
+          prompt_strength: 0.40, // 0.40 لضمان الحفاظ على الهيكل بنسبة 60% وتغيير الإضاءة فقط
           num_outputs: 1,
           scheduler: "K_EULER",
           num_inference_steps: 25,
