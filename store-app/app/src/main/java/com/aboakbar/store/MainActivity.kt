@@ -44,20 +44,6 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً وبدء اللمس من الثلث العلوي للشاشة (35% من الارتفاع)
-        // لمنع التحديث العشوائي عند سحب القوائم في منتصف وأسفل الشاشة
-        webView.setOnTouchListener { v, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val isAtTop = !webView.canScrollVertically(-1)
-                val touchY = event.y
-                val viewHeight = v.height
-                val threshold = viewHeight * 0.35f // 35% من الارتفاع (الثلث العلوي تقريباً)
-                
-                swipeRefreshLayout.isEnabled = (isAtTop && touchY <= threshold)
-            }
-            false // إرجاع false للسماح للـ WebView بمعالجة اللمس بشكل طبيعي
-        }
-
         setupWebView()
         setupLongPressMenu()
 
@@ -68,6 +54,19 @@ class MainActivity : AppCompatActivity() {
             showLoading(true)
             webView.loadUrl(TARGET_URL)
         }
+    }
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (ev.action == android.view.MotionEvent.ACTION_DOWN) {
+            val isAtTop = !webView.canScrollVertically(-1)
+            val touchY = ev.y
+            val viewHeight = webView.height
+            val threshold = viewHeight * 0.35f // 35% من الارتفاع (الثلث العلوي تقريباً)
+            
+            // تفعيل التحديث فقط إذا كان الويب فيو في الأعلى وبدأت السحبة من الثلث العلوي
+            swipeRefreshLayout.isEnabled = (isAtTop && touchY <= threshold)
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
