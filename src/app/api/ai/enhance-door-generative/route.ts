@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     // جلب مفتاح Replicate من الداتا بيس
     const configs = await getAllActiveGeminiKeys();
     const replicateKeyInfo = configs.find(
-      (k) => k.provider === "replicate" && k.isActive
+      (k) => k.provider === "replicate"
     );
 
     if (!replicateKeyInfo || !replicateKeyInfo.apiKey) {
