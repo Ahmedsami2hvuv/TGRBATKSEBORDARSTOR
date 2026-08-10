@@ -4,8 +4,8 @@ import { getAllActiveGeminiKeys } from "@/lib/ai-image-enhancer";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // السماح للمسار بالعمل لمدة أطول بسبب تأخر توليد الصور
 
-// نعود للنموذج الرسمي SDXL img2img لأنه الأكثر استقراراً ومجاني
-const REPLICATE_SDXL_VERSION = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
+// نستخدم نموذج SDXL ControlNet Canny كما نصح Gemini للحفاظ على هندسة الأجسام بدقة متناهية
+const REPLICATE_SDXL_VERSION = "db2ffdbdc7f6cb4d6dab512434679ee3366ae7ab84f89750f8947d5594b79a47";
 
 export async function POST(req: Request) {
   try {
@@ -30,16 +30,15 @@ export async function POST(req: Request) {
 
     const replicateToken = replicateKeyInfo.apiKey;
 
-    // 1. بدء عملية الرسم التوليدي (Prediction)
-    // البرومبت العام المأخوذ من النصيحة
-    const prompt = "Hyper-realistic daylight exterior architecture photography, the same exact scene as the reference image, transformed into bright, clear, natural noon daylight. The dark sky is replaced by a clear, pale blue daytime sky with soft, scattered clouds. The walls and facade textures are illuminated by even, diffuse sunlight, rendering accurate colors and textures. The entire scene has sharp details, deep depth of field, and realistic shadows consistent with high-noon sun. Shot on a Canon EOS R5, 35mm lens.";
+    // البرومبت الهندسي من توجيهات Gemini
+    const prompt = "Hyper-realistic architectural photography. Transform scene illumination from night to bright, even, natural high-noon daylight. Maintain exact structural geometry of the building facade, concrete block textures, and the specific ornate copper/white gate design as defined by ControlNet input. Replace dark sky with clear pale blue daytime sky. Illuminate all elements (wheelie bins, truck portion, water tanks, gate) with realistic, hard-shadowless daylight. Preserve pixel-perfect position of all objects. Shot on a Canon EOS R5, 35mm lens.";
     
     // تجهيز الصورة Base64
     const formattedImage = imageBase64.startsWith('data:image') 
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    console.log("Starting Replicate Prediction...");
+    console.log("Starting Replicate Prediction (ControlNet Canny)...");
     
     const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
@@ -53,11 +52,10 @@ export async function POST(req: Request) {
           image: formattedImage,
           prompt: prompt,
           negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details",
-          prompt_strength: 0.60,
+          condition_scale: 0.85, // بناءً على توجيهات Gemini للحفاظ على الهيكل
           num_outputs: 1,
           scheduler: "K_EULER",
           num_inference_steps: 30,
-          guidance_scale: 7.5
         }
       }),
     });
