@@ -85,12 +85,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
   const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
 
-  // الموديلات الخارقة في OpenRouter (رخيصة جداً ومستقرة، بعضها مجاني)
+  // الموديلات الخارقة في OpenRouter (رخيصة جداً ومستقرة، وتدعم الرؤية و JSON)
   const openRouterModels = [
-    "google/gemini-2.0-flash-001",
-    "google/gemini-2.0-flash-lite-preview-02-05:free",
-    "google/gemini-flash-1.5",
-    "meta-llama/llama-3.2-11b-vision-instruct:free"
+    "openai/gpt-4o-mini",
+    "google/gemini-2.0-flash",
+    "google/gemini-1.5-flash"
   ];
 
   // موديلات Groq المجانية والسريعة جداً للرؤية (النسخ النهائية)
@@ -137,7 +136,8 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
                 }
               ],
               temperature: 0.1,
-              max_tokens: 1024
+              max_tokens: 1024,
+              ...(isProviderOpenRouter ? { response_format: { type: "json_object" } } : {})
             }),
           });
         } else {
