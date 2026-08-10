@@ -4,7 +4,8 @@ import { getAllActiveGeminiKeys } from "@/lib/ai-image-enhancer";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // السماح للمسار بالعمل لمدة أطول بسبب تأخر توليد الصور
 
-const REPLICATE_SDXL_VERSION = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
+// نستخدم نموذج SDXL ControlNet Depth للحفاظ على هندسة الأجسام وتغيير الإضاءة فقط
+const REPLICATE_SDXL_VERSION = "628d608791011885994269e8020577741872583569429188d8b671e353272d7f";
 
 export async function POST(req: Request) {
   try {
@@ -29,8 +30,9 @@ export async function POST(req: Request) {
 
     const replicateToken = replicateKeyInfo.apiKey;
 
-    // 1. بدء عملية الرسم التوليدي (Prediction)
-    const prompt = "exact same image but during bright sunny daylight. Keep all objects, shapes, and structural details exactly the same. Only change the lighting to daytime, highly detailed, realistic lighting, clear sky.";
+    // 1. بدء عملية الرسم التوليدي باستخدام ControlNet Depth
+    // البرومبت العام المأخوذ من النصيحة (بدون ذكر حاويات أو أشياء محددة ليكون مناسباً لجميع صور المندوبين)
+    const prompt = "Hyper-realistic daylight exterior architecture photography, the same exact scene as the reference image, transformed into bright, clear, natural noon daylight. The dark sky is replaced by a clear, pale blue daytime sky with soft, scattered clouds. The walls and facade textures are illuminated by even, diffuse sunlight, rendering accurate colors and textures. The entire scene has sharp details, deep depth of field, and realistic shadows consistent with high-noon sun. Shot on a Canon EOS R5, 35mm lens.";
     
     // تجهيز الصورة Base64 (قد تحتوي على data:image/jpeg;base64, تأكد من وجودها)
     const formattedImage = imageBase64.startsWith('data:image') 
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
     const startResponse = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${replicateToken}`,
+        Authorization: `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -50,11 +52,10 @@ export async function POST(req: Request) {
         input: {
           image: formattedImage,
           prompt: prompt,
-          negative_prompt: "do not change objects, do not change shapes, do not remove items, no hallucinations, night, dark, artificial lights",
-          prompt_strength: 0.40, // 0.40 لضمان الحفاظ على الهيكل بنسبة 60% وتغيير الإضاءة فقط
+          negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details",
           num_outputs: 1,
           scheduler: "K_EULER",
-          num_inference_steps: 25,
+          num_inference_steps: 30,
           guidance_scale: 7.5
         }
       })
