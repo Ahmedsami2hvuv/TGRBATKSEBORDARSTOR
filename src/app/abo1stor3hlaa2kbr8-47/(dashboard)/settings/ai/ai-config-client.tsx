@@ -536,7 +536,7 @@ function DoorTestWidget() {
       setOriginalImage(base64);
 
       try {
-        const res = await fetch("/api/ai/enhance-door", {
+        const res = await fetch("/api/ai/enhance-door-generative", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageBase64: base64 }),
@@ -632,12 +632,7 @@ function DoorTestWidget() {
                       <img
                         src={result.base64Image}
                         alt="صورة المشهد النهارية المعدلة بالذكاء الاصطناعي"
-                        className={`w-full h-full object-contain transition-all duration-500 ${
-                          result.enhanced 
-                            ? 'brightness-[2.0] contrast-[1.3] saturate-[1.2] drop-shadow-2xl hue-rotate-15' 
-                            : ''
-                        }`}
-                        style={result.enhanced ? { filter: 'brightness(2.2) contrast(1.4) saturate(1.3)' } : {}}
+                        className="w-full h-full object-contain transition-all duration-500"
                       />
                     </div>
                   </div>
