@@ -135,23 +135,23 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
         } else {
           // الاتصال الافتراضي عبر Google AI Studio المباشر
           const googleEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
-          response = await fetch(
-            `${googleEndpoint}?key=${keyInfo.apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      { text: masterPrompt },
-                      { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                    ],
-                  },
-                ],
-              }),
-            }
-          );
+          response = await fetch(googleEndpoint, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "x-goog-api-key": keyInfo.apiKey
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: masterPrompt },
+                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                  ],
+                },
+              ],
+            }),
+          });
         }
 
         if (response.ok) {
