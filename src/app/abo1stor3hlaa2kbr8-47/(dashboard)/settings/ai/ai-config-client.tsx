@@ -569,10 +569,14 @@ function DoorTestWidget() {
             body: JSON.stringify({ imageBase64: base64 }),
           });
           const data = await res.json();
-          setResult(data);
+          if (res.ok) {
+            setResult(data);
+          } else {
+            setResult({ error: `حدث خطأ: ${data.error || "غير معروف"}` });
+          }
         } catch (err: any) {
           console.error("Fetch Error:", err);
-          setResult({ error: "حدث خطأ أثناء اختبار الصورة" });
+          setResult({ error: `خطأ تقني: ${err.message || "فشل الاتصال بالخادم، ربما استغرق وقتاً طويلاً."}` });
         } finally {
           setTesting(false);
         }
