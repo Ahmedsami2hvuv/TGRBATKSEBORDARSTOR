@@ -85,12 +85,12 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
   const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
 
-  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب
+  // الموديلات الخارقة في OpenRouter (رخيصة جداً ومستقرة، بعضها مجاني)
   const openRouterModels = [
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.2-11b-vision-instruct:free", 
-    "qwen/qwen-2-vl-7b-instruct:free",
-    "google/gemini-1.5-flash"
+    "google/gemini-2.0-flash-001",
+    "google/gemini-2.0-flash-lite-preview-02-05:free",
+    "google/gemini-flash-1.5",
+    "meta-llama/llama-3.2-11b-vision-instruct:free"
   ];
 
   // موديلات Groq المجانية والسريعة جداً للرؤية (النسخ النهائية)
