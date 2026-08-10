@@ -1004,12 +1004,12 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       invoiceText: buildPreparerPurchaseSummaryText(entry.products),
     }));
 
-    const deliveryAlf = (order.deliveryPrice ? Number(order.deliveryPrice) : 0) / ALF_PER_DINAR;
+    const calcDeliveryAlf = (order.deliveryPrice ? Number(order.deliveryPrice) : 0) / ALF_PER_DINAR;
     const summary = buildCombinedOrderSummaryText({
       preparerInvoices,
       placesCount: (orderPrepJson?.placesCount as number) || 1,
       extraAlf: (orderPrepJson?.extraAlf as number) || 0,
-      deliveryAlf,
+      deliveryAlf: calcDeliveryAlf,
     });
     const oldProducts = (orderPrepJson?.products as any[]) || [];
     const oldDynamicOrderType = resolveDynamicOrderType(oldProducts, "تجهيز تسوق");

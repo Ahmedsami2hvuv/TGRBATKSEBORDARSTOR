@@ -730,10 +730,13 @@ ${productsText}`;
 
     const resolvedName = isExplicitAdmin ? "تجهيز الإدارة 🏛️" : (finalPrepName || fallbackName || "تجهيز الإدارة 🏛️");
 
+    const isBuyFilled = buyText.trim() !== "" && !isNaN(bNum) && bNum >= 0;
+    const isSellFilled = sellText.trim() !== "" && !isNaN(sNum) && sNum >= 0;
+
     next[editingIndex] = {
       ...currentProd,
-      buyAlf: bNum > 0 ? bNum.toString() : (currentProd.buyAlf || "0"),
-      sellAlf: sNum > 0 ? sNum.toString() : (currentProd.sellAlf || "0"),
+      buyAlf: isBuyFilled ? bNum.toString() : (currentProd.buyAlf || "0"),
+      sellAlf: isSellFilled ? sNum.toString() : (currentProd.sellAlf || "0"),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
       assignedPreparerName: resolvedName,
@@ -745,7 +748,7 @@ ${productsText}`;
 
     savePricingProgress(orderId, !!isDraft, next, placesCount, noProfit);
 
-    const nextUnpriced = (bNum > 0 && sNum > 0) ? getNextUnpricedIndex(editingIndex, next) : null;
+    const nextUnpriced = (isBuyFilled && isSellFilled) ? getNextUnpricedIndex(editingIndex, next) : null;
     if (nextUnpriced !== null) {
       setEditingIndex(nextUnpriced);
     } else {
@@ -755,8 +758,9 @@ ${productsText}`;
   };
 
   const suggestedPrices = useMemo(() => {
-    const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
-    if (buyNum <= 0) return [];
+    const rawBuy = normalizeNumerals(buyText).trim();
+    const buyNum = parseFloat(rawBuy);
+    if (isNaN(buyNum) || buyNum < 0 || rawBuy === "") return [];
     let limit = 1.0;
     if (buyNum < 2) {
       limit = 1.0;
@@ -776,8 +780,9 @@ ${productsText}`;
 
   const applyPriceDirectly = (sellVal: number) => {
     if (editingIndex === null) return;
-    const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
-    if (bNum <= 0 || sellVal <= 0) return;
+    const rawBuy = normalizeNumerals(buyText).trim();
+    const bNum = parseFloat(rawBuy);
+    if (isNaN(bNum) || bNum < 0 || sellVal < 0 || rawBuy === "") return;
     const next = [...products];
     const currentProd = next[editingIndex];
     const isExplicitAdmin = isAdminFulfilled;
@@ -1668,8 +1673,9 @@ ${productsText}`;
 
               {/* اقتراحات الكسور الذكية للمدير (بناءً على الشراء) */}
               {(() => {
-                const typedValue = parseFloat(buyText);
-                if (isNaN(typedValue) || typedValue <= 0) return null;
+                const rawVal = normalizeNumerals(buyText).trim();
+                const typedValue = parseFloat(rawVal);
+                if (isNaN(typedValue) || typedValue < 0 || rawVal === "") return null;
 
                 const base = Math.floor(typedValue);
                 const fractions = [0, 0.25, 0.5, 0.75];
@@ -1677,7 +1683,7 @@ ${productsText}`;
                 return (
                   <div className="grid grid-cols-4 gap-1.5 mb-4 animate-in slide-in-from-top-2 duration-300">
                     {fractions.map(frac => {
-                      const total = base + frac;
+                      const total = parseFloat((base + frac).toFixed(2));
                       return (
                         <button
                           key={frac}
@@ -1705,8 +1711,9 @@ ${productsText}`;
                     onChange={(e) => {
                       const val = e.target.value;
                       setBuyText(val);
-                      const buyNum = parseFloat(normalizeNumerals(val)) || 0;
-                      if (buyNum > 0) {
+                      const rawVal = normalizeNumerals(val).trim();
+                      const buyNum = parseFloat(rawVal);
+                      if (!isNaN(buyNum) && rawVal !== "" && buyNum >= 0) {
                         setSellText(calculateAutoSellPrice(products[editingIndex].line, buyNum, noProfit).toString());
                       }
                     }}
@@ -1801,9 +1808,11 @@ ${productsText}`;
               {/* خيارات البيع المقترحة بالأسفل */}
               {(() => {
                 const details = findStoreProductDetails(products[editingIndex]?.line, storeProducts);
-                const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
+                const rawBuy = normalizeNumerals(buyText).trim();
+                const buyNum = parseFloat(rawBuy);
+                const isBuyValid = !isNaN(buyNum) && rawBuy !== "" && buyNum >= 0;
                 
-                if (buyNum <= 0 && !details) return null;
+                if (!isBuyValid && !details) return null;
                 
                 return (
                   <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-3">
@@ -1824,7 +1833,7 @@ ${productsText}`;
                       )}
 
                       {/* زر بدون ربح */}
-                      {buyNum > 0 && (
+                      {isBuyValid && (
                         <button
                           type="button"
                           onClick={() => applyPriceDirectly(buyNum)}
@@ -1835,7 +1844,7 @@ ${productsText}`;
                       )}
 
                       {/* بقية الأرقام المقترحة */}
-                      {buyNum > 0 && suggestedPrices.map((price) => (
+                      {isBuyValid && suggestedPrices.map((price) => (
                         <button
                           key={price}
                           type="button"

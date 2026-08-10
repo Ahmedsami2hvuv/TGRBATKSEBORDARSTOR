@@ -1140,7 +1140,7 @@ export function PreparerShoppingDraftEditClient({
                     <div className="mb-6">
                       {(() => {
                         const typedValue = parseFloat(pricingLinesText);
-                        if (isNaN(typedValue) || typedValue <= 0) return (
+                        if (isNaN(typedValue) || typedValue < 0 || pricingLinesText.trim() === "") return (
                             <div className="bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200 text-center">
                                 <p className="text-[10px] font-bold text-slate-400">اكتب الرقم الأول ليظهر لك شريط الكسور هنا...</p>
                             </div>
