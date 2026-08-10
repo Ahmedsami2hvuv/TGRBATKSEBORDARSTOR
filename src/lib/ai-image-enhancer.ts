@@ -85,104 +85,116 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   const googleEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
 
+  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب
+  const openRouterModels = [
+    "google/gemini-2.0-pro-exp-02-05:free",
+    "google/gemini-2.0-flash-thinking-exp:free",
+    "meta-llama/llama-3.2-90b-vision-instruct:free"
+  ];
+
   for (const keyInfo of keys) {
-    try {
-      let response: Response;
-      let isProviderOpenRouter = keyInfo.provider === "openrouter";
+    let isProviderOpenRouter = keyInfo.provider === "openrouter";
+    let modelsToTry = isProviderOpenRouter ? openRouterModels : ["gemini-1.5-flash"];
 
-      if (isProviderOpenRouter) {
-        // الاتصال عبر OpenRouter (يدعم Gemini وغيرها بصيغة موحدة)
-        response = await fetch(openRouterEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${keyInfo.apiKey}`,
-            "HTTP-Referer": "https://aboakbr.com", // موقعك
-            "X-Title": "Abo Akbr System",
-          },
-          body: JSON.stringify({
-            // استخدام الموديل المجاني السريع والرائع للرؤية من جوجل عبر اوبن راوتر
-            model: "google/gemini-2.0-flash-lite-preview-02-05:free",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: masterPrompt },
-                  { type: "image_url", image_url: { url: `data:${mimeType};base64,${cleanBase64}` } }
-                ]
-              }
-            ],
-            response_format: { type: "json_object" }
-          }),
-        });
-      } else {
-        // الاتصال الافتراضي عبر Google AI Studio المباشر
-        response = await fetch(
-          `${googleEndpoint}?key=${keyInfo.apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: masterPrompt },
-                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                  ],
-                },
-              ],
-            }),
-          }
-        );
-      }
+    for (const currentModel of modelsToTry) {
+      try {
+        let response: Response;
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        let rawText = "";
         if (isProviderOpenRouter) {
-          rawText = data?.choices?.[0]?.message?.content || "";
+          // الاتصال عبر OpenRouter (يدعم Gemini وغيرها بصيغة موحدة)
+          response = await fetch(openRouterEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${keyInfo.apiKey}`,
+              "HTTP-Referer": "https://aboakbr.com", // موقعك
+              "X-Title": "Abo Akbr System",
+            },
+            body: JSON.stringify({
+              model: currentModel,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: masterPrompt },
+                    { type: "image_url", image_url: { url: `data:${mimeType};base64,${cleanBase64}` } }
+                  ]
+                }
+              ],
+              response_format: { type: "json_object" }
+            }),
+          });
         } else {
-          rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          // الاتصال الافتراضي عبر Google AI Studio المباشر
+          response = await fetch(
+            `${googleEndpoint}?key=${keyInfo.apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: masterPrompt },
+                      { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                    ],
+                  },
+                ],
+              }),
+            }
+          );
         }
 
-        let parsed: any = null;
-        try {
-          const match = rawText.match(/\{[\s\S]*\}/);
-          if (match) parsed = JSON.parse(match[0]);
-        } catch (e) {}
+        if (response.ok) {
+          const data = await response.json();
+          
+          let rawText = "";
+          if (isProviderOpenRouter) {
+            rawText = data?.choices?.[0]?.message?.content || "";
+          } else {
+            rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
 
-        const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
-        const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
+          let parsed: any = null;
+          try {
+            const match = rawText.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+          } catch (e) {}
 
-        prisma.aIConfig.update({
-          where: { id: keyInfo.id },
-          data: { usedToday: { increment: 1 } },
-        }).catch(() => {});
+          const isNight = parsed?.isNight ?? (rawText.includes("مظلم") || rawText.includes("ليلي") || rawText.includes("ليل"));
+          const isBlurred = parsed?.isBlurred ?? (rawText.includes("غواش") || rawText.includes("مغوش"));
 
-        return {
-          enhanced: false,
-          isNightToDay: isNight,
-          base64Image: base64Data,
-          reason: parsed?.reason || rawText || "تم تحليل الصورة بالذكاء الاصطناعي بنجاح ☀️",
-          keyUsedLabel: `${keyInfo.label} (${isProviderOpenRouter ? 'OpenRouter Gemini' : 'Google API'})`,
-        };
-      } else {
-        const errJson = await response.json().catch(() => ({}));
-        const errMsg = errJson?.error?.message || response.statusText || "";
-        
-        if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || errMsg.toLowerCase().includes("credit") || response.status === 429 || response.status === 402) {
-          isQuotaError = true;
-          break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
-        } else if (errMsg.toLowerCase().includes("not found")) {
-          isNotFoundError = true;
-          break; // خروج لإنهاء المحاولة على هذا المفتاح المقيد
+          prisma.aIConfig.update({
+            where: { id: keyInfo.id },
+            data: { usedToday: { increment: 1 } },
+          }).catch(() => {});
+
+          return {
+            enhanced: false,
+            isNightToDay: isNight,
+            base64Image: base64Data,
+            reason: parsed?.reason || rawText || "تم تحليل الصورة بالذكاء الاصطناعي بنجاح ☀️",
+            keyUsedLabel: `${keyInfo.label} (${isProviderOpenRouter ? currentModel.split(':')[0] : 'Google API'})`,
+          };
         } else {
-          lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+          const errJson = await response.json().catch(() => ({}));
+          const errMsg = errJson?.error?.message || response.statusText || "";
+          
+          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || errMsg.toLowerCase().includes("credit") || response.status === 429 || response.status === 402) {
+            isQuotaError = true;
+            break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
+          } else if (errMsg.toLowerCase().includes("not found") || errMsg.toLowerCase().includes("not a valid model id")) {
+            isNotFoundError = true;
+            // نستمر للموديل اللي بعده في المصفوفة إذا كنا في OpenRouter
+            lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+          } else {
+            lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+            break;
+          }
         }
+      } catch (err: any) {
+        lastErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
       }
-    } catch (err: any) {
-      lastErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
     }
   }
 
