@@ -184,17 +184,16 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || errMsg.toLowerCase().includes("credit") || response.status === 429 || response.status === 402) {
             isQuotaError = true;
             lastErrorMessage = errMsg || "Insufficient Quota / Credits";
-            break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
-          } else if (errMsg.toLowerCase().includes("not found") || errMsg.toLowerCase().includes("not a valid model id")) {
-            // لا نغير isNotFoundError لأننا نريد تجربة الموديل التالي بسلام!
-            lastErrorMessage = errMsg || `الموديل ${currentModel} غير متوفر`;
+            break; // خروج لإنهاء المحاولة لأن هذا المفتاح استنفد الرصيد بالكامل
           } else {
+            // أي خطأ آخر (مثل الموديل غير موجود، السيرفر مشغول، إلخ) نسجله ونستمر فوراً للموديل التالي
             lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
-            break;
+            continue; // استمر للموديل اللي بعده
           }
         }
       } catch (err: any) {
         lastErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
+        continue; // استمر للموديل اللي بعده
       }
     }
     
