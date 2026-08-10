@@ -9,10 +9,11 @@ const REPLICATE_SDXL_VERSION = "db2ffdbdc7f6cb4d6dab512434679ee3366ae7ab84f89750
 
 export async function POST(req: Request) {
   try {
-    const { imageBase64 } = await req.json();
+    const body = await req.json();
+    const { imageBase64, predictionUrl } = body;
 
-    if (!imageBase64) {
-      return NextResponse.json({ error: "لا توجد صورة مرسلة." }, { status: 400 });
+    if (!imageBase64 && !predictionUrl) {
+      return NextResponse.json({ error: "لا توجد بيانات مرسلة." }, { status: 400 });
     }
 
     // جلب مفتاح Replicate من الداتا بيس
@@ -30,6 +31,47 @@ export async function POST(req: Request) {
 
     const replicateToken = replicateKeyInfo.apiKey;
 
+    // حالة 1: إذا كان الطلب هو استعلام عن حالة صورة قيد المعالجة (Polling)
+    if (predictionUrl) {
+      const pollResponse = await fetch(predictionUrl, {
+        headers: {
+          "Authorization": `Token ${replicateToken}`,
+        }
+      });
+      
+      if (!pollResponse.ok) {
+        const err = await pollResponse.json();
+        return NextResponse.json({ error: `خطأ في الاستعلام: ${err.detail || JSON.stringify(err)}` }, { status: 500 });
+      }
+      
+      const pollData = await pollResponse.json();
+      
+      if (pollData.status === "succeeded") {
+        const finalOutputUrl = pollData.output[0];
+        // تحويل الصورة الناتجة إلى Base64
+        const imageResponse = await fetch(finalOutputUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const generatedBase64 = Buffer.from(imageBuffer).toString('base64');
+        const finalBase64Url = `data:image/jpeg;base64,${generatedBase64}`;
+        
+        return NextResponse.json({
+          status: pollData.status,
+          enhanced: true,
+          reason: "تم رسم الصورة بالذكاء الاصطناعي التوليدي لتصبح نهارية ومشرقة.",
+          base64Image: finalBase64Url,
+          keyUsedLabel: replicateKeyInfo.label || "Replicate ControlNet",
+        });
+      } else if (pollData.status === "failed") {
+         return NextResponse.json({ error: `فشل Replicate في توليد الصورة: ${pollData.error}` }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        status: pollData.status,
+        predictionUrl: predictionUrl
+      });
+    }
+
+    // حالة 2: بدء طلب جديد لمعالجة صورة
     // البرومبت الهندسي من توجيهات Gemini
     const prompt = "Hyper-realistic architectural photography. Transform scene illumination from night to bright, even, natural high-noon daylight. Maintain exact structural geometry of the building facade, concrete block textures, and the specific ornate copper/white gate design as defined by ControlNet input. Replace dark sky with clear pale blue daytime sky. Illuminate all elements (wheelie bins, truck portion, water tanks, gate) with realistic, hard-shadowless daylight. Preserve pixel-perfect position of all objects. Shot on a Canon EOS R5, 35mm lens.";
     
@@ -52,7 +94,7 @@ export async function POST(req: Request) {
           image: formattedImage,
           prompt: prompt,
           negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details",
-          condition_scale: 0.85, // بناءً على توجيهات Gemini للحفاظ على الهيكل
+          condition_scale: 0.85, 
           num_outputs: 1,
           scheduler: "K_EULER",
           num_inference_steps: 30,
@@ -66,52 +108,11 @@ export async function POST(req: Request) {
     }
 
     const prediction = await replicateResponse.json();
-    let predictionUrl = prediction.urls.get;
-    let status = prediction.status;
-    let finalOutputUrl = null;
-
-    // 2. الانتظار (Polling) حتى تنتهي الصورة من الرسم
-    // نماذج ControlNet تحتاج وقتاً أطول للبدء (Cold Boot) وللمعالجة، لذا نرفع مدة الانتظار لـ 90 ثانية.
-    const maxAttempts = 45; 
-    let attempts = 0;
-
-    while (status !== "succeeded" && status !== "failed" && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // انتظر ثانيتين
-      
-      const pollResponse = await fetch(predictionUrl, {
-        headers: {
-          "Authorization": `Token ${replicateToken}`,
-        }
-      });
-      
-      const pollData = await pollResponse.json();
-      status = pollData.status;
-      
-      if (status === "succeeded") {
-        finalOutputUrl = pollData.output[0]; // الرابط الخاص بالصورة المولدة
-      } else if (status === "failed") {
-        throw new Error(`فشل Replicate في توليد الصورة: ${pollData.error}`);
-      }
-      
-      attempts++;
-    }
-
-    if (!finalOutputUrl) {
-      throw new Error("تأخر Replicate في الرد. انتهى وقت الانتظار.");
-    }
-
-    // 3. جلب الصورة من الرابط وتحويلها إلى Base64 لكي يستطيع التطبيق عرضها وحفظها
-    console.log("Image generated, fetching output URL...", finalOutputUrl);
-    const imageResponse = await fetch(finalOutputUrl);
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const generatedBase64 = Buffer.from(imageBuffer).toString('base64');
-    const finalBase64Url = `data:image/jpeg;base64,${generatedBase64}`;
-
+    
+    // إعادة الرابط والحالة للواجهة لتقوم هي بعملية الاستعلام
     return NextResponse.json({
-      enhanced: true,
-      reason: "تم رسم الصورة بالذكاء الاصطناعي التوليدي لتصبح نهارية ومشرقة.",
-      base64Image: finalBase64Url,
-      keyUsedLabel: replicateKeyInfo.label || "Replicate Img2Img",
+      status: prediction.status,
+      predictionUrl: prediction.urls.get
     });
 
   } catch (error: any) {

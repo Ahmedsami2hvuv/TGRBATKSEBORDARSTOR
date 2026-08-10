@@ -568,11 +568,53 @@ function DoorTestWidget() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ imageBase64: base64 }),
           });
+          
+          if (!res.ok) {
+            const errText = await res.text();
+            setResult({ error: `خطأ بدء المعالجة (${res.status}): ${errText.substring(0, 50)}` });
+            return;
+          }
+          
           const data = await res.json();
-          if (res.ok) {
-            setResult(data);
+
+          if (data.predictionUrl) {
+            let currentStatus = data.status;
+            let attempts = 0;
+            const maxAttempts = 45;
+            let finalData = data;
+
+            while (
+              (currentStatus === "processing" || currentStatus === "starting") &&
+              attempts < maxAttempts
+            ) {
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              const pollRes = await fetch("/api/ai/enhance-door-generative", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ predictionUrl: data.predictionUrl }),
+              });
+              
+              if (!pollRes.ok) {
+                const errText = await pollRes.text();
+                setResult({ error: `خطأ أثناء الاستعلام (${pollRes.status}): ${errText.substring(0, 50)}` });
+                return;
+              }
+              
+              const pollData = await pollRes.json();
+              currentStatus = pollData.status;
+              finalData = pollData;
+              attempts++;
+            }
+
+            if (currentStatus === "succeeded") {
+              setResult(finalData); 
+            } else if (currentStatus === "failed") {
+              setResult({ error: "فشل الموديل في توليد الصورة." });
+            } else {
+              setResult({ error: "انتهى وقت الانتظار. الموديل يتأخر في الاستجابة." });
+            }
           } else {
-            setResult({ error: `حدث خطأ: ${data.error || "غير معروف"}` });
+             setResult({ error: "فشل الحصول على رابط المعالجة من السيرفر." });
           }
         } catch (err: any) {
           console.error("Fetch Error:", err);
