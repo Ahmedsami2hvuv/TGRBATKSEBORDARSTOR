@@ -369,7 +369,7 @@ export default function AIConfigClient({
                 <button
                   onClick={() => handleDelete(cfg.id)}
                   disabled={loading === cfg.id}
-                  className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 p-2 rounded-xl hover:bg-rose-100 transition"
+                  className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:rose-400 p-2 rounded-xl hover:bg-rose-100 transition"
                 >
                   🗑️
                 </button>
@@ -383,6 +383,7 @@ export default function AIConfigClient({
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-500 mr-2">المزود</label>
                     <select name="provider" defaultValue={cfg.provider} className="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500">
+                      <option value="replicate">Replicate (رسم احترافي: تحويل الليل لنهار 🎨)</option>
                       <option value="nanobanana">Nano Banana AI (مخصص لتعديل وتحسين الصور البصرية 🍌)</option>
                       <option value="gemini_image_edit">Google Gemini</option>
                       <option value="openrouter">OpenRouter (شامل الموديلات المجانية 🚀)</option>
