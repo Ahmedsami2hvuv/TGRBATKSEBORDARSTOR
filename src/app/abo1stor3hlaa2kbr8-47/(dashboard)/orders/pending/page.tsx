@@ -298,6 +298,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         assignedPreparerIds,
         requestLocationWaUrl,
         notifyCustomerWaUrl,
+        imageUrl: resolvePublicAssetSrc(o.imageUrl) || null,
       };
     };
 
@@ -360,6 +361,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         },
         vehiclePreference: d.vehiclePreference,
         assignedPreparerIds,
+        imageUrl: null,
       };
     };
 

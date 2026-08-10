@@ -79,6 +79,7 @@ export type PendingOrderRow = {
   preparerShoppingJson?: any;
   vehiclePreference?: string | null;
   assignedPreparerIds: string[];
+  imageUrl?: string | null;
 };
 
 function CheckIcon({ icons }: { icons: GlobalIconsConfig | null }) {
@@ -3844,6 +3845,26 @@ export default function PendingOrdersClient({
                 <span>👤 المجهز الحالي:</span>
                 <span className="text-slate-800 dark:text-slate-200">{order.submittedByName}</span>
               </p>
+            )}
+
+            {/* Order Image / Store Product Image */}
+            {order.imageUrl && (
+              <div 
+                className="flex items-center gap-3 cursor-zoom-in group p-2 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-white/5 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:border-sky-200 transition-all w-max"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewImageUrl(order.imageUrl!);
+                  setPreviewZoom(1);
+                }}
+              >
+                <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 group-hover:border-sky-400 group-hover:scale-105 transition-all shadow-sm">
+                  <img src={order.imageUrl} alt="صورة المنتج" className="w-full h-full object-cover" />
+                </div>
+                <div className="text-right">
+                  <span className="block text-[11px] font-black text-slate-700 dark:text-slate-300">صورة الطلب / المنتج</span>
+                  <span className="block text-[9px] text-slate-400 group-hover:text-sky-500 transition-colors">انقر للتكبير 🔍</span>
+                </div>
+              </div>
             )}
 
             {/* Bottom Actions Row */}
