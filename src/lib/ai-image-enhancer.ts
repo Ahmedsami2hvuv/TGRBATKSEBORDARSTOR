@@ -80,11 +80,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
 
   let lastErrorMessage = "";
   let isQuotaError = false;
-  let isNotFoundError = false;
   
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
+  const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
 
-  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب (تم تحديثها للأسماء الرسمية الفعالة)
+  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب
   const openRouterModels = [
     "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.2-11b-vision-instruct:free", 
@@ -92,22 +92,31 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     "google/gemini-1.5-flash"
   ];
 
-  // موديلات جوجل الرسمية لضمان الاستقرار (النسخة المستقرة v1)
+  // موديلات Groq المجانية والسريعة جداً للرؤية
+  const groqModels = [
+    "llama-3.2-90b-vision-preview",
+    "llama-3.2-11b-vision-preview"
+  ];
+
+  // موديلات جوجل الرسمية لضمان الاستقرار
   const googleModels = [
     "gemini-1.5-flash"
   ];
 
   for (const keyInfo of keys) {
     let isProviderOpenRouter = keyInfo.provider === "openrouter";
-    let modelsToTry = isProviderOpenRouter ? openRouterModels : googleModels;
+    let isProviderGroq = keyInfo.provider === "groq";
+    
+    let modelsToTry = isProviderOpenRouter ? openRouterModels : (isProviderGroq ? groqModels : googleModels);
 
     for (const currentModel of modelsToTry) {
       try {
         let response: Response;
 
-        if (isProviderOpenRouter) {
-          // الاتصال عبر OpenRouter (يدعم Gemini وغيرها بصيغة موحدة)
-          response = await fetch(openRouterEndpoint, {
+        if (isProviderOpenRouter || isProviderGroq) {
+          // الاتصال عبر OpenRouter أو Groq (نفس المعمارية متوافقة)
+          const endpoint = isProviderGroq ? groqEndpoint : openRouterEndpoint;
+          response = await fetch(endpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -158,7 +167,7 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           const data = await response.json();
           
           let rawText = "";
-          if (isProviderOpenRouter) {
+          if (isProviderOpenRouter || isProviderGroq) {
             rawText = data?.choices?.[0]?.message?.content || "";
           } else {
             rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
