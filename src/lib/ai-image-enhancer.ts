@@ -202,9 +202,9 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   let finalReason = `❌ استجابة السيرفر: ${lastErrorMessage}`;
   
   if (isQuotaError) {
-    finalReason = "❌ تنبيه: حسابك استنفد الرصيد أو الحصة المجانية بالكامل! (Quota Exceeded). الحل: إنشاء مفتاح جديد أو استخدام مفتاح OpenRouter.";
+    finalReason = "❌ تنبيه: حسابك استنفد الرصيد أو الحصة المجانية بالكامل! (Quota Exceeded). الحل: يرجى شحن الرصيد أو استخدام مفتاح جديد.";
   } else if (isNotFoundError) {
-    finalReason = "❌ تنبيه: مفتاح جوجل هذا مقيد ولا يملك صلاحية للوصول للموديلات (Not Found). الحل: استخدم مفتاح OpenRouter الجديد.";
+    finalReason = "❌ تنبيه: هذا المفتاح مقيد ولا يملك صلاحية للوصول للموديلات أو الموديل غير موجود (Not Found). الحل: تأكد من تفعيل الصلاحيات أو استخدام موديل آخر.";
   }
 
   return {

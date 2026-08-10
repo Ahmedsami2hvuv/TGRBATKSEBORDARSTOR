@@ -313,7 +313,7 @@ export default function AIConfigClient({
             </div>
             <div className="space-y-2 md:col-span-3">
               <label className="text-xs font-black text-slate-500 mr-2">API Key (المفتاح السري)</label>
-              <input name="apiKey" type="password" required placeholder="أدخل المفتاح هنا..." className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" />
+              <input name="apiKey" type="text" required placeholder="أدخل المفتاح هنا..." className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <button
@@ -396,8 +396,8 @@ export default function AIConfigClient({
                     <input name="label" defaultValue={cfg.label} placeholder="مثلاً: حساب جمناي الأساسي" className="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" />
                   </div>
                   <div className="space-y-2 md:col-span-3">
-                    <label className="text-xs font-black text-slate-500 mr-2">API Key</label>
-                    <input name="apiKey" type="password" required defaultValue={cfg.apiKey} placeholder="أدخل المفتاح هنا..." className="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" />
+                    <label className="text-xs font-black text-slate-500 mr-2">API Key (المفتاح السري)</label>
+                    <input name="apiKey" type="text" required defaultValue={cfg.apiKey} placeholder="أدخل المفتاح هنا..." className="w-full bg-white dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" />
                   </div>
                 </div>
                 <button
