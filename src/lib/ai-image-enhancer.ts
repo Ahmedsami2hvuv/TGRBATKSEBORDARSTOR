@@ -85,11 +85,12 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
   const googleEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
 
-  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب
+  // الموديلات المجانية الخارقة للرؤية في OpenRouter بالترتيب (تم تحديثها للأسماء الرسمية الفعالة)
   const openRouterModels = [
-    "google/gemini-2.0-pro-exp-02-05:free",
-    "google/gemini-2.0-flash-thinking-exp:free",
-    "meta-llama/llama-3.2-90b-vision-instruct:free"
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free", 
+    "qwen/qwen-2-vl-7b-instruct:free",
+    "google/gemini-1.5-flash"
   ];
 
   for (const keyInfo of keys) {
@@ -182,11 +183,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
           
           if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded") || errMsg.toLowerCase().includes("credit") || response.status === 429 || response.status === 402) {
             isQuotaError = true;
+            lastErrorMessage = errMsg || "Insufficient Quota / Credits";
             break; // خروج لإنهاء المحاولة على هذا المفتاح المستنفد
           } else if (errMsg.toLowerCase().includes("not found") || errMsg.toLowerCase().includes("not a valid model id")) {
-            isNotFoundError = true;
-            // نستمر للموديل اللي بعده في المصفوفة إذا كنا في OpenRouter
-            lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
+            // لا نغير isNotFoundError لأننا نريد تجربة الموديل التالي بسلام!
+            lastErrorMessage = errMsg || `الموديل ${currentModel} غير متوفر`;
           } else {
             lastErrorMessage = errMsg || `كود الخطأ: ${response.status}`;
             break;
@@ -195,6 +196,11 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
       } catch (err: any) {
         lastErrorMessage = err.message || "خطأ في الاتصال بالشبكة";
       }
+    }
+    
+    // إذا كان الخطأ متعلقاً بانتهاء الرصيد نكسر حلقة المفاتيح فوراً ونبلغ المستخدم
+    if (isQuotaError) {
+        break;
     }
   }
 
