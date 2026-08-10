@@ -71,7 +71,8 @@ export async function POST(req: Request) {
     let finalOutputUrl = null;
 
     // 2. الانتظار (Polling) حتى تنتهي الصورة من الرسم
-    const maxAttempts = 20; // الحد الأقصى للمحاولات (تقريباً 40 ثانية)
+    // نماذج ControlNet تحتاج وقتاً أطول للبدء (Cold Boot) وللمعالجة، لذا نرفع مدة الانتظار لـ 90 ثانية.
+    const maxAttempts = 45; 
     let attempts = 0;
 
     while (status !== "succeeded" && status !== "failed" && attempts < maxAttempts) {
