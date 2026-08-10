@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Enhance door route error:", error);
-    return NextResponse.json({ error: "حدث خطأ أثناء فحص وتحسين الصورة" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || "حدث خطأ برمجي غير متوقع",
+      reason: `❌ خطأ داخلي في السيرفر: ${error.message}`
+    }, { status: 200 }); // إرجاع 200 لكي تقرأه الواجهة كرسالة
   }
 }
