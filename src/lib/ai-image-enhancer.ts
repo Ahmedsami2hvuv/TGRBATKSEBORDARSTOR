@@ -92,11 +92,8 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     "google/gemini-1.5-flash"
   ];
 
-  // موديلات جوجل الرسمية لضمان الاستقرار والعمل على كافة أنواع المفاتيح القديمة والجديدة
+  // موديلات جوجل الرسمية لضمان الاستقرار (النسخة المستقرة v1)
   const googleModels = [
-    "gemini-1.5-flash-latest",
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-pro",
     "gemini-1.5-flash"
   ];
 
@@ -133,25 +130,25 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
             }),
           });
         } else {
-          // الاتصال الافتراضي عبر Google AI Studio المباشر
-          const googleEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
-          response = await fetch(googleEndpoint, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "x-goog-api-key": keyInfo.apiKey
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: masterPrompt },
-                    { inline_data: { mime_type: mimeType, data: cleanBase64 } },
-                  ],
-                },
-              ],
-            }),
-          });
+          // الاتصال الافتراضي عبر Google AI Studio المباشر (النسخة المستقرة v1)
+          const googleEndpoint = `https://generativelanguage.googleapis.com/v1/models/${currentModel}:generateContent`;
+          response = await fetch(
+            `${googleEndpoint}?key=${keyInfo.apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: masterPrompt },
+                      { inline_data: { mime_type: mimeType, data: cleanBase64 } },
+                    ],
+                  },
+                ],
+              }),
+            }
+          );
         }
 
         if (response.ok) {
