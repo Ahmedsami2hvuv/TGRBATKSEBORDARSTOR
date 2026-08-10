@@ -93,10 +93,10 @@ export async function enhanceDoorImageWithAI(base64Data: string, isTestMode: boo
     "google/gemini-1.5-flash"
   ];
 
-  // موديلات Groq المجانية والسريعة جداً للرؤية
+  // موديلات Groq المجانية والسريعة جداً للرؤية (النسخ النهائية)
   const groqModels = [
-    "llama-3.2-90b-vision-preview",
-    "llama-3.2-11b-vision-preview"
+    "llama-3.2-90b-vision-instruct",
+    "llama-3.2-11b-vision-instruct"
   ];
 
   // موديلات جوجل الرسمية لضمان الاستقرار
