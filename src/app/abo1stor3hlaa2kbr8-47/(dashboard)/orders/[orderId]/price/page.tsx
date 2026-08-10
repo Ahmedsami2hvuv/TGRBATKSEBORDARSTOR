@@ -83,6 +83,8 @@ export default async function OrderPricingPage({ params }: Props) {
         id: true,
         name: true,
         salePrice: true,
+        photoUrls: true,
+        branch: { select: { name: true } },
         hasVariants: true,
         variants: {
           where: { active: true },

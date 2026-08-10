@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAllActiveGeminiKeys } from "@/lib/ai-image-enhancer";
 
-const REPLICATE_SDXL_VERSION = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
-
+export const dynamic = "force-dynamic";
 export const maxDuration = 60; // السماح للمسار بالعمل لمدة أطول بسبب تأخر توليد الصور
+
+const REPLICATE_SDXL_VERSION = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
 
 export async function POST(req: Request) {
   try {

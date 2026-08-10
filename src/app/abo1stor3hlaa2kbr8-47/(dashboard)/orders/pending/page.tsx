@@ -99,6 +99,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           id: true,
           name: true,
           salePrice: true,
+          photoUrls: true,
+          branch: { select: { name: true } },
           hasVariants: true,
           variants: {
             where: { active: true },
@@ -298,7 +300,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         assignedPreparerIds,
         requestLocationWaUrl,
         notifyCustomerWaUrl,
-        imageUrl: resolvePublicAssetSrc(o.imageUrl) || null,
       };
     };
 
@@ -361,7 +362,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         },
         vehiclePreference: d.vehiclePreference,
         assignedPreparerIds,
-        imageUrl: null,
       };
     };
 
