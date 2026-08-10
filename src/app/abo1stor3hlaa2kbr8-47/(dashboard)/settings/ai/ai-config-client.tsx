@@ -298,6 +298,7 @@ export default function AIConfigClient({
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 mr-2">المزود</label>
               <select name="provider" className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500">
+                <option value="replicate">Replicate (رسم احترافي: تحويل الليل لنهار 🎨)</option>
                 <option value="nanobanana">Nano Banana AI (مخصص لتعديل وتحسين الصور البصرية 🍌)</option>
                 <option value="gemini_image_edit">Google Gemini</option>
                 <option value="openrouter">OpenRouter (شامل الموديلات المجانية 🚀)</option>
@@ -333,7 +334,7 @@ export default function AIConfigClient({
             <div className={`bg-white dark:bg-[#131418] p-5 rounded-[2rem] border-2 transition shadow-sm flex items-center justify-between ${cfg.isActive ? 'border-slate-100 dark:border-slate-800' : 'border-slate-100 dark:border-slate-800 opacity-60 grayscale'}`}>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl">
-                  {cfg.provider === "gemini" ? "♊" : cfg.provider === "openrouter" ? "🚀" : cfg.provider === "openai" ? "🤖" : cfg.provider === "groq" ? "⚡" : cfg.provider === "deepseek" ? "🧠" : "🐳"}
+                  {cfg.provider === "gemini" ? "♊" : cfg.provider === "replicate" ? "🎨" : cfg.provider === "openrouter" ? "🚀" : cfg.provider === "openai" ? "🤖" : cfg.provider === "groq" ? "⚡" : cfg.provider === "deepseek" ? "🧠" : "🐳"}
                 </div>
                 <div>
                   <h3 className="font-black text-slate-800 dark:text-white text-sm">{cfg.label || "مفتاح إزالة خلفية"}</h3>
