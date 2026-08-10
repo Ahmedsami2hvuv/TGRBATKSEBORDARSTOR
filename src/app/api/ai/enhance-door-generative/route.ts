@@ -80,8 +80,8 @@ export async function POST(req: Request) {
     }
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // البرومبت الهندسي من توجيهات Gemini
-    const prompt = "Hyper-realistic architectural photography. Transform scene illumination from night to bright, even, natural high-noon daylight. Maintain exact structural geometry of the building facade, concrete block textures, and the specific ornate copper/white gate design as defined by ControlNet input. Replace dark sky with clear pale blue daytime sky. Illuminate all elements (wheelie bins, truck portion, water tanks, gate) with realistic, hard-shadowless daylight. Preserve pixel-perfect position of all objects. Shot on a Canon EOS R5, 35mm lens.";
+    // البرومبت الهندسي الصارم لمنع الهلوسة بناءً على توجيهات Gemini
+    const prompt = "Hyper-realistic exterior architecture photography. Transform the specific nighttime scene into clear, bright, natural high-noon daylight. Preserve pixel-perfect geometry. Do not change the design of the ornate copper and white gate. Do not change the wall material (keep the original grey block/stucco texture). Maintain exact position, color, and orientation of all elements: the grey block walls, the specific gate, the visible truck portion, and the three specific wheelie bins (blue, orange, blue) in their exact locations. Replace dark sky with clear daytime sky. No new objects or textures are to be generated. Maintain original camera perspective.";
     
     // تجهيز الصورة Base64
     const formattedImage = imageBase64.startsWith('data:image') 
@@ -101,8 +101,9 @@ export async function POST(req: Request) {
         input: {
           image: formattedImage,
           prompt: prompt,
-          negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details",
-          condition_scale: 0.85, 
+          negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details, altered geometry, different walls",
+          condition_scale: 0.9, 
+          prompt_strength: 0.45, // هذا البرامتر يمنع الذكاء الاصطناعي من تدمير أو إعادة تصميم الأجسام الأصلية
           num_outputs: 1,
           scheduler: "K_EULER",
           num_inference_steps: 30,
