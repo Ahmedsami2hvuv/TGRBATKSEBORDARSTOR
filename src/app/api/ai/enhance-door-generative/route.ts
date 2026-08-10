@@ -47,7 +47,15 @@ export async function POST(req: Request) {
       const pollData = await pollResponse.json();
       
       if (pollData.status === "succeeded") {
-        const finalOutputUrl = pollData.output[0];
+        let finalOutputUrl = "";
+        if (Array.isArray(pollData.output)) {
+           finalOutputUrl = pollData.output[0];
+        } else if (typeof pollData.output === "string") {
+           finalOutputUrl = pollData.output;
+        } else {
+           throw new Error("لا يوجد رابط صورة في النتيجة.");
+        }
+        
         // تحويل الصورة الناتجة إلى Base64
         const imageResponse = await fetch(finalOutputUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
