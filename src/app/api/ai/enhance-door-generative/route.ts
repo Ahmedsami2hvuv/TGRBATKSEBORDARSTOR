@@ -80,40 +80,36 @@ export async function POST(req: Request) {
     }
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // البرومبت الهندسي الصارم لمنع الهلوسة بناءً على توجيهات Gemini
-    const prompt = "Hyper-realistic exterior architecture photography. Transform the specific nighttime scene into clear, bright, natural high-noon daylight. Preserve pixel-perfect geometry. Do not change the design of the ornate copper and white gate. Do not change the wall material (keep the original grey block/stucco texture). Maintain exact position, color, and orientation of all elements: the grey block walls, the specific gate, the visible truck portion, and the three specific wheelie bins (blue, orange, blue) in their exact locations. Replace dark sky with clear daytime sky. No new objects or textures are to be generated. Maintain original camera perspective.";
+    // البرومبت الخاص بـ IC-Light كما نصح Gemini
+    const prompt = "bright daylight, natural sunlight, clear blue sky, high noon, realistic architectural lighting, vibrant colors, preserve exact original textures and colors of gates and bins";
     
-    // تجهيز الصورة Base64
     const formattedImage = imageBase64.startsWith('data:image') 
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    console.log("Starting Replicate Prediction (ControlNet Canny)...");
+    console.log("Starting Replicate Prediction (IC-Light)...");
     
-    const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
+    // نستخدم الـ endpoint المباشر للموديل لتفادي البحث عن الـ Version Hash
+    const replicateResponse = await fetch("https://api.replicate.com/v1/models/zsxkib/ic-light/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: REPLICATE_SDXL_VERSION,
         input: {
           image: formattedImage,
           prompt: prompt,
-          negative_prompt: "low quality, dark, night, artificial light, cartoon, painting, sketch, distorted perspective, blurry, overexposed, underexposed, wrong colors, extra objects, missing details, altered geometry, different walls",
-          condition_scale: 0.9, 
-          prompt_strength: 0.45, // هذا البرامتر يمنع الذكاء الاصطناعي من تدمير أو إعادة تصميم الأجسام الأصلية
-          num_outputs: 1,
-          scheduler: "K_EULER",
-          num_inference_steps: 30,
+          subject_prompt: prompt, // IC-Light sometimes uses subject_prompt instead of prompt
+          light_source: "Top", // لتغيير الإضاءة كأنها شمس وقت الظهيرة
+          num_outputs: 1
         }
       }),
     });
 
     if (!replicateResponse.ok) {
       const err = await replicateResponse.json();
-      throw new Error(`خطأ في تشغيل Replicate: ${err.detail || JSON.stringify(err)}`);
+      throw new Error(`خطأ في تشغيل Replicate (IC-Light): ${err.detail || JSON.stringify(err)}`);
     }
 
     const prediction = await replicateResponse.json();
