@@ -107,12 +107,7 @@ export function ProductCard({
           </div>
           
           <div className="flex items-end justify-between mt-2">
-            <div className="text-right">
-              <span className="text-sm font-black text-slate-800">{formatPrice(currentPrice)}</span>
-              <span className="text-[10px] text-slate-500 mr-1">د.ع</span>
-            </div>
-            
-            <div className="mr-auto relative z-30">
+            <div className="mr-auto relative z-30 w-full flex justify-end">
                {product.hasVariants ? (
                 <button className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 font-bold text-sm">
                   +
@@ -222,13 +217,6 @@ export function ProductCard({
               <div className="flex items-center justify-between px-2">
                  <div className="flex items-center gap-2">
                    <span className="text-sm text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded text-[10px]">متوفر في المخزن</span>
-                 </div>
-                 <div className="text-left">
-                   <div className="text-xs text-slate-400 mb-0.5">السعر</div>
-                   <div>
-                     <span className="text-xl font-black text-green-600">{formatPrice(currentPrice)}</span>
-                     <span className="text-xs text-slate-500 mr-1">د.ع</span>
-                   </div>
                  </div>
               </div>
               

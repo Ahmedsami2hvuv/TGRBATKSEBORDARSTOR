@@ -52,11 +52,11 @@ const BottomNav = () => {
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans pb-24 transition-colors duration-300" dir="rtl">
+    <div className="min-h-screen bg-white font-sans pb-24 transition-colors duration-300" dir="rtl">
       <StoreSidePanels />
       
       {/* الشريط العلوي الجديد */}
-      <header className="sticky top-0 z-50 bg-[#f8fafc] pt-4 pb-2 px-4">
+      <header className="sticky top-0 z-50 bg-white pt-4 pb-2 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
