@@ -80,38 +80,40 @@ export async function POST(req: Request) {
     }
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // البرومبت الهندسي الجديد الصارم جداً لنموذج Flux
-    const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Do not change wall material (grey block/stucco only). CRITICAL: Do not change gate design. CRITICAL: Maintain correct colors and types of all objects: blue wheelie bin (left), orange wheelie bin (middle), blue wheelie bin (right). Maintain exact position of truck. Remove dark night sky, replace with clear daytime sky. No artistic reinterpretation. Zero hallucination allowed.";
+    // البرومبت الخاص بـ IC-Light (يركز فقط على الإضاءة لأن الهيكل سيتم استنتاجه من الصورة)
+    const prompt = "bright daylight, sun lighting from above, outdoor sunlight, clear sky, highly detailed architecture, perfect colors";
+    const negative_prompt = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, dark, night";
     
     const formattedImage = imageBase64.startsWith('data:image') 
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    console.log("Starting Replicate Prediction (Flux-Dev Img2Img)...");
+    console.log("Starting Replicate Prediction (IC-Light Relighting)...");
     
-    // استخدام Endpoint المباشر لنموذج Flux Dev
-    const replicateResponse = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions", {
+    // استخدام النموذج المخصص للإضاءة (IC-Light)
+    const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        version: "d41bcb10d8c159868f4cfbd7c6a2ca01484f7d39e4613419d5952c61562f1ba7", // zsxkib/ic-light
         input: {
-          image: formattedImage,
+          subject_image: formattedImage,
           prompt: prompt,
-          prompt_strength: 0.55, // رفعنا القوة إلى 0.55 ليتمكن من تغيير الليل لنهار، 0.30 كانت ضعيفة جداً وأبقت المشهد ليلي
-          num_outputs: 1,
-          output_format: "jpg",
-          go_fast: true, // لتسريع المعالجة إذا كان مدعوماً
-          megapixels: "1"
+          light_source: "Top Light", // فرض إضاءة شمس عمودية
+          lowres_denoise: 0.9, 
+          highres_denoise: 0.5,
+          steps: 25,
+          number_of_images: 1
         }
       }),
     });
 
     if (!replicateResponse.ok) {
       const err = await replicateResponse.json();
-      throw new Error(`خطأ في تشغيل Replicate (Flux): ${err.detail || JSON.stringify(err)}`);
+      throw new Error(`خطأ في تشغيل Replicate (IC-Light): ${err.detail || JSON.stringify(err)}`);
     }
 
     const prediction = await replicateResponse.json();
