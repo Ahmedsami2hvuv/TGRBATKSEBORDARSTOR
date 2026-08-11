@@ -81,8 +81,8 @@ export async function POST(req: Request) {
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // البرومبت الهندسي الجديد الصارم جداً لنموذج Flux كما اقترح Gemini
-    const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Do not alter wall material (keep rough concrete block texture). CRITICAL: Do not change ornate gate design or color. CRITICAL: Do not change wheelie bin colors or order (Blue-Left, Orange-Middle, Blue-Right). Maintain exact position of truck portion. Replace dark sky with clear daytime sky. No new objects or textures to be generated. Zero tolerance for artistic reinterpretation.";
+    // برومبت عام وقوي يحافظ على أي هيكل دون تخصيص عناصر صورة واحدة (مثل العلم أو الخزان) ليناسب جميع المندوبين
+    const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Maintain exact original wall materials, textures, and colors. CRITICAL: Maintain exact gate design and all existing objects in their exact positions. Replace dark night sky with clear bright daytime sky. No new objects or textures to be generated. Zero tolerance for artistic reinterpretation or hallucination.";
     
     const formattedImage = imageBase64.startsWith('data:image') 
       ? imageBase64 
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         input: {
           image: formattedImage,
           prompt: prompt,
-          prompt_strength: 0.25, // القيمة الحرجة التي نصح بها جمناي (0.25) لمنع الهلوسة نهائياً
+          prompt_strength: 0.40, // 0.28 يبقي الصورة ليلاً، 0.55 يهلوس. 0.40 هي النقطة الذهبية
           num_outputs: 1,
           output_format: "jpg",
           go_fast: true, // لتسريع المعالجة إذا كان مدعوماً
