@@ -41,6 +41,21 @@ export function ProductCard({
     window.dispatchEvent(new Event("favorites-updated"));
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: `تفقد هذا المنتج: ${product.name}`,
+          url: window.location.href,
+        });
+      }
+    } catch (err) {
+      console.log('Share ignored', err);
+    }
+  };
+
   const photos = product.photoUrls && product.photoUrls.length > 0 ? product.photoUrls : [""];
   const currentPrice = selectedVariant ? Number(selectedVariant.salePrice) : Number(product.salePrice);
   const currentName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
@@ -64,7 +79,7 @@ export function ProductCard({
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:border-green-400 hover:shadow-md transition-all duration-300 cursor-pointer relative h-[240px] md:h-[280px]"
+        className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:border-green-400 hover:shadow-md transition-all duration-300 cursor-pointer relative"
       >
         {/* زر المفضلة - أعلى اليسار */}
         <button
@@ -77,7 +92,7 @@ export function ProductCard({
         </button>
 
         {/* حاوية الصورة */}
-        <div className="relative w-full h-32 md:h-40 bg-white flex items-center justify-center pt-4">
+        <div className="relative w-full h-32 bg-white flex items-center justify-center pt-2">
           {photos[0] ? (
             <img
               src={photos[0]}
@@ -99,14 +114,14 @@ export function ProductCard({
         </div>
 
         {/* محتوى المنتج */}
-        <div className="p-3 md:p-4 flex-1 flex flex-col justify-between bg-white relative z-10">
+        <div className="px-3 pb-3 pt-1 flex-1 flex flex-col justify-between bg-white relative z-10 gap-1">
           <div>
-            <h2 className="text-sm font-bold text-slate-800 line-clamp-2 text-right">
+            <h2 className="text-xs font-bold text-slate-800 line-clamp-2 text-right">
               {currentName}
             </h2>
           </div>
           
-          <div className="flex items-end justify-between mt-2">
+          <div className="flex items-end justify-between mt-1">
             <div className="mr-auto relative z-30 w-full flex justify-end">
                {product.hasVariants ? (
                 <button className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 font-bold text-sm">
@@ -136,7 +151,7 @@ export function ProductCard({
                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                    </svg>
                  </button>
-                 <button>
+                 <button onClick={handleShare}>
                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                    </svg>
@@ -152,19 +167,21 @@ export function ProductCard({
             <div className="overflow-y-auto flex-1 pb-0">
               <div className="relative bg-white overflow-hidden flex flex-col items-center py-6">
                 <div className="relative w-full flex flex-col items-center">
-                  <img
-                    src={photos[activePhotoIndex]}
-                    decoding="async"
-                    className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] object-contain relative z-10"
-                    alt={product.name}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      if (target.src.includes('?')) {
-                        target.src = target.src.split('?')[0];
-                      }
-                    }}
-                  />
+                  <div className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y" style={{ touchAction: "pan-x pan-y pinch-zoom" }}>
+                    <img
+                      src={photos[activePhotoIndex]}
+                      decoding="async"
+                      className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] object-contain relative z-10"
+                      alt={product.name}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        if (target.src.includes('?')) {
+                          target.src = target.src.split('?')[0];
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {photos.length > 1 && (
@@ -214,28 +231,7 @@ export function ProductCard({
 
             {/* شريط السعر والإضافة للسلة في الأسفل */}
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between px-2">
-                 <div className="flex items-center gap-2">
-                   <span className="text-sm text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded text-[10px]">متوفر في المخزن</span>
-                 </div>
-              </div>
-              
-              <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-slate-100 mb-2">
-                <div className="flex items-center gap-2 text-green-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="text-right flex-1 mr-3">
-                  <div className="text-[10px] text-slate-400">توصيل سريع</div>
-                  <div className="text-sm font-bold text-slate-700">خلال 15-30 دقيقة</div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </div>
-              </div>
+
 
               <AddToCartButton product={productForCart} variant="default" />
             </div>

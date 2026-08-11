@@ -17,7 +17,7 @@ async function CategoriesRow() {
     if (categories.length === 0) return null;
 
     return (
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-1 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-pan-x">
         {categories.map((cat) => (
           <Link
             key={cat.id}
@@ -63,7 +63,7 @@ async function BestSellersRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-1 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-pan-x">
         {products.map((prod: any) => (
           <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
             <ProductCard product={prod} />
