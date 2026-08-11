@@ -54,7 +54,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
       ? { branchId: activeBranchId, active: true }
       : { branch: { categoryId }, active: true };
 
-    const productsRaw = await prisma.product.findMany({
+    const productsRaw = await prisma.storeProduct.findMany({
       where: productsWhereClause,
       orderBy: { sequence: "asc" },
       include: {
