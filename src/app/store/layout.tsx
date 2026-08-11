@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 import { BottomNav } from "./_components/bottom-nav";
 import { StoreHeader } from "./_components/store-header";
+import { GlobalToast } from "./_components/global-toast";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       
       {/* الشريط العلوي الجديد الذي يحتوي الأزرار والبحث */}
       <StoreHeader />
+      
+      {/* التنبيهات العائمة للتطبيق */}
+      <GlobalToast />
 
       <main className="max-w-7xl mx-auto px-4 py-4">
         {children}

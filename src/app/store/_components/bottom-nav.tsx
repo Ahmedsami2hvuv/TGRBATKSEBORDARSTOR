@@ -37,7 +37,7 @@ export function BottomNav() {
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-4px_10px_rgba(0,0,0,0.05)] rounded-t-3xl border-t border-slate-100 pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md shadow-[0_-4px_10px_rgba(0,0,0,0.05)] rounded-t-3xl border-t border-white/50 pb-safe">
       <div className="flex items-center justify-around h-16 md:h-20 px-2 md:px-6">
         <Link href="/store" className="flex flex-col items-center justify-center gap-1 w-full h-full text-slate-400 hover:text-green-600 transition-colors focus:text-green-600">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

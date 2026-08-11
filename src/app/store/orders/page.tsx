@@ -23,6 +23,13 @@ export default function OrdersPage() {
     router.push("/store/cart");
   };
 
+  const handleAddMoreToOrder = (orderId: string) => {
+    // حفظ الـ ID الخاص بالطلب ليتم الإضافة عليه في السلة
+    localStorage.setItem("kse_add_to_order_id", orderId);
+    // توجيه الزبون للمتجر لإضافة منتجات
+    router.push("/store");
+  };
+
   if (!mounted) return <div className="p-8 text-center text-slate-500">جاري التحميل...</div>;
 
   return (
@@ -70,15 +77,30 @@ export default function OrdersPage() {
                 ))}
               </div>
 
-              <button 
-                onClick={() => handleRepeatOrder(order.items)}
-                className="w-full py-3 bg-green-50 text-green-700 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                تكرار الطلب
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleRepeatOrder(order.items)}
+                  className="w-1/2 py-3 bg-slate-50 text-slate-700 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  تكرار الطلب
+                </button>
+
+                {/* يظهر هذا الزر لإضافة منتجات لطلبية سابقة (نفترض أن الطلبات خلال 24 ساعة قابلة للتعديل) */}
+                {Date.now() - new Date(order.date).getTime() < 24 * 60 * 60 * 1000 && (
+                  <button 
+                    onClick={() => handleAddMoreToOrder(order.id)}
+                    className="w-1/2 py-3 bg-green-50 text-green-700 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    إضافة منتجات
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

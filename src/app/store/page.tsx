@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { StoreSlider } from "./_components/store-slider";
 import { ProductCard } from "./product-card";
+import { ScrollReveal } from "@/components/scroll-reveal";
 
 export const revalidate = 3600; // تفعيل الكاش لـ ساعة واحدة لتسريع التصفح بشكل كبير
 
@@ -199,7 +200,7 @@ export default async function StoreHomePage() {
     return (
       <div className="space-y-6">
         {/* البانر الترويجي */}
-        <section className="mb-6">
+        <ScrollReveal className="mb-6">
           {slides && slides.length > 0 ? (
             <div className="rounded-[2rem] overflow-hidden shadow-sm">
               <StoreSlider slides={slides.map((s: any) => ({
@@ -226,10 +227,10 @@ export default async function StoreHomePage() {
             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
           </div>
-        </section>
+        </ScrollReveal>
 
         {/* قسم الفئات */}
-        <section>
+        <ScrollReveal>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-black text-slate-800">الأقسام</h2>
             <Link href="/store/categories" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
@@ -239,10 +240,10 @@ export default async function StoreHomePage() {
           <Suspense fallback={<div className="flex gap-4 overflow-hidden"><div className="w-16 h-16 bg-slate-200 rounded-2xl animate-pulse" /></div>}>
             <CategoriesRow />
           </Suspense>
-        </section>
+        </ScrollReveal>
 
         {/* قسم الأكثر مبيعاً */}
-        <section>
+        <ScrollReveal>
           <div className="flex items-center justify-between mb-4 mt-8">
             <h2 className="text-xl font-black text-slate-800">الأكثر مبيعاً</h2>
             <Link href="/store/best-sellers" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
@@ -252,10 +253,10 @@ export default async function StoreHomePage() {
           <Suspense fallback={<div className="flex gap-4 overflow-hidden"><div className="w-[160px] h-[240px] bg-slate-200 rounded-3xl animate-pulse" /></div>}>
             <BestSellersRow />
           </Suspense>
-        </section>
+        </ScrollReveal>
         
         {/* قسم الجديد */}
-        <section>
+        <ScrollReveal>
           <div className="flex items-center justify-between mb-4 mt-8">
             <h2 className="text-xl font-black text-slate-800">وصل حديثاً</h2>
             <Link href="/store/new" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
@@ -265,14 +266,14 @@ export default async function StoreHomePage() {
           <Suspense fallback={<div className="flex gap-4 overflow-hidden"><div className="w-[160px] h-[240px] bg-slate-200 rounded-3xl animate-pulse" /></div>}>
             <NewProductsRow />
           </Suspense>
-        </section>
+        </ScrollReveal>
 
         {/* مقتطفات الأقسام */}
-        <section className="mt-8">
+        <ScrollReveal className="mt-8">
           <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
             <CategoryShowcase slides={slides} />
           </Suspense>
-        </section>
+        </ScrollReveal>
       </div>
     );
   } catch (error) {

@@ -25,6 +25,7 @@ export default function CartPage() {
   const [deliveryPrice, setDeliveryPrice] = useState<number>(0);
   const [baseDeliveryPrice, setBaseDeliveryPrice] = useState<number>(0);
   const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
+  const [addToOrderId, setAddToOrderId] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,11 @@ export default function CartPage() {
           setDeliveryPrice(Number(profile.deliveryPrice || 0));
         }
       }
+    }
+    
+    const editingOrderId = localStorage.getItem("kse_add_to_order_id");
+    if (editingOrderId) {
+      setAddToOrderId(editingOrderId);
     }
   }, []);
 
@@ -73,6 +79,7 @@ export default function CartPage() {
       const orders = JSON.parse(localStorage.getItem("kse_orders") || "[]");
       if (!orders.find((o: any) => o.orderNumber === state.orderNumber)) {
         orders.push({
+          id: state.draftId, // مهم جداً لتعديل الطلب لاحقاً
           orderNumber: state.orderNumber,
           date: new Date().toISOString(),
           items: cart
@@ -129,6 +136,7 @@ export default function CartPage() {
       localStorage.removeItem("kse_cart");
       localStorage.removeItem("kse_active_shared_cart_id");
       localStorage.removeItem("kse_shared_user_name");
+      localStorage.removeItem("kse_add_to_order_id");
       window.dispatchEvent(new Event("cart-updated"));
     }
     return (
@@ -198,8 +206,26 @@ export default function CartPage() {
               }
             }}
           >
+            {addToOrderId && (
+              <div className="bg-sky-50 text-sky-800 p-4 rounded-xl border border-sky-200 text-sm font-bold flex items-center justify-between">
+                <span>أنت تقوم بإضافة منتجات لطلبية سابقة. (لن يتم احتساب تكلفة توصيل إضافية).</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    localStorage.removeItem("kse_add_to_order_id");
+                    setAddToOrderId(null);
+                  }}
+                  className="text-xs bg-white text-sky-600 px-3 py-1 rounded-full shadow-sm hover:bg-sky-100"
+                >
+                  إلغاء
+                </button>
+              </div>
+            )}
+            
             <input type="hidden" name="cart" value={JSON.stringify(cart)} />
             <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
+            <input type="hidden" name="regionName" value={selectedRegion?.name || regionQuery} />
+            {addToOrderId && <input type="hidden" name="addToOrderId" value={addToOrderId} />}
 
             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
               <h2 className="text-lg font-black text-slate-900 mb-4">معلومات التوصيل والاتصال</h2>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { AddToCartButton } from "./add-to-cart-button";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { SuggestedProducts } from "./_components/suggested-products";
 
 export function ProductCard({
   product,
@@ -89,9 +90,11 @@ export function ProductCard({
     if (favorites.includes(product.id)) {
       newFavorites = favorites.filter((id: string) => id !== product.id);
       setIsFavorite(false);
+      window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت الإزالة من المفضلة", type: "error" } }));
     } else {
       newFavorites = [...favorites, product.id];
       setIsFavorite(true);
+      window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت الإضافة للمفضلة بنجاح ❤️", type: "success" } }));
     }
     localStorage.setItem("kse_favorites", JSON.stringify(newFavorites));
     window.dispatchEvent(new Event("favorites-updated"));
@@ -291,6 +294,9 @@ export function ProductCard({
                    </div>
                 </div>
               )}
+
+              {/* قسم المنتجات المكملة */}
+              <SuggestedProducts excludeId={product.id} />
             </div>
 
             {/* شريط السعر والإضافة للسلة في الأسفل */}

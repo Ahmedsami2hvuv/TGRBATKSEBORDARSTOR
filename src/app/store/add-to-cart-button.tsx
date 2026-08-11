@@ -41,6 +41,10 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
 
       setAdded(true);
       setQuantity(1);
+      
+      // إرسال تنبيه عائم
+      window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "عاشت ايدك، تمت الإضافة للسلة!", type: "success" } }));
+      
       setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       console.error("Cart error:", err);

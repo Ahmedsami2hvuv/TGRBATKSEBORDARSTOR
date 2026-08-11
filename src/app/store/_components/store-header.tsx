@@ -25,7 +25,7 @@ export function StoreHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white pt-4 pb-2 px-4 shadow-sm relative border-b border-slate-100">
+    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md pt-4 pb-2 px-4 shadow-sm relative border-b border-white/50">
       <div className="max-w-7xl mx-auto flex items-center justify-between mb-4">
         {/* زر القائمة - يسار */}
         <Link href="/store/categories" className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
