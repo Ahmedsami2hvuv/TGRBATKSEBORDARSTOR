@@ -299,7 +299,7 @@ export default function CartPage() {
                         ))}
                       </ul>
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
                 <div>
