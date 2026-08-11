@@ -81,38 +81,40 @@ export async function POST(req: Request) {
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // برومبت عام وقوي يحافظ على أي هيكل دون تخصيص عناصر صورة واحدة (مثل العلم أو الخزان) ليناسب جميع المندوبين
-    const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Maintain exact original wall materials, textures, and colors. CRITICAL: Maintain exact gate design and all existing objects in their exact positions. Replace dark night sky with clear bright daytime sky. No new objects or textures to be generated. Zero tolerance for artistic reinterpretation or hallucination.";
+    // برومبت الإضاءة الصافي لـ IC-Light
+    const prompt = "bright daylight, clear blue sky, noon sunlight, sharp shadows, realistic lighting";
+    const negative_prompt = "dark, night, low quality, altered textures, new objects";
     
     const formattedImage = imageBase64.startsWith('data:image') 
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    console.log("Starting Replicate Prediction (Flux-Dev Img2Img)...");
+    console.log("Starting Replicate Prediction (IC-Light Fixed)...");
     
-    // استخدام Endpoint المباشر لنموذج Flux Dev
-    const replicateResponse = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions", {
+    // استخدام النموذج المخصص للإضاءة (IC-Light)
+    const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        version: "d41bcb10d8c159868f4cfbd7c6a2ca01484f7d39e4613419d5952c61562f1ba7", // zsxkib/ic-light
         input: {
-          image: formattedImage,
+          subject_image: formattedImage,
           prompt: prompt,
-          prompt_strength: 0.40, // 0.28 يبقي الصورة ليلاً، 0.55 يهلوس. 0.40 هي النقطة الذهبية
-          num_outputs: 1,
-          output_format: "jpg",
-          go_fast: true, // لتسريع المعالجة إذا كان مدعوماً
-          megapixels: "1"
+          light_source: "Top Light", 
+          lowres_denoise: 0.15, // تقليل حاد من 0.9 إلى 0.15 لمنع أي هلوسة أو اختراع أجسام جديدة
+          highres_denoise: 0.15, // تقليل حاد
+          steps: 25,
+          number_of_images: 1
         }
       }),
     });
 
     if (!replicateResponse.ok) {
       const err = await replicateResponse.json();
-      throw new Error(`خطأ في تشغيل Replicate (Flux): ${err.detail || JSON.stringify(err)}`);
+      throw new Error(`خطأ في تشغيل Replicate (IC-Light): ${err.detail || JSON.stringify(err)}`);
     }
 
     const prediction = await replicateResponse.json();
