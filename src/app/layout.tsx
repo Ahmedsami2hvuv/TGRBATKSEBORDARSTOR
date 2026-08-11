@@ -96,7 +96,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             preparerFeatures={preparerFeatures}
             chatEnabled={chatEnabled}
             trackingEnabled={trackingEnabled}
-            storeFeatures={{ aiEnabled: true }}
+            storeFeatures={{ aiEnabled: false }}
             externalId={externalId}
           >
             {children}

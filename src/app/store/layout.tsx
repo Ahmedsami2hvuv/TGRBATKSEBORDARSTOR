@@ -57,45 +57,15 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       
       {/* الشريط العلوي الجديد */}
       <header className="sticky top-0 z-50 bg-white pt-4 pb-2 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center flex-1">
-            <span className="text-xs text-slate-500 flex items-center gap-1">
-              التوصيل إلى
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-            </span>
-            <div className="flex items-center gap-1 cursor-pointer">
-              <span className="text-sm font-bold text-slate-800">إضافة عنوان</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-800" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center font-bold text-green-600 bg-green-50 px-2 py-1 rounded-xl text-xs">
-              <span className="text-[10px]">🛒</span>
-              <span className="ml-1">BC+</span>
-            </div>
+        <div className="max-w-7xl mx-auto flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-lg font-black text-green-600">حصري بستور أبو الأكبر للتوصيل</span>
           </div>
         </div>
         
         {/* شريط البحث والكاميرا */}
         <div className="max-w-7xl mx-auto flex items-center gap-2">
-          <div className="w-12 h-12 rounded-full border border-green-100 bg-white flex items-center justify-center text-green-500 relative shrink-0 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold border-2 border-white">+</div>
-          </div>
+
           <div className="flex-1 relative">
             <input type="text" placeholder="بحث" className="w-full h-12 bg-white rounded-2xl border border-slate-100 shadow-sm pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -110,7 +80,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       </main>
 
       <BottomNav />
-      <DraggableBackButton />
+
     </div>
   );
 }
