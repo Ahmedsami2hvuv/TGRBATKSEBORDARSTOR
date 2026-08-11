@@ -40,19 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
 
     const applyTheme = () => {
-      if (theme === "dark") {
-        root.classList.add("dark");
-      } else if (theme === "light") {
-        root.classList.remove("dark");
-      } else {
-        const hour = new Date().getHours();
-        const isNight = hour >= 18 || hour < 6;
-        if (isNight) {
-          root.classList.add("dark");
-        } else {
-          root.classList.remove("dark");
-        }
-      }
+      root.classList.remove("dark");
     };
 
     applyTheme();

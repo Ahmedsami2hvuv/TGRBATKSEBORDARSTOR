@@ -75,21 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('kse-theme');
-                  var isDark = false;
-                  if (saved === 'dark') {
-                    isDark = true;
-                  } else if (saved === 'light') {
-                    isDark = false;
-                  } else {
-                    var hour = new Date().getHours();
-                    isDark = (hour >= 18 || hour < 6);
-                  }
-                  if (isDark) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
+                  document.documentElement.classList.remove('dark');
                 } catch (e) {}
               })();
             `,
