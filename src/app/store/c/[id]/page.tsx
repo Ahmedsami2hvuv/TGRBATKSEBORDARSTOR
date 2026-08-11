@@ -4,7 +4,7 @@ import { CustomProductRequest } from "@/components/custom-product-request";
 import { CategoryBranchesScroll } from "./_components/category-branches-scroll";
 import { ProductCard } from "../../product-card";
 
-export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع التصفح
+export const revalidate = 3600; // تفعيل الكاش لـ 3600 ثانية لتسريع التصفح
 
 // دالة تطهير بيانات فائقة الأمان لـ Next.js 15 لضمان تحويل كافة الكائنات المعقدة إلى بسيطة
 function safeJson(data: any) {
@@ -122,21 +122,18 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
       <div className="space-y-4 md:space-y-6 animate-in fade-in duration-700" dir="rtl">
         {/* Header Section */}
         <header className="space-y-4 pt-2">
-          {branches && branches.length > 0 && (
-            <CategoryBranchesScroll branches={branches} categoryId={categoryId} />
+          {branches && branches.length > 0 ? (
+            <CategoryBranchesScroll branches={branches} categoryId={categoryId} productCount={products.length} />
+          ) : (
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h2 className="text-lg md:text-xl font-black flex items-center gap-2 text-slate-900">المنتجات</h2>
+              <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-500">{products.length} منتج</span>
+            </div>
           )}
         </header>
 
         {/* Products Grid */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg md:text-xl font-black flex items-center gap-2 text-slate-900">
-              المنتجات
-            </h2>
-            <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-500">
-               {products.length} منتج
-            </span>
-          </div>
 
           {products.length === 0 ? (
             <div className="text-center py-20 bg-slate-50 rounded-3xl text-slate-400 font-bold border border-slate-100">

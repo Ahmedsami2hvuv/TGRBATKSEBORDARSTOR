@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
-export function CategoryBranchesScroll({ branches, categoryId }: { branches: any[], categoryId: string }) {
+export function CategoryBranchesScroll({ branches, categoryId, productCount }: { branches: any[], categoryId: string, productCount: number }) {
   const searchParams = useSearchParams();
   const activeBranchIdFromUrl = searchParams.get("b");
   
@@ -55,13 +55,21 @@ export function CategoryBranchesScroll({ branches, categoryId }: { branches: any
       })}
       </div>
       
-      {/* مؤشر التحميل الصغير */}
-      {isPending && (
-        <div className="flex items-center gap-2 px-1 animate-pulse">
-          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs font-bold text-green-600">جاري تحميل المنتجات...</span>
-        </div>
-      )}
+      {/* رأس المنتجات مع مؤشر التحميل */}
+      <div className="flex items-center justify-between mt-4 border-t border-slate-100 pt-4 px-2">
+        <h2 className="text-lg md:text-xl font-black flex items-center gap-3 text-slate-900">
+          المنتجات
+          {isPending && (
+            <span className="flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg animate-pulse">
+              <span className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></span>
+              جاري التحميل...
+            </span>
+          )}
+        </h2>
+        <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-500">
+           {productCount} منتج
+        </span>
+      </div>
     </div>
   );
 }

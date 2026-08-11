@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { StoreSlider } from "./_components/store-slider";
 import { ProductCard } from "./product-card";
 
-export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع التصفح
+export const revalidate = 3600; // تفعيل الكاش لـ ساعة واحدة لتسريع التصفح بشكل كبير
 
 async function CategoriesRow() {
   try {
@@ -105,7 +105,7 @@ async function CategoryShowcase({ slides }: { slides: any[] }) {
   try {
     const categoriesRaw = await prisma.storeCategory.findMany({
       where: { active: true },
-      take: 4,
+      // تم إزالة take: 4 لعرض جميع الأقسام
       orderBy: { sequence: "desc" },
     });
     
@@ -113,31 +113,35 @@ async function CategoryShowcase({ slides }: { slides: any[] }) {
 
     return (
       <div className="space-y-8">
-        {categoriesRaw.map((cat, index) => (
-          <div key={cat.id}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-slate-800">{cat.name}</h2>
-              <Link href={`/store/c/${cat.id}`} className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
-                عرض الكل
-              </Link>
-            </div>
-            <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
-              <CategoryProducts categoryId={cat.id} />
-            </Suspense>
+        {categoriesRaw.map((cat, index) => {
+          // السلايدر يظهر بعد كل 3 أقسام
+          const shouldShowSlider = (index + 1) % 3 === 0 && index < categoriesRaw.length - 1;
 
-            {/* إضافة سلايدر بين كل قسم والثاني إذا توفرت سلايدات */}
-            {index < categoriesRaw.length - 1 && slides && slides.length > 0 && (
-              <div className="mt-8 mb-4 rounded-[2rem] overflow-hidden shadow-sm">
-                <StoreSlider slides={slides.map((s: any) => ({
-                  id: s.id,
-                  imageUrl: s.imageUrl,
-                  linkUrl: s.linkUrl || "",
-                  title: s.title || ""
-                }))} />
+          return (
+            <div key={cat.id}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black text-slate-800">{cat.name}</h2>
+                <Link href={`/store/c/${cat.id}`} className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
+                  عرض الكل
+                </Link>
               </div>
-            )}
-          </div>
-        ))}
+              <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
+                <CategoryProducts categoryId={cat.id} />
+              </Suspense>
+
+              {shouldShowSlider && slides && slides.length > 0 && (
+                <div className="mt-8 mb-4 rounded-[2rem] overflow-hidden shadow-sm">
+                  <StoreSlider slides={slides.map((s: any) => ({
+                    id: s.id,
+                    imageUrl: s.imageUrl,
+                    linkUrl: s.linkUrl || "",
+                    title: s.title || ""
+                  }))} />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   } catch (error) {

@@ -220,40 +220,51 @@ export default function CartPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">منطقتك</label>
-                  <input
-                    ref={regionInputRef}
-                    type="text"
-                    value={regionQuery}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setRegionQuery(v);
-                      setRegionFieldError(null);
-                      if (
-                        selectedRegion &&
-                        normalizeRegionNameForMatch(v) !== normalizeRegionNameForMatch(selectedRegion.name)
-                      ) {
-                        setSelectedRegion(null);
-                        setDeliveryPrice(0);
-                        setBaseDeliveryPrice(0);
-                      }
-                    }}
-                    autoComplete="off"
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
-                    placeholder="مثال: حمدان البز أو جيكور..."
-                  />
                   {selectedRegion ? (
-                    <p className="mt-2 text-xs font-bold text-emerald-700">
-                      تم الاختيار: <span className="font-black">{selectedRegion.name}</span>
-                    </p>
-                  ) : null}
-                  {regionErrMsg ? (
-                    <p className="mt-2 text-xs font-bold text-rose-600" role="alert">
-                      {regionErrMsg}
-                    </p>
-                  ) : null}
+                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-xl">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-green-800">المنطقة المختارة:</span>
+                        <span className="text-lg font-black text-green-900">{selectedRegion.name}</span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setSelectedRegion(null);
+                          setRegionQuery("");
+                          setDeliveryPrice(0);
+                          setBaseDeliveryPrice(0);
+                          setTimeout(() => regionInputRef.current?.focus(), 100);
+                        }}
+                        className="text-xs font-bold text-green-700 underline hover:text-green-800 bg-white px-3 py-1 rounded-full shadow-sm"
+                      >
+                        تغيير
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        ref={regionInputRef}
+                        type="text"
+                        value={regionQuery}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setRegionQuery(v);
+                          setRegionFieldError(null);
+                        }}
+                        autoComplete="off"
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                        placeholder="ابحث عن منطقتك (مثل: حمدان البز...)"
+                      />
+                      {regionErrMsg && (
+                        <p className="mt-2 text-xs font-bold text-rose-600" role="alert">
+                          {regionErrMsg}
+                        </p>
+                      )}
+                    </>
+                  )}
 
-                  {regionHits.length > 0 && !selectedRegion ? (
+                  {regionHits.length > 0 && !selectedRegion && (
                     <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 p-2">
                       <ul className="max-h-40 overflow-auto space-y-1">
                         {regionHits.map((h) => (
