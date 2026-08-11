@@ -80,16 +80,6 @@ export async function POST(req: Request) {
     }
 
     // حالة 2: بدء طلب جديد لمعالجة صورة
-    // البرومبت الخاص بـ IC-Light كما نصح Gemini
-    const prompt = "bright daylight, natural sunlight, clear blue sky, high noon, realistic architectural lighting, vibrant colors, preserve exact original textures and colors of gates and bins";
-    
-    const formattedImage = imageBase64.startsWith('data:image') 
-      ? imageBase64 
-      : `data:image/jpeg;base64,${imageBase64}`;
-
-    console.log("Starting Replicate Prediction (IC-Light)...");
-    
-    // حالة 2: بدء طلب جديد لمعالجة صورة
     // البرومبت الهندسي الجديد الصارم جداً لنموذج Flux
     const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Do not change wall material (grey block/stucco only). CRITICAL: Do not change gate design. CRITICAL: Maintain correct colors and types of all objects: blue wheelie bin (left), orange wheelie bin (middle), blue wheelie bin (right). Maintain exact position of truck. Remove dark night sky, replace with clear daytime sky. No artistic reinterpretation. Zero hallucination allowed.";
     
