@@ -99,11 +99,13 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         version: "d41bcb10d8c159868f4cfbd7c6a2ca01484f7d39e4613419d5952c61562f1ba7", // zsxkib/ic-light
         input: {
-          image: formattedImage,
+          subject_image: formattedImage,
           prompt: prompt,
-          subject_prompt: prompt, // IC-Light sometimes uses subject_prompt instead of prompt
-          light_source: "Top", // لتغيير الإضاءة كأنها شمس وقت الظهيرة
-          num_outputs: 1
+          light_source: "Top Light", // الخيارات: None, Left Light, Right Light, Top Light, Bottom Light
+          lowres_denoise: 0.9, 
+          highres_denoise: 0.5,
+          steps: 30,
+          number_of_images: 1
         }
       }),
     });
