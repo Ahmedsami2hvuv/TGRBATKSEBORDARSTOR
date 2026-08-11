@@ -77,26 +77,16 @@ async function BestSellersRow() {
 }
 
 
-// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization في بيئة الإنتاج
 function deepSanitize(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  if (typeof obj === "bigint") return obj.toString();
-  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-  if (obj instanceof Date) return obj.toISOString();
-  if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
-  if (typeof obj === "object") {
-    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
-      return Number(obj.toString());
-    }
-    const newObj: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        newObj[key] = deepSanitize(obj[key]);
-      }
-    }
-    return newObj;
+  try {
+    return JSON.parse(JSON.stringify(obj, (key, value) => 
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+  } catch (error) {
+    console.error("Sanitize Error:", error);
+    return [];
   }
-  return obj;
 }
 
 export default async function StoreHomePage() {
