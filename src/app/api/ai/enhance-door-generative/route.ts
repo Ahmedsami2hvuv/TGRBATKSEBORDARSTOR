@@ -89,30 +89,39 @@ export async function POST(req: Request) {
 
     console.log("Starting Replicate Prediction (IC-Light)...");
     
-    // نستخدم الـ endpoint القياسي لـ Replicate مع تحديد نسخة IC-Light
-    const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
+    // حالة 2: بدء طلب جديد لمعالجة صورة
+    // البرومبت الهندسي الجديد الصارم جداً لنموذج Flux
+    const prompt = "Hyper-realistic exterior architecture photography. Transform lighting from night to bright, natural, even daylight. PRESERVE PIXEL-PERFECT GEOMETRY. CRITICAL: Do not change wall material (grey block/stucco only). CRITICAL: Do not change gate design. CRITICAL: Maintain correct colors and types of all objects: blue wheelie bin (left), orange wheelie bin (middle), blue wheelie bin (right). Maintain exact position of truck. Remove dark night sky, replace with clear daytime sky. No artistic reinterpretation. Zero hallucination allowed.";
+    
+    const formattedImage = imageBase64.startsWith('data:image') 
+      ? imageBase64 
+      : `data:image/jpeg;base64,${imageBase64}`;
+
+    console.log("Starting Replicate Prediction (Flux-Dev Img2Img)...");
+    
+    // استخدام Endpoint المباشر لنموذج Flux Dev
+    const replicateResponse = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "d41bcb10d8c159868f4cfbd7c6a2ca01484f7d39e4613419d5952c61562f1ba7", // zsxkib/ic-light
         input: {
-          subject_image: formattedImage,
+          image: formattedImage,
           prompt: prompt,
-          light_source: "Top Light", // الخيارات: None, Left Light, Right Light, Top Light, Bottom Light
-          lowres_denoise: 0.9, 
-          highres_denoise: 0.5,
-          steps: 30,
-          number_of_images: 1
+          prompt_strength: 0.30, // قوة منخفضة جداً للحفاظ على الهيكل وتغيير الإضاءة فقط
+          num_outputs: 1,
+          output_format: "jpg",
+          go_fast: true, // لتسريع المعالجة إذا كان مدعوماً
+          megapixels: "1"
         }
       }),
     });
 
     if (!replicateResponse.ok) {
       const err = await replicateResponse.json();
-      throw new Error(`خطأ في تشغيل Replicate (IC-Light): ${err.detail || JSON.stringify(err)}`);
+      throw new Error(`خطأ في تشغيل Replicate (Flux): ${err.detail || JSON.stringify(err)}`);
     }
 
     const prediction = await replicateResponse.json();
