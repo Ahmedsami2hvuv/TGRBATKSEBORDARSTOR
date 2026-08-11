@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export function AddToCartButton({ product }: { product: any }) {
+export function AddToCartButton({ product, variant = "default" }: { product: any, variant?: "default" | "compact" }) {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -16,7 +16,6 @@ export function AddToCartButton({ product }: { product: any }) {
     try {
       const cart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
 
-      // نستخدم المعرف الفريد للمنتج (مع المتغير إن وجد)
       const productId = product.id;
       const existingIndex = cart.findIndex((item: any) => item.id === productId);
 
@@ -36,13 +35,12 @@ export function AddToCartButton({ product }: { product: any }) {
 
       localStorage.setItem("kse_cart", JSON.stringify(cart));
 
-      // إطلاق كافة الأحداث لضمان Mزامنة مع المساعد الذكي وواجهة المتجر
       window.dispatchEvent(new Event("cart-updated"));
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("kse:store-cart-changed", { detail: { cart } }));
 
       setAdded(true);
-      setQuantity(1); // إعادة ضبط الكمية إلى 1 بعد الإضافة بنجاح
+      setQuantity(1);
       setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       console.error("Cart error:", err);
@@ -50,10 +48,27 @@ export function AddToCartButton({ product }: { product: any }) {
     }
   }
 
+  if (variant === "compact") {
+    return (
+      <button
+        onClick={addToCart}
+        className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90 shadow-sm ${
+          added ? "bg-emerald-500 scale-110" : "bg-green-500 hover:bg-green-600"
+        }`}
+      >
+        {added ? (
+          <span className="text-xs md:text-sm">✔</span>
+        ) : (
+          <span className="text-lg md:text-xl font-medium">+</span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <div className="flex flex-col md:flex-row items-center gap-2 w-full">
       {/* أزرار التحكم بالكمية */}
-      <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-2xl p-0.5 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm w-full md:w-auto shrink-0 select-none">
+      <div className="flex items-center justify-between border border-slate-200 rounded-xl p-1 bg-white w-full md:w-32 shrink-0 select-none shadow-sm">
         <button
           type="button"
           onClick={(e) => {
@@ -63,11 +78,11 @@ export function AddToCartButton({ product }: { product: any }) {
               setQuantity(quantity - 1);
             }
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-850 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-black text-sm transition-all active:scale-90"
+          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-800 text-lg transition-all active:scale-90"
         >
           -
         </button>
-        <span className="w-8 text-center font-black text-xs md:text-sm text-slate-800 dark:text-slate-200">
+        <span className="w-8 text-center font-bold text-sm text-slate-800">
           {quantity}
         </span>
         <button
@@ -77,7 +92,7 @@ export function AddToCartButton({ product }: { product: any }) {
             e.preventDefault();
             setQuantity(quantity + 1);
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-850 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-black text-sm transition-all active:scale-90"
+          className="w-8 h-8 flex items-center justify-center text-green-500 hover:text-green-600 font-bold text-lg transition-all active:scale-90"
         >
           +
         </button>
@@ -86,21 +101,23 @@ export function AddToCartButton({ product }: { product: any }) {
       {/* زر إضافة للسلة */}
       <button
         onClick={addToCart}
-        className={`w-full md:flex-1 py-3 rounded-2xl font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 transform active:scale-90 ${
+        className={`w-full md:flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 transform active:scale-90 ${
           added
-            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-none"
-            : "bg-slate-900 text-white hover:bg-violet-600 shadow-lg shadow-slate-200 dark:shadow-none"
+            ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
+            : "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200"
         }`}
       >
         {added ? (
           <>
-            <span className="animate-bounce">✅</span>
+            <span>✅</span>
             تمت الإضافة
           </>
         ) : (
           <>
-            <span>🛒</span>
-            إضافة للسلة
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            أضف للسلة
           </>
         )}
       </button>

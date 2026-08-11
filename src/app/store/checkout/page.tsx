@@ -28,6 +28,7 @@ function CheckoutContent() {
 
   const [regionQuery, setRegionQuery] = useState("");
   const [landmark, setLandmark] = useState("");
+  const [phone, setPhone] = useState("");
   const [regionHits, setRegionHits] = useState<RegionHit[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<RegionHit | null>(null);
   const [deliveryPrice, setDeliveryPrice] = useState<number>(0);
@@ -35,14 +36,32 @@ function CheckoutContent() {
   const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // استرجاع معلومات المستخدم إن وجدت لتسهيل الطلب
   useEffect(() => {
     setMounted(true);
     setCart(JSON.parse(localStorage.getItem("kse_cart") || "[]"));
+    const profile = JSON.parse(localStorage.getItem("kse_user_profile") || "null");
+    if (profile) {
+      setPhone(profile.phone || "");
+    }
   }, []);
 
   useEffect(() => {
     if (!state.ok || hasRedirectedToWhatsappRef.current) return;
     hasRedirectedToWhatsappRef.current = true;
+
+    // بمجرد نجاح الطلب، نقوم بتخزينه
+    try {
+      const orders = JSON.parse(localStorage.getItem("kse_orders") || "[]");
+      if (!orders.find((o: any) => o.orderNumber === state.orderNumber)) {
+        orders.push({
+          orderNumber: state.orderNumber,
+          date: new Date().toISOString(),
+          items: cart
+        });
+        localStorage.setItem("kse_orders", JSON.stringify(orders));
+      }
+    } catch(e) {}
 
     const whatsappPhone = "9647733921468";
     const orderNo = state.orderNumber ? String(state.orderNumber) : "غير متوفر";
@@ -122,6 +141,15 @@ function CheckoutContent() {
             return;
           }
           setRegionFieldError(null);
+
+          // حفظ الملف الشخصي لأول مرة
+          if (!localStorage.getItem("kse_user_profile")) {
+             localStorage.setItem("kse_user_profile", JSON.stringify({
+               phone: phone,
+               regionName: selectedRegion.name,
+               landmark: landmark
+             }));
+          }
         }}
       >
         <input type="hidden" name="cart" value={JSON.stringify(cart)} />
@@ -142,6 +170,8 @@ function CheckoutContent() {
                   name="phone"
                   type="tel"
                   required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="07XXXXXXXXX"
                 />
