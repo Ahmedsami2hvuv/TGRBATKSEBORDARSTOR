@@ -16,6 +16,40 @@ export function ProductCard({
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [initialDistance, setInitialDistance] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setInitialDistance(dist);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && initialDistance !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const zoom = dist / initialDistance;
+      setZoomLevel(prev => Math.min(Math.max(1, prev * zoom), 3));
+      setInitialDistance(dist);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setInitialDistance(null);
+    if (zoomLevel < 1.1) setZoomLevel(1);
+  };
+
+  const handleDoubleClick = () => {
+    setZoomLevel(prev => prev > 1 ? 1 : 2);
+  };
+
   useEffect(() => {
     getGlobalIcons().then(setIcons);
     const favorites = JSON.parse(localStorage.getItem("kse_favorites") || "[]");
@@ -25,6 +59,28 @@ export function ProductCard({
       setSelectedVariant(product.variants[0]);
     }
   }, [product.id, product.hasVariants, product.variants]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      // Create a dummy history entry so the phone's back button can be intercepted
+      window.history.pushState({ modalOpen: true, id: product.id }, "", window.location.href);
+
+      const handlePopState = (e: PopStateEvent) => {
+        setIsModalOpen(false);
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+  }, [isModalOpen, product.id]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Go back to remove the dummy history entry we added when opening
+    window.history.back();
+  };
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -138,7 +194,7 @@ export function ProductCard({
       {isModalOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
-          onClick={() => setIsModalOpen(false)}
+          onClick={closeModal}
         >
           <div
             className="bg-white w-full md:max-w-2xl md:rounded-[2rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col h-full md:h-auto md:max-h-[90vh]"
@@ -157,9 +213,9 @@ export function ProductCard({
                    </svg>
                  </button>
                </div>
-               <button onClick={() => setIsModalOpen(false)}>
-                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+               <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-800 hover:bg-slate-200">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                  </svg>
                </button>
             </div>
@@ -167,11 +223,19 @@ export function ProductCard({
             <div className="overflow-y-auto flex-1 pb-0">
               <div className="relative bg-white overflow-hidden flex flex-col items-center py-6">
                 <div className="relative w-full flex flex-col items-center">
-                  <div className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y" style={{ touchAction: "pan-x pan-y pinch-zoom" }}>
+                  <div 
+                    className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y" 
+                    style={{ touchAction: "pan-x pan-y pinch-zoom" }}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onDoubleClick={handleDoubleClick}
+                  >
                     <img
                       src={photos[activePhotoIndex]}
                       decoding="async"
-                      className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] object-contain relative z-10"
+                      className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] object-contain relative z-10 transition-transform duration-75"
+                      style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
                       alt={product.name}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -201,10 +265,10 @@ export function ProductCard({
                 )}
               </div>
 
-              <div className="px-6 pb-6 text-center">
+              <div className="px-6 pb-2 text-center">
                 <h2 className="text-xl md:text-2xl font-black text-slate-800 mb-1">{product.name}</h2>
                 {product.description && (
-                  <p className="text-sm text-slate-400 mt-2">{product.description}</p>
+                  <p className="text-sm text-slate-500 mt-1 whitespace-pre-wrap leading-relaxed">{product.description}</p>
                 )}
               </div>
               
@@ -230,9 +294,7 @@ export function ProductCard({
             </div>
 
             {/* شريط السعر والإضافة للسلة في الأسفل */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
-
-
+            <div className="p-4 bg-slate-50 border-t border-slate-100">
               <AddToCartButton product={productForCart} variant="default" />
             </div>
           </div>

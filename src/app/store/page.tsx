@@ -17,7 +17,7 @@ async function CategoriesRow() {
     if (categories.length === 0) return null;
 
     return (
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-pan-x">
+      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
         {categories.map((cat) => (
           <Link
             key={cat.id}
@@ -63,7 +63,7 @@ async function BestSellersRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-pan-x">
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
         {products.map((prod: any) => (
           <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
             <ProductCard product={prod} />
@@ -72,6 +72,100 @@ async function BestSellersRow() {
       </div>
     );
   } catch (error) {
+    return null;
+  }
+}
+
+async function NewProductsRow() {
+  try {
+    const productsRaw = await prisma.storeProduct.findMany({
+      where: { active: true },
+      take: 6,
+      orderBy: { createdAt: "desc" }
+    });
+    const products = deepSanitize(productsRaw);
+
+    if (products.length === 0) return null;
+
+    return (
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+        {products.map((prod: any) => (
+          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+            <ProductCard product={prod} />
+          </div>
+        ))}
+      </div>
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+async function CategoryShowcase({ slides }: { slides: any[] }) {
+  try {
+    const categoriesRaw = await prisma.storeCategory.findMany({
+      where: { active: true },
+      take: 4,
+      orderBy: { sequence: "desc" },
+    });
+    
+    if (categoriesRaw.length === 0) return null;
+
+    return (
+      <div className="space-y-8">
+        {categoriesRaw.map((cat, index) => (
+          <div key={cat.id}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-black text-slate-800">{cat.name}</h2>
+              <Link href={`/store/c/${cat.id}`} className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
+                عرض الكل
+              </Link>
+            </div>
+            <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
+              <CategoryProducts categoryId={cat.id} />
+            </Suspense>
+
+            {/* إضافة سلايدر بين كل قسم والثاني إذا توفرت سلايدات */}
+            {index < categoriesRaw.length - 1 && slides && slides.length > 0 && (
+              <div className="mt-8 mb-4 rounded-[2rem] overflow-hidden shadow-sm">
+                <StoreSlider slides={slides.map((s: any) => ({
+                  id: s.id,
+                  imageUrl: s.imageUrl,
+                  linkUrl: s.linkUrl || "",
+                  title: s.title || ""
+                }))} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+async function CategoryProducts({ categoryId }: { categoryId: string }) {
+  try {
+    const productsRaw = await prisma.storeProduct.findMany({
+      where: { active: true, branch: { categoryId } },
+      take: 6,
+      orderBy: { sequence: "desc" }
+    });
+    const products = deepSanitize(productsRaw);
+    
+    if (products.length === 0) return <div className="text-sm text-slate-400 p-4 text-center">لا توجد منتجات حالياً</div>;
+
+    return (
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+        {products.map((prod: any) => (
+          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+            <ProductCard product={prod} />
+          </div>
+        ))}
+      </div>
+    );
+  } catch(e) {
     return null;
   }
 }
@@ -133,7 +227,7 @@ export default async function StoreHomePage() {
         {/* قسم الفئات */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-black text-slate-800">الفئات</h2>
+            <h2 className="text-xl font-black text-slate-800">الأقسام</h2>
             <Link href="/store/categories" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
               عرض الكل
             </Link>
@@ -156,16 +250,23 @@ export default async function StoreHomePage() {
           </Suspense>
         </section>
         
-        {/* قسم جاهز للأكل */}
+        {/* قسم الجديد */}
         <section>
           <div className="flex items-center justify-between mb-4 mt-8">
-            <h2 className="text-xl font-black text-slate-800">جاهز للأكل</h2>
-            <Link href="/store/ready-to-eat" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
+            <h2 className="text-xl font-black text-slate-800">وصل حديثاً</h2>
+            <Link href="/store/new" className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-xl">
               عرض الكل
             </Link>
           </div>
           <Suspense fallback={<div className="flex gap-4 overflow-hidden"><div className="w-[160px] h-[240px] bg-slate-200 rounded-3xl animate-pulse" /></div>}>
-            <BestSellersRow /> {/* سنستخدم نفس الدالة حالياً كمثال */}
+            <NewProductsRow />
+          </Suspense>
+        </section>
+
+        {/* مقتطفات الأقسام */}
+        <section className="mt-8">
+          <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
+            <CategoryShowcase slides={slides} />
           </Suspense>
         </section>
       </div>

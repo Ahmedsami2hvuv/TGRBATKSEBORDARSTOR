@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -13,6 +15,13 @@ export default function OrdersPage() {
     const storedOrders = JSON.parse(localStorage.getItem("kse_orders") || "[]");
     setOrders(storedOrders.reverse()); // نعكس الترتيب ليكون الأحدث أولاً
   }, []);
+
+  const handleRepeatOrder = (items: any[]) => {
+    if (!items || items.length === 0) return;
+    localStorage.setItem("kse_cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("cart-updated"));
+    router.push("/store/cart");
+  };
 
   if (!mounted) return <div className="p-8 text-center text-slate-500">جاري التحميل...</div>;
 
@@ -52,14 +61,24 @@ export default function OrdersPage() {
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 mb-4">
                 {order.items && order.items.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center text-sm">
+                  <div key={i} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
                     <span className="text-slate-600 font-bold">{item.name}</span>
                     <span className="text-slate-500">الكمية: {item.quantity}</span>
                   </div>
                 ))}
               </div>
+
+              <button 
+                onClick={() => handleRepeatOrder(order.items)}
+                className="w-full py-3 bg-green-50 text-green-700 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                تكرار الطلب
+              </button>
             </div>
           ))}
         </div>

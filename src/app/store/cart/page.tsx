@@ -1,17 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useFormState } from "react-dom";
+import { submitStoreOrder } from "../actions";
+import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
+
+type RegionHit = { id: string; name: string; deliveryPrice?: string };
 
 export default function CartPage() {
-  const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+
+  // Form State
+  const [state, action] = useFormState(submitStoreOrder, {});
+  const hasRedirectedToWhatsappRef = useRef(false);
+  const regionInputRef = useRef<HTMLInputElement>(null);
+
+  const [regionQuery, setRegionQuery] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [phone, setPhone] = useState("");
+  const [regionHits, setRegionHits] = useState<RegionHit[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<RegionHit | null>(null);
+  const [deliveryPrice, setDeliveryPrice] = useState<number>(0);
+  const [baseDeliveryPrice, setBaseDeliveryPrice] = useState<number>(0);
+  const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
     setCart(JSON.parse(localStorage.getItem("kse_cart") || "[]"));
+    const profile = JSON.parse(localStorage.getItem("kse_user_profile") || "null");
+    if (profile) {
+      setPhone(profile.phone || "");
+      if (profile.landmark) setLandmark(profile.landmark);
+      if (profile.regionName) {
+        setRegionQuery(profile.regionName);
+        if (profile.regionId) {
+          setSelectedRegion({ id: profile.regionId, name: profile.regionName, deliveryPrice: String(profile.deliveryPrice || 0) });
+          setBaseDeliveryPrice(Number(profile.deliveryPrice || 0));
+          setDeliveryPrice(Number(profile.deliveryPrice || 0));
+        }
+      }
+    }
   }, []);
 
   function updateQty(id: string, delta: number) {
@@ -33,20 +64,92 @@ export default function CartPage() {
     window.dispatchEvent(new Event("cart-updated"));
   }
 
+  // Effect for Whatsapp redirection
+  useEffect(() => {
+    if (!state.ok || hasRedirectedToWhatsappRef.current) return;
+    hasRedirectedToWhatsappRef.current = true;
 
-  const subtotal = cart.reduce((acc, item) => acc + (Number(item.price || 0) * (item.quantity || 1)), 0);
+    try {
+      const orders = JSON.parse(localStorage.getItem("kse_orders") || "[]");
+      if (!orders.find((o: any) => o.orderNumber === state.orderNumber)) {
+        orders.push({
+          orderNumber: state.orderNumber,
+          date: new Date().toISOString(),
+          items: cart
+        });
+        localStorage.setItem("kse_orders", JSON.stringify(orders));
+      }
+    } catch(e) {}
+
+    const whatsappPhone = "9647733921468";
+    const orderNo = state.orderNumber ? String(state.orderNumber) : "غير متوفر";
+    const fallbackMessage = `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي\nرقم طلبي هو: ${orderNo}`;
+    const whatsappMessage = state.whatsappMessage || fallbackMessage;
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`;
+
+    window.location.href = whatsappUrl;
+  }, [state.ok, state.orderNumber, state.whatsappMessage, cart]);
+
+  // Effect for Region Autocomplete
+  useEffect(() => {
+    const q = regionQuery.trim();
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    if (q.length < 2) {
+      setRegionHits([]);
+      return;
+    }
+
+    searchTimer.current = setTimeout(() => {
+      void (async () => {
+        try {
+          const r = await fetch(`/api/regions/search?q=${encodeURIComponent(q)}`);
+          const j = (await r.json()) as { regions?: RegionHit[] };
+          setRegionHits(j.regions ?? []);
+        } catch {
+          setRegionHits([]);
+        }
+      })();
+    }, 280);
+
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [regionQuery]);
+
+
+  const regionErrMsg =
+    regionFieldError ??
+    (typeof state.error === "string" && state.error.includes("منطقة") ? state.error : null);
 
   if (!mounted) return null;
 
+  if (state.ok) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("kse_cart");
+      localStorage.removeItem("kse_active_shared_cart_id");
+      localStorage.removeItem("kse_shared_user_name");
+      window.dispatchEvent(new Event("cart-updated"));
+    }
+    return (
+      <div className="max-w-2xl mx-auto text-center py-20 space-y-6">
+        <div className="text-8xl animate-bounce">🎉</div>
+        <h1 className="text-4xl font-black text-slate-900">شكراً لطلبك!</h1>
+        <p className="text-xl text-slate-600 font-bold">رقم طلبك هو: <span className="text-violet-600">#{state.orderNumber}</span></p>
+        <p className="text-slate-500 font-bold">جارٍ تحويلك تلقائياً إلى واتساب...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-20">
-      <h1 className="text-3xl font-black text-slate-900 dark:text-white">سلة التسوق</h1>
+      <h1 className="text-2xl font-black text-slate-900 px-2">سلة التسوق</h1>
 
       {cart.length === 0 ? (
-        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-800">
+        <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
           <div className="text-6xl mb-4">🛒</div>
           <p className="text-slate-500 font-bold mb-6">سلتك فارغة حالياً</p>
-          <Link href="/store" className="inline-flex px-8 py-3 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition">
+          <Link href="/store" className="inline-flex px-8 py-3 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition">
             ابدأ التسوق الآن
           </Link>
         </div>
@@ -54,42 +157,193 @@ export default function CartPage() {
         <>
           <div className="space-y-4">
             {cart.map((item) => (
-              <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div key={item.id} className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
                 <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 shrink-0">
                   {item.photo ? <img src={item.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">📦</div>}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-black text-slate-900 dark:text-white">{item.name}</h3>
-                  <p className="text-amber-600 font-bold text-xs">يتم التسعير عند التجهيز</p>
+                  <h3 className="font-black text-slate-900">{item.name}</h3>
+                  <p className="text-amber-600 font-bold text-xs mt-1">يتم التسعير عند التجهيز</p>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
-                  <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-lg shadow-sm font-bold text-slate-600">-</button>
+                <div className="flex items-center gap-3 bg-slate-50 p-1 rounded-xl">
+                  <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm font-bold text-slate-600">-</button>
                   <span className="font-black w-4 text-center">{item.quantity}</span>
-                  <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-lg shadow-sm font-bold text-slate-600">+</button>
+                  <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm font-bold text-slate-600">+</button>
                 </div>
                 <button onClick={() => removeItem(item.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition">🗑️</button>
               </div>
             ))}
           </div>
 
-          <div className="bg-slate-900 text-white p-8 rounded-[3rem] shadow-xl shadow-slate-200 dark:shadow-none space-y-6">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 font-bold text-sm">التسعير الإجمالي: يتم تحديده عند التجهيز والتوصيل</span>
+          <form
+            action={action}
+            className="space-y-6 mt-8"
+            onSubmit={(e) => {
+              if (!selectedRegion?.id) {
+                e.preventDefault();
+                setRegionFieldError("اختر منطقتك من الاقتراحات بعد كتابة الاسم.");
+                regionInputRef.current?.focus();
+                return;
+              }
+              setRegionFieldError(null);
+
+              if (selectedRegion?.id) {
+                 localStorage.setItem("kse_user_profile", JSON.stringify({
+                   phone: phone,
+                   regionName: selectedRegion.name,
+                   regionId: selectedRegion.id,
+                   deliveryPrice: deliveryPrice,
+                   landmark: landmark
+                 }));
+              }
+            }}
+          >
+            <input type="hidden" name="cart" value={JSON.stringify(cart)} />
+            <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
+
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+              <h2 className="text-lg font-black text-slate-900 mb-4">معلومات التوصيل والاتصال</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">رقم الهاتف</label>
+                  <input
+                    name="phone"
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                    placeholder="07XXXXXXXXX"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">منطقتك</label>
+                  <input
+                    ref={regionInputRef}
+                    type="text"
+                    value={regionQuery}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setRegionQuery(v);
+                      setRegionFieldError(null);
+                      if (
+                        selectedRegion &&
+                        normalizeRegionNameForMatch(v) !== normalizeRegionNameForMatch(selectedRegion.name)
+                      ) {
+                        setSelectedRegion(null);
+                        setDeliveryPrice(0);
+                        setBaseDeliveryPrice(0);
+                      }
+                    }}
+                    autoComplete="off"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                    placeholder="مثال: حمدان البز أو جيكور..."
+                  />
+                  {selectedRegion ? (
+                    <p className="mt-2 text-xs font-bold text-emerald-700">
+                      تم الاختيار: <span className="font-black">{selectedRegion.name}</span>
+                    </p>
+                  ) : null}
+                  {regionErrMsg ? (
+                    <p className="mt-2 text-xs font-bold text-rose-600" role="alert">
+                      {regionErrMsg}
+                    </p>
+                  ) : null}
+
+                  {regionHits.length > 0 && !selectedRegion ? (
+                    <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 p-2">
+                      <ul className="max-h-40 overflow-auto space-y-1">
+                        {regionHits.map((h) => (
+                          <li key={h.id}>
+                            <button
+                              type="button"
+                              className="w-full rounded-lg px-3 py-2 text-end text-sm font-bold text-slate-800 hover:bg-white transition"
+                              onClick={() => {
+                                const currentInput = regionQuery;
+                                setSelectedRegion(h);
+                                const price = Number(h.deliveryPrice || 0);
+                                setDeliveryPrice(price);
+                                setBaseDeliveryPrice(price);
+                                setRegionQuery(h.name);
+                                setRegionHits([]);
+                                setRegionFieldError(null);
+
+                                const remainder = currentInput.replace(h.name, "").trim();
+                                if (remainder) {
+                                  const cleanedRemainder = remainder.replace(/^[،, \-ـ]+/, "");
+                                  if (cleanedRemainder) {
+                                    setLandmark((prev) =>
+                                      prev ? `${prev} ${cleanedRemainder}` : cleanedRemainder
+                                    );
+                                  }
+                                }
+                              }}
+                            >
+                              {h.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">أقرب نقطة دالة</label>
+                  <textarea
+                    name="landmark"
+                    value={landmark}
+                    onChange={(e) => setLandmark(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                    placeholder="مثال: قرب مدرسة ... أو خلف جامع ..."
+                    rows={2}
+                  />
+                </div>
+
+                {selectedRegion && (
+                  <div className="pt-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">سعر التوصيل المتوقع (ألف دينار)</label>
+                    <input
+                      name="deliveryPrice"
+                      type="number"
+                      value={deliveryPrice}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val >= baseDeliveryPrice) {
+                          setDeliveryPrice(val);
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-green-100 bg-green-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-200 transition font-black text-green-700"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="pt-4">
-              <Link
-                href="/store/checkout"
-                className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-center block transition transform active:scale-95 shadow-lg shadow-violet-800/40"
+            <div className="bg-slate-900 text-white p-6 rounded-[2rem] shadow-xl space-y-4">
+              <p className="text-center text-sm font-bold text-slate-300 leading-relaxed">
+                يتم تحديد السعر الكلي للمنتجات والتوصيل عند التجهيز بواسطة المندوب.
+              </p>
+
+              {typeof state.error === "string" && !state.error.includes("منطقة") ? (
+                <div className="p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-300 text-sm font-bold text-center">
+                  {state.error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-green-600 text-white rounded-xl font-black text-lg hover:bg-green-500 transition-all active:scale-95 shadow-lg"
               >
-                إتمام الطلب
-              </Link>
+                تأكيد وإرسال الطلب
+              </button>
             </div>
-          </div>
+          </form>
         </>
       )}
-
     </div>
   );
 }
-
