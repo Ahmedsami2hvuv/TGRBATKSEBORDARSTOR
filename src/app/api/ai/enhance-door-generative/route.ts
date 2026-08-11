@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         input: {
           image: formattedImage,
           prompt: prompt,
-          prompt_strength: 0.30, // قوة منخفضة جداً للحفاظ على الهيكل وتغيير الإضاءة فقط
+          prompt_strength: 0.55, // رفعنا القوة إلى 0.55 ليتمكن من تغيير الليل لنهار، 0.30 كانت ضعيفة جداً وأبقت المشهد ليلي
           num_outputs: 1,
           output_format: "jpg",
           go_fast: true, // لتسريع المعالجة إذا كان مدعوماً
