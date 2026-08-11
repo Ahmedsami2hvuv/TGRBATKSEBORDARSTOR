@@ -89,14 +89,15 @@ export async function POST(req: Request) {
 
     console.log("Starting Replicate Prediction (IC-Light)...");
     
-    // نستخدم الـ endpoint المباشر للموديل لتفادي البحث عن الـ Version Hash
-    const replicateResponse = await fetch("https://api.replicate.com/v1/models/zsxkib/ic-light/predictions", {
+    // نستخدم الـ endpoint القياسي لـ Replicate مع تحديد نسخة IC-Light
+    const replicateResponse = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${replicateToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        version: "d41bcb10d8c159868f4cfbd7c6a2ca01484f7d39e4613419d5952c61562f1ba7", // zsxkib/ic-light
         input: {
           image: formattedImage,
           prompt: prompt,
