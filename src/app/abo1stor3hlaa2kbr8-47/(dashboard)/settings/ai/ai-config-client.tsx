@@ -580,7 +580,7 @@ function DoorTestWidget() {
           if (data.predictionUrl) {
             let currentStatus = data.status;
             let attempts = 0;
-            const maxAttempts = 45;
+            const maxAttempts = 120; // تمت الزيادة إلى 120 (4 دقائق) لأن موديل Flux-Dev ثقيل جداً وقد يحتاج وقتاً طويلاً للإقلاع
             let finalData = data;
 
             while (
