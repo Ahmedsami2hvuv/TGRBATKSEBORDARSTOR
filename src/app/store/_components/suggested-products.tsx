@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProductCard } from "./product-card";
+import { ProductCard } from "../product-card";
 
 export function SuggestedProducts({ excludeId }: { excludeId: string }) {
   const [products, setProducts] = useState<any[]>([]);

@@ -1,16 +1,16 @@
 export default function StoreLoading() {
   return (
-    <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
-      <div className="relative w-24 h-24 mb-4">
-        {/* دوائر متحركة */}
-        <div className="absolute inset-0 border-4 border-green-100 rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-green-500 rounded-full border-t-transparent animate-spin"></div>
-        <div className="absolute inset-0 flex items-center justify-center text-2xl">
-          🛍️
-        </div>
+    <div className="space-y-6 py-8" dir="rtl">
+      <div className="h-10 w-48 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+      <div className="h-48 md:h-64 rounded-[2.5rem] bg-slate-100 dark:bg-slate-800 animate-pulse" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="aspect-[4/5] rounded-[2rem] bg-slate-100 dark:bg-slate-800 animate-pulse"
+          />
+        ))}
       </div>
-      <h3 className="text-lg font-black text-slate-800 mb-1">جاري التحميل...</h3>
-      <p className="text-sm text-slate-500 font-medium">يرجى الانتظار لحظات</p>
     </div>
   );
 }

@@ -28,9 +28,15 @@ export function ScrollReveal({
     if (domRef.current) {
       observer.observe(domRef.current);
     }
+    
+    // Fallback: show anyway after 500ms to avoid freezing perception
+    const fallbackTimer = setTimeout(() => {
+      setIsVisible(true);
+    }, 500);
 
     return () => {
       if (domRef.current) observer.unobserve(domRef.current);
+      clearTimeout(fallbackTimer);
     };
   }, []);
 

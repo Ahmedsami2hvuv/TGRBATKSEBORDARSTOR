@@ -19,22 +19,21 @@ async function CategoriesRow() {
 
     return (
       <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
-        {/* زر المفضلة كأول قسم دائمًا */}
+        {/* زر المفضلة الثابت */}
         <Link
           href="/store/favorites"
-          prefetch={true}
+          prefetch={false}
           className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] snap-start shrink-0"
         >
-          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-rose-50 border border-rose-100 shadow-sm overflow-hidden flex items-center justify-center p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-rose-500 fill-rose-500" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-rose-100 shadow-sm overflow-hidden flex items-center justify-center p-1 text-rose-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </div>
-          <span className="text-xs font-bold text-rose-600 text-center leading-tight">
+          <span className="text-xs font-bold text-slate-800 text-center leading-tight">
             المفضلة
           </span>
         </Link>
-        
         {categories.map((cat) => (
           <Link
             key={cat.id}
