@@ -19,6 +19,22 @@ async function CategoriesRow() {
 
     return (
       <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+        {/* زر المفضلة كأول قسم دائمًا */}
+        <Link
+          href="/store/favorites"
+          prefetch={true}
+          className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] snap-start shrink-0"
+        >
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-rose-50 border border-rose-100 shadow-sm overflow-hidden flex items-center justify-center p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-rose-500 fill-rose-500" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <span className="text-xs font-bold text-rose-600 text-center leading-tight">
+            المفضلة
+          </span>
+        </Link>
+        
         {categories.map((cat) => (
           <Link
             key={cat.id}
