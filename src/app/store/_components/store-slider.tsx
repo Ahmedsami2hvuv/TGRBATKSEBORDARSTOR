@@ -89,21 +89,19 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         {/* تم إزالة نقاط التنقل (الشريط الشفاف) نهائياً */}
       </div>
 
-      {/* أزرار التنقل السفلية - نظيفة وبدون حدود */}
+      {/* مؤشرات دائرية بدلاً من الأزرار الكبيرة */}
       {slides.length > 1 && (
-        <div className="grid grid-cols-2 mt-0 overflow-hidden rounded-b-[2.5rem] relative z-40" dir="ltr">
-          <button
-            onClick={prevSlide}
-            className="h-12 bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 font-black text-[11px] uppercase tracking-widest active:bg-slate-200 transition-colors"
-          >
-            السابق
-          </button>
-          <button
-            onClick={nextSlide}
-            className="h-12 bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest active:bg-indigo-700 transition-colors"
-          >
-            التالي
-          </button>
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrent(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                current === idx ? "w-4 bg-green-500" : "w-1.5 bg-slate-300 hover:bg-slate-400"
+              }`}
+              aria-label={`الذهاب للشريحة ${idx + 1}`}
+            />
+          ))}
         </div>
       )}
     </div>

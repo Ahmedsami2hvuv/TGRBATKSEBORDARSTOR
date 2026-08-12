@@ -235,13 +235,6 @@ export default async function StoreHomePage() {
                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                <div className="absolute -left-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </div>
-          )}
-          {/* مؤشرات البانر الوهمية */}
-          <div className="flex justify-center gap-1.5 mt-3">
-            <span className="w-4 h-1.5 bg-green-500 rounded-full"></span>
-            <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-            <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-          </div>
         </ScrollReveal>
 
         {/* قسم الفئات */}
