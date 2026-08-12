@@ -27,10 +27,10 @@ export function StoreHeader() {
   return (
     <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md pt-4 pb-2 px-4 shadow-sm relative border-b border-white/50">
       <div className="max-w-7xl mx-auto flex items-center justify-between mb-4">
-        {/* زر الرجوع - يسار */}
+        {/* زر الرجوع - يسار (سهم متجه لليمين لأن الموقع عربي RTL) */}
         <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
         
@@ -39,10 +39,10 @@ export function StoreHeader() {
           <span className="text-sm md:text-lg font-black text-green-600 line-clamp-1">خصيب ستور ابو الاكبر</span>
         </div>
 
-        {/* زر الأقسام (القائمة) - يمين */}
-        <Link href="/store/categories" prefetch={true} className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
+        {/* زر الرئيسية - يمين (منزل) */}
+        <Link href="/store" prefetch={true} className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         </Link>
       </div>
