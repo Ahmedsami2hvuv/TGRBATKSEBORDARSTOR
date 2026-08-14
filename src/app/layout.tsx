@@ -10,6 +10,8 @@ import { cookies } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "أبو الأكبر للتوصيل",
   description: "إدارة التوصيل والطلبات — لوحة الإدارة",

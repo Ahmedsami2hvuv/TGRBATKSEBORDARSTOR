@@ -5,7 +5,7 @@ import { StoreSlider } from "./_components/store-slider";
 import { ProductCard } from "./product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
-export const revalidate = 3600; // تفعيل الكاش لـ ساعة واحدة لتسريع التصفح بشكل كبير
+export const dynamic = "force-dynamic";
 
 async function CategoriesRow() {
   try {
