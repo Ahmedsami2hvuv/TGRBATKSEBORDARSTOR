@@ -196,11 +196,11 @@ export function ProductCard({
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={closeModal}
         >
           <div
-            className="bg-white w-full md:max-w-2xl md:rounded-[2rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col h-full md:h-auto md:max-h-[90vh]"
+            className="bg-white w-full md:max-w-2xl rounded-t-[2rem] md:rounded-[2rem] overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 flex flex-col max-h-[95dvh] md:max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
