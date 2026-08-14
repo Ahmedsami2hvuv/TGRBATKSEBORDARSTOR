@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AddToCartButton } from "./add-to-cart-button";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -15,9 +16,14 @@ export function ProductCard({
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [initialDistance, setInitialDistance] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
@@ -128,18 +134,12 @@ export function ProductCard({
     supplierId: product.supplierId || null,
   };
 
-  // دالة تنسيق السعر
-  const formatPrice = (price: number) => {
-    return price.toLocaleString('en-US');
-  };
-
   return (
     <>
       <div
         onClick={() => setIsModalOpen(true)}
         className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:border-green-400 hover:shadow-md transition-all duration-300 cursor-pointer relative"
       >
-        {/* زر المفضلة - أعلى اليسار */}
         <button
           onClick={toggleFavorite}
           className="absolute top-3 left-3 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all"
@@ -149,7 +149,6 @@ export function ProductCard({
           </svg>
         </button>
 
-        {/* حاوية الصورة */}
         <div className="relative w-full h-32 bg-white flex items-center justify-center pt-2">
           {photos[0] ? (
             <img
@@ -171,7 +170,6 @@ export function ProductCard({
           )}
         </div>
 
-        {/* محتوى المنتج */}
         <div className="px-3 pb-3 pt-1 flex-1 flex flex-col justify-between bg-white relative z-10 gap-1">
           <div>
             <h2 className="text-xs font-bold text-slate-800 line-clamp-2 text-right">
@@ -193,9 +191,9 @@ export function ProductCard({
         </div>
       </div>
 
-      {isModalOpen && (
+      {mounted && isModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={closeModal}
         >
           <div
@@ -301,7 +299,8 @@ export function ProductCard({
               <AddToCartButton product={productForCart} variant="default" />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
