@@ -79,14 +79,14 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
     >
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-3 pb-2 px-4"
+        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-2 pb-2 px-3"
         style={{ scrollBehavior: "smooth" }}
       >
         {slides.map((slide, index) => (
           <div
             key={slide.id}
             data-index={index}
-            className="w-[90%] md:w-[85%] shrink-0 snap-center relative aspect-[2/1] md:aspect-[21/7] rounded-[2rem] overflow-hidden bg-slate-100 shadow-sm"
+            className="w-[94%] md:w-[85%] shrink-0 snap-center relative aspect-[21/9] md:aspect-[21/7] rounded-[1.5rem] overflow-hidden bg-slate-100 shadow-sm"
           >
             {/* الصورة */}
             <img

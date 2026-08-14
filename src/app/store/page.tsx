@@ -217,7 +217,7 @@ export default async function StoreHomePage() {
         {/* البانر الترويجي */}
         <ScrollReveal className="mb-6">
           {slides && slides.length > 0 ? (
-            <div className="rounded-[2rem] overflow-hidden shadow-sm">
+            <div className="w-full">
               <StoreSlider slides={slides.map((s: any) => ({
                 id: s.id,
                 imageUrl: s.imageUrl,
