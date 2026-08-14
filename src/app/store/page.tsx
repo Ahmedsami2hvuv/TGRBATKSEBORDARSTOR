@@ -146,7 +146,7 @@ async function CategoryShowcase({ slides }: { slides: any[] }) {
               </Suspense>
 
               {shouldShowSlider && slides && slides.length > 0 && (
-                <div className="mt-8 mb-4 rounded-[2rem] overflow-hidden shadow-sm">
+                <div className="mt-8 mb-4 w-full">
                   <StoreSlider slides={slides.map((s: any) => ({
                     id: s.id,
                     imageUrl: s.imageUrl,
