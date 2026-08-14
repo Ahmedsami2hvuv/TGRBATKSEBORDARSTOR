@@ -18,38 +18,40 @@ export default function ProfilePage() {
   if (!mounted) return <div className="p-8 text-center text-slate-500">جاري التحميل...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-black text-slate-800">الملف الشخصي</h1>
+    <div className="space-y-4 pb-20 px-2">
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-black text-slate-800">الملف الشخصي</h1>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 text-center">
-        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-white shadow-md">
+      <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 flex items-center gap-4">
+        <div className="w-16 h-16 shrink-0 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl border-2 border-white shadow-sm">
           👤
         </div>
-        <h2 className="text-xl font-black text-slate-800 mb-1">
-          {profile ? "زبوننا المميز" : "زائر جديد"}
-        </h2>
-        <p className="text-sm text-slate-500 mb-6">
-          {profile ? "تم حفظ بياناتك محلياً لسهولة الطلب في المرات القادمة" : "قم بإجراء أول طلبية لك ليتم حفظ بياناتك تلقائياً هنا"}
-        </p>
+        <div>
+          <h2 className="text-lg font-black text-slate-800 mb-0.5">
+            {profile ? "زبوننا المميز" : "زائر جديد"}
+          </h2>
+          <p className="text-xs text-slate-500 leading-tight">
+            {profile ? "تم حفظ بياناتك محلياً لسهولة الطلب" : "قم بإجراء طلبية لحفظ بياناتك هنا"}
+          </p>
+        </div>
       </div>
 
       {profile && (
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 mb-1">رقم الهاتف</h3>
-            <p className="text-lg font-black text-slate-800">{profile.phone}</p>
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
+          <div className="p-4 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-500">رقم الهاتف</h3>
+            <p className="text-base font-black text-slate-900" dir="ltr">{profile.phone}</p>
           </div>
-          <div className="h-px bg-slate-50 w-full"></div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 mb-1">المنطقة الرئيسية</h3>
-            <p className="text-lg font-black text-slate-800">{profile.regionName}</p>
+          
+          <div className="p-4 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-500">المنطقة</h3>
+            <p className="text-base font-black text-slate-900 text-end truncate max-w-[60%]">{profile.regionName}</p>
           </div>
-          <div className="h-px bg-slate-50 w-full"></div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 mb-1">أقرب نقطة دالة (العنوان التفصيلي)</h3>
-            <p className="text-lg font-black text-slate-800">{profile.landmark || "لم يتم تحديد نقطة دالة"}</p>
+          
+          <div className="p-4 flex flex-col gap-1.5 bg-slate-50/50">
+            <h3 className="text-sm font-bold text-slate-500">أقرب نقطة دالة (العنوان التفصيلي)</h3>
+            <p className="text-sm font-black text-slate-900 leading-relaxed">{profile.landmark || "لم يتم تحديد نقطة دالة"}</p>
           </div>
         </div>
       )}
