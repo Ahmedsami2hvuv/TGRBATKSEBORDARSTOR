@@ -19,13 +19,18 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
   const isPending = optimisticBranch !== activeBranchIdFromUrl;
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-4 overflow-x-auto pb-2 hide-scrollbar snap-x px-4 -mx-4">
+    <div className="flex flex-col gap-2 relative">
+      {branches.length > 3 && (
+        <div className="absolute top-0 left-2 z-10 flex items-center justify-end w-full pointer-events-none opacity-60">
+           <span className="text-[10px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded-full shadow-sm animate-pulse">اسحب للمزيد 👈</span>
+        </div>
+      )}
+      <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-4 hide-scrollbar px-2 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
       <Link 
         href={`/store/c/${categoryId}`} 
         prefetch={false} 
         onClick={() => setOptimisticBranch(null)}
-        className="snap-start shrink-0 flex flex-col items-center gap-1 mt-1"
+        className="shrink-0 flex flex-col items-center gap-1"
       >
         <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all ${!activeBranchId ? 'border-green-500 bg-green-50 shadow-md scale-105' : 'border-slate-100 bg-slate-50 opacity-80 hover:opacity-100'}`}>
           <span className={`text-xs font-black ${!activeBranchId ? 'text-green-600' : 'text-slate-600'}`}>الكل</span>
@@ -40,7 +45,7 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
             href={`/store/c/${categoryId}?b=${b.id}`} 
             prefetch={false} 
             onClick={() => setOptimisticBranch(b.id)}
-            className="snap-start shrink-0 flex flex-col items-center gap-1 mt-1"
+            className="shrink-0 flex flex-col items-center gap-1"
           >
              <div className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${isActive ? 'border-green-500 shadow-md scale-105' : 'border-slate-100 opacity-80 hover:opacity-100'}`}>
                 {b.photoUrl ? (
