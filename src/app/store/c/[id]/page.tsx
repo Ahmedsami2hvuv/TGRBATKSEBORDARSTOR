@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { CategoryBranchesScroll } from "./_components/category-branches-scroll";
 import { ProductCard } from "../../product-card";
+import { ProductListInfinite } from "./_components/product-list-infinite";
 
 export const revalidate = 3600; // تفعيل الكاش لـ 3600 ثانية لتسريع التصفح
 
@@ -132,20 +133,9 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
           )}
         </header>
 
-        {/* Products Grid */}
+        {/* Products Grid with Infinite Scroll */}
         <section className="space-y-4">
-
-          {products.length === 0 ? (
-            <div className="text-center py-20 bg-slate-50 rounded-3xl text-slate-400 font-bold border border-slate-100">
-              لا توجد منتجات متاحة حالياً.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-              {products.map((product: any) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          <ProductListInfinite products={products} />
         </section>
       </div>
     );
