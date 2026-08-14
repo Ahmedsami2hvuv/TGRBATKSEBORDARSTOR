@@ -223,7 +223,7 @@ export function ProductCard({
                </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 pb-0">
+            <div className="overflow-y-auto overscroll-contain flex-1 pb-0">
               <div className="relative bg-white overflow-hidden flex flex-col items-center py-6">
                 <div className="relative w-full flex flex-col items-center">
                   <div 
