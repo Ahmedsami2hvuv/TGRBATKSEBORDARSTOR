@@ -235,6 +235,7 @@ export default async function StoreHomePage() {
                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                <div className="absolute -left-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </div>
+          )}
         </ScrollReveal>
 
         {/* قسم الفئات */}
