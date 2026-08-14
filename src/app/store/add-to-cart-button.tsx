@@ -41,6 +41,19 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
 
       setAdded(true);
       setQuantity(1);
+
+      // إطلاق حدث طيران الصورة
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      const startY = rect.top + rect.height / 2;
+      const imageUrl = product.photoUrls?.[0] || product.photo || product.imageUrl || "";
+      
+      if (imageUrl) {
+        window.dispatchEvent(new CustomEvent("kse:fly-to-cart", { 
+           detail: { startX, startY, imageUrl } 
+        }));
+      }
+      
       
       // إرسال تنبيه عائم
       window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "عاشت ايدك، تمت الإضافة للسلة!", type: "success" } }));

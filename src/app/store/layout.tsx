@@ -13,6 +13,7 @@ import { BottomNav } from "./_components/bottom-nav";
 import { StoreHeader } from "./_components/store-header";
 import { GlobalToast } from "./_components/global-toast";
 import { TopLoadingBar } from "./_components/top-loading-bar";
+import { CartAnimation } from "./_components/cart-animation";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,6 +31,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       
       {/* التنبيهات العائمة للتطبيق */}
       <GlobalToast />
+      
+      {/* أنيميشن إضافة المنتج للسلة */}
+      <CartAnimation />
 
       <main className="max-w-7xl mx-auto px-4 py-4">
         {children}
