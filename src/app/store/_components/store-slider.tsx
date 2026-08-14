@@ -46,11 +46,9 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
     const container = scrollRef.current;
     const child = container.children[index] as HTMLElement;
     if (child) {
-      child.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+      // حساب الموقع بالنسبة للحاوية لتجنب scrollIntoView الذي يحرك الشاشة بأكملها
+      const scrollPos = child.offsetLeft - (container.clientWidth - child.clientWidth) / 2;
+      container.scrollTo({ left: scrollPos, behavior: "smooth" });
     }
   };
 
