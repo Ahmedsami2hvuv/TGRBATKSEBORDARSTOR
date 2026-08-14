@@ -167,14 +167,14 @@ export default function CartPage() {
             {cart.map((item) => (
               <div key={item.id} className="p-4 flex items-center gap-4">
                 {/* أزرار زيادة ونقصان الكمية (عمودية) - تم نقلها للأمام */}
-                <div className="flex flex-col items-center justify-center bg-slate-50 p-1 rounded-2xl shrink-0 shadow-inner">
+                <div className="flex flex-col items-center justify-center bg-white p-1 rounded-2xl shrink-0 shadow-inner">
                   <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm font-bold text-green-600 active:scale-95 transition-transform">+</button>
                   <span className="font-black text-sm my-1 w-8 text-center text-slate-800">{item.quantity}</span>
                   <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm font-bold text-rose-500 active:scale-95 transition-transform">-</button>
                 </div>
 
                 {/* الصورة */}
-                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 shrink-0">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white shrink-0">
                   {item.photo ? <img src={item.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
                 </div>
                 
@@ -249,7 +249,7 @@ export default function CartPage() {
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
                     placeholder="07XXXXXXXXX"
                   />
                 </div>
@@ -289,7 +289,7 @@ export default function CartPage() {
                         }}
                         autoComplete="off"
                         required
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
                         placeholder="ابحث عن منطقتك (مثل: حمدان البز...)"
                       />
                       {regionErrMsg && (
@@ -344,7 +344,7 @@ export default function CartPage() {
                     name="landmark"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
                     placeholder="مثال: قرب مدرسة ... أو خلف جامع ..."
                     rows={2}
                   />

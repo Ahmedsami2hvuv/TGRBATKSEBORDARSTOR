@@ -295,7 +295,7 @@ export function ProductCard({
             </div>
 
             {/* شريط السعر والإضافة للسلة في الأسفل */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100">
+            <div className="p-4 bg-white border-t border-slate-100">
               <AddToCartButton product={productForCart} variant="default" />
             </div>
           </div>

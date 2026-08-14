@@ -86,7 +86,7 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar Filters */}
         <aside className="md:col-span-1 space-y-6">
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
             <h3 className="font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
               <span>🎯</span> الفلاتر
             </h3>
@@ -173,7 +173,7 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
             <div className={`grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
               {products.map((product: any) => (
                 <div key={product.id} className="bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-none flex flex-col group">
-                   <div className="relative aspect-square bg-slate-50 dark:bg-slate-800 overflow-hidden">
+                   <div className="relative aspect-square bg-white dark:bg-slate-800 overflow-hidden">
                     {product.photoUrls && (product.photoUrls as string[]).length > 0 ? (
                       <img
                         src={(product.photoUrls as string[])[0]}

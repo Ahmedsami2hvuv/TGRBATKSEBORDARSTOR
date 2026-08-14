@@ -172,7 +172,7 @@ function CheckoutContent() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="07XXXXXXXXX"
                 />
               </div>
@@ -210,7 +210,7 @@ function CheckoutContent() {
                   }}
                   autoComplete="off"
                   required
-                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="مثال: حمدان البز أو جيكور حزبه قرب الجامع"
                 />
                 {selectedRegion ? (
@@ -269,7 +269,7 @@ function CheckoutContent() {
                   name="landmark"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="مثال: قرب مدرسة ... أو خلف جامع ..."
                   rows={2}
                 />

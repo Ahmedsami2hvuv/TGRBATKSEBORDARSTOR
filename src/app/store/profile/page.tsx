@@ -142,7 +142,7 @@ export default function ProfilePage() {
             <p className="text-base font-black text-slate-900 text-end truncate max-w-[60%]">{profile.regionName}</p>
           </div>
           
-          <div className="p-4 flex flex-col gap-1.5 bg-slate-50/50">
+          <div className="p-4 flex flex-col gap-1.5 bg-white/50">
             <h3 className="text-sm font-bold text-slate-500">أقرب نقطة دالة (العنوان التفصيلي)</h3>
             <p className="text-sm font-black text-slate-900 leading-relaxed">{profile.landmark || "لم يتم تحديد نقطة دالة"}</p>
           </div>
@@ -157,7 +157,7 @@ export default function ProfilePage() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
               dir="ltr"
             />
           </div>
@@ -187,7 +187,7 @@ export default function ProfilePage() {
                   type="text"
                   value={regionQuery}
                   onChange={(e) => setRegionQuery(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
                   placeholder="ابحث عن منطقتك..."
                 />
                 {regionHits.length > 0 && (
@@ -221,7 +221,7 @@ export default function ProfilePage() {
             <textarea
               value={landmark}
               onChange={(e) => setLandmark(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
               rows={2}
             />
           </div>

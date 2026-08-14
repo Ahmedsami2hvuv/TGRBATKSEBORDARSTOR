@@ -28,7 +28,7 @@ export function StoreHeader() {
     <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md pt-4 pb-2 px-4 shadow-sm relative border-b border-white/50">
       <div className="max-w-7xl mx-auto flex items-center justify-between mb-4">
         {/* زر الرجوع - يسار (سهم متجه لليمين لأن الموقع عربي RTL) */}
-        <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
+        <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
@@ -40,7 +40,7 @@ export function StoreHeader() {
         </div>
 
         {/* زر الرئيسية - يمين (منزل) */}
-        <Link href="/store" prefetch={true} className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
+        <Link href="/store" prefetch={true} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
@@ -55,7 +55,7 @@ export function StoreHeader() {
             placeholder="بحث عن منتج..." 
             value={searchTerm}
             onChange={handleSearchChange}
-            className="w-full h-12 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" 
+            className="w-full h-12 bg-white rounded-2xl border border-slate-100 shadow-inner pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" 
           />
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

@@ -17,7 +17,7 @@ import { CartAnimation } from "./_components/cart-animation";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white font-sans pb-24 transition-colors duration-300 relative z-10" dir="rtl">
+    <div id="kse-store-root" className="min-h-screen bg-white font-sans pb-24 transition-colors duration-300 relative z-10" dir="rtl">
       {/* غطاء أبيض صلب لحجب صورة الخلفية */}
       <div className="fixed inset-0 bg-white -z-10"></div>
       
