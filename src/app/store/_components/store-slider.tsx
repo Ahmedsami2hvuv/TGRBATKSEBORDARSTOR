@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 interface Slide {
@@ -13,91 +13,118 @@ interface Slide {
 export function StoreSlider({ slides }: { slides: Slide[] }) {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const nextSlide = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % slides.length);
-  }, [slides.length]);
+  // تحديث النقطة النشطة عند التمرير باستخدام IntersectionObserver (يدعم الـ RTL بشكل مثالي)
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
 
-  const prevSlide = useCallback(() => {
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-  }, [slides.length]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = Number(entry.target.getAttribute("data-index"));
+            setCurrent(index);
+          }
+        });
+      },
+      {
+        root: container,
+        threshold: 0.6, // العنصر الذي يظهر بنسبة 60% يصبح هو النشط
+      }
+    );
 
+    Array.from(container.children).forEach((child) => observer.observe(child));
+
+    return () => observer.disconnect();
+  }, [slides]);
+
+  // دالة التمرير للعنصر المطلوب
+  const scrollToIndex = (index: number) => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const child = container.children[index] as HTMLElement;
+    if (child) {
+      child.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  };
+
+  // التحريك التلقائي كل 4 ثواني
   useEffect(() => {
     if (slides.length <= 1 || isPaused) return;
-    const timer = setInterval(nextSlide, 6000);
+
+    const timer = setInterval(() => {
+      setCurrent((prev) => {
+        const next = (prev + 1) % slides.length;
+        scrollToIndex(next);
+        return next;
+      });
+    }, 4000);
+
     return () => clearInterval(timer);
-  }, [slides.length, isPaused, nextSlide]);
+  }, [slides.length, isPaused]);
 
   if (slides.length === 0) return null;
 
   return (
     <div
-      className="w-full group select-none relative"
+      className="w-full relative"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
     >
       <div
-        className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-[2.5rem] bg-slate-950 touch-pan-y"
-        onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
-        onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
-        onTouchEnd={() => {
-          if (!touchStart || !touchEnd) return;
-          const dist = touchStart - touchEnd;
-          if (dist > 50) nextSlide();
-          if (dist < -50) prevSlide();
-          setTouchStart(null);
-          setTouchEnd(null);
-        }}
+        ref={scrollRef}
+        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-3 pb-2 px-4"
+        style={{ scrollBehavior: "smooth" }}
       >
-        {slides.map((slide, index) => {
-          const isActive = index === current;
-          return (
-            <div
-              key={slide.id}
-              className={`absolute inset-0 transition-all duration-[1000ms] ease-in-out ${
-                isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-              }`}
-            >
-              <div className="relative w-full h-full">
-                {/* صورة صافية تماماً بدون أي تدرجات أو ظلال */}
-                <img
-                  src={slide.imageUrl}
-                  alt={slide.title || ""}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-
-                {slide.title && (
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-20 text-right z-20">
-                    <h2 className={`text-white text-2xl md:text-5xl font-black transition-all duration-700 drop-shadow-md ${isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
-                      {slide.title}
-                    </h2>
-                  </div>
-                )}
-
-                {slide.linkUrl && (
-                  <Link href={slide.linkUrl} className="absolute inset-0 z-30" />
-                )}
+        {slides.map((slide, index) => (
+          <div
+            key={slide.id}
+            data-index={index}
+            className="w-[90%] md:w-[85%] shrink-0 snap-center relative aspect-[2/1] md:aspect-[21/7] rounded-[2rem] overflow-hidden bg-slate-100 shadow-sm"
+          >
+            {/* الصورة */}
+            <img
+              src={slide.imageUrl}
+              alt={slide.title || ""}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* عنوان السلايد (إن وجد) مع تدرج لوني لضمان وضوح النص */}
+            {slide.title && (
+              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12 text-right bg-gradient-to-t from-black/60 via-transparent to-transparent z-20">
+                <h2 className="text-white text-xl md:text-4xl font-black drop-shadow-md">
+                  {slide.title}
+                </h2>
               </div>
-            </div>
-          );
-        })}
-
-        {/* تم إزالة نقاط التنقل (الشريط الشفاف) نهائياً */}
+            )}
+            {/* الرابط */}
+            {slide.linkUrl && (
+              <Link href={slide.linkUrl} className="absolute inset-0 z-30" />
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* مؤشرات دائرية بدلاً من الأزرار الكبيرة */}
+      {/* مؤشرات دائرية */}
       {slides.length > 1 && (
-        <div className="flex justify-center items-center gap-1.5 mt-3">
+        <div className="flex justify-center items-center gap-1.5 mt-1">
           {slides.map((_, idx) => (
             <button
               key={idx}
-              onClick={() => setCurrent(idx)}
+              onClick={() => scrollToIndex(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                current === idx ? "w-4 bg-green-500" : "w-1.5 bg-slate-300 hover:bg-slate-400"
+                current === idx
+                  ? "w-4 bg-green-500"
+                  : "w-1.5 bg-slate-300 hover:bg-slate-400"
               }`}
               aria-label={`الذهاب للشريحة ${idx + 1}`}
             />
