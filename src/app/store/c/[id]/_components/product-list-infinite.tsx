@@ -19,15 +19,19 @@ export function ProductListInfinite({ products }: { products: any[] }) {
           setVisibleCount((prev) => Math.min(prev + 12, products.length));
         }
       },
-      { rootMargin: "200px" } // يبدأ بالتحميل قبل الوصول للنهاية بـ 200 بيكسل
+      { rootMargin: "400px" } // زيادة المسافة لضمان عدم حصول تقطيع
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
-    return () => observer.disconnect();
-  }, [products.length]);
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
+      observer.disconnect();
+    };
+  }, [products.length, visibleCount]);
 
   if (products.length === 0) {
     return (

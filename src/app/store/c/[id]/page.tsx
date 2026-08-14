@@ -1,3 +1,4 @@
+import React from "react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { CustomProductRequest } from "@/components/custom-product-request";
@@ -124,7 +125,9 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         {/* Header Section */}
         <header className="space-y-4 pt-2">
           {branches && branches.length > 0 ? (
-            <CategoryBranchesScroll branches={branches} categoryId={categoryId} productCount={products.length} />
+            <React.Suspense fallback={<div className="h-16 bg-slate-50 animate-pulse rounded-2xl" />}>
+              <CategoryBranchesScroll branches={branches} categoryId={categoryId} productCount={products.length} />
+            </React.Suspense>
           ) : (
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h2 className="text-lg md:text-xl font-black flex items-center gap-2 text-slate-900">المنتجات</h2>

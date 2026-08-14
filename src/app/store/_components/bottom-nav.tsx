@@ -34,12 +34,12 @@ export function BottomNav() {
     calculateCart();
 
     // الاستماع لأي تحديثات على السلة
-    window.addEventListener("cart_updated", calculateCart);
+    window.addEventListener("cart-updated", calculateCart);
     // الاستماع لتغييرات الـ localStorage في تبويبات أخرى
     window.addEventListener("storage", calculateCart);
 
     return () => {
-      window.removeEventListener("cart_updated", calculateCart);
+      window.removeEventListener("cart-updated", calculateCart);
       window.removeEventListener("storage", calculateCart);
     };
   }, []);
