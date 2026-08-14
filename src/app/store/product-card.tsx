@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { AddToCartButton } from "./add-to-cart-button";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { SuggestedProducts } from "./_components/suggested-products";
 
 export function ProductCard({
   product,
@@ -295,8 +294,6 @@ export function ProductCard({
                 </div>
               )}
 
-              {/* قسم المنتجات المكملة */}
-              <SuggestedProducts excludeId={product.id} />
             </div>
 
             {/* شريط السعر والإضافة للسلة في الأسفل */}
