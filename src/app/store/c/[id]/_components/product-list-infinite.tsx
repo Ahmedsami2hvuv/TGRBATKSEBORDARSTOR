@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ProductCard } from "../../product-card";
+import { ProductCard } from "../../../product-card";
 
 export function ProductListInfinite({ products }: { products: any[] }) {
   const [visibleCount, setVisibleCount] = useState(12);
