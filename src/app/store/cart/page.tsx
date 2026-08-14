@@ -166,19 +166,21 @@ export default function CartPage() {
           <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm divide-y divide-slate-50 overflow-hidden">
             {cart.map((item) => (
               <div key={item.id} className="p-4 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 shrink-0">
-                  {item.photo ? <img src={item.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
-                </div>
-                
-                <div className="flex-1">
-                  <h3 className="font-black text-slate-900 leading-tight">{item.name}</h3>
-                </div>
-                
-                {/* أزرار زيادة ونقصان الكمية (عمودية) */}
+                {/* أزرار زيادة ونقصان الكمية (عمودية) - تم نقلها للأمام */}
                 <div className="flex flex-col items-center justify-center bg-slate-50 p-1 rounded-2xl shrink-0 shadow-inner">
                   <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm font-bold text-green-600 active:scale-95 transition-transform">+</button>
                   <span className="font-black text-sm my-1 w-8 text-center text-slate-800">{item.quantity}</span>
                   <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm font-bold text-rose-500 active:scale-95 transition-transform">-</button>
+                </div>
+
+                {/* الصورة */}
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 shrink-0">
+                  {item.photo ? <img src={item.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
+                </div>
+                
+                {/* الاسم */}
+                <div className="flex-1">
+                  <h3 className="font-black text-slate-900 leading-tight">{item.name}</h3>
                 </div>
                 
                 {/* زر الحذف */}
