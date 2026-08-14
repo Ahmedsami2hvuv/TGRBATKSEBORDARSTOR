@@ -18,12 +18,12 @@ async function CategoriesRow() {
     if (categories.length === 0) return null;
 
     return (
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
         {/* زر المفضلة الثابت */}
         <Link
           href="/store/favorites"
           prefetch={false}
-          className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] snap-start shrink-0"
+          className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] shrink-0"
         >
           <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-rose-100 shadow-sm overflow-hidden flex items-center justify-center p-1 text-rose-500">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -39,7 +39,7 @@ async function CategoriesRow() {
             key={cat.id}
             href={`/store/c/${cat.id}`}
             prefetch={false}
-            className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] snap-start shrink-0"
+            className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] shrink-0"
           >
             <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden flex items-center justify-center p-1">
               {cat.photoUrl ? (
@@ -79,9 +79,9 @@ async function BestSellersRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
         {products.map((prod: any) => (
-          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
             <ProductCard product={prod} />
           </div>
         ))}
@@ -104,9 +104,9 @@ async function NewProductsRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
         {products.map((prod: any) => (
-          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
             <ProductCard product={prod} />
           </div>
         ))}
@@ -177,9 +177,9 @@ async function CategoryProducts({ categoryId }: { categoryId: string }) {
     if (products.length === 0) return <div className="text-sm text-slate-400 p-4 text-center">لا توجد منتجات حالياً</div>;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-4 -mx-4 hide-scrollbar snap-x touch-auto">
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
         {products.map((prod: any) => (
-          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
             <ProductCard product={prod} />
           </div>
         ))}
