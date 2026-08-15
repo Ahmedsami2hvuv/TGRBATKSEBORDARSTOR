@@ -137,20 +137,50 @@ export function SocialLinksSettingsForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-bold flex items-center gap-2 text-slate-600">
-            <Globe className="w-4 h-4" /> الموقع الإلكتروني (الرئيسي)
-          </label>
-          <input 
-            type="text" 
-            className={ad.input} 
-            value={links.website} 
-            onChange={e => setLinks({...links, website: e.target.value})} 
-            dir="ltr"
-          />
-        </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2 text-slate-600">
+              <Globe className="w-4 h-4" /> الموقع الإلكتروني (الرئيسي)
+            </label>
+            <input 
+              type="text" 
+              className={ad.input} 
+              value={links.website} 
+              onChange={e => setLinks({...links, website: e.target.value})} 
+              dir="ltr"
+            />
+          </div>
 
-      </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2 text-red-600">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg> 
+              رابط فيديو الشرح (يوتيوب)
+            </label>
+            <input 
+              type="text" 
+              className={ad.input} 
+              value={links.youtubeTutorial || ""} 
+              onChange={e => setLinks({...links, youtubeTutorial: e.target.value})} 
+              placeholder="مثال: https://youtube.com/..."
+              dir="ltr"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2 text-indigo-600">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+              رابط الأنيميشن (Lottie JSON)
+            </label>
+            <input 
+              type="text" 
+              className={ad.input} 
+              value={links.animationUrl || ""} 
+              onChange={e => setLinks({...links, animationUrl: e.target.value})} 
+              placeholder="رابط لملف json للأنيميشن"
+              dir="ltr"
+            />
+          </div>
+
+        </div>
 
       <div className="flex justify-end pt-4 border-t">
         <button

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { motion } from "framer-motion";
+import Lottie from "lottie-react";
 import {
   Store,
   Phone,
@@ -33,11 +34,30 @@ import {
 
 export default function WelcomePage() {
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
+  const [animationData, setAnimationData] = useState<any>(null);
 
   useEffect(() => {
     // جلب الروابط من الإعدادات
-    getSocialLinksAction().then(data => setLinks(data));
+    getSocialLinksAction().then(data => {
+      setLinks(data);
+      if (data?.animationUrl && data.animationUrl.endsWith(".json")) {
+        fetch(data.animationUrl)
+          .then((res) => res.json())
+          .then((json) => setAnimationData(json))
+          .catch((err) => console.error("Error loading custom lottie", err));
+      }
+    });
   }, []);
+
+  const getYouTubeEmbedUrl = (url?: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+      return `https://www.youtube.com/embed/${match[2]}`;
+    }
+    return url;
+  };
 
   const services = [
     { name: "أدوية وصيدلية", icon: "💊" },
@@ -169,23 +189,25 @@ export default function WelcomePage() {
             initial={{ scale: 0.8, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md flex flex-col items-center justify-center border border-slate-100"
+            className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md flex flex-col items-center justify-center border border-slate-100 overflow-hidden"
           >
-            <motion.div
-              animate={{ 
-                x: [-15, 15, -15],
-                y: [-5, 5, -5],
-                rotate: [-5, 5, -5]
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 3,
-                ease: "easeInOut"
-              }}
-              className="bg-blue-100 p-6 rounded-full mb-4"
-            >
-              <Bike className="w-20 h-20 text-blue-600" />
-            </motion.div>
+            {animationData ? (
+              <Lottie animationData={animationData} className="w-full h-64" loop={true} />
+            ) : links?.animationUrl && !links.animationUrl.endsWith(".json") ? (
+              <img src={links.animationUrl} alt="Delivery Animation" className="w-full h-64 object-contain rounded-2xl mb-4" />
+            ) : (
+              <motion.div
+                animate={{ 
+                  x: [-15, 15, -15],
+                  y: [-5, 5, -5],
+                  rotate: [-5, 5, -5]
+                }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                className="bg-blue-100 p-6 rounded-full mb-4"
+              >
+                <Bike className="w-20 h-20 text-blue-600" />
+              </motion.div>
+            )}
             <h2 className="text-center text-xl font-bold text-blue-800 mt-2">وين ما كنت، نوصلك!</h2>
           </motion.div>
         </section>
@@ -372,7 +394,33 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        {/* How to order video - temporarily removed until user provides link */}
+        {/* How to order video */}
+        {links?.youtubeTutorial && (
+          <motion.section 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-16"
+          >
+            <div className="bg-red-600 p-6 text-white text-center">
+              <svg className="w-12 h-12 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+              <h2 className="text-2xl font-bold">طريقة التسوق من موقعنا</h2>
+              <p className="opacity-90 mt-1">شاهد هذا الفيديو السريع لتعرف شون تطلب من الموقع بسهولة</p>
+            </div>
+            <div className="aspect-video w-full bg-slate-900">
+              <iframe 
+                width="100%" 
+                height="100%" 
+                src={getYouTubeEmbedUrl(links.youtubeTutorial) || links.youtubeTutorial} 
+                title="YouTube video player" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerPolicy="strict-origin-when-cross-origin" 
+                allowFullScreen
+              ></iframe>
+            </div>
+          </motion.section>
+        )}
 
         {/* Links & Social Media */}
         <section className="max-w-3xl mx-auto">
