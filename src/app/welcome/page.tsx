@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import ScrollytellingHero from "@/components/scrollytelling-hero";
 import {
   Store,
   Phone,
@@ -162,48 +163,10 @@ export default function WelcomePage() {
         </motion.div>
       </div>
 
-      {/* Header / Hero Section */}
-      <header className="bg-gradient-to-b from-blue-600 to-blue-500 text-white rounded-b-[3rem] shadow-lg relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
-        <div className="container mx-auto px-4 pt-12 pb-16 relative z-10 text-center">
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, type: "spring" }}
-            className="w-28 h-28 mx-auto bg-white rounded-full flex items-center justify-center shadow-xl mb-6 border-4 border-blue-100"
-          >
-            <ShoppingBag className="w-14 h-14 text-blue-600" />
-          </motion.div>
+      {/* Header / Hero Section (Scrollytelling) */}
+      <ScrollytellingHero />
 
-          <motion.h1
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-3xl md:text-5xl font-bold mb-4 leading-tight"
-          >
-            أهلاً بك في <span className="text-yellow-300">أبو الأكبر</span>
-            <br /> للتوصيل الشامل
-          </motion.h1>
-
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto"
-          >
-            كل شي تحتاجه بأبي الخصيب، نجيبه لحد باب بيتك وأنت مرتاح!
-          </motion.p>
-        </div>
-        
-        {/* Animated Wave */}
-        <div className="absolute bottom-0 left-0 right-0">
-           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto drop-shadow-md">
-             <path fill="#f8fafc" fillOpacity="1" d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,133.3C672,139,768,181,864,186.7C960,192,1056,160,1152,144C1248,128,1344,128,1392,128L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-           </svg>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 -mt-6">
+      <main className="container mx-auto px-4 pt-16 relative z-10">
         
         {/* Animation Section */}
         <section className="flex justify-center mb-10 relative z-20">
