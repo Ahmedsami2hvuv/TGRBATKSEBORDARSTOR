@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { motion } from "framer-motion";
-import Lottie from "lottie-react";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import {
   Store,
   Phone,
@@ -34,19 +34,10 @@ import {
 
 export default function WelcomePage() {
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
-  const [animationData, setAnimationData] = useState<any>(null);
 
   useEffect(() => {
     // جلب الروابط من الإعدادات
-    getSocialLinksAction().then(data => {
-      setLinks(data);
-      if (data?.animationUrl && data.animationUrl.endsWith(".json")) {
-        fetch(data.animationUrl)
-          .then((res) => res.json())
-          .then((json) => setAnimationData(json))
-          .catch((err) => console.error("Error loading custom lottie", err));
-      }
-    });
+    getSocialLinksAction().then(data => setLinks(data));
   }, []);
 
   const getYouTubeEmbedUrl = (url?: string) => {
@@ -191,10 +182,12 @@ export default function WelcomePage() {
             viewport={{ once: true }}
             className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md flex flex-col items-center justify-center border border-slate-100 overflow-hidden"
           >
-            {animationData ? (
-              <Lottie animationData={animationData} className="w-full h-64" loop={true} />
-            ) : links?.animationUrl && !links.animationUrl.endsWith(".json") ? (
-              <img src={links.animationUrl} alt="Delivery Animation" className="w-full h-64 object-contain rounded-2xl mb-4" />
+            {links?.animationUrl ? (
+              (links.animationUrl.endsWith(".lottie") || links.animationUrl.endsWith(".json")) ? (
+                <DotLottieReact src={links.animationUrl} loop autoplay className="w-full h-64 mb-4" />
+              ) : (
+                <img src={links.animationUrl} alt="Delivery Animation" className="w-full h-64 object-contain rounded-2xl mb-4" />
+              )
             ) : (
               <motion.div
                 animate={{ 
