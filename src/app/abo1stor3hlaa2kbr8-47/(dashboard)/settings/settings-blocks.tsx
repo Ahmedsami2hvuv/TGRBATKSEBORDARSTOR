@@ -23,6 +23,7 @@ import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 import { AdminBackgroundsSettings } from "./admin-backgrounds-settings";
 import { AdminGesturesSettings } from "./admin-gestures-settings";
+import { SocialLinksSettingsForm } from "./social-links-settings-form";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -188,6 +189,13 @@ export function SettingsBlocks({
 
   // Blocks Configuration
   const blocks = useMemo(() => [
+    {
+      id: "social-links",
+      title: "روابط حساباتنا",
+      subtitle: "تعديل روابط السوشال ميديا والكروبات",
+      tone: "pink",
+      content: <SocialLinksSettingsForm />
+    },
     {
       id: "ai-settings",
       title: "إعدادات الذكاء الصناعي 🤖",

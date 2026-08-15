@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
 import {
@@ -24,6 +25,7 @@ const welcomeAnimationUrl = "https://lottie.host/830cce89-9a64-4eec-8c6c-843c0d8
 
 export default function WelcomePage() {
   const [deliveryAnimationData, setDeliveryAnimationData] = useState<any>(null);
+  const [links, setLinks] = useState<SocialLinksConfig | null>(null);
 
   useEffect(() => {
     // جلب الأنيميشن بصيغة JSON لتشغيله
@@ -31,6 +33,9 @@ export default function WelcomePage() {
       .then((res) => res.json())
       .then((data) => setDeliveryAnimationData(data))
       .catch((err) => console.error("Error loading lottie", err));
+      
+    // جلب الروابط من الإعدادات
+    getSocialLinksAction().then(data => setLinks(data));
   }, []);
 
   const services = [
@@ -58,41 +63,59 @@ export default function WelcomePage() {
   const socialLinks = [
     {
       name: "موقعنا الإلكتروني (مسواگي)",
-      url: "https://aboakbar.mahal.li",
+      url: links?.website || "https://aboakbar.mahal.li",
       icon: <Store className="w-6 h-6" />,
       color: "bg-blue-600 hover:bg-blue-700",
     },
     {
       name: "راسلنا على الواتساب",
-      url: "https://wa.me/9647733921468",
+      url: links?.whatsapp || "https://wa.me/9647733921468",
       icon: <MessageCircle className="w-6 h-6" />,
       color: "bg-green-500 hover:bg-green-600",
     },
     {
       name: "تابعنا على الانستغرام",
-      url: "https://instagram.com/k.o_kseb",
+      url: links?.instagram || "https://instagram.com/k.o_kseb",
       icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>,
       color: "bg-pink-600 hover:bg-pink-700",
     },
     {
       name: "قناتنا على التليجرام",
-      url: "https://t.me/ko_kseb",
+      url: links?.telegram || "https://t.me/ko_kseb",
       icon: <Send className="w-6 h-6" />,
       color: "bg-blue-500 hover:bg-blue-600",
     },
     {
       name: "كروب الواتساب للبيع والشراء",
-      url: "https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH",
+      url: links?.whatsappGroup || "https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH",
       icon: <Users className="w-6 h-6" />,
       color: "bg-teal-500 hover:bg-teal-600",
     },
     {
       name: "كروب التليجرام للبيع والشراء",
-      url: "https://t.me/+IIH_puHB8Mg2MDIy",
+      url: links?.telegramGroup || "https://t.me/+IIH_puHB8Mg2MDIy",
       icon: <Users className="w-6 h-6" />,
       color: "bg-sky-500 hover:bg-sky-600",
     },
   ];
+
+  if (links?.facebook) {
+    socialLinks.push({
+      name: "صفحتنا على فيسبوك",
+      url: links.facebook,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>,
+      color: "bg-blue-700 hover:bg-blue-800",
+    });
+  }
+
+  if (links?.tiktok) {
+    socialLinks.push({
+      name: "حسابنا على تيك توك",
+      url: links.tiktok,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.8-5.46-.4-2.52.41-5.18 2.21-6.94 1.56-1.52 3.8-2.26 5.95-2.1v4.21c-.81-.07-1.63.15-2.28.64-.81.6-1.32 1.57-1.35 2.59-.03 1.01.41 1.99 1.14 2.63.78.68 1.91.89 2.87.58.94-.3 1.69-1.12 1.94-2.09.17-.67.2-1.38.19-2.07-.02-3.95-.01-7.91-.01-11.86Z"/></svg>,
+      color: "bg-slate-900 hover:bg-black",
+    });
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
