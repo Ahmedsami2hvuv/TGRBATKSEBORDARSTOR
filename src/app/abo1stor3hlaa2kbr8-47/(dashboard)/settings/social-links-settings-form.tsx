@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, Link as LinkIcon, Instagram, Facebook, Send, MessageCircle, Users, Globe } from "lucide-react";
+import { Save, Link as LinkIcon, Send, MessageCircle, Users, Globe } from "lucide-react";
 import { getSocialLinksAction, saveSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { ad } from "@/lib/admin-ui";
 
@@ -100,7 +100,7 @@ export function SocialLinksSettingsForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-bold flex items-center gap-2 text-pink-600">
-            <Instagram className="w-4 h-4" /> انستغرام
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg> انستغرام
           </label>
           <input 
             type="text" 
@@ -113,7 +113,7 @@ export function SocialLinksSettingsForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-bold flex items-center gap-2 text-blue-700">
-            <Facebook className="w-4 h-4" /> فيسبوك
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> فيسبوك
           </label>
           <input 
             type="text" 
