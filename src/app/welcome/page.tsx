@@ -147,7 +147,7 @@ export default function WelcomePage() {
     <div ref={containerRef} className="relative min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
       
       {/* 🏍️ Vertical Scroll Journey Path */}
-      <div className="fixed right-2 md:right-8 top-0 bottom-0 w-1.5 md:w-2 z-50 rounded-full hidden sm:block">
+      <div className="fixed right-2 md:right-6 top-1/2 -translate-y-1/2 h-[80vh] w-1.5 md:w-2 z-50 rounded-full pointer-events-none">
         <div className="absolute inset-0 bg-slate-200 rounded-full overflow-hidden">
           <motion.div 
             className="absolute top-0 left-0 right-0 bg-gradient-to-b from-blue-500 to-red-500 origin-top" 
