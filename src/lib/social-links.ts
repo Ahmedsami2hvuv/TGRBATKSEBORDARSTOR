@@ -24,7 +24,7 @@ const defaultSocialLinks: SocialLinksConfig = {
   instagram: "https://instagram.com/k.o_kseb",
   facebook: "",
   tiktok: "",
-  website: "https://aboakbar.mahal.li",
+  website: "https://aboakbr.com",
   whatsappGroup: "https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH",
   telegramGroup: "https://t.me/+IIH_puHB8Mg2MDIy",
 };

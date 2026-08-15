@@ -63,7 +63,7 @@ export default function WelcomePage() {
   const socialLinks = [
     {
       name: "موقعنا الإلكتروني (مسواگي)",
-      url: links?.website || "https://aboakbar.mahal.li",
+      url: links?.website || "https://aboakbr.com",
       icon: <Store className="w-6 h-6" />,
       color: "bg-blue-600 hover:bg-blue-700",
     },
