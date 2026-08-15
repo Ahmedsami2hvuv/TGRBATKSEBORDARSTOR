@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import { motion } from "framer-motion";
-import Lottie from "lottie-react";
 import {
   Store,
   Phone,
@@ -32,22 +31,10 @@ import {
   Bike
 } from "lucide-react";
 
-// رابط لأنيميشن دراجة توصيل (مجاني من lottiefiles)
-const deliveryAnimationUrl = "https://lottie.host/8816c7cf-6eb3-41bb-b851-bcce8e93ad3a/W0q7MhX7Z2.json";
-// أنيميشن ترحيبي
-const welcomeAnimationUrl = "https://lottie.host/830cce89-9a64-4eec-8c6c-843c0d8f0759/5a9g0lR7f3.json";
-
 export default function WelcomePage() {
-  const [deliveryAnimationData, setDeliveryAnimationData] = useState<any>(null);
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
 
   useEffect(() => {
-    // جلب الأنيميشن بصيغة JSON لتشغيله
-    fetch(deliveryAnimationUrl)
-      .then((res) => res.json())
-      .then((data) => setDeliveryAnimationData(data))
-      .catch((err) => console.error("Error loading lottie", err));
-      
     // جلب الروابط من الإعدادات
     getSocialLinksAction().then(data => setLinks(data));
   }, []);
@@ -179,18 +166,26 @@ export default function WelcomePage() {
         {/* Animation Section */}
         <section className="flex justify-center mb-10 relative z-20">
           <motion.div 
-            initial={{ y: 50, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-xl p-4 w-full max-w-md"
+            className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md flex flex-col items-center justify-center border border-slate-100"
           >
-            {deliveryAnimationData ? (
-              <Lottie animationData={deliveryAnimationData} className="w-full h-64" loop={true} />
-            ) : (
-              <div className="w-full h-64 flex items-center justify-center bg-slate-100 rounded-2xl animate-pulse">
-                <span className="text-slate-400">جاري تحميل دراجة أبو الأكبر...</span>
-              </div>
-            )}
+            <motion.div
+              animate={{ 
+                x: [-15, 15, -15],
+                y: [-5, 5, -5],
+                rotate: [-5, 5, -5]
+              }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 3,
+                ease: "easeInOut"
+              }}
+              className="bg-blue-100 p-6 rounded-full mb-4"
+            >
+              <Bike className="w-20 h-20 text-blue-600" />
+            </motion.div>
             <h2 className="text-center text-xl font-bold text-blue-800 mt-2">وين ما كنت، نوصلك!</h2>
           </motion.div>
         </section>
@@ -377,31 +372,7 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        {/* How to order video */}
-        <motion.section 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-16"
-        >
-          <div className="bg-red-600 p-6 text-white text-center">
-            <svg className="w-12 h-12 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-            <h2 className="text-2xl font-bold">طريقة التسوق من موقعنا</h2>
-            <p className="opacity-90 mt-1">شاهد هذا الفيديو السريع لتعرف شون تطلب من الموقع بسهولة</p>
-          </div>
-          <div className="aspect-video w-full bg-slate-900">
-            <iframe 
-              width="100%" 
-              height="100%" 
-              src="https://www.youtube.com/embed/DA4ewcyRhBo?si=C8B3fUjS5oVq5M6i" 
-              title="YouTube video player" 
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-              referrerPolicy="strict-origin-when-cross-origin" 
-              allowFullScreen
-            ></iframe>
-          </div>
-        </motion.section>
+        {/* How to order video - temporarily removed until user provides link */}
 
         {/* Links & Social Media */}
         <section className="max-w-3xl mx-auto">
