@@ -1,0 +1,286 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import Lottie from "lottie-react";
+import {
+  Store,
+  Phone,
+  MessageCircle,
+  Instagram,
+  Send,
+  Users,
+  ShoppingBag,
+  Heart,
+  ChevronDown,
+  Info,
+  Youtube,
+  Save,
+  CheckCircle2,
+} from "lucide-react";
+
+// رابط لأنيميشن دراجة توصيل (مجاني من lottiefiles)
+const deliveryAnimationUrl = "https://lottie.host/8816c7cf-6eb3-41bb-b851-bcce8e93ad3a/W0q7MhX7Z2.json";
+// أنيميشن ترحيبي
+const welcomeAnimationUrl = "https://lottie.host/830cce89-9a64-4eec-8c6c-843c0d8f0759/5a9g0lR7f3.json";
+
+export default function WelcomePage() {
+  const [deliveryAnimationData, setDeliveryAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    // جلب الأنيميشن بصيغة JSON لتشغيله
+    fetch(deliveryAnimationUrl)
+      .then((res) => res.json())
+      .then((data) => setDeliveryAnimationData(data))
+      .catch((err) => console.error("Error loading lottie", err));
+  }, []);
+
+  const services = [
+    { name: "أدوية وصيدلية", icon: "💊" },
+    { name: "مخضر وفواكه", icon: "🍎" },
+    { name: "خبز وصمون حار", icon: "🥖" },
+    { name: "كيك ومعجنات", icon: "🍰" },
+    { name: "كبة ولحم بعجين", icon: "🥩" },
+    { name: "أجبان وألبان", icon: "🧀" },
+    { name: "دجاج وسمچ شوي", icon: "🍗" },
+    { name: "طرشي وبهارات", icon: "🌶️" },
+    { name: "مواد تجميل", icon: "💄" },
+    { name: "كرزات وتسالي", icon: "🥜" },
+    { name: "إنشائية وكهربائيات", icon: "💡" },
+    { name: "قرطاسية وهدايا", icon: "🎁" },
+    { name: "ألعاب وملابس", icon: "👕" },
+    { name: "مفروشات وأثاث", icon: "🛏️" },
+    { name: "ذهب ومجوهرات", icon: "💍" },
+    { name: "مواد غذائية", icon: "📦" },
+    { name: "مستلزمات أركيلة", icon: "💨" },
+    { name: "بانزين ودهن محركات", icon: "🛢️" },
+    { name: "توصيل أموال وأمانات", icon: "💸" },
+  ];
+
+  const socialLinks = [
+    {
+      name: "موقعنا الإلكتروني (مسواگي)",
+      url: "https://aboakbar.mahal.li",
+      icon: <Store className="w-6 h-6" />,
+      color: "bg-blue-600 hover:bg-blue-700",
+    },
+    {
+      name: "راسلنا على الواتساب",
+      url: "https://wa.me/9647733921468",
+      icon: <MessageCircle className="w-6 h-6" />,
+      color: "bg-green-500 hover:bg-green-600",
+    },
+    {
+      name: "تابعنا على الانستغرام",
+      url: "https://instagram.com/k.o_kseb",
+      icon: <Instagram className="w-6 h-6" />,
+      color: "bg-pink-600 hover:bg-pink-700",
+    },
+    {
+      name: "قناتنا على التليجرام",
+      url: "https://t.me/ko_kseb",
+      icon: <Send className="w-6 h-6" />,
+      color: "bg-blue-500 hover:bg-blue-600",
+    },
+    {
+      name: "كروب الواتساب للبيع والشراء",
+      url: "https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH",
+      icon: <Users className="w-6 h-6" />,
+      color: "bg-teal-500 hover:bg-teal-600",
+    },
+    {
+      name: "كروب التليجرام للبيع والشراء",
+      url: "https://t.me/+IIH_puHB8Mg2MDIy",
+      icon: <Users className="w-6 h-6" />,
+      color: "bg-sky-500 hover:bg-sky-600",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
+      {/* Header / Hero Section */}
+      <header className="bg-gradient-to-b from-blue-600 to-blue-500 text-white rounded-b-[3rem] shadow-lg relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
+        <div className="container mx-auto px-4 pt-12 pb-16 relative z-10 text-center">
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, type: "spring" }}
+            className="w-28 h-28 mx-auto bg-white rounded-full flex items-center justify-center shadow-xl mb-6 border-4 border-blue-100"
+          >
+            <ShoppingBag className="w-14 h-14 text-blue-600" />
+          </motion.div>
+
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-3xl md:text-5xl font-bold mb-4 leading-tight"
+          >
+            أهلاً بك في <span className="text-yellow-300">أبو الأكبر</span>
+            <br /> للتوصيل الشامل
+          </motion.h1>
+
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto"
+          >
+            كل شي تحتاجه بأبي الخصيب، نجيبه لحد باب بيتك وأنت مرتاح!
+          </motion.p>
+        </div>
+        
+        {/* Animated Wave */}
+        <div className="absolute bottom-0 left-0 right-0">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto drop-shadow-md">
+             <path fill="#f8fafc" fillOpacity="1" d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,133.3C672,139,768,181,864,186.7C960,192,1056,160,1152,144C1248,128,1344,128,1392,128L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+           </svg>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 -mt-6">
+        
+        {/* Animation Section */}
+        <section className="flex justify-center mb-10 relative z-20">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="bg-white rounded-3xl shadow-xl p-4 w-full max-w-md"
+          >
+            {deliveryAnimationData ? (
+              <Lottie animationData={deliveryAnimationData} className="w-full h-64" loop={true} />
+            ) : (
+              <div className="w-full h-64 flex items-center justify-center bg-slate-100 rounded-2xl animate-pulse">
+                <span className="text-slate-400">جاري تحميل دراجة أبو الأكبر...</span>
+              </div>
+            )}
+            <h2 className="text-center text-xl font-bold text-blue-800 mt-2">وين ما كنت، نوصلك!</h2>
+          </motion.div>
+        </section>
+
+        {/* Essential Instruction */}
+        <motion.section 
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="max-w-3xl mx-auto bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-6 mb-12 shadow-md text-center"
+        >
+          <Save className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+          <h2 className="text-2xl font-bold text-yellow-800 mb-2">قبل كل شي... خطوة مهمة!</h2>
+          <p className="text-lg text-yellow-900 mb-4">
+            الرجاء خزن رقمنا باسم <strong>(أبو الأكبر للتوصيل)</strong> حتى تقدر تشوف الحالات (الستوريات) اللي ننزل بيها عروض يومية من شتى المحلات. 
+          </p>
+          <a 
+            href="tel:07733921468" 
+            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 px-6 rounded-full transition-colors"
+          >
+            <Phone className="w-5 h-5" />
+            07733921468
+          </a>
+        </motion.section>
+
+        {/* Services Section */}
+        <section className="max-w-5xl mx-auto mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-blue-900 mb-3 flex items-center justify-center gap-2">
+              <CheckCircle2 className="text-blue-500" /> شنو نكدر نوصلك؟
+            </h2>
+            <p className="text-slate-600 text-lg">
+              افتح واتساب، اطلب أي شي يخطر ببالك... وإحنا نتكفل بالباقي!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {services.map((service, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-3 hover:shadow-md transition-all group"
+              >
+                <div className="text-4xl group-hover:scale-110 transition-transform duration-300">{service.icon}</div>
+                <span className="font-semibold text-slate-700 text-sm md:text-base">{service.name}</span>
+              </motion.div>
+            ))}
+          </div>
+          <div className="mt-8 text-center bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 font-medium">
+             ... وكل شي يصير بين إيديك وين ما كنت بأبي الخصيب!
+          </div>
+        </section>
+
+        {/* How to order video */}
+        <motion.section 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-16"
+        >
+          <div className="bg-red-600 p-6 text-white text-center">
+            <Youtube className="w-12 h-12 mx-auto mb-2" />
+            <h2 className="text-2xl font-bold">طريقة التسوق من موقعنا</h2>
+            <p className="opacity-90 mt-1">شاهد هذا الفيديو السريع لتعرف شون تطلب من الموقع بسهولة</p>
+          </div>
+          <div className="aspect-video w-full bg-slate-900">
+            <iframe 
+              width="100%" 
+              height="100%" 
+              src="https://www.youtube.com/embed/DA4ewcyRhBo?si=C8B3fUjS5oVq5M6i" 
+              title="YouTube video player" 
+              frameBorder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              referrerPolicy="strict-origin-when-cross-origin" 
+              allowFullScreen
+            ></iframe>
+          </div>
+        </motion.section>
+
+        {/* Links & Social Media */}
+        <section className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-blue-900 mb-3">
+              حساباتنا وروابطنا
+            </h2>
+            <p className="text-slate-600 text-lg">
+              خليك على تواصل ويانا دائماً ولا تفوت العروض!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {socialLinks.map((link, index) => (
+              <motion.a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className={`${link.color} text-white p-5 rounded-2xl flex items-center gap-4 shadow-md transition-all`}
+              >
+                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                  {link.icon}
+                </div>
+                <span className="font-bold text-lg">{link.name}</span>
+              </motion.a>
+            ))}
+          </div>
+        </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-16 text-center text-slate-500 pb-8 px-4">
+        <Heart className="w-6 h-6 text-red-500 mx-auto mb-2 animate-bounce" />
+        <p>نخدمكم بعيوننا - أبو الأكبر للتوصيل الشامل</p>
+        <p className="text-sm mt-1">أبي الخصيب - البصرة</p>
+      </footer>
+    </div>
+  );
+}
