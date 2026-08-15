@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -107,13 +107,14 @@ export default function ScrollytellingHero() {
           </motion.div>
         </div>
         
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center text-slate-400">
-           <span className="text-xs mb-2 tracking-widest uppercase opacity-70">اسحب للأسفل</span>
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center z-50">
+           <span className="text-sm font-bold mb-3 tracking-widest text-yellow-400 drop-shadow-lg">اسحب للأسفل</span>
            <motion.div 
-             animate={{ y: [0, 10, 0] }} 
+             animate={{ y: [0, 15, 0] }} 
              transition={{ repeat: Infinity, duration: 1.5 }}
+             className="bg-yellow-400 text-slate-900 rounded-full p-2 shadow-[0_0_20px_rgba(250,204,21,0.6)]"
            >
-             <ChevronDown className="w-6 h-6" />
+             <ChevronDown className="w-8 h-8" />
            </motion.div>
         </div>
       </motion.div>

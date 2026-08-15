@@ -1,10 +1,9 @@
 "use client";
-
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import ScrollytellingHero from "@/components/scrollytelling-hero";
+import { motion } from "framer-motion";
 import {
   Store,
   Phone,
@@ -35,20 +34,6 @@ import {
 
 export default function WelcomePage() {
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
-
-  const bikeY = useTransform(smoothProgress, [0, 1], ["0%", "95%"]);
 
   useEffect(() => {
     // جلب الروابط من الإعدادات
@@ -145,24 +130,8 @@ export default function WelcomePage() {
   }
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
+    <div className="relative min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
       
-      {/* 🏍️ Vertical Scroll Journey Path */}
-      <div className="fixed right-2 md:right-6 top-1/2 -translate-y-1/2 h-[80vh] w-1.5 md:w-2 z-50 rounded-full pointer-events-none">
-        <div className="absolute inset-0 bg-slate-200 rounded-full overflow-hidden">
-          <motion.div 
-            className="absolute top-0 left-0 right-0 bg-gradient-to-b from-blue-500 to-red-500 origin-top" 
-            style={{ scaleY: smoothProgress, height: "100%" }} 
-          />
-        </div>
-        <motion.div 
-          className="absolute left-1/2 -translate-x-1/2 bg-white rounded-full p-2 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-blue-500 z-50"
-          style={{ top: bikeY }}
-        >
-          <Bike className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-        </motion.div>
-      </div>
-
       {/* Header / Hero Section (Scrollytelling) */}
       <ScrollytellingHero />
 
