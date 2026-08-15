@@ -16,6 +16,20 @@ import {
   Info,
   Save,
   CheckCircle2,
+  Banknote, 
+  Zap, 
+  Clock, 
+  UserCheck, 
+  RefreshCcw, 
+  Megaphone, 
+  Car, 
+  MonitorSmartphone, 
+  MapPin, 
+  Mic, 
+  Camera, 
+  ArrowRightLeft, 
+  CheckCheck, 
+  Bike
 } from "lucide-react";
 
 // رابط لأنيميشن دراجة توصيل (مجاني من lottiefiles)
@@ -62,7 +76,7 @@ export default function WelcomePage() {
 
   const socialLinks = [
     {
-      name: "موقعنا الإلكتروني (مسواگي)",
+      name: "متجرنا خصيب ستور",
       url: links?.website || "https://aboakbr.com",
       icon: <Store className="w-6 h-6" />,
       color: "bg-blue-600 hover:bg-blue-700",
@@ -231,6 +245,135 @@ export default function WelcomePage() {
           </div>
           <div className="mt-8 text-center bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 font-medium">
              ... وكل شي يصير بين إيديك وين ما كنت بأبي الخصيب!
+          </div>
+        </section>
+
+        {/* B2B Section for Shops and Pages */}
+        <section className="max-w-5xl mx-auto mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-blue-900 mb-3 flex items-center justify-center gap-2">
+              <Store className="text-blue-500" /> أصحاب المحلات والبيجات التجارية
+            </h2>
+            <p className="text-slate-600 text-lg px-4">
+              استمتعوا بمزايا التوصيل المتوفرة لدينا خصيصاً لدعم أعمالكم!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 px-4">
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-green-100 text-green-600 p-3 rounded-xl"><Banknote className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">الدفع نقداً</h3>
+                <p className="text-slate-600 text-sm">يسلمكم المندوب الحساب قبل مغادرة المكان مباشرة.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-amber-100 text-amber-600 p-3 rounded-xl"><Zap className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">توصيل فوري</h3>
+                <p className="text-slate-600 text-sm">الطلبات الصباحية تصل صباحاً، والمسائية تصل عصراً/مغرباً. أقصى تأخير 3 ساعات فقط للظروف.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-xl"><Clock className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">احترام شديد للمواعيد</h3>
+                <p className="text-slate-600 text-sm">التزام تام بموعد استلام وتسليم الطلبيات.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-indigo-100 text-indigo-600 p-3 rounded-xl"><UserCheck className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">مندوبين محترفين</h3>
+                <p className="text-slate-600 text-sm">مختارين بعناية ومدربين على أعلى مستوى من الاحترام واللباقة.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-red-100 text-red-600 p-3 rounded-xl"><RefreshCcw className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">إعادة الطلبات مجاناً</h3>
+                <p className="text-slate-600 text-sm">في حال عدم استجابة الزبون للاتصال، يتم إرجاع الطلب لكم مجاناً.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
+              <div className="bg-pink-100 text-pink-600 p-3 rounded-xl"><Megaphone className="w-6 h-6" /></div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">الترويج لحساباتكم</h3>
+                <p className="text-slate-600 text-sm">نقوم بنشر حساباتكم عبر حساباتنا وقنواتنا لزيادة الطلبيات لكم.</p>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 md:col-span-2 items-start">
+              <div className="bg-sky-100 text-sky-600 p-3 rounded-xl"><MonitorSmartphone className="w-6 h-6" /></div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg mb-2 text-sky-800">موقع مخصص لرفع طلباتكم بسهولة</h3>
+                <p className="text-sm text-slate-600 mb-3">يغنيك عن تحميل التطبيقات، الموقع سيتعرف عليك مباشرة لرفع طلباتك!</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><CheckCheck className="w-4 h-4 text-green-500" /> بدون يوزر وباسورد</span>
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Mic className="w-4 h-4 text-blue-500" /> بصمة صوت بالطلبية</span>
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Camera className="w-4 h-4 text-pink-500" /> التقاط صور للطلب</span>
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><ArrowRightLeft className="w-4 h-4 text-orange-500" /> زر الطلب العكسي</span>
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Car className="w-4 h-4 text-slate-500" /> سيارات حديثة مكيفة</span>
+                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Bike className="w-4 h-4 text-red-500" /> دراجات سريعة</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section className="max-w-4xl mx-auto mb-16 bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 mx-4">
+          <div className="bg-gradient-to-r from-blue-700 to-blue-500 p-6 text-white text-center">
+            <MapPin className="w-10 h-10 mx-auto mb-2" />
+            <h2 className="text-2xl font-bold">أسعار التوصيل حسب المناطق</h2>
+            <p className="opacity-90 mt-1">الأسعار للطلبية الواحدة لجميع مناطق أبي الخصيب</p>
+          </div>
+          
+          <div className="p-6 md:p-8 grid md:grid-cols-2 gap-8">
+            {/* 3000 Regions */}
+            <div>
+              <div className="flex items-center justify-between mb-4 border-b pb-2">
+                <h3 className="text-xl font-bold text-slate-800">مناطق على 3</h3>
+                <span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-sm">3,000 دينار</span>
+              </div>
+              <ul className="grid grid-cols-2 gap-x-2 gap-y-3 text-sm text-slate-600 list-disc list-inside">
+                <li>الاسمدة</li><li>جيكور حزبه</li><li>جيكور</li><li>العصفورية</li>
+                <li>باب سليمان</li><li>باب طويل</li><li>باب العريض</li><li>باب عباس</li>
+                <li>كوت بازل</li><li>باب دباغ</li><li>باب ميدان</li><li>بلد سلطان</li>
+                <li>ام الصخر</li><li>باب رمانه</li><li>اهل عيد</li><li>الباني</li>
+                <li>نهر خوز</li><li>ابو مغيرة</li><li>مجيبرة</li><li>السبيليات</li>
+                <li>الصنكر</li><li>طريق الوسطي</li><li>العاكولية</li><li>الصحراء</li>
+                <li>ابو كوصرة</li><li>طريزاوية</li><li>العوجة</li><li>المقيمين</li>
+                <li>الابطاح</li><li>اللكطة</li><li>الشجرة الطيبة</li><li>شيخ ابراهيم</li>
+                <li>نزيلة</li><li>عميرية</li><li>بلد</li><li>كوت البلجاني</li>
+                <li>الحوطة</li><li>السوق</li><li>محيله (فروع)</li>
+              </ul>
+            </div>
+
+            {/* 5000 Regions */}
+            <div>
+              <div className="flex items-center justify-between mb-4 border-b pb-2">
+                <h3 className="text-xl font-bold text-slate-800">مناطق على 5</h3>
+                <span className="bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full text-sm">5,000 دينار</span>
+              </div>
+              <ul className="grid grid-cols-2 gap-x-2 gap-y-3 text-sm text-slate-600 list-disc list-inside">
+                <li>المعهد الصناعي</li><li>دورة ام زباله</li><li>الاندلس</li><li>الجديدة</li>
+                <li>الرومية</li><li>الصكاروة</li><li>كوت الصلحي</li><li>كوت الفداغ</li>
+                <li>جامع الشهيد</li><li>يوسفان</li><li>حمدان</li><li>كوت ثويني</li>
+                <li>البهادرية</li><li>محولة الزهير</li><li>كوت الحمداني</li><li>عويسيان</li>
+                <li>مهيجران</li><li>السراجي</li>
+              </ul>
+              <div className="mt-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  * بعض فروع محيلة البعيدة مثل شارع سيد حامد، الاندلس، الصكاروة تكون على 5,000.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
