@@ -101,8 +101,8 @@ export default function ScrollytellingHero() {
                </motion.div>
              </motion.div>
              
-             <motion.h2 style={{ opacity: text3Opacity }} className="absolute bottom-1/4 w-[90%] md:w-[200%] text-center text-3xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-200 leading-tight">
-               خصيب ستور يوصلها <br/> لباب بيتك فوراً!
+             <motion.h2 style={{ opacity: text3Opacity }} className="absolute bottom-1/4 w-[90%] md:w-[200%] text-center text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-200 leading-tight">
+               أبو الأكبر للتوصيل الشامل <br/> <span className="text-xl md:text-3xl mt-4 block text-blue-200 font-normal">ومو بس هيج... فتحنالك متجر إلكتروني بيه كلشي!</span>
              </motion.h2>
           </motion.div>
         </div>
