@@ -35,7 +35,7 @@ export default function WelcomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F6FAFD] text-[#22323F] font-['IBM_Plex_Sans_Arabic'] overflow-x-hidden selection:bg-[#BFE0F2] selection:text-[#22323F]">
+    <div className="min-h-screen bg-[#F6FAFD] text-[#22323F] font-['IBM_Plex_Sans_Arabic']  selection:bg-[#BFE0F2] selection:text-[#22323F]">
       
       {/* 1. السرد القصصي (Scrollytelling) بالبداية */}
       <ScrollytellingHero />
