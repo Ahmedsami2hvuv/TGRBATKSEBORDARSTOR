@@ -1531,17 +1531,7 @@ ${productsText}`;
                       {priced && <span className="shrink-0">✅</span>}
                       <span>
                         {p.line}
-                        {(() => {
-                          const details = findStoreProductDetails(p.line, storeProducts);
-                          if (!details) return null;
-                          return (
-                            <span
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50/80 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 shrink-0 mr-1 inline-block pointer-events-none"
-                            >
-                              🏪 متجر: {details.salePrice}
-                            </span>
-                          );
-                        })()}
+                        {/* تمت إزالة ميزة إظهار سعر المنتج الموجود في المتجر بناءً على الطلب */}
                       </span>
                     </p>
 
