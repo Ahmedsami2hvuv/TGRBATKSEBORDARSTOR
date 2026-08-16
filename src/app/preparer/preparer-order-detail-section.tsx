@@ -234,7 +234,8 @@ export function PreparerOrderDetailSection({
                 const lineName = item.name || item.line || "";
                 const lineKey = lineName.trim().toLowerCase();
                 const qty = item.quantity || item.qty || 1;
-                const img = productImagesMap?.[lineKey] || "";
+                const isWebStore = parsedShoppingJson && Array.isArray(parsedShoppingJson.webStoreCart);
+                const img = isWebStore ? (productImagesMap?.[lineKey] || "") : "";
 
                 // التحقق من المجهز أو المورد المخصص للمنتج
                 const itemPrepId = String(item.assignedPreparerId || item.pricedById || "").trim();

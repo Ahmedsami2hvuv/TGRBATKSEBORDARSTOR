@@ -109,7 +109,7 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     }
   });
 
-  const isWebStoreOrder = draft.titleLine?.includes("المتجر") || draft.titleLine?.includes("السلة") || productsList.some(p => p.isFromStore);
+  const isWebStoreOrder = Array.isArray((draft.data as any)?.webStoreCart) || productsList.some(p => p.isFromStore);
 
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};

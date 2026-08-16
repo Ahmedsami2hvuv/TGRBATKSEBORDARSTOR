@@ -155,8 +155,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   }) : [];
 
   const isWebStoreOrder = orderRaw.submissionSource === "web_store" || 
-    (orderRaw.preparerShoppingJson as any)?.titleLine?.includes("المتجر") ||
-    (orderRaw.preparerShoppingJson as any)?.titleLine?.includes("السلة");
+    Array.isArray((orderRaw.preparerShoppingJson as any)?.webStoreCart);
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};
 
