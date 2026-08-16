@@ -72,6 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
