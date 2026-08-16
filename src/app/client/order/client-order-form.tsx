@@ -683,7 +683,6 @@ function ClientOrderFormInner({
                         onClick={() => {
                           setSelected(r);
                           setQ(r.name);
-                          setOrderTime("الآن");
                         }}
                         className="px-3 py-1.5 text-xs font-bold bg-white text-sky-700 hover:bg-sky-100 rounded-xl border border-sky-200 shadow-sm transition active:scale-95"
                       >
@@ -985,7 +984,6 @@ function ClientOrderFormInner({
                           onClick={() => {
                             setSelected(r);
                             setQ(r.name);
-                            setOrderTime("الآن");
                             setLearnStep(1);
                           }}
                           className="px-4 py-2 text-sm font-bold bg-white text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 shadow-sm transition active:scale-95"
