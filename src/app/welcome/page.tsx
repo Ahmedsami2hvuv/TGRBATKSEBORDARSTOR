@@ -4,7 +4,7 @@ import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import ScrollytellingHero from "@/components/scrollytelling-hero";
 import { motion } from "framer-motion";
 import {
-  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight
+  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight, Banknote
 } from "lucide-react";
 
 export default function WelcomePage() {
