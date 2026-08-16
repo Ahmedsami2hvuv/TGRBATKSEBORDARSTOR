@@ -1,11 +1,27 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
 import ScrollytellingHero from "@/components/scrollytelling-hero";
 import { motion } from "framer-motion";
 import {
-  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight, Banknote
+  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight, Banknote, ShoppingCart, UserPlus, Save
 } from "lucide-react";
+import Link from "next/link";
+
+function FadeInSection({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      className="w-full"
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function WelcomePage() {
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
@@ -18,265 +34,203 @@ export default function WelcomePage() {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    if (match && match[2].length === 11) {
-      return `https://www.youtube.com/embed/${match[2]}`;
-    }
-    return url;
+    return (match && match[2].length === 11) ? "https://www.youtube.com/embed/" + match[2] : null;
   };
 
-  const deliveryItems = [
-    "أدوية", "مخضر (خضروات وفواكه)", "خبز وصمون", "كيك ومعجنات بأنواعها", "كبة وميني بيتزا", 
-    "لحم بعجين", "أجبان وألبان", "حليب", "دجاج (ذبح وشوي)", "سمك (حي وشوي)", "طرشي", 
-    "بهارات", "لحم", "مواد تجميل (كوزمتك)", "كرزات", "إنشائية", "كهربائيات", "قرطاسية", 
-    "هدايا وأشياء طباعة", "ألعاب", "ملابس (مجمع النور، ضرار...)", "أحذية وشحاطات", 
-    "هيدفون وشاحنة", "مفروشات", "مواد من أنسب الأسعار", "ذهب", "مواد غذائية والجملة", 
-    "أقراص ألعاب", "معسل وفحم وكل مستلزمات الأركيلة", "أكل ولفات", "بانزين ودهن محركات", 
-    "نودي ونجيب فلوس من مكان لمكان"
-  ];
+  const videoUrl = getYouTubeEmbedUrl(links?.promoVideoUrl);
 
-  const regions3k = [
-    "الأسمدة", "جيكور", "حزبه", "العصفورية", "باب سليمان", "باب طويل", "باب العريض",
-    "باب عباس", "كوت بازل", "باب دباغ", "باب ميدان", "بلد سلطان", "ام الصخر", "باب رمانه",
-    "اهل عيد", "الباني", "نهر خوز", "ابو مغيرة", "مجيبرة", "السبيليات", "الصنگر", 
-    "محيلة قبل دورة ام زباله", "طريق الوسطي", "العاگولية", "الصحراء", "ابو كوصرة", 
-    "طريزاوية", "العوجة", "المقيمين", "الابطاح", "اللكطة", "الشجرة الطيبة", "شيخ ابراهيم", 
-    "نزيلة", "عميرية", "بلد", "كوت البلجاني", "الحوطة", "السوق", "الصنكر", "محيله الوسطي", 
-    "محيله قرب الجسر", "محيله بالسوق", "محيله قرب السيطرة", "محيله شارع المشروع", 
-    "محيله قبل دورة ام زباله", "محيله شارع سيد حامد", "محيله شارع الاندلس", "محيله الصكاروة"
-  ];
-
-  const regions5k = [
-    "المعهد الصناعي", "دورة ام زباله بعد الاستدارة", "الاندلس", "طريق سيد حامد بعد الاندلس",
-    "الجديدة", "الرومية", "الصكاروة", "كوت الصلحي", "كوت الفداغ", "جامع الشهيد", "يوسفان",
-    "حمدان", "كوت ثويني", "البهادرية", "محولة الزهير", "كوت الحمداني", "عويسيان", 
-    "مهيجران", "السراجي"
-  ];
+  // vCard format for saving contact
+  const vCardData = "BEGIN:VCARD\nVERSION:3.0\nN:;أبو الأكبر للتوصيل;;;\nFN:أبو الأكبر للتوصيل\nTEL;TYPE=CELL:+9647733921468\nORG:أبو الأكبر للتوصيل الشامل\nEND:VCARD";
+  const vCardUrl = "data:text/vcard;charset=utf-8," + encodeURIComponent(vCardData);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-['IBM_Plex_Sans_Arabic']" dir="rtl">
+    <div className="min-h-screen bg-[#F6FAFD] text-[#22323F] font-['IBM_Plex_Sans_Arabic'] overflow-x-hidden selection:bg-[#BFE0F2] selection:text-[#22323F]">
       
-      {/* 1. Scrollytelling Hero */}
+      {/* 1. السرد القصصي (Scrollytelling) بالبداية */}
       <ScrollytellingHero />
 
-      {/* 2. Main Content Wrapper */}
-      <div className="relative z-20 bg-slate-50 mt-[-20vh] md:mt-[-10vh] pt-12 pb-24 rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.1)]">
+      {/* 2. تكملة الصفحة بحركات تفاعلية (Scroll Magic) */}
+      <div className="max-w-4xl mx-auto px-4 pb-24 relative z-10 -mt-[10vh]">
         
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
-          
-          {/* Section: Save Number & Intro */}
-          <section className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full font-bold text-lg mb-4 shadow-sm border border-yellow-200">
-              أهم شيء... اخزن رقمنا باسم أبو الأكبر للتوصيل! 📌
-            </div>
-            <h2 className="text-3xl md:text-5xl font-black text-slate-800 leading-tight">
-              أبو الأكبر للتوصيل الشامل <br/>
-              <span className="text-blue-600 text-2xl md:text-4xl mt-2 block">
-                في أي مكان بأبي الخصيب... كلشي يصير بين ايديك!
-              </span>
-            </h2>
-            <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto font-medium">
-              إنت بالبيت، بالدوام، أو طالع... تفتح واتساب وتراسلني وتطلب <strong className="text-blue-600 font-bold">أي شيء</strong> راح أشتريه وأوصله إلك للبيت.
-              <br/><br/>
-              ليش لازم تخزن رقمنا ونخزن رقمك؟ لأن إحنا ننشر يومياً منتجات من شتى المحلات! اخزن رقمنا وراسلنا حتى تشوف الحالات.
+        {/* زر حفظ الرقم بحركة ملفتة */}
+        <FadeInSection>
+          <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-12 text-center shadow-[0_10px_40px_rgba(95,168,211,0.12),inset_0_0_0_1px_rgba(191,224,242,0.6)] mb-12 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#5FA8D3]/5 to-transparent pointer-events-none" />
+            <motion.div animate={{ scale: [1, 1.03, 1] }} transition={{ repeat: Infinity, duration: 2.5 }} className="w-16 h-16 bg-[#5FA8D3] rounded-full mx-auto flex items-center justify-center mb-6 shadow-[0_8px_20px_rgba(95,168,211,0.3)] text-white">
+              <Save className="w-7 h-7" />
+            </motion.div>
+            <h2 className="text-[26px] md:text-[32px] font-bold mb-4 text-[#22323F]">أهم شي... اخزن رقمنا!</h2>
+            <p className="text-[16px] md:text-[18px] text-[#22323F]/70 mb-8 max-w-lg mx-auto">
+              تخيل تحتاج شي ضروري بنص الليل؟ رقمنا لازم يكون بجهازك واسمنا "أبو الأكبر للتوصيل" 🛵
             </p>
-            
-            <a 
-              href="https://wa.me/9647733921468" 
-              target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-2xl font-bold text-xl shadow-lg shadow-green-500/30 transition-all hover:scale-105 active:scale-95"
-            >
-              <MessageCircle className="w-7 h-7" />
-              راسلنا الآن على الواتساب
+            <a href={vCardUrl} download="Abu_Alakbar.vcf" className="inline-flex items-center gap-3 bg-[#5FA8D3] text-white px-8 py-4 rounded-full font-bold text-[18px] hover:bg-[#4a8eb9] transition-colors shadow-lg hover:shadow-xl active:scale-95 duration-200">
+              <UserPlus className="w-5 h-5" />
+              اضغط هنا لحفظ الرقم في جهات الاتصال
             </a>
-          </section>
+          </div>
+        </FadeInSection>
 
-          {/* Section: What we deliver */}
-          <section className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-100">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-4 bg-blue-100 rounded-2xl text-blue-600">
-                <Store className="w-8 h-8" />
+        {/* أقسام التوصيل */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          <FadeInSection delay={0.1}>
+            <div className="bg-white/60 backdrop-blur-md rounded-[28px] p-8 shadow-sm border border-[#BFE0F2]/50 hover:bg-white/80 transition-all h-full">
+              <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+                <Store className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-slate-800">شنو نكدر نوصلك؟</h3>
+              <h3 className="text-xl font-bold mb-3">شنو نوصلك؟ كلشي!</h3>
+              <p className="text-[#22323F]/70 leading-relaxed">
+                ملابس، أحذية، كوزمتك، هدايا، إكسسوارات، حلويات، ورد، أدوية صيدلية، سوبر ماركت، خضراوات، وتجهيزات غذائية... حرفياً أي شي ببالك يجيك للباب.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {deliveryItems.map((item, i) => (
-                <span key={i} className="bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent transition-colors text-slate-700 px-4 py-2 rounded-xl text-sm md:text-base font-medium">
-                  {item}
-                </span>
-              ))}
-            </div>
-            <div className="mt-8 bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center">
-              <h4 className="text-xl font-bold text-blue-800 mb-2">تسوق من متجرنا الإلكتروني المتكامل!</h4>
-              <p className="text-blue-600 mb-4 font-medium">موقع تسوق شامل لأهالي أبي الخصيب.</p>
-              <a href="https://aboakbr.com/store" target="_blank" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
-                <Store className="w-5 h-5" />
-                تصفح متجر خصيب ستور
-              </a>
-            </div>
-          </section>
+          </FadeInSection>
 
-          {/* Section: YouTube Tutorial */}
-          {links?.youtubeTutorial && (
-            <section className="bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white text-center">
-              <h3 className="text-2xl md:text-3xl font-bold mb-4">طريقة التسوق من الموقع</h3>
-              <p className="text-slate-300 mb-8 font-medium">شرح مبسط لكيفية الطلب من متجرنا الإلكتروني بكل سهولة.</p>
-              <div className="relative pt-[56.25%] rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src={getYouTubeEmbedUrl(links.youtubeTutorial) || ""}
-                  title="طريقة التسوق"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+          <FadeInSection delay={0.2}>
+            <div className="bg-white/60 backdrop-blur-md rounded-[28px] p-8 shadow-sm border border-[#BFE0F2]/50 hover:bg-white/80 transition-all h-full">
+              <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center text-green-500 mb-6">
+                <Clock className="w-7 h-7" />
               </div>
-            </section>
-          )}
+              <h3 className="text-xl font-bold mb-3">ميزات خيالية للزبائن</h3>
+              <ul className="text-[#22323F]/70 space-y-3">
+                <li className="flex items-center gap-2"><CheckCheck className="w-5 h-5 text-green-500 shrink-0"/> توصيل سريع وآمن</li>
+                <li className="flex items-center gap-2"><CheckCheck className="w-5 h-5 text-green-500 shrink-0"/> استبدال مجاني من باب البيت</li>
+                <li className="flex items-center gap-2"><CheckCheck className="w-5 h-5 text-green-500 shrink-0"/> إرسال واستلام الطلبات الشخصية</li>
+              </ul>
+            </div>
+          </FadeInSection>
+        </div>
 
-          {/* Section: B2B For Shop Owners */}
-          <section className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl p-8 md:p-12 shadow-2xl text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl" />
+        {/* قسم البائعين وأصحاب المتاجر */}
+        <FadeInSection>
+          <div className="bg-[#22323F] text-white rounded-[32px] p-8 md:p-12 mb-12 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#5FA8D3] blur-[120px] rounded-full opacity-20 pointer-events-none" />
+            <h2 className="text-[28px] md:text-[34px] font-bold mb-8 flex items-center gap-4">
+              <Zap className="w-8 h-8 text-[#5FA8D3]" />
+              عندك بيج أو محل؟ (B2B)
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-y-6 gap-x-8 text-white/80">
+              <div className="flex gap-4">
+                <Banknote className="w-6 h-6 text-[#5FA8D3] shrink-0" />
+                <div>
+                  <h4 className="font-bold text-white mb-1">دفع عند الاستلام</h4>
+                  <p className="text-sm">ندفعلك الحساب كاش مقدماً قبل ما نوصل طلبك للزبون!</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <RotateCcw className="w-6 h-6 text-[#5FA8D3] shrink-0" />
+                <div>
+                  <h4 className="font-bold text-white mb-1">راجع مجاني</h4>
+                  <p className="text-sm">اذا الزبون مارد الطلب، يرجعلك ببلاش بدون أي كلفة.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Smartphone className="w-6 h-6 text-[#5FA8D3] shrink-0" />
+                <div>
+                  <h4 className="font-bold text-white mb-1">بدون برامج</h4>
+                  <p className="text-sm">التعامل كله بالواتساب بصمة أو رسالة، مادوخك ببرامج معقدة.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <ArrowLeftRight className="w-6 h-6 text-[#5FA8D3] shrink-0" />
+                <div>
+                  <h4 className="font-bold text-white mb-1">تغيير القياس مجاناً</h4>
+                  <p className="text-sm">خدمة تبديل القياس للزبون مجانية من باب بيته.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeInSection>
+
+        {/* الأسعار بشكل جميل وجديد */}
+        <FadeInSection>
+          <div className="mb-16">
+            <div className="text-center mb-10">
+              <h2 className="text-[28px] md:text-[32px] font-bold text-[#22323F] mb-4">قائمة أسعار التوصيل</h2>
+              <p className="text-[#22323F]/60">أسعارنا ثابتة ومناسبة لجميع مناطق كربلاء</p>
+            </div>
             
-            <div className="relative z-10">
-              <h3 className="text-3xl md:text-4xl font-black mb-4">يا هلا بأصحاب المحلات! 🏪</h3>
-              <p className="text-blue-100 text-lg mb-10 font-medium">استمتعوا بمزايا التوصيل الاستثنائية المصممة خصيصاً لدعم أعمالكم:</p>
-              
-              <div className="grid md:grid-cols-2 gap-6 mb-12">
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <Banknote className="w-8 h-8 text-yellow-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">الدفع نقداً</h4><p className="text-blue-100 text-sm leading-relaxed">يسلمكم المندوب الحساب فوراً قبل مغادرة المكان.</p></div>
-                </div>
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <Clock className="w-8 h-8 text-green-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">توصيل فوري ودقيق</h4><p className="text-blue-100 text-sm leading-relaxed">طلبات الصباح تصل صباحاً، والمساء تصل عصراً. أقصى تأخير 3 ساعات فقط! واحترام شديد لمواعيد التسليم.</p></div>
-                </div>
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <RotateCcw className="w-8 h-8 text-pink-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">إعادة مجانية</h4><p className="text-blue-100 text-sm leading-relaxed">في حال عدم استجابة الزبون للاتصال، يتم إرجاع الطلب مجاناً.</p></div>
-                </div>
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <Megaphone className="w-8 h-8 text-orange-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">ترويج لحساباتكم</h4><p className="text-blue-100 text-sm leading-relaxed">نشر حساباتكم عبر منصاتنا لزيادة طلبياتكم ومبيعاتكم.</p></div>
-                </div>
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <Car className="w-8 h-8 text-cyan-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">أسطول حديث ومريح</h4><p className="text-blue-100 text-sm leading-relaxed">سيارات حديثة مكيفة، دراجات نارية سريعة، ومندوبين محترفين.</p></div>
-                </div>
-                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
-                  <Smartphone className="w-8 h-8 text-purple-300 shrink-0 mt-1" />
-                  <div><h4 className="font-bold text-xl mb-1">نظام طلبات ذكي</h4><p className="text-blue-100 text-sm leading-relaxed">موقع مخصص لرفع ومتابعة طلباتكم بسهولة تامة.</p></div>
-                </div>
-              </div>
-
-              {/* Web App Features */}
-              <div className="bg-white text-slate-800 rounded-2xl p-6 md:p-8 shadow-xl">
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <Zap className="w-8 h-8 text-yellow-500" />
-                  <h4 className="text-xl md:text-2xl font-black text-center">مميزات نظام الطلبات للمحلات</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">بدون تحميل تطبيق</span></div>
-                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">بدون يوزرنيم أو باسورد</span></div>
-                  <div className="flex items-center gap-3"><Mic className="w-5 h-5 text-blue-500" /> <span className="font-bold text-sm">تسجيل بصمة صوت</span></div>
-                  <div className="flex items-center gap-3"><Camera className="w-5 h-5 text-pink-500" /> <span className="font-bold text-sm">إلتقاط صور للطلبية</span></div>
-                  <div className="flex items-center gap-3"><ArrowLeftRight className="w-5 h-5 text-purple-500" /> <span className="font-bold text-sm">زر الطلب العكسي</span></div>
-                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">زر "كلشي واصل"</span></div>
-                  <div className="flex items-center gap-3 md:col-span-3 justify-center mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <Car className="w-5 h-5 text-indigo-500" /> <span className="font-bold text-sm text-center">تحديد نوع المركبة المطلوبة (سيارة أو دراجة)</span>
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* 3000 IQD */}
+              <div className="flex-1 bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-emerald-400 blur-[80px] rounded-full opacity-20" />
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="font-bold text-[22px] text-[#22323F]">3,000 دينار</h3>
+                    <span className="text-emerald-500 text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full mt-2 inline-block">مناطق المركز</span>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+                    <MapPin className="w-6 h-6" />
                   </div>
                 </div>
-                <div className="mt-6 text-center">
-                  <p className="text-sm font-medium text-slate-500 mb-3">الموقع سيتعرف عليك مباشرة لرفع طلباتك بسرعة قياسية!</p>
-                </div>
-              </div>
-
-            </div>
-          </section>
-
-          {/* Section: Pricing */}
-          <section className="space-y-8">
-            <div className="text-center">
-              <h3 className="text-3xl font-black text-slate-800 mb-2">أسعار التوصيل (للطلبية الواحدة)</h3>
-              <p className="text-slate-500 font-medium">أسعار تنافسية ومحددة بوضوح لجميع مناطق أبي الخصيب.</p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* 3000 List */}
-              <div className="bg-white rounded-3xl p-6 shadow-lg border-t-4 border-green-500">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                  <h4 className="text-xl font-bold text-slate-800">مناطق 3,000 دينار</h4>
-                  <span className="bg-green-100 text-green-700 font-black px-4 py-1 rounded-full text-lg">3K</span>
-                </div>
-                <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {regions3k.map((r, i) => (
-                    <span key={i} className="text-sm bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium">{r}</span>
+                <div className="flex flex-wrap gap-2">
+                  {['العسكري', 'حي الحسين', 'المعلمين', 'النقيب', 'البلدية', 'الملحق', 'الإسكان', 'حي رمضان', 'البناء الجاهز', 'حي العباس', 'الحي الصناعي', 'الجاير'].map(m => (
+                    <span key={m} className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-sm">{m}</span>
                   ))}
                 </div>
               </div>
 
-              {/* 5000 List */}
-              <div className="bg-white rounded-3xl p-6 shadow-lg border-t-4 border-blue-500">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                  <h4 className="text-xl font-bold text-slate-800">مناطق 5,000 دينار</h4>
-                  <span className="bg-blue-100 text-blue-700 font-black px-4 py-1 rounded-full text-lg">5K</span>
+              {/* 5000 IQD */}
+              <div className="flex-1 bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-[#5FA8D3] blur-[80px] rounded-full opacity-20" />
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="font-bold text-[22px] text-[#22323F]">5,000 دينار</h3>
+                    <span className="text-[#5FA8D3] text-sm font-bold bg-[#BFE0F2]/30 px-3 py-1 rounded-full mt-2 inline-block">الأطراف والأقضية</span>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-[#BFE0F2]/30 flex items-center justify-center text-[#5FA8D3]">
+                    <Car className="w-6 h-6" />
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {regions5k.map((r, i) => (
-                    <span key={i} className="text-sm bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium">{r}</span>
+                <div className="flex flex-wrap gap-2">
+                  {['الحر', 'طويريج', 'الجدول الغربي', 'الحسينية', 'العطيشي'].map(m => (
+                    <span key={m} className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-sm">{m}</span>
                   ))}
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </FadeInSection>
 
-          {/* Section: Social & Links */}
-          <section className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-slate-100 text-center">
-            <h3 className="text-2xl font-black text-slate-800 mb-8">تواصل معنا وانضم لمجتمعنا</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              <a href="https://wa.me/9647733921468" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 transition border border-[#25D366]/20 group">
-                <MessageCircle className="w-8 h-8 text-[#25D366] group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-slate-700">واتساب المندوب</span>
-                <span className="text-sm text-slate-500 font-medium" dir="ltr">0773 392 1468</span>
+        {/* وسائل التواصل - شكل أحدث */}
+        <FadeInSection>
+          <div className="text-center bg-[#E7F2FA] rounded-[32px] p-8 md:p-12 mb-12 shadow-inner">
+            <h2 className="text-[24px] font-bold text-[#22323F] mb-8">تابعنا وتواصل ويانا</h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              <a href="https://wa.me/9647733921468" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-green-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20">
+                <MessageCircle className="w-6 h-6" />
+                واتساب الشركة
               </a>
-              
-              <a href={links?.instagram || "https://instagram.com/k.o_kseb"} target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#E1306C]/10 hover:bg-[#E1306C]/20 transition border border-[#E1306C]/20 group">
-                <Camera className="w-8 h-8 text-[#E1306C] group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-slate-700">إنستغرام</span>
-                <span className="text-sm text-slate-500 font-medium" dir="ltr">@k.o_kseb</span>
+              <a href="https://instagram.com/k.o_kseb" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-gradient-to-tr from-pink-500 to-purple-500 text-white px-6 py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-pink-500/20">
+                <Camera className="w-6 h-6" />
+                انستغرام
               </a>
-
-              <a href={links?.telegram || "https://t.me/ko_kseb"} target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#0088cc]/10 hover:bg-[#0088cc]/20 transition border border-[#0088cc]/20 group">
-                <Send className="w-8 h-8 text-[#0088cc] group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-slate-700">قناة التليغرام</span>
-                <span className="text-sm text-slate-500 font-medium">عروض ومنتجات</span>
-              </a>
-
-              <a href="https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#128C7E]/10 hover:bg-[#128C7E]/20 transition border border-[#128C7E]/20 group sm:col-span-2 md:col-span-1">
-                <Users className="w-8 h-8 text-[#128C7E] group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-slate-700">كروب الواتساب</span>
-                <span className="text-sm text-slate-500 font-medium text-center">أكبر كروب بيع وشراء لأبي الخصيب (مختلط)</span>
-              </a>
-
-              <a href="https://t.me/+IIH_puHB8Mg2MDIy" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#0088cc]/10 hover:bg-[#0088cc]/20 transition border border-[#0088cc]/20 group sm:col-span-2 md:col-span-1">
-                <Users className="w-8 h-8 text-[#0088cc] group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-slate-700">كروب التليغرام</span>
-                <span className="text-sm text-slate-500 font-medium text-center">أكبر كروب بيع وشراء لأبي الخصيب</span>
-              </a>
-
-              <a href="https://aboakbr.com/store" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-slate-900 hover:bg-slate-800 transition border border-slate-800 group sm:col-span-2 md:col-span-1">
-                <Store className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-white">خصيب ستور</span>
-                <span className="text-sm text-slate-300 font-medium text-center">متجر إلكتروني متكامل للكل</span>
+              <a href="https://t.me/your_telegram_channel" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                <Send className="w-6 h-6" />
+                قناة التليكرام
               </a>
             </div>
-          </section>
+            
+            <div className="mt-8 flex justify-center gap-4 flex-wrap">
+              <a href="https://chat.whatsapp.com/your_group_link" target="_blank" rel="noreferrer" className="text-sm font-medium text-[#22323F]/70 hover:text-[#5FA8D3] flex items-center gap-1 bg-white/50 px-4 py-2 rounded-full">
+                <Users className="w-4 h-4" /> قروب الواتساب المختلط
+              </a>
+              <a href="https://t.me/your_telegram_group" target="_blank" rel="noreferrer" className="text-sm font-medium text-[#22323F]/70 hover:text-[#5FA8D3] flex items-center gap-1 bg-white/50 px-4 py-2 rounded-full">
+                <Users className="w-4 h-4" /> قروب التليكرام
+              </a>
+            </div>
+          </div>
+        </FadeInSection>
+        
+        {/* زر متجر النظام الفعلي */}
+        <FadeInSection delay={0.2}>
+          <div className="text-center">
+             <Link href="/store" className="inline-flex items-center justify-center gap-2 bg-[#22323F] text-white px-10 py-5 rounded-full font-bold text-xl hover:bg-[#1a2530] transition-colors shadow-xl hover:shadow-2xl hover:-translate-y-1 duration-300">
+               <ShoppingCart className="w-6 h-6" />
+               ادخل للمتجر الإلكتروني الآن
+             </Link>
+          </div>
+        </FadeInSection>
 
-        </div>
       </div>
-
     </div>
   );
 }
- 

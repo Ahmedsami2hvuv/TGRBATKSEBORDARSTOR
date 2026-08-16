@@ -93,50 +93,50 @@ export default function ScrollytellingHero() {
           />
 
           {/* Stop 1 */}
-          <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => "blur(" + b + "px)"), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
-            <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
-            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
-              <Pill className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+          <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => "blur(" + b + "px)"), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+15px)] md:right-[calc(50%+26px)] w-[140px] md:w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+            <div className="absolute top-1/2 -right-[15px] md:-right-[26px] w-[15px] md:w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[54px] h-[54px] md:w-[68px] md:h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <Pill className="w-[20px] h-[20px] md:w-[26px] md:h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠١</span>
-              <span className="text-[15px] text-[#22323F] font-medium">صيدلية</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">صيدلية</span>
             </div>
           </motion.div>
 
           {/* Stop 2 */}
-          <motion.div style={{ opacity: stop2Opacity, filter: useTransform(stop2Blur, b => "blur(" + b + "px)"), y: stop2Y, scale: stop2Scale }} className="absolute top-[42%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
-            <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
-            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
-              <MapPin className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+          <motion.div style={{ opacity: stop2Opacity, filter: useTransform(stop2Blur, b => "blur(" + b + "px)"), y: stop2Y, scale: stop2Scale }} className="absolute top-[42%] left-[calc(50%+15px)] md:left-[calc(50%+26px)] w-[140px] md:w-[200px] flex items-center gap-[14px] text-left">
+            <div className="absolute top-1/2 -left-[15px] md:-left-[26px] w-[15px] md:w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[54px] h-[54px] md:w-[68px] md:h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <MapPin className="w-[20px] h-[20px] md:w-[26px] md:h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٢</span>
-              <span className="text-[15px] text-[#22323F] font-medium">مطعم</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">مطعم</span>
             </div>
           </motion.div>
 
           {/* Stop 3 */}
-          <motion.div style={{ opacity: stop3Opacity, filter: useTransform(stop3Blur, b => "blur(" + b + "px)"), y: stop3Y, scale: stop3Scale }} className="absolute top-[56%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
-            <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
-            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
-              <ShoppingBag className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+          <motion.div style={{ opacity: stop3Opacity, filter: useTransform(stop3Blur, b => "blur(" + b + "px)"), y: stop3Y, scale: stop3Scale }} className="absolute top-[56%] right-[calc(50%+15px)] md:right-[calc(50%+26px)] w-[140px] md:w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+            <div className="absolute top-1/2 -right-[15px] md:-right-[26px] w-[15px] md:w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[54px] h-[54px] md:w-[68px] md:h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <ShoppingBag className="w-[20px] h-[20px] md:w-[26px] md:h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٣</span>
-              <span className="text-[15px] text-[#22323F] font-medium">سوبرماركت</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">سوبرماركت</span>
             </div>
           </motion.div>
 
           {/* Stop 4 */}
-          <motion.div style={{ opacity: stop4Opacity, filter: useTransform(stop4Blur, b => "blur(" + b + "px)"), y: stop4Y, scale: stop4Scale }} className="absolute top-[70%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
-            <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
-            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
-              <Gift className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+          <motion.div style={{ opacity: stop4Opacity, filter: useTransform(stop4Blur, b => "blur(" + b + "px)"), y: stop4Y, scale: stop4Scale }} className="absolute top-[70%] left-[calc(50%+15px)] md:left-[calc(50%+26px)] w-[140px] md:w-[200px] flex items-center gap-[14px] text-left">
+            <div className="absolute top-1/2 -left-[15px] md:-left-[26px] w-[15px] md:w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[54px] h-[54px] md:w-[68px] md:h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <Gift className="w-[20px] h-[20px] md:w-[26px] md:h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٤</span>
-              <span className="text-[15px] text-[#22323F] font-medium">هدايا</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">هدايا</span>
             </div>
           </motion.div>
         </div>
@@ -162,17 +162,20 @@ export default function ScrollytellingHero() {
           </div>
           <h2 className="font-bold text-[clamp(34px,7vw,64px)] text-[#22323F] tracking-tight">أبو الأكبر</h2>
           <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-2 mb-2" />
-          <p className="text-[#22323F]/60 text-[15px] max-w-[420px] font-medium leading-relaxed">
+          <p className="text-[#22323F]/60 text-[12px] sm:text-[14px] md:text-[15px] max-w-[420px] font-medium leading-relaxed">
             خدمة توصيل شاملة، مدعومة بمتجر تسوق شامل.
           </p>
         </motion.div>
 
         {/* Scroll Hint */}
         <motion.div style={{ opacity: hintOpacity }} className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[14px] z-10">
-          <motion.div animate={{ y: [0, 8, 0], opacity: [0.55, 1, 0.55] }} transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }} className="w-[34px] h-[34px]">
-            <ChevronDown className="w-full h-full text-[#5FA8D3]" strokeWidth={1.4} />
+          <motion.div animate={{ y: [25, -15], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }} className="w-[42px] h-[42px] flex flex-col items-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-[#5FA8D3]">
+              <path d="M12 5v14M12 5l-4 4M12 5l4 4"/>
+              <path d="M15 16h-3c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2"/>
+            </svg>
           </motion.div>
-          <span className="text-[20px] font-bold tracking-[4px] text-[#5FA8D3]">اسحب</span>
+          <span className="text-[18px] font-bold tracking-[2px] text-[#5FA8D3] mt-2">اسحب للأعلى</span>
         </motion.div>
 
       </div>
