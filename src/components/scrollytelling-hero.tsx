@@ -93,7 +93,7 @@ export default function ScrollytellingHero() {
           />
 
           {/* Stop 1 */}
-          <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => \lur(\px)\), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+          <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => `blur(${b}px)`), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
             <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
             <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
               <Pill className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
