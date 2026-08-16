@@ -234,6 +234,36 @@ function ClientOrderFormInner({
   });
   const [alertSending, setAlertSending] = useState(false);
 
+  const [previousRegions, setPreviousRegions] = useState<RegionHit[]>([]);
+  const [isOldCustomer, setIsOldCustomer] = useState(false);
+
+  useEffect(() => {
+    if (!customerPhone || customerPhone.length < 10) {
+      setPreviousRegions([]);
+      setIsOldCustomer(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/customers/regions-by-phone?phone=${encodeURIComponent(customerPhone)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.regions && data.regions.length > 0) {
+            setPreviousRegions(data.regions);
+            setIsOldCustomer(true);
+          } else {
+            setPreviousRegions([]);
+            setIsOldCustomer(false);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch previous regions", err);
+          setPreviousRegions([]);
+          setIsOldCustomer(false);
+        });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [customerPhone]);
+
   const handleCarAlertYes = () => {
     setShowCarAlert(false);
   };
@@ -642,6 +672,28 @@ function ClientOrderFormInner({
                 <input ref={customerPhoneRef} name="customerPhone" required autoFocus={!initialOrder} value={customerPhone} onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))} onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums text-lg font-black ${isPhoneErr ? inputErrorClass : ""}`} placeholder="07XXXXXXXXX" />
               </label>
 
+              {isOldCustomer && previousRegions.length > 0 && (
+                <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3 shadow-inner">
+                  <p className="text-xs font-black text-sky-800 mb-2">هذا الزبون قديم، يرجى اختيار منطقته السابقة:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {previousRegions.map((r, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setSelected(r);
+                          setQ(r.name);
+                          setOrderTime("الآن");
+                        }}
+                        className="px-3 py-1.5 text-xs font-bold bg-white text-sky-700 hover:bg-sky-100 rounded-xl border border-sky-200 shadow-sm transition active:scale-95"
+                      >
+                        {r.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">نوع الطلب *</span>
                 {suggestions.types.length > 0 && (
@@ -922,6 +974,28 @@ function ClientOrderFormInner({
                     placeholder="07XXXXXXXXX"
                   />
                 </div>
+                {isOldCustomer && previousRegions.length > 0 && (
+                  <div className="mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-inner">
+                    <p className="text-sm font-black text-emerald-800 mb-3 text-center">هذا الزبون قديم، يرجى اختيار منطقته السابقة:</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {previousRegions.map((r, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSelected(r);
+                            setQ(r.name);
+                            setOrderTime("الآن");
+                            setLearnStep(1);
+                          }}
+                          className="px-4 py-2 text-sm font-bold bg-white text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 shadow-sm transition active:scale-95"
+                        >
+                          {r.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button type="button" onClick={() => customerPhone.trim() && setLearnStep(1)} className="mt-6 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
               </div>
             )}
