@@ -17,9 +17,7 @@ export default function ScrollytellingHero() {
   const p = useSpring(rawProgress, SPRING);
 
   // Thread animation
-  // Thread scales from 0 to 1 as p goes from 0 to 0.85
   const threadScale = useTransform(p, [0, 0.85], [0, 1]);
-  // Thread cap position (top 0% to 100%)
   const threadCapTop = useTransform(p, [0, 0.85], ["0%", "100%"]);
   const threadCapOpacity = useTransform(p, [0.03, 0.06, 0.85, 0.88], [0, 1, 1, 0]);
 
@@ -45,8 +43,9 @@ export default function ScrollytellingHero() {
   const stop4Scale = useTransform(p, [0.68, 0.70], [0.94, 1]);
 
   // Headlines
-  const h1Opacity = useTransform(p, [0.02, 0.1, 0.2, 0.24], [0, 1, 1, 0]);
-  const h1Blur = useTransform(p, [0.02, 0.1, 0.2, 0.24], [8, 0, 0, 8]);
+  // VISIBLE ON LOAD
+  const h1Opacity = useTransform(p, [0, 0.15], [1, 0]);
+  const h1Blur = useTransform(p, [0, 0.15], [0, 8]);
   
   const h2Opacity = useTransform(p, [0.3, 0.38, 0.5, 0.58], [0, 1, 1, 0]);
   const h2Blur = useTransform(p, [0.3, 0.38, 0.5, 0.58], [8, 0, 0, 8]);
@@ -63,35 +62,20 @@ export default function ScrollytellingHero() {
       
       {/* Scroll Rail */}
       <div className="fixed left-6 top-[14vh] bottom-[14vh] w-[2px] bg-[#5FA8D3]/15 rounded-full z-20 hidden md:block">
-        <motion.div style={{ height: railHeight }} className="absolute top-0 right-0 left-0 w-full rounded-full bg-[#5FA8D3]" />
+        <motion.div style={{ height: railHeight }} className="w-full bg-[#5FA8D3] rounded-full origin-top" />
       </div>
 
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center justify-center">
         
-        {/* Background Gradients */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse 55% 40% at 25% 15%, rgba(191,224,242,0.65), transparent 65%), radial-gradient(ellipse 60% 45% at 80% 85%, rgba(191,224,242,0.55), transparent 65%), linear-gradient(180deg, #F6FAFD 0%, #E7F2FA 50%, #F6FAFD 100%)"
-          }}
-        />
-        <div className="absolute top-[6%] -right-[8%] w-[38vw] h-[38vw] rounded-full blur-[60px] opacity-50 bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(191,224,242,0.2))] hidden md:block" />
-        <div className="absolute bottom-[8%] -left-[6%] w-[30vw] h-[30vw] rounded-full blur-[60px] opacity-50 bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(191,224,242,0.2))] hidden md:block" />
+        {/* Thread Animation Center */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[10%] bottom-[10%] w-[2px] bg-[#BFE0F2]/30" />
+          <motion.div style={{ scaleY: threadScale }} className="absolute left-1/2 -translate-x-1/2 top-[10%] bottom-[10%] w-[2px] bg-gradient-to-b from-[#5FA8D3] to-[#BFE0F2] origin-top shadow-[0_0_12px_rgba(95,168,211,0.6)]" />
+          <motion.div style={{ top: threadCapTop, opacity: threadCapOpacity }} className="absolute left-1/2 -translate-x-1/2 w-[8px] h-[8px] rounded-full bg-[#5FA8D3] shadow-[0_0_10px_#5FA8D3] -mt-[4px]" />
+        </div>
 
-        <div className="absolute left-0 right-0 top-0 h-[16vh] z-10 pointer-events-none bg-gradient-to-b from-[#F6FAFD] to-transparent" />
-        <div className="absolute left-0 right-0 bottom-0 h-[16vh] z-10 pointer-events-none bg-gradient-to-t from-[#F6FAFD] to-transparent" />
-
-        {/* Map Thread */}
-        <div className="relative w-[min(94vw,560px)] h-[88vh] z-[2]">
-          <motion.div 
-            style={{ scaleY: threadScale }}
-            className="absolute right-1/2 top-0 w-[2px] h-full origin-top rounded-full bg-gradient-to-b from-transparent via-[#5FA8D3] to-transparent" 
-          />
-          <motion.div 
-            style={{ top: threadCapTop, opacity: threadCapOpacity }}
-            className="absolute right-[calc(50%-5px)] w-[10px] h-[10px] rounded-full bg-white border-2 border-[#5FA8D3] shadow-[0_2px_10px_rgba(95,168,211,0.4)]"
-          />
-
+        {/* Stops */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none">
           {/* Stop 1 */}
           <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => "blur(" + b + "px)"), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+15px)] md:right-[calc(50%+26px)] w-[140px] md:w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
             <div className="absolute top-1/2 -right-[15px] md:-right-[26px] w-[15px] md:w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
@@ -100,7 +84,7 @@ export default function ScrollytellingHero() {
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠١</span>
-              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">صيدلية</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">صيدلية وأدوية</span>
             </div>
           </motion.div>
 
@@ -112,7 +96,7 @@ export default function ScrollytellingHero() {
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٢</span>
-              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">مطعم</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">مطعم وأكلات</span>
             </div>
           </motion.div>
 
@@ -124,7 +108,7 @@ export default function ScrollytellingHero() {
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٣</span>
-              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">سوبرماركت</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">سوبرماركت ومخضر</span>
             </div>
           </motion.div>
 
@@ -136,7 +120,7 @@ export default function ScrollytellingHero() {
             </div>
             <div>
               <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٤</span>
-              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">هدايا</span>
+              <span className="text-[12px] sm:text-[14px] md:text-[15px] text-[#22323F] font-medium">هدايا وكوزمتك وكلشي!</span>
             </div>
           </motion.div>
         </div>
@@ -144,15 +128,16 @@ export default function ScrollytellingHero() {
         {/* Headlines */}
         <motion.div style={{ opacity: h1Opacity, filter: useTransform(h1Blur, b => "blur(" + b + "px)") }} className="absolute left-1/2 top-[16%] -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
           <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
-            تجربة توصيل<br/><span className="text-[#5FA8D3]">بمستوى ثاني</span>
+            أبو الأكبر للتوصيل<br/><span className="text-[#5FA8D3]">تجربة توصيل بمستوى ثاني</span>
           </h2>
           <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-[18px]" />
         </motion.div>
 
-        <motion.div style={{ opacity: h2Opacity, filter: useTransform(h2Blur, b => "blur(" + b + "px)") }} className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
-          <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
-            من الصيدلية للهديّة —<br/><span className="text-[#5FA8D3]">كلشي بطلب وحد</span>
+        <motion.div style={{ opacity: h2Opacity, filter: useTransform(h2Blur, b => "blur(" + b + "px)") }} className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none bg-white/70 backdrop-blur-md p-6 rounded-[24px] border border-[#BFE0F2]/50 shadow-sm">
+          <h2 className="font-bold tracking-[1px] text-[clamp(20px,4vw,32px)] leading-[1.4] text-[#22323F] mb-4">
+            من الصيدلية للهدية...<br/><span className="text-[#5FA8D3]">كلشي بطلب واحد</span>
           </h2>
+          <p className="text-[#22323F]/80 text-[15px] leading-relaxed">يعني شنو نوصل لك؟ أي شي! أدوية، مخضر، مطاعم، هدايا، كوزمتك، كل اللي تريده يوصلك للباب.</p>
         </motion.div>
 
         {/* Final Scene */}
@@ -160,11 +145,11 @@ export default function ScrollytellingHero() {
           <div className="w-[84px] h-[84px] rounded-full bg-white flex items-center justify-center shadow-[0_10px_30px_rgba(95,168,211,0.28),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
             <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.3} />
           </div>
-          <h2 className="font-bold text-[clamp(28px,7vw,64px)] text-[#22323F] tracking-tight mb-2">أبو الأكبر للتوصيل</h2>
+          <h2 className="font-bold text-[clamp(28px,7vw,64px)] text-[#22323F] tracking-tight mb-2">إحنا خدمة توصيل شاملة</h2>
           <p className="text-[#5FA8D3] font-bold text-[16px] md:text-[20px] mb-4">خدمة توصيل شاملة، مدعومة بمتجر تسوق شامل (خصيبي ستور).</p>
           <div className="w-[80px] h-[3px] rounded-full bg-gradient-to-r from-[#BFE0F2] to-transparent mx-auto mb-4" />
           <p className="text-[#22323F]/80 text-[13px] sm:text-[15px] md:text-[17px] max-w-[500px] font-medium leading-loose">
-            إحنا خدمة توصيل شاملة داخل أبي الخصيب... يعني وأنت بالبيت، بالدوام، أو طالع تفتح واتساب تراسلني تطلب أي شي (أي شي!) راح أشتريه ونوصله إلك للبيت.
+            إحنا خدمة توصيل داخل أبي الخصيب... يعني وأنت بالبيت، بالدوام، أو طالع تفتح واتساب تراسلني تطلب أي شي (أي شي!) راح أشتريه ونوصله إلك للبيت.
           </p>
         </motion.div>
 
