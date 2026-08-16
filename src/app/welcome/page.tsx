@@ -41,7 +41,7 @@ export default function WelcomePage() {
       <ScrollytellingHero />
 
       {/* 2. تكملة الصفحة بحركات تفاعلية (Scroll Magic) */}
-      <div className="max-w-4xl mx-auto px-4 pb-24 relative z-10 -mt-[10vh]">
+      <div className="max-w-4xl mx-auto px-4 pb-24 relative z-10 pt-16">
         
         {/* زر حفظ الرقم بحركة ملفتة ومختصرة */}
         <FadeInSection>
