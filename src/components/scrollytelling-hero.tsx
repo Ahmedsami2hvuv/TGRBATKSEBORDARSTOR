@@ -160,10 +160,11 @@ export default function ScrollytellingHero() {
           <div className="w-[84px] h-[84px] rounded-full bg-white flex items-center justify-center shadow-[0_10px_30px_rgba(95,168,211,0.28),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
             <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.3} />
           </div>
-          <h2 className="font-bold text-[clamp(34px,7vw,64px)] text-[#22323F] tracking-tight">أبو الأكبر</h2>
-          <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-2 mb-2" />
-          <p className="text-[#22323F]/60 text-[12px] sm:text-[14px] md:text-[15px] max-w-[420px] font-medium leading-relaxed">
-            خدمة توصيل شاملة، مدعومة بمتجر تسوق شامل.
+          <h2 className="font-bold text-[clamp(28px,7vw,64px)] text-[#22323F] tracking-tight mb-2">أبو الأكبر للتوصيل</h2>
+          <p className="text-[#5FA8D3] font-bold text-[16px] md:text-[20px] mb-4">خدمة توصيل شاملة، مدعومة بمتجر تسوق شامل (خصيبي ستور).</p>
+          <div className="w-[80px] h-[3px] rounded-full bg-gradient-to-r from-[#BFE0F2] to-transparent mx-auto mb-4" />
+          <p className="text-[#22323F]/80 text-[13px] sm:text-[15px] md:text-[17px] max-w-[500px] font-medium leading-loose">
+            إحنا خدمة توصيل شاملة داخل أبي الخصيب... يعني وأنت بالبيت، بالدوام، أو طالع تفتح واتساب تراسلني تطلب أي شي (أي شي!) راح أشتريه ونوصله إلك للبيت.
           </p>
         </motion.div>
 
@@ -175,7 +176,7 @@ export default function ScrollytellingHero() {
               <path d="M15 16h-3c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2"/>
             </svg>
           </motion.div>
-          <span className="text-[18px] font-bold tracking-[2px] text-[#5FA8D3] mt-2">اسحب للأعلى</span>
+          <span className="text-[18px] font-bold tracking-[2px] text-[#5FA8D3] mt-2">اسحب</span>
         </motion.div>
 
       </div>
