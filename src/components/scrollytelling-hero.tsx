@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
@@ -72,7 +72,7 @@ export default function ScrollytellingHero() {
         <div 
           className="absolute inset-0"
           style={{
-            background: adial-gradient(ellipse 55% 40% at 25% 15%, rgba(191,224,242,0.65), transparent 65%), radial-gradient(ellipse 60% 45% at 80% 85%, rgba(191,224,242,0.55), transparent 65%), linear-gradient(180deg, #F6FAFD 0%, #E7F2FA 50%, #F6FAFD 100%)
+            background: "radial-gradient(ellipse 55% 40% at 25% 15%, rgba(191,224,242,0.65), transparent 65%), radial-gradient(ellipse 60% 45% at 80% 85%, rgba(191,224,242,0.55), transparent 65%), linear-gradient(180deg, #F6FAFD 0%, #E7F2FA 50%, #F6FAFD 100%)"
           }}
         />
         <div className="absolute top-[6%] -right-[8%] w-[38vw] h-[38vw] rounded-full blur-[60px] opacity-50 bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(191,224,242,0.2))] hidden md:block" />
