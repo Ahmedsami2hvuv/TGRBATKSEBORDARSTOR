@@ -695,11 +695,15 @@ function ClientOrderFormInner({
 
               <div className="relative">
                 <label className="flex flex-col gap-1.5">
-                  <span className={`text-sm font-bold px-1 flex items-center justify-between ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-600'}`}>
-                    <span>منطقة الزبون (المستلم) *</span>
-                    {selected && q === selected.name && <span className="text-lg animate-in zoom-in duration-300">👍</span>}
+                  <span className={`text-sm font-bold px-1 ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-600'}`}>
+                    منطقة الزبون (المستلم) *
                   </span>
-                  <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""} ${selected && q === selected.name ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-inner' : ''}`} placeholder="ابحث عن المنطقة..." required />
+                  <div className="relative">
+                    <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""} ${selected && q === selected.name ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-inner pl-10' : ''}`} placeholder="ابحث عن المنطقة..." required />
+                    {selected && q === selected.name && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xl animate-in zoom-in duration-300 pointer-events-none">👍</div>
+                    )}
+                  </div>
                 </label>
 
                 {hits.length > 0 && !(selected && q === selected.name) && (
