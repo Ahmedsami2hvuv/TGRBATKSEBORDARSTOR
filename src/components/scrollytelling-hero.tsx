@@ -25,17 +25,17 @@ export default function ScrollytellingHero() {
   const bgGradientRotate = useTransform(rawProgress, [0, 1], [0, 60]);
   const orb1X = useTransform(scrollYProgress, [0, 0.5, 1], ["-10%", "40%", "90%"]);
   const orb2X = useTransform(scrollYProgress, [0, 0.5, 1], ["90%", "50%", "0%"]);
-  const ambientOpacity = useTransform(rawProgress, [0, 0.05, 0.95, 1], [0, 1, 1, 0]);
+  const ambientOpacity = useTransform(rawProgress, [0, 0.95, 1], [1, 1, 0]);
 
   // ============ المشهد ١: الصندوق (0% - 30%) ============
   const boxScale = useTransform(scrollYProgress, [0, 0.14, 0.22, 0.3], [0.85, 1.08, 1.25, 0.4]);
-  const boxOpacity = useTransform(scrollYProgress, [0, 0.05, 0.18, 0.26], [0, 1, 1, 0]);
+  const boxOpacity = useTransform(scrollYProgress, [0, 0.18, 0.26], [1, 1, 0]);
   const boxY = useTransform(scrollYProgress, [0, 0.22, 0.3], [40, 0, -60]);
   const boxRotate = useTransform(scrollYProgress, [0, 0.3], [-4, 6]);
   const boxGlow = useTransform(scrollYProgress, [0, 0.15, 0.28], [0.2, 0.9, 0]);
-  const text1Y = useTransform(scrollYProgress, [0, 0.15], [20, 0]);
-  const text1Opacity = useTransform(scrollYProgress, [0, 0.1, 0.16, 0.24], [0, 1, 1, 0]);
-  const text1Blur = useTransform(scrollYProgress, [0, 0.08, 0.22, 0.26], [8, 0, 0, 6]);
+  const text1Y = useTransform(scrollYProgress, [0, 0.15], [0, -20]);
+  const text1Opacity = useTransform(scrollYProgress, [0, 0.16, 0.24], [1, 1, 0]);
+  const text1Blur = useTransform(scrollYProgress, [0, 0.22, 0.26], [0, 0, 6]);
 
   // ============ المشهد ٢: الأيقونات المتطايرة (24% - 66%) ============
   const itemsOpacity = useTransform(scrollYProgress, [0.24, 0.32, 0.56, 0.66], [0, 1, 1, 0]);
