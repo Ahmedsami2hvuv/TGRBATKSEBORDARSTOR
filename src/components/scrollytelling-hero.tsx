@@ -18,22 +18,23 @@ export default function ScrollytellingHero() {
   // Thread animation
   const threadScale = useTransform(p, [0, 0.9], [0, 1]);
   const threadCapTop = useTransform(p, [0, 0.9], ["0%", "100%"]);
-  const threadCapOpacity = useTransform(p, [0.03, 0.05, 0.9, 0.95], [0, 1, 1, 0]);
+  const threadCapOpacity = useTransform(p, [0.03, 0.05, 0.8, 0.85], [0, 1, 1, 0]);
+  const threadOpacity = useTransform(p, [0.8, 0.85], [1, 0]);
 
   // Make stops appear faster and closer to each other
-  const stop1Opacity = useTransform(p, [0.1, 0.15], [0, 1]);
+  const stop1Opacity = useTransform(p, [0.1, 0.15, 0.8, 0.85], [0, 1, 1, 0]);
   const stop1Y = useTransform(p, [0.1, 0.15], [20, 0]);
   const stop1Scale = useTransform(p, [0.1, 0.15], [0.8, 1]);
 
-  const stop2Opacity = useTransform(p, [0.25, 0.3], [0, 1]);
+  const stop2Opacity = useTransform(p, [0.25, 0.3, 0.8, 0.85], [0, 1, 1, 0]);
   const stop2Y = useTransform(p, [0.25, 0.3], [20, 0]);
   const stop2Scale = useTransform(p, [0.25, 0.3], [0.8, 1]);
 
-  const stop3Opacity = useTransform(p, [0.4, 0.45], [0, 1]);
+  const stop3Opacity = useTransform(p, [0.4, 0.45, 0.8, 0.85], [0, 1, 1, 0]);
   const stop3Y = useTransform(p, [0.4, 0.45], [20, 0]);
   const stop3Scale = useTransform(p, [0.4, 0.45], [0.8, 1]);
 
-  const stop4Opacity = useTransform(p, [0.55, 0.6], [0, 1]);
+  const stop4Opacity = useTransform(p, [0.55, 0.6, 0.8, 0.85], [0, 1, 1, 0]);
   const stop4Y = useTransform(p, [0.55, 0.6], [20, 0]);
   const stop4Scale = useTransform(p, [0.55, 0.6], [0.8, 1]);
 
@@ -59,7 +60,7 @@ export default function ScrollytellingHero() {
         {/* Thread Animation Center */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute left-1/2 -translate-x-1/2 top-[10%] bottom-[10%] w-[2px] bg-[#BFE0F2]/30" />
-          <motion.div style={{ scaleY: threadScale }} className="absolute left-1/2 -translate-x-1/2 top-[10%] bottom-[10%] w-[3px] bg-[#5FA8D3] origin-top" />
+          <motion.div style={{ scaleY: threadScale, opacity: threadOpacity }} className="absolute left-1/2 -translate-x-1/2 top-[10%] bottom-[10%] w-[3px] bg-[#5FA8D3] origin-top" />
           <motion.div style={{ top: threadCapTop, opacity: threadCapOpacity }} className="absolute left-1/2 -translate-x-1/2 w-[12px] h-[12px] rounded-full bg-[#5FA8D3] -mt-[6px]" />
         </div>
 
