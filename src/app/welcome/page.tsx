@@ -1,42 +1,16 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import ScrollytellingHero from "@/components/scrollytelling-hero";
 import { motion } from "framer-motion";
 import {
-  Store,
-  Phone,
-  MessageCircle,
-  Send,
-  Users,
-  ShoppingBag,
-  Heart,
-  ChevronDown,
-  Info,
-  Save,
-  CheckCircle2,
-  Banknote, 
-  Zap, 
-  Clock, 
-  UserCheck, 
-  RefreshCcw, 
-  Megaphone, 
-  Car, 
-  MonitorSmartphone, 
-  MapPin, 
-  Mic, 
-  Camera, 
-  ArrowRightLeft, 
-  CheckCheck, 
-  Bike
+  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight
 } from "lucide-react";
 
 export default function WelcomePage() {
   const [links, setLinks] = useState<SocialLinksConfig | null>(null);
 
   useEffect(() => {
-    // جلب الروابط من الإعدادات
     getSocialLinksAction().then(data => setLinks(data));
   }, []);
 
@@ -50,376 +24,258 @@ export default function WelcomePage() {
     return url;
   };
 
-  const services = [
-    { name: "أدوية وصيدلية", icon: "💊" },
-    { name: "مخضر وفواكه", icon: "🍎" },
-    { name: "خبز وصمون حار", icon: "🥖" },
-    { name: "كيك ومعجنات", icon: "🍰" },
-    { name: "كبة ولحم بعجين", icon: "🥩" },
-    { name: "أجبان وألبان", icon: "🧀" },
-    { name: "دجاج وسمچ شوي", icon: "🍗" },
-    { name: "طرشي وبهارات", icon: "🌶️" },
-    { name: "مواد تجميل", icon: "💄" },
-    { name: "كرزات وتسالي", icon: "🥜" },
-    { name: "إنشائية وكهربائيات", icon: "💡" },
-    { name: "قرطاسية وهدايا", icon: "🎁" },
-    { name: "ألعاب وملابس", icon: "👕" },
-    { name: "مفروشات وأثاث", icon: "🛏️" },
-    { name: "ذهب ومجوهرات", icon: "💍" },
-    { name: "مواد غذائية", icon: "📦" },
-    { name: "مستلزمات أركيلة", icon: "💨" },
-    { name: "بانزين ودهن محركات", icon: "🛢️" },
-    { name: "توصيل أموال وأمانات", icon: "💸" },
+  const deliveryItems = [
+    "أدوية", "مخضر (خضروات وفواكه)", "خبز وصمون", "كيك ومعجنات بأنواعها", "كبة وميني بيتزا", 
+    "لحم بعجين", "أجبان وألبان", "حليب", "دجاج (ذبح وشوي)", "سمك (حي وشوي)", "طرشي", 
+    "بهارات", "لحم", "مواد تجميل (كوزمتك)", "كرزات", "إنشائية", "كهربائيات", "قرطاسية", 
+    "هدايا وأشياء طباعة", "ألعاب", "ملابس (مجمع النور، ضرار...)", "أحذية وشحاطات", 
+    "هيدفون وشاحنة", "مفروشات", "مواد من أنسب الأسعار", "ذهب", "مواد غذائية والجملة", 
+    "أقراص ألعاب", "معسل وفحم وكل مستلزمات الأركيلة", "أكل ولفات", "بانزين ودهن محركات", 
+    "نودي ونجيب فلوس من مكان لمكان"
   ];
 
-  const socialLinks = [
-    {
-      name: "متجرنا خصيب ستور",
-      url: links?.website || "https://aboakbr.com",
-      icon: <Store className="w-6 h-6" />,
-      color: "bg-blue-600 hover:bg-blue-700",
-    },
-    {
-      name: "راسلنا على الواتساب",
-      url: links?.whatsapp || "https://wa.me/9647733921468",
-      icon: <MessageCircle className="w-6 h-6" />,
-      color: "bg-green-500 hover:bg-green-600",
-    },
-    {
-      name: "تابعنا على الانستغرام",
-      url: links?.instagram || "https://instagram.com/k.o_kseb",
-      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>,
-      color: "bg-pink-600 hover:bg-pink-700",
-    },
-    {
-      name: "قناتنا على التليجرام",
-      url: links?.telegram || "https://t.me/ko_kseb",
-      icon: <Send className="w-6 h-6" />,
-      color: "bg-blue-500 hover:bg-blue-600",
-    },
-    {
-      name: "كروب الواتساب للبيع والشراء",
-      url: links?.whatsappGroup || "https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH",
-      icon: <Users className="w-6 h-6" />,
-      color: "bg-teal-500 hover:bg-teal-600",
-    },
-    {
-      name: "كروب التليجرام للبيع والشراء",
-      url: links?.telegramGroup || "https://t.me/+IIH_puHB8Mg2MDIy",
-      icon: <Users className="w-6 h-6" />,
-      color: "bg-sky-500 hover:bg-sky-600",
-    },
+  const regions3k = [
+    "الأسمدة", "جيكور", "حزبه", "العصفورية", "باب سليمان", "باب طويل", "باب العريض",
+    "باب عباس", "كوت بازل", "باب دباغ", "باب ميدان", "بلد سلطان", "ام الصخر", "باب رمانه",
+    "اهل عيد", "الباني", "نهر خوز", "ابو مغيرة", "مجيبرة", "السبيليات", "الصنگر", 
+    "محيلة قبل دورة ام زباله", "طريق الوسطي", "العاگولية", "الصحراء", "ابو كوصرة", 
+    "طريزاوية", "العوجة", "المقيمين", "الابطاح", "اللكطة", "الشجرة الطيبة", "شيخ ابراهيم", 
+    "نزيلة", "عميرية", "بلد", "كوت البلجاني", "الحوطة", "السوق", "الصنكر", "محيله الوسطي", 
+    "محيله قرب الجسر", "محيله بالسوق", "محيله قرب السيطرة", "محيله شارع المشروع", 
+    "محيله قبل دورة ام زباله", "محيله شارع سيد حامد", "محيله شارع الاندلس", "محيله الصكاروة"
   ];
 
-  if (links?.facebook) {
-    socialLinks.push({
-      name: "صفحتنا على فيسبوك",
-      url: links.facebook,
-      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>,
-      color: "bg-blue-700 hover:bg-blue-800",
-    });
-  }
-
-  if (links?.tiktok) {
-    socialLinks.push({
-      name: "حسابنا على تيك توك",
-      url: links.tiktok,
-      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.8-5.46-.4-2.52.41-5.18 2.21-6.94 1.56-1.52 3.8-2.26 5.95-2.1v4.21c-.81-.07-1.63.15-2.28.64-.81.6-1.32 1.57-1.35 2.59-.03 1.01.41 1.99 1.14 2.63.78.68 1.91.89 2.87.58.94-.3 1.69-1.12 1.94-2.09.17-.67.2-1.38.19-2.07-.02-3.95-.01-7.91-.01-11.86Z"/></svg>,
-      color: "bg-slate-900 hover:bg-black",
-    });
-  }
+  const regions5k = [
+    "المعهد الصناعي", "دورة ام زباله بعد الاستدارة", "الاندلس", "طريق سيد حامد بعد الاندلس",
+    "الجديدة", "الرومية", "الصكاروة", "كوت الصلحي", "كوت الفداغ", "جامع الشهيد", "يوسفان",
+    "حمدان", "كوت ثويني", "البهادرية", "محولة الزهير", "كوت الحمداني", "عويسيان", 
+    "مهيجران", "السراجي"
+  ];
 
   return (
-    <div className="relative min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200 selection:text-blue-900 pb-16">
+    <div className="min-h-screen bg-slate-50 font-['IBM_Plex_Sans_Arabic']" dir="rtl">
       
-      {/* Header / Hero Section (Scrollytelling) */}
+      {/* 1. Scrollytelling Hero */}
       <ScrollytellingHero />
 
-      <main className="container mx-auto px-4 pt-16 relative z-10">
+      {/* 2. Main Content Wrapper */}
+      <div className="relative z-20 bg-slate-50 mt-[-20vh] md:mt-[-10vh] pt-12 pb-24 rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.1)]">
         
-        {/* Animation Section */}
-        <section className="flex justify-center mb-10 relative z-20">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md flex flex-col items-center justify-center border border-slate-100 overflow-hidden"
-          >
-            {links?.animationUrl ? (
-              (links.animationUrl.endsWith(".lottie") || links.animationUrl.endsWith(".json")) ? (
-                <DotLottieReact src={links.animationUrl} loop autoplay className="w-full h-64 mb-4" />
-              ) : (
-                <img src={links.animationUrl} alt="Delivery Animation" className="w-full h-64 object-contain rounded-2xl mb-4" />
-              )
-            ) : (
-              <motion.div
-                animate={{ 
-                  x: [-15, 15, -15],
-                  y: [-5, 5, -5],
-                  rotate: [-5, 5, -5]
-                }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                className="bg-blue-100 p-6 rounded-full mb-4"
-              >
-                <Bike className="w-20 h-20 text-blue-600" />
-              </motion.div>
-            )}
-            <h2 className="text-center text-xl font-bold text-blue-800 mt-2">وين ما كنت، نوصلك!</h2>
-          </motion.div>
-        </section>
-
-        {/* Essential Instruction */}
-        <motion.section 
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="max-w-3xl mx-auto bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-6 mb-12 shadow-md text-center"
-        >
-          <Save className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
-          <h2 className="text-2xl font-bold text-yellow-800 mb-2">قبل كل شي... خطوة مهمة!</h2>
-          <p className="text-lg text-yellow-900 mb-4">
-            الرجاء خزن رقمنا باسم <strong>(أبو الأكبر للتوصيل)</strong> حتى تقدر تشوف الحالات (الستوريات) اللي ننزل بيها عروض يومية من شتى المحلات. 
-          </p>
-          <a 
-            href="tel:07733921468" 
-            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 px-6 rounded-full transition-colors"
-          >
-            <Phone className="w-5 h-5" />
-            07733921468
-          </a>
-        </motion.section>
-
-        {/* Services Section */}
-        <section className="max-w-5xl mx-auto mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-blue-900 mb-3 flex items-center justify-center gap-2">
-              <CheckCircle2 className="text-blue-500" /> شنو نكدر نوصلك؟
-            </h2>
-            <p className="text-slate-600 text-lg">
-              افتح واتساب، اطلب أي شي يخطر ببالك... وإحنا نتكفل بالباقي!
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-3 hover:shadow-md transition-all group"
-              >
-                <div className="text-4xl group-hover:scale-110 transition-transform duration-300">{service.icon}</div>
-                <span className="font-semibold text-slate-700 text-sm md:text-base">{service.name}</span>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-8 text-center bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 font-medium">
-             ... وكل شي يصير بين إيديك وين ما كنت بأبي الخصيب!
-          </div>
-        </section>
-
-        {/* B2B Section for Shops and Pages */}
-        <section className="max-w-5xl mx-auto mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-blue-900 mb-3 flex items-center justify-center gap-2">
-              <Store className="text-blue-500" /> أصحاب المحلات والبيجات التجارية
-            </h2>
-            <p className="text-slate-600 text-lg px-4">
-              استمتعوا بمزايا التوصيل المتوفرة لدينا خصيصاً لدعم أعمالكم!
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 px-4">
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-green-100 text-green-600 p-3 rounded-xl"><Banknote className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">الدفع نقداً</h3>
-                <p className="text-slate-600 text-sm">يسلمكم المندوب الحساب قبل مغادرة المكان مباشرة.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-amber-100 text-amber-600 p-3 rounded-xl"><Zap className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">توصيل فوري</h3>
-                <p className="text-slate-600 text-sm">الطلبات الصباحية تصل صباحاً، والمسائية تصل عصراً/مغرباً. أقصى تأخير 3 ساعات فقط للظروف.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-xl"><Clock className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">احترام شديد للمواعيد</h3>
-                <p className="text-slate-600 text-sm">التزام تام بموعد استلام وتسليم الطلبيات.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-indigo-100 text-indigo-600 p-3 rounded-xl"><UserCheck className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">مندوبين محترفين</h3>
-                <p className="text-slate-600 text-sm">مختارين بعناية ومدربين على أعلى مستوى من الاحترام واللباقة.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-red-100 text-red-600 p-3 rounded-xl"><RefreshCcw className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">إعادة الطلبات مجاناً</h3>
-                <p className="text-slate-600 text-sm">في حال عدم استجابة الزبون للاتصال، يتم إرجاع الطلب لكم مجاناً.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start">
-              <div className="bg-pink-100 text-pink-600 p-3 rounded-xl"><Megaphone className="w-6 h-6" /></div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">الترويج لحساباتكم</h3>
-                <p className="text-slate-600 text-sm">نقوم بنشر حساباتكم عبر حساباتنا وقنواتنا لزيادة الطلبيات لكم.</p>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 md:col-span-2 items-start">
-              <div className="bg-sky-100 text-sky-600 p-3 rounded-xl"><MonitorSmartphone className="w-6 h-6" /></div>
-              <div className="flex-1">
-                <h3 className="font-bold text-lg mb-2 text-sky-800">موقع مخصص لرفع طلباتكم بسهولة</h3>
-                <p className="text-sm text-slate-600 mb-3">يغنيك عن تحميل التطبيقات، الموقع سيتعرف عليك مباشرة لرفع طلباتك!</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><CheckCheck className="w-4 h-4 text-green-500" /> بدون يوزر وباسورد</span>
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Mic className="w-4 h-4 text-blue-500" /> بصمة صوت بالطلبية</span>
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Camera className="w-4 h-4 text-pink-500" /> التقاط صور للطلب</span>
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><ArrowRightLeft className="w-4 h-4 text-orange-500" /> زر الطلب العكسي</span>
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Car className="w-4 h-4 text-slate-500" /> سيارات حديثة مكيفة</span>
-                  <span className="flex items-center gap-1 text-sm text-slate-700 bg-slate-50 p-1.5 rounded border"><Bike className="w-4 h-4 text-red-500" /> دراجات سريعة</span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="max-w-4xl mx-auto mb-16 bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 mx-4">
-          <div className="bg-gradient-to-r from-blue-700 to-blue-500 p-6 text-white text-center">
-            <MapPin className="w-10 h-10 mx-auto mb-2" />
-            <h2 className="text-2xl font-bold">أسعار التوصيل حسب المناطق</h2>
-            <p className="opacity-90 mt-1">الأسعار للطلبية الواحدة لجميع مناطق أبي الخصيب</p>
-          </div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
           
-          <div className="p-6 md:p-8 grid md:grid-cols-2 gap-8">
-            {/* 3000 Regions */}
-            <div>
-              <div className="flex items-center justify-between mb-4 border-b pb-2">
-                <h3 className="text-xl font-bold text-slate-800">مناطق على 3</h3>
-                <span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-sm">3,000 دينار</span>
-              </div>
-              <ul className="grid grid-cols-2 gap-x-2 gap-y-3 text-sm text-slate-600 list-disc list-inside">
-                <li>الاسمدة</li><li>جيكور حزبه</li><li>جيكور</li><li>العصفورية</li>
-                <li>باب سليمان</li><li>باب طويل</li><li>باب العريض</li><li>باب عباس</li>
-                <li>كوت بازل</li><li>باب دباغ</li><li>باب ميدان</li><li>بلد سلطان</li>
-                <li>ام الصخر</li><li>باب رمانه</li><li>اهل عيد</li><li>الباني</li>
-                <li>نهر خوز</li><li>ابو مغيرة</li><li>مجيبرة</li><li>السبيليات</li>
-                <li>الصنكر</li><li>طريق الوسطي</li><li>العاكولية</li><li>الصحراء</li>
-                <li>ابو كوصرة</li><li>طريزاوية</li><li>العوجة</li><li>المقيمين</li>
-                <li>الابطاح</li><li>اللكطة</li><li>الشجرة الطيبة</li><li>شيخ ابراهيم</li>
-                <li>نزيلة</li><li>عميرية</li><li>بلد</li><li>كوت البلجاني</li>
-                <li>الحوطة</li><li>السوق</li><li>محيله (فروع)</li>
-              </ul>
+          {/* Section: Save Number & Intro */}
+          <section className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+            <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full font-bold text-lg mb-4 shadow-sm border border-yellow-200">
+              أهم شيء... اخزن رقمنا باسم أبو الأكبر للتوصيل! 📌
             </div>
-
-            {/* 5000 Regions */}
-            <div>
-              <div className="flex items-center justify-between mb-4 border-b pb-2">
-                <h3 className="text-xl font-bold text-slate-800">مناطق على 5</h3>
-                <span className="bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full text-sm">5,000 دينار</span>
-              </div>
-              <ul className="grid grid-cols-2 gap-x-2 gap-y-3 text-sm text-slate-600 list-disc list-inside">
-                <li>المعهد الصناعي</li><li>دورة ام زباله</li><li>الاندلس</li><li>الجديدة</li>
-                <li>الرومية</li><li>الصكاروة</li><li>كوت الصلحي</li><li>كوت الفداغ</li>
-                <li>جامع الشهيد</li><li>يوسفان</li><li>حمدان</li><li>كوت ثويني</li>
-                <li>البهادرية</li><li>محولة الزهير</li><li>كوت الحمداني</li><li>عويسيان</li>
-                <li>مهيجران</li><li>السراجي</li>
-              </ul>
-              <div className="mt-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-xs text-slate-500 font-bold leading-relaxed">
-                  * بعض فروع محيلة البعيدة مثل شارع سيد حامد، الاندلس، الصكاروة تكون على 5,000.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* How to order video */}
-        {links?.youtubeTutorial && (
-          <motion.section 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-16"
-          >
-            <div className="bg-red-600 p-6 text-white text-center">
-              <svg className="w-12 h-12 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-              <h2 className="text-2xl font-bold">طريقة التسوق من موقعنا</h2>
-              <p className="opacity-90 mt-1">شاهد هذا الفيديو السريع لتعرف شون تطلب من الموقع بسهولة</p>
-            </div>
-            <div className="aspect-video w-full bg-slate-900">
-              <iframe 
-                width="100%" 
-                height="100%" 
-                src={getYouTubeEmbedUrl(links.youtubeTutorial) || links.youtubeTutorial} 
-                title="YouTube video player" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                referrerPolicy="strict-origin-when-cross-origin" 
-                allowFullScreen
-              ></iframe>
-            </div>
-          </motion.section>
-        )}
-
-        {/* Links & Social Media */}
-        <section className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-blue-900 mb-3">
-              حساباتنا وروابطنا
+            <h2 className="text-3xl md:text-5xl font-black text-slate-800 leading-tight">
+              أبو الأكبر للتوصيل الشامل <br/>
+              <span className="text-blue-600 text-2xl md:text-4xl mt-2 block">
+                في أي مكان بأبي الخصيب... كلشي يصير بين ايديك!
+              </span>
             </h2>
-            <p className="text-slate-600 text-lg">
-              خليك على تواصل ويانا دائماً ولا تفوت العروض!
+            <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto font-medium">
+              إنت بالبيت، بالدوام، أو طالع... تفتح واتساب وتراسلني وتطلب <strong className="text-blue-600 font-bold">أي شيء</strong> راح أشتريه وأوصله إلك للبيت.
+              <br/><br/>
+              ليش لازم تخزن رقمنا ونخزن رقمك؟ لأن إحنا ننشر يومياً منتجات من شتى المحلات! اخزن رقمنا وراسلنا حتى تشوف الحالات.
             </p>
-          </div>
+            
+            <a 
+              href="https://wa.me/9647733921468" 
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-2xl font-bold text-xl shadow-lg shadow-green-500/30 transition-all hover:scale-105 active:scale-95"
+            >
+              <MessageCircle className="w-7 h-7" />
+              راسلنا الآن على الواتساب
+            </a>
+          </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {socialLinks.map((link, index) => (
-              <motion.a
-                key={index}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                className={`${link.color} text-white p-5 rounded-2xl flex items-center gap-4 shadow-md transition-all`}
-              >
-                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                  {link.icon}
+          {/* Section: What we deliver */}
+          <section className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-4 bg-blue-100 rounded-2xl text-blue-600">
+                <Store className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-800">شنو نكدر نوصلك؟</h3>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {deliveryItems.map((item, i) => (
+                <span key={i} className="bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent transition-colors text-slate-700 px-4 py-2 rounded-xl text-sm md:text-base font-medium">
+                  {item}
+                </span>
+              ))}
+            </div>
+            <div className="mt-8 bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center">
+              <h4 className="text-xl font-bold text-blue-800 mb-2">تسوق من متجرنا الإلكتروني المتكامل!</h4>
+              <p className="text-blue-600 mb-4 font-medium">موقع تسوق شامل لأهالي أبي الخصيب.</p>
+              <a href="https://aboakbr.com/store" target="_blank" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                <Store className="w-5 h-5" />
+                تصفح متجر خصيب ستور
+              </a>
+            </div>
+          </section>
+
+          {/* Section: YouTube Tutorial */}
+          {links?.youtubeTutorial && (
+            <section className="bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white text-center">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">طريقة التسوق من الموقع</h3>
+              <p className="text-slate-300 mb-8 font-medium">شرح مبسط لكيفية الطلب من متجرنا الإلكتروني بكل سهولة.</p>
+              <div className="relative pt-[56.25%] rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={getYouTubeEmbedUrl(links.youtubeTutorial) || ""}
+                  title="طريقة التسوق"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </section>
+          )}
+
+          {/* Section: B2B For Shop Owners */}
+          <section className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl p-8 md:p-12 shadow-2xl text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl" />
+            
+            <div className="relative z-10">
+              <h3 className="text-3xl md:text-4xl font-black mb-4">يا هلا بأصحاب المحلات! 🏪</h3>
+              <p className="text-blue-100 text-lg mb-10 font-medium">استمتعوا بمزايا التوصيل الاستثنائية المصممة خصيصاً لدعم أعمالكم:</p>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-12">
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <Banknote className="w-8 h-8 text-yellow-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">الدفع نقداً</h4><p className="text-blue-100 text-sm leading-relaxed">يسلمكم المندوب الحساب فوراً قبل مغادرة المكان.</p></div>
                 </div>
-                <span className="font-bold text-lg">{link.name}</span>
-              </motion.a>
-            ))}
-          </div>
-        </section>
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <Clock className="w-8 h-8 text-green-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">توصيل فوري ودقيق</h4><p className="text-blue-100 text-sm leading-relaxed">طلبات الصباح تصل صباحاً، والمساء تصل عصراً. أقصى تأخير 3 ساعات فقط! واحترام شديد لمواعيد التسليم.</p></div>
+                </div>
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <RotateCcw className="w-8 h-8 text-pink-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">إعادة مجانية</h4><p className="text-blue-100 text-sm leading-relaxed">في حال عدم استجابة الزبون للاتصال، يتم إرجاع الطلب مجاناً.</p></div>
+                </div>
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <Megaphone className="w-8 h-8 text-orange-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">ترويج لحساباتكم</h4><p className="text-blue-100 text-sm leading-relaxed">نشر حساباتكم عبر منصاتنا لزيادة طلبياتكم ومبيعاتكم.</p></div>
+                </div>
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <Car className="w-8 h-8 text-cyan-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">أسطول حديث ومريح</h4><p className="text-blue-100 text-sm leading-relaxed">سيارات حديثة مكيفة، دراجات نارية سريعة، ومندوبين محترفين.</p></div>
+                </div>
+                <div className="flex items-start gap-4 bg-white/10 p-5 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition">
+                  <Smartphone className="w-8 h-8 text-purple-300 shrink-0 mt-1" />
+                  <div><h4 className="font-bold text-xl mb-1">نظام طلبات ذكي</h4><p className="text-blue-100 text-sm leading-relaxed">موقع مخصص لرفع ومتابعة طلباتكم بسهولة تامة.</p></div>
+                </div>
+              </div>
 
-      </main>
+              {/* Web App Features */}
+              <div className="bg-white text-slate-800 rounded-2xl p-6 md:p-8 shadow-xl">
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <Zap className="w-8 h-8 text-yellow-500" />
+                  <h4 className="text-xl md:text-2xl font-black text-center">مميزات نظام الطلبات للمحلات</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">بدون تحميل تطبيق</span></div>
+                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">بدون يوزرنيم أو باسورد</span></div>
+                  <div className="flex items-center gap-3"><Mic className="w-5 h-5 text-blue-500" /> <span className="font-bold text-sm">تسجيل بصمة صوت</span></div>
+                  <div className="flex items-center gap-3"><Camera className="w-5 h-5 text-pink-500" /> <span className="font-bold text-sm">إلتقاط صور للطلبية</span></div>
+                  <div className="flex items-center gap-3"><ArrowLeftRight className="w-5 h-5 text-purple-500" /> <span className="font-bold text-sm">زر الطلب العكسي</span></div>
+                  <div className="flex items-center gap-3"><CheckCheck className="w-5 h-5 text-green-500" /> <span className="font-bold text-sm">زر "كلشي واصل"</span></div>
+                  <div className="flex items-center gap-3 md:col-span-3 justify-center mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <Car className="w-5 h-5 text-indigo-500" /> <span className="font-bold text-sm text-center">تحديد نوع المركبة المطلوبة (سيارة أو دراجة)</span>
+                  </div>
+                </div>
+                <div className="mt-6 text-center">
+                  <p className="text-sm font-medium text-slate-500 mb-3">الموقع سيتعرف عليك مباشرة لرفع طلباتك بسرعة قياسية!</p>
+                </div>
+              </div>
 
-      {/* Footer */}
-      <footer className="mt-16 text-center text-slate-500 pb-8 px-4">
-        <Heart className="w-6 h-6 text-red-500 mx-auto mb-2 animate-bounce" />
-        <p>نخدمكم بعيوننا - أبو الأكبر للتوصيل الشامل</p>
-        <p className="text-sm mt-1">أبي الخصيب - البصرة</p>
-      </footer>
+            </div>
+          </section>
+
+          {/* Section: Pricing */}
+          <section className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-3xl font-black text-slate-800 mb-2">أسعار التوصيل (للطلبية الواحدة)</h3>
+              <p className="text-slate-500 font-medium">أسعار تنافسية ومحددة بوضوح لجميع مناطق أبي الخصيب.</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* 3000 List */}
+              <div className="bg-white rounded-3xl p-6 shadow-lg border-t-4 border-green-500">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <h4 className="text-xl font-bold text-slate-800">مناطق 3,000 دينار</h4>
+                  <span className="bg-green-100 text-green-700 font-black px-4 py-1 rounded-full text-lg">3K</span>
+                </div>
+                <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {regions3k.map((r, i) => (
+                    <span key={i} className="text-sm bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium">{r}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5000 List */}
+              <div className="bg-white rounded-3xl p-6 shadow-lg border-t-4 border-blue-500">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <h4 className="text-xl font-bold text-slate-800">مناطق 5,000 دينار</h4>
+                  <span className="bg-blue-100 text-blue-700 font-black px-4 py-1 rounded-full text-lg">5K</span>
+                </div>
+                <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {regions5k.map((r, i) => (
+                    <span key={i} className="text-sm bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium">{r}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section: Social & Links */}
+          <section className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-slate-100 text-center">
+            <h3 className="text-2xl font-black text-slate-800 mb-8">تواصل معنا وانضم لمجتمعنا</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              <a href="https://wa.me/9647733921468" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 transition border border-[#25D366]/20 group">
+                <MessageCircle className="w-8 h-8 text-[#25D366] group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-slate-700">واتساب المندوب</span>
+                <span className="text-sm text-slate-500 font-medium" dir="ltr">0773 392 1468</span>
+              </a>
+              
+              <a href={links?.instagram || "https://instagram.com/k.o_kseb"} target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#E1306C]/10 hover:bg-[#E1306C]/20 transition border border-[#E1306C]/20 group">
+                <Camera className="w-8 h-8 text-[#E1306C] group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-slate-700">إنستغرام</span>
+                <span className="text-sm text-slate-500 font-medium" dir="ltr">@k.o_kseb</span>
+              </a>
+
+              <a href={links?.telegram || "https://t.me/ko_kseb"} target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#0088cc]/10 hover:bg-[#0088cc]/20 transition border border-[#0088cc]/20 group">
+                <Send className="w-8 h-8 text-[#0088cc] group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-slate-700">قناة التليغرام</span>
+                <span className="text-sm text-slate-500 font-medium">عروض ومنتجات</span>
+              </a>
+
+              <a href="https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#128C7E]/10 hover:bg-[#128C7E]/20 transition border border-[#128C7E]/20 group sm:col-span-2 md:col-span-1">
+                <Users className="w-8 h-8 text-[#128C7E] group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-slate-700">كروب الواتساب</span>
+                <span className="text-sm text-slate-500 font-medium text-center">أكبر كروب بيع وشراء لأبي الخصيب (مختلط)</span>
+              </a>
+
+              <a href="https://t.me/+IIH_puHB8Mg2MDIy" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#0088cc]/10 hover:bg-[#0088cc]/20 transition border border-[#0088cc]/20 group sm:col-span-2 md:col-span-1">
+                <Users className="w-8 h-8 text-[#0088cc] group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-slate-700">كروب التليغرام</span>
+                <span className="text-sm text-slate-500 font-medium text-center">أكبر كروب بيع وشراء لأبي الخصيب</span>
+              </a>
+
+              <a href="https://aboakbr.com/store" target="_blank" className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-slate-900 hover:bg-slate-800 transition border border-slate-800 group sm:col-span-2 md:col-span-1">
+                <Store className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-white">خصيب ستور</span>
+                <span className="text-sm text-slate-300 font-medium text-center">متجر إلكتروني متكامل للكل</span>
+              </a>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
     </div>
   );
 }

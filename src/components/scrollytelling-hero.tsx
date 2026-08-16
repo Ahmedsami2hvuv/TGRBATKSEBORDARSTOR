@@ -1,313 +1,181 @@
-"use client";
+﻿"use client";
 
-// ⚠️ قبل الاستخدام: لازم تحمّل خط "Lalezar" بملف layout.tsx مالت الموقع، مثلاً:
-// import { Lalezar } from "next/font/google";
-// const lalezar = Lalezar({ subsets: ["arabic"], weight: "400", variable: "--font-lalezar" });
-// وحطه على <html className={lalezar.variable}>
-// أو أبسط: ضيف بـ layout.tsx جوه <head>:
-// <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet" />
+import React, { useRef } from "react";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { ShoppingBag, Gift, Pill, MapPin, Bike, ChevronDown } from "lucide-react";
 
-import React, { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useTransform, useSpring, MotionValue } from "framer-motion";
-
-// ============================================================
-// "مسار التوصيل" — الطريق يترسم لحاله وانت تسكرول، ويعدي
-// على محطات (صيدلية / مطعم / سوبرماركت / هدايا) وصولاً لبابك
-// ============================================================
-
-const SPRING = { stiffness: 90, damping: 24, mass: 0.6 };
-
-// نقاط منحنى الطريق (نظام إحداثيات 0-400 أفقي × 0-900 عمودي)
-const ROUTE_PATH =
-  "M 200,40 C 350,140 50,220 200,320 C 350,420 50,500 200,600 C 320,680 90,760 200,860";
-
-type Stop = { frac: number; emoji: string; label: string; glow: string };
-
-const STOPS: Stop[] = [
-  { frac: 0.03, emoji: "📦", label: "طلبك اترسل", glow: "rgba(241,228,201,0.6)" },
-  { frac: 0.27, emoji: "💊", label: "صيدلية", glow: "rgba(46,196,182,0.6)" },
-  { frac: 0.46, emoji: "🍽️", label: "مطعم", glow: "rgba(244,185,66,0.6)" },
-  { frac: 0.66, emoji: "🛒", label: "سوبرماركت", glow: "rgba(193,68,14,0.6)" },
-  { frac: 0.81, emoji: "🎁", label: "هدايا", glow: "rgba(244,185,66,0.6)" },
-  { frac: 0.97, emoji: "🏠", label: "بابك", glow: "rgba(241,228,201,0.75)" },
-];
-
-const TRACKER_STAGES = [
-  { label: "الطلب", from: 0, to: 0.3 },
-  { label: "بالمتجر", from: 0.3, to: 0.65 },
-  { label: "بالطريق إلك", from: 0.65, to: 1.01 },
-];
+const SPRING = { stiffness: 90, damping: 20, mass: 0.5 };
 
 export default function ScrollytellingHero() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const [pathLength, setPathLength] = useState(0);
-
-  useEffect(() => {
-    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
-  }, []);
 
   const { scrollYProgress: rawProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"],
   });
-  const progress = useSpring(rawProgress, SPRING);
+  
+  const p = useSpring(rawProgress, SPRING);
 
-  const containerOpacity = useTransform(rawProgress, [0.97, 1], [1, 0]);
-  const dashOffset = useTransform(progress, (p) => pathLength * (1 - p));
-  const hintOpacity = useTransform(rawProgress, [0, 0.05], [1, 0]);
+  // Thread animation
+  // Thread scales from 0 to 1 as p goes from 0 to 0.85
+  const threadScale = useTransform(p, [0, 0.85], [0, 1]);
+  // Thread cap position (top 0% to 100%)
+  const threadCapTop = useTransform(p, [0, 0.85], ["0%", "100%"]);
+  const threadCapOpacity = useTransform(p, [0.03, 0.06, 0.85, 0.88], [0, 1, 1, 0]);
 
-  // العناوين الثلاثة
-  const h1Opacity = useTransform(progress, [0, 0.06, 0.22, 0.27], [0, 1, 1, 0]);
-  const h1Y = useTransform(progress, [0, 0.1], [16, 0]);
-  const h2Opacity = useTransform(progress, [0.3, 0.36, 0.6, 0.66], [0, 1, 1, 0]);
-  const h2Y = useTransform(progress, [0.3, 0.4], [16, 0]);
-  const h3Opacity = useTransform(progress, [0.68, 0.74, 1], [0, 1, 1]);
-  const h3Y = useTransform(progress, [0.68, 0.78], [16, 0]);
+  // Stops
+  const stop1Opacity = useTransform(p, [0.26, 0.28], [0, 1]);
+  const stop1Blur = useTransform(p, [0.26, 0.28], [6, 0]);
+  const stop1Y = useTransform(p, [0.26, 0.28], [8, 0]);
+  const stop1Scale = useTransform(p, [0.26, 0.28], [0.94, 1]);
+
+  const stop2Opacity = useTransform(p, [0.4, 0.42], [0, 1]);
+  const stop2Blur = useTransform(p, [0.4, 0.42], [6, 0]);
+  const stop2Y = useTransform(p, [0.4, 0.42], [8, 0]);
+  const stop2Scale = useTransform(p, [0.4, 0.42], [0.94, 1]);
+
+  const stop3Opacity = useTransform(p, [0.54, 0.56], [0, 1]);
+  const stop3Blur = useTransform(p, [0.54, 0.56], [6, 0]);
+  const stop3Y = useTransform(p, [0.54, 0.56], [8, 0]);
+  const stop3Scale = useTransform(p, [0.54, 0.56], [0.94, 1]);
+
+  const stop4Opacity = useTransform(p, [0.68, 0.70], [0, 1]);
+  const stop4Blur = useTransform(p, [0.68, 0.70], [6, 0]);
+  const stop4Y = useTransform(p, [0.68, 0.70], [8, 0]);
+  const stop4Scale = useTransform(p, [0.68, 0.70], [0.94, 1]);
+
+  // Headlines
+  const h1Opacity = useTransform(p, [0.02, 0.1, 0.2, 0.24], [0, 1, 1, 0]);
+  const h1Blur = useTransform(p, [0.02, 0.1, 0.2, 0.24], [8, 0, 0, 8]);
+  
+  const h2Opacity = useTransform(p, [0.3, 0.38, 0.5, 0.58], [0, 1, 1, 0]);
+  const h2Blur = useTransform(p, [0.3, 0.38, 0.5, 0.58], [8, 0, 0, 8]);
+
+  // Final
+  const finalOpacity = useTransform(p, [0.8, 0.85], [0, 1]);
+  const finalBlur = useTransform(p, [0.8, 0.85], [6, 0]);
+
+  const hintOpacity = useTransform(rawProgress, [0, 0.04], [1, 0]);
+  const railHeight = useTransform(rawProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <div ref={containerRef} className="h-[420vh] relative w-full" style={{ background: "#150F35" }}>
-      <motion.div
-        style={{ opacity: containerOpacity }}
-        className="sticky top-0 h-screen overflow-hidden flex items-center justify-center w-full"
-        dir="rtl"
-      >
-        <Background />
+    <div ref={containerRef} className="h-[380vh] relative w-full font-['IBM_Plex_Sans_Arabic']" style={{ background: "#F6FAFD", color: "#22323F" }}>
+      
+      {/* Scroll Rail */}
+      <div className="fixed left-6 top-[14vh] bottom-[14vh] w-[2px] bg-[#5FA8D3]/15 rounded-full z-20 hidden md:block">
+        <motion.div style={{ height: railHeight }} className="absolute top-0 right-0 left-0 w-full rounded-full bg-[#5FA8D3]" />
+      </div>
 
-        <SidePathMap progress={progress} pathRef={pathRef} dashOffset={dashOffset} pathLength={pathLength} />
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+        
+        {/* Background Gradients */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: adial-gradient(ellipse 55% 40% at 25% 15%, rgba(191,224,242,0.65), transparent 65%), radial-gradient(ellipse 60% 45% at 80% 85%, rgba(191,224,242,0.55), transparent 65%), linear-gradient(180deg, #F6FAFD 0%, #E7F2FA 50%, #F6FAFD 100%)
+          }}
+        />
+        <div className="absolute top-[6%] -right-[8%] w-[38vw] h-[38vw] rounded-full blur-[60px] opacity-50 bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(191,224,242,0.2))] hidden md:block" />
+        <div className="absolute bottom-[8%] -left-[6%] w-[30vw] h-[30vw] rounded-full blur-[60px] opacity-50 bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(191,224,242,0.2))] hidden md:block" />
 
-        {/* العنوان ١ */}
-        <motion.div style={{ opacity: h1Opacity, y: h1Y }} className="absolute top-[13%] w-[90vw] max-w-2xl text-center px-4 z-20">
-          <Headline>
-            شنو اللي <span style={{ color: "#F4B942" }}>تحتاجه</span> اليوم؟
-          </Headline>
+        <div className="absolute left-0 right-0 top-0 h-[16vh] z-10 pointer-events-none bg-gradient-to-b from-[#F6FAFD] to-transparent" />
+        <div className="absolute left-0 right-0 bottom-0 h-[16vh] z-10 pointer-events-none bg-gradient-to-t from-[#F6FAFD] to-transparent" />
+
+        {/* Map Thread */}
+        <div className="relative w-[min(94vw,560px)] h-[88vh] z-[2]">
+          <motion.div 
+            style={{ scaleY: threadScale }}
+            className="absolute right-1/2 top-0 w-[2px] h-full origin-top rounded-full bg-gradient-to-b from-transparent via-[#5FA8D3] to-transparent" 
+          />
+          <motion.div 
+            style={{ top: threadCapTop, opacity: threadCapOpacity }}
+            className="absolute right-[calc(50%-5px)] w-[10px] h-[10px] rounded-full bg-white border-2 border-[#5FA8D3] shadow-[0_2px_10px_rgba(95,168,211,0.4)]"
+          />
+
+          {/* Stop 1 */}
+          <motion.div style={{ opacity: stop1Opacity, filter: useTransform(stop1Blur, b => \lur(\px)\), y: stop1Y, scale: stop1Scale }} className="absolute top-[28%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+            <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <Pill className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+            </div>
+            <div>
+              <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠١</span>
+              <span className="text-[15px] text-[#22323F] font-medium">صيدلية</span>
+            </div>
+          </motion.div>
+
+          {/* Stop 2 */}
+          <motion.div style={{ opacity: stop2Opacity, filter: useTransform(stop2Blur, b => \lur(\px)\), y: stop2Y, scale: stop2Scale }} className="absolute top-[42%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
+            <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <MapPin className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+            </div>
+            <div>
+              <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٢</span>
+              <span className="text-[15px] text-[#22323F] font-medium">مطعم</span>
+            </div>
+          </motion.div>
+
+          {/* Stop 3 */}
+          <motion.div style={{ opacity: stop3Opacity, filter: useTransform(stop3Blur, b => \lur(\px)\), y: stop3Y, scale: stop3Scale }} className="absolute top-[56%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+            <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <ShoppingBag className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+            </div>
+            <div>
+              <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٣</span>
+              <span className="text-[15px] text-[#22323F] font-medium">سوبرماركت</span>
+            </div>
+          </motion.div>
+
+          {/* Stop 4 */}
+          <motion.div style={{ opacity: stop4Opacity, filter: useTransform(stop4Blur, b => \lur(\px)\), y: stop4Y, scale: stop4Scale }} className="absolute top-[70%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
+            <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
+            <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+              <Gift className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
+            </div>
+            <div>
+              <span className="text-[11px] tracking-[3px] text-[#5FA8D3] font-medium block mb-1">٠٤</span>
+              <span className="text-[15px] text-[#22323F] font-medium">هدايا</span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Headlines */}
+        <motion.div style={{ opacity: h1Opacity, filter: useTransform(h1Blur, b => \lur(\px)\) }} className="absolute left-1/2 top-[16%] -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
+          <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
+            تجربة توصيل<br/><span className="text-[#5FA8D3]">بمستوى ثاني</span>
+          </h2>
+          <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-[18px]" />
         </motion.div>
 
-        {/* العنوان ٢ */}
-        <motion.div style={{ opacity: h2Opacity, y: h2Y }} className="absolute top-1/2 -translate-y-1/2 w-[90vw] max-w-2xl text-center px-4 z-20">
-          <Headline>
-            صيدلية، مطعم، أسواق،
-            <br />
-            أو أي شيء <span style={{ color: "#F4B942" }}>ببالك</span>...
-          </Headline>
+        <motion.div style={{ opacity: h2Opacity, filter: useTransform(h2Blur, b => \lur(\px)\) }} className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
+          <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
+            من الصيدلية للهديّة —<br/><span className="text-[#5FA8D3]">كلشي بطلب وحد</span>
+          </h2>
         </motion.div>
 
-        {/* العنوان ٣ */}
-        <motion.div style={{ opacity: h3Opacity, y: h3Y }} className="absolute bottom-[15%] w-[92vw] max-w-2xl text-center px-4 z-20">
-          <Headline>
-            أبو الأكبر <span style={{ color: "#F4B942" }}>للتوصيل الشامل</span>
-          </Headline>
-          <p className="mt-3 text-base md:text-xl font-medium" style={{ color: "#F1E4C9" }}>
-            ومو بس هيج... فتحنالك متجر إلكتروني بيه كلشي!
+        {/* Final Scene */}
+        <motion.div style={{ opacity: finalOpacity, filter: useTransform(finalBlur, b => \lur(\px)\) }} className="absolute bottom-[6%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 text-center w-full px-4">
+          <div className="w-[84px] h-[84px] rounded-full bg-white flex items-center justify-center shadow-[0_10px_30px_rgba(95,168,211,0.28),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
+            <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.3} />
+          </div>
+          <h2 className="font-bold text-[clamp(34px,7vw,64px)] text-[#22323F] tracking-tight">أبو الأكبر</h2>
+          <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-2 mb-2" />
+          <p className="text-[#22323F]/60 text-[15px] max-w-[420px] font-medium leading-relaxed">
+            خدمة توصيل شاملة، مدعومة بمتجر تسوق شامل.
           </p>
         </motion.div>
 
-        <Tracker progress={progress} />
-
-        {/* دعوة للسكرول */}
-        <motion.div style={{ opacity: hintOpacity }} className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-30">
-          <span className="text-xs font-bold tracking-[3px]" style={{ color: "#F4B942" }}>
-            اسحب للأسفل
-          </span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="w-8 h-8 rounded-full flex items-center justify-center font-black"
-            style={{ background: "#F4B942", color: "#150F35" }}
-          >
-            ↓
+        {/* Scroll Hint */}
+        <motion.div style={{ opacity: hintOpacity }} className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[14px] z-10">
+          <motion.div animate={{ y: [0, 8, 0], opacity: [0.55, 1, 0.55] }} transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }} className="w-[34px] h-[34px]">
+            <ChevronDown className="w-full h-full text-[#5FA8D3]" strokeWidth={1.4} />
           </motion.div>
+          <span className="text-[20px] font-bold tracking-[4px] text-[#5FA8D3]">اسحب</span>
         </motion.div>
-      </motion.div>
-    </div>
-  );
-}
 
-function Headline({ children }: { children: React.ReactNode }) {
-  return (
-    <h2
-      className="leading-tight"
-      style={{
-        fontFamily: "'Lalezar', sans-serif",
-        fontWeight: 400,
-        fontSize: "clamp(28px, 6vw, 52px)",
-        color: "#FDF8F0",
-        textShadow: "0 0 30px rgba(244,185,66,0.35)",
-      }}
-    >
-      {children}
-    </h2>
-  );
-}
-
-function Background() {
-  return (
-    <>
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 30% 20%, rgba(244,185,66,0.10), transparent 55%), radial-gradient(ellipse at 75% 75%, rgba(193,68,14,0.14), transparent 55%), linear-gradient(180deg, #150F35 0%, #241a55 55%, #0e0a28 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-50"
-        style={{
-          backgroundImage:
-            "radial-gradient(1.5px 1.5px at 20% 30%, #fff 100%, transparent), radial-gradient(1.5px 1.5px at 70% 15%, #fff 100%, transparent), radial-gradient(1px 1px at 85% 45%, #fff 100%, transparent), radial-gradient(1.5px 1.5px at 40% 65%, #fff 100%, transparent), radial-gradient(1px 1px at 60% 85%, #fff 100%, transparent), radial-gradient(1.5px 1.5px at 10% 80%, #fff 100%, transparent)",
-        }}
-      />
-      <div className="absolute inset-x-0 top-0 h-32 z-[5]" style={{ background: "linear-gradient(180deg, #150F35, transparent)" }} />
-      <div className="absolute inset-x-0 bottom-0 h-32 z-[5]" style={{ background: "linear-gradient(0deg, #150F35, transparent)" }} />
-    </>
-  );
-}
-
-function SidePathMap({
-  progress,
-  pathRef,
-  dashOffset,
-  pathLength,
-}: {
-  progress: MotionValue<number>;
-  pathRef: React.RefObject<SVGPathElement>;
-  dashOffset: MotionValue<number>;
-  pathLength: number;
-}) {
-  return (
-    <div className="relative z-10" style={{ width: "min(92vw, 480px)", height: "88vh" }}>
-      <svg viewBox="0 0 400 900" preserveAspectRatio="xMidYMid meet" className="w-full h-full overflow-visible">
-        <motion.path
-          ref={pathRef}
-          d={ROUTE_PATH}
-          fill="none"
-          stroke="#F1E4C9"
-          strokeWidth={3.4}
-          strokeLinecap="round"
-          style={{
-            strokeDasharray: pathLength,
-            strokeDashoffset: dashOffset,
-            filter: "drop-shadow(0 0 6px rgba(241,228,201,0.55))",
-          }}
-        />
-      </svg>
-
-      {STOPS.map((s, i) => (
-        <StopPin key={i} stop={s} progress={progress} pathRef={pathRef} />
-      ))}
-
-      <Bike progress={progress} pathRef={pathRef} pathLength={pathLength} />
-    </div>
-  );
-}
-
-function StopPin({
-  stop,
-  progress,
-  pathRef,
-}: {
-  stop: Stop;
-  progress: MotionValue<number>;
-  pathRef: React.RefObject<SVGPathElement>;
-}) {
-  const [pos, setPos] = useState({ x: 50, y: 50 });
-
-  useEffect(() => {
-    const p = pathRef.current;
-    if (!p) return;
-    const len = p.getTotalLength();
-    const pt = p.getPointAtLength(stop.frac * len);
-    setPos({ x: (pt.x / 400) * 100, y: (pt.y / 900) * 100 });
-  }, [pathRef, stop.frac]);
-
-  const opacity = useTransform(progress, [stop.frac - 0.015, stop.frac], [0, 1]);
-  const scale = useTransform(progress, [stop.frac - 0.015, stop.frac], [0.4, 1]);
-
-  return (
-    <motion.div
-      style={{ left: `${pos.x}%`, top: `${pos.y}%`, opacity, scale }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-[3]"
-    >
-      <div
-        className="rounded-full flex items-center justify-center backdrop-blur-md border"
-        style={{
-          width: stop.emoji === "🏠" ? 64 : 52,
-          height: stop.emoji === "🏠" ? 64 : 52,
-          fontSize: stop.emoji === "🏠" ? 28 : 24,
-          background: "rgba(255,255,255,0.06)",
-          borderColor: stop.glow,
-          borderWidth: 1.5,
-          boxShadow: `0 0 22px ${stop.glow}`,
-        }}
-      >
-        {stop.emoji}
       </div>
-      <span className="text-xs font-bold whitespace-nowrap" style={{ color: "#F1E4C9" }}>
-        {stop.label}
-      </span>
-    </motion.div>
-  );
-}
-
-function Bike({
-  progress,
-  pathRef,
-  pathLength,
-}: {
-  progress: MotionValue<number>;
-  pathRef: React.RefObject<SVGPathElement>;
-  pathLength: number;
-}) {
-  const [pos, setPos] = useState({ x: 50, y: 8 });
-
-  useEffect(() => {
-    return progress.on("change", (p) => {
-      const path = pathRef.current;
-      if (!path || !pathLength) return;
-      const pt = path.getPointAtLength(Math.min(p, 1) * pathLength);
-      setPos({ x: (pt.x / 400) * 100, y: (pt.y / 900) * 100 });
-    });
-  }, [progress, pathRef, pathLength]);
-
-  const opacity = useTransform(progress, [0.48, 0.55], [0, 1]);
-
-  return (
-    <motion.div
-      style={{ left: `${pos.x}%`, top: `${pos.y}%`, opacity }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 z-[4] flex items-center justify-center text-3xl"
-    >
-      <div style={{ filter: "drop-shadow(0 0 14px rgba(244,185,66,0.8))" }}>🛵</div>
-    </motion.div>
-  );
-}
-
-function Tracker({ progress }: { progress: MotionValue<number> }) {
-  return (
-    <div className="hidden md:flex flex-col gap-6 absolute left-6 top-1/2 -translate-y-1/2 z-30">
-      {TRACKER_STAGES.map((stage, i) => (
-        <TrackerItem key={i} stage={stage} progress={progress} />
-      ))}
     </div>
-  );
-}
-
-function TrackerItem({
-  stage,
-  progress,
-}: {
-  stage: { label: string; from: number; to: number };
-  progress: MotionValue<number>;
-}) {
-  const opacity = useTransform(progress, (p) => (p >= stage.from && p < stage.to ? 1 : 0.35));
-  return (
-    <motion.div style={{ opacity }} className="flex items-center gap-2.5">
-      <motion.div
-        className="w-2.5 h-2.5 rounded-full"
-        style={{ background: "#F4B942", boxShadow: "0 0 12px rgba(244,185,66,0.8)" }}
-      />
-      <span className="text-xs font-bold" style={{ color: "#F1E4C9" }}>
-        {stage.label}
-      </span>
-    </motion.div>
   );
 }
