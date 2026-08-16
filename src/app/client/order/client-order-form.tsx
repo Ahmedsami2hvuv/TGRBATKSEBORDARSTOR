@@ -693,7 +693,28 @@ function ClientOrderFormInner({
                 </div>
               )}
 
+              <div className="relative">
+                <label className="flex flex-col gap-1.5">
+                  <span className={`text-sm font-bold px-1 flex items-center justify-between ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-600'}`}>
+                    <span>منطقة الزبون (المستلم) *</span>
+                    {selected && q === selected.name && <span className="text-lg animate-in zoom-in duration-300">👍</span>}
+                  </span>
+                  <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""} ${selected && q === selected.name ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-inner' : ''}`} placeholder="ابحث عن المنطقة..." required />
+                </label>
+
+                {hits.length > 0 && !(selected && q === selected.name) && (
+                  <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                    {hits.map((h) => (
+                      <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
+                        <span className="text-sm font-black text-slate-900">{h.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <label className="flex flex-col gap-1.5">
+
                 <span className="text-sm font-bold text-slate-600 px-1">نوع الطلب *</span>
                 {suggestions.types.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
@@ -752,22 +773,6 @@ function ClientOrderFormInner({
                 </button>
               </div>
 
-              <div className="relative">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون (المستلم) *</span>
-                  <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
-                </label>
-
-                {hits.length > 0 && !(selected && q === selected.name) && (
-                  <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
-                    {hits.map((h) => (
-                      <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
-                        <span className="text-sm font-black text-slate-900">{h.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">وقت التوصيل المفضل *</span>
@@ -1104,7 +1109,7 @@ function ClientOrderFormInner({
             {learnStep === 3 && (
               <div className="kse-glass-dark rounded-3xl border border-indigo-200 p-8 text-center animate-in slide-in-from-left duration-300">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 text-4xl shadow-sm">📍</div>
-                <h3 className="text-xl font-black text-slate-900">المنطقة</h3>
+                <h3 className={`text-xl font-black ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-900'}`}>المنطقة</h3>
                 <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
                   لا حاجة لكتابة اسم المنطقة كاملاً، فأنا ذكي وسأعرفها من 3 أحرف.
                   <br/>
@@ -1116,9 +1121,12 @@ function ClientOrderFormInner({
                     autoFocus
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    className="w-full rounded-2xl border-2 border-indigo-200 bg-white px-4 py-4 text-center text-xl font-black text-indigo-900 shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition"
+                    className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center text-xl font-black shadow-sm outline-none transition ${selected && q === selected.name ? 'border-emerald-400 text-emerald-900 bg-emerald-50 ring-4 ring-emerald-100' : 'border-indigo-200 text-indigo-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'}`}
                     placeholder="ابحث عن المنطقة..."
                   />
+                  {selected && q === selected.name && (
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl animate-in zoom-in duration-300 pointer-events-none">👍</div>
+                  )}
                   {hits.length > 0 && !(selected && q === selected.name) && (
                     <div className="absolute z-[100] mt-2 w-full overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                       <p className="bg-indigo-50 py-2 text-[10px] font-black text-indigo-600">هيا اختر إحدى هذه المناطق 👇</p>
