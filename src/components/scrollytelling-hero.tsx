@@ -105,7 +105,7 @@ export default function ScrollytellingHero() {
           </motion.div>
 
           {/* Stop 2 */}
-          <motion.div style={{ opacity: stop2Opacity, filter: useTransform(stop2Blur, b => \lur(\px)\), y: stop2Y, scale: stop2Scale }} className="absolute top-[42%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
+          <motion.div style={{ opacity: stop2Opacity, filter: useTransform(stop2Blur, b => lur(px)), y: stop2Y, scale: stop2Scale }} className="absolute top-[42%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
             <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
             <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
               <MapPin className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
@@ -117,7 +117,7 @@ export default function ScrollytellingHero() {
           </motion.div>
 
           {/* Stop 3 */}
-          <motion.div style={{ opacity: stop3Opacity, filter: useTransform(stop3Blur, b => \lur(\px)\), y: stop3Y, scale: stop3Scale }} className="absolute top-[56%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
+          <motion.div style={{ opacity: stop3Opacity, filter: useTransform(stop3Blur, b => lur(px)), y: stop3Y, scale: stop3Scale }} className="absolute top-[56%] right-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] flex-row-reverse text-right">
             <div className="absolute top-1/2 -right-[26px] w-[26px] h-[2px] bg-gradient-to-l from-[#BFE0F2] to-transparent" />
             <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
               <ShoppingBag className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
@@ -129,7 +129,7 @@ export default function ScrollytellingHero() {
           </motion.div>
 
           {/* Stop 4 */}
-          <motion.div style={{ opacity: stop4Opacity, filter: useTransform(stop4Blur, b => \lur(\px)\), y: stop4Y, scale: stop4Scale }} className="absolute top-[70%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
+          <motion.div style={{ opacity: stop4Opacity, filter: useTransform(stop4Blur, b => lur(px)), y: stop4Y, scale: stop4Scale }} className="absolute top-[70%] left-[calc(50%+26px)] w-[200px] flex items-center gap-[14px] text-left">
             <div className="absolute top-1/2 -left-[26px] w-[26px] h-[2px] bg-gradient-to-r from-[#BFE0F2] to-transparent" />
             <div className="shrink-0 w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center relative shadow-[0_8px_24px_rgba(95,168,211,0.22),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
               <Gift className="w-[26px] h-[26px] text-[#5FA8D3]" strokeWidth={1.4} />
@@ -142,21 +142,21 @@ export default function ScrollytellingHero() {
         </div>
 
         {/* Headlines */}
-        <motion.div style={{ opacity: h1Opacity, filter: useTransform(h1Blur, b => \lur(\px)\) }} className="absolute left-1/2 top-[16%] -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
+        <motion.div style={{ opacity: h1Opacity, filter: useTransform(h1Blur, b => lur(px)) }} className="absolute left-1/2 top-[16%] -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
           <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
             تجربة توصيل<br/><span className="text-[#5FA8D3]">بمستوى ثاني</span>
           </h2>
           <div className="w-[56px] h-[2px] rounded-full bg-[#BFE0F2] mx-auto mt-[18px]" />
         </motion.div>
 
-        <motion.div style={{ opacity: h2Opacity, filter: useTransform(h2Blur, b => \lur(\px)\) }} className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
+        <motion.div style={{ opacity: h2Opacity, filter: useTransform(h2Blur, b => lur(px)) }} className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[min(90vw,620px)] text-center z-10 pointer-events-none">
           <h2 className="font-bold tracking-[1px] text-[clamp(26px,5vw,46px)] leading-[1.4] text-[#22323F]">
             من الصيدلية للهديّة —<br/><span className="text-[#5FA8D3]">كلشي بطلب وحد</span>
           </h2>
         </motion.div>
 
         {/* Final Scene */}
-        <motion.div style={{ opacity: finalOpacity, filter: useTransform(finalBlur, b => \lur(\px)\) }} className="absolute bottom-[6%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 text-center w-full px-4">
+        <motion.div style={{ opacity: finalOpacity, filter: useTransform(finalBlur, b => lur(px)) }} className="absolute bottom-[6%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 text-center w-full px-4">
           <div className="w-[84px] h-[84px] rounded-full bg-white flex items-center justify-center shadow-[0_10px_30px_rgba(95,168,211,0.28),inset_0_0_0_1px_rgba(191,224,242,0.7)]">
             <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.3} />
           </div>
