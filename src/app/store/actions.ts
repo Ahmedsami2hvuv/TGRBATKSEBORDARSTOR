@@ -103,29 +103,39 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     let existingDraft: any = null;
     
     if (addToOrderId) {
-      const orderNum = parseInt(addToOrderId, 10);
-      existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
-        where: {
-          OR: [
-            { id: addToOrderId },
-            ...(isNaN(orderNum) ? [] : [{ draftNumber: orderNum }])
-          ],
-          status: { in: ["draft", "assigned"] }
+      const isNum = /^\d+$/.test(String(addToOrderId).trim());
+      const orderNum = parseInt(String(addToOrderId).trim(), 10);
+
+      try {
+        if (isNum && !isNaN(orderNum)) {
+          existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+            where: { draftNumber: orderNum, status: { in: ["draft", "assigned"] } }
+          });
+        } else {
+          existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+            where: { id: addToOrderId, status: { in: ["draft", "assigned"] } }
+          });
         }
-      });
+      } catch (err) {
+        console.error("Failed to find existing draft:", err);
+      }
     }
 
     // إذا لم يجد بـ addToOrderId المباشر، نتحقق من وجود مسودة مفتوحة قيد التجهيز لنفس رقم هاتف العميل
     if (!existingDraft && phoneLocal) {
-      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-      existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
-        where: {
-          customerPhone: phoneLocal,
-          status: { in: ["draft", "assigned"] },
-          createdAt: { gte: twoDaysAgo }
-        },
-        orderBy: { createdAt: "desc" }
-      });
+      try {
+        const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+          where: {
+            customerPhone: phoneLocal,
+            status: { in: ["draft", "assigned"] },
+            createdAt: { gte: twoDaysAgo }
+          },
+          orderBy: { createdAt: "desc" }
+        });
+      } catch (err) {
+        console.error("Failed to find existing draft by phone:", err);
+      }
     }
 
     if (existingDraft) {
@@ -159,37 +169,39 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
     // إذا لم تكن هناك مسودة مفتوحة، نتحقق مما إذا كانت طلبية معتمدة قائمة في جدول Order
     if (!draft && addToOrderId) {
-      const orderNum = parseInt(addToOrderId, 10);
-      const existingOrder = await prisma.order.findFirst({
-        where: {
-          OR: [
-            { id: addToOrderId },
-            ...(isNaN(orderNum) ? [] : [{ orderNumber: orderNum }])
-          ],
-          status: { in: ["pending", "assigned"] }
-        }
-      });
-
-      if (existingOrder) {
-        const updatedSummary = (existingOrder.summary || "") + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n");
-        await prisma.order.update({
-          where: { id: existingOrder.id },
-          data: {
-            summary: updatedSummary,
-            orderSubtotal: { increment: subtotal },
-            totalAmount: { increment: subtotal }
+      const isNum = /^\d+$/.test(String(addToOrderId).trim());
+      const orderNum = parseInt(String(addToOrderId).trim(), 10);
+      try {
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            ...(isNum && !isNaN(orderNum) ? { orderNumber: orderNum } : { id: addToOrderId }),
+            status: { in: ["pending", "assigned"] }
           }
         });
 
-        // إرسال تنبيه تليجرام بالإضافة
-        void notifyTelegramStoreOrder(existingOrder.id);
+        if (existingOrder) {
+          const updatedSummary = (existingOrder.summary || "") + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n");
+          await prisma.order.update({
+            where: { id: existingOrder.id },
+            data: {
+              summary: updatedSummary,
+              orderSubtotal: { increment: subtotal },
+              totalAmount: { increment: subtotal }
+            }
+          });
 
-        return {
-          ok: true,
-          orderNumber: String(existingOrder.orderNumber),
-          whatsappMessage: `لقد قمت بإضافة منتجات جديدة لطلبي رقم #${existingOrder.orderNumber} في خصيب ستور:\n${summaryParts.join("\n")}`,
-          draftId: existingOrder.id
-        };
+          // إرسال تنبيه تليجرام بالإضافة
+          void notifyTelegramStoreOrder(existingOrder.id);
+
+          return {
+            ok: true,
+            orderNumber: String(existingOrder.orderNumber),
+            whatsappMessage: `لقد قمت بإضافة منتجات جديدة لطلبي رقم #${existingOrder.orderNumber} في خصيب ستور:\n${summaryParts.join("\n")}`,
+            draftId: existingOrder.id
+          };
+        }
+      } catch (err) {
+        console.error("Failed to update existing order:", err);
       }
     }
     
@@ -252,9 +264,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       whatsappMessage,
       draftId: draft.id,
     };
-  } catch (e) {
-    console.error("Order creation failed", e);
-    return { error: "فشل في إرسال الطلب، يرجى المحاولة لاحقاً" };
+  } catch (e: any) {
+    console.error("Order creation failed error details:", e);
+    return { error: `فشل في إرسال الطلب: ${e?.message || "يرجى المحاولة لاحقاً"}` };
   }
 }
 
