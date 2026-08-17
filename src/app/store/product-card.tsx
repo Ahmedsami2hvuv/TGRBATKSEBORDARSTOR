@@ -187,6 +187,17 @@ export function ProductCard({
     supplierId: product.supplierId || null,
   };
 
+  const shouldHidePrice = useMemo(() => {
+    if (product.branch?.hidePrices === false && product.branch?.category?.hidePrices === false && product.hidePrices === false) {
+      return false;
+    }
+    const branchHide = product.branch?.hidePrices ?? true;
+    const catHide = product.branch?.category?.hidePrices ?? product.category?.hidePrices ?? true;
+    const prodHide = product.hidePrices ?? true;
+
+    return branchHide || catHide || prodHide;
+  }, [product]);
+
   return (
     <>
       <div
@@ -224,9 +235,16 @@ export function ProductCard({
         </div>
 
         <div className="p-3 flex items-center justify-between gap-2 bg-white relative z-10">
-          <h2 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight flex-1 text-right">
-            {currentName}
-          </h2>
+          <div className="flex-1 text-right">
+            <h2 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">
+              {currentName}
+            </h2>
+            {!shouldHidePrice && currentPrice > 0 && (
+              <p className="text-[11px] font-black text-emerald-600 mt-0.5">
+                {currentPrice.toLocaleString("ar-IQ")} د.ع
+              </p>
+            )}
+          </div>
           
           <div className="shrink-0 relative z-30 flex items-center justify-center">
              {product.hasVariants ? (
@@ -234,7 +252,7 @@ export function ProductCard({
                 +
               </button>
              ) : (
-               <AddToCartButton product={productForCart} variant="compact" />
+                <AddToCartButton product={productForCart} variant="compact" />
              )}
           </div>
         </div>
@@ -330,9 +348,11 @@ export function ProductCard({
                 <div className="w-full px-6 pt-4 space-y-4">
                   <div className="space-y-1">
                     <h2 className="text-xl font-bold text-slate-900 leading-snug">{currentName}</h2>
-                    <p className="text-xl font-black text-green-600">
-                      {currentPrice > 0 ? `${currentPrice.toLocaleString("ar-IQ")} د.ع` : "حسب الاختيار"}
-                    </p>
+                    {!shouldHidePrice && (
+                      <p className="text-xl font-black text-green-600">
+                        {currentPrice > 0 ? `${currentPrice.toLocaleString("ar-IQ")} د.ع` : "حسب الاختيار"}
+                      </p>
+                    )}
                   </div>
 
                   {product.description && (
@@ -360,7 +380,7 @@ export function ProductCard({
                                 : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                             }`}
                           >
-                            {v.name} - {Number(v.salePrice).toLocaleString("ar-IQ")} د.ع
+                            {v.name} {!shouldHidePrice && `- ${Number(v.salePrice).toLocaleString("ar-IQ")} د.ع`}
                           </button>
                         ))}
                       </div>

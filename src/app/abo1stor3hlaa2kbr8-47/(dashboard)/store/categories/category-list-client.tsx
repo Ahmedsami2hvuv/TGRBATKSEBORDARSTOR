@@ -427,6 +427,22 @@ export function CategoryListClient({
                 </div>
 
                 <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <input
+                        type="checkbox"
+                        id="hidePricesCategory"
+                        name="hidePrices"
+                        value="true"
+                        defaultChecked={editing ? (editing.hidePrices ?? true) : true}
+                        className="w-5 h-5 accent-violet-600 rounded cursor-pointer"
+                      />
+                      <label htmlFor="hidePricesCategory" className="text-sm font-bold text-slate-800 cursor-pointer">
+                        🔒 إخفاء أسعار كافة المنتجات والفروع التابعة لهذا القسم
+                      </label>
+                    </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2 lg:col-span-3">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">ملاحظة تظهر للزبون (اختياري)</label>
                     <textarea
                         name="notes"

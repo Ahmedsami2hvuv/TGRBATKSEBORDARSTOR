@@ -649,6 +649,7 @@ model StoreCategory {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   active       Boolean       @default(true)
+  hidePrices   Boolean       @default(true)
   photoUrl     String        @default("")
   notes        String        @default("")
   profitMargin Decimal       @default(0) @db.Decimal(10, 2)
@@ -665,6 +666,7 @@ model StoreBranch {
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
   active               Boolean          @default(true)
+  hidePrices           Boolean          @default(true)
   photoUrl             String           @default("")
   parentBranchId       String?
   authorizedPreparerId String?

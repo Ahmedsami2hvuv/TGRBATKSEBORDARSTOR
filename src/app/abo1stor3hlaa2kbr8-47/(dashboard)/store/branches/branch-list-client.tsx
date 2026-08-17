@@ -833,6 +833,22 @@ export function BranchListClient({
                 </div>
 
                 <div className="space-y-2 lg:col-span-4">
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <input
+                        type="checkbox"
+                        id="hidePricesBranch"
+                        name="hidePrices"
+                        value="true"
+                        defaultChecked={editing ? (editing.hidePrices ?? true) : true}
+                        className="w-5 h-5 accent-violet-600 rounded cursor-pointer"
+                      />
+                      <label htmlFor="hidePricesBranch" className="text-sm font-bold text-slate-800 cursor-pointer">
+                        🔒 إخفاء أسعار منتجات هذا الفرع بالتحديد
+                      </label>
+                    </div>
+                </div>
+
+                <div className="space-y-2 lg:col-span-4">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">ملاحظة تظهر للزبون عند فتح هذا الفرع</label>
                     <textarea
                         name="notes"

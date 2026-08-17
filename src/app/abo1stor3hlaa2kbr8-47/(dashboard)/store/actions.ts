@@ -33,12 +33,16 @@ export async function updateGlobalProfit(margin: number) {
 
 // --- Categories ---
 export async function upsertCategory(_prev: any, formData: FormData): Promise<FormState> {
+  const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+  await ensureHidePricesColumns();
+
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const sequence = parseInt(formData.get("sequence") as string || "0");
   const profitMargin = parseFloat(formData.get("profitMargin") as string || "0");
   const notes = formData.get("notes") as string || "";
   const active = formData.get("active") !== "false";
+  const hidePrices = formData.get("hidePrices") !== "false";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
@@ -59,7 +63,13 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   if (id) {
     await prisma.storeCategory.update({
       where: { id },
-      data: { name, sequence, photoUrl, notes, profitMargin, active }
+      data: { name, sequence, photoUrl, notes, profitMargin, active, hidePrices }
+    });
+
+    // إذا تم تغيير إخفاء الأسعار للقسم، يمكن تحديث الفروع التابعة له أيضاً تلقائياً
+    await prisma.storeBranch.updateMany({
+      where: { categoryId: id },
+      data: { hidePrices }
     });
 
     // إذا تم تصفير أو إيقاف ربح القسم، نقوم بتحديث أرباح كافة الفروع التابعة له أيضاً
@@ -75,7 +85,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
     await syncCategoryProductsPrice(id);
   } else {
     await prisma.storeCategory.create({
-      data: { name, sequence, photoUrl, notes, profitMargin, active }
+      data: { name, sequence, photoUrl, notes, profitMargin, active, hidePrices }
     });
   }
 
@@ -95,6 +105,9 @@ export async function deleteCategory(id: string) {
 
 // --- Branches ---
 export async function upsertBranch(_prev: any, formData: FormData): Promise<FormState> {
+  const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+  await ensureHidePricesColumns();
+
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const categoryId = formData.get("categoryId") as string;
@@ -108,6 +121,7 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const removeBg = formData.get("removeBg") === "true";
   const skipRevalidate = formData.get("skipRevalidate") === "true";
   const active = formData.get("active") !== "false";
+  const hidePrices = formData.get("hidePrices") !== "false";
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
   if (!name || !categoryId) return { error: "الاسم والقسم مطلوبان" };
