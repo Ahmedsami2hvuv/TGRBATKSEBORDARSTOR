@@ -594,7 +594,18 @@ export function ProductListClient({
             <button onClick={() => { setEditing(null); setShowForm(false); }} className="text-slate-400 hover:text-rose-500 transition">✕</button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form
+            onSubmit={handleSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const targetTag = (e.target as HTMLElement)?.tagName;
+                if (targetTag !== "TEXTAREA") {
+                  e.preventDefault();
+                }
+              }
+            }}
+            className="space-y-8"
+          >
             <input type="hidden" name="id" value={editing?.id || ""} />
             <input type="hidden" name="currentPhotoUrls" value={JSON.stringify(editing?.photoUrls || [])} />
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
@@ -644,6 +655,11 @@ export function ProductListClient({
                         name="description"
                         defaultValue={editing?.description || ""}
                         rows={2}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.stopPropagation();
+                          }
+                        }}
                         className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
                         placeholder="أضف تفاصيل المنتج هنا..."
                     />

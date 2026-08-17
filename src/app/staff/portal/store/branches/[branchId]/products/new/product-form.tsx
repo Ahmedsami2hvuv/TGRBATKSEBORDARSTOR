@@ -71,7 +71,18 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          const targetTag = (e.target as HTMLElement)?.tagName;
+          if (targetTag !== "TEXTAREA") {
+            e.preventDefault();
+          }
+        }
+      }}
+      className="space-y-4"
+    >
       <input type="hidden" name="branchId" value={branchId} />
 
       <div>
@@ -147,6 +158,11 @@ export function ProductForm({
         <textarea
           name="description"
           rows={2}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+            }
+          }}
           className={ad.input}
           placeholder="مثال: طازج، انتاج اليوم..."
         ></textarea>

@@ -144,7 +144,18 @@ export function StaffProductListClient({
             {editing ? `تعديل المنتج: ${editing.name}` : "إضافة منتج جديد"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form
+            onSubmit={handleSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const targetTag = (e.target as HTMLElement)?.tagName;
+                if (targetTag !== "TEXTAREA") {
+                  e.preventDefault();
+                }
+              }
+            }}
+            className="space-y-8"
+          >
             <input type="hidden" name="id" value={editing?.id || ""} />
             <input type="hidden" name="currentPhotoUrls" value={JSON.stringify(editing?.photoUrls || [])} />
 
@@ -197,6 +208,11 @@ export function StaffProductListClient({
                   name="description"
                   defaultValue={editing?.description || ""}
                   rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.stopPropagation();
+                    }
+                  }}
                   className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-none font-bold focus:ring-2 focus:ring-emerald-500 text-sm"
                   placeholder="أضف تفاصيل ووصف المنتج هنا..."
                 />
