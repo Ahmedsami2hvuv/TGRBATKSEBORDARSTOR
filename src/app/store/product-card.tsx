@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { AddToCartButton } from "./add-to-cart-button";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -124,6 +125,12 @@ export function ProductCard({
   const currentPrice = selectedVariant ? Number(selectedVariant.salePrice) : Number(product.salePrice);
   const currentName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
 
+  const branchId = product.branchId || product.branch?.id;
+  const categoryId = product.categoryId || product.branch?.categoryId || product.category?.id;
+  const targetBranchOrCategoryUrl = branchId
+    ? `/store/b/${branchId}`
+    : (categoryId ? `/store/c/${categoryId}` : null);
+
   const productForCart = {
     ...product,
     productId: product.id,
@@ -201,17 +208,31 @@ export function ProductCard({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
-               <div className="flex items-center gap-4">
-                 <button onClick={toggleFavorite}>
+               <div className="flex items-center gap-3">
+                 <button onClick={toggleFavorite} className="p-1 text-slate-400 hover:text-rose-500 transition" title="المفضلة">
                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 ${isFavorite ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                    </svg>
                  </button>
-                 <button onClick={handleShare}>
+                 <button onClick={handleShare} className="p-1 text-slate-400 hover:text-slate-600 transition" title="مشاركة المنتج">
                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                    </svg>
                  </button>
+
+                 {targetBranchOrCategoryUrl && (
+                   <Link
+                     href={targetBranchOrCategoryUrl}
+                     onClick={closeModal}
+                     className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-full text-xs font-black transition-all shadow-sm active:scale-95"
+                     title="تصفح الفرع / القسم بالكامل"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                     </svg>
+                     <span>فتح الفرع / القسم</span>
+                   </Link>
+                 )}
                </div>
                <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-800 hover:bg-slate-200">
                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
