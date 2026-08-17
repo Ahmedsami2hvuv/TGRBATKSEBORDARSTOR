@@ -178,21 +178,21 @@ export function ProductCard({
       >
         <button
           onClick={toggleFavorite}
-          className="absolute top-3 left-3 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all"
+          className="absolute top-2.5 left-2.5 z-20 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-center transition-all hover:scale-110 active:scale-95"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${isFavorite ? "text-rose-500 fill-rose-500" : "text-slate-300"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${isFavorite ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
 
-        <div className="relative w-full h-32 bg-white flex items-center justify-center pt-2">
+        <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
           {photos[0] ? (
             <img
               src={photos[0]}
               alt={product.name}
               loading="lazy"
               decoding="async"
-              className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 p-2"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.onerror = null;
@@ -206,23 +206,19 @@ export function ProductCard({
           )}
         </div>
 
-        <div className="px-3 pb-3 pt-1 flex-1 flex flex-col justify-between bg-white relative z-10 gap-1">
-          <div>
-            <h2 className="text-xs font-bold text-slate-800 line-clamp-2 text-right">
-              {currentName}
-            </h2>
-          </div>
+        <div className="p-3 flex items-center justify-between gap-2 bg-white relative z-10">
+          <h2 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight flex-1 text-right">
+            {currentName}
+          </h2>
           
-          <div className="flex items-end justify-between mt-1">
-            <div className="mr-auto relative z-30 w-full flex justify-end">
-               {product.hasVariants ? (
-                <button className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 font-bold text-sm">
-                  +
-                </button>
-               ) : (
-                 <AddToCartButton product={productForCart} variant="compact" />
-               )}
-            </div>
+          <div className="shrink-0 relative z-30 flex items-center justify-center">
+             {product.hasVariants ? (
+              <button className="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-600 text-white font-black text-sm shadow-md active:scale-95 transition-transform">
+                +
+              </button>
+             ) : (
+               <AddToCartButton product={productForCart} variant="compact" />
+             )}
           </div>
         </div>
       </div>
