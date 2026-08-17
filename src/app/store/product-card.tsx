@@ -248,7 +248,7 @@ export function ProductCard({
                  {targetBranchOrCategoryUrl && (
                    <Link
                      href={targetBranchOrCategoryUrl}
-                     onClick={closeModal}
+                     onClick={() => setIsModalOpen(false)}
                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-full text-xs font-black transition-all shadow-sm active:scale-95"
                      title="تصفح الفرع / القسم بالكامل"
                    >
