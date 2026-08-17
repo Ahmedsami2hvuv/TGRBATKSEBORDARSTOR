@@ -177,6 +177,14 @@ export default function MandobJobPage() {
             
             <div className="space-y-4">
               <div className="flex items-center gap-4 text-[#22323F] font-medium bg-white/60 p-5 rounded-2xl">
+                <MapPin className="w-6 h-6 text-[#5FA8D3] shrink-0"/> 
+                <div>
+                  <h4 className="font-bold text-[17px]">من أهالي أبي الخصيب (حصراً)</h4>
+                  <p className="text-[15px] text-gray-600 mt-1">يجب أن يكون المندوب من سكنة قضاء أبي الخصيب حصراً.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-[#22323F] font-medium bg-white/60 p-5 rounded-2xl">
                 <Clock className="w-6 h-6 text-[#5FA8D3] shrink-0"/> 
                 <div>
                   <h4 className="font-bold text-[17px]">التفرغ التام</h4>
