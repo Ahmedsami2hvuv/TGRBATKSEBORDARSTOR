@@ -65,6 +65,13 @@ export function ProductCard({
     if (product.hasVariants && product.variants?.length > 0) {
       setSelectedVariant(product.variants[0]);
     }
+
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("product") === product.id) {
+        setIsModalOpen(true);
+      }
+    }
   }, [product.id, product.hasVariants, product.variants]);
 
   useEffect(() => {
@@ -108,16 +115,38 @@ export function ProductCard({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    const bId = product.branchId || product.branch?.id;
+    let shareUrl = window.location.origin + window.location.pathname;
+    if (bId) {
+      shareUrl = `${window.location.origin}/store/b/${bId}?product=${product.id}`;
+    } else {
+      shareUrl = `${window.location.origin}/store?product=${product.id}`;
+    }
+
+    const shareData = {
+      title: product.name,
+      text: `تصفح منتج (${product.name}) في خصيب ستور 🛍️`,
+      url: shareUrl,
+    };
+
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: product.name,
-          text: `تفقد هذا المنتج: ${product.name}`,
-          url: window.location.href,
-        });
+      if (navigator.share && typeof navigator.share === "function") {
+        await navigator.share(shareData);
+        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت مشاركة المنتج بنجاح 📲", type: "success" } }));
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ رابط المنتج بنجاح 📋", type: "success" } }));
       }
-    } catch (err) {
-      console.log('Share ignored', err);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ رابط المنتج بنجاح 📋", type: "success" } }));
+        } catch (clipErr) {
+          console.error("Clipboard write error:", clipErr);
+        }
+      }
     }
   };
 
