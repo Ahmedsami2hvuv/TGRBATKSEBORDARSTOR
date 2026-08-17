@@ -13,6 +13,7 @@ export function ProductCard({
   product: any,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
@@ -113,40 +114,56 @@ export function ProductCard({
     window.dispatchEvent(new Event("favorites-updated"));
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const getProductShareDetails = () => {
     const bId = product.branchId || product.branch?.id;
-    let shareUrl = window.location.origin + window.location.pathname;
+    let shareUrl = typeof window !== "undefined" ? (window.location.origin + window.location.pathname) : "";
     if (bId) {
-      shareUrl = `${window.location.origin}/store/b/${bId}?product=${product.id}`;
+      shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/store/b/${bId}?product=${product.id}`;
     } else {
-      shareUrl = `${window.location.origin}/store?product=${product.id}`;
+      shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/store?product=${product.id}`;
     }
 
-    const shareData = {
-      title: product.name,
-      text: `تصفح منتج (${product.name}) في خصيب ستور 🛍️`,
-      url: shareUrl,
-    };
+    const shareMessage = `تعال شوف \n${product.name} \nالموجود بخصيب ستور \nشرايك نشرتيه \n${shareUrl}`;
 
+    return { shareUrl, shareMessage };
+  };
+
+  const copyShareLinkOnly = async () => {
+    const { shareUrl } = getProductShareDetails();
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ رابط المنتج بنجاح 📋", type: "success" } }));
+      setShowShareModal(false);
+    } catch (err) {
+      console.error("Clipboard copy error:", err);
+    }
+  };
+
+  const shareToAppsDirectly = async () => {
+    const { shareUrl, shareMessage } = getProductShareDetails();
     try {
       if (navigator.share && typeof navigator.share === "function") {
-        await navigator.share(shareData);
-        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت مشاركة المنتج بنجاح 📲", type: "success" } }));
+        await navigator.share({
+          title: product.name,
+          text: shareMessage,
+          url: shareUrl,
+        });
+        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت المشاركة بنجاح 📲", type: "success" } }));
       } else {
-        await navigator.clipboard.writeText(shareUrl);
-        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ رابط المنتج بنجاح 📋", type: "success" } }));
+        await navigator.clipboard.writeText(shareMessage);
+        window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ نص ورابط المشاركة 📋", type: "success" } }));
       }
+      setShowShareModal(false);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         try {
-          await navigator.clipboard.writeText(shareUrl);
-          window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ رابط المنتج بنجاح 📋", type: "success" } }));
+          await navigator.clipboard.writeText(shareMessage);
+          window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تم نسخ نص ورابط المشاركة 📋", type: "success" } }));
         } catch (clipErr) {
-          console.error("Clipboard write error:", clipErr);
+          console.error("Clipboard error:", clipErr);
         }
       }
+      setShowShareModal(false);
     }
   };
 
@@ -239,7 +256,7 @@ export function ProductCard({
                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                    </svg>
                  </button>
-                 <button onClick={handleShare} className="p-1 text-slate-400 hover:text-slate-600 transition" title="مشاركة المنتج">
+                 <button onClick={() => setShowShareModal(true)} className="p-1 text-slate-400 hover:text-slate-600 transition" title="مشاركة المنتج">
                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                    </svg>
@@ -304,44 +321,56 @@ export function ProductCard({
                           activePhotoIndex === idx ? "border-green-500 scale-110 shadow-sm" : "border-slate-100 opacity-70"
                         }`}
                       >
-                        <img src={url} className="w-full h-full object-cover" />
+                        <img src={url} className="w-full h-full object-cover" alt="" />
                       </button>
                     ))}
                   </div>
                 )}
-              </div>
 
-              <div className="px-6 pb-2 text-center">
-                <h2 className="text-xl md:text-2xl font-black text-slate-800 mb-1">{product.name}</h2>
-                {product.description && (
-                  <p className="text-sm text-slate-500 mt-1 whitespace-pre-wrap leading-relaxed">{product.description}</p>
-                )}
-              </div>
-              
-              {product.hasVariants && (
-                <div className="px-6 pb-6">
-                   <div className="flex flex-wrap gap-2 justify-center">
-                     {product.variants.map((v: any) => (
-                       <button
-                         key={v.id}
-                         onClick={() => setSelectedVariant(v)}
-                         className={`px-4 py-2 rounded-xl font-bold text-sm transition-all border ${
-                           selectedVariant?.id === v.id
-                           ? "border-green-500 bg-green-50 text-green-600"
-                           : "border-slate-200 text-slate-600 hover:border-green-200"
-                         }`}
-                       >
-                         {v.name}
-                       </button>
-                     ))}
-                   </div>
+                <div className="w-full px-6 pt-4 space-y-4">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{currentName}</h2>
+                    <p className="text-xl font-black text-green-600">
+                      {currentPrice > 0 ? `${currentPrice.toLocaleString("ar-IQ")} د.ع` : "حسب الاختيار"}
+                    </p>
+                  </div>
+
+                  {product.description && (
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-400 mb-1">وصف المنتج:</h4>
+                      <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
+                        {product.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.hasVariants && product.variants?.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 block">
+                        اختر {product.variantType || "النوع"}:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {product.variants.map((v: any) => (
+                          <button
+                            key={v.id}
+                            onClick={() => setSelectedVariant(v)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                              selectedVariant?.id === v.id
+                                ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
+                                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            {v.name} - {Number(v.salePrice).toLocaleString("ar-IQ")} د.ع
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-
+              </div>
             </div>
 
-            {/* شريط السعر والإضافة للسلة في الأسفل */}
-            <div className="p-4 bg-white border-t border-slate-100">
+            <div className="p-4 border-t border-slate-100 bg-white">
               <AddToCartButton product={productForCart} variant="default" />
             </div>
           </div>
