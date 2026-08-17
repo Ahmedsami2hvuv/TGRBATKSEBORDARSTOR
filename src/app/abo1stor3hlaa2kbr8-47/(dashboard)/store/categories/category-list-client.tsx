@@ -6,7 +6,7 @@ import Link from "next/link";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-import { upsertCategory, deleteCategory, applyUnifiedProfit } from "../actions";
+import { upsertCategory, deleteCategory, applyUnifiedProfit, convertCategoryToBranch } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -27,6 +27,9 @@ export function CategoryListClient({
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [convertToBranchModal, setConvertToBranchModal] = useState<string | null>(null);
+  const [convertToBranchTarget, setConvertToBranchTarget] = useState<string>("");
+  const [converting, setConverting] = useState(false);
 
   // --- Unified profit margin ---
   const [unifiedMargin, setUnifiedMargin] = useState(globalProfitMargin);
@@ -490,7 +493,17 @@ export function CategoryListClient({
             </Link>
 
             {/* Actions Bar */}
-            <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="mt-5 grid grid-cols-4 gap-2">
+              <button
+                onClick={() => {
+                  setConvertToBranchModal(cat.id);
+                  setConvertToBranchTarget("");
+                }}
+                className="p-2 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center justify-center"
+                title="تحويل إلى فرع"
+              >
+                <DynamicIcon iconKey="ui_folder" config={icons} fallback="📁" className="w-3 h-3" />
+              </button>
               <button
                 onClick={() => {
                   setEditing(cat);
@@ -537,6 +550,44 @@ export function CategoryListClient({
                         <button
                             onClick={() => setConfirmDelete(null)}
                             className="flex-1 py-2 bg-rose-800 text-white rounded-xl font-black text-[10px]"
+                        >إلغاء</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Convert to Branch Overlay */}
+            {convertToBranchModal === cat.id && (
+                <div className="absolute inset-0 z-20 bg-indigo-600/95 backdrop-blur-sm rounded-[2.5rem] flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in duration-200">
+                    <p className="text-white font-black text-xs mb-3">اختر القسم لنقل هذا القسم إليه كـ فرع:</p>
+                    <select
+                        value={convertToBranchTarget}
+                        onChange={(e) => setConvertToBranchTarget(e.target.value)}
+                        className="w-full mb-3 px-3 py-2 rounded-xl bg-white text-indigo-900 text-[10px] font-bold outline-none"
+                    >
+                        <option value="">اختر القسم الهدف...</option>
+                        {initialCategories.filter(c => c.id !== cat.id).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                    <div className="flex gap-2 w-full">
+                        <button
+                            disabled={converting || !convertToBranchTarget}
+                            onClick={async () => {
+                                setConverting(true);
+                                const res = await convertCategoryToBranch(cat.id, convertToBranchTarget);
+                                if (res.ok) {
+                                    window.location.reload();
+                                } else {
+                                    alert(res.error);
+                                    setConverting(false);
+                                }
+                            }}
+                            className="flex-1 py-2 bg-white text-indigo-600 rounded-xl font-black text-[10px] disabled:opacity-50"
+                        >تحويل</button>
+                        <button
+                            disabled={converting}
+                            onClick={() => setConvertToBranchModal(null)}
+                            className="flex-1 py-2 bg-indigo-800 text-white rounded-xl font-black text-[10px]"
                         >إلغاء</button>
                     </div>
                 </div>
