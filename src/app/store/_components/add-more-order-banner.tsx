@@ -21,7 +21,7 @@ export function AddMoreOrderBanner() {
   };
 
   return (
-    <div className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center justify-between gap-3 text-xs md:text-sm font-bold mb-4 animate-in fade-in slide-in-from-top-4 duration-300">
+    <div className="sticky top-2 z-40 w-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white px-4 py-3 rounded-2xl shadow-xl border border-sky-400/30 flex items-center justify-between gap-3 text-xs md:text-sm font-bold mb-4 animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <span className="text-base animate-pulse">🛒</span>
         <span>أنت تقوم بإضافة منتجات لطلبك النشط <span className="font-black underline">#{orderId}</span> (سيتم دمجها في طلبك الحالي)</span>

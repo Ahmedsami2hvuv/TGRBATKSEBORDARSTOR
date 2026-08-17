@@ -165,6 +165,23 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           }
         }
       });
+
+      // إرسال تنبيه تليجرام للتحديث
+      void notifyTelegramStoreOrder(draft.id);
+
+      const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
+      const customWhatsappMessage = [
+        `لقد قمت بإضافة منتجات جديدة لطلبي السابق رقم #${draft.draftNumber}`,
+        "المنتجات المضافة حديثاً هي:",
+        ...addedLines
+      ].join("\n");
+
+      return {
+        ok: true,
+        orderNumber: String(draft.draftNumber),
+        whatsappMessage: customWhatsappMessage,
+        draftId: draft.id
+      };
     }
 
     // إذا لم تكن هناك مسودة مفتوحة، نتحقق مما إذا كانت طلبية معتمدة قائمة في جدول Order
