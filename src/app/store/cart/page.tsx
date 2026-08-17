@@ -77,15 +77,28 @@ export default function CartPage() {
 
     try {
       const orders = JSON.parse(localStorage.getItem("kse_orders") || "[]");
-      if (!orders.find((o: any) => o.orderNumber === state.orderNumber)) {
+      const targetId = addToOrderId || state.orderNumber;
+      
+      const existingOrderIndex = orders.findIndex((o: any) => 
+        String(o.orderNumber) === String(targetId) || 
+        String(o.id) === String(targetId) ||
+        String(o.draftId) === String(targetId)
+      );
+
+      if (existingOrderIndex > -1) {
+        // دمج المنتجات الجديدة مباشرة بداخل الطلب القديم
+        const existingItems = orders[existingOrderIndex].items || [];
+        orders[existingOrderIndex].items = [...existingItems, ...cart];
+        orders[existingOrderIndex].date = new Date().toISOString();
+      } else {
         orders.push({
-          id: state.draftId, // مهم جداً لتعديل الطلب لاحقاً
+          id: state.draftId,
           orderNumber: state.orderNumber,
           date: new Date().toISOString(),
           items: cart
         });
-        localStorage.setItem("kse_orders", JSON.stringify(orders));
       }
+      localStorage.setItem("kse_orders", JSON.stringify(orders));
     } catch(e) {}
 
     const whatsappPhone = "9647733921468";
@@ -385,7 +398,7 @@ export default function CartPage() {
                 type="submit"
                 className="w-full py-4 bg-green-600 text-white rounded-xl font-black text-lg hover:bg-green-500 transition-all active:scale-95 shadow-lg"
               >
-                تأكيد وإرسال الطلب
+                {addToOrderId ? `تأكيد وإضافة المنتجات للطلب #${addToOrderId}` : "تأكيد وإرسال الطلب"}
               </button>
             </div>
           </form>

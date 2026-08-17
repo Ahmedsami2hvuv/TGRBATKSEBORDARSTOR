@@ -63,8 +63,8 @@ export default function OrdersPage() {
                     <p className="text-xs text-slate-400">{new Date(order.date).toLocaleDateString("ar-IQ")}</p>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold">
-                  مكتمل
+                <div className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold">
+                  ⏳ قيد التجهيز والمعالجة
                 </div>
               </div>
               
