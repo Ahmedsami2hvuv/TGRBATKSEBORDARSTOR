@@ -16,7 +16,8 @@ import {
   HeartHandshake,
   AlertTriangle,
   MessageCircle,
-  Phone
+  Phone,
+  Car
 } from "lucide-react";
 
 function FadeInSection({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
@@ -154,7 +155,12 @@ export default function MandobJobPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 bg-gray-50 p-4 rounded-xl text-gray-700 font-medium border border-gray-200">
+            <div className="mt-6 p-4 rounded-xl bg-orange-50 border border-orange-100 text-orange-800 font-medium text-[15px] flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 shrink-0 text-orange-500 mt-0.5" />
+              <p>ملاحظة: الأوقات المذكورة أعلاه هي <span className="font-bold">أوقات استلام الطلبات</span>، وليست أوقات انتهاء العمل وتوصيلها.</p>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3 bg-gray-50 p-4 rounded-xl text-gray-700 font-medium border border-gray-200">
               <Coffee className="w-6 h-6 text-[#5FA8D3]" />
               <p>فترة استراحة بين الشفتين لمدة <span className="font-bold text-[#22323F]">4 ساعات</span>.</p>
             </div>
@@ -191,6 +197,14 @@ export default function MandobJobPage() {
                 <div>
                   <h4 className="font-bold text-[17px]">الأخلاق والتعامل</h4>
                   <p className="text-[15px] text-gray-600 mt-1">أن يكون ذو خلق وتعامـل عالي ومحترم مع الناس.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-[#22323F] font-medium bg-white/60 p-5 rounded-2xl">
+                <Car className="w-6 h-6 text-[#5FA8D3] shrink-0"/> 
+                <div>
+                  <h4 className="font-bold text-[17px]">امتلاك سيارة (حصراً)</h4>
+                  <p className="text-[15px] text-gray-600 mt-1">يجب أن يمتلك المندوب سيارة (وليست دراجة)، ويُشترط أن يكون فيها تبريد شغال لبعض الطلبات التي تحتاجه.</p>
                 </div>
               </div>
             </div>
