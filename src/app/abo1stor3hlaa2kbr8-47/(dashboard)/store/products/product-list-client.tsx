@@ -610,8 +610,8 @@ export function ProductListClient({
             <input type="hidden" name="currentPhotoUrls" value={JSON.stringify(editing?.photoUrls || [])} />
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                <div className="space-y-2 lg:col-span-4">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">الفرع التابع له</label>
                     <select
                         name="branchId"
@@ -628,7 +628,7 @@ export function ProductListClient({
                     </select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-4">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">اسم المنتج</label>
                     <input
                         name="name"
@@ -639,17 +639,26 @@ export function ProductListClient({
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">تسلسل العرض</label>
-                    <input
-                        name="sequence"
-                        type="number"
-                        defaultValue={editing?.sequence || 0}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
-                    />
+                <div className="flex items-end gap-2 lg:col-span-4">
+                    <div className="space-y-2 w-20 shrink-0">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block text-center">التسلسل</label>
+                        <input
+                            name="sequence"
+                            type="number"
+                            defaultValue={editing?.sequence || 0}
+                            className="w-full px-2 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-black text-center text-sm"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 py-3 px-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 shadow-lg shadow-emerald-100 transition-all active:scale-95 text-xs md:text-sm whitespace-nowrap h-[48px] flex items-center justify-center gap-1.5"
+                    >
+                        {loading ? "جاري الحفظ..." : (editing ? "💾 حفظ التعديلات" : "🚀 حفظ المنتج")}
+                    </button>
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 lg:col-span-8">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">وصف المنتج (اختياري)</label>
                     <textarea
                         name="description"
@@ -665,7 +674,7 @@ export function ProductListClient({
                     />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-4">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
                       صور المنتج
                       <label className="inline-flex items-center gap-1.5 text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded-md cursor-pointer border border-violet-100">
