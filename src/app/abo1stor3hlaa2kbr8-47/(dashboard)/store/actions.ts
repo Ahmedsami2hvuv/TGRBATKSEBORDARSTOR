@@ -948,3 +948,51 @@ export async function getGlobalProfitMargin() {
   });
   return settings?.profitMargin ? Number(settings.profitMargin) : 250;
 }
+
+export async function convertCategoryToBranch(sourceCategoryId: string, targetCategoryId: string): Promise<FormState> {
+  try {
+    const sourceCategory = await prisma.storeCategory.findUnique({ where: { id: sourceCategoryId } });
+    if (!sourceCategory) return { error: "القسم المصدر غير موجود" };
+
+    const targetCategory = await prisma.storeCategory.findUnique({ where: { id: targetCategoryId } });
+    if (!targetCategory) return { error: "القسم الهدف غير موجود" };
+
+    if (sourceCategoryId === targetCategoryId) {
+      return { error: "لا يمكن تحويل القسم إلى فرع داخل نفسه" };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Create a branch inside target category representing the old category
+      const newBranch = await tx.storeBranch.create({
+        data: {
+          name: sourceCategory.name,
+          categoryId: targetCategoryId,
+          photoUrl: sourceCategory.photoUrl,
+          notes: sourceCategory.notes,
+          profitMargin: sourceCategory.profitMargin,
+          active: sourceCategory.active,
+          sequence: 0,
+        }
+      });
+
+      // 2. Move all branches of the old category to be sub-branches of the new branch
+      await tx.storeBranch.updateMany({
+        where: { categoryId: sourceCategoryId },
+        data: {
+          categoryId: targetCategoryId,
+          parentBranchId: newBranch.id
+        }
+      });
+
+      // 3. Delete the old category
+      await tx.storeCategory.delete({ where: { id: sourceCategoryId } });
+    });
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("CONVERT CATEGORY ERROR:", err);
+    return { error: err.message || "حدث خطأ غير متوقع أثناء تحويل القسم" };
+  }
+}
