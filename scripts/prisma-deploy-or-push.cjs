@@ -6,10 +6,7 @@ const { execSync } = require("node:child_process");
 const isDevMode = process.argv.includes("--dev");
 
 function shouldSkipDbDeployStep() {
-  const skipFlag = process.env.SKIP_DB_DEPLOY === "1";
-  const hasDbUrl = !!process.env.DATABASE_URL;
-  if (!hasDbUrl) return true;
-  return skipFlag;
+  return false;
 }
 
 /**
@@ -74,14 +71,7 @@ if (isDevMode) {
   console.warn("[prisma] migrate dev failed in dev mode, trying migrate deploy...");
 }
 
-// محاولة أولى: Migrate Deploy
-let result = runCapture("npx prisma migrate deploy", env);
-
-if (!result.ok) {
-  console.warn("[prisma] Migrate deploy failed, trying db push...");
-  // محاولة ثانية: DB Push
-  result = runCapture("npx prisma db push --skip-generate --accept-data-loss", env);
-}
+let result = runCapture("npx prisma db push --skip-generate --accept-data-loss", env);
 
 if (result.ok) {
   console.log("[prisma] Database updated successfully.");
