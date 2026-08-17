@@ -251,7 +251,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
                 orderId: (o as any).id || (o as any).orderId,
                 courierId: id,
                 kind: MONEY_KIND_DELIVERY,
-                amountDinar: earning,
+                amountDinar: new Decimal(0),
                 expectedDinar: expected,
                 matchesExpected: true,
                 createdAt: eventDate <= periodEndAt ? eventDate : periodEndAt,

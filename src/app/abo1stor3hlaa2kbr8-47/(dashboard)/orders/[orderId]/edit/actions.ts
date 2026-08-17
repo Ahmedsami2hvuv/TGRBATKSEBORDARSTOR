@@ -266,6 +266,22 @@ export async function updateOrderAdmin(
       await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, existing.status, status);
     }
 
+    if (existing.assignedCourierId && existing.assignedCourierId !== assignedCourierId) {
+      await tx.orderCourierMoneyEvent.updateMany({
+        where: {
+          orderId: orderId,
+          courierId: existing.assignedCourierId,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: new Date(),
+          deletedReason: "manual_admin",
+          deletedByDisplayName: "نظام التعديل",
+          mismatchNote: "حُذفت تلقائياً بسبب تغيير المندوب",
+        },
+      });
+    }
+
     // منطق تحديث أرباح الموظف إذا كان الطلب من بوابة الموظفين (routeMode = double)
     let nextPreparerShoppingJson = existing.preparerShoppingJson;
     if (existing.routeMode === "double" && nextPreparerShoppingJson && typeof nextPreparerShoppingJson === "object") {
