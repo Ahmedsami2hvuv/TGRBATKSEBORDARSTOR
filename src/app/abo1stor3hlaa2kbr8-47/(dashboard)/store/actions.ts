@@ -222,6 +222,7 @@ export async function clearBranchProducts(branchId: string) {
 export async function upsertProduct(_prev: any, formData: FormData): Promise<FormState> {
   try {
     const id = formData.get("id") as string;
+    const name = formData.get("name") as string;
     const hasDescriptionInput = formData.has("description");
     const rawDescription = formData.get("description");
     let descriptionInput: string | null = null;
