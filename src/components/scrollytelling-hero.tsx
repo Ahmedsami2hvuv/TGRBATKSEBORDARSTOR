@@ -133,7 +133,7 @@ export default function ScrollytellingHero() {
         </motion.div>
 
         {/* Final Scene */}
-        <motion.div style={{ opacity: finalOpacity, y: finalY }} className="absolute bottom-[8%] md:top-1/2 md:-translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-[12px] z-10 text-center w-[90vw] md:w-full">
+        <motion.div style={{ opacity: finalOpacity, y: finalY }} className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-[12px] z-10 text-center w-[90vw] md:w-full">
           <div className="w-[72px] h-[72px] rounded-full bg-white flex items-center justify-center border-2 border-[#5FA8D3] shadow-lg">
             <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.5} />
           </div>
@@ -146,7 +146,7 @@ export default function ScrollytellingHero() {
         </motion.div>
 
         {/* Scroll Hint */}
-        <motion.div style={{ opacity: hintOpacity }} className="absolute bottom-[8%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 pointer-events-none">
+        <motion.div style={{ opacity: hintOpacity }} className="absolute bottom-[3%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 pointer-events-none">
           <motion.div animate={{ y: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }} className="w-[42px] h-[42px] flex flex-col items-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-10 text-[#5FA8D3]">
               <path d="M12 5v14M12 5l-4 4M12 5l4 4"/>

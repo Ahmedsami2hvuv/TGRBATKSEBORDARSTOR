@@ -48,9 +48,17 @@ export default function WelcomePage() {
           <div className="bg-[#5FA8D3] text-white rounded-[32px] p-8 md:p-10 text-center shadow-xl mb-12 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-32 h-32 bg-white blur-[80px] opacity-20 rounded-full" />
             <h2 className="text-[26px] md:text-[30px] font-bold mb-4 leading-snug">السلام عليكم 👋 أهم شي... اخزن رقمنا!</h2>
-            <p className="text-[16px] md:text-[18px] text-white/90 mb-8 max-w-lg mx-auto leading-relaxed">
-              تخيل تحتاج شي ضروري بنص الليل؟ رقمنا لازم يكون بجهازك واسمنا (أبو الأكبر للتوصيل). ننشر يومياً حالات لمنتجات من شتى المحلات، فاحفظ الرقم حتى توصلك أقوى العروض.
+            <p className="text-[16px] md:text-[18px] text-white/90 mb-6 max-w-lg mx-auto leading-relaxed">
+              رقمنا لازم يكون بجهازك واسمنا (أبو الأكبر للتوصيل). ننشر يومياً حالات لمنتجات من شتى المحلات، فاحفظ الرقم حتى توصلك أقوى العروض.
             </p>
+            <div className="bg-white/10 rounded-2xl p-4 mb-8 max-w-md mx-auto text-right">
+              <h4 className="font-bold text-[18px] mb-3 text-white">⏰ أوقات التوصيل:</h4>
+              <ul className="space-y-2 text-[15px] text-white/90">
+                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-white block"></span> <strong>الصباح:</strong> من الصبح لحد ساعة 12 الظهر</li>
+                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-300 block"></span> <strong>استراحة:</strong> الظهر 4 ساعات (من 12 لـ 4)</li>
+                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-white block"></span> <strong>المساء:</strong> الشفت الثاني من 4 العصر لـ 8 بالليل</li>
+              </ul>
+            </div>
             <a href="tel:+9647733921468" className="inline-flex items-center justify-center gap-3 bg-white text-[#5FA8D3] px-8 py-4 rounded-full font-bold text-[18px] hover:bg-gray-50 transition-colors shadow-lg active:scale-95 duration-200 w-full sm:w-auto">
               <Phone className="w-5 h-5" />
               احفظ الرقم (07733921468)
