@@ -96,22 +96,6 @@ export async function transferOrderToCourierInternal(
   const oldCourierId = order.assignedCourierId;
 
   await prisma.$transaction(async (tx) => {
-    if (oldCourierId && oldCourierId !== courierId) {
-      await tx.orderCourierMoneyEvent.updateMany({
-        where: {
-          orderId: orderId,
-          courierId: oldCourierId,
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedReason: "manual_admin",
-          deletedByDisplayName: "نظام التحويل",
-          mismatchNote: "حُذفت تلقائياً بسبب تحويل الطلبية لمندوب آخر",
-        },
-      });
-    }
-
     await tx.order.update({
       where: { id: orderId },
       data: {

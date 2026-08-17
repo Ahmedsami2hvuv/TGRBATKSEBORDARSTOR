@@ -28,7 +28,6 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
       <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-4 hide-scrollbar px-2 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
       <Link 
         href={`/store/c/${categoryId}`} 
-        prefetch={false} 
         onClick={() => setOptimisticBranch(null)}
         className="shrink-0 flex flex-col items-center gap-1"
       >
@@ -43,7 +42,6 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
           <Link 
             key={b.id} 
             href={`/store/c/${categoryId}?b=${b.id}`} 
-            prefetch={false} 
             onClick={() => setOptimisticBranch(b.id)}
             className="shrink-0 flex flex-col items-center gap-1"
           >

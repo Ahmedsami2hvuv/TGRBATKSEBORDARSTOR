@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ProductCard } from "../../product-card";
 import { CustomProductRequest } from "@/components/custom-product-request";
+import { unstable_cache } from "next/cache";
 
-export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع تصفح المنتجات في الفرع
+export const revalidate = 60; // تفعيل الكاش الإجمالي لـ 60 ثانية
 
 /**
  * دالة تطهير عميقة وقوية لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
@@ -34,6 +35,94 @@ function deepSanitize(obj: any): any {
   return obj;
 }
 
+const getCachedBranchData = (branchId: string) =>
+  unstable_cache(
+    async () => {
+      const [settingsRaw, branchRaw] = await Promise.all([
+        prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
+        prisma.storeBranch.findUnique({
+          where: { id: branchId },
+          include: {
+            category: true,
+            products: {
+              where: { active: true },
+              orderBy: { sequence: "asc" },
+              include: {
+                supplier: true,
+                variants: {
+                  where: { active: true },
+                  orderBy: { sequence: "asc" }
+                }
+              }
+            },
+            subBranches: {
+              where: { active: true },
+              orderBy: { sequence: "asc" }
+            }
+          }
+        })
+      ]);
+
+      if (!branchRaw) return null;
+
+      const settings = deepSanitize(settingsRaw);
+      const branch = deepSanitize(branchRaw);
+
+      const globalMargin = settings?.profitMargin || 0;
+      const branchMargin = branch.profitMargin || 0;
+      const categoryMargin = branch.category?.profitMargin || 0;
+
+      const products = (branch.products || []).map((p: any) => {
+        const supplierMargin = p.supplier?.profitMargin || 0;
+        const effectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
+
+        let salePrice = p.salePrice || 0;
+        const purchasePrice = p.purchasePrice || 0;
+
+        if (salePrice <= 0 && purchasePrice > 0) {
+          const addedMargin = effectiveMargin <= 1 ? (purchasePrice * effectiveMargin) : effectiveMargin;
+          salePrice = purchasePrice + addedMargin;
+        }
+
+        const variants = (p.variants || []).map((v: any) => {
+          let vSalePrice = v.salePrice || 0;
+          const vPurchasePrice = v.purchasePrice || 0;
+          if (vSalePrice <= 0 && vPurchasePrice > 0) {
+            const vAddedMargin = effectiveMargin <= 1 ? (vPurchasePrice * effectiveMargin) : effectiveMargin;
+            vSalePrice = vPurchasePrice + vAddedMargin;
+          }
+          return {
+            id: String(v.id),
+            name: v.name,
+            salePrice: vSalePrice,
+            purchasePrice: vPurchasePrice,
+          };
+        });
+
+        return {
+          id: String(p.id),
+          name: p.name,
+          description: p.description || "",
+          salePrice,
+          purchasePrice,
+          photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+          hasVariants: !!p.hasVariants,
+          variantType: p.variantType || "النوع",
+          variants,
+          supplierId: p.supplierId || null,
+        };
+      });
+
+      return {
+        branch,
+        products,
+        children: branch.subBranches || []
+      };
+    },
+    [`branch-cache-data-${branchId}`],
+    { revalidate: 120, tags: ["store-branches", `branch-${branchId}`] }
+  )();
+
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const branchId = params?.id;
@@ -41,99 +130,28 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
   if (!branchId) return <div className="p-10 text-center font-bold">معرف الفرع مفقود</div>;
 
   try {
-    const settingsRaw = await prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null);
+    const data = await getCachedBranchData(branchId);
 
-    const branchRaw = await prisma.storeBranch.findUnique({
-      where: { id: branchId },
-      include: {
-        category: true,
-        products: {
-          where: { active: true },
-          orderBy: { sequence: "asc" },
-          include: {
-            supplier: true,
-            variants: {
-              where: { active: true },
-              orderBy: { sequence: "asc" }
-            }
-          }
-        },
-        subBranches: {
-          where: { active: true },
-          orderBy: { sequence: "asc" }
-        }
-      }
-    });
-
-    if (!branchRaw) {
+    if (!data || !data.branch) {
       return (
         <div className="text-center py-20" dir="rtl">
           <h2 className="text-xl font-bold text-slate-900">الفرع غير موجود أو غير نشط</h2>
-          <Link href="/store" prefetch={false} className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر</Link>
+          <Link href="/store" className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر</Link>
         </div>
       );
     }
 
-    // تطهير البيانات بالكامل قبل المعالجة
-    const settings = deepSanitize(settingsRaw);
-    const branch = deepSanitize(branchRaw);
-
-    const globalMargin = settings?.profitMargin || 0;
-    const branchMargin = branch.profitMargin || 0;
-    const categoryMargin = branch.category?.profitMargin || 0;
-
-    const products = (branch.products || []).map((p: any) => {
-      const supplierMargin = p.supplier?.profitMargin || 0;
-      const effectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
-
-      let salePrice = p.salePrice || 0;
-      const purchasePrice = p.purchasePrice || 0;
-
-      if (salePrice <= 0 && purchasePrice > 0) {
-        const addedMargin = effectiveMargin <= 1 ? (purchasePrice * effectiveMargin) : effectiveMargin;
-        salePrice = purchasePrice + addedMargin;
-      }
-
-      const variants = (p.variants || []).map((v: any) => {
-        let vSalePrice = v.salePrice || 0;
-        const vPurchasePrice = v.purchasePrice || 0;
-        if (vSalePrice <= 0 && vPurchasePrice > 0) {
-          const vAddedMargin = effectiveMargin <= 1 ? (vPurchasePrice * effectiveMargin) : effectiveMargin;
-          vSalePrice = vPurchasePrice + vAddedMargin;
-        }
-        return {
-          id: String(v.id),
-          name: v.name,
-          salePrice: vSalePrice,
-          purchasePrice: vPurchasePrice,
-        };
-      });
-
-      return {
-        id: String(p.id),
-        name: p.name,
-        description: p.description || "",
-        salePrice,
-        purchasePrice,
-        photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
-        hasVariants: !!p.hasVariants,
-        variantType: p.variantType || "النوع",
-        variants,
-        supplierId: p.supplierId || null,
-      };
-    });
-
-    const children = branch.subBranches || [];
+    const { branch, products, children } = data;
 
     return (
       <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700" dir="rtl">
         <header className="space-y-4">
           <nav className="flex items-center gap-2 text-sm font-bold text-slate-400">
-            <Link href="/store" prefetch={false} className="hover:text-violet-600 transition">🏠 المتجر</Link>
+            <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
             <span>/</span>
             {branch.category && (
               <>
-                <Link href={`/store/c/${branch.category.id}`} prefetch={false} className="hover:text-violet-600 transition">
+                <Link href={`/store/c/${branch.category.id}`} className="hover:text-violet-600 transition">
                   {branch.category.name}
                 </Link>
                 <span>/</span>
@@ -172,7 +190,6 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
                 <Link
                   key={child.id}
                   href={`/store/b/${child.id}`}
-                  prefetch={false}
                   className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all text-center group"
                 >
                   <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-xl group-hover:scale-105 transition-transform overflow-hidden">
