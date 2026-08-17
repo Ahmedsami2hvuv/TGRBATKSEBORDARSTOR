@@ -83,9 +83,9 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
   }
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-2 w-full">
-      {/* أزرار التحكم بالكمية */}
-      <div className="flex items-center justify-between border border-slate-200 rounded-xl p-1 bg-white w-full md:w-32 shrink-0 select-none shadow-sm">
+    <div className="flex flex-row items-center gap-2.5 w-full">
+      {/* أزرار التحكم بالكمية المدمجة */}
+      <div className="flex items-center justify-between border-2 border-slate-100 rounded-2xl p-1 bg-slate-50 w-28 shrink-0 select-none shadow-inner">
         <button
           type="button"
           onClick={(e) => {
@@ -95,11 +95,11 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
               setQuantity(quantity - 1);
             }
           }}
-          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-800 text-lg transition-all active:scale-90"
+          className="w-7 h-7 rounded-xl bg-white text-slate-600 hover:text-slate-900 font-black text-base flex items-center justify-center transition-all active:scale-90 shadow-sm"
         >
           -
         </button>
-        <span className="w-8 text-center font-bold text-sm text-slate-800">
+        <span className="w-6 text-center font-black text-sm text-slate-900">
           {quantity}
         </span>
         <button
@@ -109,7 +109,7 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
             e.preventDefault();
             setQuantity(quantity + 1);
           }}
-          className="w-8 h-8 flex items-center justify-center text-green-500 hover:text-green-600 font-bold text-lg transition-all active:scale-90"
+          className="w-7 h-7 rounded-xl bg-white text-emerald-600 hover:text-emerald-700 font-black text-base flex items-center justify-center transition-all active:scale-90 shadow-sm"
         >
           +
         </button>
@@ -118,20 +118,20 @@ export function AddToCartButton({ product, variant = "default" }: { product: any
       {/* زر إضافة للسلة */}
       <button
         onClick={addToCart}
-        className={`w-full md:flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 transform active:scale-90 ${
+        className={`flex-1 py-3.5 rounded-2xl font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 transform active:scale-95 whitespace-nowrap shadow-lg ${
           added
-            ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
-            : "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200"
+            ? "bg-emerald-500 text-white shadow-emerald-200"
+            : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100"
         }`}
       >
         {added ? (
           <>
             <span>✅</span>
-            تمت الإضافة
+            تمت الإضافة للسلة
           </>
         ) : (
           <>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             أضف للسلة

@@ -284,7 +284,7 @@ export function ProductCard({
             </div>
 
             <div className="overflow-y-auto overscroll-contain flex-1 pb-0">
-              <div className="relative bg-white overflow-hidden flex flex-col items-center py-6">
+              <div className="relative bg-white overflow-hidden flex flex-col items-center py-2">
                 <div className="relative w-full flex flex-col items-center">
                   <div 
                     className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y" 
@@ -297,7 +297,7 @@ export function ProductCard({
                     <img
                       src={photos[activePhotoIndex]}
                       decoding="async"
-                      className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] object-contain relative z-10 transition-transform duration-75"
+                      className="w-full h-[280px] sm:h-[340px] md:h-[380px] object-cover relative z-10 transition-transform duration-75"
                       style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
                       alt={product.name}
                       onError={(e) => {
