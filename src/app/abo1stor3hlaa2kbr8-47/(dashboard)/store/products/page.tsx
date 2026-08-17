@@ -34,6 +34,7 @@ export default async function ProductsPage(props: { searchParams: Promise<{ bran
         select: {
           id: true,
           name: true,
+          description: true,
           purchasePrice: true,
           salePrice: true,
           photoUrls: true,
