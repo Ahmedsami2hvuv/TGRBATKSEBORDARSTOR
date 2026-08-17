@@ -37,7 +37,6 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <CartAnimation />
 
       <main className="max-w-7xl mx-auto px-4 py-4">
-        <AddMoreOrderBanner />
         {children}
       </main>
 

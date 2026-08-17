@@ -7,6 +7,7 @@ export function AddMoreProductsButton({ orderNumber }: { orderNumber: number | s
 
   const handleAddMore = () => {
     localStorage.setItem("kse_add_to_order_id", String(orderNumber));
+    window.dispatchEvent(new Event("kse:add-to-order-changed"));
     window.dispatchEvent(new CustomEvent("kse:show-toast", { 
       detail: { message: `جاري إضافة منتجات لطلبك رقم #${orderNumber} 🛍️`, type: "success" } 
     }));

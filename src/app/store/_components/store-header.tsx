@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
+import { AddMoreOrderBanner } from "./add-more-order-banner";
+
 export function StoreHeader() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,6 +63,11 @@ export function StoreHeader() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+      </div>
+
+      {/* الشريط الإشعاري البارز الملتصق بالهيدر للطلب النشط */}
+      <div className="max-w-7xl mx-auto">
+        <AddMoreOrderBanner />
       </div>
     </header>
   );

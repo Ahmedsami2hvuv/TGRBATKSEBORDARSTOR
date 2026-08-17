@@ -102,13 +102,34 @@ export default function CartPage() {
     } catch(e) {}
 
     const whatsappPhone = "9647733921468";
-    const orderNo = state.orderNumber ? String(state.orderNumber) : "غير متوفر";
-    const fallbackMessage = `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي\nرقم طلبي هو: ${orderNo}`;
-    const whatsappMessage = state.whatsappMessage || fallbackMessage;
-    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`;
+    const activeAddId = typeof window !== "undefined" ? localStorage.getItem("kse_add_to_order_id") : addToOrderId;
+    const orderNo = state.orderNumber || activeAddId || "غير متوفر";
+
+    let finalWhatsappMessage = state.whatsappMessage;
+
+    // إذا كانت العملية إضافة منتجات لطلب سابق، ننشئ الرسالة المخصصة المطلوب نصها تماماً
+    if (activeAddId || (state.whatsappMessage && state.whatsappMessage.includes("إضافة"))) {
+      const addedProductLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
+      finalWhatsappMessage = [
+        `مرحباً، لقد قمت بإضافة منتجات للطلبية المرفوعة مسبقاً بالرقم #${orderNo}، والمنتجات التي قمت بإضافتها هي:`,
+        ...addedProductLines
+      ].join("\n");
+    }
+
+    if (!finalWhatsappMessage) {
+      const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
+      finalWhatsappMessage = [
+        `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي`,
+        `رقم طلبي هو: ${orderNo}`,
+        `المنتجات:`,
+        ...productLines
+      ].join("\n");
+    }
+
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(finalWhatsappMessage)}`;
 
     window.location.href = whatsappUrl;
-  }, [state.ok, state.orderNumber, state.whatsappMessage, cart]);
+  }, [state.ok, state.orderNumber, state.whatsappMessage, cart, addToOrderId]);
 
   // Effect for Region Autocomplete
   useEffect(() => {
