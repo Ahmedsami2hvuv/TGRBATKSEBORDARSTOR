@@ -56,12 +56,12 @@ export default async function JobApplicationsPage() {
               </div>
 
               <div className="space-y-2 border-t border-gray-50 pt-4">
-                <div className={`flex items-center gap-2 text-sm font-medium ${app.hasAc ? "text-green-600" : "text-gray-400"}`}>
+                <div className={"flex items-center gap-2 text-sm font-medium " + (app.hasAc ? "text-green-600" : "text-gray-400")}>
                   <CheckCircle2 className="w-4 h-4" />
                   {app.hasAc ? "يوجد تبريد شغال" : "لا يوجد تبريد"}
                 </div>
                 
-                <div className={`flex items-center gap-2 text-sm font-medium ${!app.hasCommitment ? "text-green-600" : "text-orange-500"}`}>
+                <div className={"flex items-center gap-2 text-sm font-medium " + (!app.hasCommitment ? "text-green-600" : "text-orange-500")}>
                   <Clock className="w-4 h-4" />
                   {app.hasCommitment ? "لديه التزام بوقت" : "متفرغ تماماً"}
                 </div>
