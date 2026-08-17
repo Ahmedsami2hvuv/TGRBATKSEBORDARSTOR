@@ -189,6 +189,18 @@ export function StaffProductListClient({
                 <label className="text-sm font-black text-slate-500 mr-2">تحديث الصورة (اختياري)</label>
                 <input name="photos" type="file" accept="image/*" multiple className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200" />
               </div>
+
+              {/* 6. وصف المنتج */}
+              <div className="space-y-2 md:col-span-3">
+                <label className="text-sm font-black text-slate-500 mr-2">وصف المنتج (اختياري)</label>
+                <textarea
+                  name="description"
+                  defaultValue={editing?.description || ""}
+                  rows={2}
+                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-none font-bold focus:ring-2 focus:ring-emerald-500 text-sm"
+                  placeholder="أضف تفاصيل ووصف المنتج هنا..."
+                />
+              </div>
             </div>
 
             {/* زر الحفظ النهائي */}

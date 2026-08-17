@@ -222,8 +222,13 @@ export async function clearBranchProducts(branchId: string) {
 export async function upsertProduct(_prev: any, formData: FormData): Promise<FormState> {
   try {
     const id = formData.get("id") as string;
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string || "";
+    const hasDescriptionInput = formData.has("description");
+    const rawDescription = formData.get("description");
+    let descriptionInput: string | null = null;
+    if (hasDescriptionInput && rawDescription !== null) {
+      descriptionInput = String(rawDescription).trim();
+    }
+
     const branchId = formData.get("branchId") as string;
     const sequence = parseInt(formData.get("sequence") as string || "0");
     const purchasePrice = parseFloat(formData.get("purchasePrice") as string || "0");
@@ -239,9 +244,11 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
     const photoFiles = formData.getAll("photos") as File[];
     let photoUrls: string[] = JSON.parse(formData.get("currentPhotoUrls") as string || "[]");
 
+    let existingDescription = "";
     if (id) {
-      const existing = await prisma.storeProduct.findUnique({ where: { id }, select: { photoUrls: true } });
+      const existing = await prisma.storeProduct.findUnique({ where: { id }, select: { photoUrls: true, description: true } });
       if (existing) {
+        existingDescription = existing.description || "";
         // مسح الصور التي تم حذفها من القائمة من R2
         const removedPhotos = existing.photoUrls.filter(oldUrl => !photoUrls.includes(oldUrl));
         for (const url of removedPhotos) {
@@ -251,6 +258,11 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
     }
 
     if (!name || !branchId) return { error: "الاسم والفرع مطلوبان" };
+
+    // تحديد الوصف النهائي: إذا تضمن النموذج حقل description نستخدمه، وإلا نحافظ على الوصف الموجود سابقاً
+    const finalDescription = hasDescriptionInput
+      ? (descriptionInput !== null ? descriptionInput : "")
+      : (id ? existingDescription : "");
 
     for (const file of photoFiles) {
       if (file && file.size > 0) {
@@ -288,7 +300,7 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
 
     const data: any = {
       name,
-      description,
+      description: finalDescription,
       branchId,
       sequence,
       purchasePrice,
