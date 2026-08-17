@@ -56,19 +56,19 @@ export default async function JobApplicationsPage() {
               </div>
 
               <div className="space-y-2 border-t border-gray-50 pt-4">
-                <div className={\`flex items-center gap-2 text-sm font-medium \${app.hasAc ? "text-green-600" : "text-gray-400"}\`}>
+                <div className={`flex items-center gap-2 text-sm font-medium ${app.hasAc ? "text-green-600" : "text-gray-400"}`}>
                   <CheckCircle2 className="w-4 h-4" />
                   {app.hasAc ? "يوجد تبريد شغال" : "لا يوجد تبريد"}
                 </div>
                 
-                <div className={\`flex items-center gap-2 text-sm font-medium \${!app.hasCommitment ? "text-green-600" : "text-orange-500"}\`}>
+                <div className={`flex items-center gap-2 text-sm font-medium ${!app.hasCommitment ? "text-green-600" : "text-orange-500"}`}>
                   <Clock className="w-4 h-4" />
                   {app.hasCommitment ? "لديه التزام بوقت" : "متفرغ تماماً"}
                 </div>
               </div>
 
               <div className="mt-6">
-                <a href={\`https://wa.me/\${app.phone.replace(/^0/, "964")}\`} target="_blank" rel="noreferrer" className="block w-full text-center bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white font-bold py-3 rounded-xl transition-colors">
+                <a href={`https://wa.me/${app.phone.replace(/^0/, "964")}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white font-bold py-3 rounded-xl transition-colors">
                   مراسلة واتساب
                 </a>
               </div>
