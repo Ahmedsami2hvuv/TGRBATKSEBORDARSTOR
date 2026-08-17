@@ -74,6 +74,33 @@ export function ProductListClient({
   const [salePrice, setSalePrice] = useState<string>("");
   const [profitMargin, setProfitMargin] = useState(250);
 
+  const [formBranchId, setFormBranchId] = useState<string>("");
+
+  useEffect(() => {
+    if (editing?.branchId) {
+      setFormBranchId(editing.branchId);
+    } else if (defaultBranchId) {
+      setFormBranchId(defaultBranchId);
+    } else if (branches.length > 0) {
+      setFormBranchId(branches[0].id);
+    }
+  }, [editing, defaultBranchId, branches]);
+
+  const nextSequenceForBranch = useMemo(() => {
+    if (editing) return editing.sequence ?? 0;
+
+    const targetBranchId = formBranchId || defaultBranchId || (branches[0]?.id ?? "");
+    if (!targetBranchId) return 1;
+
+    // المنتجات التابعة لهذا الفرع فقط
+    const branchProducts = initialProducts.filter(p => p.branchId === targetBranchId);
+    if (branchProducts.length === 0) return 1;
+
+    // إيجاد أقصى تسلسل موجود بالفرع
+    const maxSeq = Math.max(...branchProducts.map(p => Number(p.sequence || 0)), 0);
+    return maxSeq + 1;
+  }, [editing, formBranchId, defaultBranchId, branches, initialProducts]);
+
   useEffect(() => {
     if (editing) {
       setHasVariants(editing.hasVariants || false);
@@ -615,7 +642,8 @@ export function ProductListClient({
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">الفرع التابع له</label>
                     <select
                         name="branchId"
-                        defaultValue={editing?.branchId || defaultBranchId || ""}
+                        value={formBranchId || editing?.branchId || defaultBranchId || ""}
+                        onChange={(e) => setFormBranchId(e.target.value)}
                         className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
                         required
                     >
@@ -643,9 +671,10 @@ export function ProductListClient({
                     <div className="space-y-2 w-20 shrink-0">
                         <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block text-center">التسلسل</label>
                         <input
+                            key={editing ? `edit-${editing.id}` : `new-${formBranchId}-${nextSequenceForBranch}`}
                             name="sequence"
                             type="number"
-                            defaultValue={editing?.sequence || 0}
+                            defaultValue={editing ? (editing.sequence ?? 0) : nextSequenceForBranch}
                             className="w-full px-2 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-black text-center text-sm"
                         />
                     </div>
