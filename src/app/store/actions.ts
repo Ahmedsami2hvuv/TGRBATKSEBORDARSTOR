@@ -99,39 +99,97 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
     let draft: any;
     
+    // محاولة دمج المنتجات مع طلب أو مسودة سابقة قيد التجهيز
+    let existingDraft: any = null;
+    
     if (addToOrderId) {
-      // محاولة دمج المنتجات مع طلب سابق
-      const existingDraft = await prisma.companyPreparerShoppingDraft.findUnique({
-        where: { id: addToOrderId }
+      const orderNum = parseInt(addToOrderId, 10);
+      existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+        where: {
+          OR: [
+            { id: addToOrderId },
+            ...(isNaN(orderNum) ? [] : [{ draftNumber: orderNum }])
+          ],
+          status: { in: ["draft", "assigned"] }
+        }
       });
+    }
+
+    // إذا لم يجد بـ addToOrderId المباشر، نتحقق من وجود مسودة مفتوحة قيد التجهيز لنفس رقم هاتف العميل
+    if (!existingDraft && phoneLocal) {
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+        where: {
+          customerPhone: phoneLocal,
+          status: { in: ["draft", "assigned"] },
+          createdAt: { gte: twoDaysAgo }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+    }
+
+    if (existingDraft) {
+      const existingData = typeof existingDraft.data === 'object' && existingDraft.data !== null ? existingDraft.data : {};
+      const existingProducts = Array.isArray((existingData as any).products) ? (existingData as any).products : [];
+      const existingCart = Array.isArray((existingData as any).webStoreCart) ? (existingData as any).webStoreCart : [];
       
-      if (existingDraft && (existingDraft.status === "draft" || existingDraft.status === "assigned")) {
-        const existingData = typeof existingDraft.data === 'object' && existingDraft.data !== null ? existingDraft.data : {};
-        const existingProducts = (existingData as any).products || [];
-        const existingCart = (existingData as any).webStoreCart || [];
-        
-        const newProducts = cart.map((i: any) => ({
-          line: i.name,
-          qty: i.quantity || 1,
-          buyAlf: "",
-          sellAlf: "",
-          isFromStore: true,
-          supplierId: i.supplierId || null,
-          productId: i.productId || i.id,
-          addedBy: i.addedBy || null
-        }));
-        
-        draft = await prisma.companyPreparerShoppingDraft.update({
-          where: { id: addToOrderId },
+      const newProducts = cart.map((i: any) => ({
+        line: i.name,
+        qty: i.quantity || 1,
+        buyAlf: "",
+        sellAlf: "",
+        isFromStore: true,
+        supplierId: i.supplierId || null,
+        productId: i.productId || i.id,
+        addedBy: i.addedBy || null
+      }));
+      
+      draft = await prisma.companyPreparerShoppingDraft.update({
+        where: { id: existingDraft.id },
+        data: {
+          rawListText: (existingDraft.rawListText || "") + "\n--- إضافات جديدة للطلب ---\n" + summaryParts.join("\n"),
           data: {
-            rawListText: existingDraft.rawListText + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n"),
-            data: {
-              ...(existingData as any),
-              products: [...existingProducts, ...newProducts],
-              webStoreCart: [...existingCart, ...cart]
-            }
+            ...(existingData as any),
+            products: [...existingProducts, ...newProducts],
+            webStoreCart: [...existingCart, ...cart]
+          }
+        }
+      });
+    }
+
+    // إذا لم تكن هناك مسودة مفتوحة، نتحقق مما إذا كانت طلبية معتمدة قائمة في جدول Order
+    if (!draft && addToOrderId) {
+      const orderNum = parseInt(addToOrderId, 10);
+      const existingOrder = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { id: addToOrderId },
+            ...(isNaN(orderNum) ? [] : [{ orderNumber: orderNum }])
+          ],
+          status: { in: ["pending", "assigned"] }
+        }
+      });
+
+      if (existingOrder) {
+        const updatedSummary = (existingOrder.summary || "") + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n");
+        await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: {
+            summary: updatedSummary,
+            orderSubtotal: { increment: subtotal },
+            totalAmount: { increment: subtotal }
           }
         });
+
+        // إرسال تنبيه تليجرام بالإضافة
+        void notifyTelegramStoreOrder(existingOrder.id);
+
+        return {
+          ok: true,
+          orderNumber: String(existingOrder.orderNumber),
+          whatsappMessage: `لقد قمت بإضافة منتجات جديدة لطلبي رقم #${existingOrder.orderNumber} في خصيب ستور:\n${summaryParts.join("\n")}`,
+          draftId: existingOrder.id
+        };
       }
     }
     

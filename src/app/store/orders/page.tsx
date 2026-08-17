@@ -89,9 +89,9 @@ export default function OrdersPage() {
                 </button>
 
                 {/* يظهر هذا الزر لإضافة منتجات لطلبية سابقة (نفترض أن الطلبات خلال 24 ساعة قابلة للتعديل) */}
-                {Date.now() - new Date(order.date).getTime() < 24 * 60 * 60 * 1000 && (
+                {Date.now() - new Date(order.date).getTime() < 48 * 60 * 60 * 1000 && (
                   <button 
-                    onClick={() => handleAddMoreToOrder(order.id)}
+                    onClick={() => handleAddMoreToOrder(order.orderNumber || order.id || order.draftId)}
                     className="w-1/2 py-3 bg-green-50 text-green-700 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

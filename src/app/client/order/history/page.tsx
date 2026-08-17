@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { CancelOrderButton } from "./cancel-order-button";
+import { AddMoreProductsButton } from "./add-more-products-button";
 
 export const dynamic = "force-dynamic";
 
@@ -323,6 +324,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                         </span>
                         {canEdit ? (
                           <div className="flex items-center gap-2">
+                            <AddMoreProductsButton orderNumber={o.orderNumber} />
                             <Link
                               href={clientOrderEditPath(e, exp, sig, o.orderNumber, rowPhone)}
                               aria-label={`تعديل بيانات طلب الزبون رقم ${o.orderNumber}`}
