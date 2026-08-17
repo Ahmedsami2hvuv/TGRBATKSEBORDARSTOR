@@ -215,7 +215,7 @@ export default function MandobJobPage() {
           <div className="text-center">
             <h3 className="text-[22px] font-bold text-[#22323F] mb-6">مهتم بالوظيفة وتنطبق عليك الشروط؟</h3>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a href="https://wa.me/9647733921468?text=مرحباً 👋%0Aإجيتك من إعلان طلب مندوب التوصيل 🛵%0Aأني قريت كل التفاصيل والشروط 📋%0Aوتنطبق عليّ كل الشروط ✅%0Aوأني متفرغ وما عندي أي التزام ثاني، وأكدر أشتغل وياكم صبح وعصر ⏰" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 bg-[#25D366] text-white px-8 py-5 rounded-full font-bold text-[18px] hover:bg-[#20bd5a] transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1 duration-300">
+              <a href="https://wa.me/9647733921468?text=مرحباً 👋%0Aإجيتك من إعلان طلب مندوب التوصيل 🚗%0A%0Aأني قريت كل التفاصيل والشروط 📋%0A%0Aوتنطبق عليّ كل الشروط ✅%0A%0Aوأني متفرغ وما عندي أي التزام ثاني، %0A%0Aوأكدر أشتغل وياكم صبح وعصر ⏰" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 bg-[#25D366] text-white px-8 py-5 rounded-full font-bold text-[18px] hover:bg-[#20bd5a] transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1 duration-300">
                 <MessageCircle className="w-6 h-6" />
                 تواصل معنا على واتساب
               </a>
