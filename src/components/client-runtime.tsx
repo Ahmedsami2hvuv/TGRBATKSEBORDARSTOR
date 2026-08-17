@@ -16,9 +16,7 @@ const PwaRoutePreserver = dynamic(
   () => import("@/components/pwa-route-preserver").then((m) => m.PwaRoutePreserver),
   { ssr: false },
 );
-const GlobalAIAssistant = dynamic(() => import("@/components/GlobalAIAssistant"), {
-  ssr: false,
-});
+
 
 const OneSignalInitializer = dynamic(
   () => import("@/components/OneSignalInitializer").then((m) => m.OneSignalInitializer),
@@ -114,11 +112,7 @@ export function ClientRuntime({
       <OneSignalInitializer externalId={externalId} />
       {/* Keep global assistant visible across portals */}
       <EnterSubmitGlobal />
-      <GlobalAIAssistant
-        mandoubFeatures={mandoubFeatures}
-        preparerFeatures={preparerFeatures}
-        storeFeatures={storeFeatures}
-      />
+
 
       <PwaRoutePreserver />
       <PwaServiceWorkerRegister />

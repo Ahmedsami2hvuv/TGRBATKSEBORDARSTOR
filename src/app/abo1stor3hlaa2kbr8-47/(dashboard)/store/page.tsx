@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { StoreAiSettings } from "./_components/store-ai-settings";
+
 import { GlobalProfitWidget } from "./_components/global-profit-widget";
 
 export default async function StoreAdminHub({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -90,7 +90,7 @@ export default async function StoreAdminHub({ searchParams }: { searchParams: Pr
         </form>
       </div>
 
-      <StoreAiSettings />
+
 
       <GlobalProfitWidget initialMargin={Number(globalSettings?.profitMargin || 0)} />
 

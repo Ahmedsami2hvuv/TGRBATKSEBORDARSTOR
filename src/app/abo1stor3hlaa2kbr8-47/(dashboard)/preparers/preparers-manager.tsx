@@ -19,7 +19,7 @@ import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import type { GlobalIconsConfig } from "@/lib/icon-settings";
 import { PreparerChatToggle } from "./preparer-chat-toggle";
-import { PreparerAIToggle } from "./preparer-ai-toggle";
+
 
 const initial: PreparerFormState = {};
 
@@ -504,7 +504,7 @@ function PreparerCard({
             <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات المزايا</p>
             <div className="flex flex-wrap gap-2">
               <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
-              <PreparerAIToggle preparerId={row.id} initialDisabled={row.aiDisabled} icons={icons!} />
+
             </div>
           </div>
         </div>
