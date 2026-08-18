@@ -20,6 +20,9 @@ export function ProductCard({
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  const [similarProducts, setSimilarProducts] = useState<any[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
+
   const [zoomLevel, setZoomLevel] = useState(1);
   const [initialDistance, setInitialDistance] = useState<number | null>(null);
 
@@ -176,6 +179,22 @@ export function ProductCard({
   const targetBranchOrCategoryUrl = branchId
     ? `/store/b/${branchId}`
     : (categoryId ? `/store/c/${categoryId}` : null);
+
+  useEffect(() => {
+    if (isModalOpen && branchId) {
+      setLoadingSimilar(true);
+      fetch(`/api/store/products?branchId=${branchId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const filtered = data.filter((p: any) => p.id !== product.id).slice(0, 10);
+            setSimilarProducts(filtered);
+          }
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingSimilar(false));
+    }
+  }, [isModalOpen, branchId, product.id]);
 
   const productForCart = {
     ...product,
@@ -360,53 +379,19 @@ export function ProductCard({
 
               {/* 2. التفاصيل والمعلومات */}
               <div className="px-6 space-y-5">
-                {/* اسم المنتج وتصنيفه */}
+                {/* اسم المنتج وتصنيفه والسعر */}
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 leading-snug">{currentName}</h2>
-                  <p className="text-xs font-bold text-slate-400 mt-1">
-                    {product.branch?.name || product.category?.name || "متوفر لدينا"}
-                  </p>
-                </div>
-
-                {/* كرت السعر والتوافر المزدوج */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50/80 rounded-2xl border border-slate-100/90 shadow-sm">
-                  {/* السعر - يختفي تماماً إذا كان shouldHidePrice مفعل */}
-                  {!shouldHidePrice ? (
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 block">السعر</span>
-                      <p className="text-xl font-black text-emerald-600 mt-0.5">
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs font-bold text-slate-400">
+                      {product.branch?.name || product.category?.name || "متوفر لدينا"}
+                    </p>
+                    {!shouldHidePrice && (
+                      <p className="text-xl font-black text-emerald-600">
                         {currentPrice > 0 ? `${currentPrice.toLocaleString("en-US")} د.ع` : "حسب الاختيار"}
                       </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 block">السعر</span>
-                      <p className="text-sm font-black text-slate-500 mt-1">يتحدد عند الطلب</p>
-                    </div>
-                  )}
-
-                  {/* التوافر */}
-                  <div className="border-r border-slate-200/60 pr-4">
-                    <span className="text-[11px] font-bold text-slate-400 block">التوافر</span>
-                    <p className="text-sm font-black text-emerald-600 mt-1 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      متوفر في المخزن
-                    </p>
+                    )}
                   </div>
-                </div>
-
-                {/* بطاقة التوصيل السريع */}
-                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/70 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-lg shrink-0">
-                      🚚
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 block">توصيل سريع</span>
-                      <p className="text-sm font-black text-slate-900">خلال 15-30 دقيقة</p>
-                    </div>
-                  </div>
-                  <span className="text-xl opacity-40">🕒</span>
                 </div>
 
                 {/* وصف المنتج إن وجد */}
@@ -443,11 +428,11 @@ export function ProductCard({
                   </div>
                 )}
 
-                {/* قسم منتجات مشابهة */}
-                {targetBranchOrCategoryUrl && (
-                  <div className="pt-4 border-t border-slate-100 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-black text-slate-900">منتجات مشابهة</h3>
+                {/* قسم منتجات مشابهة من نفس الفرع */}
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-black text-slate-900">منتجات مشابهة</h3>
+                    {targetBranchOrCategoryUrl && (
                       <Link
                         href={targetBranchOrCategoryUrl}
                         onClick={() => setIsModalOpen(false)}
@@ -455,10 +440,52 @@ export function ProductCard({
                       >
                         عرض الكل
                       </Link>
-                    </div>
-                    <p className="text-xs font-bold text-slate-400">تصفح باقي منتجات هذا الفرع بسهولة</p>
+                    )}
                   </div>
-                )}
+
+                  {loadingSimilar ? (
+                    <div className="flex gap-3 overflow-x-auto py-2">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="w-28 h-36 bg-slate-100 rounded-2xl animate-pulse shrink-0"></div>
+                      ))}
+                    </div>
+                  ) : similarProducts.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 snap-x scrollbar-none">
+                      {similarProducts.map((simProd: any) => {
+                        const simPhoto = simProd.photoUrls?.[0] || simProd.photo || "";
+                        const simPrice = Number(simProd.salePrice || 0);
+                        return (
+                          <div
+                            key={simProd.id}
+                            onClick={() => {
+                              setIsModalOpen(false);
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent("kse:open-product-modal", { detail: { product: simProd } }));
+                              }, 100);
+                            }}
+                            className="w-28 sm:w-32 bg-white rounded-2xl border border-slate-100 p-2 shadow-sm shrink-0 snap-start cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between"
+                          >
+                            <div className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2 relative">
+                              {simPhoto ? (
+                                <img src={simPhoto} alt={simProd.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">لا صورة</div>
+                              )}
+                            </div>
+                            <h4 className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">{simProd.name}</h4>
+                            {!shouldHidePrice && simPrice > 0 && (
+                              <p className="text-[11px] font-black text-emerald-600 mt-1">
+                                {simPrice.toLocaleString("en-US")} د.ع
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs font-bold text-slate-400">لا توجد منتجات إضافية بهذا الفرع حالياً.</p>
+                  )}
+                </div>
               </div>
             </div>
 
