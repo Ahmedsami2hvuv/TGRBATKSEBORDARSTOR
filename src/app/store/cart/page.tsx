@@ -133,7 +133,7 @@ export default function CartPage() {
 
     const whatsappPhone = "9647733921468";
     const activeAddId = typeof window !== "undefined" ? localStorage.getItem("kse_add_to_order_id") : addToOrderId;
-    const orderNo = state.orderNumber || activeAddId || "غير متوفر";
+    const orderNo = activeAddId || state.orderNumber || "غير متوفر";
 
     let finalWhatsappMessage = "";
 

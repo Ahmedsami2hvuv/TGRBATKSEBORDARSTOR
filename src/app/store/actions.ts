@@ -102,20 +102,23 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     // محاولة دمج المنتجات مع طلب أو مسودة سابقة قيد التجهيز
     let existingDraft: any = null;
     
+    let targetOrderNumber: string | null = addToOrderId ? String(addToOrderId).trim() : null;
+
     if (addToOrderId) {
-      const isNum = /^\d+$/.test(String(addToOrderId).trim());
-      const orderNum = parseInt(String(addToOrderId).trim(), 10);
+      const cleanId = String(addToOrderId).trim();
+      const orderNum = parseInt(cleanId, 10);
+      const isNum = !isNaN(orderNum);
 
       try {
-        if (isNum && !isNaN(orderNum)) {
-          existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
-            where: { draftNumber: orderNum, status: { in: ["draft", "assigned"] } }
-          });
-        } else {
-          existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
-            where: { id: addToOrderId, status: { in: ["draft", "assigned"] } }
-          });
-        }
+        existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
+          where: {
+            OR: [
+              ...(isNum ? [{ draftNumber: orderNum }] : []),
+              { id: cleanId }
+            ]
+          },
+          orderBy: { createdAt: "desc" }
+        });
       } catch (err) {
         console.error("Failed to find existing draft:", err);
       }
@@ -128,7 +131,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
           where: {
             customerPhone: phoneLocal,
-            status: { in: ["draft", "assigned"] },
             createdAt: { gte: twoDaysAgo }
           },
           orderBy: { createdAt: "desc" }
@@ -139,6 +141,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     }
 
     if (existingDraft) {
+      targetOrderNumber = String(existingDraft.draftNumber || targetOrderNumber || addToOrderId);
+
       const existingData = typeof existingDraft.data === 'object' && existingDraft.data !== null ? existingDraft.data : {};
       const existingProducts = Array.isArray((existingData as any).products) ? (existingData as any).products : [];
       const existingCart = Array.isArray((existingData as any).webStoreCart) ? (existingData as any).webStoreCart : [];
@@ -170,33 +174,35 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       void notifyTelegramStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
-      const customWhatsappMessage = [
-        `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${draft.draftNumber}`,
-        "المنتجات المضافة هي:",
-        ...addedLines
-      ].join("\n");
-
       return {
         ok: true,
-        orderNumber: String(draft.draftNumber),
-        whatsappMessage: customWhatsappMessage,
+        orderNumber: targetOrderNumber,
+        whatsappMessage: [
+          `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${targetOrderNumber}`,
+          "المنتجات المضافة هي:",
+          ...addedLines
+        ].join("\n"),
         draftId: draft.id
       };
     }
 
     // إذا لم تكن هناك مسودة مفتوحة، نتحقق مما إذا كانت طلبية معتمدة قائمة في جدول Order
     if (!draft && addToOrderId) {
-      const isNum = /^\d+$/.test(String(addToOrderId).trim());
-      const orderNum = parseInt(String(addToOrderId).trim(), 10);
+      const cleanId = String(addToOrderId).trim();
+      const orderNum = parseInt(cleanId, 10);
+      const isNum = !isNaN(orderNum);
       try {
         const existingOrder = await prisma.order.findFirst({
           where: {
-            ...(isNum && !isNaN(orderNum) ? { orderNumber: orderNum } : { id: addToOrderId }),
-            status: { in: ["pending", "assigned"] }
+            OR: [
+              ...(isNum ? [{ orderNumber: orderNum }] : []),
+              { id: cleanId }
+            ]
           }
         });
 
         if (existingOrder) {
+          targetOrderNumber = String(existingOrder.orderNumber);
           const updatedSummary = (existingOrder.summary || "") + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n");
           await prisma.order.update({
             where: { id: existingOrder.id },
@@ -213,9 +219,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
           return {
             ok: true,
-            orderNumber: String(existingOrder.orderNumber),
+            orderNumber: targetOrderNumber,
             whatsappMessage: [
-              `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${existingOrder.orderNumber}`,
+              `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${targetOrderNumber}`,
               "المنتجات المضافة هي:",
               ...addedLines
             ].join("\n"),
@@ -271,7 +277,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     // Notify via Telegram
     void notifyTelegramStoreOrder(draft.id);
 
-    const numericOrderNumber = String(draft.draftNumber);
+    const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
 
     const isAddition = Boolean(addToOrderId);
