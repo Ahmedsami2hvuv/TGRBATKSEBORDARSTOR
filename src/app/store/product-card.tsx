@@ -277,79 +277,78 @@ export function ProductCard({
           onClick={closeModal}
         >
           <div
-            className="bg-white w-full md:max-w-2xl rounded-t-[2rem] md:rounded-[2rem] overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 flex flex-col max-h-[95dvh] md:max-h-[90vh]"
+            className="bg-white w-full md:max-w-xl rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 flex flex-col max-h-[96dvh] md:max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-               <div className="flex items-center gap-3">
-                 <button onClick={toggleFavorite} className="p-1 text-slate-400 hover:text-rose-500 transition" title="المفضلة">
-                   <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 ${isFavorite ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                   </svg>
-                 </button>
-                 <button onClick={() => setShowShareModal(true)} className="p-1 text-slate-400 hover:text-slate-600 transition" title="مشاركة المنتج">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                   </svg>
-                 </button>
+            {/* الهيدر العلوي العائم فوق الصورة */}
+            <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="w-10 h-10 rounded-full bg-white/85 backdrop-blur-md shadow-md flex items-center justify-center text-slate-700 hover:bg-white transition active:scale-90"
+                  title="مشاركة"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={toggleFavorite}
+                  className="w-10 h-10 rounded-full bg-white/85 backdrop-blur-md shadow-md flex items-center justify-center hover:bg-white transition active:scale-90"
+                  title="المفضلة"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${isFavorite ? "text-rose-500 fill-rose-500" : "text-slate-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              </div>
 
-                 {targetBranchOrCategoryUrl && (
-                   <Link
-                     href={targetBranchOrCategoryUrl}
-                     onClick={() => setIsModalOpen(false)}
-                     className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-full text-xs font-black transition-all shadow-sm active:scale-95"
-                     title="تصفح الفرع / القسم بالكامل"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                     </svg>
-                     <span>فتح الفرع / القسم</span>
-                   </Link>
-                 )}
-               </div>
-               <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-800 hover:bg-slate-200">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
+              <button
+                onClick={closeModal}
+                className="w-10 h-10 rounded-full bg-white/85 backdrop-blur-md shadow-md flex items-center justify-center text-slate-800 hover:bg-white transition active:scale-90 pointer-events-auto"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            <div className="overflow-y-auto overscroll-contain flex-1 pb-0">
-              <div className="relative bg-white overflow-hidden flex flex-col items-center py-2">
-                <div className="relative w-full flex flex-col items-center">
-                  <div 
-                    className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y" 
-                    style={{ touchAction: "pan-x pan-y pinch-zoom" }}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onDoubleClick={handleDoubleClick}
-                  >
-                    <img
-                      src={photos[activePhotoIndex]}
-                      decoding="async"
-                      className="w-full h-[280px] sm:h-[340px] md:h-[380px] object-cover relative z-10 transition-transform duration-75"
-                      style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
-                      alt={product.name}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        if (target.src.includes('?')) {
-                          target.src = target.src.split('?')[0];
-                        }
-                      }}
-                    />
-                  </div>
+            {/* الجزء القابل للتمرير */}
+            <div className="overflow-y-auto overscroll-contain flex-1 pb-6 space-y-6">
+              {/* 1. صورة المنتج العلوية الكبيرة */}
+              <div className="relative bg-slate-50 w-full rounded-b-[2.5rem] overflow-hidden flex flex-col items-center justify-center pt-10 pb-6 border-b border-slate-100">
+                <div 
+                  className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y min-h-[260px] max-h-[360px]" 
+                  style={{ touchAction: "pan-x pan-y pinch-zoom" }}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onDoubleClick={handleDoubleClick}
+                >
+                  <img
+                    src={photos[activePhotoIndex]}
+                    decoding="async"
+                    className="max-h-[320px] w-auto object-contain transition-transform duration-75 drop-shadow-sm"
+                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
+                    alt={product.name}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      if (target.src.includes('?')) {
+                        target.src = target.src.split('?')[0];
+                      }
+                    }}
+                  />
                 </div>
 
                 {photos.length > 1 && (
-                  <div className="w-full flex justify-center gap-2 px-4 overflow-x-auto py-4 z-20">
+                  <div className="flex justify-center gap-2 px-4 overflow-x-auto py-2 z-20">
                     {photos.map((url: string, idx: number) => (
                       <button
                         key={idx}
                         onClick={() => setActivePhotoIndex(idx)}
-                        className={`w-12 h-12 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${
-                          activePhotoIndex === idx ? "border-green-500 scale-110 shadow-sm" : "border-slate-100 opacity-70"
+                        className={`w-10 h-10 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${
+                          activePhotoIndex === idx ? "border-emerald-500 scale-110 shadow-sm" : "border-slate-200 opacity-70"
                         }`}
                       >
                         <img src={url} className="w-full h-full object-cover" alt="" />
@@ -357,53 +356,114 @@ export function ProductCard({
                     ))}
                   </div>
                 )}
+              </div>
 
-                <div className="w-full px-6 pt-4 space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{currentName}</h2>
-                    {!shouldHidePrice && (
-                      <p className="text-xl font-black text-green-600">
+              {/* 2. التفاصيل والمعلومات */}
+              <div className="px-6 space-y-5">
+                {/* اسم المنتج وتصنيفه */}
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 leading-snug">{currentName}</h2>
+                  <p className="text-xs font-bold text-slate-400 mt-1">
+                    {product.branch?.name || product.category?.name || "متوفر لدينا"}
+                  </p>
+                </div>
+
+                {/* كرت السعر والتوافر المزدوج */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50/80 rounded-2xl border border-slate-100/90 shadow-sm">
+                  {/* السعر - يختفي تماماً إذا كان shouldHidePrice مفعل */}
+                  {!shouldHidePrice ? (
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block">السعر</span>
+                      <p className="text-xl font-black text-emerald-600 mt-0.5">
                         {currentPrice > 0 ? `${currentPrice.toLocaleString("en-US")} د.ع` : "حسب الاختيار"}
                       </p>
-                    )}
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block">السعر</span>
+                      <p className="text-sm font-black text-slate-500 mt-1">يتحدد عند الطلب</p>
+                    </div>
+                  )}
+
+                  {/* التوافر */}
+                  <div className="border-r border-slate-200/60 pr-4">
+                    <span className="text-[11px] font-bold text-slate-400 block">التوافر</span>
+                    <p className="text-sm font-black text-emerald-600 mt-1 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      متوفر في المخزن
+                    </p>
                   </div>
-
-                  {product.description && (
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-400 mb-1">وصف المنتج:</h4>
-                      <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
-                        {product.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {product.hasVariants && product.variants?.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 block">
-                        اختر {product.variantType || "النوع"}:
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {product.variants.map((v: any) => (
-                          <button
-                            key={v.id}
-                            onClick={() => setSelectedVariant(v)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                              selectedVariant?.id === v.id
-                                ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
-                                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                            }`}
-                          >
-                            {v.name} {!shouldHidePrice && `- ${Number(v.salePrice).toLocaleString("en-US")} د.ع`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
+
+                {/* بطاقة التوصيل السريع */}
+                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/70 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+                      🚚
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block">توصيل سريع</span>
+                      <p className="text-sm font-black text-slate-900">خلال 15-30 دقيقة</p>
+                    </div>
+                  </div>
+                  <span className="text-xl opacity-40">🕒</span>
+                </div>
+
+                {/* وصف المنتج إن وجد */}
+                {product.description && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h4 className="text-xs font-bold text-slate-400 mb-1">وصف المنتج:</h4>
+                    <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
+                      {product.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* خيارات الأنواع إن وجدت */}
+                {product.hasVariants && product.variants?.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 block">
+                      اختر {product.variantType || "النوع"}:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {product.variants.map((v: any) => (
+                        <button
+                          key={v.id}
+                          onClick={() => setSelectedVariant(v)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                            selectedVariant?.id === v.id
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-md scale-105"
+                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          }`}
+                        >
+                          {v.name} {!shouldHidePrice && `- ${Number(v.salePrice).toLocaleString("en-US")} د.ع`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* قسم منتجات مشابهة */}
+                {targetBranchOrCategoryUrl && (
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-slate-900">منتجات مشابهة</h3>
+                      <Link
+                        href={targetBranchOrCategoryUrl}
+                        onClick={() => setIsModalOpen(false)}
+                        className="text-xs font-black text-emerald-600 hover:underline"
+                      >
+                        عرض الكل
+                      </Link>
+                    </div>
+                    <p className="text-xs font-bold text-slate-400">تصفح باقي منتجات هذا الفرع بسهولة</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-white">
+            {/* الشريط السفلي الملتصق لزر أضف للسلة */}
+            <div className="p-4 border-t border-slate-100 bg-white/95 backdrop-blur-md shadow-lg sticky bottom-0 z-40 rounded-t-3xl">
               <AddToCartButton product={productForCart} variant="default" />
             </div>
           </div>
