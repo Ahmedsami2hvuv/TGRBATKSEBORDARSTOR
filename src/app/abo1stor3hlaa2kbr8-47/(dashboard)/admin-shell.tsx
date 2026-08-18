@@ -676,82 +676,70 @@ export function AdminShell({
             })}
           </div>
         </nav>
-        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-4 flex flex-col gap-4 shrink-0 bg-slate-50 dark:bg-slate-950/50">
-          {/* أزرار التكبير والتصغير - هنا مكانها آمن جداً */}
-          <div className="flex items-center justify-between bg-white dark:bg-[#09090b] p-2 rounded-2xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm">
-            <div className="flex flex-col ms-2 flex-1 min-w-0">
-              {isSearching ? (
-                <div className="flex items-center gap-1 bg-slate-50 dark:bg-[#131418] px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
-                  <input
-                    type="text"
-                    placeholder="بحث بالأقسام..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-transparent border-none outline-none text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 py-0.5"
-                    autoFocus
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-1"
-                      title="مسح البحث"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">حجم القائمة</span>
-                  <span className="text-[11px] font-black text-[#00f3ff]">{Math.round(itemScale * 100)}%</span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSearching(prev => !prev);
-                  setSearchQuery("");
-                }}
-                className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-all active:scale-90 ${
-                  isSearching 
-                    ? "bg-[#00f3ff] text-black border-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.4)]" 
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white border-transparent hover:bg-[#00f3ff]/20 hover:border-[#00f3ff]/30"
-                }`}
-                title="بحث في الأزرار"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-red-500 hover:text-white transition-all active:scale-90 border border-transparent"
-                title="تصغير"
-              >
-                <span className="text-xl font-bold">−</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-[#00f3ff] hover:text-black transition-all active:scale-90 border border-transparent"
-                title="تكبير"
-              >
-                <span className="text-xl font-bold">+</span>
-              </button>
-            </div>
+        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-2 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950/50 gap-2">
+          <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#09090b] p-1 rounded-xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm h-10">
+            {isSearching ? (
+              <div className="flex items-center gap-1 flex-1 px-1 h-full">
+                <input
+                  type="text"
+                  placeholder="بحث..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-none outline-none text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 py-0.5"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => { setIsSearching(false); setSearchQuery(""); }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs shrink-0 px-1"
+                  title="إلغاء البحث"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsSearching(true)}
+                  className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors shrink-0"
+                  title="بحث في الأزرار"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                </button>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
+                  className="w-7 h-full flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors shrink-0"
+                  title="تصغير"
+                >
+                  <span className="text-lg font-bold leading-none">−</span>
+                </button>
+                <span className="text-[10px] font-black text-[#00f3ff] min-w-[34px] text-center shrink-0">
+                  {Math.round(itemScale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
+                  className="w-7 h-full flex items-center justify-center rounded-lg hover:bg-[#00f3ff]/10 text-slate-500 hover:text-[#00f3ff] transition-colors shrink-0"
+                  title="تكبير"
+                >
+                  <span className="text-lg font-bold leading-none">+</span>
+                </button>
+              </>
+            )}
           </div>
 
-          <form action={logout} className="w-full">
+          <form action={logout} className="shrink-0 m-0">
             <button
               type="submit"
               title="تسجيل الخروج"
-              className="flex w-full h-12 items-center justify-center gap-3 rounded-2xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] transition hover:bg-[#ff3b30]/10 font-black text-xs uppercase tracking-wider"
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-colors"
             >
-              <span className="text-lg">⏻</span>
-              <span>تسجيل الخروج</span>
+              <span className="text-lg font-bold leading-none mt-0.5">⏻</span>
             </button>
           </form>
         </div>
