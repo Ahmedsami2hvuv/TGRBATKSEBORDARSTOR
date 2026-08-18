@@ -22,7 +22,6 @@ async function CategoriesRow() {
         {/* زر المفضلة الثابت */}
         <Link
           href="/store/favorites"
-          prefetch={false}
           className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] shrink-0"
         >
           <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-rose-100 shadow-sm overflow-hidden flex items-center justify-center p-1 text-rose-500">
@@ -38,8 +37,7 @@ async function CategoriesRow() {
           <Link
             key={cat.id}
             href={`/store/c/${cat.id}`}
-            prefetch={false}
-            className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] shrink-0"
+            className="flex flex-col items-center gap-2 min-w-[72px] max-w-[80px] shrink-0 transition-transform active:scale-95"
           >
             <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden flex items-center justify-center p-1">
               {cat.photoUrl ? (

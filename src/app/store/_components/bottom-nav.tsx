@@ -93,6 +93,7 @@ export function BottomNav() {
             <Link 
               key={item.href}
               href={item.href} 
+              prefetch={true}
               onClick={() => {
                 if (pathname !== item.href) {
                   setClickedPath(item.href);
