@@ -318,7 +318,6 @@ export function AdminShell({
     setNavOpen(false);
   }, [pathname, searchParams]);
 
-  // Close sidebar when clicking outside
   useEffect(() => {
     if (!navOpen) return;
     const handleClick = (e: MouseEvent) => {
@@ -332,6 +331,22 @@ export function AdminShell({
       document.removeEventListener('mousedown', handleClick);
     };
   }, [navOpen]);
+
+  // Lock body scroll on mobile when sidebar is open to prevent pull-to-refresh
+  useEffect(() => {
+    if (!isLg && navOpen) {
+      document.body.style.overflow = 'hidden';
+      // Optional: Prevent overscroll behavior on body
+      document.body.style.overscrollBehaviorY = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehaviorY = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehaviorY = '';
+    };
+  }, [navOpen, isLg]);
 
   useEffect(() => {
     let cancelled = false;
