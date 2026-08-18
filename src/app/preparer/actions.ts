@@ -2185,12 +2185,8 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       where: {
         employeeId: preparer.walletEmployeeId,
         createdAt: { gt: lastWithdrawal },
-        OR: [
-          { label: { startsWith: "[راتب]" } },
-          { label: { startsWith: "راتب" } },
-          { label: { contains: "راتب" } }
-        ],
-        deletedAt: null
+        label: { contains: "راتب" },
+        direction: "give"
       },
       select: { amountDinar: true }
     });
