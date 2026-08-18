@@ -105,18 +105,22 @@ export default function CartPage() {
     const activeAddId = typeof window !== "undefined" ? localStorage.getItem("kse_add_to_order_id") : addToOrderId;
     const orderNo = state.orderNumber || activeAddId || "غير متوفر";
 
-    let finalWhatsappMessage = state.whatsappMessage;
+    let finalWhatsappMessage = "";
 
-    // إذا كانت العملية إضافة منتجات لطلب سابق، ننشئ الرسالة المخصصة المطلوب نصها تماماً
+    // إذا كانت العملية إضافة منتجات لطلب سابق، ننشئ الرسالة المخصصة المطلوب نصها تماماً بحرفيتها
     if (activeAddId || (state.whatsappMessage && state.whatsappMessage.includes("إضافة"))) {
       const addedProductLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
-        `مرحباً، لقد قمت بإضافة منتجات للطلبية المرفوعة مسبقاً بالرقم #${orderNo}، والمنتجات التي قمت بإضافتها هي:`,
+        `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${orderNo}`,
+        "المنتجات المضافة هي:",
         ...addedProductLines
       ].join("\n");
-    }
-
-    if (!finalWhatsappMessage) {
+      
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("kse_add_to_order_id");
+        window.dispatchEvent(new Event("kse:add-to-order-changed"));
+      }
+    } else {
       const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
         `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي`,

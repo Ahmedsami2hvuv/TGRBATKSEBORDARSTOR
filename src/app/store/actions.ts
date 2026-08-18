@@ -171,8 +171,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       const customWhatsappMessage = [
-        `لقد قمت بإضافة منتجات جديدة لطلبي السابق رقم #${draft.draftNumber}`,
-        "المنتجات المضافة حديثاً هي:",
+        `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${draft.draftNumber}`,
+        "المنتجات المضافة هي:",
         ...addedLines
       ].join("\n");
 
@@ -210,10 +210,15 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           // إرسال تنبيه تليجرام بالإضافة
           void notifyTelegramStoreOrder(existingOrder.id);
 
+          const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
           return {
             ok: true,
             orderNumber: String(existingOrder.orderNumber),
-            whatsappMessage: `لقد قمت بإضافة منتجات جديدة لطلبي رقم #${existingOrder.orderNumber} في خصيب ستور:\n${summaryParts.join("\n")}`,
+            whatsappMessage: [
+              `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${existingOrder.orderNumber}`,
+              "المنتجات المضافة هي:",
+              ...addedLines
+            ].join("\n"),
             draftId: existingOrder.id
           };
         }
