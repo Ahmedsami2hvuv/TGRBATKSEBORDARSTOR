@@ -196,6 +196,20 @@ export function ProductCard({
     }
   }, [isModalOpen, branchId, product.id]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.overscrollBehavior = "contain";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+    };
+  }, [isModalOpen]);
+
   const productForCart = {
     ...product,
     productId: product.id,
@@ -332,8 +346,11 @@ export function ProductCard({
               </button>
             </div>
 
-            {/* الجزء القابل للتمرير */}
-            <div className="overflow-y-auto overscroll-contain flex-1 pb-6 space-y-6">
+            {/* الجزء القابل للتمرير المستقل بالكامل */}
+            <div 
+              className="overflow-y-auto overscroll-contain flex-1 pb-6 space-y-6 touch-pan-y" 
+              style={{ overscrollBehaviorY: "contain", overscrollBehavior: "contain" }}
+            >
               {/* 1. صورة المنتج العلوية الكبيرة */}
               <div className="relative bg-white w-full rounded-b-[2.5rem] overflow-hidden flex flex-col items-center justify-center pt-10 pb-6 border-b border-slate-100">
                 <div 
