@@ -579,7 +579,7 @@ export function AdminShell({
           fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
           shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
           ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
-          inset-y-0 start-0 w-72
+          top-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
           ${activeBgUrl ? "aside-has-bg bg-cover bg-center bg-no-repeat" : "bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md"}
@@ -599,7 +599,7 @@ export function AdminShell({
             </span>
           </div>
         </div>
-        <nav className="flex flex-1 overflow-y-auto overscroll-none px-3 py-4">
+        <nav className="flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4">
           <div className={`grid w-full gap-2 content-start ${
             isCompact 
               ? "grid-cols-1" 
