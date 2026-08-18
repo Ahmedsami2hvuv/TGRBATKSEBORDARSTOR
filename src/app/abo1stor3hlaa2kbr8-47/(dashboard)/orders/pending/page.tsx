@@ -45,18 +45,27 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const pricingId = (sp.pricing ?? "").trim();
     const showFishPrices = sp.fishPrices === "true";
 
-    // 1. جلب البيانات الثقيلة أولاً (الطلبات والمسودات)
-    const [allActiveDrafts, allPendingOrders] = await Promise.all([
-      prisma.companyPreparerShoppingDraft.findMany({
-        where: { status: { in: ["draft", "priced"] } },
-        include: {
-          preparer: { select: { id: true, name: true } },
-          customerRegion: { select: { id: true, name: true, deliveryPrice: true } }
-        },
-        orderBy: { createdAt: "desc" },
-        take: 250,
-      }),
-      prisma.order.findMany({
+    // تحديد التبويب الفعلي قبل جلب البيانات
+    const assignOrderExistsInPrepared = assignOrder ? await prisma.order.count({ where: { id: assignOrder, submissionSource: "company_preparer" } }) > 0 : false;
+    const activeTab = sp.tab ?? (assignOrderExistsInPrepared ? "completed" : "new");
+
+    // 1. جلب المسودات دائماً (نحتاجها لحساب عدد المسودات المجمعة بدقة في التبويب)
+    const draftsPromise = prisma.companyPreparerShoppingDraft.findMany({
+      where: { status: { in: ["draft", "priced"] } },
+      include: {
+        preparer: { select: { id: true, name: true } },
+        customerRegion: { select: { id: true, name: true, deliveryPrice: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 250,
+    });
+
+    let pendingOrdersPromise: Promise<any[]> = Promise.resolve([]);
+    let newCountPromise: Promise<number> = Promise.resolve(0);
+    let preparedCountPromise: Promise<number> = Promise.resolve(0);
+
+    if (activeTab === "new" || activeTab === "completed") {
+      pendingOrdersPromise = prisma.order.findMany({
         where: {
           OR: [
             { status: "pending" },
@@ -74,10 +83,41 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
           moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true } },
         },
-      }),
-    ]);
+      });
+    } else {
+      newCountPromise = prisma.order.count({
+        where: {
+          OR: [
+            { status: "pending" },
+            ...(assignOrder ? [{ id: assignOrder }] : []),
+          ],
+        },
+      });
+      preparedCountPromise = prisma.order.count({
+        where: {
+          status: "pending",
+          submissionSource: "company_preparer",
+        },
+      });
+    }
 
-    const [couriers, shops, preparers, icons, waButtons, storeProducts, fishPricesSetting] = await Promise.all([
+    const [
+      allActiveDrafts,
+      allPendingOrders,
+      newCountRaw,
+      preparedCountRaw,
+      couriers,
+      shops,
+      preparers,
+      icons,
+      waButtons,
+      storeProducts,
+      fishPricesSetting
+    ] = await Promise.all([
+      draftsPromise,
+      pendingOrdersPromise,
+      newCountPromise,
+      preparedCountPromise,
       prisma.courier.findMany({
         where: courierAssignableWhere,
         orderBy: { name: "asc" },
@@ -93,7 +133,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       prisma.mandoubWaButtonSetting.findMany({
         where: { isActive: true },
       }),
-      prisma.storeProduct.findMany({
+      // جلب المنتجات فقط عند الحاجة لتخفيف الضغط
+      activeTab === "preparing" ? prisma.storeProduct.findMany({
         where: { active: true },
         select: {
           id: true,
@@ -104,14 +145,10 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           hasVariants: true,
           variants: {
             where: { active: true },
-            select: {
-              id: true,
-              name: true,
-              salePrice: true,
-            }
+            select: { id: true, name: true, salePrice: true }
           }
         }
-      }),
+      }) : Promise.resolve([]),
       prisma.uISystemSetting.findUnique({
         where: {
           target_section: { target: "system", section: "fish_prices" }
@@ -368,9 +405,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const newRows = serializePrisma(newOrders.map(mapOrderToRow));
     const preparedRows = serializePrisma(preparedOrders.map(mapOrderToRow));
 
-    const assignOrderInPrepared = Boolean(assignOrder && preparedRows.some(r => r.id === assignOrder));
-    const activeTab = sp.tab ?? (assignOrderInPrepared ? "completed" : "new");
-
     const groupedDraftRows: PendingOrderRow[] = [];
     const processedDraftIds = new Set<string>();
 
@@ -388,6 +422,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
     const safeGroupedDraftRows = serializePrisma(groupedDraftRows);
     const safeIcons = serializePrisma(icons);
+    
+    const finalNewCount = activeTab === "new" || activeTab === "completed" ? newRows.length : newCountRaw;
+    const finalPreparedCount = activeTab === "new" || activeTab === "completed" ? preparedRows.length : preparedCountRaw;
 
     return (
       <div className="space-y-6">
@@ -403,13 +440,13 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar">
           <Link href="?tab=new" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'new' ? 'border-sky-600 text-sky-700 bg-sky-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            الطلبات الجديدة ({newRows.length})
+            الطلبات الجديدة ({finalNewCount})
           </Link>
           <Link href="?tab=preparing" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'preparing' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
             قيد التجهيز ({safeGroupedDraftRows.length})
           </Link>
           <Link href="?tab=completed" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'completed' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            مكتمل التجهيز ({preparedRows.length})
+            مكتمل التجهيز ({finalPreparedCount})
           </Link>
         </div>
 
