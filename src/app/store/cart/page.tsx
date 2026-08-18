@@ -138,10 +138,10 @@ export default function CartPage() {
     let finalWhatsappMessage = "";
 
     // إذا كانت العملية إضافة منتجات لطلب سابق، ننشئ الرسالة المخصصة المطلوب نصها تماماً بحرفيتها
-    if (activeAddId || (state.whatsappMessage && state.whatsappMessage.includes("إضافة"))) {
+    if (activeAddId || (state.whatsappMessage && (state.whatsappMessage.includes("أضفت") || state.whatsappMessage.includes("إضافة")))) {
       const addedProductLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
-        `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${orderNo}`,
+        `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${orderNo}`,
         "المنتجات المضافة هي:",
         ...addedProductLines
       ].join("\n");
@@ -327,7 +327,11 @@ export default function CartPage() {
             <input type="hidden" name="cart" value={JSON.stringify(cart)} />
             <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
             <input type="hidden" name="regionName" value={selectedRegion?.name || regionQuery} />
-            {addToOrderId && <input type="hidden" name="addToOrderId" value={addToOrderId} />}
+            <input 
+              type="hidden" 
+              name="addToOrderId" 
+              value={addToOrderId || (typeof window !== "undefined" ? (localStorage.getItem("kse_add_to_order_id") || "") : "")} 
+            />
 
             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
               <h2 className="text-lg font-black text-slate-900 mb-4">معلومات التوصيل والاتصال</h2>

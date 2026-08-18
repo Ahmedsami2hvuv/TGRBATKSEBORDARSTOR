@@ -171,7 +171,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       const customWhatsappMessage = [
-        `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${draft.draftNumber}`,
+        `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${draft.draftNumber}`,
         "المنتجات المضافة هي:",
         ...addedLines
       ].join("\n");
@@ -215,7 +215,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             ok: true,
             orderNumber: String(existingOrder.orderNumber),
             whatsappMessage: [
-              `لقد قمت بإضافة منتجات إلى طلبيتي من خصيب ستور، رقم طلبي هو: ${existingOrder.orderNumber}`,
+              `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${existingOrder.orderNumber}`,
               "المنتجات المضافة هي:",
               ...addedLines
             ].join("\n"),
@@ -273,7 +273,14 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
     const numericOrderNumber = String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
-    const whatsappMessage = [
+
+    const isAddition = Boolean(addToOrderId);
+
+    const whatsappMessage = isAddition ? [
+      `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${numericOrderNumber}`,
+      "المنتجات المضافة هي:",
+      ...productLines,
+    ].join("\n") : [
       sharedCartId ? "لقد قمنا بالطلب من السلة المشتركة للعائلة في خصيب ستور ارجو تجهيز طلبي" : "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
       `رقم طلبي هو: ${numericOrderNumber}`,
       "المنتجات:",
