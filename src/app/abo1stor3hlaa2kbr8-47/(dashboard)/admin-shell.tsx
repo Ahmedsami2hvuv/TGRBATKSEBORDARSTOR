@@ -336,15 +336,17 @@ export function AdminShell({
   useEffect(() => {
     if (!isLg && navOpen) {
       document.body.style.overflow = 'hidden';
-      // Optional: Prevent overscroll behavior on body
       document.body.style.overscrollBehaviorY = 'none';
+      document.documentElement.style.overscrollBehaviorY = 'none';
     } else {
       document.body.style.overflow = '';
       document.body.style.overscrollBehaviorY = '';
+      document.documentElement.style.overscrollBehaviorY = '';
     }
     return () => {
       document.body.style.overflow = '';
       document.body.style.overscrollBehaviorY = '';
+      document.documentElement.style.overscrollBehaviorY = '';
     };
   }, [navOpen, isLg]);
 
@@ -570,7 +572,7 @@ export function AdminShell({
       {/* Mobile overlay backdrop (closes on click) */}
       {!isLg && navOpen ? (
         <div
-          className="fixed inset-0 z-[115] bg-slate-950/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[115] bg-slate-950/40 backdrop-blur-sm lg:hidden touch-none"
           onClick={() => setNavOpen(false)}
         />
       ) : null}
@@ -602,7 +604,7 @@ export function AdminShell({
             </span>
           </div>
         </div>
-        <nav className="flex flex-1 overflow-y-auto overscroll-contain px-3 py-4">
+        <nav className="flex flex-1 overflow-y-auto overscroll-none px-3 py-4">
           <div className={`grid w-full gap-2 content-start ${
             isCompact 
               ? "grid-cols-1" 
