@@ -54,6 +54,7 @@ export default async function BranchesPage(props: {
       parentBranchId: true,
       authorizedPreparerId: true,
       profitMargin: true,
+      hidePrices: true,
       category: { select: { name: true } },
       parentBranch: { select: { name: true } },
       _count: { select: { products: true } }

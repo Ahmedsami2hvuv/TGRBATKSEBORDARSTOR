@@ -14,6 +14,7 @@ export default async function CategoriesPage() {
       photoUrl: true,
       active: true,
       profitMargin: true,
+      hidePrices: true,
     },
     orderBy: { sequence: "desc" },
   });
