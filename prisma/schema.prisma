@@ -936,3 +936,16 @@ model UserBackgroundSelection {
 
 
 
+
+model JobApplication {
+  id              String   @id @default(cuid())
+  name            String
+  region          String
+  phone           String
+  carType         String
+  hasAc           Boolean  @default(false)
+  hasCommitment   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  status          String   @default("pending")
+}
