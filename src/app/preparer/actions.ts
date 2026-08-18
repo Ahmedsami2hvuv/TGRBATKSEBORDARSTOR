@@ -2194,8 +2194,11 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       },
       select: { amountDinar: true }
     });
-    const sumWithdrawnDinar = miscEntries.reduce((sum, entry) => sum.add(entry.amountDinar), new Decimal(0));
-    alreadyWithdrawnAlf = Number(sumWithdrawnDinar);
+    let sumWithdrawnDinar = 0;
+    for (const entry of miscEntries) {
+      sumWithdrawnDinar += Number(entry.amountDinar) || 0;
+    }
+    alreadyWithdrawnAlf = sumWithdrawnDinar;
   }
 
   const rawAccumulatedSalary = uniqueShifts.size * shiftHalfValue;
@@ -2234,6 +2237,9 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
   isBeforeEightPM?: boolean;
   hasPinCode?: boolean;
   pinDisabled?: boolean;
+  unwithdrawnDays?: any[];
+  rawAccumulatedSalary?: number;
+  alreadyWithdrawnAlf?: number;
 }> {
   try {
     const v = readPortal(formData);
@@ -2273,7 +2279,9 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
       isBeforeEightPM,
       hasPinCode: !!preparer.salaryPinCode && !preparer.salaryPinDisabled,
       pinDisabled: preparer.salaryPinDisabled,
-      unwithdrawnDays: stats.unwithdrawnDays
+      unwithdrawnDays: stats.unwithdrawnDays,
+      rawAccumulatedSalary: stats.rawAccumulatedSalary,
+      alreadyWithdrawnAlf: stats.alreadyWithdrawnAlf
     };
   } catch (e) {
     console.error("getPreparerSalaryStats error:", e);

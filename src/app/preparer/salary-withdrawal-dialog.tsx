@@ -22,6 +22,8 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
     isBeforeEightPM: boolean;
     hasPinCode: boolean;
     pinDisabled: boolean;
+    rawAccumulatedSalary?: number;
+    alreadyWithdrawnAlf?: number;
   } | null>(null);
   
   // لتعيين الرمز السري لأول مرة
@@ -57,7 +59,9 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
             withdrawableSalary: res.withdrawableSalary || 0,
             isBeforeEightPM: !!res.isBeforeEightPM,
             hasPinCode: !!res.hasPinCode,
-            pinDisabled: !!res.pinDisabled
+            pinDisabled: !!res.pinDisabled,
+            rawAccumulatedSalary: res.rawAccumulatedSalary || 0,
+            alreadyWithdrawnAlf: res.alreadyWithdrawnAlf || 0
           });
         }
         setLoading(false);
@@ -170,17 +174,25 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
 
           {/* لوحة تفاصيل الراتب */}
           <div className="my-6 space-y-3 bg-slate-50/80 dark:bg-slate-900/60 p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-right">
-                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">راتب اليوم</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center text-right">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">المتراكم الكلي للعمل:</span>
                 <span className="text-base font-black text-slate-800 dark:text-white tabular-nums">
-                  {stats?.todaySalary} <span className="text-xs font-bold text-slate-400">الف</span>
+                  {stats?.rawAccumulatedSalary} <span className="text-xs font-bold text-slate-400">الف</span>
                 </span>
               </div>
-              <div className="text-left border-r border-slate-200/60 dark:border-slate-800/60 pr-4">
-                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">الراتب التراكمي الكلي</span>
+              {stats?.alreadyWithdrawnAlf ? (
+                <div className="flex justify-between items-center text-right">
+                  <span className="block text-[10px] font-black text-rose-500/80 uppercase tracking-widest">المسحوب سلفاً:</span>
+                  <span className="text-base font-black text-rose-500/80 tabular-nums">
+                    - {stats.alreadyWithdrawnAlf} <span className="text-xs font-bold text-rose-500/80">الف</span>
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between items-center text-right border-t border-slate-200/50 dark:border-slate-800/50 pt-2">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">راتب اليوم:</span>
                 <span className="text-base font-black text-slate-700 dark:text-slate-300 tabular-nums">
-                  {stats?.accumulatedSalary} <span className="text-xs font-bold text-slate-400">الف</span>
+                  {stats?.todaySalary} <span className="text-xs font-bold text-slate-400">الف</span>
                 </span>
               </div>
             </div>

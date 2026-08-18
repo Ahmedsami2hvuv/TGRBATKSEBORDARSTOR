@@ -24,6 +24,8 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     hasPinCode: boolean;
     pinDisabled: boolean;
     unwithdrawnDays?: Array<{ date: string; morning: boolean; evening: boolean; amount: number }>;
+    rawAccumulatedSalary?: number;
+    alreadyWithdrawnAlf?: number;
   } | null>(null);
 
   // حالة إلغاء قفل الصفحة
@@ -58,7 +60,6 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
           const hasPin = !!res.hasPinCode;
           const pinDis = !!res.pinDisabled;
           const withdrawable = res.withdrawableSalary || 0;
-          
           setStats({
             dailySalary: res.dailySalary || 0,
             todaySalary: res.todaySalary || 0,
@@ -67,7 +68,9 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             isBeforeEightPM: !!res.isBeforeEightPM,
             hasPinCode: hasPin,
             pinDisabled: pinDis,
-            unwithdrawnDays: res.unwithdrawnDays || []
+            unwithdrawnDays: res.unwithdrawnDays || [],
+            rawAccumulatedSalary: res.rawAccumulatedSalary || 0,
+            alreadyWithdrawnAlf: res.alreadyWithdrawnAlf || 0
           });
           setWithdrawAmount(withdrawable);
 
@@ -274,17 +277,25 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
               <span className="text-lg font-black text-sky-300">الف دينار</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 w-full max-w-md border-t border-white/10 pt-6 mt-2">
-              <div className="text-right">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">راتب اليوم الحالي</span>
+            <div className="flex flex-col gap-4 w-full max-w-md border-t border-white/10 pt-6 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">المتراكم الكلي للعمل:</span>
                 <span className="text-lg font-black text-white tabular-nums">
-                  {stats?.todaySalary} <span className="text-xs text-slate-450 font-bold">الف</span>
+                  {stats?.rawAccumulatedSalary} <span className="text-xs text-slate-450 font-bold">الف</span>
                 </span>
               </div>
-              <div className="text-left border-r border-white/10 pr-4">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">المتراكم الكلي للعمل</span>
+              {stats?.alreadyWithdrawnAlf ? (
+                <div className="flex justify-between items-center">
+                  <span className="block text-xs font-bold text-rose-400/80 uppercase tracking-widest">المسحوب سلفاً (جزئياً):</span>
+                  <span className="text-lg font-black text-rose-400/80 tabular-nums">
+                    - {stats.alreadyWithdrawnAlf} <span className="text-xs text-rose-500/80 font-bold">الف</span>
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between items-center">
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">راتب اليوم الحالي:</span>
                 <span className="text-lg font-black text-sky-200 tabular-nums">
-                  {stats?.accumulatedSalary} <span className="text-xs text-slate-450 font-bold">الف</span>
+                  {stats?.todaySalary} <span className="text-xs text-slate-450 font-bold">الف</span>
                 </span>
               </div>
             </div>
