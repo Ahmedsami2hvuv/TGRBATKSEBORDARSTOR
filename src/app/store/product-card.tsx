@@ -227,7 +227,7 @@ export function ProductCard({
         <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
           {!shouldHidePrice && currentPrice > 0 && (
             <div className="absolute bottom-2.5 right-2.5 z-20 bg-emerald-600 text-white font-black text-[10px] sm:text-[11px] px-3 py-1 rounded-full shadow-lg shadow-emerald-600/25 flex items-center gap-1 border border-emerald-400/30 pointer-events-none">
-              <span>{currentPrice.toLocaleString("ar-IQ")}</span>
+              <span>{currentPrice.toLocaleString("en-US")}</span>
               <span className="text-[9px] text-emerald-100 font-extrabold">د.ع</span>
             </div>
           )}
@@ -363,7 +363,7 @@ export function ProductCard({
                     <h2 className="text-xl font-bold text-slate-900 leading-snug">{currentName}</h2>
                     {!shouldHidePrice && (
                       <p className="text-xl font-black text-green-600">
-                        {currentPrice > 0 ? `${currentPrice.toLocaleString("ar-IQ")} د.ع` : "حسب الاختيار"}
+                        {currentPrice > 0 ? `${currentPrice.toLocaleString("en-US")} د.ع` : "حسب الاختيار"}
                       </p>
                     )}
                   </div>
@@ -393,7 +393,7 @@ export function ProductCard({
                                 : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                             }`}
                           >
-                            {v.name} {!shouldHidePrice && `- ${Number(v.salePrice).toLocaleString("ar-IQ")} د.ع`}
+                            {v.name} {!shouldHidePrice && `- ${Number(v.salePrice).toLocaleString("en-US")} د.ع`}
                           </button>
                         ))}
                       </div>

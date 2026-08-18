@@ -60,7 +60,7 @@ export default function OrdersPage() {
                   </div>
                   <div>
                     <h3 className="font-black text-slate-800">رقم الطلب #{order.orderNumber || "غير معروف"}</h3>
-                    <p className="text-xs text-slate-400">{new Date(order.date).toLocaleDateString("ar-IQ")}</p>
+                    <p className="text-xs text-slate-400">{new Date(order.date).toLocaleDateString("en-US")}</p>
                   </div>
                 </div>
                 <div className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold">
