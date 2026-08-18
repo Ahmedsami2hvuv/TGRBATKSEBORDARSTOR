@@ -226,9 +226,9 @@ export function ProductCard({
 
         <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
           {!shouldHidePrice && currentPrice > 0 && (
-            <div className="absolute bottom-2.5 right-2.5 z-20 bg-slate-950/85 backdrop-blur-md text-emerald-400 font-black text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl shadow-lg border border-emerald-500/30 flex items-center gap-1 pointer-events-none">
+            <div className="absolute bottom-2.5 right-2.5 z-20 bg-emerald-600 text-white font-black text-[10px] sm:text-[11px] px-3 py-1 rounded-full shadow-lg shadow-emerald-600/25 flex items-center gap-1 border border-emerald-400/30 pointer-events-none">
               <span>{currentPrice.toLocaleString("ar-IQ")}</span>
-              <span className="text-[9px] text-emerald-300/90 font-bold">د.ع</span>
+              <span className="text-[9px] text-emerald-100 font-extrabold">د.ع</span>
             </div>
           )}
 
