@@ -188,9 +188,15 @@ export function ProductCard({
   };
 
   const shouldHidePrice = useMemo(() => {
-    if (product.branch?.hidePrices === false && product.branch?.category?.hidePrices === false && product.hidePrices === false) {
+    if (
+      product.branch?.hidePrices === false || 
+      product.branch?.category?.hidePrices === false || 
+      product.category?.hidePrices === false || 
+      product.hidePrices === false
+    ) {
       return false;
     }
+
     const branchHide = product.branch?.hidePrices ?? true;
     const catHide = product.branch?.category?.hidePrices ?? product.category?.hidePrices ?? true;
     const prodHide = product.hidePrices ?? true;

@@ -110,6 +110,9 @@ const getCachedBranchData = (branchId: string) =>
           variantType: p.variantType || "النوع",
           variants,
           supplierId: p.supplierId || null,
+          hidePrices: p.hidePrices,
+          branch: p.branch || branch,
+          category: p.category || branch?.category,
         };
       });
 

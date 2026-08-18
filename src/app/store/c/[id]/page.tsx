@@ -61,7 +61,10 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
       orderBy: { sequence: "asc" },
       include: {
         supplier: true,
-        branch: true,
+        branch: {
+          include: { category: true }
+        },
+        category: true,
         variants: {
           where: { active: true },
           orderBy: { sequence: "asc" }
@@ -117,6 +120,9 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         variantType: p.variantType || "النوع",
         variants,
         supplierId: p.supplierId || null,
+        hidePrices: p.hidePrices,
+        branch: p.branch,
+        category: p.category || p.branch?.category || category,
       };
     });
 
