@@ -2092,7 +2092,8 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       shift2Start: true,
       shift2End: true,
       salaryWithdrawalTime: true,
-      bypassWithdrawalTime: true
+      bypassWithdrawalTime: true,
+      walletEmployeeId: true
     }
   });
 
