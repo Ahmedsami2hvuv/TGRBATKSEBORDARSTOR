@@ -335,7 +335,7 @@ export function ProductCard({
             {/* الجزء القابل للتمرير */}
             <div className="overflow-y-auto overscroll-contain flex-1 pb-6 space-y-6">
               {/* 1. صورة المنتج العلوية الكبيرة */}
-              <div className="relative bg-slate-50 w-full rounded-b-[2.5rem] overflow-hidden flex flex-col items-center justify-center pt-10 pb-6 border-b border-slate-100">
+              <div className="relative bg-white w-full rounded-b-[2.5rem] overflow-hidden flex flex-col items-center justify-center pt-10 pb-6 border-b border-slate-100">
                 <div 
                   className="w-full flex items-center justify-center overflow-auto touch-pan-x touch-pan-y min-h-[260px] max-h-[360px]" 
                   style={{ touchAction: "pan-x pan-y pinch-zoom" }}
@@ -378,7 +378,7 @@ export function ProductCard({
               </div>
 
               {/* 2. التفاصيل والمعلومات */}
-              <div className="px-6 space-y-5">
+              <div className="px-6 space-y-5 bg-white">
                 {/* اسم المنتج وتصنيفه والسعر */}
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 leading-snug">{currentName}</h2>
@@ -396,7 +396,7 @@ export function ProductCard({
 
                 {/* وصف المنتج إن وجد */}
                 {product.description && (
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
                     <h4 className="text-xs font-bold text-slate-400 mb-1">وصف المنتج:</h4>
                     <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
                       {product.description}
@@ -473,11 +473,45 @@ export function ProductCard({
                               )}
                             </div>
                             <h4 className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">{simProd.name}</h4>
-                            {!shouldHidePrice && simPrice > 0 && (
-                              <p className="text-[11px] font-black text-emerald-600 mt-1">
-                                {simPrice.toLocaleString("en-US")} د.ع
-                              </p>
-                            )}
+                            
+                            <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100/80">
+                              {!shouldHidePrice && simPrice > 0 ? (
+                                <p className="text-[11px] font-black text-emerald-600">
+                                  {simPrice.toLocaleString("en-US")} <span className="text-[9px] font-bold text-slate-400">د.ع</span>
+                                </p>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-bold">عرض</span>
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const cart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
+                                  const existingIndex = cart.findIndex((item: any) => item.id === simProd.id);
+                                  if (existingIndex > -1) {
+                                    cart[existingIndex].quantity += 1;
+                                  } else {
+                                    cart.push({
+                                      id: simProd.id,
+                                      productId: simProd.id,
+                                      name: simProd.name,
+                                      price: simPrice,
+                                      photo: simPhoto,
+                                      quantity: 1
+                                    });
+                                  }
+                                  localStorage.setItem("kse_cart", JSON.stringify(cart));
+                                  window.dispatchEvent(new Event("cart-updated"));
+                                  window.dispatchEvent(new Event("storage"));
+                                  window.dispatchEvent(new CustomEvent("kse:store-cart-changed", { detail: { cart } }));
+                                  window.dispatchEvent(new CustomEvent("kse:show-toast", { detail: { message: "تمت إضافته للسلة 🛒", type: "success" } }));
+                                }}
+                                className="w-6 h-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center shadow-sm active:scale-90 transition-all shrink-0"
+                                title="أضف للسلة"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
