@@ -28,13 +28,13 @@ export function StoreCartIcon() {
   }, []);
 
   return (
-    <>
+    <div className={`relative inline-flex items-center justify-center ${count > 0 ? "animate-cart-dance" : ""}`}>
       <DynamicIcon icon={icons?.store_cart} className="text-2xl" fallback="🛒" />
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+        <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce shadow-sm">
           {count}
         </span>
       )}
-    </>
+    </div>
   );
 }

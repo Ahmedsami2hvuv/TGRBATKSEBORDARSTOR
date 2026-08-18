@@ -101,18 +101,18 @@ export function BottomNav() {
               className={containerClass}
             >
               {item.badge ? (
-                <div className="absolute top-1 right-1/4 md:right-1/3 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-black flex items-center justify-center shadow-sm z-10">
+                <div className={`absolute top-1 right-1/4 md:right-1/3 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-black flex items-center justify-center shadow-sm z-10 ${item.href === "/store/cart" && cartCount > 0 ? "animate-bounce" : ""}`}>
                   {item.badge > 99 ? "+99" : item.badge}
                 </div>
               ) : null}
               
-              <div className="relative">
+              <div className={`relative ${item.href === "/store/cart" && cartCount > 0 ? "animate-cart-dance text-emerald-600" : ""}`}>
                 {item.icon}
                 {isClicked && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-green-500 rounded-full animate-pulse blur-sm"></span>
                 )}
               </div>
-              <span className={`text-[10px] md:text-xs font-bold ${isActive ? 'text-green-600' : ''}`}>{item.label}</span>
+              <span className={`text-[10px] md:text-xs font-bold ${isActive ? 'text-green-600' : ''} ${item.href === "/store/cart" && cartCount > 0 ? "text-emerald-700 font-black" : ""}`}>{item.label}</span>
             </Link>
           );
         })}
