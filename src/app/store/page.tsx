@@ -5,7 +5,7 @@ import { StoreSlider } from "./_components/store-slider";
 import { ProductCard } from "./product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // كاش سريع جداً يتحدث كل 60 ثانية لتصفح صاروخي
 
 async function CategoriesRow() {
   try {
@@ -62,17 +62,20 @@ async function CategoriesRow() {
       </div>
     );
   } catch (error) {
-    return <div className="text-center p-4 text-slate-500 text-sm">جاري تحميل الأقسام...</div>;
+    return null;
   }
 }
 
-// أضفنا قسم للأكثر مبيعاً ليعرض بعض المنتجات بشكل أفقي
 async function BestSellersRow() {
   try {
     const productsRaw = await prisma.storeProduct.findMany({
       where: { active: true },
-      take: 6, // أخذ عينة
-      orderBy: { sequence: "desc" }
+      take: 6,
+      orderBy: { sequence: "desc" },
+      include: {
+        supplier: true,
+        branch: { include: { category: true } }
+      }
     });
     const products = deepSanitize(productsRaw);
 
@@ -119,19 +122,48 @@ async function NewProductsRow() {
 
 async function CategoryShowcase({ slides }: { slides: any[] }) {
   try {
+    // استعلام واحد مدمج وسريع جداً لجميع الأقسام ومنتجاتها بدون استعلامات متكررة
     const categoriesRaw = await prisma.storeCategory.findMany({
       where: { active: true },
-      // تم إزالة take: 4 لعرض جميع الأقسام
       orderBy: { sequence: "desc" },
+      include: {
+        branches: {
+          where: { active: true },
+          take: 5,
+          include: {
+            products: {
+              where: { active: true },
+              take: 4,
+              orderBy: { sequence: "asc" },
+              include: {
+                supplier: true,
+                branch: { include: { category: true } }
+              }
+            }
+          }
+        }
+      }
     });
     
     if (categoriesRaw.length === 0) return null;
+    const categories = deepSanitize(categoriesRaw);
 
     return (
       <div className="space-y-8">
-        {categoriesRaw.map((cat, index) => {
-          // السلايدر يظهر بعد كل 3 أقسام
-          const shouldShowSlider = (index + 1) % 3 === 0 && index < categoriesRaw.length - 1;
+        {categories.map((cat: any, index: number) => {
+          // تجميع منتجات الأفرع التابعة للقسم
+          const catProducts: any[] = [];
+          (cat.branches || []).forEach((b: any) => {
+            (b.products || []).forEach((p: any) => {
+              if (catProducts.length < 6) {
+                catProducts.push(p);
+              }
+            });
+          });
+
+          if (catProducts.length === 0) return null;
+
+          const shouldShowSlider = (index + 1) % 3 === 0 && index < categories.length - 1;
 
           return (
             <div key={cat.id}>
@@ -141,9 +173,14 @@ async function CategoryShowcase({ slides }: { slides: any[] }) {
                   عرض الكل
                 </Link>
               </div>
-              <Suspense fallback={<div className="h-40 bg-slate-100 rounded-3xl animate-pulse"></div>}>
-                <CategoryProducts categoryId={cat.id} />
-              </Suspense>
+              
+              <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+                {catProducts.map((prod: any) => (
+                  <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
+                    <ProductCard product={prod} />
+                  </div>
+                ))}
+              </div>
 
               {shouldShowSlider && slides && slides.length > 0 && (
                 <div className="mt-8 mb-4 w-full">
@@ -165,33 +202,7 @@ async function CategoryShowcase({ slides }: { slides: any[] }) {
   }
 }
 
-async function CategoryProducts({ categoryId }: { categoryId: string }) {
-  try {
-    const productsRaw = await prisma.storeProduct.findMany({
-      where: { active: true, branch: { categoryId } },
-      take: 6,
-      orderBy: { sequence: "desc" }
-    });
-    const products = deepSanitize(productsRaw);
-    
-    if (products.length === 0) return <div className="text-sm text-slate-400 p-4 text-center">لا توجد منتجات حالياً</div>;
-
-    return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
-        {products.map((prod: any) => (
-          <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
-            <ProductCard product={prod} />
-          </div>
-        ))}
-      </div>
-    );
-  } catch(e) {
-    return null;
-  }
-}
-
-
-// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization في بيئة الإنتاج
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
 function deepSanitize(obj: any): any {
   try {
     return JSON.parse(JSON.stringify(obj, (key, value) => 
