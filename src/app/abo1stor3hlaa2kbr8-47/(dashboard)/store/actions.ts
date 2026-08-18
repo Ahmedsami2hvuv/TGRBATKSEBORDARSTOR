@@ -42,7 +42,8 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const profitMargin = parseFloat(formData.get("profitMargin") as string || "0");
   const notes = formData.get("notes") as string || "";
   const active = formData.get("active") !== "false";
-  const hidePrices = formData.get("hidePrices") !== "false";
+  const rawHidePrices = formData.get("hidePrices");
+  const hidePrices = rawHidePrices === "true" || rawHidePrices === "on";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
@@ -121,7 +122,8 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const removeBg = formData.get("removeBg") === "true";
   const skipRevalidate = formData.get("skipRevalidate") === "true";
   const active = formData.get("active") !== "false";
-  const hidePrices = formData.get("hidePrices") !== "false";
+  const rawBranchHidePrices = formData.get("hidePrices");
+  const hidePrices = rawBranchHidePrices === "true" || rawBranchHidePrices === "on";
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
   if (!name || !categoryId) return { error: "الاسم والقسم مطلوبان" };

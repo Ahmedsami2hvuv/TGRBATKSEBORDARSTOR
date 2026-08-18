@@ -378,7 +378,7 @@ export function CategoryListClient({
             <button onClick={() => { setEditing(null); setShowForm(false); }} className="text-slate-400 hover:text-rose-500 transition">✕</button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form key={editing?.id ? `edit-cat-${editing.id}-${editing.hidePrices}` : "new-cat"} onSubmit={handleSubmit} className="space-y-6">
             <input type="hidden" name="id" value={editing?.id || ""} />
             <input type="hidden" name="currentPhotoUrl" value={editing?.photoUrl || ""} />
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
