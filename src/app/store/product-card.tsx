@@ -214,6 +214,12 @@ export function ProductCard({
         </button>
 
         <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
+          {!shouldHidePrice && currentPrice > 0 && (
+            <div className="absolute top-2 right-2 z-20 bg-slate-900/85 backdrop-blur-md text-emerald-400 font-black text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg shadow-sm border border-emerald-500/30">
+              {currentPrice.toLocaleString("ar-IQ")} د.ع
+            </div>
+          )}
+
           {photos[0] ? (
             <img
               src={photos[0]}
@@ -239,11 +245,6 @@ export function ProductCard({
             <h2 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">
               {currentName}
             </h2>
-            {!shouldHidePrice && currentPrice > 0 && (
-              <p className="text-[11px] font-black text-emerald-600 mt-0.5">
-                {currentPrice.toLocaleString("ar-IQ")} د.ع
-              </p>
-            )}
           </div>
           
           <div className="shrink-0 relative z-30 flex items-center justify-center">
