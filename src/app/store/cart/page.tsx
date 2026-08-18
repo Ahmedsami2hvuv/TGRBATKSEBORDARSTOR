@@ -28,6 +28,11 @@ export default function CartPage() {
   const [addToOrderId, setAddToOrderId] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // External Product Modal State
+  const [showExternalModal, setShowExternalModal] = useState(false);
+  const [externalItemName, setExternalItemName] = useState("");
+  const [externalQty, setExternalQty] = useState<number>(1);
+
   useEffect(() => {
     setMounted(true);
     setCart(JSON.parse(localStorage.getItem("kse_cart") || "[]"));
@@ -69,6 +74,31 @@ export default function CartPage() {
     localStorage.setItem("kse_cart", JSON.stringify(next));
     window.dispatchEvent(new Event("cart-updated"));
   }
+
+  const handleAddExternalProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!externalItemName.trim()) return;
+
+    const newItem = {
+      id: `ext-${Date.now()}`,
+      productId: `ext-${Date.now()}`,
+      name: `[منتج خارجي] ${externalItemName.trim()}`,
+      price: 0,
+      salePrice: 0,
+      quantity: Math.max(1, Number(externalQty || 1)),
+      photo: null,
+      isExternal: true
+    };
+
+    const nextCart = [...cart, newItem];
+    setCart(nextCart);
+    localStorage.setItem("kse_cart", JSON.stringify(nextCart));
+    window.dispatchEvent(new Event("cart-updated"));
+
+    setExternalItemName("");
+    setExternalQty(1);
+    setShowExternalModal(false);
+  };
 
   // Effect for Whatsapp redirection
   useEffect(() => {
@@ -188,16 +218,40 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-20">
-      <h1 className="text-2xl font-black text-slate-900 px-2">سلة التسوق</h1>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
+        <h1 className="text-2xl font-black text-slate-900">سلة التسوق</h1>
+        <button
+          type="button"
+          onClick={() => setShowExternalModal(true)}
+          className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs md:text-sm font-black rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+          <span className="text-base">📝</span>
+          <span>إضافة منتج من خارج المتجر</span>
+        </button>
+      </div>
 
       {cart.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-          <div className="text-6xl mb-4">🛒</div>
-          <p className="text-slate-500 font-bold mb-6">سلتك فارغة حالياً</p>
-          <Link href="/store" className="inline-flex px-8 py-3 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition">
-            ابدأ التسوق الآن
-          </Link>
+        <div className="text-center py-16 px-4 bg-white rounded-[3rem] border border-dashed border-slate-200 space-y-6">
+          <div className="text-6xl animate-bounce">🛒</div>
+          <div>
+            <p className="text-slate-700 font-black text-lg mb-1">سلتك فارغة حالياً</p>
+            <p className="text-slate-400 text-xs font-bold">يمكنك التسوق من أفرع المتجر أو إضافة أي منتج خاص من خارج المتجر مباشرة!</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowExternalModal(true)}
+              className="w-full sm:w-auto px-6 py-3.5 bg-amber-500 text-white font-black rounded-2xl hover:bg-amber-600 shadow-md transition active:scale-95 flex items-center justify-center gap-2 text-sm"
+            >
+              <span>📝</span>
+              <span>إضافة منتج من خارج المتجر</span>
+            </button>
+            <Link href="/store" className="w-full sm:w-auto px-6 py-3.5 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition flex items-center justify-center gap-2 text-sm">
+              <span>🛍️</span>
+              <span>تصفح أفرع المتجر</span>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
@@ -428,6 +482,82 @@ export default function CartPage() {
             </div>
           </form>
         </>
+      )}
+
+      {/* مودال إضافة منتج من خارج المتجر */}
+      {showExternalModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 border border-slate-100 relative">
+            <button
+              onClick={() => setShowExternalModal(false)}
+              className="absolute top-5 left-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold transition"
+            >
+              ✕
+            </button>
+
+            <div className="text-center space-y-2 pt-2">
+              <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+                📝
+              </div>
+              <h2 className="text-xl font-black text-slate-900">إضافة منتج من خارج المتجر</h2>
+              <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">
+                اكتب اسم المنتج أو الطلب الخاص الذي تريده من خارج المتجر وسيقوم المندوب بتسليمه وتجهيزه لك.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddExternalProduct} className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم المنتج أو الملاحظة *</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={externalItemName}
+                  onChange={(e) => setExternalItemName(e.target.value)}
+                  placeholder="مثال: مناديل فاخرة / خبز عراقي حار 5 أرغفة..."
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-500 font-bold text-sm text-slate-800 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">الكمية المطلوبة</label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExternalQty(Math.max(1, externalQty - 1))}
+                    className="w-10 h-10 bg-slate-100 rounded-xl font-black text-slate-700 hover:bg-slate-200 transition font-mono"
+                  >
+                    -
+                  </button>
+                  <span className="font-black text-base w-8 text-center text-slate-800">{externalQty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setExternalQty(externalQty + 1)}
+                    className="w-10 h-10 bg-slate-100 rounded-xl font-black text-slate-700 hover:bg-slate-200 transition font-mono"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-3">
+                <button
+                  type="submit"
+                  className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                >
+                  إضافة المنتج للسلة 🛍️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowExternalModal(false)}
+                  className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-bold text-sm transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
