@@ -45,7 +45,7 @@ export default function MandobJobPage() {
     phone: "",
     carType: "",
     hasAc: false,
-    hasCommitment: false,
+    hasCommitment: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -352,8 +352,8 @@ ${formData.hasCommitment ? "عندي التزام بوقت" : "ما عندي ا�
                 </div>
                 
                 <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <input type="checkbox" id="hasCommitment" checked={formData.hasCommitment} onChange={e => setFormData({...formData, hasCommitment: e.target.checked})} className="w-5 h-5 rounded text-[#5FA8D3] focus:ring-[#5FA8D3]" />
-                  <label htmlFor="hasCommitment" className="font-bold text-gray-700 cursor-pointer select-none">عندي التزام بوقت معين (وظيفة أخرى أو دراسة)</label>
+                  <input type="checkbox" id="hasCommitment" checked={!formData.hasCommitment} onChange={e => setFormData({...formData, hasCommitment: !e.target.checked})} className="w-5 h-5 rounded text-[#5FA8D3] focus:ring-[#5FA8D3]" />
+                  <label htmlFor="hasCommitment" className="font-bold text-gray-700 cursor-pointer select-none">ليس لدي اي التزام بوقت معين وضيفه او دراسة او اي شيء اخر</label>
                 </div>
                 
                 <button disabled={isSubmitting} type="submit" className="w-full bg-[#5FA8D3] hover:bg-[#4a8eb9] text-white font-bold py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-2 mt-4">
