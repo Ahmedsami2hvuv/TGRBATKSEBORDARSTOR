@@ -587,7 +587,7 @@ export function AdminShell({
             </span>
           </div>
         </div>
-        <nav className="flex flex-1 overflow-y-auto px-3 py-4">
+        <nav className="flex flex-1 overflow-y-auto overscroll-contain px-3 py-4">
           <div className={`grid w-full gap-2 content-start ${
             isCompact 
               ? "grid-cols-1" 
