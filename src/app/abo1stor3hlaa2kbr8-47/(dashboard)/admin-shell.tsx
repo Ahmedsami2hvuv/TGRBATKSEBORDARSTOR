@@ -599,7 +599,22 @@ export function AdminShell({
             </span>
           </div>
         </div>
-        <nav className="flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4">
+        <style dangerouslySetInnerHTML={{ __html: `
+          .admin-sidebar-scroll::-webkit-scrollbar {
+            width: 6px;
+          }
+          .admin-sidebar-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 20px;
+          }
+          .dark .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(75, 85, 99, 0.5);
+          }
+        `}} />
+        <nav className="admin-sidebar-scroll flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4">
           <div className={`grid w-full gap-2 content-start ${
             isCompact 
               ? "grid-cols-1" 
