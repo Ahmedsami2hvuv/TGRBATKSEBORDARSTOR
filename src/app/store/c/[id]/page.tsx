@@ -64,7 +64,6 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         branch: {
           include: { category: true }
         },
-        category: true,
         variants: {
           where: { active: true },
           orderBy: { sequence: "asc" }

@@ -197,11 +197,16 @@ export function ProductCard({
       return false;
     }
 
-    const branchHide = product.branch?.hidePrices ?? true;
-    const catHide = product.branch?.category?.hidePrices ?? product.category?.hidePrices ?? true;
-    const prodHide = product.hidePrices ?? true;
+    if (
+      product.branch?.hidePrices === true || 
+      product.branch?.category?.hidePrices === true || 
+      product.category?.hidePrices === true || 
+      product.hidePrices === true
+    ) {
+      return true;
+    }
 
-    return branchHide || catHide || prodHide;
+    return false;
   }, [product]);
 
   return (
