@@ -193,57 +193,62 @@ export function ProductListClient({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    try {
+      const form = e.currentTarget;
+      const formData = new FormData(form);
 
-    formData.append("hasVariants", hasVariants.toString());
-    formData.append("variants", JSON.stringify(variants));
-    formData.append("removeBg", String(manualRemoveBg));
+      formData.append("hasVariants", hasVariants.toString());
+      formData.append("variants", JSON.stringify(variants));
+      formData.append("removeBg", String(manualRemoveBg));
 
-    const photoFiles = formData.getAll("photos") as File[];
-    const validPhotos: File[] = [];
-    for (const f of photoFiles) {
-      if (f && f.size > 0) {
-        const compressed = await compressImageFileForUpload(f, {
-          maxEdgePx: 1000,
-          jpegQuality: 0.8,
-        });
-        validPhotos.push(compressed);
+      const photoFiles = formData.getAll("photos") as File[];
+      const validPhotos: File[] = [];
+      for (const f of photoFiles) {
+        if (f && f.size > 0) {
+          const compressed = await compressImageFileForUpload(f, {
+            maxEdgePx: 1000,
+            jpegQuality: 0.8,
+          });
+          validPhotos.push(compressed);
+        }
       }
-    }
 
-    formData.delete("photos");
-    validPhotos.forEach(f => formData.append("photos", f));
+      formData.delete("photos");
+      validPhotos.forEach(f => formData.append("photos", f));
 
-    const res = await upsertProduct(null, formData);
-    if (res.ok) {
-       // إذا كنا نقوم بتعديل منتج موجود، نغلق الفورم
-       if (editing) {
-         setEditing(null);
-         setShowForm(false);
-         router.refresh();
-       } else {
-         // إذا كان منتج جديد، لا نغلق الفورم، بل نصفره ونركز على الاسم
-         form.reset();
-         // إعادة تصفير قيم السعر اليدوية في الـ state إن وجدت
-         setPurchasePrice("");
-         setSalePrice("");
-         const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
-         if (nameInput) nameInput.focus();
-         setLoading(false);
-         // تصفير المتغيرات
-         setHasVariants(false);
-         setVariants([]);
-         // تنبيه بسيط للنجاح
-         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-         if (submitBtn) {
-            const oldText = submitBtn.innerText;
-            submitBtn.innerText = "✅ تم الحفظ بنجاح! أضف التالي...";
-            setTimeout(() => { submitBtn.innerText = oldText; }, 2000);
+      const res = await upsertProduct(null, formData);
+      if (res.ok) {
+         // إذا كنا نقوم بتعديل منتج موجود، نغلق الفورم
+         if (editing) {
+           setEditing(null);
+           setShowForm(false);
+           router.refresh();
+         } else {
+           // إذا كان منتج جديد، لا نغلق الفورم، بل نصفره ونركز على الاسم
+           form.reset();
+           // إعادة تصفير قيم السعر اليدوية في الـ state إن وجدت
+           setPurchasePrice("");
+           setSalePrice("");
+           const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
+           if (nameInput) nameInput.focus();
+           // تصفير المتغيرات
+           setHasVariants(false);
+           setVariants([]);
+           // تنبيه بسيط للنجاح
+           const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+           if (submitBtn) {
+              const oldText = submitBtn.innerText;
+              submitBtn.innerText = "✅ تم الحفظ بنجاح! أضف التالي...";
+              setTimeout(() => { submitBtn.innerText = oldText; }, 2000);
+           }
          }
-       }
-    } else {
-      alert(res.error);
+      } else {
+        alert(res.error || "حدث خطأ أثناء الحفظ");
+      }
+    } catch (err: any) {
+      console.error("Save Error:", err);
+      alert("حدث خطأ غير متوقع أثناء المعالجة والحفظ.");
+    } finally {
       setLoading(false);
     }
   }
@@ -475,6 +480,7 @@ export function ProductListClient({
           </label>
           <button
             onClick={() => {
+              setLoading(false);
               setEditing(null);
               setShowForm(!showForm);
             }}
@@ -937,6 +943,7 @@ export function ProductListClient({
               <div className="mt-auto grid grid-cols-3 gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all translate-y-0 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300">
                 <button
                   onClick={() => {
+                    setLoading(false);
                     setEditing(p);
                     setShowForm(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
