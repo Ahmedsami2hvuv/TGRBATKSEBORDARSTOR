@@ -177,13 +177,8 @@ export function AdminShell({
 
   const sidebarConfig = initialSidebarConfig || DEFAULT_SIDEBAR_CONFIG;
   const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [activeBgUrl, setActiveBgUrl] = useState<string | null>(null);
-
-  const filteredTiles = orderedTiles.filter(tile =>
-    tile.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTiles = orderedTiles;
 
   const handleTileClick = (slug: string) => {
     handleLinkClick();
@@ -679,60 +674,29 @@ export function AdminShell({
           </div>
         </nav>
         <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-2 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950/50 gap-2">
+          {/* أزرار التكبير والتصغير */}
           <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#09090b] p-1 rounded-xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm h-10">
-            {isSearching ? (
-              <div className="flex items-center gap-1 flex-1 px-1 h-full">
-                <input
-                  type="text"
-                  placeholder="بحث..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 py-0.5"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => { setIsSearching(false); setSearchQuery(""); }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs shrink-0 px-1"
-                  title="إلغاء البحث"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsSearching(true)}
-                  className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors shrink-0"
-                  title="بحث في الأزرار"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                  </svg>
-                </button>
-                <div className="flex-1" />
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
-                  className="w-7 h-full flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors shrink-0"
-                  title="تصغير"
-                >
-                  <span className="text-lg font-bold leading-none">−</span>
-                </button>
-                <span className="text-[10px] font-black text-[#00f3ff] min-w-[34px] text-center shrink-0">
-                  {Math.round(itemScale * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
-                  className="w-7 h-full flex items-center justify-center rounded-lg hover:bg-[#00f3ff]/10 text-slate-500 hover:text-[#00f3ff] transition-colors shrink-0"
-                  title="تكبير"
-                >
-                  <span className="text-lg font-bold leading-none">+</span>
-                </button>
-              </>
-            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
+              className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors shrink-0"
+              title="تصغير"
+            >
+              <span className="text-xl font-bold leading-none">−</span>
+            </button>
+            <span className="text-[11px] font-black text-[#00f3ff] min-w-[40px] text-center shrink-0">
+              {Math.round(itemScale * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
+              className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-[#00f3ff]/10 text-slate-500 hover:text-[#00f3ff] transition-colors shrink-0"
+              title="تكبير"
+            >
+              <span className="text-xl font-bold leading-none">+</span>
+            </button>
+            <div className="flex-1" />
           </div>
 
           <form action={logout} className="shrink-0 m-0">
@@ -741,7 +705,9 @@ export function AdminShell({
               title="تسجيل الخروج"
               className="w-10 h-10 flex items-center justify-center rounded-xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-colors"
             >
-              <span className="text-lg font-bold leading-none mt-0.5">⏻</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
             </button>
           </form>
         </div>
