@@ -226,7 +226,7 @@ export function ProductCard({
 
         <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
           {!shouldHidePrice && currentPrice > 0 && (
-            <div className="absolute bottom-2.5 right-2.5 z-20 bg-emerald-600 text-white font-black text-[10px] sm:text-[11px] px-3 py-1 rounded-full shadow-lg shadow-emerald-600/25 flex items-center gap-1 border border-emerald-400/30 pointer-events-none">
+            <div className="absolute bottom-1.5 right-1.5 z-20 bg-emerald-600 text-white font-black text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-lg shadow-md flex items-center gap-0.5 border border-emerald-400/30 pointer-events-none">
               <span>{currentPrice.toLocaleString("en-US")}</span>
               <span className="text-[9px] text-emerald-100 font-extrabold">د.ع</span>
             </div>
