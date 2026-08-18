@@ -5,22 +5,48 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q");
 
-  if (!q) return NextResponse.json([]);
+  if (!q) return NextResponse.json({ products: [], categories: [], branches: [] });
 
-  const products = await prisma.storeProduct.findMany({
-    where: {
-      active: true,
-      name: { contains: q, mode: "insensitive" }
-    },
-    select: {
-      id: true,
-      name: true,
-      salePrice: true,
-      description: true,
-      photoUrls: true
-    },
-    take: 5
-  });
+  const [products, categories, branches] = await Promise.all([
+    prisma.storeProduct.findMany({
+      where: {
+        active: true,
+        name: { contains: q, mode: "insensitive" }
+      },
+      select: {
+        id: true,
+        name: true,
+        salePrice: true,
+        description: true,
+        photoUrls: true
+      },
+      take: 5
+    }),
+    prisma.storeCategory.findMany({
+      where: {
+        active: true,
+        name: { contains: q, mode: "insensitive" }
+      },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true
+      },
+      take: 4
+    }),
+    prisma.storeBranch.findMany({
+      where: {
+        active: true,
+        name: { contains: q, mode: "insensitive" }
+      },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true
+      },
+      take: 4
+    })
+  ]);
 
-  return NextResponse.json(products);
+  return NextResponse.json({ products, categories, branches });
 }

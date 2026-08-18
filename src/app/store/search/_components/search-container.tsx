@@ -155,17 +155,54 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
         {/* Results Area */}
         <div className="md:col-span-3 space-y-6">
           {query && (matchedCategories.length > 0 || matchedBranches.length > 0) && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {matchedCategories.map(c => (
-                <Link key={c.id} href={`/store/c/${c.id}`} prefetch={false} className="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-xs font-black border border-violet-200 dark:border-violet-800">
-                  قسم: {c.name}
-                </Link>
-              ))}
-              {matchedBranches.map(b => (
-                <Link key={b.id} href={`/store/b/${b.id}`} prefetch={false} className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-black border border-indigo-200 dark:border-indigo-800">
-                  فرع: {b.name}
-                </Link>
-              ))}
+            <div className="space-y-3 bg-slate-50/80 dark:bg-slate-900/40 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
+              <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <span className="text-sm">📁</span> الأقسام والفروع المطابقة
+              </h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+                {matchedCategories.map((c: any) => (
+                  <Link
+                    key={c.id}
+                    href={`/store/c/${c.id}`}
+                    prefetch={false}
+                    className="group bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-emerald-500 shadow-sm hover:shadow-md transition-all flex items-center gap-3"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 relative flex items-center justify-center">
+                      {c.photoUrl ? (
+                        <img src={c.photoUrl} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <span className="text-xl">📁</span>
+                      )}
+                    </div>
+                    <div className="overflow-hidden">
+                      <span className="text-[10px] font-black text-violet-600 dark:text-violet-400 block">قسم</span>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate group-hover:text-emerald-600 transition-colors">{c.name}</h4>
+                    </div>
+                  </Link>
+                ))}
+
+                {matchedBranches.map((b: any) => (
+                  <Link
+                    key={b.id}
+                    href={`/store/b/${b.id}`}
+                    prefetch={false}
+                    className="group bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-emerald-500 shadow-sm hover:shadow-md transition-all flex items-center gap-3"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 relative flex items-center justify-center">
+                      {b.photoUrl ? (
+                        <img src={b.photoUrl} alt={b.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <span className="text-xl">🏪</span>
+                      )}
+                    </div>
+                    <div className="overflow-hidden">
+                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 block">فرع</span>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate group-hover:text-emerald-600 transition-colors">{b.name}</h4>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 
