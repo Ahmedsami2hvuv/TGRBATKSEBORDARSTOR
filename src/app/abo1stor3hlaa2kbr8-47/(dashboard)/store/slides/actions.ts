@@ -50,8 +50,9 @@ export async function createSlide(formData: FormData) {
     }
 
     // 3. الحفظ في قاعدة البيانات
+    let slide: any = null;
     try {
-      await prisma.storeSlide.create({
+      slide = await prisma.storeSlide.create({
         data: {
           imageUrl,
           title,
@@ -74,7 +75,7 @@ export async function createSlide(formData: FormData) {
     revalidatePath("/store");
     revalidatePath("/abo1stor3hlaa2kbr8-47/store");
 
-    return { success: true };
+    return { success: true, slide: JSON.parse(JSON.stringify(slide)) };
   } catch (error: any) {
     console.error("Critical Action Error:", error);
     return { success: false, error: "حدث خطأ غير متوقع: " + (error.message || "فشل النظام") };
@@ -188,7 +189,7 @@ export async function updateSlide(id: string, formData: FormData) {
       updateData.imageUrl = imageUrl;
     }
 
-    await prisma.storeSlide.update({
+    const updatedSlide = await prisma.storeSlide.update({
       where: { id },
       data: updateData,
     });
@@ -196,7 +197,7 @@ export async function updateSlide(id: string, formData: FormData) {
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
     revalidatePath("/abo1stor3hlaa2kbr8-47/store");
-    return { success: true };
+    return { success: true, slide: JSON.parse(JSON.stringify(updatedSlide)) };
   } catch (error: any) {
     console.error("Update Slide Error:", error);
     return { success: false, error: "فشل في تحديث السلايد: " + (error.message || "فشل النظام") };

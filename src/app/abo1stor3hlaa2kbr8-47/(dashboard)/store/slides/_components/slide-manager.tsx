@@ -14,13 +14,25 @@ interface Slide {
   sequence: number;
 }
 
-export function SlideManager({ initialSlides }: { initialSlides: Slide[] }) {
+interface SlideManagerProps {
+  initialSlides: Slide[];
+  categories?: { id: string; name: string }[];
+  branches?: { id: string; name: string }[];
+}
+
+export function SlideManager({ initialSlides, categories = [], branches = [] }: SlideManagerProps) {
   const [slides, setSlides] = useState(initialSlides);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
+  const [editLinkUrl, setEditLinkUrl] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const router = useRouter();
+
+  // مزامنة القائمة عند التحديث السيرفري
+  useEffect(() => {
+    setSlides(initialSlides);
+  }, [initialSlides]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev =>
@@ -34,9 +46,11 @@ export function SlideManager({ initialSlides }: { initialSlides: Slide[] }) {
     setIsUpdating(true);
     try {
       const formData = new FormData(e.currentTarget);
+      formData.set("linkUrl", editLinkUrl);
       const res = await updateSlide(editingSlide.id, formData);
-      if (res.success) {
+      if (res.success && res.slide) {
         toast.success("تم التحديث بنجاح");
+        setSlides(prev => prev.map(s => s.id === editingSlide.id ? res.slide : s));
         setEditingSlide(null);
         router.refresh();
       } else {
@@ -119,8 +133,38 @@ export function SlideManager({ initialSlides }: { initialSlides: Slide[] }) {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 mr-2">رابط التوجيه</label>
-                <input name="linkUrl" defaultValue={editingSlide.linkUrl} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm" />
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 mr-2">رابط التوجيه</label>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setEditLinkUrl(e.target.value);
+                    }}
+                    className="text-[9px] font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded-lg border border-violet-200 dark:border-violet-800 outline-none"
+                  >
+                    <option value="">اختر قسم أو فرع...</option>
+                    {categories.length > 0 && (
+                      <optgroup label="الأقسام">
+                        {categories.map(c => (
+                          <option key={c.id} value={`/store/c/${c.id}`}>قسم: {c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {branches.length > 0 && (
+                      <optgroup label="الفروع">
+                        {branches.map(b => (
+                          <option key={b.id} value={`/store/b/${b.id}`}>فرع: {b.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
+                <input
+                  name="linkUrl"
+                  value={editLinkUrl}
+                  onChange={(e) => setEditLinkUrl(e.target.value)}
+                  placeholder="https://... أو اختر قسم/فرع"
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm"
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -197,6 +241,7 @@ export function SlideManager({ initialSlides }: { initialSlides: Slide[] }) {
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingSlide(slide);
+                    setEditLinkUrl(slide.linkUrl || "");
                   }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 dark:bg-slate-800/90 shadow-lg text-violet-600 hover:scale-110 transition"
                   title="تعديل السلايد"

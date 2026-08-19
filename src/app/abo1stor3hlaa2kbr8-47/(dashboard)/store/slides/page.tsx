@@ -4,9 +4,24 @@ import { SlideManager } from "./_components/slide-manager";
 import { SlideForm } from "./_components/slide-form";
 
 export default async function AdminSlidesPage() {
-  const slides = await prisma.storeSlide.findMany({
-    orderBy: { sequence: "asc" },
-  });
+  const [slides, categories, branches] = await Promise.all([
+    prisma.storeSlide.findMany({
+      orderBy: { sequence: "asc" },
+    }),
+    prisma.storeCategory.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { sequence: "desc" }
+    }),
+    prisma.storeBranch.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { sequence: "desc" }
+    })
+  ]);
+
+  const sanitizedCategories = JSON.parse(JSON.stringify(categories));
+  const sanitizedBranches = JSON.parse(JSON.stringify(branches));
 
   return (
     <div className="space-y-8" dir="rtl">
@@ -20,9 +35,13 @@ export default async function AdminSlidesPage() {
         </Link>
       </div>
 
-      <SlideForm />
+      <SlideForm categories={sanitizedCategories} branches={sanitizedBranches} />
 
-      <SlideManager initialSlides={JSON.parse(JSON.stringify(slides))} />
+      <SlideManager
+        initialSlides={JSON.parse(JSON.stringify(slides))}
+        categories={sanitizedCategories}
+        branches={sanitizedBranches}
+      />
     </div>
   );
 }
