@@ -25,7 +25,7 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
            <span className="text-[10px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded-full shadow-sm animate-pulse">اسحب للمزيد 👈</span>
         </div>
       )}
-      <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-4 hide-scrollbar px-2 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-4 hide-scrollbar px-2 accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
       <Link 
         href={`/store/c/${categoryId}`} 
         onClick={() => setOptimisticBranch(null)}

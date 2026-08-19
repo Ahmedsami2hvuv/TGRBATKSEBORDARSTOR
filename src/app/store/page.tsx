@@ -18,7 +18,7 @@ async function CategoriesRow() {
     if (categories.length === 0) return null;
 
     return (
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
         {/* زر المفضلة الثابت */}
         <Link
           href="/store/favorites"
@@ -77,7 +77,7 @@ async function BestSellersRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
         {products.map((prod: any) => (
           <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
             <ProductCard product={prod} />
@@ -102,7 +102,7 @@ async function NewProductsRow() {
     if (products.length === 0) return null;
 
     return (
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-2 px-2 hide-scrollbar accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
         {products.map((prod: any) => (
           <div key={prod.id} className="w-[160px] md:w-[200px] shrink-0">
             <ProductCard product={prod} />

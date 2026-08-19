@@ -90,7 +90,6 @@ body {
   background: transparent;
   color: var(--foreground);
   transition: background-color 0.3s ease, color 0.3s ease;
-  overscroll-behavior-y: none;
 }
 
 /* حماية النوافذ المنبثقة والشيتات من ظاهرة الرفرش بالسحب Pull-to-Refresh */
@@ -104,18 +103,28 @@ body {
   touch-action: pan-x pan-y;
 }
 
-/* Hide scrollbar for elements with .no-scrollbar */
-.no-scrollbar::-webkit-scrollbar {
+/* Hide scrollbar for elements with .no-scrollbar & .hide-scrollbar */
+.no-scrollbar::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.no-scrollbar {
+.no-scrollbar,
+.hide-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* تسريع كرت الشاشة لسلاسة خرافية أثناء الحركة والسحب */
+.accelerate-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 html, body {
   background-color: var(--background);
-  overscroll-behavior-y: none;
 }
 
 .kse-app-bg {

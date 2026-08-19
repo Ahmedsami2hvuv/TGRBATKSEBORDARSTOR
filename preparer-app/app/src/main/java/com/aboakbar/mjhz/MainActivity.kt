@@ -509,11 +509,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         try {
-            webView.onResume()
-            webView.resumeTimers()
+            // webView.onResume()
+            // webView.resumeTimers()
             webView.requestFocus(View.FOCUS_DOWN)
             webView.requestFocusFromTouch()
-            webView.post { webView.invalidate() }
+            // webView.post { webView.invalidate() }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -528,7 +528,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         try {
-            webView.onPause()
+            // webView.onPause()
         } catch (e: Exception) {
             e.printStackTrace()
         }
