@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4f6f8',
-    direction: 'rtl', // لدعم اللغة العربية
   },
   scrollContent: {
     padding: 20,
