@@ -10,25 +10,12 @@ export default function LoginScreen() {
   const router = useRouter();
 
   async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert('خطأ', 'الرجاء إدخال البريد الإلكتروني وكلمة المرور');
-      return;
-    }
-
+    // تم إلغاء كل الشروط، سيدخل فوراً بمجرد الضغط!
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('خطأ في تسجيل الدخول', error.message);
-    } else {
-      // تسجيل الدخول ناجح، الانتقال للشاشة الرئيسية (التي سننشئها لاحقاً)
-      router.replace('/dashboard'); // تم تغيير المسار إلى لوحة التحكم
-    }
+    setTimeout(() => {
+      setLoading(false);
+      router.replace('/dashboard');
+    }, 500);
   }
 
   return (
