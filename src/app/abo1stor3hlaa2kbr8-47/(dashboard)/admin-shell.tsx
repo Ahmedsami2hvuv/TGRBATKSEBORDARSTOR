@@ -13,6 +13,7 @@ import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { FloatingAdminMenu } from "@/components/floating-admin-menu";
 import { AdminGestureHandler } from "./admin-gesture-handler";
+import { AdminStoreNotifications } from "@/components/admin-store-notifications";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -552,6 +553,7 @@ export function AdminShell({
       )}
       <OneSignalInitializer externalId="admin_global" />
       <FloatingAdminMenu />
+      <AdminStoreNotifications />
       <button
         id="navToggleButton"
         type="button"
