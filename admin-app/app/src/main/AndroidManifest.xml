@@ -102,6 +102,12 @@
             android:enabled="true"
             android:exported="false" />
 
+        <service
+            android:name="com.aboakbar.admin.KeepAliveService"
+            android:foregroundServiceType="dataSync"
+            android:enabled="true"
+            android:exported="false" />
+
         <meta-data
             android:name="com.onesignal.NotificationServiceExtension"
             android:value="com.aboakbar.admin.MyNotificationServiceExtension" />

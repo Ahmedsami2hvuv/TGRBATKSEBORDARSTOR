@@ -104,6 +104,18 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
+        // تشغيل خدمة البقاء في الخلفية الوهمية لمنع الأندرويد من قتل التطبيق
+        try {
+            val serviceIntent = Intent(this, KeepAliveService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContentView(R.layout.activity_main)
 
         // تهيئة OneSignal للإشعارات الفورية
