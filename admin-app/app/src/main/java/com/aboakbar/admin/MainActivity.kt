@@ -274,7 +274,8 @@ class MainActivity : AppCompatActivity() {
         webView.isHorizontalFadingEdgeEnabled = false
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+            // إعطاء المتصفح الأولوية القصوى لمنع الأندرويد من إسقاط الذاكرة الرسومية في الخلفية
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true)
         }
 
         // Enable cookie manager
