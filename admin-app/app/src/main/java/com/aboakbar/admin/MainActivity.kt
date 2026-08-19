@@ -703,7 +703,7 @@ class MainActivity : AppCompatActivity() {
         loginLayout.visibility = View.GONE
         swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
-        mainLayout.setBackgroundColor(android.graphics.Color.WHITE)
+        
     }
 
     private fun showLoginLayout() {
@@ -770,10 +770,7 @@ class MainActivity : AppCompatActivity() {
             
             // إخفاء السكرين شوت فجأة بدون تأثير الرفرش أو التلاشي! 
             // هذا سيمنع ظهور الشاشة السوداء أو البيضاء نهائياً
-            screenshotOverlay.postDelayed({
-                screenshotOverlay.visibility = View.GONE
-                screenshotOverlay.setImageBitmap(null)
-            }, 400)
+            
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -791,14 +788,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         try {
             // أخذ لقطة شاشة لحظية قبل الخروج لتغطية الفراغ الذي يتركه المتصفح
-            if (mainLayout.width > 0 && mainLayout.height > 0) {
-                val bitmap = android.graphics.Bitmap.createBitmap(mainLayout.width, mainLayout.height, android.graphics.Bitmap.Config.ARGB_8888)
-                val canvas = android.graphics.Canvas(bitmap)
-                mainLayout.draw(canvas)
-                screenshotOverlay.setImageBitmap(bitmap)
-                screenshotOverlay.visibility = android.view.View.VISIBLE
-                screenshotOverlay.alpha = 1f
-            }
+            
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -1254,3 +1244,4 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
+
