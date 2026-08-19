@@ -111,6 +111,12 @@
             android:enabled="true"
             android:exported="false" />
 
+        <service
+            android:name="com.aboakbar.mandob.KeepAliveService"
+            android:foregroundServiceType="dataSync"
+            android:enabled="true"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

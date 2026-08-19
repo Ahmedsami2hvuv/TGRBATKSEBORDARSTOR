@@ -48,6 +48,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // تشغيل خدمة البقاء في الخلفية الوهمية لمنع الأندرويد من قتل التطبيق
+        try {
+            val serviceIntent = Intent(this, KeepAliveService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContentView(R.layout.activity_main)
 
         // تهيئة OneSignal للإشعارات الفورية
@@ -206,14 +218,14 @@ class MainActivity : AppCompatActivity() {
         settings.displayZoomControls = false
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+            // إعطاء المتصفح الأولوية القصوى لمنع الأندرويد من إسقاط الذاكرة الرسومية في الخلفية
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true)
         }
 
         // تحسين أداء اللمس والتمرير الفوري
-        webView.overScrollMode = View.OVER_SCROLL_NEVER
+        webView.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
         webView.isVerticalFadingEdgeEnabled = false
         webView.isHorizontalFadingEdgeEnabled = false
-        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -432,7 +444,7 @@ class MainActivity : AppCompatActivity() {
         loginLayout.visibility = View.GONE
         swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
-        mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#09090b"))
+        mainLayout.setBackgroundColor(android.graphics.Color.WHITE)
     }
 
     private fun showLoginLayout() {
