@@ -765,12 +765,15 @@ class MainActivity : AppCompatActivity() {
         syncTokenFromCookies()
         
         try {
-            // تم إيقاف onResume و resumeTimers لمنع الشاشة السوداء عند العودة للتطبيق
-            // webView.onResume()
-            // webView.resumeTimers()
             webView.requestFocus(View.FOCUS_DOWN)
             webView.requestFocusFromTouch()
-            // webView.post { webView.invalidate() }
+            
+            // إخفاء السكرين شوت فجأة بدون تأثير الرفرش أو التلاشي! 
+            // هذا سيمنع ظهور الشاشة السوداء أو البيضاء نهائياً
+            screenshotOverlay.postDelayed({
+                screenshotOverlay.visibility = View.GONE
+                screenshotOverlay.setImageBitmap(null)
+            }, 400)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -787,8 +790,15 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         try {
-            // تم إيقاف onPause لمنع الويب فيو من مسح الشاشة والتسبب بشاشة سوداء
-            // webView.onPause()
+            // أخذ لقطة شاشة لحظية قبل الخروج لتغطية الفراغ الذي يتركه المتصفح
+            if (mainLayout.width > 0 && mainLayout.height > 0) {
+                val bitmap = android.graphics.Bitmap.createBitmap(mainLayout.width, mainLayout.height, android.graphics.Bitmap.Config.ARGB_8888)
+                val canvas = android.graphics.Canvas(bitmap)
+                mainLayout.draw(canvas)
+                screenshotOverlay.setImageBitmap(bitmap)
+                screenshotOverlay.visibility = android.view.View.VISIBLE
+                screenshotOverlay.alpha = 1f
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
