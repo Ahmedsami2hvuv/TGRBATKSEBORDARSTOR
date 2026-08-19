@@ -486,22 +486,7 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
-        // إخفاء صورة الخلفية تدريجياً بعد تأخير بسيط للتأكد من اكتمال رسم الصفحة تحتها
-        if (screenshotOverlay.visibility == View.VISIBLE) {
-            fadeOutRunnable?.let { screenshotOverlay.removeCallbacks(it) }
-            fadeOutRunnable = Runnable {
-                screenshotOverlay.animate()
-                    .alpha(0f)
-                    .setDuration(350)
-                    .withEndAction {
-                        screenshotOverlay.visibility = View.GONE
-                        screenshotOverlay.alpha = 1f
-                        screenshotOverlay.setImageBitmap(null)
-                    }
-                    .start()
-            }
-            screenshotOverlay.postDelayed(fadeOutRunnable, 500)
-        }
+        // (Removed screenshot fade out logic to prevent refresh-like visual bug)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {
@@ -511,22 +496,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        // إلغاء التلاشي المؤجل لتجنب أي تداخل
-        fadeOutRunnable?.let { screenshotOverlay.removeCallbacks(it) }
-        screenshotOverlay.animate().cancel()
-        
-        try {
-            // التقاط لقطة شاشة سريعة للصفحة الحالية لحفظ حالة التطبيق البصرية قبل الذهاب للخلفية
-            if (webView.visibility == View.VISIBLE && webView.width > 0 && webView.height > 0) {
-                val bitmap = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(bitmap)
-                webView.draw(canvas)
-                screenshotOverlay.setImageBitmap(bitmap)
-                screenshotOverlay.visibility = View.VISIBLE
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
         super.onPause()
         try {
             webView.onPause()
