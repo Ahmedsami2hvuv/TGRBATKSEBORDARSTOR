@@ -27,7 +27,7 @@ export default function LoginScreen() {
       Alert.alert('خطأ في تسجيل الدخول', error.message);
     } else {
       // تسجيل الدخول ناجح، الانتقال للشاشة الرئيسية (التي سننشئها لاحقاً)
-      router.replace('/explore'); // مؤقتاً نحوله لصفحة explore الموجودة افتراضياً
+      router.replace('/dashboard'); // تم تغيير المسار إلى لوحة التحكم
     }
   }
 
