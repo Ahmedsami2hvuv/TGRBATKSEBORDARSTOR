@@ -269,10 +269,9 @@ class MainActivity : AppCompatActivity() {
         settings.displayZoomControls = false
 
         // تحسين أداء اللمس والتمرير الفوري
-        webView.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+        webView.overScrollMode = View.OVER_SCROLL_NEVER
         webView.isVerticalFadingEdgeEnabled = false
         webView.isHorizontalFadingEdgeEnabled = false
-        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
@@ -703,7 +702,7 @@ class MainActivity : AppCompatActivity() {
         loginLayout.visibility = View.GONE
         swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
-        mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#09090b"))
+        mainLayout.setBackgroundColor(android.graphics.Color.WHITE)
     }
 
     private fun showLoginLayout() {
