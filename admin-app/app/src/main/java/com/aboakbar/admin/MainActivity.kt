@@ -753,11 +753,12 @@ class MainActivity : AppCompatActivity() {
         syncTokenFromCookies()
         
         try {
-            webView.onResume()
-            webView.resumeTimers()
+            // تم إيقاف onResume و resumeTimers لمنع الشاشة السوداء عند العودة للتطبيق
+            // webView.onResume()
+            // webView.resumeTimers()
             webView.requestFocus(View.FOCUS_DOWN)
             webView.requestFocusFromTouch()
-            webView.post { webView.invalidate() }
+            // webView.post { webView.invalidate() }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -774,7 +775,8 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         try {
-            webView.onPause()
+            // تم إيقاف onPause لمنع الويب فيو من مسح الشاشة والتسبب بشاشة سوداء
+            // webView.onPause()
         } catch (e: Exception) {
             e.printStackTrace()
         }
