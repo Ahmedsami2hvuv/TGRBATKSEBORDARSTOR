@@ -154,7 +154,7 @@ export default function AdminCreateOrderScreen() {
                 keyboardType="numeric" 
                 textAlign="center"
               />
-              <TouchableOpacity style={styles.counterBtnGreen} onPress={() => setDeliveryCost(String(Number(deliveryCost)+1)))}>
+              <TouchableOpacity style={styles.counterBtnGreen} onPress={() => setDeliveryCost(String(Number(deliveryCost)+1))}>
                 <Text style={styles.counterBtnTextGreen}>+</Text>
               </TouchableOpacity>
             </View>
