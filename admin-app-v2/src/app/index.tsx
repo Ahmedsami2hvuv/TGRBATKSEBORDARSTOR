@@ -1,46 +1,79 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  async function handleLogin() {
-    // تم إلغاء كل الشروط، سيدخل فوراً بمجرد الضغط!
-    setLoading(true);
-    setTimeout(() => {
+  // التحقق المسبق من وجود الجلسة
+  useEffect(() => {
+    checkLoginSession();
+  }, []);
+
+  async function checkLoginSession() {
+    try {
+      const loggedIn = await AsyncStorage.getItem('admin_logged_in');
+      if (loggedIn === 'true') {
+        router.replace('/dashboard');
+      } else {
+        setLoading(false);
+      }
+    } catch (e) {
       setLoading(false);
-      router.replace('/dashboard');
-    }, 500);
+    }
+  }
+
+  async function handleLogin() {
+    if (!password) {
+      Alert.alert('خطأ', 'الرجاء إدخال رمز الدخول');
+      return;
+    }
+
+    setLoading(true);
+    
+    // جلب الرمز من بيئة العمل أو استخدام "admin" كافتراضي إذا لم يتم العثور عليه
+    const expectedPassword = process.env.EXPO_PUBLIC_ADMIN_PASSWORD || 'admin';
+
+    if (password === expectedPassword) {
+      // حفظ الجلسة وتوجيه المستخدم
+      try {
+        await AsyncStorage.setItem('admin_logged_in', 'true');
+        router.replace('/dashboard');
+      } catch (e) {
+        Alert.alert('خطأ', 'فشل في حفظ بيانات الدخول');
+        setLoading(false);
+      }
+    } else {
+      Alert.alert('مرفوض', 'رمز الدخول غير صحيح');
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0a7ea4" />
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>لوحة الإدارة</Text>
-        <Text style={styles.subtitle}>الرجاء تسجيل الدخول للمتابعة</Text>
+        <Text style={styles.subtitle}>الرجاء إدخال رمز الوصول السري</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="البريد الإلكتروني"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="كلمة المرور"
+          placeholder="رمز الدخول (كلمة المرور)"
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoCapitalize="none"
         />
 
         <TouchableOpacity 
