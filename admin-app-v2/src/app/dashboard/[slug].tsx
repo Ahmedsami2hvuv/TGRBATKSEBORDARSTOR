@@ -22,9 +22,58 @@ const TILE_TITLES: Record<string, string> = {
   "settings": "الإعدادات",
 };
 
+import NewOrdersScreen from '../../components/screens/NewOrdersScreen';
+import OrderTrackingScreen from '../../components/screens/OrderTrackingScreen';
+import CreateOrderScreen from '../../components/screens/CreateOrderScreen';
+
 export default function GenericModuleScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+
+  if (slug === 'new-orders') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#0f172a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الرجوع للوحة التحكم</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <NewOrdersScreen />
+      </SafeAreaView>
+    );
+  }
+
+  if (slug === 'order-tracking') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#0f172a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الرجوع للوحة التحكم</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <OrderTrackingScreen />
+      </SafeAreaView>
+    );
+  }
+
+  if (slug === 'admin-create-order') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#0f172a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الرجوع للوحة التحكم</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <CreateOrderScreen />
+      </SafeAreaView>
+    );
+  }
 
   const title = slug && TILE_TITLES[slug] ? TILE_TITLES[slug] : "قسم الإدارة";
 
