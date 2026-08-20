@@ -1011,6 +1011,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       placesCount: (orderPrepJson?.placesCount as number) || 1,
       extraAlf: (orderPrepJson?.extraAlf as number) || 0,
       deliveryAlf: calcDeliveryAlf,
+      sumSellAlf,
     });
     const oldProducts = (orderPrepJson?.products as any[]) || [];
     const oldDynamicOrderType = resolveDynamicOrderType(oldProducts, "تجهيز تسوق");
