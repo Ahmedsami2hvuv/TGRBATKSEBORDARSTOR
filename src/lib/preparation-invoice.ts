@@ -125,12 +125,20 @@ export function buildCombinedOrderSummaryText(params: {
   return lines.join("\n");
 }
 
-/** معالجة وتنسيق أي نص ملخص مجهزين قديم أو جديد لتظهر الأسعار بالشكل الدقيق المفهوم للزبون */
+/** معالجة وتنسيق أي نص ملخص مجهزين قديم أو جديد لتظهر الأسعار بالشكل الدقيق المفهوم للزبون، مع حساب المجموع الكلي للطلبات القديمة */
 export function normalizeOrderSummaryText(rawText: string | null | undefined): string {
   if (!rawText) return "";
-  return rawText
+
+  let hasTotal = false;
+  let sum = 0;
+
+  const processedLines = rawText
     .split("\n")
     .map((line) => {
+      if (line.includes("المجموع الكلي")) {
+        hasTotal = true;
+      }
+
       // البحث عن الأسطر التي تبدأ بنقطة المجهز • ومتبوعة باسم المنتج والسعر في نهاية السطر
       const match = line.match(/^(\s*•\s*)(.+?)\s+([\d.]+)\s*$/);
       if (match) {
@@ -138,12 +146,44 @@ export function normalizeOrderSummaryText(rawText: string | null | undefined): s
         const productName = match[2].trim();
         const priceNum = parseFloat(match[3]);
         if (!isNaN(priceNum)) {
+          sum += priceNum;
           return `${prefix}${productName}  ${formatAlfForCustomer(priceNum)}`;
         }
       }
+
+      // استخراج كلفة التجهيز
+      const extraMatch = line.match(/كلفة تجهيز.*?بـ\s*([\d.]+)/);
+      if (extraMatch) {
+        const extraNum = parseFloat(extraMatch[1]);
+        if (!isNaN(extraNum)) sum += extraNum;
+      }
+
+      // استخراج كلفة التوصيل
+      const deliveryMatch = line.match(/كلفة توصيل.*?بـ\s*([\d.]+)/);
+      if (deliveryMatch) {
+        const delNum = parseFloat(deliveryMatch[1]);
+        if (!isNaN(delNum)) sum += delNum;
+      }
+
       return line;
-    })
-    .join("\n");
+    });
+
+  // إذا لم يكن المجموع موجوداً في الفاتورة القديمة، نقوم بإضافته برمجياً قبل الخط الفاصل الأخير
+  if (!hasTotal && sum > 0) {
+    let inserted = false;
+    for (let i = processedLines.length - 1; i >= 0; i--) {
+      if (processedLines[i].includes("═══════════════")) {
+        processedLines.splice(i, 0, `المجموع الكلي: ${formatAlfForCustomer(sum)} 💵`);
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted) {
+      processedLines.push(`المجموع الكلي: ${formatAlfForCustomer(sum)} 💵`);
+    }
+  }
+
+  return processedLines.join("\n");
 }
 
 export function resolveDynamicOrderType(products: { line: string }[], defaultType: string = "تجهيز تسوق"): string {
