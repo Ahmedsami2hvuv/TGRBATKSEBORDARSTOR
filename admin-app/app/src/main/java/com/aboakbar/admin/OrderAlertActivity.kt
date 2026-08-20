@@ -30,6 +30,7 @@ class OrderAlertActivity : Activity() {
     private val BASE_URL = "https://aboakbr.com/api/admin"
     private var adminToken: String? = null
     private var currentOrderNumber: Int = 0
+    private var isStoreOrder = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,7 @@ class OrderAlertActivity : Activity() {
         adminToken = prefs.getString("admin_token", null)
 
         val type = intent.getStringExtra("type") ?: "new_order"
+        isStoreOrder = (type == "store_order")
 
         if (type == "preparer_withdrawal") {
             val preparerName = intent.getStringExtra("preparerName") ?: "—"
@@ -208,7 +210,7 @@ class OrderAlertActivity : Activity() {
                 
                 try {
                     val json = JSONObject(responseData)
-                    val array = json.getJSONArray("couriers")
+                    val array = if (isStoreOrder) json.getJSONArray("preparers") else json.getJSONArray("couriers")
                     runOnUiThread {
                         populateCouriers(array)
                     }

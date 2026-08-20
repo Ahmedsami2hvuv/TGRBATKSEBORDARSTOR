@@ -172,6 +172,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       // إرسال تنبيه تليجرام للتحديث
       void notifyTelegramStoreOrder(draft.id);
+    const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
+    void notifyOneSignalAdminStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       return {
@@ -276,6 +278,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
     // Notify via Telegram
     void notifyTelegramStoreOrder(draft.id);
+    const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
+    void notifyOneSignalAdminStoreOrder(draft.id);
 
     const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);

@@ -405,3 +405,42 @@ export async function notifyOneSignalPreparersForShopOrder(shopId: string, order
   }
 }
 
+
+export async function notifyOneSignalAdminStoreOrder(draftId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+    where: { id: draftId },
+    include: { customerRegion: { select: { name: true } } }
+  });
+  if (!draft) return;
+
+  const orderTime = draft.orderTime || "????";
+  const regionName = draft.customerRegion?.name || "???? ?????";
+  const shopName = "?????? ??????????";
+  const orderNumber = draft.draftNumber;
+  const products = (draft.data as any)?.products || [];
+  const pendingCount = products.length;
+  const subtotal = Number((draft.data as any)?.orderSubtotalAlf || 0);
+
+  const title = `??? ?? ?????? ??????????: #${orderNumber}`;
+  const body = `??? ?????: ${orderTime} | ???????: ${regionName} | ????????: ${pendingCount}`;
+
+  await sendOneSignalNotification({
+    title,
+    body,
+    url: "/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing",
+    externalIds: [],
+    targetApp: "admin",
+    data: {
+      type: "store_order",
+      orderNumber: orderNumber,
+      shopName: shopName,
+      regionName: regionName,
+      orderTime: orderTime,
+      orderType: "????? ??????",
+      subtotal: subtotal,
+      pendingCount: pendingCount
+    }
+  });
+}
+
