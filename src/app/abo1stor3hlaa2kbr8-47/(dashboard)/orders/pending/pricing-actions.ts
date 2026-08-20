@@ -420,6 +420,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     placesCount,
     extraAlf,
     deliveryAlf,
+    sumSellAlf,
   });
 
   let existingOrderType = "تجهيز تسوق";

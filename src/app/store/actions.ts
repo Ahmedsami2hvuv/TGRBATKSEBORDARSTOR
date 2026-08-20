@@ -50,7 +50,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     subtotal += Number(item.price || 0) * (item.quantity || 1);
     // إذا كان هناك حقل addedBy نضيفه في تفاصيل الطلب ليرى الأدمن من طلب المنتج!
     const addedInfo = item.addedBy ? ` [بواسطة: ${item.addedBy}]` : "";
-    summaryParts.push(`${item.name} (${item.quantity || 1})${addedInfo}`);
+    summaryParts.push(`${item.name} ×${item.quantity || 1}${addedInfo}`);
   });
 
   const region = await prisma.region.findUnique({ where: { id: regionId } });

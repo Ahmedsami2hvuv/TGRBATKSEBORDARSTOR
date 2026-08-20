@@ -675,7 +675,7 @@ export function OrderViewContent({
                     <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-black text-slate-900">{item.name}</span>
+                          <span className="text-sm font-black text-slate-900">{item.name} ×{item.quantity}</span>
                           {item.quantity > 1 && (
                             <span className="text-xs font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300 animate-pulse">
                               ×{item.quantity}

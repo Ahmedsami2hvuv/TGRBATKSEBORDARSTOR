@@ -439,6 +439,7 @@ export async function submitPreparerShoppingDraft(
       placesCount,
       extraAlf,
       deliveryAlf,
+      sumSellAlf,
     });
 
     let resolvedOrderType = draftData?.orderType || "تجهيز تسوق";

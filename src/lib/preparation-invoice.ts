@@ -81,14 +81,15 @@ export function buildPreparerPurchaseSummaryText(lines: InvoiceProductLine[]): s
   return lines.map((r) => `• ${r.line.trim()}  ${formatAlfForCustomer(r.sellAlf)}`).join("\n");
 }
 
-/** بناء نص الفاتورة المجمعة (الملاحظات التلقائية) مع كلفة التجهيز وكلفة التوصيل */
+/** بناء نص الفاتورة المجمعة (الملاحظات التلقائية) مع كلفة التجهيز وكلفة التوصيل والمجموع الكلي */
 export function buildCombinedOrderSummaryText(params: {
   preparerInvoices: { preparerName: string; invoiceText: string }[];
   placesCount: number;
   extraAlf: number;
   deliveryAlf: number;
+  sumSellAlf?: number; // Optional for backward compatibility, but we will provide it
 }): string {
-  const { preparerInvoices, placesCount, extraAlf, deliveryAlf } = params;
+  const { preparerInvoices, placesCount, extraAlf, deliveryAlf, sumSellAlf = 0 } = params;
   const CUSTOMER_NOTE_BORDER = "═══════════════";
 
   const summaryParts = preparerInvoices.map((inv) => {
@@ -98,7 +99,14 @@ export function buildCombinedOrderSummaryText(params: {
   const prepText = `كلفة تجهيز من ${placesCount} محلات بـ ${formatAlfForCustomer(extraAlf)}`;
   const deliveryText = `كلفة توصيل بـ ${formatAlfForCustomer(deliveryAlf)}`;
 
-  return [
+  let totalText = "";
+  if (sumSellAlf > 0 || extraAlf > 0 || deliveryAlf > 0) {
+    const totalWithoutDelivery = sumSellAlf + extraAlf;
+    const finalTotal = totalWithoutDelivery + deliveryAlf;
+    totalText = `المجموع الكلي: ${formatAlfForCustomer(finalTotal)} 💵`;
+  }
+
+  const lines = [
     CUSTOMER_NOTE_BORDER,
     "المنتجات المجهزة (حسب المجهز)",
     CUSTOMER_NOTE_BORDER,
@@ -106,8 +114,15 @@ export function buildCombinedOrderSummaryText(params: {
     CUSTOMER_NOTE_BORDER,
     prepText,
     deliveryText,
-    CUSTOMER_NOTE_BORDER,
-  ].join("\n");
+  ];
+
+  if (totalText) {
+    lines.push(totalText);
+  }
+
+  lines.push(CUSTOMER_NOTE_BORDER);
+
+  return lines.join("\n");
 }
 
 /** معالجة وتنسيق أي نص ملخص مجهزين قديم أو جديد لتظهر الأسعار بالشكل الدقيق المفهوم للزبون */

@@ -264,7 +264,7 @@ export function PreparerOrderDetailSection({
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-black text-slate-900 dark:text-white truncate flex-1">{lineName}</p>
+                        <p className="text-sm font-black text-slate-900 dark:text-white truncate flex-1">{lineName} ×{qty}</p>
                         <span className={`shrink-0 text-base font-black px-2.5 py-0.5 rounded border-2 ${
                           qty > 1
                             ? "text-rose-600 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/40 border-rose-500 animate-pulse scale-105"

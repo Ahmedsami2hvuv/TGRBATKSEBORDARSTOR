@@ -649,6 +649,7 @@ export async function assignPendingOrderToCourier(
         placesCount: draft.placesCount || 1,
         extraAlf,
         deliveryAlf,
+        sumSellAlf,
       });
 
       let finalOrderId: string;
