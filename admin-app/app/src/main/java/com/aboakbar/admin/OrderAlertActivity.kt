@@ -194,7 +194,7 @@ class OrderAlertActivity : Activity() {
         if (adminToken.isNullOrEmpty()) return
 
         val request = Request.Builder()
-            .url("$BASE_URL/couriers")
+            .url(if (isStoreOrder) "$BASE_URL/preparers" else "$BASE_URL/couriers")
             .header("Authorization", "Bearer $adminToken")
             .addHeader("Cookie", "admin_token=$adminToken")
             .build()
@@ -277,7 +277,7 @@ class OrderAlertActivity : Activity() {
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
-            .url("$BASE_URL/order-action")
+            .url(if (isStoreOrder) "$BASE_URL/store-order-action" else "$BASE_URL/order-action")
             .post(body)
             .header("Authorization", "Bearer $adminToken")
             .addHeader("Cookie", "admin_token=$adminToken")

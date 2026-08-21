@@ -107,7 +107,7 @@ export async function sendOneSignalNotification(options: {
     notification.small_icon = "ic_stat_onesignal_default";
 
     if (options.data?.isHasimAlert) {
-      notification.android_channel_id = "hasim_floating_alert_channel";
+      // ?? ???? android_channel_id ????? ??????? ????????? ???? ?????? ????????
       notification.android_group = "hasim_alerts";
       notification.android_accent_color = "10b981";
       if (!options.sound) {
