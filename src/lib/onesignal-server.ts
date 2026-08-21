@@ -81,6 +81,8 @@ export async function sendOneSignalNotification(options: {
     priority: 10,
     huawei_priority: 10,
     web_push_priority: "high",
+    android_channel_id: "hasim_floating_alert_channel",
+    android_group: "hasim_alerts",
   };
 
   // تطبيق الجدولة المباشرة إذا كانت محددة
@@ -102,9 +104,15 @@ export async function sendOneSignalNotification(options: {
     if (options.sound) {
       notification.android_sound = options.sound;
       notification.ios_sound = `${options.sound}.wav`;
+    } else {
+      notification.android_sound = "hasim_alert";
     }
-    notification.android_accent_color = "4f46e5";
+    notification.android_accent_color = "10b981";
     notification.small_icon = "ic_stat_onesignal_default";
+    notification.android_background_layout = {
+      headings_color: "FF10B981",
+      contents_color: "FF334155"
+    };
   }
 
   if (isAdmin) {
