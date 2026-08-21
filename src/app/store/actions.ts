@@ -235,42 +235,10 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           });
         }
 
-        // 1. إنشاء الطلب الرسمي بجدول Order لكي ينزل فوراً في لوحة التحكم وقسم الطلبات الجديدة والتجهيز للأدمن!
-        createdOrder = await tx.order.create({
-          data: {
-            shopId: shop.id,
-            customerId: customer.id,
-            customerPhone: phoneLocal,
-            customerRegionId: effectiveRegionId || null,
-            customerLandmark: landmark ? `${landmark} (منطقة: ${regionNameInput || "عامة"})` : `منطقة: ${regionNameInput || "عامة"}`,
-            status: "pending",
-            summary: summaryParts.join("\n"),
-            orderType: sharedCartId ? "سلة مشتركة" : "طلب متجر 🛒",
-            orderSubtotal: subtotal,
-            deliveryPrice: finalDeliveryPrice,
-            totalAmount: totalAmount,
-            vehiclePreference: vehiclePreference,
-            preparerShoppingJson: {
-              isWebStore: true,
-              products: cart.map((i: any) => ({
-                line: i.name,
-                qty: i.quantity || 1,
-                buyAlf: "",
-                sellAlf: "",
-                isFromStore: true,
-                supplierId: i.supplierId || null,
-                productId: i.productId || i.id,
-                addedBy: i.addedBy || null
-              }))
-            }
-          }
-        });
-
-        // 2. إنشاء مسودة التجهيز المرافقة
+        // إنشاء مسودة التجهيز فقط لتنزل حصراً في صفحة وقسم قيد التجهيز للأدمن
         const newDraft = await tx.companyPreparerShoppingDraft.create({
           data: {
             preparerId: null,
-            sentOrderId: createdOrder.id,
             customerPhone: phoneLocal,
             customerRegionId: effectiveRegionId || null,
             customerLandmark: landmark ? `${landmark} (منطقة: ${regionNameInput || "عامة"})` : `منطقة: ${regionNameInput || "عامة"}`,
@@ -292,7 +260,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
               })),
               webStoreCart: cart,
               sharedCartId: sharedCartId,
-              orderId: createdOrder.id
+              orderSubtotalAlf: String(subtotal)
             }
           }
         });
@@ -301,18 +269,14 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       });
     }
 
-    // تنبيهات فورية (تليجرام + ون سجنل + إشعار عائم للإدارة والأدمن)
+    // تنبيهات فورية لقسم التجهيز والإشعار العائم المباشر للأدمن
     void notifyTelegramStoreOrder(draft.id);
     const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
     void notifyOneSignalAdminStoreOrder(draft.id);
     const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
     void pushNotifyAdminsNewStoreOrder(draft.id);
-    if (createdOrder?.orderNumber) {
-      const { pushNotifyAdminsNewPendingOrder } = await import("@/lib/web-push-server");
-      void pushNotifyAdminsNewPendingOrder(createdOrder.orderNumber).catch(() => null);
-    }
 
-    const numericOrderNumber = createdOrder?.orderNumber ? String(createdOrder.orderNumber) : (targetOrderNumber || String(draft.draftNumber));
+    const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
 
     const isAddition = Boolean(addToOrderId);
