@@ -551,18 +551,31 @@ export function OrderDetailSection({
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
-                            <a 
-                              href={secondLocMerged} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
-                              style={{
-                                fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
-                                height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
-                              }}
-                            >
-                              📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
-                            </a>
+                            <div className="flex items-stretch gap-1 w-full sm:w-auto">
+                              <a 
+                                href={secondLocMerged} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn flex-1"
+                                style={{
+                                  fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
+                                  height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
+                                }}
+                              >
+                                📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); setFloatingMapUrl(secondLocMerged); }}
+                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-100/80 px-3 text-emerald-800 hover:bg-emerald-200 active:scale-95 transition-all shadow-sm shrink-0 border border-emerald-200"
+                                title="فتح في خريطة مصغرة"
+                                style={{
+                                  height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
+                                }}
+                              >
+                                🗺️
+                              </button>
+                            </div>
                           ) : (
                             <MandoubUploadLocationInline 
                               orderId={order.id} 
@@ -1020,6 +1033,13 @@ export function OrderDetailSection({
           onClose={() => setPreviewImageUrl(null)}
         />
       )}
+
+      {/* خريطة مصغرة عائمة للمندوب */}
+      <MandoubFloatingMap
+        isOpen={!!floatingMapUrl}
+        onClose={() => setFloatingMapUrl(null)}
+        locationUrl={floatingMapUrl || ""}
+      />
     </section>
   );
 }
