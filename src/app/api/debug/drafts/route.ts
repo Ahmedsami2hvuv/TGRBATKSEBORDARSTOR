@@ -1,0 +1,1 @@
+import { NextResponse } from "next/server"; import { prisma } from "@/lib/prisma"; export async function GET() { const drafts = await prisma.companyPreparerShoppingDraft.findMany({ orderBy: { createdAt: "desc" }, take: 5 }); return NextResponse.json(drafts); }
