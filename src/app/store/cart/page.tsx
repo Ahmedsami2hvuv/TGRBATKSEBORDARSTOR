@@ -148,8 +148,11 @@ export default function CartPage() {
       
       if (typeof window !== "undefined") {
         localStorage.removeItem("kse_add_to_order_id");
+        localStorage.removeItem("kse_cart");
         window.dispatchEvent(new Event("kse:add-to-order-changed"));
+        window.dispatchEvent(new Event("cart-updated"));
       }
+      setCart([]);
     } else {
       const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
@@ -158,6 +161,14 @@ export default function CartPage() {
         `المنتجات:`,
         ...productLines
       ].join("\n");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("kse_add_to_order_id");
+        localStorage.removeItem("kse_cart");
+        window.dispatchEvent(new Event("kse:add-to-order-changed"));
+        window.dispatchEvent(new Event("cart-updated"));
+      }
+      setCart([]);
     }
 
     const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(finalWhatsappMessage)}`;
