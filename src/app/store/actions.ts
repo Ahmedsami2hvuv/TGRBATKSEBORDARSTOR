@@ -276,6 +276,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     void notifyTelegramStoreOrder(draft.id);
     const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
     void notifyOneSignalAdminStoreOrder(draft.id);
+    const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
+    void pushNotifyAdminsNewStoreOrder(draft.id);
 
     const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);

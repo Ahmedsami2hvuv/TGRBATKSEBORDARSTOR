@@ -251,6 +251,60 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
   }
 }
 
+/** إشعار عائم للإدارة عند وصول طلب جديد من المتجر الإلكتروني */
+export async function pushNotifyAdminsNewStoreOrder(draftId: string): Promise<void> {
+  console.log("[PushNotify] pushNotifyAdminsNewStoreOrder started for draftId:", draftId);
+  try {
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: draftId },
+      include: { customerRegion: { select: { name: true } } }
+    });
+    if (!draft) return;
+
+    const orderTime = draft.orderTime || "فوري";
+    const regionName = draft.customerRegion?.name || "منطقة عامة";
+    const shopName = "المتجر الإلكتروني (خصيب ستور)";
+    const orderNumber = draft.draftNumber;
+    const products = (draft.data as any)?.products || [];
+    const pendingCount = products.length;
+    const subtotal = Number((draft.data as any)?.orderSubtotalAlf || 0);
+
+    const title = `🚨 طلب جديد من المتجر الإلكتروني: #${orderNumber}`;
+    const body = `المتجر الإلكتروني | وقت الطلب: ${orderTime} | المنطقة: ${regionName} | المواد: ${pendingCount}`;
+
+    const adminExternalIds = ["admin_global", "admin"];
+    const customData = {
+      type: "store_order",
+      isStoreOrder: true,
+      isHasimAlert: true,
+      orderNumber: orderNumber,
+      shopName: shopName,
+      regionName: regionName,
+      orderTime: orderTime,
+      orderType: "متجر حازم 🛒",
+      subtotal: subtotal,
+      pendingCount: pendingCount
+    };
+
+    const subs = await prisma.webPushSubscription.findMany({
+      where: { audience: "admin" },
+      select: { id: true, endpoint: true, p256dh: true, auth: true },
+    });
+
+    await sendToSubscriptions(subs, {
+      title,
+      body,
+      url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending?tab=preparing`,
+      tag: `kse-push-admin-store-${orderNumber}`,
+      sound: "hasim_alert",
+    }, adminExternalIds, customData);
+
+    console.log("[PushNotify] pushNotifyAdminsNewStoreOrder completed successfully.");
+  } catch (error) {
+    console.error("[PushNotify] Error in pushNotifyAdminsNewStoreOrder:", error);
+  }
+}
+
 /** إشعار للإدارة: تغيّر توفر مندوب/مجهز */
 export async function pushNotifyAdminsPresenceChange(input: {
   kind: "courier" | "preparer";
