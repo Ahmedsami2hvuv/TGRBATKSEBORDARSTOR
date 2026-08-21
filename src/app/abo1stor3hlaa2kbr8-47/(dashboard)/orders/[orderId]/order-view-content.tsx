@@ -26,6 +26,7 @@ import {
 import { CustomerDoorPhotoQuick } from "./customer-door-photo-quick";
 import { AdminOrderPhotoQuick } from "./admin-order-photo-quick";
 import { AdminCustomerLocationQuick } from "./admin-customer-location-quick";
+import { AdminFloatingMap } from "@/components/admin-floating-map";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
@@ -119,6 +120,7 @@ export function OrderViewContent({
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [floatingMapUrl, setFloatingMapUrl] = useState<string | null>(null);
 
   // حالات مودال تغيير المندوب المباشر
   const [showAssignCourierModal, setShowAssignCourierModal] = useState(false);
@@ -332,7 +334,7 @@ export function OrderViewContent({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المرسل ↗</a>
-                        <button type="button" onClick={() => window.open(order.customerLocationUrl, 'map_popup_1', 'width=800,height=600,left=200,top=100,scrollbars=yes,resizable=yes')} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="نافذة المتصفح العائمة للخرائط">🗺️</button>
+                        <button type="button" onClick={() => setFloatingMapUrl(order.customerLocationUrl)} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="متصفح الخريطة العائم">🗺️</button>
                       </div>
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
@@ -434,7 +436,7 @@ export function OrderViewContent({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المستلم ↗</a>
-                        <button type="button" onClick={() => window.open(order.secondCustomerLocationUrl, 'map_popup_2', 'width=800,height=600,left=200,top=100,scrollbars=yes,resizable=yes')} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="نافذة المتصفح العائمة للخرائط">🗺️</button>
+                        <button type="button" onClick={() => setFloatingMapUrl(order.secondCustomerLocationUrl)} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="متصفح الخريطة العائم">🗺️</button>
                       </div>
                       <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                     </div>
@@ -507,7 +509,7 @@ export function OrderViewContent({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن الزبون ↗</a>
-                        <button type="button" onClick={() => window.open(order.customerLocationUrl, 'map_popup_3', 'width=800,height=600,left=200,top=100,scrollbars=yes,resizable=yes')} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="نافذة المتصفح العائمة للخرائط">🗺️</button>
+                        <button type="button" onClick={() => setFloatingMapUrl(order.customerLocationUrl)} className="inline-flex min-h-[44px] w-[44px] items-center justify-center bg-emerald-100 text-emerald-800 rounded-xl shadow-sm hover:bg-emerald-200 active:scale-95 transition-all text-xl" title="متصفح الخريطة العائم">🗺️</button>
                       </div>
                       <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                     </div>
@@ -731,6 +733,13 @@ export function OrderViewContent({
           onClose={() => setPreviewImageUrl(null)}
         />
       )}
+
+      {/* متصفح الخريطة العائم للإدارة */}
+      <AdminFloatingMap
+        isOpen={!!floatingMapUrl}
+        onClose={() => setFloatingMapUrl(null)}
+        locationUrl={floatingMapUrl || ""}
+      />
 
       {/* توست التأكيد الإيجابي الأخضر لنجاح تغيير المندوب */}
       {toastSuccess && (
