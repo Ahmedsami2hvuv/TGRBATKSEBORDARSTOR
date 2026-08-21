@@ -68,6 +68,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
   const basePrice = region ? Number(region.deliveryPrice) : 0;
   const finalDeliveryPrice = deliveryPriceOverriden > basePrice ? deliveryPriceOverriden : basePrice;
   const effectiveRegionId = region ? region.id : (regionId || (await prisma.region.findFirst())?.id || "");
+  const totalAmount = subtotal + finalDeliveryPrice;
 
   try {
     let shop = await prisma.shop.findFirst({
@@ -104,6 +105,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     }
 
     let draft: any;
+    let createdOrder: any = null;
     let existingDraft: any = null;
     let targetOrderNumber: string | null = addToOrderId ? String(addToOrderId).trim() : null;
 
@@ -172,9 +174,12 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         }
       });
 
+      // تنبيه الإشعار العائم والتليجرام
       void notifyTelegramStoreOrder(draft.id);
       const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
       void notifyOneSignalAdminStoreOrder(draft.id);
+      const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
+      void pushNotifyAdminsNewStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       return {
@@ -243,9 +248,42 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           });
         }
 
-        return tx.companyPreparerShoppingDraft.create({
+        // 1. إنشاء الطلب الرسمي بجدول Order لكي ينزل فوراً في لوحة التحكم وقسم الطلبات الجديدة والتجهيز للأدمن!
+        createdOrder = await tx.order.create({
+          data: {
+            shopId: shop.id,
+            customerId: customer.id,
+            customerPhone: phoneLocal,
+            customerRegionId: effectiveRegionId || null,
+            customerLandmark: landmark ? `${landmark} (منطقة: ${regionNameInput || "عامة"})` : `منطقة: ${regionNameInput || "عامة"}`,
+            status: "pending",
+            summary: summaryParts.join("\n"),
+            orderType: sharedCartId ? "سلة مشتركة" : "طلب متجر 🛒",
+            orderSubtotal: subtotal,
+            deliveryPrice: finalDeliveryPrice,
+            totalAmount: totalAmount,
+            vehiclePreference: vehiclePreference,
+            preparerShoppingJson: {
+              isWebStore: true,
+              products: cart.map((i: any) => ({
+                line: i.name,
+                qty: i.quantity || 1,
+                buyAlf: "",
+                sellAlf: "",
+                isFromStore: true,
+                supplierId: i.supplierId || null,
+                productId: i.productId || i.id,
+                addedBy: i.addedBy || null
+              }))
+            }
+          }
+        });
+
+        // 2. إنشاء مسودة التجهيز المرافقة
+        const newDraft = await tx.companyPreparerShoppingDraft.create({
           data: {
             preparerId: null,
+            sentOrderId: createdOrder.id,
             customerPhone: phoneLocal,
             customerRegionId: effectiveRegionId || null,
             customerLandmark: landmark ? `${landmark} (منطقة: ${regionNameInput || "عامة"})` : `منطقة: ${regionNameInput || "عامة"}`,
@@ -266,20 +304,28 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
                 addedBy: i.addedBy || null
               })),
               webStoreCart: cart,
-              sharedCartId: sharedCartId
+              sharedCartId: sharedCartId,
+              orderId: createdOrder.id
             }
           }
         });
+
+        return newDraft;
       });
     }
 
+    // تنبيهات فورية (تليجرام + ون سجنل + إشعار عائم للإدارة والأدمن)
     void notifyTelegramStoreOrder(draft.id);
     const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
     void notifyOneSignalAdminStoreOrder(draft.id);
     const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
     void pushNotifyAdminsNewStoreOrder(draft.id);
+    if (createdOrder?.orderNumber) {
+      const { pushNotifyAdminsNewPendingOrder } = await import("@/lib/web-push-server");
+      void pushNotifyAdminsNewPendingOrder(createdOrder.orderNumber).catch(() => null);
+    }
 
-    const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
+    const numericOrderNumber = createdOrder?.orderNumber ? String(createdOrder.orderNumber) : (targetOrderNumber || String(draft.draftNumber));
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
 
     const isAddition = Boolean(addToOrderId);
