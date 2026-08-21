@@ -64,42 +64,25 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     let newCountPromise: Promise<number> = Promise.resolve(0);
     let preparedCountPromise: Promise<number> = Promise.resolve(0);
 
-    if (activeTab === "new" || activeTab === "completed") {
-      pendingOrdersPromise = prisma.order.findMany({
-        where: {
-          OR: [
-            { status: "pending" },
-            ...(assignOrder ? [{ id: assignOrder }] : []),
-          ],
-        },
-        orderBy: { createdAt: "desc" },
-        take: 300,
-        include: {
-          shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
-          submittedBy: { select: { id: true, name: true } },
-          submittedByCompanyPreparer: { select: { id: true, name: true } },
-          customerRegion: { select: { id: true, name: true } },
-          secondCustomerRegion: { select: { id: true, name: true } },
-          customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
-          moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true } },
-        },
-      });
-    } else {
-      newCountPromise = prisma.order.count({
-        where: {
-          OR: [
-            { status: "pending" },
-            ...(assignOrder ? [{ id: assignOrder }] : []),
-          ],
-        },
-      });
-      preparedCountPromise = prisma.order.count({
-        where: {
-          status: "pending",
-          submissionSource: "company_preparer",
-        },
-      });
-    }
+    pendingOrdersPromise = prisma.order.findMany({
+      where: {
+        OR: [
+          { status: "pending" },
+          ...(assignOrder ? [{ id: assignOrder }] : []),
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      include: {
+        shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+        submittedBy: { select: { id: true, name: true } },
+        submittedByCompanyPreparer: { select: { id: true, name: true } },
+        customerRegion: { select: { id: true, name: true } },
+        secondCustomerRegion: { select: { id: true, name: true } },
+        customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
+        moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true } },
+      },
+    });
 
     const [
       allActiveDrafts,
