@@ -46,6 +46,24 @@ export default function CourierSettingsClient({
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
+  const [useFloatingMap, setUseFloatingMap] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kse_floating_map_enabled");
+      if (saved !== null) {
+        setUseFloatingMap(saved !== "false");
+      }
+    }
+  }, []);
+
+  const handleFloatingMapToggle = () => {
+    const newValue = !useFloatingMap;
+    setUseFloatingMap(newValue);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("kse_floating_map_enabled", newValue ? "true" : "false");
+    }
+  };
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("c", auth.c);
@@ -291,6 +309,35 @@ export default function CourierSettingsClient({
             <span className="text-xs text-sky-500 font-bold">تعديل ←</span>
           </Link>
         </div>
+
+        {/* إعدادات الخرائط المصغرة */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex gap-3 min-w-0">
+              <span className="text-2xl mt-0.5 shrink-0 select-none">🗺️</span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">متصفح الخرائط المصغر</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal mt-0.5">
+                  فتح الخرائط في متصفح عائم داخل الطلبية. (إيقافه يجعلك تفتح الخريطة بتطبيق خارجي كالمعتاد)
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0">
+              <button
+                onClick={handleFloatingMapToggle}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  useFloatingMap ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    useFloatingMap ? "translate-x-0 rtl:-translate-x-5" : "translate-x-5 rtl:-translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* Quick Actions Visibility Toggles */}
         <section className="kse-glass-dark border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
