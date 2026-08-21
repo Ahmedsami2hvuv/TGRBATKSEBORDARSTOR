@@ -165,13 +165,27 @@ export default function CartPage() {
     window.location.href = whatsappUrl;
   }, [state.ok, state.orderNumber, state.whatsappMessage, cart, addToOrderId]);
 
-  // Effect for Region Autocomplete
+  // Effect for Region Autocomplete & Initial Load
+  const [allRegions, setAllRegions] = useState<RegionHit[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const r = await fetch("/api/regions/search?q=all");
+        const j = (await r.json()) as { regions?: RegionHit[] };
+        if (j.regions) {
+          setAllRegions(j.regions);
+        }
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     const q = regionQuery.trim();
     if (searchTimer.current) clearTimeout(searchTimer.current);
 
-    if (q.length < 2) {
-      setRegionHits([]);
+    if (!q) {
+      setRegionHits(allRegions.slice(0, 15));
       return;
     }
 
@@ -180,17 +194,26 @@ export default function CartPage() {
         try {
           const r = await fetch(`/api/regions/search?q=${encodeURIComponent(q)}`);
           const j = (await r.json()) as { regions?: RegionHit[] };
-          setRegionHits(j.regions ?? []);
+          const serverHits = j.regions ?? [];
+          
+          // إذا لم يجد السيرفر، نفصل البحث المحلي
+          if (serverHits.length === 0 && allRegions.length > 0) {
+            const localHits = allRegions.filter(reg => reg.name.toLowerCase().includes(q.toLowerCase()));
+            setRegionHits(localHits.slice(0, 15));
+          } else {
+            setRegionHits(serverHits);
+          }
         } catch {
-          setRegionHits([]);
+          const localHits = allRegions.filter(reg => reg.name.toLowerCase().includes(q.toLowerCase()));
+          setRegionHits(localHits.slice(0, 15));
         }
       })();
-    }, 280);
+    }, 150);
 
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [regionQuery]);
+  }, [regionQuery, allRegions]);
 
 
   const regionErrMsg =
@@ -378,6 +401,11 @@ export default function CartPage() {
                         ref={regionInputRef}
                         type="text"
                         value={regionQuery}
+                        onFocus={() => {
+                          if (regionHits.length === 0 && allRegions.length > 0) {
+                            setRegionHits(allRegions.slice(0, 15));
+                          }
+                        }}
                         onChange={(e) => {
                           const v = e.target.value;
                           setRegionQuery(v);
@@ -385,8 +413,8 @@ export default function CartPage() {
                         }}
                         autoComplete="off"
                         required
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition"
-                        placeholder="ابحث عن منطقتك (مثل: حمدان البز...)"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-green-100 focus:border-green-400 transition font-bold"
+                        placeholder="ابحث عن منطقتك أو اكتب اسمها (مثل: جيكور، حمدان...)"
                       />
                       {regionErrMsg && (
                         <p className="mt-2 text-xs font-bold text-rose-600" role="alert">
@@ -396,14 +424,37 @@ export default function CartPage() {
                     </>
                   )}
 
-                  {regionHits.length > 0 && !selectedRegion && (
-                    <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 p-2">
-                      <ul className="max-h-40 overflow-auto space-y-1">
+                  {!selectedRegion && (regionHits.length > 0 || regionQuery.trim().length > 0) && (
+                    <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 p-2 shadow-lg">
+                      <ul className="max-h-48 overflow-auto space-y-1">
+                        {regionQuery.trim() && !regionHits.some(h => h.name.trim() === regionQuery.trim()) && (
+                          <li>
+                            <button
+                              type="button"
+                              className="w-full rounded-lg px-3 py-2 text-end text-sm font-black text-emerald-800 bg-emerald-100 hover:bg-emerald-200 transition border border-emerald-300 flex items-center justify-between"
+                              onClick={() => {
+                                const customRegion = {
+                                  id: `custom_${Date.now()}`,
+                                  name: regionQuery.trim(),
+                                  deliveryPrice: "0"
+                                };
+                                setSelectedRegion(customRegion);
+                                setDeliveryPrice(0);
+                                setBaseDeliveryPrice(0);
+                                setRegionHits([]);
+                                setRegionFieldError(null);
+                              }}
+                            >
+                              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">اختيار مخصص</span>
+                              <span>📍 اعتماد "{regionQuery.trim()}" كمنطقتك</span>
+                            </button>
+                          </li>
+                        )}
                         {regionHits.map((h) => (
                           <li key={h.id}>
                             <button
                               type="button"
-                              className="w-full rounded-lg px-3 py-2 text-end text-sm font-bold text-slate-800 hover:bg-white transition"
+                              className="w-full rounded-lg px-3 py-2 text-end text-sm font-bold text-slate-800 hover:bg-white hover:text-emerald-700 transition flex items-center justify-between"
                               onClick={() => {
                                 const currentInput = regionQuery;
                                 setSelectedRegion(h);
@@ -425,7 +476,10 @@ export default function CartPage() {
                                 }
                               }}
                             >
-                              {h.name}
+                              <span className="text-[11px] font-bold text-slate-400">
+                                {Number(h.deliveryPrice) > 0 ? `${Number(h.deliveryPrice).toLocaleString("en-US")} د.ع` : "توصيل مجاني"}
+                              </span>
+                              <span>{h.name}</span>
                             </button>
                           </li>
                         ))}

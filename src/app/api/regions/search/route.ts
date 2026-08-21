@@ -28,15 +28,20 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const raw = searchParams.get("q")?.trim() ?? "";
+    const allRegions = await getCachedRegions();
 
-    if (raw.length < 2) {
-      return NextResponse.json({ regions: [] });
+    if (!raw || raw === "all") {
+      return NextResponse.json({
+        regions: allRegions.map((r) => ({
+          id: r.id,
+          name: r.name,
+          deliveryPrice: r.deliveryPrice.toString(),
+        })),
+      });
     }
 
     const normQ = normalizeRegionNameForMatch(raw);
     const tokens = normQ.split(/\s+/).filter((t) => t.length > 0);
-
-    const allRegions = await getCachedRegions();
 
     const strict = allRegions.filter((r) => {
       const normName = normalizeRegionNameForMatch(r.name);

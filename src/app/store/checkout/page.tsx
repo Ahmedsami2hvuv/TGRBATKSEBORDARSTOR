@@ -72,12 +72,26 @@ function CheckoutContent() {
     window.location.href = whatsappUrl;
   }, [state.ok, state.orderNumber, state.whatsappMessage]);
 
+  const [allRegions, setAllRegions] = useState<RegionHit[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const r = await fetch("/api/regions/search?q=all");
+        const j = (await r.json()) as { regions?: RegionHit[] };
+        if (j.regions) {
+          setAllRegions(j.regions);
+        }
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     const q = regionQuery.trim();
     if (searchTimer.current) clearTimeout(searchTimer.current);
 
-    if (q.length < 2) {
-      setRegionHits([]);
+    if (!q) {
+      setRegionHits(allRegions.slice(0, 15));
       return;
     }
 
@@ -86,17 +100,25 @@ function CheckoutContent() {
         try {
           const r = await fetch(`/api/regions/search?q=${encodeURIComponent(q)}`);
           const j = (await r.json()) as { regions?: RegionHit[] };
-          setRegionHits(j.regions ?? []);
+          const serverHits = j.regions ?? [];
+          
+          if (serverHits.length === 0 && allRegions.length > 0) {
+            const localHits = allRegions.filter(reg => reg.name.toLowerCase().includes(q.toLowerCase()));
+            setRegionHits(localHits.slice(0, 15));
+          } else {
+            setRegionHits(serverHits);
+          }
         } catch {
-          setRegionHits([]);
+          const localHits = allRegions.filter(reg => reg.name.toLowerCase().includes(q.toLowerCase()));
+          setRegionHits(localHits.slice(0, 15));
         }
       })();
-    }, 280);
+    }, 150);
 
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [regionQuery]);
+  }, [regionQuery, allRegions]);
 
   const subtotal = useMemo(
     () => cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
@@ -195,6 +217,11 @@ function CheckoutContent() {
                   ref={regionInputRef}
                   type="text"
                   value={regionQuery}
+                  onFocus={() => {
+                    if (regionHits.length === 0 && allRegions.length > 0) {
+                      setRegionHits(allRegions.slice(0, 15));
+                    }
+                  }}
                   onChange={(e) => {
                     const v = e.target.value;
                     setRegionQuery(v);
@@ -210,8 +237,8 @@ function CheckoutContent() {
                   }}
                   autoComplete="off"
                   required
-                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
-                  placeholder="مثال: حمدان البز أو جيكور حزبه قرب الجامع"
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition font-bold"
+                  placeholder="ابحث عن منطقتك أو اكتب اسمها (مثل: جيكور، حمدان...)"
                 />
                 {selectedRegion ? (
                   <p className="mt-2 text-xs font-bold text-emerald-700">
@@ -224,15 +251,38 @@ function CheckoutContent() {
                   </p>
                 ) : null}
 
-                {regionHits.length > 0 && !selectedRegion ? (
-                  <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
-                    <p className="text-xs font-black text-violet-900 mb-2">هل تقصد إحدى هذه المناطق؟</p>
+                {!selectedRegion && (regionHits.length > 0 || regionQuery.trim().length > 0) ? (
+                  <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50/60 p-3 shadow-lg">
+                    <p className="text-xs font-black text-violet-900 mb-2">المناطق المتاحة والاقتراحات:</p>
                     <ul className="max-h-52 overflow-auto space-y-1">
+                      {regionQuery.trim() && !regionHits.some(h => h.name.trim() === regionQuery.trim()) && (
+                        <li>
+                          <button
+                            type="button"
+                            className="w-full rounded-xl px-3 py-2.5 text-end text-sm font-black text-emerald-800 bg-emerald-100 hover:bg-emerald-200 transition border border-emerald-300 flex items-center justify-between"
+                            onClick={() => {
+                              const customRegion = {
+                                id: `custom_${Date.now()}`,
+                                name: regionQuery.trim(),
+                                deliveryPrice: "0"
+                              };
+                              setSelectedRegion(customRegion);
+                              setDeliveryPrice(0);
+                              setBaseDeliveryPrice(0);
+                              setRegionHits([]);
+                              setRegionFieldError(null);
+                            }}
+                          >
+                            <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">اختيار مخصص</span>
+                            <span>📍 اعتماد "{regionQuery.trim()}" كمنطقتك</span>
+                          </button>
+                        </li>
+                      )}
                       {regionHits.map((h) => (
                         <li key={h.id}>
                           <button
                             type="button"
-                            className="w-full rounded-xl px-3 py-2.5 text-end text-sm font-bold text-slate-800 hover:bg-white border border-transparent hover:border-violet-300 transition"
+                            className="w-full rounded-xl px-3 py-2.5 text-end text-sm font-bold text-slate-800 hover:bg-white hover:text-violet-700 border border-transparent hover:border-violet-300 transition flex items-center justify-between"
                             onClick={() => {
                               const currentInput = regionQuery;
                               setSelectedRegion(h);
