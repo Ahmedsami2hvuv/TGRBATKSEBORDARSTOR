@@ -159,38 +159,38 @@ export async function runAdminSuperSearch(
       : []),
     ...routeModeOr,
     ...(orderJsonMatchIds.length > 0 ? [{ id: { in: orderJsonMatchIds } }] : []),
-    { id: { contains: q, mode: "insensitive" as const } },
-    { summary: { contains: q, mode: "insensitive" as const } },
-    { orderType: { contains: q, mode: "insensitive" as const } },
-    { adminOrderCode: { contains: q, mode: "insensitive" as const } },
-    { submissionSource: { contains: q, mode: "insensitive" as const } },
-    { customerPhone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ customerPhone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { alternatePhone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ alternatePhone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { secondCustomerPhone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ secondCustomerPhone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { customerLandmark: { contains: q, mode: "insensitive" as const } },
-    { secondCustomerLandmark: { contains: q, mode: "insensitive" as const } },
-    { orderNoteTime: { contains: q, mode: "insensitive" as const } },
-    { shop: { name: { contains: q, mode: "insensitive" as const } } },
-    { customerRegion: { name: { contains: q, mode: "insensitive" as const } } },
-    { secondCustomerRegion: { name: { contains: q, mode: "insensitive" as const } } },
-    { courier: { name: { contains: q, mode: "insensitive" as const } } },
+    { id: { contains: q, mode: "insensitive" } },
+    { summary: { contains: q, mode: "insensitive" } },
+    { orderType: { contains: q, mode: "insensitive" } },
+    { adminOrderCode: { contains: q, mode: "insensitive" } },
+    { submissionSource: { contains: q, mode: "insensitive" } },
+    { customerPhone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ customerPhone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { alternatePhone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ alternatePhone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { secondCustomerPhone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ secondCustomerPhone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { customerLandmark: { contains: q, mode: "insensitive" } },
+    { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+    { orderNoteTime: { contains: q, mode: "insensitive" } },
+    { shop: { name: { contains: q, mode: "insensitive" } } },
+    { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+    { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+    { courier: { name: { contains: q, mode: "insensitive" } } },
     {
       submittedBy: {
         OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { phone: { contains: q, mode: "insensitive" as const } },
+          { name: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q, mode: "insensitive" } },
         ],
       },
     },
     {
       submittedByCompanyPreparer: {
         OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { phone: { contains: q, mode: "insensitive" as const } },
-          { notes: { contains: q, mode: "insensitive" as const } },
+          { name: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q, mode: "insensitive" } },
+          { notes: { contains: q, mode: "insensitive" } },
         ],
       },
     },
@@ -225,16 +225,16 @@ export async function runAdminSuperSearch(
     : [];
 
   const customerOrFilters: Prisma.CustomerWhereInput[] = [
-    { name: { contains: q, mode: "insensitive" as const } },
-    { phone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { alternatePhone: { contains: q, mode: "insensitive" as const } },
+    { name: { contains: q, mode: "insensitive" } },
+    { phone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { alternatePhone: { contains: q, mode: "insensitive" } },
     ...(qDigits
-      ? [{ alternatePhone: { contains: qDigits, mode: "insensitive" as const } }]
+      ? [{ alternatePhone: { contains: qDigits, mode: "insensitive" } }]
       : []),
-    { customerLandmark: { contains: q, mode: "insensitive" as const } },
-    { shop: { name: { contains: q, mode: "insensitive" as const } } },
-    { customerRegion: { name: { contains: q, mode: "insensitive" as const } } },
+    { customerLandmark: { contains: q, mode: "insensitive" } },
+    { shop: { name: { contains: q, mode: "insensitive" } } },
+    { customerRegion: { name: { contains: q, mode: "insensitive" } } },
   ];
 
   const customers = includesScope(params.scope, "customers")
@@ -250,11 +250,11 @@ export async function runAdminSuperSearch(
     : [];
 
   const shopOrFilters: Prisma.ShopWhereInput[] = [
-    { name: { contains: q, mode: "insensitive" as const } },
-    { ownerName: { contains: q, mode: "insensitive" as const } },
-    { phone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { region: { name: { contains: q, mode: "insensitive" as const } } },
+    { name: { contains: q, mode: "insensitive" } },
+    { ownerName: { contains: q, mode: "insensitive" } },
+    { phone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { region: { name: { contains: q, mode: "insensitive" } } },
   ];
 
   const shops = includesScope(params.scope, "shops")
@@ -267,9 +267,9 @@ export async function runAdminSuperSearch(
     : [];
 
   const courierOrFilters: Prisma.CourierWhereInput[] = [
-    { name: { contains: q, mode: "insensitive" as const } },
-    { phone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" as const } }] : []),
+    { name: { contains: q, mode: "insensitive" } },
+    { phone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" } }] : []),
   ];
 
   const couriers = includesScope(params.scope, "couriers")
@@ -281,10 +281,10 @@ export async function runAdminSuperSearch(
     : [];
 
   const employeeOrFilters: Prisma.EmployeeWhereInput[] = [
-    { name: { contains: q, mode: "insensitive" as const } },
-    { phone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { shop: { name: { contains: q, mode: "insensitive" as const } } },
+    { name: { contains: q, mode: "insensitive" } },
+    { phone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { shop: { name: { contains: q, mode: "insensitive" } } },
   ];
 
   const employees = includesScope(params.scope, "employees")
@@ -297,11 +297,11 @@ export async function runAdminSuperSearch(
     : [];
 
   const preparerOrFilters: Prisma.CompanyPreparerWhereInput[] = [
-    { name: { contains: q, mode: "insensitive" as const } },
-    { phone: { contains: q, mode: "insensitive" as const } },
-    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" as const } }] : []),
-    { notes: { contains: q, mode: "insensitive" as const } },
-    { telegramUserId: { contains: q, mode: "insensitive" as const } },
+    { name: { contains: q, mode: "insensitive" } },
+    { phone: { contains: q, mode: "insensitive" } },
+    ...(qDigits ? [{ phone: { contains: qDigits, mode: "insensitive" } }] : []),
+    { notes: { contains: q, mode: "insensitive" } },
+    { telegramUserId: { contains: q, mode: "insensitive" } },
   ];
 
   const companyPreparers = includesScope(params.scope, "preparers")
@@ -317,7 +317,7 @@ export async function runAdminSuperSearch(
   const regions = wantsRegions
     ? await prisma.region.findMany({
         where: {
-          name: { contains: q, mode: "insensitive" as const },
+          name: { contains: q, mode: "insensitive" },
         },
         orderBy: { updatedAt: "desc" },
         take: 80,

@@ -788,11 +788,11 @@ export async function handleTelegramAdminPrivateMessage(message: {
       const p = JSON.parse(session.payload || "{}");
       const phone = normalizeIraqMobileLocal11(txt);
       if (!phone) {
-        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ رقم الهاتف غير صحيح. يرجى إرسال رقم هاتف عراقي صالح:", { inline_keyboard: [] });
+        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ رقم الهاتف غير صحيح. يرجى إرسال رقم هاتف عراقي صالح:");
         return true;
       }
       const courier = await prisma.courier.create({
-        data: { name: p.name, phone, vehicleType: "motorcycle" }
+        data: { name: p.name, phone, vehicleType: "دراجة" }
       });
       await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
       await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة المندوب <b>${courier.name}</b> بنجاح!`, {
@@ -844,7 +844,7 @@ export async function handleTelegramAdminPrivateMessage(message: {
       const p = JSON.parse(session.payload || "{}");
       const price = parseAlfInputToDinarDecimalRequired(txt);
       if (!price.ok) {
-        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ السعر غير صالح. يرجى إرسال رقم (مثلاً 3.5):", { inline_keyboard: [] });
+        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ السعر غير صالح. يرجى إرسال رقم (مثلاً 3.5):");
         return true;
       }
       await prisma.region.update({ where: { id: p.id }, data: { deliveryPrice: new Decimal(price.value) } });
@@ -1273,7 +1273,7 @@ export async function handleTelegramAdminCallback(
           data: { step: "idle", payload: "" }
         });
 
-        await notifyTelegramNewOrder(order.id).catch(() => {});
+        await notifyTelegramNewOrder(order.id, botToken).catch(() => {});
         await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
         await editTelegramMessage(chatId, messageId, `✅ تم إنشاء الطلب السريع بنجاح!\n\nرقم الطلب: <b>#${order.orderNumber}</b>`, {

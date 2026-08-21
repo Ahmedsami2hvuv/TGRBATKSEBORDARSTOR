@@ -1,4 +1,4 @@
-﻿package com.aboakbar.admin
+package com.aboakbar.admin
 
 import android.content.Context
 import android.content.Intent
@@ -28,24 +28,24 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                             return
                         }
                     }
-                    val shopName = additionalData.optString("shopName", "â€”")
-                    val regionName = additionalData.optString("regionName", "â€”")
-                    val orderTime = additionalData.optString("orderTime", "ÙÙˆØ±ÙŠ")
-                    val orderType = additionalData.optString("orderType", "ØªÙˆØµÙŠÙ„")
+                    val shopName = additionalData.optString("shopName", "—")
+                    val regionName = additionalData.optString("regionName", "—")
+                    val orderTime = additionalData.optString("orderTime", "فوري")
+                    val orderType = additionalData.optString("orderType", "توصيل")
                     val subtotal = additionalData.optDouble("subtotal", 0.0)
 
-                    // 1. Ø¨Ù†Ø§Ø¡ ÙˆØ¹Ø±Ø¶ Ø¥Ø´Ø¹Ø§Ø± Ù†Ø¸Ø§Ù… ÙŠØ¯ÙˆÙŠ ÙÙˆØ±Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¨Ø±Ø¯Ø© Ø°Ùˆ Ø£ÙˆÙ„ÙˆÙŠØ© Ù‚ØµÙˆÙ‰ Ù„Ø¶Ù…Ø§Ù† Ø¸Ù‡ÙˆØ±Ù‡ ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ©
+                    // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة ذو أولوية قصوى لضمان ظهوره في الخلفية
                     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                     val channelId = "aboakbar_admin_notifications"
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channelName = "ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©"
+                        val channelName = "تنبيهات الطلبات الجديدة"
                         val channel = android.app.NotificationChannel(
                             channelId,
                             channelName,
                             android.app.NotificationManager.IMPORTANCE_HIGH
                         ).apply {
-                            description = "Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©"
+                            description = "إشعارات الطلبات الجديدة"
                             enableLights(true)
                             enableVibration(true)
                             vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
@@ -53,7 +53,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         notificationManager.createNotificationChannel(channel)
                     }
 
-                    // Ø¥Ø¹Ø¯Ø§Ø¯ Ù†ÙŠØ© ÙØªØ­ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ø¹Ù„Ù‰ ØµÙØ­Ø© Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© Ù…Ø¨Ø§Ø´Ø±Ø©
+                    // إعداد نية فتح التطبيق على صفحة الطلبات المعلقة مباشرة
                     val openIntent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending")
@@ -83,8 +83,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     }
                     val alertPendingIntent = android.app.PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
 
-                    val title = "ðŸ”” Ø·Ù„Ø¨ Ø¬Ø¯ÙŠØ¯: $shopName â€” $regionName"
-                    val body = "â° $orderTime | ðŸ“¦ $orderType | ðŸ’µ ${formatNumber(subtotal)} Ø¯.Ø¹"
+                    val title = "🔔 طلب جديد: $shopName — $regionName"
+                    val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
                     val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 
@@ -100,17 +100,17 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         .setContentIntent(pendingIntent)
                         .setFullScreenIntent(alertPendingIntent, true)
 
-                    // ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø§Ù‡ØªØ²Ø§Ø² Ø§Ù„Ù‚ÙˆÙŠ Ù„Ù„ØªÙ†Ø¨ÙŠÙ‡ Ø§Ù„ÙÙˆØ±ÙŠ
+                    // تفعيل الاهتزاز القوي للتنبيه الفوري
                     val pattern = longArrayOf(0, 400, 200, 400, 200, 400)
                     builder.setVibrate(pattern)
 
                     notificationManager.notify(orderNumber, builder.build())
 
-                    // 2. ØªØ´ØºÙŠÙ„ Ø§Ù„Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø© Ø§Ù„Ø¥Ø¬Ø¨Ø§Ø±ÙŠØ© Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙˆÙ‚ ÙƒÙ„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª
+                    // 2. تشغيل الشاشة المنبثقة الإجبارية مباشرة فوق كل التطبيقات
                     context.startActivity(alertIntent)
 
                 } catch (e: Exception) {
-                    // ØªØ¬Ø§Ù‡Ù„ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡
+                    // تجاهل الأخطاء
                 }
             } else if (type == "store_order") {
                 try {
@@ -125,13 +125,13 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     val channelId = "aboakbar_admin_notifications"
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channelName = "إشعارات المدير"
+                        val channelName = "??????? ??????"
                         val channel = android.app.NotificationChannel(
                             channelId,
                             channelName,
                             android.app.NotificationManager.IMPORTANCE_HIGH
                         ).apply {
-                            description = "إشعارات الطلبات لمدير النظام"
+                            description = "??????? ??????? ?? ?????? ??????????"
                             enableLights(true)
                             enableVibration(true)
                             vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
@@ -168,8 +168,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     }
                     val alertPendingIntent = android.app.PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
 
-                    val title = "🛒 طلب من المتجر: $regionName"
-                    val body = "⏰ $orderTime | 📦 عدد المنتجات: " + additionalData.optInt("pendingCount", 1)
+                    val title = "?? ??? ?? ??????: $regionName"
+                    val body = "? $orderTime | ?? ??? ????????: " + additionalData.optInt("pendingCount", 1)
 
                     val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 
@@ -195,23 +195,23 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 }
             } else if (type == "preparer_withdrawal") {
                 try {
-                    val preparerName = additionalData.optString("preparerName", "â€”")
+                    val preparerName = additionalData.optString("preparerName", "—")
                     val amount = additionalData.optString("amount", "0")
                     val remain = additionalData.optString("remain", "0")
-                    val time = additionalData.optString("time", "â€”")
+                    val time = additionalData.optString("time", "—")
 
-                    // 1. Ø¨Ù†Ø§Ø¡ ÙˆØ¹Ø±Ø¶ Ø¥Ø´Ø¹Ø§Ø± Ù†Ø¸Ø§Ù… ÙŠØ¯ÙˆÙŠ ÙÙˆØ±Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¨Ø±Ø¯Ø©
+                    // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة
                     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                     val channelId = "aboakbar_admin_notifications"
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channelName = "ØªÙ†Ø¨ÙŠÙ‡Ø§Øª ØªØ³ÙˆÙŠØ© Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø¬Ù‡Ø²ÙŠÙ†"
+                        val channelName = "تنبيهات تسوية حساب المجهزين"
                         val channel = android.app.NotificationChannel(
                             channelId,
                             channelName,
                             android.app.NotificationManager.IMPORTANCE_HIGH
                         ).apply {
-                            description = "Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ØªØ³ÙˆÙŠØ© Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø¬Ù‡Ø²ÙŠÙ†"
+                            description = "إشعارات تسوية حساب المجهزين"
                             enableLights(true)
                             enableVibration(true)
                             vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
@@ -219,7 +219,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         notificationManager.createNotificationChannel(channel)
                     }
 
-                    // Ø¥Ø¹Ø¯Ø§Ø¯ Ù†ÙŠØ© ÙØªØ­ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ø¹Ù„Ù‰ ØµÙØ­Ø© Ø¯ÙØªØ± Ø§Ù„Ø¯ÙŠÙˆÙ† Ù…Ø¨Ø§Ø´Ø±Ø©
+                    // إعداد نية فتح التطبيق على صفحة دفتر الديون مباشرة
                     val openIntent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/credit-book")
@@ -246,8 +246,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     }
                     val alertPendingIntent = android.app.PendingIntent.getActivity(context, 999, alertIntent, alertFlags)
 
-                    val title = "ðŸ’µ Ø·Ù„Ø¨ ØªØ³ÙˆÙŠØ© Ø­Ø³Ø§Ø¨ Ù…Ø¬Ù‡Ø²: $preparerName"
-                    val body = "Ø§Ù„Ù…Ø¨Ù„Øº: $amount | Ø§Ù„Ù…ØªØ¨Ù‚ÙŠ: $remain"
+                    val title = "💵 طلب تسوية حساب مجهز: $preparerName"
+                    val body = "المبلغ: $amount | المتبقي: $remain"
 
                     val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 
@@ -268,11 +268,11 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
                     notificationManager.notify(999, builder.build())
 
-                    // 2. ØªØ´ØºÙŠÙ„ Ø§Ù„Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø© Ø§Ù„Ø¥Ø¬Ø¨Ø§Ø±ÙŠØ© Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙˆÙ‚ ÙƒÙ„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª
+                    // 2. تشغيل الشاشة المنبثقة الإجبارية مباشرة فوق كل التطبيقات
                     context.startActivity(alertIntent)
 
                 } catch (e: Exception) {
-                    // ØªØ¬Ø§Ù‡Ù„ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡
+                    // تجاهل الأخطاء
                 }
             }
         }
