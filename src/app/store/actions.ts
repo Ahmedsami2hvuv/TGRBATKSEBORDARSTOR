@@ -163,10 +163,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       // تنبيه الإدارة للمشترك
       await notifyTelegramStoreOrder(draft.id);
-      const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-      await notifyOneSignalAdminStoreOrder(draft.id);
       const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
-      void pushNotifyAdminsNewStoreOrder(draft.id);
+      await pushNotifyAdminsNewStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       return {
@@ -208,8 +206,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           });
 
           await notifyTelegramStoreOrder(existingOrder.id);
-          const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-          await notifyOneSignalAdminStoreOrder(existingOrder.id);
+          const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
+          await pushNotifyAdminsNewStoreOrder(existingOrder.id);
 
           const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
           return {
@@ -271,12 +269,10 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       });
     }
 
-    // تنبيهات فورية لقسم التجهيز والإشعار العائم المباشر للأدمن
-    await notifyTelegramStoreOrder(draft.id);
-    const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-    await notifyOneSignalAdminStoreOrder(draft.id);
-    const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
-    await pushNotifyAdminsNewStoreOrder(draft.id);
+      // تنبيهات فورية لقسم التجهيز والتطبيق الخاص بالادارة
+      await notifyTelegramStoreOrder(draft.id);
+      const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
+      await pushNotifyAdminsNewStoreOrder(draft.id);
 
     const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);

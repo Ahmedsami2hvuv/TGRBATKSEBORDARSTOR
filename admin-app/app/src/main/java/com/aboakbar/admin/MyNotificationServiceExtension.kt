@@ -114,12 +114,15 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 }
             } else if (type == "store_order") {
                 try {
+                    val orderNumber = additionalData.optInt("orderNumber", 0)
+                    if (orderNumber > 0) {
+                        event.preventDefault()
+                    }
                     val shopName = additionalData.optString("shopName", "")
                     val regionName = additionalData.optString("regionName", "")
                     val orderTime = additionalData.optString("orderTime", "")
                     val orderType = additionalData.optString("orderType", "")
                     val subtotal = additionalData.optDouble("subtotal", 0.0)
-                    val orderNumber = additionalData.optInt("orderNumber", 0)
 
                     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                     val channelId = "aboakbar_admin_store_alerts"
@@ -171,14 +174,14 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
                     val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 
-                    val builder = NotificationCompat.Builder(context, channelId)
+                    val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
                         .setSmallIcon(R.drawable.ic_stat_onesignal_default)
                         .setLargeIcon(largeIcon)
                         .setContentTitle(title)
                         .setContentText(body)
-                        .setPriority(NotificationCompat.PRIORITY_MAX)
-                        .setCategory(NotificationCompat.CATEGORY_CALL)
-                        .setDefaults(NotificationCompat.DEFAULT_ALL)
+                        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
+                        .setCategory(androidx.core.app.NotificationCompat.CATEGORY_CALL)
+                        .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                         .setAutoCancel(true)
                         .setContentIntent(pendingIntent)
                         .setFullScreenIntent(alertPendingIntent, true)
@@ -187,8 +190,10 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     builder.setVibrate(pattern)
 
                     notificationManager.notify(orderNumber, builder.build())
-                    context.startActivity(alertIntent)
-
+                    
+                    if (android.provider.Settings.canDrawOverlays(context)) {
+                        context.startActivity(alertIntent)
+                    }
                 } catch (e: Exception) {
                 }
             } else if (type == "preparer_withdrawal") {
