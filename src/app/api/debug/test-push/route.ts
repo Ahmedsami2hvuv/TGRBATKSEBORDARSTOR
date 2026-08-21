@@ -1,27 +1,19 @@
+﻿import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { pushNotifyAdminsNewStoreOrder } from '@/lib/web-push-server';
 
-import { NextResponse } from 'next/server';
-import { sendOneSignalNotification } from '@/lib/onesignal-server';
-
-export async function GET() {
-  const result1 = await sendOneSignalNotification({
-    title: 'Test Default Sound',
-    body: 'This should ring',
-    url: '/',
-    externalIds: ['admin_global'],
-    targetApp: 'admin',
-    data: { type: 'store_order' }
-  });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  let draftId = searchParams.get('id');
   
-  const result2 = await sendOneSignalNotification({
-    title: 'Test Hasim Sound',
-    body: 'This should ring with hasim',
-    url: '/',
-    externalIds: ['admin_global'],
-    targetApp: 'admin',
-    sound: 'hasim_alert',
-    data: { type: 'store_order' }
-  });
-
-  return NextResponse.json({ result1, result2 });
+  if (!draftId) {
+    const draft = await prisma.companyPreparerShoppingDraft.findFirst({
+      orderBy: { createdAt: 'desc' }
+    });
+    if (!draft) return NextResponse.json({ error: 'No draft found' });
+    draftId = draft.id;
+  }
+  
+  await pushNotifyAdminsNewStoreOrder(draftId);
+  return NextResponse.json({ success: true, draftId });
 }
-
