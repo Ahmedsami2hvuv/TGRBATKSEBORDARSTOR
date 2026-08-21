@@ -60,7 +60,7 @@ export function MandoubFloatingMap({
           initial={{ opacity: 0, scale: 0.9, y: 50 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 50 }}
-          className="fixed bottom-24 right-4 z-[9999] w-[300px] sm:w-[350px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+          className="fixed top-1/4 right-4 z-[999999] w-[300px] sm:w-[350px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
           style={{ touchAction: "none" }} // يمنع تداخل السحب مع تمرير الشاشة
         >
           {/* شريط السحب العلوي */}
