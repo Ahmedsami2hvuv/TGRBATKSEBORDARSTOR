@@ -414,33 +414,39 @@ export async function notifyOneSignalAdminStoreOrder(draftId: string) {
   });
   if (!draft) return;
 
-  const orderTime = draft.orderTime || "????";
-  const regionName = draft.customerRegion?.name || "???? ?????";
-  const shopName = "?????? ??????????";
+  const orderTime = draft.orderTime || "فوري";
+  const regionName = draft.customerRegion?.name || "منطقة عامة";
+  const shopName = "المتجر الإلكتروني (خصيب ستور)";
   const orderNumber = draft.draftNumber;
   const products = (draft.data as any)?.products || [];
   const pendingCount = products.length;
   const subtotal = Number((draft.data as any)?.orderSubtotalAlf || 0);
 
-  const title = `??? ?? ?????? ??????????: #${orderNumber}`;
-  const body = `??? ?????: ${orderTime} | ???????: ${regionName} | ????????: ${pendingCount}`;
+  const title = `🚨 طلب جديد حازم من المتجر الإلكتروني: #${orderNumber}`;
+  const body = `المتجر الإلكتروني | وقت الطلب: ${orderTime} | المنطقة: ${regionName} | عدد المواد: ${pendingCount}`;
 
+  // إرسال الإشعار الحازم الفوري لتطبيق الأدمن OneSignal
   await sendOneSignalNotification({
     title,
     body,
     url: "/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing",
-    externalIds: [],
+    externalIds: ["admin_global", "admin"],
     targetApp: "admin",
+    sound: "hasim_alert",
     data: {
       type: "store_order",
+      isStoreOrder: true,
+      isHasimAlert: true,
       orderNumber: orderNumber,
       shopName: shopName,
       regionName: regionName,
       orderTime: orderTime,
-      orderType: "????? ??????",
+      orderType: "طلب متجر حازم",
       subtotal: subtotal,
       pendingCount: pendingCount
     }
   });
+
+  console.log(`[OneSignal] Sent HASIM store order notification for draft #${orderNumber}`);
 }
 
