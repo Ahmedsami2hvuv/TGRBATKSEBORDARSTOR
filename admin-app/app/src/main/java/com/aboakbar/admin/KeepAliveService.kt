@@ -1,4 +1,4 @@
-package com.aboakbar.admin
+﻿package com.aboakbar.admin
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -33,8 +33,8 @@ class KeepAliveService : Service() {
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, pendingIntentFlags)
 
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("??????? ????")
-            .setContentText("??????? ???? ?? ??????? ????? ??? ??????")
+            .setContentTitle("التطبيق يعمل")
+            .setContentText("التطبيق يعمل في الخلفية لتلقي الطلبات")
             .setSmallIcon(R.drawable.ic_notification_small)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -53,10 +53,10 @@ class KeepAliveService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "???? ???? ???????",
+                "خدمة بقاء التطبيق",
                 NotificationManager.IMPORTANCE_MIN
             )
-            serviceChannel.description = "???? ????? ???? ??????? ???? ?? ?????"
+            serviceChannel.description = "يمنع إغلاق نظام الأندرويد للتطبيق في الخلفية"
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
         }
