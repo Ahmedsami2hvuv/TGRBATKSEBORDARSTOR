@@ -360,8 +360,8 @@ export default function CartPage() {
             )}
             
             <input type="hidden" name="cart" value={JSON.stringify(cart)} />
-            <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
-            <input type="hidden" name="regionName" value={selectedRegion?.name || regionQuery} />
+            <input type="hidden" name="regionId" value={selectedRegion?.id || `custom_region`} />
+            <input type="hidden" name="regionName" value={selectedRegion?.name || regionQuery || "منطقة عامة"} />
             <input 
               type="hidden" 
               name="addToOrderId" 
