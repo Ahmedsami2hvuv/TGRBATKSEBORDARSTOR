@@ -92,20 +92,38 @@ export function MandoubFloatingMap({
           </div>
           
           {/* محتوى الخريطة */}
-          <div className="h-[320px] w-full bg-slate-50 relative pointer-events-auto" onPointerDownCapture={(e) => e.stopPropagation()}>
+          <div className="h-[320px] w-full bg-slate-50 relative pointer-events-auto flex flex-col" onPointerDownCapture={(e) => e.stopPropagation()}>
              {isLoading ? (
                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-3">
                   <RefreshCw className="animate-spin" size={24} />
                   <span className="text-sm font-medium">جاري تحديد الموقع...</span>
                </div>
              ) : embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  className="h-full w-full border-0"
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+                <>
+                  <iframe
+                    src={embedUrl}
+                    className="flex-1 w-full border-0"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  {/* زر بدء الملاحة يفتح تطبيق الخرائط */}
+                  <div className="bg-white p-2 border-t border-slate-200">
+                    <a
+                      href={(() => {
+                        const coords = extractLatLngFromLocationInput(locationUrl);
+                        if (coords) return `https://www.google.com/maps/dir/?api=1&destination=${coords.latitude},${coords.longitude}`;
+                        // إذا كان الرابط لا يحتوي على إحداثيات مباشرة (مثل الروابط المختصرة)، سنحاول الاعتماد على الرابط نفسه
+                        return locationUrl;
+                      })()}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700 active:scale-95 shadow-md transition-all"
+                    >
+                      🚀 بدء المسار (الملاحة)
+                    </a>
+                  </div>
+                </>
              ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center gap-2">
                   <span className="text-sm">لم نتمكن من عرض الخريطة المصغرة.</span>
