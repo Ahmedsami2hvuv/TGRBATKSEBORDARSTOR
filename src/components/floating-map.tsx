@@ -5,17 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, RefreshCw, Map as MapIcon } from "lucide-react";
 import { extractLatLngFromLocationInput } from "@/lib/order-location";
 
-interface MandoubFloatingMapProps {
+interface FloatingMapProps {
   isOpen: boolean;
   onClose: () => void;
   locationUrl: string;
 }
 
-export function MandoubFloatingMap({
+export function FloatingMap({
   isOpen,
   onClose,
   locationUrl,
-}: MandoubFloatingMapProps) {
+}: FloatingMapProps) {
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
