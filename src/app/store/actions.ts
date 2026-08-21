@@ -129,20 +129,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       }
     }
 
-    if (!existingDraft && phoneLocal) {
-      try {
-        const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-        existingDraft = await prisma.companyPreparerShoppingDraft.findFirst({
-          where: {
-            customerPhone: phoneLocal,
-            createdAt: { gte: twoDaysAgo }
-          },
-          orderBy: { createdAt: "desc" }
-        });
-      } catch (err) {
-        console.error("Failed to find existing draft by phone:", err);
-      }
-    }
+    // لا نقوم بدمج الطلبات تلقائياً بالهاتف مطلقاً، يُنشأ كل طلب كطلب جديد فريد ومستقل دائماً إلا إذا حدد المستخدم addToOrderId صراحةً
 
     if (existingDraft) {
       targetOrderNumber = String(existingDraft.draftNumber || targetOrderNumber || addToOrderId);
