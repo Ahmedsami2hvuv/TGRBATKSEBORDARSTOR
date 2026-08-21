@@ -549,14 +549,14 @@ export async function notifyTelegramStoreOrderUpdate(orderId: string, cart: any[
     if (!order) return;
 
     const text = [
-      ‏🛍 <b>إضافة جديدة لطلب من المتجر</b>,
-      ‏🔖 <b>رقم الطلب الأصلي:</b> ‎\u200E,
-      ‏👤 <b>الزبون:</b> ,
-      ‏-------------------------,
-      ‏<b>المنتجات المضافة حديثاً:</b>,
-      ...cart.map(i => ‏▫️  ()),
-      ‏-------------------------,
-      ‏🔗 <a href="/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing">فتح لوحة الطلبات</a>
+      `\u200F🛍 <b>إضافة جديدة لطلب من المتجر</b>`,
+      `\u200F🔖 <b>رقم الطلب الأصلي:</b> \u200E${order.orderNumber}\u200E`,
+      `\u200F👤 <b>الزبون:</b> ${escapeTelegramHtml(order.customerName || "?")}`,
+      `\u200F-------------------------`,
+      `\u200F<b>المنتجات المضافة حديثاً:</b>`,
+      ...cart.map(i => `\u200F▫️ ${escapeTelegramHtml(i.name)} (${i.quantity || 1})`),
+      `\u200F-------------------------`,
+      `\u200F🔗 <a href="${getPublicAppUrl()}/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing">فتح لوحة الطلبات</a>`
     ].join("\n");
 
     const notificationBotToken = await getBotTokenByPurpose("notification");

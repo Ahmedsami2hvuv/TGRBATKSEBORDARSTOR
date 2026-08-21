@@ -319,8 +319,8 @@ export async function pushNotifyAdminsStoreOrderUpdated(orderId: string, addedCo
     const shopName = "المتجر الإلكتروني (خصيب ستور)";
     const orderNumber = draft.orderNumber;
 
-    const title = 🚨 إضافة لطلب متجر خصيب: #;
-    const body = تم إضافة  منتجات جديدة للطلب الحالي بقيمة  د.ع;
+    const title = `🚨 إضافة لطلب متجر خصيب: #${orderNumber}`;
+    const body = `تم إضافة ${addedCount} منتجات جديدة للطلب الحالي بقيمة ${addedSubtotal} د.ع`;
 
     const adminExternalIds = ["admin_global", "admin"];
     const customData = {
@@ -344,8 +344,8 @@ export async function pushNotifyAdminsStoreOrderUpdated(orderId: string, addedCo
     await sendToSubscriptions(subs, {
       title,
       body,
-      url: ${getPublicAppUrl()}/orders/pending?tab=preparing,
-      tag: kse-push-admin-store-update--,
+      url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending?tab=preparing`,
+      tag: `kse-push-admin-store-update-${orderNumber}-${Date.now()}`,
       sound: "hasim_alert",
     }, adminExternalIds, customData);
 
