@@ -125,13 +125,13 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     val channelId = "aboakbar_admin_notifications"
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channelName = "??????? ??????"
+                        val channelName = "إشعارات المتجر"
                         val channel = android.app.NotificationChannel(
                             channelId,
                             channelName,
                             android.app.NotificationManager.IMPORTANCE_HIGH
                         ).apply {
-                            description = "??????? ??????? ?? ?????? ??????????"
+                            description = "إشعارات الطلبات من المتجر الإلكتروني"
                             enableLights(true)
                             enableVibration(true)
                             vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
@@ -168,8 +168,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     }
                     val alertPendingIntent = android.app.PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
 
-                    val title = "?? ??? ?? ??????: $regionName"
-                    val body = "? $orderTime | ?? ??? ????????: " + additionalData.optInt("pendingCount", 1)
+                    val title = "🛒 طلب من المتجر: $regionName"
+                    val body = "⏰ $orderTime | 📦 عدد المنتجات: " + additionalData.optInt("pendingCount", 1)
 
                     val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 

@@ -153,6 +153,9 @@ export default function CartPage() {
         window.dispatchEvent(new Event("cart-updated"));
       }
       setCart([]);
+        setAddToOrderId(null);
+        hasRedirectedToWhatsappRef.current = false;
+
     } else {
       const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
@@ -169,6 +172,9 @@ export default function CartPage() {
         window.dispatchEvent(new Event("cart-updated"));
       }
       setCart([]);
+        setAddToOrderId(null);
+        hasRedirectedToWhatsappRef.current = false;
+
     }
 
     const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(finalWhatsappMessage)}`;
