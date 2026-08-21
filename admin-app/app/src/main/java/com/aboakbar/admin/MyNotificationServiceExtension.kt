@@ -122,20 +122,18 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     val orderNumber = additionalData.optInt("orderNumber", 0)
 
                     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                    val channelId = "aboakbar_admin_notifications"
+                    val channelId = "aboakbar_admin_store_alerts"
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channelName = "إشعارات المتجر"
+                        val channelName = "طلبات المتجر"
                         val channel = android.app.NotificationChannel(
                             channelId,
                             channelName,
                             android.app.NotificationManager.IMPORTANCE_HIGH
-                        ).apply {
-                            description = "إشعارات الطلبات من المتجر الإلكتروني"
-                            enableLights(true)
-                            enableVibration(true)
-                            vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
-                        }
+                        )
+                        channel.description = "تنبيهات طلبات متجر خصيب ستور"
+                        channel.enableVibration(true)
+                        channel.vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
                         notificationManager.createNotificationChannel(channel)
                     }
 
