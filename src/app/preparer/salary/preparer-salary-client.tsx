@@ -23,7 +23,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     isBeforeEightPM: boolean;
     hasPinCode: boolean;
     pinDisabled: boolean;
-    unwithdrawnDays?: Array<{ date: string; morning: boolean; evening: boolean; amount: number }>;
+    unwithdrawnDays?: Array<{ date: string; morning: boolean; evening: boolean; amount: number; isToday?: boolean }>;
     rawAccumulatedSalary?: number;
     alreadyWithdrawnAlf?: number;
   } | null>(null);
@@ -394,25 +394,26 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             </h3>
             <div className="space-y-3">
               {stats.unwithdrawnDays.map((day: any) => (
-                <div key={day.date} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800">
+                <div key={day.date} className={`flex items-center justify-between p-3.5 rounded-2xl border ${day.isToday ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/60' : 'bg-orange-50/80 dark:bg-orange-950/30 border-orange-200/60 dark:border-orange-800/60'}`}>
                   <div className="text-right">
-                    <span className="block text-xs font-bold text-slate-700 dark:text-slate-350">
+                    <span className={`block text-xs font-bold ${day.isToday ? 'text-emerald-800 dark:text-emerald-300' : 'text-orange-800 dark:text-orange-300'}`}>
                       {new Date(day.date).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                      {day.isToday && " (اليوم)"}
                     </span>
                     <span className="inline-flex gap-2 mt-1">
                       {day.morning && (
-                        <span className="text-[10px] font-black bg-sky-100 text-sky-850 px-2 py-0.5 rounded-lg leading-none">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg leading-none ${day.isToday ? 'bg-emerald-200/60 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-orange-200/60 text-orange-900 dark:bg-orange-900/50 dark:text-orange-200'}`}>
                           الشفت الصباحي
                         </span>
                       )}
                       {day.evening && (
-                        <span className="text-[10px] font-black bg-indigo-100 text-indigo-850 px-2 py-0.5 rounded-lg leading-none">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg leading-none ${day.isToday ? 'bg-emerald-200/60 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-orange-200/60 text-orange-900 dark:bg-orange-900/50 dark:text-orange-200'}`}>
                           الشفت المسائي
                         </span>
                       )}
                     </span>
                   </div>
-                  <div className="text-left font-black text-emerald-600 dark:text-emerald-400">
+                  <div className={`text-left font-black ${day.isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}>
                     +{day.amount} الف
                   </div>
                 </div>

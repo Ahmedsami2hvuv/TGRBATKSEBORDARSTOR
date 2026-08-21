@@ -2211,9 +2211,13 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       date: dayKey,
       morning: data.morning,
       evening: data.evening,
-      amount
+      amount,
+      isToday: dayKey === todayKey
     };
   });
+
+  // فرز الأيام تنازلياً بحيث يكون الأحدث (أو اليوم الحالي) في الأعلى
+  unwithdrawnDays.sort((a, b) => b.date.localeCompare(a.date));
 
   return {
     dailySalary,
