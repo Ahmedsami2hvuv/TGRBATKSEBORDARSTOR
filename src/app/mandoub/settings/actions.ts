@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function updateCourierSetting(
   auth: { c: string; exp: string; s: string },
-  settingName: "showLocationBtn" | "useFloatingMap" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "rotate180Photos",
+  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "rotate180Photos",
   value: boolean
 ) {
   const v = verifyDelegatePortalQuery(auth.c, auth.exp || undefined, auth.s);
@@ -21,7 +21,6 @@ export async function updateCourierSetting(
 
   const allowedSettings = [
     "showLocationBtn",
-    "useFloatingMap",
     "showDoorBtn",
     "showCallBtn",
     "showWhatsAppBtn",
@@ -44,6 +43,5 @@ export async function updateCourierSetting(
 
   revalidatePath("/mandoub");
   revalidatePath(`/mandoub/order`);
-  revalidatePath(`/mandoub/settings`);
   return { ok: true };
 }

@@ -12,7 +12,6 @@ import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagno
 
 type CourierSettings = {
   showLocationBtn: boolean;
-  useFloatingMap: boolean;
   showDoorBtn: boolean;
   showCallBtn: boolean;
   showWhatsAppBtn: boolean;
@@ -92,12 +91,6 @@ export default function CourierSettingsClient({
       icon: "📍",
       title: "زر الموقع الجغرافي (GPS)",
       desc: "إظهار أو إخفاء زر الانتقال للخريطة من خارج تفاصيل الطلب",
-    },
-    {
-      key: "useFloatingMap" as const,
-      icon: "🗺️",
-      title: "متصفح الخرائط المصغر",
-      desc: "فتح الخرائط في متصفح عائم بداخل الطلبية. (إيقافه يعيد فتح الخرائط في التطبيق الخارجي)",
     },
     {
       key: "showDoorBtn" as const,

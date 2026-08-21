@@ -880,7 +880,6 @@ export default async function MandoubPage({ searchParams }: Props) {
       adminAudioUrl: o.adminVoiceNoteUrl,
       showDoorBtn: courier.showDoorBtn,
       showLocationBtn: courier.showLocationBtn,
-      useFloatingMap: courier.useFloatingMap,
       showCallBtn: courier.showCallBtn,
       showWhatsAppBtn: courier.showWhatsAppBtn,
       showNotesBtn: courier.showNotesBtn,

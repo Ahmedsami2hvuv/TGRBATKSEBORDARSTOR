@@ -24,7 +24,6 @@ import { MandoubOrderMoneyFlow } from "./mandoub-order-money-flow";
 import { MandoubOrderImageQuick } from "./mandoub-order-image-quick";
 import { MandoubQuickDoorCapture } from "./mandoub-quick-door";
 import { MandoubQuickDoorSecondCapture } from "./mandoub-quick-door-second";
-import { MandoubFloatingMap } from "./mandoub-floating-map";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
@@ -122,7 +121,6 @@ export function OrderDetailSection({
   courierSettings?: {
     showDoorBtn?: boolean;
     showLocationBtn?: boolean;
-    useFloatingMap?: boolean;
     showCallBtn?: boolean;
     showWhatsAppBtn?: boolean;
     showNotesBtn?: boolean;
@@ -170,7 +168,7 @@ export function OrderDetailSection({
   }, [isModal]);
 
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [floatingMapUrl, setFloatingMapUrl] = useState<string | null>(null);
+
 
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
@@ -396,25 +394,18 @@ export function OrderDetailSection({
                         {courierSettings?.showLocationBtn !== false && (
                           <>
                             {mergedCustomerLocationUrl ? (
-                              <button
-                                type="button"
-                                onClick={(e) => { 
-                                  e.preventDefault(); 
-                                  const useFloatingMap = courierSettings?.useFloatingMap !== false;
-                                  if (useFloatingMap) {
-                                    setFloatingMapUrl(mergedCustomerLocationUrl);
-                                  } else {
-                                    window.open(mergedCustomerLocationUrl, "_blank");
-                                  }
-                                }}
-                                className="inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
+                              <a 
+                                href={mergedCustomerLocationUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
                                 style={{
                                   fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
                                   height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                                 }}
                               >
-                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="🗺️" width={16} height={16} />
-                              </button>
+                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                              </a>
                             ) : (
                               <MandoubUploadLocationInline 
                                 orderId={order.id} 
@@ -546,25 +537,18 @@ export function OrderDetailSection({
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
-                              <button
-                                type="button"
-                                onClick={(e) => { 
-                                  e.preventDefault(); 
-                                  const useFloatingMap = courierSettings?.useFloatingMap !== false;
-                                  if (useFloatingMap) {
-                                    setFloatingMapUrl(secondLocMerged);
-                                  } else {
-                                    window.open(secondLocMerged, "_blank");
-                                  }
-                                }}
-                                className="inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
+                              <a 
+                                href={secondLocMerged} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
                                 style={{
                                   fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
                                   height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                                 }}
                               >
-                                📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="🗺️" width={16} height={16} />
-                              </button>
+                                📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                              </a>
                           ) : (
                             <MandoubUploadLocationInline 
                               orderId={order.id} 
@@ -1023,12 +1007,6 @@ export function OrderDetailSection({
         />
       )}
 
-      {/* خريطة مصغرة عائمة للمندوب */}
-      <MandoubFloatingMap
-        isOpen={!!floatingMapUrl}
-        onClose={() => setFloatingMapUrl(null)}
-        locationUrl={floatingMapUrl || ""}
-      />
     </section>
   );
 }

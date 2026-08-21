@@ -7,7 +7,6 @@ import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export const metadata = {
   title: "إعدادات المندوب",
@@ -66,7 +65,6 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         phone: true,
         blocked: true,
         availableForAssignment: true,
-        useFloatingMap: true,
         showLocationBtn: true,
         showDoorBtn: true,
         showCallBtn: true,
@@ -93,7 +91,6 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
 
     const initialSettings = {
       showLocationBtn: courier.showLocationBtn,
-      useFloatingMap: courier.useFloatingMap,
       showDoorBtn: courier.showDoorBtn,
       showCallBtn: courier.showCallBtn,
       showWhatsAppBtn: courier.showWhatsAppBtn,

@@ -764,13 +764,12 @@ export function MandoubOrderTable({
                 secondSmartHintLine={activeOrderData.secondSmartHintLine}
                 icons={icons}
                 courierSettings={{
-                  showDoorBtn: (activeOrderData as any).showDoorBtn ?? true,
-                  showLocationBtn: (activeOrderData as any).showLocationBtn ?? true,
-                  useFloatingMap: (activeOrderData as any).useFloatingMap ?? true,
-                  showCallBtn: (activeOrderData as any).showCallBtn ?? true,
-                  showWhatsAppBtn: (activeOrderData as any).showWhatsAppBtn ?? true,
-                  showNotesBtn: (activeOrderData as any).showNotesBtn ?? true,
-                  showVoiceNotesBtn: (activeOrderData as any).showVoiceNotesBtn ?? true,
+                  showDoorBtn: true,
+                  showLocationBtn: true,
+                  showCallBtn: true,
+                  showWhatsAppBtn: true,
+                  showNotesBtn: true,
+                  showVoiceNotesBtn: true,
                 }}
                 isModal={true}
                 customWaButtons={customWaButtons}
