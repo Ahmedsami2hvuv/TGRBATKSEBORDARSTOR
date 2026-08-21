@@ -122,6 +122,7 @@ export function OrderDetailSection({
   courierSettings?: {
     showDoorBtn?: boolean;
     showLocationBtn?: boolean;
+    useFloatingMap?: boolean;
     showCallBtn?: boolean;
     showWhatsAppBtn?: boolean;
     showNotesBtn?: boolean;
@@ -399,13 +400,11 @@ export function OrderDetailSection({
                                 type="button"
                                 onClick={(e) => { 
                                   e.preventDefault(); 
-                                  if (typeof window !== "undefined") {
-                                    const useFloatingMap = localStorage.getItem("kse_floating_map_enabled") !== "false";
-                                    if (useFloatingMap) {
-                                      setFloatingMapUrl(mergedCustomerLocationUrl);
-                                    } else {
-                                      window.open(mergedCustomerLocationUrl, "_blank");
-                                    }
+                                  const useFloatingMap = courierSettings?.useFloatingMap !== false;
+                                  if (useFloatingMap) {
+                                    setFloatingMapUrl(mergedCustomerLocationUrl);
+                                  } else {
+                                    window.open(mergedCustomerLocationUrl, "_blank");
                                   }
                                 }}
                                 className="inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
@@ -551,13 +550,11 @@ export function OrderDetailSection({
                                 type="button"
                                 onClick={(e) => { 
                                   e.preventDefault(); 
-                                  if (typeof window !== "undefined") {
-                                    const useFloatingMap = localStorage.getItem("kse_floating_map_enabled") !== "false";
-                                    if (useFloatingMap) {
-                                      setFloatingMapUrl(secondLocMerged);
-                                    } else {
-                                      window.open(secondLocMerged, "_blank");
-                                    }
+                                  const useFloatingMap = courierSettings?.useFloatingMap !== false;
+                                  if (useFloatingMap) {
+                                    setFloatingMapUrl(secondLocMerged);
+                                  } else {
+                                    window.open(secondLocMerged, "_blank");
                                   }
                                 }}
                                 className="inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"

@@ -21,6 +21,7 @@ export async function updateCourierSetting(
 
   const allowedSettings = [
     "showLocationBtn",
+    "useFloatingMap",
     "showDoorBtn",
     "showCallBtn",
     "showWhatsAppBtn",

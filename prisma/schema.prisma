@@ -317,6 +317,7 @@ model Courier {
   // إعدادات ظهور الأزرار للمندوب
   showDoorBtn                 Boolean                  @default(true)
   showLocationBtn             Boolean                  @default(true)
+  useFloatingMap              Boolean                  @default(true)
   showCallBtn                 Boolean                  @default(true)
   showWhatsAppBtn             Boolean                  @default(true)
   showNotesBtn                Boolean                  @default(true)
