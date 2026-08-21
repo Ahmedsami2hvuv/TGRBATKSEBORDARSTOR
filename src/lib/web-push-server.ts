@@ -353,6 +353,7 @@ export async function pushNotifyCourierNewAssignment(
       orderType: true,
       orderSubtotal: true,
       deliveryPrice: true,
+      submissionSource: true,
       totalAmount: true,
       customerPhone: true,
       alternatePhone: true,
