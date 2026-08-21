@@ -161,10 +161,10 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         }
       });
 
-      // تنبيه الإشعار العائم والتليجرام
-      void notifyTelegramStoreOrder(draft.id);
+      // تنبيه الإدارة للمشترك
+      await notifyTelegramStoreOrder(draft.id);
       const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-      void notifyOneSignalAdminStoreOrder(draft.id);
+      await notifyOneSignalAdminStoreOrder(draft.id);
       const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
       void pushNotifyAdminsNewStoreOrder(draft.id);
 
@@ -207,7 +207,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             }
           });
 
-          void notifyTelegramStoreOrder(existingOrder.id);
+          await notifyTelegramStoreOrder(existingOrder.id);
+          const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
+          await notifyOneSignalAdminStoreOrder(existingOrder.id);
 
           const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
           return {
@@ -270,11 +272,11 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     }
 
     // تنبيهات فورية لقسم التجهيز والإشعار العائم المباشر للأدمن
-    void notifyTelegramStoreOrder(draft.id);
+    await notifyTelegramStoreOrder(draft.id);
     const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-    void notifyOneSignalAdminStoreOrder(draft.id);
+    await notifyOneSignalAdminStoreOrder(draft.id);
     const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
-    void pushNotifyAdminsNewStoreOrder(draft.id);
+    await pushNotifyAdminsNewStoreOrder(draft.id);
 
     const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);

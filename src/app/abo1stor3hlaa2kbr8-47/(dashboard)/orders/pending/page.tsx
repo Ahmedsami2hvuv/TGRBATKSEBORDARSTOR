@@ -353,7 +353,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       return {
         id: d.id,
-        orderNumber: Number((draftData as any)?.reservedOrderNumber ?? 0) || 0,
+        orderNumber: Number((draftData as any)?.reservedOrderNumber || d.draftNumber || 0),
         routeMode: "single",
         shopName: "تجهيز تسوق مشترك",
         regionName: d.customerRegion?.name || "—",
