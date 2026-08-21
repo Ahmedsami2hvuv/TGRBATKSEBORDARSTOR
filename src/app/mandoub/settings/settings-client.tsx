@@ -47,7 +47,6 @@ export default function CourierSettingsClient({
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
-  const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("c", auth.c);
