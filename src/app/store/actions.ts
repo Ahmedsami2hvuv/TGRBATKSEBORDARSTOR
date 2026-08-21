@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { notifyTelegramStoreOrder } from "@/lib/telegram-notify";
 
@@ -16,6 +15,7 @@ export type OrderFormState = {
 export async function submitStoreOrder(_prev: any, formData: FormData): Promise<OrderFormState> {
   const phone = formData.get("phone") as string;
   const regionId = formData.get("regionId") as string;
+  const regionNameInput = (formData.get("regionName") as string) || "";
   const deliveryPriceOverriden = Number(formData.get("deliveryPrice") || 0);
   const vehiclePreference = formData.get("vehiclePreference") as string || null;
   const landmark = formData.get("landmark") as string || "";
@@ -23,7 +23,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
   const sharedCartId = formData.get("sharedCartId") as string || null;
   const addToOrderId = formData.get("addToOrderId") as string || null;
 
-  if (!phone || !regionId || !cartJson) {
+  if (!phone || (!regionId && !regionNameInput) || !cartJson) {
     return { error: "يرجى ملء جميع الحقول المطلوبة" };
   }
 
@@ -48,21 +48,28 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
   cart.forEach((item: any) => {
     subtotal += Number(item.price || 0) * (item.quantity || 1);
-    // إذا كان هناك حقل addedBy نضيفه في تفاصيل الطلب ليرى الأدمن من طلب المنتج!
     const addedInfo = item.addedBy ? ` [بواسطة: ${item.addedBy}]` : "";
     summaryParts.push(`${item.name} ×${item.quantity || 1}${addedInfo}`);
   });
 
-  const region = await prisma.region.findUnique({ where: { id: regionId } });
-  if (!region) return { error: "المنطقة غير صالحة" };
+  let region = regionId ? await prisma.region.findUnique({ where: { id: regionId } }).catch(() => null) : null;
+  
+  if (!region) {
+    if (regionNameInput) {
+      region = await prisma.region.findFirst({
+        where: { name: { contains: regionNameInput, mode: "insensitive" } }
+      }).catch(() => null);
+    }
+    if (!region) {
+      region = await prisma.region.findFirst().catch(() => null);
+    }
+  }
 
-  const basePrice = Number(region.deliveryPrice);
+  const basePrice = region ? Number(region.deliveryPrice) : 0;
   const finalDeliveryPrice = deliveryPriceOverriden > basePrice ? deliveryPriceOverriden : basePrice;
-
-  const totalAmount = subtotal + finalDeliveryPrice;
+  const effectiveRegionId = region ? region.id : (regionId || (await prisma.region.findFirst())?.id || "");
 
   try {
-    // الحصول على محل "خصيب ستور" أو إنشاؤه إذا لم يكن موجوداً
     let shop = await prisma.shop.findFirst({
       where: { name: { contains: "خصيب", mode: "insensitive" } }
     });
@@ -81,7 +88,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       return { error: "لا يوجد محل مفعل لاستقبال الطلبات حالياً" };
     }
 
-    // البحث عن عميل أو إنشاؤه لهذا المحل
     let customer = await prisma.customer.findFirst({
       where: { shopId: shop.id, phone: phoneLocal }
     });
@@ -91,17 +97,14 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         data: {
           shopId: shop.id,
           phone: phoneLocal,
-          customerRegionId: regionId,
+          customerRegionId: effectiveRegionId || null,
           customerLandmark: landmark,
         }
       });
     }
 
     let draft: any;
-    
-    // محاولة دمج المنتجات مع طلب أو مسودة سابقة قيد التجهيز
     let existingDraft: any = null;
-    
     let targetOrderNumber: string | null = addToOrderId ? String(addToOrderId).trim() : null;
 
     if (addToOrderId) {
@@ -124,7 +127,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       }
     }
 
-    // إذا لم يجد بـ addToOrderId المباشر، نتحقق من وجود مسودة مفتوحة قيد التجهيز لنفس رقم هاتف العميل
     if (!existingDraft && phoneLocal) {
       try {
         const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -170,10 +172,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         }
       });
 
-      // إرسال تنبيه تليجرام للتحديث
       void notifyTelegramStoreOrder(draft.id);
-    const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
-    void notifyOneSignalAdminStoreOrder(draft.id);
+      const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
+      void notifyOneSignalAdminStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
       return {
@@ -188,7 +189,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       };
     }
 
-    // إذا لم تكن هناك مسودة مفتوحة، نتحقق مما إذا كانت طلبية معتمدة قائمة في جدول Order
     if (!draft && addToOrderId) {
       const cleanId = String(addToOrderId).trim();
       const orderNum = parseInt(cleanId, 10);
@@ -215,7 +215,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             }
           });
 
-          // إرسال تنبيه تليجرام بالإضافة
           void notifyTelegramStoreOrder(existingOrder.id);
 
           const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
@@ -237,7 +236,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     
     if (!draft) {
       draft = await prisma.$transaction(async (tx) => {
-        // إذا كانت السلة مشتركة، نحدث حالتها إلى ordered
         if (sharedCartId) {
           await tx.sharedCart.update({
             where: { id: sharedCartId },
@@ -245,13 +243,12 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           });
         }
 
-        // إنشاء مسودة تجهيز فقط لكي تظهر في تبويب "قيد التجهيز" للإدارة للتسعير والإسناد
         return tx.companyPreparerShoppingDraft.create({
           data: {
-            preparerId: null, // سيبقى فارغاً حتى يسنده الأدمن لمجهز معين
+            preparerId: null,
             customerPhone: phoneLocal,
-            customerRegionId: regionId,
-            customerLandmark: landmark,
+            customerRegionId: effectiveRegionId || null,
+            customerLandmark: landmark ? `${landmark} (منطقة: ${regionNameInput || "عامة"})` : `منطقة: ${regionNameInput || "عامة"}`,
             titleLine: sharedCartId ? "طلب من السلة المشتركة للعائلة" : "طلب من المتجر الالكتروني",
             rawListText: summaryParts.join("\n"),
             status: "draft",
@@ -261,12 +258,12 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
               products: cart.map((i: any) => ({
                 line: i.name,
                 qty: i.quantity || 1,
-                buyAlf: "", // نتركها فارغة لكي يضطر المجهز لتسعيرها وتجهيزها
-                sellAlf: "", // نتركها فارغة لضمان ظهورها كغير مجهزة
+                buyAlf: "",
+                sellAlf: "",
                 isFromStore: true,
                 supplierId: i.supplierId || null,
                 productId: i.productId || i.id,
-                addedBy: i.addedBy || null // لحفظ اسم من أضاف المنتج
+                addedBy: i.addedBy || null
               })),
               webStoreCart: cart,
               sharedCartId: sharedCartId
@@ -276,7 +273,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       });
     }
 
-    // Notify via Telegram
     void notifyTelegramStoreOrder(draft.id);
     const { notifyOneSignalAdminStoreOrder } = await import("@/lib/onesignal-server");
     void notifyOneSignalAdminStoreOrder(draft.id);
@@ -308,4 +304,3 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     return { error: `فشل في إرسال الطلب: ${e?.message || "يرجى المحاولة لاحقاً"}` };
   }
 }
-

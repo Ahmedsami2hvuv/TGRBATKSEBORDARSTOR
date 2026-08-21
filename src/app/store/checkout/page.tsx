@@ -156,19 +156,30 @@ function CheckoutContent() {
         action={action}
         className="grid grid-cols-1 lg:grid-cols-2 gap-12"
         onSubmit={(e) => {
-          if (!selectedRegion?.id) {
+          let activeRegion = selectedRegion;
+          
+          if (!activeRegion && regionQuery.trim()) {
+            activeRegion = {
+              id: `custom_${Date.now()}`,
+              name: regionQuery.trim(),
+              deliveryPrice: "0"
+            };
+            setSelectedRegion(activeRegion);
+          }
+
+          if (!activeRegion?.name && !regionQuery.trim()) {
             e.preventDefault();
-            setRegionFieldError("اختر منطقتك من الاقتراحات بعد كتابة الاسم.");
+            setRegionFieldError("يرجى كتابة منطقتك لاكمال الطلب.");
             regionInputRef.current?.focus();
             return;
           }
           setRegionFieldError(null);
 
           // حفظ الملف الشخصي لأول مرة
-          if (!localStorage.getItem("kse_user_profile")) {
+          if (activeRegion) {
              localStorage.setItem("kse_user_profile", JSON.stringify({
                phone: phone,
-               regionName: selectedRegion.name,
+               regionName: activeRegion.name,
                landmark: landmark
              }));
           }

@@ -312,19 +312,31 @@ export default function CartPage() {
             action={action}
             className="space-y-6 mt-8"
             onSubmit={(e) => {
-              if (!selectedRegion?.id) {
+              let activeRegion = selectedRegion;
+              
+              // إذا كتب المستخدم المنطقة ولم يضغط الاقتراح، نعتمد المنطقة التي كتبها تلقائياً
+              if (!activeRegion && regionQuery.trim()) {
+                activeRegion = {
+                  id: `custom_${Date.now()}`,
+                  name: regionQuery.trim(),
+                  deliveryPrice: "0"
+                };
+                setSelectedRegion(activeRegion);
+              }
+
+              if (!activeRegion?.name && !regionQuery.trim()) {
                 e.preventDefault();
-                setRegionFieldError("اختر منطقتك من الاقتراحات بعد كتابة الاسم.");
+                setRegionFieldError("يرجى كتابة منطقتك لاكمال الطلب.");
                 regionInputRef.current?.focus();
                 return;
               }
               setRegionFieldError(null);
 
-              if (selectedRegion?.id) {
+              if (activeRegion) {
                  localStorage.setItem("kse_user_profile", JSON.stringify({
                    phone: phone,
-                   regionName: selectedRegion.name,
-                   regionId: selectedRegion.id,
+                   regionName: activeRegion.name,
+                   regionId: activeRegion.id,
                    deliveryPrice: deliveryPrice,
                    landmark: landmark
                  }));
