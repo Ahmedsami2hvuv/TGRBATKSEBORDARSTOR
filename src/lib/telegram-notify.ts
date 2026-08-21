@@ -541,6 +541,29 @@ export async function notifyTelegramCourierNewAssignment(orderId: string): Promi
 }
 
 /** إشعار عند وصول طلب جديد من المتجر الإلكتروني */
+export async function notifyTelegramStoreOrderUpdate(orderId: string, cart: any[]): Promise<void> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customerRegion: true }
+    });
+    if (!order) return;
+
+    const text = [
+      ‏🛍 <b>إضافة جديدة لطلب من المتجر</b>,
+      ‏🔖 <b>رقم الطلب الأصلي:</b> ‎\u200E,
+      ‏👤 <b>الزبون:</b> ,
+      ‏-------------------------,
+      ‏<b>المنتجات المضافة حديثاً:</b>,
+      ...cart.map(i => ‏▫️  ()),
+      ‏-------------------------,
+      ‏🔗 <a href="/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing">فتح لوحة الطلبات</a>
+    ].join("\n");
+
+    const notificationBotToken = await getBotTokenByPurpose("notification");
+    if (notificationBotToken) {
+      await sendTelegramMessage(text, { botToken: notificationBotToken }).catch(() => null);
+    }
+}
 export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
   const draft = await prisma.companyPreparerShoppingDraft.findUnique({
     where: { id: draftId },

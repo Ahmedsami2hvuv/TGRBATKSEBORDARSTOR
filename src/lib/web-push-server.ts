@@ -306,6 +306,53 @@ export async function pushNotifyAdminsNewStoreOrder(draftId: string): Promise<vo
 }
 
 /** إشعار للإدارة: تغيّر توفر مندوب/مجهز */
+export async function pushNotifyAdminsStoreOrderUpdated(orderId: string, addedCount: number, addedSubtotal: number): Promise<void> {
+  try {
+    const draft = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customerRegion: { select: { name: true } } }
+    });
+    if (!draft) return;
+
+    const orderTime = "فوري";
+    const regionName = draft.customerRegion?.name || "منطقة عامة";
+    const shopName = "المتجر الإلكتروني (خصيب ستور)";
+    const orderNumber = draft.orderNumber;
+
+    const title = 🚨 إضافة لطلب متجر خصيب: #;
+    const body = تم إضافة  منتجات جديدة للطلب الحالي بقيمة  د.ع;
+
+    const adminExternalIds = ["admin_global", "admin"];
+    const customData = {
+      type: "store_order",
+      isStoreOrder: true,
+      isHasimAlert: true,
+      orderNumber: orderNumber,
+      shopName: shopName,
+      regionName: regionName,
+      orderTime: orderTime,
+      orderType: "تحديث لطلب المتجر 🛒",
+      subtotal: addedSubtotal,
+      pendingCount: addedCount
+    };
+
+    const subs = await prisma.webPushSubscription.findMany({
+      where: { audience: "admin" },
+      select: { id: true, endpoint: true, p256dh: true, auth: true },
+    });
+
+    await sendToSubscriptions(subs, {
+      title,
+      body,
+      url: ${getPublicAppUrl()}/orders/pending?tab=preparing,
+      tag: kse-push-admin-store-update--,
+      sound: "hasim_alert",
+    }, adminExternalIds, customData);
+
+  } catch (error) {
+    console.error("[PushNotify] Error in pushNotifyAdminsStoreOrderUpdated:", error);
+  }
+}
 export async function pushNotifyAdminsPresenceChange(input: {
   kind: "courier" | "preparer";
   name: string;
