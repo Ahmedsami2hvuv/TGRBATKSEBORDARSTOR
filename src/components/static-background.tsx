@@ -1,73 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 export function StaticBackground({ systemDefaultBgUrl }: { systemDefaultBgUrl?: string }) {
-  const [bgUrl, setBgUrl] = useState<string | null>(null);
-  const pathname = usePathname();
-
   useEffect(() => {
-    // دالة تحديث الحالة وتطبيق فئة التنسيق الزجاجي على الـ body
-    const updateBackground = () => {
-      // استبعاد أصحاب المحلات (العملاء) لتبقى الخلفية بيضاء ثابتة لديهم
-      if (pathname && pathname.startsWith("/client")) {
-        setBgUrl(null);
-        document.body.classList.remove("has-custom-bg");
-        return;
-      }
+    try {
+      localStorage.removeItem("kse_user_background_url");
+      document.body.classList.remove("has-custom-bg");
+    } catch {}
+  }, []);
 
-      const stored = localStorage.getItem("kse_user_background_url");
-      let activeUrl = "";
-
-      if (stored === "none") {
-        activeUrl = "";
-      } else if (stored) {
-        activeUrl = stored;
-      } else {
-        activeUrl = systemDefaultBgUrl || "";
-      }
-
-      setBgUrl(activeUrl || null);
-
-      if (activeUrl) {
-        document.body.classList.add("has-custom-bg");
-      } else {
-        document.body.classList.remove("has-custom-bg");
-      }
-    };
-
-    // التشغيل المبدئي
-    updateBackground();
-
-    // الاستماع للتغييرات في التخزين المحلي
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "kse_user_background_url") {
-        updateBackground();
-      }
-    };
-
-    // الاستماع للحدث المخصص للتغيير الفوري بنفس التبويب
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("kse_background_changed", updateBackground);
-
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("kse_background_changed", updateBackground);
-    };
-  }, [systemDefaultBgUrl, pathname]);
-
-  if (!bgUrl) return null;
-
-  return (
-    <div
-      className="fixed inset-0 -z-10 pointer-events-none bg-cover bg-center bg-no-repeat transition-all duration-500"
-      style={{
-        backgroundImage: `url(${bgUrl})`,
-        opacity: 0.9, // شفافية خفيفة للخلفية ليتناسق النص فوقها
-      }}
-    />
-  );
+  return null;
 }
-
-

@@ -262,12 +262,9 @@ export function MandoubWalletClient({
   // ستايل المحفظة الديناميكي
   const containerStyle = uiSettings ? {
     backgroundColor: uiSettings.backgroundColor,
-    backgroundImage: uiSettings.backgroundImage ? `url(${uiSettings.backgroundImage})` : undefined,
     color: uiSettings.textColor,
     opacity: uiSettings.backgroundOpacity,
     borderRadius: uiSettings.borderRadius,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
     padding: uiSettings.padding || '1.25rem'
   } : {};
 

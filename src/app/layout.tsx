@@ -30,17 +30,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const externalId = mandoubId || preparerId || employeeId;
 
   // استرجاع الميزات بشكل آمن جداً
-  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled, availableFonts, chosenFont, defaultBg] = await Promise.all([
+  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled, availableFonts, chosenFont] = await Promise.all([
     getRoleFeatures("mandoub").catch(() => ({})),
     getRoleFeatures("preparer").catch(() => ({})),
     isChatEnabledGlobally().catch(() => true),
     isTrackingEnabledGlobally().catch(() => true),
     Promise.resolve(getAvailableFonts()),
     getChosenFont(),
-    prisma.systemBackground.findFirst({ where: { active: true } }).catch(() => null),
   ]);
-
-  const defaultBgUrl = defaultBg?.imageUrl || "";
 
   // توليد تعريفات الخطوط ديناميكياً
   const fontFaceCss = availableFonts.map(fontName => {
@@ -92,7 +89,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <StaticBackground systemDefaultBgUrl={defaultBgUrl} />
           <ClientRuntime
             mandoubFeatures={mandoubFeatures}
             preparerFeatures={preparerFeatures}

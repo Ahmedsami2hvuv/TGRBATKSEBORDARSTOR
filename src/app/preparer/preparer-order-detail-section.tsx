@@ -160,12 +160,10 @@ export function PreparerOrderDetailSection({
   // الستايل الديناميكي
   const customStyle = uiSettings ? {
     backgroundColor: uiSettings.statusStyles?.[order.status]?.backgroundColor || uiSettings.backgroundColor,
-    backgroundImage: uiSettings.statusStyles?.[order.status]?.backgroundImage ? `url(${uiSettings.statusStyles[order.status].backgroundImage})` : (uiSettings.backgroundImage ? `url(${uiSettings.backgroundImage})` : undefined),
     color: uiSettings.statusStyles?.[order.status]?.textColor || uiSettings.textColor,
     opacity: uiSettings.backgroundOpacity,
     borderRadius: uiSettings.borderRadius,
     fontSize: uiSettings.fontSize,
-    backgroundSize: 'cover', backgroundPosition: 'center',
   } : {};
 
   const renderBlock = (blockId: string) => {

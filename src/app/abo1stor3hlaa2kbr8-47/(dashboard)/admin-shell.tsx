@@ -281,21 +281,7 @@ export function AdminShell({
   }, [maxSidebarWidth, navWidth]);
 
   useEffect(() => {
-    const updateBg = () => {
-      const stored = localStorage.getItem("kse_user_background_url");
-      if (stored === "none") {
-        setActiveBgUrl(null);
-      } else {
-        setActiveBgUrl(stored);
-      }
-    };
-    updateBg();
-    window.addEventListener("kse_background_changed", updateBg);
-    window.addEventListener("storage", updateBg);
-    return () => {
-      window.removeEventListener("kse_background_changed", updateBg);
-      window.removeEventListener("storage", updateBg);
-    };
+    setActiveBgUrl(null);
   }, []);
 
 

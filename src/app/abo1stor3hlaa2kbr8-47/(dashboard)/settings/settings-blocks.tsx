@@ -225,13 +225,7 @@ export function SettingsBlocks({
       tone: "indigo",
       content: <SidebarSettingsForm initialConfig={sidebarConfig || DEFAULT_SIDEBAR_CONFIG} globalIcons={globalIcons} />
     },
-    {
-      id: "system-backgrounds",
-      title: "الخلفيات المخصصة 🖼️",
-      subtitle: "إضافة وحذف الخلفيات للنظام وتفعيلها.",
-      tone: "amber",
-      content: <AdminBackgroundsSettings />
-    },
+
 
 
     {
@@ -581,14 +575,7 @@ export function SettingsBlocks({
         </form>
       )
     },
-    {
-      id: "ui-designer",
-      title: "مصمم الواجهات 🎨",
-      subtitle: "الألوان والصور والترتيب.",
-      tone: "indigo",
-      isExternalLink: true,
-      href: `${SECRET_ADMIN_PATH}/settings/ui-designer`
-    },
+
     {
       id: "pricing-config",
       title: "التسعير والأنواع 💰",

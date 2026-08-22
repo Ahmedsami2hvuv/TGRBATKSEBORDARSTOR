@@ -258,8 +258,8 @@ export function OrderDetailSection({
     overflow: 'hidden' as const,
   } : {};
 
-  const bgImage = uiSettings?.statusStyles?.[order.status]?.backgroundImage || uiSettings?.backgroundImage;
-  const bgOpacity = uiSettings?.backgroundImageOpacity ?? 1;
+  const bgImage = undefined;
+  const bgOpacity = 1;
 
   const renderBlock = (blockId: string) => {
     const bConf = uiSettings?.blockConfigs?.[blockId] || {};
