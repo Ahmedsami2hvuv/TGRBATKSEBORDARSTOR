@@ -427,8 +427,8 @@ export function CategoryListClient({
                     />
                 </div>
 
-                <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="space-y-3 md:col-span-2 lg:col-span-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         id="hidePricesCategory"
@@ -438,7 +438,21 @@ export function CategoryListClient({
                         className="w-5 h-5 accent-violet-600 rounded cursor-pointer"
                       />
                       <label htmlFor="hidePricesCategory" className="text-sm font-bold text-slate-800 cursor-pointer">
-                        🔒 إخفاء أسعار كافة المنتجات والفروع التابعة لهذا القسم
+                        🔒 إخفاء أسعار كافة المنتجات التابعة لهذا القسم
+                      </label>
+                    </div>
+
+                    <div className="mr-8 flex items-center gap-3 pt-2 border-t border-slate-200/60">
+                      <input
+                        type="checkbox"
+                        id="applyToBranchesCategory"
+                        name="applyToBranches"
+                        value="true"
+                        defaultChecked={true}
+                        className="w-4 h-4 accent-violet-600 rounded cursor-pointer"
+                      />
+                      <label htmlFor="applyToBranchesCategory" className="text-xs font-bold text-slate-600 cursor-pointer">
+                        🔄 تطبيق نفس الخيار (إظهار أو إخفاء) على جميع الفروع التابعة لهذا القسم أيضاً
                       </label>
                     </div>
                 </div>

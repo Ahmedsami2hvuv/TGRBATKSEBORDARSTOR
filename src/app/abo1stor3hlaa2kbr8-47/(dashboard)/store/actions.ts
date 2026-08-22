@@ -43,6 +43,8 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const notes = formData.get("notes") as string || "";
   const active = formData.get("active") !== "false";
   const rawHidePrices = formData.get("hidePrices");
+  const rawApplyToBranches = formData.get("applyToBranches");
+  const shouldApplyToBranches = rawApplyToBranches === "true" || rawApplyToBranches === "on";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
@@ -81,8 +83,8 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
       data: categoryData
     });
 
-    if (hidePrices !== undefined) {
-      // إذا تم تغيير إخفاء الأسعار للقسم، نقوم بتحديث الفروع التابعة له أيضاً تلقائياً
+    if (hidePrices !== undefined && shouldApplyToBranches) {
+      // إذا تم تفعيل خيار تطبيق الخيار على جميع الفروع التابعة للقسم
       await prisma.storeBranch.updateMany({
         where: { categoryId: id },
         data: { hidePrices }
