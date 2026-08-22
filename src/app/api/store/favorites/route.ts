@@ -88,6 +88,8 @@ export async function GET(req: Request) {
         variantType: p.variantType || "النوع",
         variants,
         supplierId: p.supplierId || null,
+        branch: p.branch,
+        category: p.branch?.category,
       };
     });
 

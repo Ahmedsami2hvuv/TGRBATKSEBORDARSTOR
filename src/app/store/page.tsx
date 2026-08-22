@@ -70,7 +70,12 @@ async function BestSellersRow() {
     const productsRaw = await prisma.storeProduct.findMany({
       where: { active: true },
       take: 6, // أخذ عينة
-      orderBy: { sequence: "desc" }
+      orderBy: { sequence: "desc" },
+      include: {
+        branch: {
+          include: { category: true }
+        }
+      }
     });
     const products = deepSanitize(productsRaw);
 
@@ -95,7 +100,12 @@ async function NewProductsRow() {
     const productsRaw = await prisma.storeProduct.findMany({
       where: { active: true },
       take: 6,
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      include: {
+        branch: {
+          include: { category: true }
+        }
+      }
     });
     const products = deepSanitize(productsRaw);
 
@@ -168,7 +178,12 @@ async function CategoryProducts({ categoryId }: { categoryId: string }) {
     const productsRaw = await prisma.storeProduct.findMany({
       where: { active: true, branch: { categoryId } },
       take: 6,
-      orderBy: { sequence: "desc" }
+      orderBy: { sequence: "desc" },
+      include: {
+        branch: {
+          include: { category: true }
+        }
+      }
     });
     const products = deepSanitize(productsRaw);
     
@@ -203,6 +218,9 @@ function deepSanitize(obj: any): any {
 
 export default async function StoreHomePage() {
   try {
+    const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+    await ensureHidePricesColumns();
+
     const slidesRaw = await prisma.storeSlide.findMany({
       where: { active: true },
       orderBy: { sequence: "asc" }

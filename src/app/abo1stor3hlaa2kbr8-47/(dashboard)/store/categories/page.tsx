@@ -5,6 +5,9 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
+  const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+  await ensureHidePricesColumns();
+
   // جلب البيانات مباشرة في السيرفر لضمان الاستقرار في الإنتاج
   const rawCategories = await prisma.storeCategory.findMany({
     select: {

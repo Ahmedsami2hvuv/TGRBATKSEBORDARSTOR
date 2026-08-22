@@ -29,12 +29,15 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
   if (!categoryId) return <div className="p-10 text-center font-bold">معرف القسم مفقود</div>;
 
   try {
+    const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+    await ensureHidePricesColumns();
+
     const settingsRaw = await prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null);
 
     // جلب البيانات الأساسية
     const categoryRaw = await prisma.storeCategory.findUnique({
       where: { id: categoryId },
-      select: { id: true, name: true, photoUrl: true, profitMargin: true }
+      select: { id: true, name: true, photoUrl: true, profitMargin: true, hidePrices: true }
     });
 
     if (!categoryRaw) {

@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function BranchesPage(props: {
   searchParams: Promise<{ categoryId?: string }>
 }) {
+  const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+  await ensureHidePricesColumns();
+
   const resolvedSearchParams = await props.searchParams;
   const categoryId = resolvedSearchParams?.categoryId;
 

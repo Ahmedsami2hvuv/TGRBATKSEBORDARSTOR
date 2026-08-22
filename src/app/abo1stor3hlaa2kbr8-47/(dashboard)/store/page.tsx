@@ -2,8 +2,12 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 import { GlobalProfitWidget } from "./_components/global-profit-widget";
+import { HideAllPricesWidget } from "./_components/hide-all-prices-widget";
 
 export default async function StoreAdminHub({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+  await ensureHidePricesColumns();
+
   const { q } = await searchParams;
 
   const globalSettings = await prisma.globalSettings.findUnique({
@@ -93,6 +97,8 @@ export default async function StoreAdminHub({ searchParams }: { searchParams: Pr
 
 
       <GlobalProfitWidget initialMargin={Number(globalSettings?.profitMargin || 0)} />
+
+      <HideAllPricesWidget />
 
       {q && results && (
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-violet-200 shadow-xl shadow-violet-100/50 space-y-6">

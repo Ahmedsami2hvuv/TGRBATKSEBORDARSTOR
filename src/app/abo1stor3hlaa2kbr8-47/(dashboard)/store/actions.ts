@@ -1025,3 +1025,34 @@ export async function convertCategoryToBranch(sourceCategoryId: string, targetCa
     return { error: err.message || "حدث خطأ غير متوقع أثناء تحويل القسم" };
   }
 }
+
+// دالة إخفاء أسعار جميع الأقسام والفروع دفعة واحدة
+export async function hideAllStorePrices(): Promise<FormState> {
+  try {
+    const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
+    await ensureHidePricesColumns();
+
+    await prisma.storeCategory.updateMany({
+      data: { hidePrices: true }
+    });
+
+    await prisma.storeBranch.updateMany({
+      data: { hidePrices: true }
+    });
+
+    revalidatePath("/store");
+    revalidatePath("/store/search");
+    revalidatePath(`${SECRET_ADMIN_PATH}/store`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/store/products`);
+    revalidatePath("/staff/portal/store/categories");
+    revalidatePath("/staff/portal/store/branches");
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("HIDE ALL PRICES ERROR:", err);
+    return { error: err.message || "حدث خطأ أثناء إخفاء الأسعار" };
+  }
+}
+
