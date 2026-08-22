@@ -259,7 +259,11 @@ export async function pushNotifyAdminsNewStoreOrder(draftId: string): Promise<vo
       where: { id: draftId },
       include: { customerRegion: { select: { name: true } } }
     });
-    if (!draft) return;
+    if (!draft) {
+      const { notifyTelegramByBot } = await import("./telegram-notify");
+      await notifyTelegramByBot(`DEBUG: Draft not found in pushNotifyAdminsNewStoreOrder for ID: ${draftId}`);
+      return;
+    }
 
     const orderTime = draft.orderTime || "فوري";
     const regionName = draft.customerRegion?.name || "منطقة عامة";
@@ -268,6 +272,9 @@ export async function pushNotifyAdminsNewStoreOrder(draftId: string): Promise<vo
     const products = (draft.data as any)?.products || [];
     const pendingCount = products.length;
     const subtotal = Number((draft.data as any)?.orderSubtotalAlf || 0);
+
+    const { notifyTelegramByBot } = await import("./telegram-notify");
+    await notifyTelegramByBot(`DEBUG: Sending push for draft ${orderNumber}`);
 
     const title = `🚨 طلب جديد من المتجر الإلكتروني: #${orderNumber}`;
     const body = `المتجر الإلكتروني | وقت الطلب: ${orderTime} | المنطقة: ${regionName} | المواد: ${pendingCount}`;
@@ -300,8 +307,12 @@ export async function pushNotifyAdminsNewStoreOrder(draftId: string): Promise<vo
     }, adminExternalIds, customData);
 
     console.log("[PushNotify] pushNotifyAdminsNewStoreOrder completed successfully.");
-  } catch (error) {
+  } catch (error: any) {
     console.error("[PushNotify] Error in pushNotifyAdminsNewStoreOrder:", error);
+    try {
+      const { notifyTelegramByBot } = await import("./telegram-notify");
+      await notifyTelegramByBot(`DEBUG: Error in pushNotifyAdminsNewStoreOrder: ${error?.message || "Unknown error"}`);
+    } catch (e) {}
   }
 }
 
