@@ -43,9 +43,18 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const notes = formData.get("notes") as string || "";
   const active = formData.get("active") !== "false";
   const rawHidePrices = formData.get("hidePrices");
-  const hidePrices = rawHidePrices === "true" || rawHidePrices === "on";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
+
+  // الـ checkbox في HTML لا يرسل شيئاً إذا كان غير محدد (unchecked).
+  // نعتبر أن hidePrices = false إذا كان التعديل قادماً من نموذج التعديل ولم يتم تحديد الصح.
+  const isFullForm = formData.has("notes") || formData.has("sequence") || formData.has("profitMargin") || formData.has("isFullForm");
+  let hidePrices: boolean | undefined = undefined;
+  if (isFullForm) {
+    hidePrices = rawHidePrices === "true" || rawHidePrices === "on";
+  } else if (rawHidePrices !== null) {
+    hidePrices = rawHidePrices === "true" || rawHidePrices === "on";
+  }
 
   if (!name) return { error: "الاسم مطلوب" };
 
@@ -61,17 +70,24 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
     }
   }
 
+  const categoryData: any = { name, sequence, photoUrl, notes, profitMargin, active };
+  if (hidePrices !== undefined) {
+    categoryData.hidePrices = hidePrices;
+  }
+
   if (id) {
     await prisma.storeCategory.update({
       where: { id },
-      data: { name, sequence, photoUrl, notes, profitMargin, active, hidePrices }
+      data: categoryData
     });
 
-    // إذا تم تغيير إخفاء الأسعار للقسم، يمكن تحديث الفروع التابعة له أيضاً تلقائياً
-    await prisma.storeBranch.updateMany({
-      where: { categoryId: id },
-      data: { hidePrices }
-    });
+    if (hidePrices !== undefined) {
+      // إذا تم تغيير إخفاء الأسعار للقسم، نقوم بتحديث الفروع التابعة له أيضاً تلقائياً
+      await prisma.storeBranch.updateMany({
+        where: { categoryId: id },
+        data: { hidePrices }
+      });
+    }
 
     // إذا تم تصفير أو إيقاف ربح القسم، نقوم بتحديث أرباح كافة الفروع التابعة له أيضاً
     if (profitMargin === 0 || profitMargin === -1) {
@@ -86,12 +102,18 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
     await syncCategoryProductsPrice(id);
   } else {
     await prisma.storeCategory.create({
-      data: { name, sequence, photoUrl, notes, profitMargin, active, hidePrices }
+      data: {
+        ...categoryData,
+        hidePrices: hidePrices ?? true
+      }
     });
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
   revalidatePath("/staff/portal/store/categories");
+  revalidatePath("/store");
+  if (id) revalidatePath(`/store/c/${id}`);
   return { ok: true };
 }
 
@@ -102,6 +124,7 @@ export async function deleteCategory(id: string) {
   }
   await prisma.storeCategory.delete({ where: { id } });
   revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
+  revalidatePath("/store");
 }
 
 // --- Branches ---
@@ -123,8 +146,15 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const skipRevalidate = formData.get("skipRevalidate") === "true";
   const active = formData.get("active") !== "false";
   const rawBranchHidePrices = formData.get("hidePrices");
-  const hidePrices = rawBranchHidePrices === "true" || rawBranchHidePrices === "on";
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
+
+  const isFullForm = formData.has("notes") || formData.has("sequence") || formData.has("profitMargin") || formData.has("isFullForm");
+  let hidePrices: boolean | undefined = undefined;
+  if (isFullForm) {
+    hidePrices = rawBranchHidePrices === "true" || rawBranchHidePrices === "on";
+  } else if (rawBranchHidePrices !== null) {
+    hidePrices = rawBranchHidePrices === "true" || rawBranchHidePrices === "on";
+  }
 
   if (!name || !categoryId) return { error: "الاسم والقسم مطلوبان" };
 
@@ -164,7 +194,7 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     }
   }
 
-  const data = {
+  const data: any = {
     name,
     categoryId,
     parentBranchId: parentBranchId === "" ? null : parentBranchId,
@@ -175,6 +205,10 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     notes,
     active
   };
+
+  if (hidePrices !== undefined) {
+    data.hidePrices = hidePrices;
+  }
 
   if (id) {
     const br = await prisma.storeBranch.update({
@@ -188,15 +222,22 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     if (!skipRevalidate) {
         revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
         revalidatePath("/staff/portal/store/branches");
+        revalidatePath("/store");
+        revalidatePath(`/store/b/${id}`);
+        revalidatePath(`/store/c/${categoryId}`);
     }
     return { ok: true, id: br.id };
   } else {
     const br = await prisma.storeBranch.create({
-      data
+      data: {
+        ...data,
+        hidePrices: hidePrices ?? true
+      }
     });
     if (!skipRevalidate) {
         revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
         revalidatePath("/staff/portal/store/branches");
+        revalidatePath("/store");
     }
     return { ok: true, id: br.id };
   }

@@ -382,6 +382,7 @@ export function CategoryListClient({
             <input type="hidden" name="id" value={editing?.id || ""} />
             <input type="hidden" name="currentPhotoUrl" value={editing?.photoUrl || ""} />
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
+            <input type="hidden" name="isFullForm" value="true" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
