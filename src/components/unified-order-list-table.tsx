@@ -394,7 +394,7 @@ export function UnifiedOrderListTable({
                     }}
                     tabIndex={0}
                     role="link"
-                    className={`group cursor-pointer border-b border-slate-100 transition-all ${
+                    className={`group cursor-pointer border-b-2 border-slate-300 dark:border-slate-700 transition-all [&>td]:border-b-2 [&>td]:border-slate-300 dark:[&>td]:border-slate-700 ${
                       o.reversePickup
                         ? "bg-violet-100 hover:bg-violet-200"
                         : "bg-white hover:bg-sky-50/90"
@@ -402,7 +402,7 @@ export function UnifiedOrderListTable({
                   >
                     {showSelectColumn ? (
                       <td
-                        className={`sticky right-0 z-10 w-14 min-w-[3.25rem] max-w-[3.5rem] align-top px-1 py-2.5 text-center shadow-[-4px_0_8px_-2px_rgba(15,23,42,0.1)] transition-colors ${
+                        className={`sticky right-0 z-10 w-14 min-w-[3.25rem] max-w-[3.5rem] align-top px-1 py-3 text-center shadow-[-4px_0_8px_-2px_rgba(15,23,42,0.1)] transition-colors ${
                           o.reversePickup ? "bg-violet-100 group-hover:bg-violet-200" : "bg-white group-hover:bg-sky-50/90"
                         }`}
                         onClick={(e) => e.stopPropagation()}

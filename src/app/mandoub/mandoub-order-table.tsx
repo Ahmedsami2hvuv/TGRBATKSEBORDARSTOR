@@ -4,6 +4,8 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   bulkSetMandoubOrdersStatus,
+  saveMandoubOrderSortAction,
+  resetMandoubOrderSortAction,
 } from "./actions";
 import {
   MandoubBulkStatusState,
@@ -170,6 +172,7 @@ export function MandoubOrderTable({
   showSearch,
   setShowSearch,
   customWaButtons,
+  initialCustomSortIds,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -186,6 +189,7 @@ export function MandoubOrderTable({
   showSearch?: boolean;
   setShowSearch?: (b: boolean) => void;
   customWaButtons?: any[];
+  initialCustomSortIds?: string[];
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -217,17 +221,24 @@ export function MandoubOrderTable({
     initialCash,
   );
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-  const [customSortIds, setCustomSortIds] = useState<string[]>([]);
+  const [customSortIds, setCustomSortIds] = useState<string[]>(initialCustomSortIds || []);
 
-  // تحميل الترتيب المخصص من التخزين المحلي
+  // تحميل الترتيب المخصص من السيرفر أو التخزين المحلي
   useEffect(() => {
-    const saved = localStorage.getItem(`mandoub_sort_${auth.c}`);
-    if (saved) {
+    if (initialCustomSortIds && initialCustomSortIds.length > 0) {
+      setCustomSortIds(initialCustomSortIds);
       try {
-        setCustomSortIds(JSON.parse(saved));
+        localStorage.setItem(`mandoub_sort_${auth.c}`, JSON.stringify(initialCustomSortIds));
       } catch (e) {}
+    } else {
+      const saved = localStorage.getItem(`mandoub_sort_${auth.c}`);
+      if (saved) {
+        try {
+          setCustomSortIds(JSON.parse(saved));
+        } catch (e) {}
+      }
     }
-  }, [auth.c]);
+  }, [initialCustomSortIds, auth.c]);
 
   // حماية وتجميد الـ Pull-To-Refresh لمنع رفرش الصفحة عند سحب النوافذ المنبثقة للأجهزة الذكية
   useEffect(() => {
@@ -243,15 +254,31 @@ export function MandoubOrderTable({
     };
   }, [pickupOrder, deliveryOrder, activeOrderId]);
 
-  // حفظ الترتيب المخصص
+  // حفظ الترتيب المخصص محلياً وفي قاعدة البيانات للمزامنة
   const saveSortOrder = (newOrder: string[]) => {
     setCustomSortIds(newOrder);
-    localStorage.setItem(`mandoub_sort_${auth.c}`, JSON.stringify(newOrder));
+    try {
+      localStorage.setItem(`mandoub_sort_${auth.c}`, JSON.stringify(newOrder));
+    } catch (e) {}
+    // مزامنة فورية في السيرفر وقاعدة البيانات
+    saveMandoubOrderSortAction({
+      c: auth.c,
+      exp: auth.exp,
+      s: auth.s,
+      orderIds: newOrder,
+    }).catch((err) => console.error("Error saving sort order:", err));
   };
 
   const resetSortOrder = () => {
     setCustomSortIds([]);
-    localStorage.removeItem(`mandoub_sort_${auth.c}`);
+    try {
+      localStorage.removeItem(`mandoub_sort_${auth.c}`);
+    } catch (e) {}
+    resetMandoubOrderSortAction({
+      c: auth.c,
+      exp: auth.exp,
+      s: auth.s,
+    }).catch((err) => console.error("Error resetting sort order:", err));
     toast.success("تمت العودة للترتيب الأصلي");
   };
 

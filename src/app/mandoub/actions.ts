@@ -1017,3 +1017,58 @@ export async function revertShopDoorPhotoToOriginal(
   revalidateMandoubPaths(nextRaw);
   redirect(safeMandoubReturn(nextRaw));
 }
+
+/** يحفظ الترتيب المخصص لطلبات المندوب في قاعدة البيانات لضمان المزامنة التامة بين الأجهزة */
+export async function saveMandoubOrderSortAction(params: {
+  c: string;
+  exp: string;
+  s: string;
+  orderIds: string[];
+}) {
+  try {
+    const v = await verifyDelegateAllowed(params.c, params.exp, params.s);
+    if (!v.ok) {
+      return { ok: false, error: "غير مصرح." };
+    }
+
+    await prisma.courier.update({
+      where: { id: v.courierId },
+      data: {
+        customOrderSortJson: JSON.stringify(params.orderIds),
+      },
+    });
+
+    revalidatePath("/mandoub");
+    return { ok: true };
+  } catch (err: any) {
+    console.error("Failed to save mandoub order sort:", err);
+    return { ok: false, error: err?.message || "فشل حفظ الترتيب." };
+  }
+}
+
+/** يعيد ضبط ترتيب الطلبات للمندوب إلى الترتيب الأصلي في قاعدة البيانات */
+export async function resetMandoubOrderSortAction(params: {
+  c: string;
+  exp: string;
+  s: string;
+}) {
+  try {
+    const v = await verifyDelegateAllowed(params.c, params.exp, params.s);
+    if (!v.ok) {
+      return { ok: false, error: "غير مصرح." };
+    }
+
+    await prisma.courier.update({
+      where: { id: v.courierId },
+      data: {
+        customOrderSortJson: null,
+      },
+    });
+
+    revalidatePath("/mandoub");
+    return { ok: true };
+  } catch (err: any) {
+    console.error("Failed to reset mandoub order sort:", err);
+    return { ok: false, error: err?.message || "فشل إعادة التعيين." };
+  }
+}

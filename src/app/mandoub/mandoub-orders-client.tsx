@@ -32,6 +32,7 @@ export function MandoubOrdersSection({
   telegramLink,
   cashInHandStr,
   customWaButtons,
+  initialCustomSortIds,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
@@ -44,6 +45,7 @@ export function MandoubOrdersSection({
   telegramLink: string | null;
   cashInHandStr: string;
   customWaButtons?: any[];
+  initialCustomSortIds?: string[];
 }) {
   const [query, setQuery] = useState("");
   const searchParams = useSearchParams();
@@ -187,6 +189,7 @@ export function MandoubOrdersSection({
         showSearch={showSearch}
         setShowSearch={setShowSearch}
         customWaButtons={customWaButtons}
+        initialCustomSortIds={initialCustomSortIds}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

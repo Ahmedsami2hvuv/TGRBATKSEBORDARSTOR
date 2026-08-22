@@ -539,6 +539,16 @@ export default async function MandoubPage({ searchParams }: Props) {
     delivered: 3,
   };
 
+  let customSortOrderIds: string[] = [];
+  if (courier.customOrderSortJson) {
+    try {
+      const parsed = JSON.parse(courier.customOrderSortJson);
+      if (Array.isArray(parsed)) {
+        customSortOrderIds = parsed.map(String);
+      }
+    } catch (e) {}
+  }
+
   const listOrdersStampSig = mandoubOrdersStampSig(
     activeOrdersRaw.map((o) => ({ id: o.id, updatedAt: o.updatedAt })),
   );
@@ -546,6 +556,19 @@ export default async function MandoubPage({ searchParams }: Props) {
   const activeOrders = activeOrdersRaw
     .filter((o) => isMandoubActiveListStatus(o.status))
     .sort((a, b) => {
+      // إذا كان أحدهما delivered نضعه في النهاية
+      if (a.status === "delivered" && b.status !== "delivered") return 1;
+      if (a.status !== "delivered" && b.status === "delivered") return -1;
+      if (a.status === "delivered" && b.status === "delivered") return b.orderNumber - a.orderNumber;
+
+      if (customSortOrderIds.length > 0) {
+        const idxA = customSortOrderIds.indexOf(a.id);
+        const idxB = customSortOrderIds.indexOf(b.id);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+      }
+
       const rA = MANDOUB_STATUS_RANK[a.status] ?? 99;
       const rB = MANDOUB_STATUS_RANK[b.status] ?? 99;
       if (rA !== rB) return rA - rB;
@@ -997,6 +1020,7 @@ export default async function MandoubPage({ searchParams }: Props) {
               telegramLink={telegramLink}
               cashInHandStr={cashInHandStr}
               customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}
+              initialCustomSortIds={customSortOrderIds}
             />
           </section>
         </div>

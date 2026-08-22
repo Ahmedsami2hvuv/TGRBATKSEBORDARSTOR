@@ -327,6 +327,7 @@ model Courier {
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique
   availableForAssignment      Boolean                  @default(true)
+  customOrderSortJson         String?                  @db.Text
   tips                        CourierTip[]
   miscWalletEntries           CourierWalletMiscEntry[]
   orders                      Order[]
