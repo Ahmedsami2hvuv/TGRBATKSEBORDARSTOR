@@ -195,7 +195,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
         if (existingOrder) {
           targetOrderNumber = String(existingOrder.orderNumber);
-          const updatedSummary = (existingOrder.summary || "") + "\n--- إضافات جديدة ---\n" + summaryParts.join("\n");
+          const updatedSummary = (existingOrder.summary || "") + "\n--- إضافة جديدة ---\n" + summaryParts.join("\n");
           await prisma.order.update({
             where: { id: existingOrder.id },
             data: {
@@ -205,11 +205,12 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             }
           });
 
-          await notifyTelegramStoreOrder(existingOrder.id);
-          const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
-          await pushNotifyAdminsNewStoreOrder(existingOrder.id);
+          const { notifyTelegramStoreOrderUpdate } = await import("@/lib/telegram-notify");
+          await notifyTelegramStoreOrderUpdate(existingOrder.id, cart);
+          const { pushNotifyAdminsStoreOrderUpdated } = await import("@/lib/web-push-server");
+          await pushNotifyAdminsStoreOrderUpdated(existingOrder.id, cart.length, subtotal);
 
-          const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
+          const addedLines = cart.map((item: any) => `- ${item.name} - ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
           return {
             ok: true,
             orderNumber: targetOrderNumber,
