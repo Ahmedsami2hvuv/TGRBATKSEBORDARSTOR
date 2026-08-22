@@ -221,25 +221,37 @@ export function ProductCard({
   };
 
   const shouldHidePrice = useMemo(() => {
-    if (
-      product.branch?.hidePrices === false || 
-      product.branch?.category?.hidePrices === false || 
-      product.category?.hidePrices === false || 
-      product.hidePrices === false
-    ) {
-      return false;
-    }
+    const category = product.category || product.branch?.category;
+    const branch = product.branch;
 
-    if (
-      product.branch?.hidePrices === true || 
-      product.branch?.category?.hidePrices === true || 
-      product.category?.hidePrices === true || 
-      product.hidePrices === true
-    ) {
+    // 1. القسم يملك الأولوية العليا: إذا كان القسم مخفي الأسعار (true)، ينخفي السعر لجميع أفرعه ومنتجاته
+    if (category?.hidePrices === true) {
       return true;
     }
 
-    return false;
+    // 2. إذا كان القسم مسموح بإظهار أسعاره (false)، نحتكم لحالة الفرع
+    if (category?.hidePrices === false) {
+      // الفرع الذي لديه إخفاء أسعار (true) ينخفي السعر عنه
+      if (branch?.hidePrices === true) {
+        return true;
+      }
+      // الفرع الذي لديه إظهار أسعار (false) يظهر السعر عنده
+      if (branch?.hidePrices === false) {
+        return false;
+      }
+      // إذا لم يحدد الفرع حالة خاصة، يتبع القسم (إظهار)
+      return false;
+    }
+
+    // 3. إذا لم يحدد القسم شيئاً، نعتمد على الفرع مباشرة
+    if (branch?.hidePrices === true) {
+      return true;
+    }
+    if (branch?.hidePrices === false) {
+      return false;
+    }
+
+    return true;
   }, [product]);
 
   return (
