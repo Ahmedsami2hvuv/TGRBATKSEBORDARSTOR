@@ -1,3 +1,5 @@
+import { pushNotifyAdminsNewStoreOrder, pushNotifyAdminsStoreOrderUpdated } from "@/lib/web-push-server";
+import { notifyTelegramStoreOrderUpdate } from "@/lib/telegram-notify";
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -163,7 +165,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       // تنبيه الإدارة للمشترك
       await notifyTelegramStoreOrder(draft.id);
-      const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
       await pushNotifyAdminsNewStoreOrder(draft.id);
 
       const addedLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
@@ -205,9 +206,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             }
           });
 
-          const { notifyTelegramStoreOrderUpdate } = await import("@/lib/telegram-notify");
           await notifyTelegramStoreOrderUpdate(existingOrder.id, cart);
-          const { pushNotifyAdminsStoreOrderUpdated } = await import("@/lib/web-push-server");
           await pushNotifyAdminsStoreOrderUpdated(existingOrder.id, cart.length, subtotal);
 
           const addedLines = cart.map((item: any) => `- ${item.name} - ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
@@ -272,7 +271,6 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       // تنبيهات فورية لقسم التجهيز والتطبيق الخاص بالادارة
       await notifyTelegramStoreOrder(draft.id);
-      const { pushNotifyAdminsNewStoreOrder } = await import("@/lib/web-push-server");
       await pushNotifyAdminsNewStoreOrder(draft.id);
 
     const numericOrderNumber = targetOrderNumber || String(draft.draftNumber);
