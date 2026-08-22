@@ -123,10 +123,6 @@ const TILE_COLORS: Record<string, {
     active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
     inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
   },
-  "background-settings": {
-    active: "bg-violet-100/90 dark:bg-violet-950/60 border border-violet-400 dark:border-violet-400 text-violet-900 dark:text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.3)]",
-    inactive: "bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100/90 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-800 hover:text-violet-850 dark:hover:text-violet-200"
-  },
   settings: {
     active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
     inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
@@ -178,7 +174,6 @@ export function AdminShell({
 
   const sidebarConfig = initialSidebarConfig || DEFAULT_SIDEBAR_CONFIG;
   const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
-  const [activeBgUrl, setActiveBgUrl] = useState<string | null>(null);
   const filteredTiles = orderedTiles;
 
   const handleTileClick = (slug: string) => {
@@ -279,10 +274,6 @@ export function AdminShell({
   useEffect(() => {
     if (navWidth > maxSidebarWidth) setNavWidth(maxSidebarWidth);
   }, [maxSidebarWidth, navWidth]);
-
-  useEffect(() => {
-    setActiveBgUrl(null);
-  }, []);
 
 
   const isCompact = navWidth <= 260;
@@ -570,11 +561,10 @@ export function AdminShell({
           top-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
-          ${activeBgUrl ? "aside-has-bg bg-cover bg-center bg-no-repeat" : "bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md"}
+          bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md
         `}
         style={{ 
-          width: navWidth,
-          backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : undefined
+          width: navWidth
         }}
       >
         <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">

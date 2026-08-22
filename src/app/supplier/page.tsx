@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { SupplierPricingClient } from "./supplier-pricing-client";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
-import { UserBackgroundPicker } from "@/components/user-background-picker";
-import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 
 export const dynamic = "force-dynamic";
 
@@ -37,13 +35,6 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
         </div>
       );
     }
-
-    const userKey = `supplier_${supplier.id}`;
-    const dbBg = await prisma.userBackgroundSelection.findUnique({
-      where: { userKey }
-    });
-    const userBgUrl = dbBg?.imageUrl || null;
-
 
     let profitMargin = Number(supplier.profitMargin) || 250;
     if (profitMargin > 0 && profitMargin <= 10) profitMargin *= 1000;
@@ -104,13 +95,6 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
         </header>
 
         <main className="max-w-4xl mx-auto p-4 mt-6 space-y-6">
-          {/* تخصيص الخلفية للمورد */}
-          <div className="bg-white/60 dark:bg-slate-900/60 p-6 rounded-[2.5rem] shadow-sm border border-slate-100 backdrop-blur-md">
-            <BackgroundSynchronizer imageUrl={userBgUrl} />
-            <UserBackgroundPicker userKey={userKey} />
-          </div>
-
-
           <SupplierPricingClient
             supplierId={supplier.id}
             token={supplier.portalToken}

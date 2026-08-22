@@ -38,7 +38,6 @@ export default async function SettingsPage() {
       getAvailableFonts(),
       getChosenFont(),
       prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
-      Promise.resolve(null),
       getSidebarConfig().catch(e => { console.error("Sidebar Config Error:", e); return null; }),
       getTwoWayTemplates().catch(() => ({
         locationSenderTemplate: "",
@@ -70,7 +69,6 @@ export default async function SettingsPage() {
     availableFonts,
     currentFont,
     globalSettings,
-    backgroundsConfig,
     sidebarConfig,
     twoWayTemplates,
   ] = data;
@@ -91,7 +89,6 @@ export default async function SettingsPage() {
       <Suspense fallback={<div className="text-center py-12 text-slate-500 font-bold animate-pulse">جاري تحميل صفحة الإعدادات...</div>}>
         <SettingsBlocks
           globalIcons={icons as any}
-          backgroundsConfig={backgroundsConfig as any}
           sidebarConfig={sidebarConfig as any}
           employeeShareTemplate={employeeShareTemplate as string}
           customerOrderTemplate={customerOrderTemplate as string}

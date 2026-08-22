@@ -21,7 +21,6 @@ import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
-import { AdminBackgroundsSettings } from "./admin-backgrounds-settings";
 import { AdminGesturesSettings } from "./admin-gestures-settings";
 import { SocialLinksSettingsForm } from "./social-links-settings-form";
 
@@ -67,12 +66,10 @@ export function SettingsBlocks({
   availableFonts,
   currentFont,
   globalSettingsInitial,
-  backgroundsConfig,
   sidebarConfig,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
-  backgroundsConfig: any;
   sidebarConfig: SidebarConfig | null;
   employeeShareTemplate: string;
   customerOrderTemplate: string;

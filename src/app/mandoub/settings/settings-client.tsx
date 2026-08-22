@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { updateCourierSetting } from "./actions";
 import FontSizeCustomizer from "./font-size-customizer";
-import { UserBackgroundPicker } from "@/components/user-background-picker";
-import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 import { MandoubPresenceToggle } from "../mandoub-presence-toggle";
 import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagnostics";
 
@@ -29,7 +27,6 @@ type Props = {
   availableForAssignment: boolean;
   telegramLink: string | null;
   userKey?: string;
-  userBgUrl?: string | null;
 };
 
 export default function CourierSettingsClient({
@@ -40,7 +37,6 @@ export default function CourierSettingsClient({
   availableForAssignment,
   telegramLink,
   userKey,
-  userBgUrl,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
@@ -262,19 +258,6 @@ export default function CourierSettingsClient({
               );
             })}
           </div>
-        </section>
-
-        {/* Background Settings Box */}
-        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xl">🖼️</span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">خلفية التطبيق</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص خلفية الواجهة بالصور المتاحة</p>
-            </div>
-          </div>
-          <BackgroundSynchronizer imageUrl={userBgUrl || null} />
-          <UserBackgroundPicker userKey={userKey} />
         </section>
 
 

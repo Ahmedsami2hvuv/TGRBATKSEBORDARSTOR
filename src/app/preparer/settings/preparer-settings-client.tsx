@@ -7,8 +7,6 @@ import { PreparerPresenceToggle } from "../preparer-presence-toggle";
 import { disablePreparerSalaryPinCode, enablePreparerSalaryPinCode } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { UserBackgroundPicker } from "@/components/user-background-picker";
-import { BackgroundSynchronizer } from "@/components/background-synchronizer";
 
 
 type Props = {
@@ -19,7 +17,6 @@ type Props = {
   pinDisabled: boolean;
   telegramLink?: string | null;
   userKey?: string;
-  userBgUrl?: string | null;
 };
 
 export default function PreparerSettingsClient({
@@ -30,7 +27,6 @@ export default function PreparerSettingsClient({
   pinDisabled,
   telegramLink,
   userKey,
-  userBgUrl,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -475,19 +471,6 @@ export default function PreparerSettingsClient({
               );
             })}
           </div>
-        </section>
-
-        {/* Background Settings Box */}
-        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xl">🖼️</span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">خلفية التطبيق</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص خلفية الواجهة بالصور المتاحة</p>
-            </div>
-          </div>
-          <BackgroundSynchronizer imageUrl={userBgUrl || null} />
-          <UserBackgroundPicker userKey={userKey} />
         </section>
 
 
