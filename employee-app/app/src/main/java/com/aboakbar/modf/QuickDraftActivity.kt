@@ -99,11 +99,10 @@ class QuickDraftActivity : AppCompatActivity() {
     }
 
     private fun fetchPreparers() {
-        val portalUrl = getSavedPortalUrl()
         showLoading(true)
 
         val request = Request.Builder()
-            .url("$BACKEND_URL/api/admin/preparers")
+            .url("$BACKEND_URL/api/employee/preparers")
             .get()
             .build()
 
