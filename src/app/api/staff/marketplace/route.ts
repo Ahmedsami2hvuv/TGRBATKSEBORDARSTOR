@@ -117,9 +117,10 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // إضافة أو نشر سلعة جديدة
-    if (action === "create_item") {
+    // إضافة أو نشر أو تعديل سلعة
+    if (action === "create_item" || action === "update_item") {
       const {
+        id,
         title,
         categoryId,
         categoryName,
@@ -148,19 +149,36 @@ export async function POST(req: NextRequest) {
         finalCategoryId = cat.id;
       }
 
-      const item = await prisma.marketplaceItem.create({
-        data: {
-          title: title.trim(),
-          categoryId: finalCategoryId,
-          imageUrl: imageUrl || "",
-          location: location || "",
-          price: price || "",
-          sellerPhone: sellerPhone.trim(),
-          sellerName: sellerName || "",
-          staffEmployeeId: staffEmployeeId || null
-        },
-        include: { category: true }
-      });
+      let item;
+      if (id) {
+        item = await prisma.marketplaceItem.update({
+          where: { id },
+          data: {
+            title: title.trim(),
+            categoryId: finalCategoryId,
+            imageUrl: imageUrl || "",
+            location: location || "",
+            price: price || "",
+            sellerPhone: sellerPhone.trim(),
+            sellerName: sellerName || ""
+          },
+          include: { category: true }
+        });
+      } else {
+        item = await prisma.marketplaceItem.create({
+          data: {
+            title: title.trim(),
+            categoryId: finalCategoryId,
+            imageUrl: imageUrl || "",
+            location: location || "",
+            price: price || "",
+            sellerPhone: sellerPhone.trim(),
+            sellerName: sellerName || "",
+            staffEmployeeId: staffEmployeeId || null
+          },
+          include: { category: true }
+        });
+      }
 
       return NextResponse.json({ success: true, item });
     }

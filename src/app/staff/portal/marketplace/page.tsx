@@ -35,14 +35,14 @@ export default function StaffMarketplacePortal() {
   const [showAddItemModal, setShowAddItemModal] = useState<boolean>(false);
   const [showAddCatModal, setShowAddCatModal] = useState<boolean>(false);
 
-  // Add Item Form State
+  // Add/Edit Item Form State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [sellerPhone, setSellerPhone] = useState("");
-  const [sellerName, setSellerName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploadingItemImg, setUploadingItemImg] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -115,7 +115,7 @@ export default function StaffMarketplacePortal() {
     }
   };
 
-  const handleCreateItem = async (e: React.FormEvent) => {
+  const handleCreateOrUpdateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || (!selectedCategory && !newCategoryName) || !sellerPhone) {
       setFormMsg("الرجاء ملء الأقسام المطلوبة: اسم السلعة، القسم، ورقم البائع");
@@ -130,14 +130,14 @@ export default function StaffMarketplacePortal() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "create_item",
+          action: editingItemId ? "update_item" : "create_item",
+          id: editingItemId || undefined,
           title,
           categoryId: selectedCategory !== "new" ? selectedCategory : undefined,
           categoryName: selectedCategory === "new" ? newCategoryName : undefined,
           price,
           location,
           sellerPhone,
-          sellerName,
           imageUrl,
           staffEmployeeId: se
         })
@@ -145,28 +145,40 @@ export default function StaffMarketplacePortal() {
 
       const data = await res.json();
       if (data.success) {
-        setFormMsg("تم نشر السلعة في المعرض بنجاح! 🎉");
-        setTitle("");
-        setPrice("");
-        setLocation("");
-        setSellerPhone("");
-        setSellerName("");
-        setImageUrl("");
-        setNewCategoryName("");
-        setSelectedCategory("");
+        setFormMsg(editingItemId ? "تم تحديث كافة تفاصيل السلعة بنجاح! ✨" : "تم نشر السلعة في المعرض بنجاح! 🎉");
         fetchData();
         setTimeout(() => {
           setShowAddItemModal(false);
+          setEditingItemId(null);
+          setTitle("");
+          setPrice("");
+          setLocation("");
+          setSellerPhone("");
+          setImageUrl("");
+          setNewCategoryName("");
+          setSelectedCategory("");
           setFormMsg("");
-        }, 1200);
+        }, 1000);
       } else {
-        setFormMsg(data.error || "فشل نشر السلعة");
+        setFormMsg(data.error || "فشل حفظ السلعة");
       }
     } catch (err) {
       setFormMsg("حدث خطأ في الاتصال");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setTitle(item.title);
+    setSelectedCategory(item.categoryId || "");
+    setPrice(item.price || "");
+    setLocation(item.location || "");
+    setSellerPhone(item.sellerPhone || "");
+    setImageUrl(item.imageUrl || "");
+    setFormMsg("");
+    setShowAddItemModal(true);
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
@@ -203,7 +215,7 @@ export default function StaffMarketplacePortal() {
           setCatImageUrl("");
           setCatSortOrder(0);
           setCatMsg("");
-        }, 1200);
+        }, 1000);
       } else {
         setCatMsg(data.error || "فشل حفظ القسم");
       }
@@ -245,26 +257,6 @@ export default function StaffMarketplacePortal() {
     }
   };
 
-  const handleNotifySeller = async (inquiryId: string) => {
-    try {
-      const res = await fetch(`/api/staff/marketplace`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "notify_seller",
-          inquiryId
-        })
-      });
-      const data = await res.json();
-      if (data.success && data.whatsappUrl) {
-        window.open(data.whatsappUrl, "_blank");
-        fetchData();
-      }
-    } catch (e) {
-      alert("فشل التبليغ");
-    }
-  };
-
   const handleToggleSold = async (itemId: string, currentIsSold: boolean) => {
     try {
       const res = await fetch(`/api/staff/marketplace`, {
@@ -282,6 +274,26 @@ export default function StaffMarketplacePortal() {
       }
     } catch (e) {
       alert("فشل تغيير حالة السلعة");
+    }
+  };
+
+  const handleNotifySeller = async (inquiryId: string) => {
+    try {
+      const res = await fetch(`/api/staff/marketplace`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "notify_seller",
+          inquiryId
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.whatsappUrl) {
+        window.open(data.whatsappUrl, "_blank");
+        fetchData();
+      }
+    } catch (e) {
+      alert("فشل التبليغ");
     }
   };
 
@@ -319,7 +331,7 @@ export default function StaffMarketplacePortal() {
             </Link>
             <div>
               <h1 className="text-xl font-bold">إدارة سوق المبيعات والمستعمل 🏷️</h1>
-              <p className="text-xs text-slate-400">متابعة المنتجات، إضافة سلع وأقسام، وإدارة طلبات الشراية</p>
+              <p className="text-xs text-slate-400">تعديل كافة تفاصيل السلع والأقسام وتأشير المبيعات</p>
             </div>
           </div>
           <Link
@@ -336,6 +348,13 @@ export default function StaffMarketplacePortal() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
+                setEditingItemId(null);
+                setTitle("");
+                setPrice("");
+                setLocation("");
+                setSellerPhone("");
+                setImageUrl("");
+                setSelectedCategory("");
                 setFormMsg("");
                 setShowAddItemModal(true);
               }}
@@ -425,13 +444,20 @@ export default function StaffMarketplacePortal() {
               <h3 className="font-bold text-sm text-slate-300">السلع المنشورة بالمعرض:</h3>
               <button
                 onClick={() => {
+                  setEditingItemId(null);
+                  setTitle("");
+                  setPrice("");
+                  setLocation("");
+                  setSellerPhone("");
+                  setImageUrl("");
+                  setSelectedCategory("");
                   setFormMsg("");
                   setShowAddItemModal(true);
                 }}
                 className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
               >
                 <span>➕</span>
-                <span>إضافة سلعة</span>
+                <span>إضافة سلعة جديدة</span>
               </button>
             </div>
             {loading ? (
@@ -464,6 +490,12 @@ export default function StaffMarketplacePortal() {
                       <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800 pt-2 mt-2">
                         <span>👁️ {item.viewsCount} | 💬 {item.inquiriesCount} طلب</span>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 px-2 py-1 rounded text-[11px] font-bold"
+                          >
+                            ✏️ تعديل
+                          </button>
                           <button
                             onClick={() => handleToggleSold(item.id, item.isSold)}
                             className={`px-2 py-1 rounded text-[11px] font-bold transition ${
@@ -616,7 +648,7 @@ export default function StaffMarketplacePortal() {
         )}
       </div>
 
-      {/* 🟢 Modal 1: Add Item Modal */}
+      {/* 🟢 Modal 1: Add / Edit Item Modal */}
       {showAddItemModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -628,8 +660,8 @@ export default function StaffMarketplacePortal() {
             </button>
 
             <h3 className="font-bold text-base text-white mb-4 flex items-center gap-2">
-              <span>🚀</span>
-              <span>إضافة منشور سلعة جديدة للمعرض</span>
+              <span>{editingItemId ? "✏️" : "🚀"}</span>
+              <span>{editingItemId ? "تعديل تفاصيل السلعة المنشورة" : "إضافة منشور سلعة جديدة للمعرض"}</span>
             </h3>
 
             {formMsg && (
@@ -644,7 +676,7 @@ export default function StaffMarketplacePortal() {
               </div>
             )}
 
-            <form onSubmit={handleCreateItem} className="space-y-4 text-xs">
+            <form onSubmit={handleCreateOrUpdateItem} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-300 mb-1">اسم / عنوان السلعة *</label>
                 <input
@@ -731,7 +763,7 @@ export default function StaffMarketplacePortal() {
                   <label className="cursor-pointer bg-slate-900 border border-cyan-500/50 hover:border-cyan-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
                     <span className="text-base">📸</span>
                     <span className="font-semibold text-cyan-300">
-                      {uploadingItemImg ? "جاري تقليل حجم الصورة ورفعها لـ R2..." : "اختر صورة السلعة من الهاتف..."}
+                      {uploadingItemImg ? "جاري تقليل حجم الصورة ورفعها لـ R2..." : "اختر أو استبدل صورة السلعة..."}
                     </span>
                     <input
                       type="file"
@@ -747,7 +779,7 @@ export default function StaffMarketplacePortal() {
 
                   {imageUrl && (
                     <div className="relative w-full h-32 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
-                      <img src={imageUrl} alt="معاينة السلعة" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(imageUrl)} alt="معاينة السلعة" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setImageUrl("")}
@@ -766,7 +798,7 @@ export default function StaffMarketplacePortal() {
                   disabled={submitting || uploadingItemImg}
                   className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm"
                 >
-                  {submitting ? "جاري النشر..." : "🚀 نشر السلعة الآن"}
+                  {submitting ? "جاري الحفظ..." : editingItemId ? "حفظ التعديلات" : "🚀 نشر السلعة الآن"}
                 </button>
                 <button
                   type="button"
@@ -844,7 +876,7 @@ export default function StaffMarketplacePortal() {
 
                   {catImageUrl && (
                     <div className="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
-                      <img src={catImageUrl} alt="معاينة القسم" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(catImageUrl)} alt="معاينة القسم" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setCatImageUrl("")}
