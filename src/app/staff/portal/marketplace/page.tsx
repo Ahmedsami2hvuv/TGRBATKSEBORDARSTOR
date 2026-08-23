@@ -318,33 +318,33 @@ export default function StaffMarketplacePortal() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8 dir-rtl" style={{ direction: "rtl" }}>
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Top Header */}
-        <div className="flex items-center justify-between bg-slate-800 p-4 rounded-2xl border border-slate-700">
+    <div className="min-h-screen bg-slate-100 text-slate-800 p-3 sm:p-6 dir-rtl" style={{ direction: "rtl" }}>
+      <div className="max-w-5xl mx-auto space-y-5">
+        {/* Top Header - Light Theme */}
+        <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <Link
               href={`/staff/portal?${authQ}`}
-              className="w-10 h-10 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-lg font-bold"
+              className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl flex items-center justify-center text-lg font-bold border border-slate-300 transition"
             >
               ➔
             </Link>
             <div>
-              <h1 className="text-xl font-bold">إدارة سوق المبيعات والمستعمل 🏷️</h1>
-              <p className="text-xs text-slate-400">تعديل كافة تفاصيل السلع والأقسام وتأشير المبيعات</p>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800">إدارة سوق المبيعات والمستعمل 🏷️</h1>
+              <p className="text-xs text-slate-500 font-medium">تعديل كافة تفاصيل السلع والأقسام ومتابعة طلبات الشراية</p>
             </div>
           </div>
           <Link
             href="/sell"
             target="_blank"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition"
           >
             مشاهدة المعرض العام 🌐
           </Link>
         </div>
 
-        {/* Action Buttons Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-800 p-3 rounded-2xl border border-slate-700">
+        {/* Action Buttons Bar - Light */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
@@ -358,7 +358,7 @@ export default function StaffMarketplacePortal() {
                 setFormMsg("");
                 setShowAddItemModal(true);
               }}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition active:scale-95"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-2 transition active:scale-95"
             >
               <span>➕</span>
               <span>إضافة منشور سلعة جديدة</span>
@@ -373,48 +373,48 @@ export default function StaffMarketplacePortal() {
                 setCatMsg("");
                 setShowAddCatModal(true);
               }}
-              className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-pink-600/30 flex items-center gap-2 transition active:scale-95"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-purple-600/20 flex items-center gap-2 transition active:scale-95"
             >
               <span>🏷️</span>
               <span>إضافة قسم جديد</span>
             </button>
           </div>
 
-          <span className="text-xs text-slate-400 font-semibold">
-            الأقسام: <span className="text-purple-400">{stats.totalCategories}</span> | السلع: <span className="text-cyan-400">{stats.totalItems}</span>
+          <span className="text-xs text-slate-500 font-bold">
+            الأقسام: <span className="text-purple-600 font-black">{stats.totalCategories}</span> | السلع: <span className="text-emerald-600 font-black">{stats.totalItems}</span>
           </span>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+        {/* Stats Section - Light Theme */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-sm">
             <span className="text-2xl">📦</span>
-            <div className="text-xl font-black text-white mt-1">{stats.totalItems}</div>
-            <div className="text-xs text-slate-400">السلع المعروضة</div>
+            <div className="text-xl font-black text-slate-800 mt-1">{stats.totalItems}</div>
+            <div className="text-xs text-slate-500 font-semibold">السلع المعروضة</div>
           </div>
-          <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-sm">
             <span className="text-2xl">👁️</span>
-            <div className="text-xl font-black text-cyan-400 mt-1">{stats.totalViews}</div>
-            <div className="text-xs text-slate-400">مشاهدات المعرض</div>
+            <div className="text-xl font-black text-cyan-600 mt-1">{stats.totalViews}</div>
+            <div className="text-xs text-slate-500 font-semibold">مشاهدات المعرض</div>
           </div>
-          <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-sm">
             <span className="text-2xl">💬</span>
-            <div className="text-xl font-black text-emerald-400 mt-1">{stats.totalInquiries}</div>
-            <div className="text-xs text-slate-400">طلبات المراسلة (الشراية)</div>
+            <div className="text-xl font-black text-emerald-600 mt-1">{stats.totalInquiries}</div>
+            <div className="text-xs text-slate-500 font-semibold">طلبات المراسلة (الشراية)</div>
           </div>
-          <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-sm">
             <span className="text-2xl">🏷️</span>
-            <div className="text-xl font-black text-purple-400 mt-1">{stats.totalCategories}</div>
-            <div className="text-xs text-slate-400">الأقسام المتاحة</div>
+            <div className="text-xl font-black text-purple-600 mt-1">{stats.totalCategories}</div>
+            <div className="text-xs text-slate-500 font-semibold">الأقسام المتاحة</div>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="flex gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 overflow-x-auto">
+        {/* Tabs Navigation - Light Theme */}
+        <div className="flex gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
           <button
             onClick={() => setActiveTab("items")}
             className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "items" ? "bg-cyan-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+              activeTab === "items" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             📋 قائمة السلع ({items.length})
@@ -422,7 +422,7 @@ export default function StaffMarketplacePortal() {
           <button
             onClick={() => setActiveTab("categories")}
             className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "categories" ? "bg-purple-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+              activeTab === "categories" ? "bg-purple-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             🏷️ الأقسام والتسلسل ({categories.length})
@@ -430,18 +430,18 @@ export default function StaffMarketplacePortal() {
           <button
             onClick={() => setActiveTab("inquiries")}
             className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "inquiries" ? "bg-emerald-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+              activeTab === "inquiries" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             👥 الشراية وطلبات المراسلة ({inquiries.length})
           </button>
         </div>
 
-        {/* Tab 1: Items List */}
+        {/* Tab 1: Items List - Light Theme */}
         {activeTab === "items" && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-slate-300">السلع المنشورة بالمعرض:</h3>
+              <h3 className="font-bold text-sm text-slate-800">السلع المنشورة بالمعرض:</h3>
               <button
                 onClick={() => {
                   setEditingItemId(null);
@@ -454,21 +454,21 @@ export default function StaffMarketplacePortal() {
                   setFormMsg("");
                   setShowAddItemModal(true);
                 }}
-                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm"
               >
                 <span>➕</span>
                 <span>إضافة سلعة جديدة</span>
               </button>
             </div>
             {loading ? (
-              <div className="text-center py-8 text-slate-400 text-xs">جاري التحميل...</div>
+              <div className="text-center py-8 text-slate-500 text-xs font-semibold">جاري التحميل...</div>
             ) : items.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">لا توجد سلع مضافة حتى الآن</div>
+              <div className="text-center py-8 text-slate-500 text-xs font-semibold">لا توجد سلع مضافة حتى الآن</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {items.map((item) => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex gap-3">
-                    <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex gap-3 shadow-sm hover:border-slate-300 transition">
+                    <div className="w-20 h-20 bg-slate-200 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-300">
                       {item.imageUrl ? (
                         <img src={getImageUrl(item.imageUrl)} alt={item.title} className="w-full h-full object-cover" />
                       ) : (
@@ -477,38 +477,38 @@ export default function StaffMarketplacePortal() {
                     </div>
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-sm text-white line-clamp-1">{item.title}</h4>
-                          <span className="text-[10px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded border border-cyan-800">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.title}</h4>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-200">
                             {item.category?.name}
                           </span>
                         </div>
-                        <p className="text-xs text-emerald-400 font-semibold mt-1">{item.price || "غير محدد"}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">📞 البائع: {item.sellerPhone}</p>
-                        {item.location && <p className="text-xs text-slate-400">📍 المكان: {item.location}</p>}
+                        <p className="text-xs text-emerald-600 font-bold mt-1">{item.price || "غير محدد"}</p>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">📞 البائع: {item.sellerPhone}</p>
+                        {item.location && <p className="text-xs text-slate-500 font-medium">📍 المكان: {item.location}</p>}
                       </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800 pt-2 mt-2">
-                        <span>👁️ {item.viewsCount} | 💬 {item.inquiriesCount} طلب</span>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200 pt-2 mt-2">
+                        <span className="font-semibold">👁️ {item.viewsCount} | 💬 {item.inquiriesCount} طلب</span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEditItem(item)}
-                            className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 px-2 py-1 rounded text-[11px] font-bold"
+                            className="bg-white hover:bg-slate-100 text-cyan-700 border border-slate-300 px-2 py-1 rounded-lg text-[11px] font-bold shadow-sm"
                           >
                             ✏️ تعديل
                           </button>
                           <button
                             onClick={() => handleToggleSold(item.id, item.isSold)}
-                            className={`px-2 py-1 rounded text-[11px] font-bold transition ${
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition shadow-sm ${
                               item.isSold
-                                ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                                : "bg-amber-950 text-amber-400 border border-amber-800 hover:bg-amber-900"
+                                ? "bg-slate-200 text-slate-700 hover:bg-slate-300 border border-slate-300"
+                                : "bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200"
                             }`}
                           >
                             {item.isSold ? "إعادة كـ متاح 🔄" : "تأشير كمبيوع 🏷️"}
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
-                            className="text-red-400 hover:text-red-300 font-bold"
+                            className="text-red-600 hover:text-red-500 font-bold"
                           >
                             🗑️ حذف
                           </button>
@@ -522,11 +522,11 @@ export default function StaffMarketplacePortal() {
           </div>
         )}
 
-        {/* Tab 2: Categories Management List */}
+        {/* Tab 2: Categories Management List - Light Theme */}
         {activeTab === "categories" && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-slate-300">الأقسام المتاحة (حسب التسلسل):</h3>
+              <h3 className="font-bold text-sm text-slate-800">الأقسام المتاحة (حسب التسلسل):</h3>
               <button
                 onClick={() => {
                   setEditingCatId(null);
@@ -536,7 +536,7 @@ export default function StaffMarketplacePortal() {
                   setCatMsg("");
                   setShowAddCatModal(true);
                 }}
-                className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm"
               >
                 <span>➕</span>
                 <span>إضافة قسم جديد</span>
@@ -544,16 +544,16 @@ export default function StaffMarketplacePortal() {
             </div>
 
             {categories.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">لا توجد أقسام مضافة بعد</div>
+              <div className="text-center py-8 text-slate-500 text-xs font-semibold">لا توجد أقسام مضافة بعد</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
-                    className="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between gap-3"
+                    className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-sm"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
+                      <div className="w-12 h-12 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 shadow-sm">
                         {cat.imageUrl ? (
                           <img src={getImageUrl(cat.imageUrl)} alt={cat.name} className="w-full h-full object-cover" />
                         ) : (
@@ -562,25 +562,25 @@ export default function StaffMarketplacePortal() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-sm text-white">{cat.name}</h4>
-                          <span className="bg-purple-950 text-purple-400 border border-purple-800 text-[10px] px-2 py-0.5 rounded font-mono">
+                          <h4 className="font-bold text-sm text-slate-800">{cat.name}</h4>
+                          <span className="bg-purple-100 text-purple-800 border border-purple-200 text-[10px] px-2 py-0.5 rounded font-mono font-bold">
                             تسلسل: {cat.sortOrder}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500">تاريخ الإنشاء: {new Date(cat.createdAt).toLocaleDateString("ar-EG")}</span>
+                        <span className="text-[11px] text-slate-500 font-medium">تاريخ الإنشاء: {new Date(cat.createdAt).toLocaleDateString("ar-EG")}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleEditCategory(cat)}
-                        className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
+                        className="bg-white hover:bg-slate-100 text-cyan-700 border border-slate-300 text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm"
                       >
                         ✏️ تعديل
                       </button>
                       <button
                         onClick={() => handleDeleteCategory(cat.id)}
-                        className="bg-slate-800 hover:bg-slate-700 text-red-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
+                        className="bg-white hover:bg-slate-100 text-red-600 border border-slate-300 text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm"
                       >
                         🗑️ حذف
                       </button>
@@ -592,84 +592,105 @@ export default function StaffMarketplacePortal() {
           </div>
         )}
 
-        {/* Tab 3: Inquiries & Buyers */}
+        {/* Tab 3: Inquiries & Buyers - Beautiful Mobile Cards Layout */}
         {activeTab === "inquiries" && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-4">
-            <h3 className="font-bold text-sm text-slate-300">سجل طلبات المراسلة والشراية:</h3>
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <span>👥</span>
+                <span>سجل طلبات المراسلة والشراية:</span>
+              </h3>
+              <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                {inquiries.length} طلب
+              </span>
+            </div>
+
             {inquiries.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">لا توجد طلبات شراية مسجلة بعد</div>
+              <div className="text-center py-10 text-slate-400 text-xs font-semibold">لا توجد طلبات شراية مسجلة بعد</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-right text-slate-300">
-                  <thead className="bg-slate-900 text-slate-400">
-                    <tr>
-                      <th className="p-3">اسم المشتري</th>
-                      <th className="p-3">رقم الهاتف</th>
-                      <th className="p-3">العنوان</th>
-                      <th className="p-3">السلعة المطلوبة</th>
-                      <th className="p-3">حالة التبليغ</th>
-                      <th className="p-3 text-center">إجراء التبليغ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/50">
-                    {inquiries.map((inq) => (
-                      <tr key={inq.id} className="hover:bg-slate-700/30">
-                        <td className="p-3 font-bold text-white">{inq.buyerName}</td>
-                        <td className="p-3 font-mono text-cyan-400">{inq.buyerPhone}</td>
-                        <td className="p-3 text-slate-400">{inq.buyerAddress || "غير محدد"}</td>
-                        <td className="p-3 text-emerald-400 font-semibold">{inq.item?.title}</td>
-                        <td className="p-3">
-                          {inq.notifiedSeller ? (
-                            <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">
-                              تم التبليغ ✅
-                            </span>
-                          ) : (
-                            <span className="bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded text-[10px]">
-                              لم يُبلغ بعد ⏳
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleNotifySeller(inq.id)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center justify-center gap-1 mx-auto"
-                          >
-                            <span>📲</span>
-                            <span>تبليغ البائع</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {inquiries.map((inq) => (
+                  <div
+                    key={inq.id}
+                    className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-emerald-300 transition"
+                  >
+                    {/* Header: Buyer Name & Status Badge */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-200 pb-2.5">
+                      <div>
+                        <h4 className="font-black text-sm text-slate-800 flex items-center gap-1.5">
+                          <span>👤</span>
+                          <span>{inq.buyerName}</span>
+                        </h4>
+                        <p className="text-xs font-mono font-bold text-cyan-700 mt-0.5">📞 {inq.buyerPhone}</p>
+                      </div>
+
+                      {inq.notifiedSeller ? (
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-xl text-[10px] font-bold shadow-sm">
+                          تم التبليغ ✅
+                        </span>
+                      ) : (
+                        <span className="bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-xl text-[10px] font-bold shadow-sm animate-pulse">
+                          لم يُبلغ بعد ⏳
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Details: Item & Address */}
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">السلعة المطلوبة:</span>
+                        <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                          {inq.item?.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">العنوان / المنطقة:</span>
+                        <span className="text-slate-700 font-bold">{inq.buyerAddress || "غير محدد"}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <span>وقت الطلب:</span>
+                        <span>{new Date(inq.createdAt).toLocaleDateString("ar-EG")} - {new Date(inq.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Button: Notify Seller via WhatsApp */}
+                    <button
+                      onClick={() => handleNotifySeller(inq.id)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-95 mt-1"
+                    >
+                      <span>📲</span>
+                      <span>تبليغ البائع بالواتساب الآن</span>
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* 🟢 Modal 1: Add / Edit Item Modal */}
+      {/* 🟢 Modal 1: Add / Edit Item Modal - Light Theme */}
       {showAddItemModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto text-slate-800">
             <button
               onClick={() => setShowAddItemModal(false)}
-              className="absolute top-4 left-4 text-slate-400 hover:text-white text-xl p-1"
+              className="absolute top-4 left-4 text-slate-400 hover:text-slate-600 text-xl p-1"
             >
               ✕
             </button>
 
-            <h3 className="font-bold text-base text-white mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-base text-slate-800 mb-4 flex items-center gap-2">
               <span>{editingItemId ? "✏️" : "🚀"}</span>
               <span>{editingItemId ? "تعديل تفاصيل السلعة المنشورة" : "إضافة منشور سلعة جديدة للمعرض"}</span>
             </h3>
 
             {formMsg && (
               <div
-                className={`p-3 rounded-xl text-xs font-semibold text-center mb-4 ${
+                className={`p-3 rounded-xl text-xs font-bold text-center mb-4 ${
                   formMsg.includes("بنجاح")
-                    ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                    : "bg-red-950 text-red-300 border border-red-800"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
                 {formMsg}
@@ -678,24 +699,24 @@ export default function StaffMarketplacePortal() {
 
             <form onSubmit={handleCreateOrUpdateItem} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">اسم / عنوان السلعة *</label>
+                <label className="block font-bold text-slate-700 mb-1">اسم / عنوان السلعة *</label>
                 <input
                   type="text"
                   required
                   placeholder="مثال: طابعة ليتر ملونة / بايسكل جبلي 26"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">اختر القسم *</label>
+                  <label className="block font-bold text-slate-700 mb-1">اختر القسم *</label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                   >
                     <option value="">اختر قسماً من القائمة</option>
                     {categories.map((c) => (
@@ -709,13 +730,13 @@ export default function StaffMarketplacePortal() {
 
                 {selectedCategory === "new" && (
                   <div>
-                    <label className="block font-semibold text-cyan-400 mb-1">اسم القسم الجديد *</label>
+                    <label className="block font-bold text-emerald-700 mb-1">اسم القسم الجديد *</label>
                     <input
                       type="text"
                       placeholder="مثال: أجهزة رياضية"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="w-full bg-slate-900 border border-cyan-500 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+                      className="w-full bg-slate-50 border border-emerald-500 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:bg-white"
                     />
                   </div>
                 )}
@@ -723,46 +744,46 @@ export default function StaffMarketplacePortal() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">سعر السلعة</label>
+                  <label className="block font-bold text-slate-700 mb-1">سعر السلعة</label>
                   <input
                     type="text"
                     placeholder="مثال: 50,000 دينار / 100$"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">المنطقة / المكان</label>
+                  <label className="block font-bold text-slate-700 mb-1">المنطقة / المكان</label>
                   <input
                     type="text"
                     placeholder="مثال: بغداد - حي الجامعة"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">رقم هاتف البائع *</label>
+                <label className="block font-bold text-slate-700 mb-1">رقم هاتف البائع *</label>
                 <input
                   type="tel"
                   required
                   placeholder="077xxxxxxxx"
                   value={sellerPhone}
                   onChange={(e) => setSellerPhone(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">صورة السلعة (رفع مباشر من الهاتف مع ضغط R2)</label>
+                <label className="block font-bold text-slate-700 mb-1">صورة السلعة (رفع مباشر من الهاتف مع ضغط R2)</label>
                 <div className="flex flex-col gap-2">
-                  <label className="cursor-pointer bg-slate-900 border border-cyan-500/50 hover:border-cyan-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
+                  <label className="cursor-pointer bg-slate-50 border border-emerald-300 hover:border-emerald-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
                     <span className="text-base">📸</span>
-                    <span className="font-semibold text-cyan-300">
+                    <span className="font-bold text-emerald-700">
                       {uploadingItemImg ? "جاري تقليل حجم الصورة ورفعها لـ R2..." : "اختر أو استبدل صورة السلعة..."}
                     </span>
                     <input
@@ -778,7 +799,7 @@ export default function StaffMarketplacePortal() {
                   </label>
 
                   {imageUrl && (
-                    <div className="relative w-full h-32 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                    <div className="relative w-full h-32 bg-slate-100 rounded-xl overflow-hidden border border-slate-300 flex items-center justify-center">
                       <img src={getImageUrl(imageUrl)} alt="معاينة السلعة" className="w-full h-full object-cover" />
                       <button
                         type="button"
@@ -796,14 +817,14 @@ export default function StaffMarketplacePortal() {
                 <button
                   type="submit"
                   disabled={submitting || uploadingItemImg}
-                  className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-md shadow-emerald-600/20 text-sm"
                 >
                   {submitting ? "جاري الحفظ..." : editingItemId ? "حفظ التعديلات" : "🚀 نشر السلعة الآن"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddItemModal(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-3 rounded-xl text-sm"
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-3 rounded-xl text-sm"
                 >
                   إلغاء
                 </button>
@@ -813,28 +834,28 @@ export default function StaffMarketplacePortal() {
         </div>
       )}
 
-      {/* 🟣 Modal 2: Add / Edit Category Modal */}
+      {/* 🟣 Modal 2: Add / Edit Category Modal - Light Theme */}
       {showAddCatModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md shadow-2xl relative text-slate-800">
             <button
               onClick={() => setShowAddCatModal(false)}
-              className="absolute top-4 left-4 text-slate-400 hover:text-white text-xl p-1"
+              className="absolute top-4 left-4 text-slate-400 hover:text-slate-600 text-xl p-1"
             >
               ✕
             </button>
 
-            <h3 className="font-bold text-base text-pink-400 mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-base text-purple-700 mb-4 flex items-center gap-2">
               <span>🏷️</span>
               <span>{editingCatId ? "تعديل بيانات القسم" : "إضافة قسم جديد للمعرض"}</span>
             </h3>
 
             {catMsg && (
               <div
-                className={`p-3 rounded-xl text-xs font-semibold text-center mb-4 ${
+                className={`p-3 rounded-xl text-xs font-bold text-center mb-4 ${
                   catMsg.includes("بنجاح")
-                    ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                    : "bg-red-950 text-red-300 border border-red-800"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
                 {catMsg}
@@ -843,23 +864,23 @@ export default function StaffMarketplacePortal() {
 
             <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">اسم القسم *</label>
+                <label className="block font-bold text-slate-700 mb-1">اسم القسم *</label>
                 <input
                   type="text"
                   required
                   placeholder="مثال: طابعات / بايسكلات / بيوت"
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">صورة القسم (رفع من الهاتف لـ R2)</label>
+                <label className="block font-bold text-slate-700 mb-1">صورة القسم (رفع من الهاتف لـ R2)</label>
                 <div className="flex flex-col gap-2">
-                  <label className="cursor-pointer bg-slate-900 border border-pink-500/50 hover:border-pink-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
+                  <label className="cursor-pointer bg-slate-50 border border-purple-300 hover:border-purple-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
                     <span className="text-base">📱</span>
-                    <span className="font-semibold text-pink-300">
+                    <span className="font-bold text-purple-700">
                       {uploadingCatImg ? "جاري ضغط الصورة ورفعها لـ R2..." : "اختر صورة القسم من الهاتف..."}
                     </span>
                     <input
@@ -875,7 +896,7 @@ export default function StaffMarketplacePortal() {
                   </label>
 
                   {catImageUrl && (
-                    <div className="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                    <div className="relative w-full h-24 bg-slate-100 rounded-xl overflow-hidden border border-slate-300 flex items-center justify-center">
                       <img src={getImageUrl(catImageUrl)} alt="معاينة القسم" className="w-full h-full object-cover" />
                       <button
                         type="button"
@@ -890,29 +911,29 @@ export default function StaffMarketplacePortal() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">تسلسل / ترتيب الظهور (رقم)</label>
+                <label className="block font-bold text-slate-700 mb-1">تسلسل / ترتيب الظهور (رقم)</label>
                 <input
                   type="number"
                   placeholder="0"
                   value={catSortOrder}
                   onChange={(e) => setCatSortOrder(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">الأرقام الأصغر تصدر أولاً (مثال: 1 ثم 2 ثم 3)</span>
+                <span className="text-[10px] text-slate-500 font-semibold mt-1 block">الأرقام الأصغر تصدر أولاً (مثال: 1 ثم 2 ثم 3)</span>
               </div>
 
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={catSubmitting || uploadingCatImg}
-                  className="flex-1 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-pink-600/30 text-sm"
+                  className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition shadow-md shadow-purple-600/20 text-sm"
                 >
                   {catSubmitting ? "جاري الحفظ..." : editingCatId ? "حفظ التعديلات" : "إضافة القسم الآن"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddCatModal(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm"
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm"
                 >
                   إلغاء
                 </button>
