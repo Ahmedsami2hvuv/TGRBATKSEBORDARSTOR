@@ -4,10 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ProgressBar
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -36,6 +34,7 @@ class QuickDraftActivity : AppCompatActivity() {
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
+    private val KEY_TOKEN = "admin_token"
     private val BACKEND_URL = "https://aboakbr.com"
 
     private var selectedText: String = ""
@@ -100,24 +99,11 @@ class QuickDraftActivity : AppCompatActivity() {
     }
 
     private fun fetchPreparers() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val se = sharedPreferences.getString("se", null)
-        val exp = sharedPreferences.getString("exp", null)
-        val sig = sharedPreferences.getString("sig", null)
-
-        if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) {
-            Toast.makeText(this, "يرجى تسجيل الدخول إلى بوابتك أولاً في التطبيق الرئيسي", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
+        val portalUrl = getSavedPortalUrl()
         showLoading(true)
 
         val request = Request.Builder()
-            .url("$BACKEND_URL/api/employee/preparers")
-            .header("x-employee-se", se)
-            .header("x-employee-exp", exp)
-            .header("x-employee-sig", sig)
+            .url("$BACKEND_URL/api/admin/preparers")
             .get()
             .build()
 
@@ -125,7 +111,7 @@ class QuickDraftActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showLoading(false)
-                    Toast.makeText(this@QuickDraftActivity, "فشل الاتصال: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@QuickDraftActivity, "فشل جلب المجهزين", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -145,10 +131,10 @@ class QuickDraftActivity : AppCompatActivity() {
                             preparerList = list
                             populatePreparerChips()
                         } catch (e: Exception) {
-                            Toast.makeText(this@QuickDraftActivity, "خطأ في قراءة المجهزين", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@QuickDraftActivity, "خطأ في قراءة البيانات", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(this@QuickDraftActivity, "فشل جلب المجهزين (قد تحتاج لتسجيل دخول جديد)", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@QuickDraftActivity, "فشل جلب المجهزين", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -183,16 +169,7 @@ class QuickDraftActivity : AppCompatActivity() {
             }
         }
 
-        // نسمح بأن يكون المجهز غير مسند (عام) ولكن يُفضل تحديد مجهز
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val se = sharedPreferences.getString("se", null)
-        val exp = sharedPreferences.getString("exp", null)
-        val sig = sharedPreferences.getString("sig", null)
-
-        if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) {
-            Toast.makeText(this, "يرجى تسجيل الدخول إلى بوابتك أولاً في التطبيق الرئيسي", Toast.LENGTH_LONG).show()
-            return
-        }
+        val portalUrl = getSavedPortalUrl()
 
         val json = JSONObject()
         json.put("text", selectedText)
@@ -202,7 +179,6 @@ class QuickDraftActivity : AppCompatActivity() {
             preparerArray.put(id)
         }
         json.put("preparerIds", preparerArray)
-        json.put("orderTime", "عاجل اليوم")
 
         if (isFinalStep) {
             var selectedRegionId: String? = null
@@ -235,16 +211,22 @@ class QuickDraftActivity : AppCompatActivity() {
 
         showLoading(true)
 
-        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val request = Request.Builder()
-            .url("$BACKEND_URL/api/employee/quick-draft")
-            .header("x-employee-se", se)
-            .header("x-employee-exp", exp)
-            .header("x-employee-sig", sig)
-            .post(body)
-            .build()
+        var targetUrl = "$BACKEND_URL/api/employee/quick-draft"
+        if (!portalUrl.isNullOrEmpty() && portalUrl.contains("?")) {
+            val q = portalUrl.substring(portalUrl.indexOf("?"))
+            targetUrl += q
+        }
 
-        client.newCall(request).enqueue(object : Callback {
+        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val reqBuilder = Request.Builder()
+            .url(targetUrl)
+            .post(body)
+
+        if (!portalUrl.isNullOrEmpty()) {
+            reqBuilder.header("Authorization", "Bearer $portalUrl")
+        }
+
+        client.newCall(reqBuilder.build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showLoading(false)
@@ -259,7 +241,7 @@ class QuickDraftActivity : AppCompatActivity() {
                     try {
                         val jsonRes = JSONObject(responseBody)
                         if (response.isSuccessful && jsonRes.optBoolean("success")) {
-                            Toast.makeText(this@QuickDraftActivity, "تم إضافة طلب التجهيز بنجاح!", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@QuickDraftActivity, "تم إضافة الطلب بنجاح!", Toast.LENGTH_LONG).show()
                             finish()
                         } else if (response.isSuccessful && jsonRes.optBoolean("requireRegion")) {
                             layoutStep1.visibility = View.GONE
@@ -290,14 +272,14 @@ class QuickDraftActivity : AppCompatActivity() {
                             }
                             
                             if (!isFinalStep) {
-                                Toast.makeText(this@QuickDraftActivity, "يرجى تحديد المنطقة بدقة لطلب التجهيز", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@QuickDraftActivity, "يرجى تحديد المنطقة بدقة", Toast.LENGTH_SHORT).show()
                             }
                         } else {
-                            val errorMsg = jsonRes.optString("error", "فشل الإرسال.")
+                            val errorMsg = jsonRes.optString("error", jsonRes.optString("message", "فشل الإرسال."))
                             Toast.makeText(this@QuickDraftActivity, errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(this@QuickDraftActivity, "خطأ: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@QuickDraftActivity, "خطأ في المعالجة", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -347,5 +329,10 @@ class QuickDraftActivity : AppCompatActivity() {
             
             chipGroupRegions.addView(chip)
         }
+    }
+
+    private fun getSavedPortalUrl(): String? {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return sharedPreferences.getString(KEY_TOKEN, null)
     }
 }

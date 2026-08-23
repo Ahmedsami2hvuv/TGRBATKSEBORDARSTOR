@@ -85,7 +85,7 @@
         <activity
             android:name="com.aboakbar.modf.QuickDraftActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
-            android:label="إضافة طلب - موظف"
+            android:label="رفع طلب"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
@@ -93,6 +93,19 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.aboakbar.modf.QuickSellActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:label="رفع بيعة"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
 
         <activity
             android:name="com.aboakbar.modf.DoubleOrderActivity"

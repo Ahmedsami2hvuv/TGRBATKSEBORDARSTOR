@@ -951,3 +951,49 @@ model JobApplication {
   updatedAt       DateTime @updatedAt
   status          String   @default("pending")
 }
+
+model MarketplaceCategory {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  imageUrl  String            @default("")
+  sortOrder Int               @default(0)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  items     MarketplaceItem[]
+}
+
+model MarketplaceItem {
+  id              String               @id @default(cuid())
+  title           String
+  categoryId      String
+  imageUrl        String               @default("")
+  location        String               @default("")
+  price           String               @default("")
+  sellerPhone     String
+  sellerName      String               @default("")
+  staffEmployeeId String?
+  viewsCount      Int                  @default(0)
+  inquiriesCount  Int                  @default(0)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  category        MarketplaceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  inquiries       MarketplaceInquiry[]
+
+  @@index([categoryId, isActive])
+  @@index([createdAt])
+}
+
+model MarketplaceInquiry {
+  id             String          @id @default(cuid())
+  itemId         String
+  buyerName      String
+  buyerPhone     String
+  buyerAddress   String          @default("")
+  notifiedSeller Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  item           MarketplaceItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, createdAt])
+}
+

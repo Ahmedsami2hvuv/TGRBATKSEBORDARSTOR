@@ -6,22 +6,49 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
 import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 
-function verifyRequest(request: Request) {
+async function verifyRequest(request: Request) {
   const urlObj = new URL(request.url);
-  const se = request.headers.get("x-employee-se") || urlObj.searchParams.get("se") || undefined;
-  const exp = request.headers.get("x-employee-exp") || urlObj.searchParams.get("exp") || undefined;
-  const sig = request.headers.get("x-employee-sig") || urlObj.searchParams.get("s") || undefined;
-  
-  if (!se || !exp || !sig) return { ok: false };
+  let se = request.headers.get("x-employee-se") || urlObj.searchParams.get("se") || undefined;
+  let exp = request.headers.get("x-employee-exp") || urlObj.searchParams.get("exp") || undefined;
+  let sig = request.headers.get("x-employee-sig") || urlObj.searchParams.get("s") || undefined;
+
+  const authHeader = request.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const rawAuth = authHeader.substring(7).trim();
+    if (rawAuth.includes("se=") && rawAuth.includes("exp=") && rawAuth.includes("s=")) {
+      try {
+        const tokenUrl = new URL(rawAuth.startsWith("http") ? rawAuth : `https://aboakbr.com${rawAuth}`);
+        se = tokenUrl.searchParams.get("se") || se;
+        exp = tokenUrl.searchParams.get("exp") || exp;
+        sig = tokenUrl.searchParams.get("s") || sig;
+      } catch (e) {}
+    }
+  }
+
+  if (!se || !exp || !sig) {
+    // محاولة إيجاد الموظف عن طريق الـ portalToken المباشر
+    const tokenMatch = authHeader?.replace("Bearer ", "").trim() || urlObj.searchParams.get("token");
+    if (tokenMatch) {
+      const emp = await prisma.staffEmployee.findFirst({
+        where: { OR: [{ id: tokenMatch }, { portalToken: tokenMatch }] }
+      });
+      if (emp) {
+        return { ok: true, staffEmployeeId: emp.id, token: emp.portalToken };
+      }
+    }
+    return { ok: false };
+  }
   return verifyStaffEmployeePortalQuery(se, exp, sig);
 }
 
+
 export async function POST(request: Request) {
   try {
-    const verification = verifyRequest(request);
+    const verification = await verifyRequest(request);
     if (!verification.ok) {
       return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
     }
+
 
     const staff = await prisma.staffEmployee.findUnique({
       where: { id: verification.staffEmployeeId },
