@@ -51,10 +51,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "فشل الحفظ في خادم الصور Cloudflare R2" }, { status: 500 });
     }
 
-    // إرجاع رابط الصورة المباشر من Cloudflare R2 / Uploads
-    const r2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_BUCKET_DOMAIN || "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
-    const cleanDomain = r2Domain.replace(/\/$/, "");
-    const publicUrl = `${cleanDomain}/${r2Key}`;
+    // استخدام مسار /uploads الداخلي المضمون لتقديم صور R2
+    const publicUrl = `/uploads/${r2Key}`;
 
     return NextResponse.json({
       success: true,

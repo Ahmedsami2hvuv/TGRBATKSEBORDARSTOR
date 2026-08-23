@@ -5,6 +5,18 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { compressImageFile } from "@/lib/image-compressor";
 
+function getImageUrl(rawUrl: string): string {
+  if (!rawUrl || !rawUrl.trim()) return "";
+  let url = rawUrl.trim();
+  if (url.includes(".r2.dev/")) {
+    const parts = url.split(".r2.dev/");
+    if (parts.length > 1) {
+      return `/uploads/${parts[1]}`;
+    }
+  }
+  return url;
+}
+
 export default function StaffMarketplacePortal() {
   const searchParams = useSearchParams();
   const se = searchParams.get("se") || "";
@@ -432,7 +444,7 @@ export default function StaffMarketplacePortal() {
                   <div key={item.id} className="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex gap-3">
                     <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(item.imageUrl)} alt={item.title} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-2xl">📦</span>
                       )}
@@ -511,7 +523,7 @@ export default function StaffMarketplacePortal() {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
                         {cat.imageUrl ? (
-                          <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                          <img src={getImageUrl(cat.imageUrl)} alt={cat.name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-xl">🏷️</span>
                         )}

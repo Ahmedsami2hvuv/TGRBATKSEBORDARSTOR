@@ -23,6 +23,18 @@ interface Item {
   category: Category;
 }
 
+function getImageUrl(rawUrl: string): string {
+  if (!rawUrl || !rawUrl.trim()) return "";
+  let url = rawUrl.trim();
+  if (url.includes(".r2.dev/")) {
+    const parts = url.split(".r2.dev/");
+    if (parts.length > 1) {
+      return `/uploads/${parts[1]}`;
+    }
+  }
+  return url;
+}
+
 export default function SellPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -205,7 +217,7 @@ export default function SellPage() {
                     <div className="w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden mb-2 relative border border-slate-700/60 group-hover:border-emerald-500/50 transition">
                       {cat.imageUrl ? (
                         <img
-                          src={cat.imageUrl}
+                          src={getImageUrl(cat.imageUrl)}
                           alt={cat.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
@@ -299,7 +311,7 @@ export default function SellPage() {
                     <div className="relative h-48 bg-slate-900 flex items-center justify-center overflow-hidden group">
                       {item.imageUrl ? (
                         <img
-                          src={item.imageUrl}
+                          src={getImageUrl(item.imageUrl)}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />

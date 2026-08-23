@@ -67,7 +67,7 @@ function buildCandidateKeys(originalKey: string): string[] {
   const slash = key.lastIndexOf("/");
   const fileName = slash >= 0 ? key.slice(slash + 1) : key;
   if (fileName) {
-    const folders = ["customers", "profiles", "orders", "customer-photos", "door-photos"];
+    const folders = ["market", "customers", "profiles", "orders", "customer-photos", "door-photos"];
     for (const folder of folders) {
       out.add(`${folder}/${fileName}`);
     }
