@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, parseQuantityFromLine } from "@/lib/auto-pricing";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import type { PreparerShoppingPayloadV1 } from "@/lib/preparer-shopping-payload";
 import { updatePreparerShoppingOrder, type PreparerActionState } from "../actions";
@@ -383,7 +383,19 @@ export function PreparerSiteOrderPrepEditClient({
                      ) : (
                        <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced && !isOthers ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
                      )}
-                     <span className={`truncate text-sm font-bold ${priced && !isOthers ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>{p.line}</span>
+                      <span className={`truncate text-sm font-bold flex items-center gap-1.5 ${priced && !isOthers ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
+                        <span>{p.line}</span>
+                        {(() => {
+                          const itemQty = p.qty ?? p.quantity;
+                          const parsedQty = parseQuantityFromLine(p.line || "");
+                          const q = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty && Number(parsedQty) > 0 ? Number(parsedQty) : 1);
+                          return (
+                            <span className="shrink-0 font-black px-1.5 py-0.5 rounded text-[10px] bg-rose-600 text-white shadow-sm">
+                              ×{q}
+                            </span>
+                          );
+                        })()}
+                      </span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
                     <span className={`font-mono text-sm font-black tabular-nums ${priced && !isOthers ? "text-white" : "text-slate-500 dark:text-slate-400"}`} dir="ltr">

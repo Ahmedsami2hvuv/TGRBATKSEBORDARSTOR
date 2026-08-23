@@ -964,77 +964,81 @@ export function PreparerShoppingDraftEditClient({
         )}
 
         <div className="grid grid-cols-2 gap-1.5">
-          {orderedForButtons.map(({ p, idx: i }) => {
-            const isMeat = isMeatProduct(p.line);
-            const priced = p.buyAlf !== "" && p.sellAlf !== "";
-            const isAssignedToOther = Boolean(p.assignedPreparerId && p.assignedPreparerId !== preparerId);
-            const isPricedByOther = Boolean(priced && p.pricedById && p.pricedById !== preparerId && p.pricedById !== "auto");
-            const isOthers = isAssignedToOther || isPricedByOther;
-            const active = i === selectedPriceIndex;
+            {orderedForButtons.map(({ p, idx: i }) => {
+              const isMeat = isMeatProduct(p.line);
+              const priced = p.buyAlf !== "" && p.sellAlf !== "";
+              const isAssignedToOther = Boolean(p.assignedPreparerId && p.assignedPreparerId !== preparerId);
+              const isPricedByOther = Boolean(priced && p.pricedById && p.pricedById !== preparerId && p.pricedById !== "auto");
+              const isOthers = isAssignedToOther || isPricedByOther;
+              const active = i === selectedPriceIndex;
 
-            return (
-              <button
-                key={`${i}-${p.line}`}
-                type="button"
-                disabled={(isAssignedToOther || isPricedByOther) && !deleteMode}
-                onClick={() => {
-                  if (deleteMode) { removeProductByIndex(i); return; }
-                  if (isMeat) {
-                      if (!priced) handleAutoPriceMeat(i);
-                      return;
-                  }
-                  if (isAssignedToOther || isPricedByOther) return;
-                  setSelectedPriceIndex(i);
-                  setPricingLinesText(priced ? `${p.buyAlf}` : "");
-                }}
-                className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
-                  active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
-                  isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
-                  priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
-                } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
-              >
-                {/* صورة المنتج */}
-                {productImagesMap[p.line.trim().toLowerCase()] && (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setZoomImage({
-                        url: productImagesMap[p.line.trim().toLowerCase()],
-                        title: p.line
-                      });
-                    }}
-                    className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in"
-                  >
-                    <img
-                      src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+              // حساب كمية المنتج للمجهز
+              const itemQty = p.qty ?? p.quantity;
+              const parsedQty = parseQuantityFromLine(p.line || "");
+              const displayQty = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty && Number(parsedQty) > 0 ? Number(parsedQty) : 1);
+
+              return (
+                <button
+                  key={`${i}-${p.line}`}
+                  type="button"
+                  disabled={(isAssignedToOther || isPricedByOther) && !deleteMode}
+                  onClick={() => {
+                    if (deleteMode) { removeProductByIndex(i); return; }
+                    if (isMeat) {
+                        if (!priced) handleAutoPriceMeat(i);
+                        return;
+                    }
+                    if (isAssignedToOther || isPricedByOther) return;
+                    setSelectedPriceIndex(i);
+                    setPricingLinesText(priced ? `${p.buyAlf}` : "");
+                  }}
+                  className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
+                    active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
+                    isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
+                    priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
+                  } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
+                >
+                  {/* شارة عدد المنتج البارزة للمجهز */}
+                  <div className="absolute top-1 left-1 flex gap-1 items-center z-10">
+                    <span className="font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm bg-rose-600 text-white border border-rose-400/50">
+                      {displayQty}x
+                    </span>
                   </div>
-                )}
 
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full">
-                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
-                      {priced && <span className="shrink-0">✅</span>}
-                      <span>
-                        {p.line}
-                        {(() => {
-                          const itemQty = p.qty ?? p.quantity;
-                          const parsedQty = parseQuantityFromLine(p.line || "");
-                          const q = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty > 1 ? parsedQty : null);
-                          if (!q) return null;
-                          return (
-                            <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
-                              priced && !isOthers 
-                                ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
-                                : "bg-rose-600 text-white border border-rose-500 shadow-sm"
-                            }`}>
-                              ×{q}
-                            </span>
-                          );
-                        })()}
-                      </span>
-                    </p>
+                  {/* صورة المنتج */}
+                  {productImagesMap[p.line.trim().toLowerCase()] && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setZoomImage({
+                          url: productImagesMap[p.line.trim().toLowerCase()],
+                          title: p.line
+                        });
+                      }}
+                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in mt-2"
+                    >
+                      <img
+                        src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
+                      <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 flex-wrap ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
+                        {priced && <span className="shrink-0">✅</span>}
+                        <span className="flex items-center gap-1 flex-wrap">
+                          <span>{p.line}</span>
+                          <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
+                            priced && !isOthers 
+                              ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
+                              : "bg-rose-600 text-white border border-rose-500 shadow-sm"
+                          }`}>
+                            ×{displayQty}
+                          </span>
+                        </span>
+                      </p>
 
                     <div className="flex items-center justify-between gap-1 mt-1">
                         <div className="flex flex-wrap items-center gap-1 min-w-0">
