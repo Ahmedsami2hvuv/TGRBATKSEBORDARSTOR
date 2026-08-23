@@ -975,6 +975,7 @@ model MarketplaceItem {
   viewsCount      Int                  @default(0)
   inquiriesCount  Int                  @default(0)
   isActive        Boolean              @default(true)
+  isSold          Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   category        MarketplaceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)

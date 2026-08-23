@@ -19,6 +19,7 @@ interface Item {
   sellerName: string;
   viewsCount: number;
   inquiriesCount: number;
+  isSold: boolean;
   category: Category;
 }
 
@@ -76,6 +77,8 @@ export default function SellPage() {
   };
 
   const openChatModal = async (item: Item) => {
+    if (item.isSold) return;
+
     setSelectedItemForChat(item);
     setErrorMessage("");
     setBuyerName("");
@@ -216,7 +219,11 @@ export default function SellPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-slate-800 border border-slate-700/70 rounded-2xl overflow-hidden hover:border-cyan-500/50 transition duration-200 flex flex-col shadow-lg"
+                className={`rounded-2xl overflow-hidden transition duration-200 flex flex-col shadow-lg border ${
+                  item.isSold
+                    ? "bg-slate-800/60 border-slate-700/50 grayscale opacity-80"
+                    : "bg-slate-800 border-slate-700/70 hover:border-cyan-500/50"
+                }`}
               >
                 {/* Product Image */}
                 <div className="relative h-48 bg-slate-900 flex items-center justify-center overflow-hidden group">
@@ -232,9 +239,18 @@ export default function SellPage() {
                       <span className="text-xs">بدون صورة</span>
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded-lg text-xs font-semibold text-cyan-400 border border-slate-700">
-                    {item.category?.name || "عام"}
-                  </div>
+
+                  {item.isSold ? (
+                    <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px] flex items-center justify-center">
+                      <span className="bg-slate-800 text-slate-300 font-black text-sm px-4 py-1.5 rounded-full border border-slate-600 shadow-xl tracking-wider">
+                        مبيوع 🚫
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded-lg text-xs font-semibold text-cyan-400 border border-slate-700">
+                      {item.category?.name || "عام"}
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -249,7 +265,7 @@ export default function SellPage() {
                         </div>
                       )}
                       {item.price && (
-                        <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-sm">
+                        <div className={`flex items-center gap-1.5 font-bold text-sm ${item.isSold ? "text-slate-500 line-through" : "text-emerald-400"}`}>
                           <span>💰</span>
                           <span>{item.price}</span>
                         </div>
@@ -258,13 +274,23 @@ export default function SellPage() {
                   </div>
 
                   {/* Action Button */}
-                  <button
-                    onClick={() => openChatModal(item)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95"
-                  >
-                    <span>💬</span>
-                    <span>مراسلة البائع واتساب</span>
-                  </button>
+                  {item.isSold ? (
+                    <button
+                      disabled
+                      className="w-full bg-slate-700/80 text-slate-400 text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed border border-slate-600/50"
+                    >
+                      <span>🚫</span>
+                      <span>السلعة مبيوعة بالكامل</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openChatModal(item)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95"
+                    >
+                      <span>💬</span>
+                      <span>مراسلة البائع واتساب</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

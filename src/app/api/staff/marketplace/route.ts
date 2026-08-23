@@ -193,12 +193,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, inquiry, whatsappUrl });
     }
 
+    // تأشير السلعة كمبيوعة أو إعادتها كـ متاح
+    if (action === "toggle_sold") {
+      const { itemId, isSold } = body;
+      if (!itemId) {
+        return NextResponse.json({ success: false, error: "معرف السلعة مطلوب" }, { status: 400 });
+      }
+
+      const item = await prisma.marketplaceItem.update({
+        where: { id: itemId },
+        data: { isSold: isSold !== undefined ? Boolean(isSold) : true }
+      });
+
+      return NextResponse.json({ success: true, item });
+    }
+
     // حذف سلعة
     if (action === "delete_item") {
       const { itemId } = body;
       await prisma.marketplaceItem.delete({ where: { id: itemId } });
       return NextResponse.json({ success: true });
     }
+
 
     return NextResponse.json({ success: false, error: "إجراء غير معروف" }, { status: 400 });
   } catch (error: any) {

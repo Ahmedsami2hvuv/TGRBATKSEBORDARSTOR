@@ -253,6 +253,26 @@ export default function StaffMarketplacePortal() {
     }
   };
 
+  const handleToggleSold = async (itemId: string, currentIsSold: boolean) => {
+    try {
+      const res = await fetch(`/api/staff/marketplace`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggle_sold",
+          itemId,
+          isSold: !currentIsSold
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData();
+      }
+    } catch (e) {
+      alert("فشل تغيير حالة السلعة");
+    }
+  };
+
   const handleDeleteItem = async (itemId: string) => {
     if (!confirm("هل أنت تأكد من حذف هذه السلعة من المعرض؟")) return;
     try {
@@ -431,12 +451,24 @@ export default function StaffMarketplacePortal() {
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800 pt-2 mt-2">
                         <span>👁️ {item.viewsCount} | 💬 {item.inquiriesCount} طلب</span>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="text-red-400 hover:text-red-300 font-bold"
-                        >
-                          🗑️ حذف
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleSold(item.id, item.isSold)}
+                            className={`px-2 py-1 rounded text-[11px] font-bold transition ${
+                              item.isSold
+                                ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                : "bg-amber-950 text-amber-400 border border-amber-800 hover:bg-amber-900"
+                            }`}
+                          >
+                            {item.isSold ? "إعادة كـ متاح 🔄" : "تأشير كمبيوع 🏷️"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-red-400 hover:text-red-300 font-bold"
+                          >
+                            🗑️ حذف
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
