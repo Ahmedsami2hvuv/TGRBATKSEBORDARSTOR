@@ -669,29 +669,16 @@ export default function StaffMarketplacePortal() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">رقم هاتف البائع *</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="077xxxxxxxx"
-                    value={sellerPhone}
-                    onChange={(e) => setSellerPhone(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">اسم البائع / المجهز</label>
-                  <input
-                    type="text"
-                    placeholder="اسم البائع الاصلي (اختياري)"
-                    value={sellerName}
-                    onChange={(e) => setSellerName(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">رقم هاتف البائع *</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="077xxxxxxxx"
+                  value={sellerPhone}
+                  onChange={(e) => setSellerPhone(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                />
               </div>
 
               <div>
