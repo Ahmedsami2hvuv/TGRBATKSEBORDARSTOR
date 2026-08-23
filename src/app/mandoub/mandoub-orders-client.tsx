@@ -33,6 +33,7 @@ export function MandoubOrdersSection({
   cashInHandStr,
   customWaButtons,
   initialCustomSortIds,
+  courierSettings,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
@@ -46,6 +47,7 @@ export function MandoubOrdersSection({
   cashInHandStr: string;
   customWaButtons?: any[];
   initialCustomSortIds?: string[];
+  courierSettings?: any;
 }) {
   const [query, setQuery] = useState("");
   const searchParams = useSearchParams();
@@ -190,6 +192,7 @@ export function MandoubOrdersSection({
         setShowSearch={setShowSearch}
         customWaButtons={customWaButtons}
         initialCustomSortIds={initialCustomSortIds}
+        courierSettings={courierSettings}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

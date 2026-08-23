@@ -1022,6 +1022,16 @@ export default async function MandoubPage({ searchParams }: Props) {
               cashInHandStr={cashInHandStr}
               customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}
               initialCustomSortIds={customSortOrderIds}
+              courierSettings={{
+                showDoorBtn: courier.showDoorBtn,
+                showLocationBtn: courier.showLocationBtn,
+                showCallBtn: courier.showCallBtn,
+                showWhatsAppBtn: courier.showWhatsAppBtn,
+                showNotesBtn: courier.showNotesBtn,
+                showVoiceNotesBtn: courier.showVoiceNotesBtn,
+                showMoneyBoxes: courier.showMoneyBoxes,
+                guidedDeliverySteps: courier.guidedDeliverySteps,
+              }}
             />
           </section>
         </div>

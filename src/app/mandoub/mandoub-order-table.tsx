@@ -173,6 +173,7 @@ export function MandoubOrderTable({
   setShowSearch,
   customWaButtons,
   initialCustomSortIds,
+  courierSettings,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -190,6 +191,7 @@ export function MandoubOrderTable({
   setShowSearch?: (b: boolean) => void;
   customWaButtons?: any[];
   initialCustomSortIds?: string[];
+  courierSettings?: any;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -790,7 +792,7 @@ export function MandoubOrderTable({
                 smartHintLine={activeOrderData.smartHintLine}
                 secondSmartHintLine={activeOrderData.secondSmartHintLine}
                 icons={icons}
-                courierSettings={{
+                courierSettings={courierSettings || {
                   showDoorBtn: true,
                   showLocationBtn: true,
                   showCallBtn: true,
