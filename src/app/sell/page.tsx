@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Category {
   id: string;
@@ -163,9 +164,13 @@ export default function SellPage() {
             </div>
           </div>
 
-          <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl border border-emerald-200 shadow-sm">
-            🛒
-          </div>
+          <Link
+            href="/"
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black px-3.5 py-2 rounded-2xl shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition active:scale-95 border border-emerald-500/30"
+          >
+            <span>🛍️</span>
+            <span>زيارة متجرنا الرئيسي ➔</span>
+          </Link>
         </div>
 
         {/* Search Input Bar - Light */}
@@ -183,7 +188,29 @@ export default function SellPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Promotional Main Store Banner */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-4 sm:p-5 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-500/30 relative overflow-hidden">
+          <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+          <div className="flex items-center gap-3.5 z-10">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl flex-shrink-0 border border-white/20">
+              🏬
+            </div>
+            <div>
+              <h2 className="font-black text-base sm:text-lg">متجر أبو الأكبر الرئيسي 🛍️</h2>
+              <p className="text-xs text-emerald-100 font-medium mt-0.5">
+                تصفح مئات المنتجات والأجهزة الإلكترونية والخصومات الحصرية في متجرنا الرسمي!
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/"
+            className="z-10 bg-white hover:bg-slate-100 text-emerald-800 text-xs sm:text-sm font-black px-5 py-2.5 rounded-2xl shadow-lg transition whitespace-nowrap active:scale-95"
+          >
+            تصفح المتجر الآن 🚀
+          </Link>
+        </div>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
