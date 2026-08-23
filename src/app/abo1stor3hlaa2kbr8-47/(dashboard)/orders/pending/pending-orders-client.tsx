@@ -32,7 +32,7 @@ import { updateOrderPricingByAdmin, savePricingProgress, duplicateOrderOrDraft }
 import { orderStatusPendingCardBorderBg } from "@/lib/order-status-style";
 import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
 import { matchFishAndCalculatePrice, parseFishPricesList } from "@/lib/fish-pricing";
 
@@ -486,7 +486,13 @@ export function OrderPricingPanel({
 
   const handleCopyTemplate = () => {
     try {
-      const productsText = products.map((p, index) => `${index + 1}. ${p.line}`).join("\n");
+      const productsText = products.map((p, index) => {
+        const itemQty = p.qty ?? p.quantity;
+        const parsedQty = parseQuantityFromLine(p.line || "");
+        const qty = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty > 1 ? parsedQty : null);
+        const qtyStr = qty ? ` (عدد: ${qty})` : "";
+        return `${index + 1}. ${p.line}${qtyStr}`;
+      }).join("\n");
       const regionName = initialData?.customerRegionName || regions.find(r => r.id === (initialData?.customerRegionId || initialData?.regionId))?.name || "غير محددة";
       const landmarkText = initialData?.customerLandmark ? `\n${initialData.customerLandmark}` : "";
       
@@ -1485,6 +1491,11 @@ ${productsText}`;
               const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
               const isMeat = isMeatProduct(p.line);
 
+              // حساب كمية المنتج لاستعراضها بوضوح للزبون والمجهز والأدمن
+              const itemQty = p.qty ?? p.quantity;
+              const parsedQty = parseQuantityFromLine(p.line || "");
+              const displayQty = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty > 1 ? parsedQty : null);
+
               return (
                 <div
                   key={`${i}-${p.line}`}
@@ -1523,15 +1534,19 @@ ${productsText}`;
                   )}
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
-                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${
+                    <p className={`text-[11px] font-black leading-tight pr-1 flex items-center gap-1 flex-wrap ${
                       isSelected ? "text-sky-900 dark:text-sky-100" :
                       active ? "text-indigo-900 dark:text-indigo-100" :
                       priced ? "text-white" : "text-slate-800 dark:text-slate-200"
                     }`}>
                       {priced && <span className="shrink-0">✅</span>}
-                      <span>
-                        {p.line}
-                        {/* تمت إزالة ميزة إظهار سعر المنتج الموجود في المتجر بناءً على الطلب */}
+                      <span className="flex items-center gap-1 flex-wrap">
+                        <span>{p.line}</span>
+                        {displayQty && (
+                          <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
+                            ×{displayQty}
+                          </span>
+                        )}
                       </span>
                     </p>
 
@@ -1559,8 +1574,13 @@ ${productsText}`;
                     </div>
                   </div>
 
-                  {/* شارة السعر */}
+                  {/* شارة السعر والكمية في الأعلى */}
                   <div className="absolute top-1 left-1 flex gap-1 items-center">
+                    {displayQty && displayQty > 1 && (
+                      <span className="font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm bg-rose-600 text-white border border-rose-400/50">
+                        العدد: {displayQty}
+                      </span>
+                    )}
                     {priced ? (
                       <div className="flex gap-0.5">
                         {!hideBuyPrice && (

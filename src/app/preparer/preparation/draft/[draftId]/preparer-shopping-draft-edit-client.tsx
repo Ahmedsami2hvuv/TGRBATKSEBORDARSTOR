@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, reportUnavailableProductsAction, type PreparerActionState } from "@/app/preparer/actions";
 import { suggestFixedPrices } from "@/lib/fixed-prices";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine } from "@/lib/auto-pricing";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 
@@ -1018,15 +1018,21 @@ export function PreparerShoppingDraftEditClient({
                       {priced && <span className="shrink-0">✅</span>}
                       <span>
                         {p.line}
-                        {p.qty && p.qty > 0 && (
-                          <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
-                            priced && !isOthers 
-                              ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
-                              : "bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30"
-                          }`}>
-                            x{p.qty}
-                          </span>
-                        )}
+                        {(() => {
+                          const itemQty = p.qty ?? p.quantity;
+                          const parsedQty = parseQuantityFromLine(p.line || "");
+                          const q = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty > 1 ? parsedQty : null);
+                          if (!q) return null;
+                          return (
+                            <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
+                              priced && !isOthers 
+                                ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
+                                : "bg-rose-600 text-white border border-rose-500 shadow-sm"
+                            }`}>
+                              ×{q}
+                            </span>
+                          );
+                        })()}
                       </span>
                     </p>
 
