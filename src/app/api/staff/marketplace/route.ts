@@ -69,21 +69,53 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action } = body;
 
-    // إضافة أو تحديث قسم
-    if (action === "create_category") {
-      const { name, imageUrl } = body;
+    // إضافة أو تحديث قسم (اسم، صورة، تسلسل)
+    if (action === "create_category" || action === "update_category") {
+      const { id, name, imageUrl, sortOrder } = body;
       if (!name) {
         return NextResponse.json({ success: false, error: "يرجى تحديد اسم القسم" }, { status: 400 });
       }
 
-      const category = await prisma.marketplaceCategory.upsert({
-        where: { name: name.trim() },
-        update: { imageUrl: imageUrl || "" },
-        create: { name: name.trim(), imageUrl: imageUrl || "" }
-      });
+      const parsedOrder = parseInt(sortOrder) || 0;
+
+      let category;
+      if (id) {
+        category = await prisma.marketplaceCategory.update({
+          where: { id },
+          data: {
+            name: name.trim(),
+            imageUrl: imageUrl || "",
+            sortOrder: parsedOrder
+          }
+        });
+      } else {
+        category = await prisma.marketplaceCategory.upsert({
+          where: { name: name.trim() },
+          update: {
+            imageUrl: imageUrl || "",
+            sortOrder: parsedOrder
+          },
+          create: {
+            name: name.trim(),
+            imageUrl: imageUrl || "",
+            sortOrder: parsedOrder
+          }
+        });
+      }
 
       return NextResponse.json({ success: true, category });
     }
+
+    // حذف قسم
+    if (action === "delete_category") {
+      const { categoryId } = body;
+      if (!categoryId) {
+        return NextResponse.json({ success: false, error: "معرف القسم مطلوب" }, { status: 400 });
+      }
+      await prisma.marketplaceCategory.delete({ where: { id: categoryId } });
+      return NextResponse.json({ success: true });
+    }
+
 
     // إضافة أو نشر سلعة جديدة
     if (action === "create_item") {
