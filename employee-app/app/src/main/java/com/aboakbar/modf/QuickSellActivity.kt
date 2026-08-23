@@ -75,7 +75,7 @@ class QuickSellActivity : AppCompatActivity() {
     private fun fetchCategories() {
         showLoading(true)
         val request = Request.Builder()
-            .url("$BACKEND_URL/api/market")
+            .url("$BACKEND_URL/api/sell")
             .get()
             .build()
 

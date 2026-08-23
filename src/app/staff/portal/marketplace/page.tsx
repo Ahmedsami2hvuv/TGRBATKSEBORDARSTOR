@@ -161,7 +161,7 @@ export default function StaffMarketplacePortal() {
             </div>
           </div>
           <Link
-            href="/market"
+            href="/sell"
             target="_blank"
             className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl"
           >
