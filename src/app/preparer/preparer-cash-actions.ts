@@ -320,7 +320,7 @@ export async function submitPreparerDeliveryMoney(
           });
         }
       });
-      if (advanceStatus === "delivered" && a.order.status === "delivering") {
+      if (a.order.status === "delivered" || (advanceStatus === "delivered" && a.order.status === "delivering")) {
         try {
           const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
           await handleOrderDelivered(orderId);

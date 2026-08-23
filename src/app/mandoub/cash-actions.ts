@@ -441,7 +441,7 @@ export async function submitMandoubDeliveryMoney(
         },
       });
 
-      if (advanceStatus === "delivered" && order.status === "delivering") {
+      if (order.status === "delivered" || (advanceStatus === "delivered" && order.status === "delivering")) {
         const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
         await handleOrderDelivered(orderId, tx);
       }
@@ -623,7 +623,10 @@ export async function softDeleteMandoubMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
-    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    if (ev.order.status === "delivered") {
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      await handleOrderDelivered(ev.orderId, tx);
+    }
   });
 
   revalidatePath(`/mandoub/order/${ev.orderId}`);
@@ -662,7 +665,10 @@ export async function softDeleteMandoubMoneyEventAdmin(
         deletedByDisplayName: "لوحة الإدارة",
       },
     });
-    // await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
+    if (ev.order.status === "delivered") {
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      await handleOrderDelivered(ev.orderId, tx);
+    }
   });
 
   const oid = ev.orderId;
@@ -714,7 +720,10 @@ export async function hardDeleteOrderCourierMoneyEventAdmin(
 
   await prisma.$transaction(async (tx) => {
     await tx.orderCourierMoneyEvent.delete({ where: { id: eventId } });
-    // await syncOrderStatusFromActiveMoneyEvents(tx, orderId);
+    if (ev.order.status === "delivered") {
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      await handleOrderDelivered(orderId, tx);
+    }
   });
 
   revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
