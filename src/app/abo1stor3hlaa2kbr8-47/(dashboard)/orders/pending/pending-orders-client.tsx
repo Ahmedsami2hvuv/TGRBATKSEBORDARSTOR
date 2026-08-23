@@ -222,6 +222,7 @@ export function AdminPricingPanel({
   couriers,
   isDraft,
   onSuccess,
+  onClose,
   hideContainer = false,
   footerActions,
   extraActions,
@@ -237,6 +238,7 @@ export function AdminPricingPanel({
   couriers?: { id: string; name: string }[];
   isDraft?: boolean;
   onSuccess?: () => void;
+  onClose?: () => void;
   hideContainer?: boolean;
   footerActions?: React.ReactNode;
   extraActions?: React.ReactNode;
@@ -254,6 +256,7 @@ export function AdminPricingPanel({
     couriers={couriers}
     isDraft={isDraft}
     onSuccess={onSuccess}
+    onClose={onClose}
     hideContainer={hideContainer}
     footerActions={footerActions}
     extraActions={extraActions}
@@ -366,6 +369,7 @@ export function OrderPricingPanel({
   couriers,
   isDraft,
   onSuccess,
+  onClose,
   hideContainer = false,
   footerActions,
   extraActions,
@@ -381,6 +385,7 @@ export function OrderPricingPanel({
   couriers?: { id: string; name: string }[];
   isDraft?: boolean;
   onSuccess?: () => void;
+  onClose?: () => void;
   hideContainer?: boolean;
   footerActions?: React.ReactNode;
   extraActions?: React.ReactNode;
@@ -1076,10 +1081,10 @@ ${productsText}`;
         <div className="sticky top-0 z-[100] bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md p-3 border-b border-white/10 -mx-1 shadow-2xl rounded-b-[1.5rem] mb-2">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2 w-full text-white">
-              {onSuccess && (
+              {(onClose || onSuccess) && (
                 <button
                   type="button"
-                  onClick={onSuccess}
+                  onClick={onClose || onSuccess}
                   className="h-10 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-black text-slate-300 border border-slate-700 active:scale-95 transition-all flex items-center gap-1 shrink-0"
                 >
                   ✕ إغلاق
@@ -1456,7 +1461,7 @@ ${productsText}`;
         )}
 
         <div className="flex-1 overflow-y-auto px-1 custom-scrollbar pb-32">
-          {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); window.location.reload(); }} icons={icons || undefined} hideContainer={true} /></div>}
+          {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); router.refresh(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
           {assignSuccessMsg && (
             <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-black rounded-xl text-center animate-in fade-in">
@@ -1613,7 +1618,7 @@ ${productsText}`;
             currentCourierName={couriers.find(c => c.id === initialData?.autoCourierId)?.name}
             icons={icons}
             onSuccess={() => {
-              window.location.reload();
+              router.refresh();
             }}
           />
         </div>
@@ -2338,6 +2343,7 @@ function RejectButton({ orderId, icons }: { orderId: string, icons?: GlobalIcons
 
 /** زر حذف الطلب نهائياً (رفض الطلب) */
 function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, isDraft: boolean, onSuccess?: () => void, icons?: GlobalIconsConfig | null }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -2359,7 +2365,7 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
       const res = await deleteOrderPermanently({}, formData);
       if (res?.ok || res?.success || !res?.error) {
         if (onSuccess) onSuccess();
-        else window.location.reload();
+        else router.refresh();
       } else {
         await customAlert(res.error || "حدث خطأ أثناء مسح الطلب");
       }
@@ -2381,6 +2387,7 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
 
 /** زر إرجاع الطلب المكتمل التجهيز إلى قيد التجهيز */
 function RevertPreparedOrderButton({ id, onSuccess }: { id: string; onSuccess?: () => void }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const handleRevert = async (e: React.MouseEvent) => {
@@ -2401,7 +2408,7 @@ function RevertPreparedOrderButton({ id, onSuccess }: { id: string; onSuccess?: 
       const res = await revertPreparedOrderToPreparing({}, formData);
       if (res?.ok || !res?.error) {
         if (onSuccess) onSuccess();
-        else window.location.reload();
+        else router.refresh();
       } else {
         await customAlert(res.error || "حدث خطأ أثناء الإرجاع");
       }
@@ -3320,7 +3327,7 @@ export default function PendingOrdersClient({
       } else {
         setSelectedIds(new Set());
         setShowBulkDeleteConfirm(false);
-        window.location.reload();
+        router.refresh();
       }
     } catch (err: any) {
       setBulkActionError(err.message || "حدث خطأ غير متوقع");
@@ -3341,7 +3348,7 @@ export default function PendingOrdersClient({
         setSelectedIds(new Set());
         setBulkCourierId("");
         setShowBulkAssignModal(false);
-        window.location.reload();
+        router.refresh();
       }
     } catch (err: any) {
       setBulkActionError(err.message || "حدث خطأ غير متوقع");
@@ -3924,7 +3931,7 @@ export default function PendingOrdersClient({
                       initialPreparerIds={currentPreparerIds}
                       onSuccess={() => {
                         setActiveAssignPreparerOrderId(null);
-                        window.location.reload();
+                        router.refresh();
                       }}
                       icons={icons || undefined}
                       hideContainer={true}
@@ -3960,7 +3967,7 @@ export default function PendingOrdersClient({
                     isDraft={o.submissionLabel === "مسودة مشتركة" || isDraftMode}
                     onSuccess={() => {
                       setActiveAssignOrderId(null);
-                      window.location.reload();
+                      router.refresh();
                     }}
                   />
                 );
@@ -3991,8 +3998,12 @@ export default function PendingOrdersClient({
                     hideContainer={true}
                     storeProducts={storeProducts}
                     fishPricesRaw={fishPricesText}
+                    onClose={() => {
+                      setActivePricingOrderId(null);
+                    }}
                     onSuccess={() => {
-                       window.location.reload();
+                      setActivePricingOrderId(null);
+                      router.refresh();
                     }}
                   />
                 );
