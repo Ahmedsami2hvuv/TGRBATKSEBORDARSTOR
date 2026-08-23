@@ -12,6 +12,7 @@ type Courier = {
   showWhatsAppBtn: boolean;
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
+  guidedDeliverySteps?: boolean;
 };
 
 export function CourierButtonsSettings() {
@@ -104,6 +105,12 @@ export function CourierButtonsSettings() {
             label="مراسلة واتساب"
             checked={selectedCourier.showWhatsAppBtn}
             onChange={(v) => toggleBtn("showWhatsAppBtn", v)}
+            disabled={saving}
+          />
+          <ButtonToggle
+            label="🗺️ نظام خطوات الاستلام والتوصيل (للمندوبين الجدد)"
+            checked={!!selectedCourier.guidedDeliverySteps}
+            onChange={(v) => toggleBtn("guidedDeliverySteps", v)}
             disabled={saving}
           />
         </div>

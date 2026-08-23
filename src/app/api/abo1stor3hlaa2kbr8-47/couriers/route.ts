@@ -18,6 +18,7 @@ export async function GET() {
       showWhatsAppBtn: true,
       showNotesBtn: true,
       showVoiceNotesBtn: true,
+      guidedDeliverySteps: true,
     },
     orderBy: { name: "asc" },
   });

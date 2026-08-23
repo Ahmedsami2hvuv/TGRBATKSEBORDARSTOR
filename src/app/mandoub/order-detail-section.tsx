@@ -125,6 +125,7 @@ export function OrderDetailSection({
     showWhatsAppBtn?: boolean;
     showNotesBtn?: boolean;
     showVoiceNotesBtn?: boolean;
+    guidedDeliverySteps?: boolean;
   };
   isModal?: boolean;
   customWaButtons?: any[];
@@ -277,7 +278,12 @@ export function OrderDetailSection({
       case "shop_info":
         if (isDoubleRoute) return null;
         return (
-          <div key="shop" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-305 hover:shadow-xl" style={blockStyle}>
+          <div key="shop" className={`bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border ${courierSettings?.guidedDeliverySteps ? "border-amber-400/80 dark:border-amber-500/50 ring-2 ring-amber-400/20" : "border-slate-200 dark:border-white/10"} shadow-lg p-4 relative overflow-hidden transition-all duration-305 hover:shadow-xl`} style={blockStyle}>
+            {courierSettings?.guidedDeliverySteps && (
+              <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
+                <span>🏬 الخطوة 1: استلام البضاعة من المحل (المرسل)</span>
+              </div>
+            )}
             <div className="flex flex-row gap-4 items-start justify-between">
               <div className="flex-1 space-y-2 text-right">
                 <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
@@ -285,7 +291,9 @@ export function OrderDetailSection({
                     <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={18} height={18} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-400">معلومات المحل (المرسل)</h3>
+                    <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-400">
+                      {courierSettings?.guidedDeliverySteps ? "المحل (المرسل - مكان الاستلام)" : "معلومات المحل (المرسل)"}
+                    </h3>
                   </div>
                 </div>
 
@@ -315,12 +323,12 @@ export function OrderDetailSection({
 
                 <div className="pt-1.5">
                   {order.shop.locationUrl?.trim() ? (
-                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md max-w-full">
-                      📍 موقع المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-300" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md max-w-full`}>
+                      {courierSettings?.guidedDeliverySteps ? "🏢 خريطة المحل (لاستلام البضاعة فقط)" : "📍 موقع المحل"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                     </a>
                   ) : (
                     <div className="inline-block p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
-                      ⚠️ لا يوجد موقع جغرافي
+                      ⚠️ لا يوجد موقع جغرافي للمحل
                     </div>
                   )}
                 </div>
@@ -353,7 +361,12 @@ export function OrderDetailSection({
       case "customer_info":
         return (
           <div key="customer_parent" className="space-y-4">
-            <div key="customer" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl" style={blockStyle}>
+            <div key="customer" className={`bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border ${courierSettings?.guidedDeliverySteps ? "border-emerald-500/80 dark:border-emerald-400/50 ring-2 ring-emerald-400/20" : "border-slate-200 dark:border-white/10"} shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl`} style={blockStyle}>
+              {courierSettings?.guidedDeliverySteps && (
+                <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
+                  <span>🏠 الخطوة 2: التوصيل للزبون (المستلم النهائي)</span>
+                </div>
+              )}
               <div className="flex flex-row gap-4 items-start justify-between">
                 <div className="flex-1 space-y-2 text-right">
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
@@ -362,7 +375,7 @@ export function OrderDetailSection({
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-sky-950 dark:text-sky-400">
-                        {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                        {isDoubleRoute ? "المرسل (الوجهة الأولى)" : courierSettings?.guidedDeliverySteps ? "الزبون (المستلم النهائي)" : "الزبون (المستلم)"}
                       </h3>
                     </div>
                   </div>
@@ -398,13 +411,13 @@ export function OrderDetailSection({
                                 href={mergedCustomerLocationUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs sm:text-sm font-black text-white hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn"
+                                className={`inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-300 animate-pulse" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn`}
                                 style={{
                                   fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
                                   height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                                 }}
                               >
-                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                                {courierSettings?.guidedDeliverySteps ? "🛵 خريطة الزبون (للتوصيل والتسليم)" : "📍 موقع الزبون"} {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                               </a>
                             ) : (
                               <MandoubUploadLocationInline 

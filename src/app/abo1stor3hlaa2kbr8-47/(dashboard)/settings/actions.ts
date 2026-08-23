@@ -63,6 +63,7 @@ export async function updateCourierButtonsAction(courierId: string, data: {
   showWhatsAppBtn?: boolean;
   showNotesBtn?: boolean;
   showVoiceNotesBtn?: boolean;
+  guidedDeliverySteps?: boolean;
 }) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
   try {

@@ -17,6 +17,7 @@ type CourierSettings = {
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
   rotate180Photos: boolean;
+  guidedDeliverySteps: boolean;
 };
 
 type Props = {
@@ -129,6 +130,12 @@ export default function CourierSettingsClient({
       icon: "🔄",
       title: "قلب الصور المرفوعة (180 درجة)",
       desc: "قم بتفعيل هذا الخيار إذا كانت الكاميرا في هاتفك تلتقط الصور مقلوبة رأسًا على عقب لتدويرها تلقائياً عند الرفع",
+    },
+    {
+      key: "guidedDeliverySteps" as const,
+      icon: "🗺️",
+      title: "نظام خطوات الاستلام والتوصيل التوجيهي",
+      desc: "مخصص للمندوبين الجدد لمنع الخلط بين موقع المحل (الاستلام) وموقع الزبون (التسليم) وإبراز العناوين واللوكيشن خطوة بخطوة",
     },
   ];
 

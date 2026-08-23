@@ -73,6 +73,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         showNotesBtn: true,
         showVoiceNotesBtn: true,
         rotate180Photos: true,
+        guidedDeliverySteps: true,
       },
     });
 
@@ -98,6 +99,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
       rotate180Photos: courier.rotate180Photos,
+      guidedDeliverySteps: courier.guidedDeliverySteps,
     };
 
     const auth = {

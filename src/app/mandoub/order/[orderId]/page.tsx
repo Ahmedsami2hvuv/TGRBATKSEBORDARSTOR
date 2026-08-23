@@ -95,6 +95,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
       showNotesBtn: true,
       showVoiceNotesBtn: true,
       showMoneyBoxes: true,
+      guidedDeliverySteps: true,
     },
   });
   if (!courier || courier.blocked) {
@@ -307,13 +308,14 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             icons={icons}
             routeHistory={routeHistory}
             courierSettings={{
-              showDoorBtn: true,
-              showLocationBtn: true,
-              showCallBtn: true,
-              showWhatsAppBtn: true,
-              showNotesBtn: true,
-              showVoiceNotesBtn: true,
-              showMoneyBoxes: true,
+              showDoorBtn: courier.showDoorBtn,
+              showLocationBtn: courier.showLocationBtn,
+              showCallBtn: courier.showCallBtn,
+              showWhatsAppBtn: courier.showWhatsAppBtn,
+              showNotesBtn: courier.showNotesBtn,
+              showVoiceNotesBtn: courier.showVoiceNotesBtn,
+              showMoneyBoxes: courier.showMoneyBoxes,
+              guidedDeliverySteps: courier.guidedDeliverySteps,
             }}
           />
         </div>
