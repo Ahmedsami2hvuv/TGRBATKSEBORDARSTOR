@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { compressImageFile } from "@/lib/image-compressor";
 
 export default function StaffMarketplacePortal() {
   const searchParams = useSearchParams();
@@ -27,6 +28,7 @@ export default function StaffMarketplacePortal() {
   const [sellerPhone, setSellerPhone] = useState("");
   const [sellerName, setSellerName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadingItemImg, setUploadingItemImg] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formMsg, setFormMsg] = useState("");
 
@@ -35,6 +37,7 @@ export default function StaffMarketplacePortal() {
   const [catName, setCatName] = useState("");
   const [catImageUrl, setCatImageUrl] = useState("");
   const [catSortOrder, setCatSortOrder] = useState<number>(0);
+  const [uploadingCatImg, setUploadingCatImg] = useState(false);
   const [catSubmitting, setCatSubmitting] = useState(false);
   const [catMsg, setCatMsg] = useState("");
 
@@ -57,6 +60,45 @@ export default function StaffMarketplacePortal() {
       console.error("Error fetching staff marketplace data:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // دالة رفع وضغط الصور من الهاتف إلى Cloudflare R2
+  const handleUploadImage = async (file: File, isCategory: boolean) => {
+    if (isCategory) setUploadingCatImg(true);
+    else setUploadingItemImg(true);
+
+    try {
+      // 1. الضغط في المتصفح لتحويل الميغابايت إلى كيلوبايتات ضئيلة
+      const compressedBlob = await compressImageFile(file, 800, 800, 0.6);
+      const compressedFile = new File([compressedBlob], file.name, { type: "image/jpeg" });
+
+      // 2. إرسال الصورة المضغوطة للسيرفر ليتم ضغطها بـ Sharp ورفعها لـ Cloudflare R2
+      const formData = new FormData();
+      formData.append("file", compressedFile);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.success && data.url) {
+        if (isCategory) {
+          setCatImageUrl(data.url);
+          setCatMsg(`تم رفع وضغط صورة القسم بنجاح (${data.compressedSizeKb} كيلوبايت) ⚡`);
+        } else {
+          setImageUrl(data.url);
+          setFormMsg(`تم رفع وضغط صورة السلعة بنجاح (${data.compressedSizeKb} كيلوبايت) ⚡`);
+        }
+      } else {
+        alert(data.error || "فشل رفع الصورة");
+      }
+    } catch (err) {
+      alert("خطأ أثناء رفع الصورة");
+    } finally {
+      if (isCategory) setUploadingCatImg(false);
+      else setUploadingItemImg(false);
     }
   };
 
@@ -236,7 +278,7 @@ export default function StaffMarketplacePortal() {
             </Link>
             <div>
               <h1 className="text-xl font-bold">إدارة سوق المبيعات والمستعمل 🏷️</h1>
-              <p className="text-xs text-slate-400">إضافة منشورات، إدارة الأقسام والتسلسل، ومتابعة الطلبات</p>
+              <p className="text-xs text-slate-400">إضافة منشورات، رفع الصور المضغوطة لـ R2، وإدارة الطلبات</p>
             </div>
           </div>
           <Link
@@ -391,14 +433,38 @@ export default function StaffMarketplacePortal() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">رابط صورة القسم (اختياري)</label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={catImageUrl}
-                    onChange={(e) => setCatImageUrl(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
-                  />
+                  <label className="block font-semibold text-slate-300 mb-1">صورة القسم (رفع من الهاتف وضغط لـ R2)</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="cursor-pointer bg-slate-900 border border-purple-500/50 hover:border-purple-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
+                      <span className="text-base">📱</span>
+                      <span className="font-semibold text-purple-300">
+                        {uploadingCatImg ? "جاري ضغط الصورة ورفعها لـ R2..." : "اختر صورة من الهاتف..."}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingCatImg}
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadImage(file, true);
+                        }}
+                      />
+                    </label>
+
+                    {catImageUrl && (
+                      <div className="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                        <img src={catImageUrl} alt="معاينة القسم" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setCatImageUrl("")}
+                          className="absolute top-1 left-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -416,8 +482,8 @@ export default function StaffMarketplacePortal() {
                 <div className="flex gap-2 pt-2">
                   <button
                     type="submit"
-                    disabled={catSubmitting}
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-purple-600/30"
+                    disabled={catSubmitting || uploadingCatImg}
+                    className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-purple-600/30"
                   >
                     {catSubmitting ? "جاري الحفظ..." : editingCatId ? "حفظ التعديلات" : "إضافة القسم"}
                   </button>
@@ -659,20 +725,44 @@ export default function StaffMarketplacePortal() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">رابط صورة السلعة</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500"
-                />
+                <label className="block font-semibold text-slate-300 mb-1">صورة السلعة (رفع مباشر من الهاتف لـ R2 مع ضغط شديد)</label>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer bg-slate-900 border border-cyan-500/50 hover:border-cyan-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
+                    <span className="text-base">📸</span>
+                    <span className="font-semibold text-cyan-300">
+                      {uploadingItemImg ? "جاري تقليل حجم الصورة ورفعها لـ R2..." : "اختر صورة السلعة من الهاتف..."}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingItemImg}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadImage(file, false);
+                      }}
+                    />
+                  </label>
+
+                  {imageUrl && (
+                    <div className="relative w-full h-32 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                      <img src={imageUrl} alt="معاينة السلعة" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl("")}
+                        className="absolute top-2 left-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
                 type="submit"
-                disabled={submitting}
-                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm mt-4"
+                disabled={submitting || uploadingItemImg}
+                className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm mt-4"
               >
                 {submitting ? "جاري النشر..." : "🚀 نشر السلعة في المعرض الان"}
               </button>
