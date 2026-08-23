@@ -12,12 +12,16 @@ export default function StaffMarketplacePortal() {
   const s = searchParams.get("s") || "";
   const authQ = `se=${se}&exp=${exp}&s=${s}`;
 
-  const [activeTab, setActiveTab] = useState<"items" | "inquiries" | "add_item" | "categories">("items");
+  const [activeTab, setActiveTab] = useState<"items" | "inquiries" | "categories">("items");
   const [stats, setStats] = useState<any>({ totalItems: 0, totalViews: 0, totalInquiries: 0, totalCategories: 0 });
   const [categories, setCategories] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Modals Visibility State
+  const [showAddItemModal, setShowAddItemModal] = useState<boolean>(false);
+  const [showAddCatModal, setShowAddCatModal] = useState<boolean>(false);
 
   // Add Item Form State
   const [title, setTitle] = useState("");
@@ -63,17 +67,14 @@ export default function StaffMarketplacePortal() {
     }
   };
 
-  // دالة رفع وضغط الصور من الهاتف إلى Cloudflare R2
   const handleUploadImage = async (file: File, isCategory: boolean) => {
     if (isCategory) setUploadingCatImg(true);
     else setUploadingItemImg(true);
 
     try {
-      // 1. الضغط في المتصفح لتحويل الميغابايت إلى كيلوبايتات ضئيلة
       const compressedBlob = await compressImageFile(file, 800, 800, 0.6);
       const compressedFile = new File([compressedBlob], file.name, { type: "image/jpeg" });
 
-      // 2. إرسال الصورة المضغوطة للسيرفر ليتم ضغطها بـ Sharp ورفعها لـ Cloudflare R2
       const formData = new FormData();
       formData.append("file", compressedFile);
 
@@ -86,10 +87,10 @@ export default function StaffMarketplacePortal() {
       if (data.success && data.url) {
         if (isCategory) {
           setCatImageUrl(data.url);
-          setCatMsg(`تم رفع وضغط صورة القسم بنجاح (${data.compressedSizeKb} كيلوبايت) ⚡`);
+          setCatMsg(`تم رفع وضغط صورة القسم بنجاح (${data.compressedSizeKb} KB) ⚡`);
         } else {
           setImageUrl(data.url);
-          setFormMsg(`تم رفع وضغط صورة السلعة بنجاح (${data.compressedSizeKb} كيلوبايت) ⚡`);
+          setFormMsg(`تم رفع وضغط صورة السلعة بنجاح (${data.compressedSizeKb} KB) ⚡`);
         }
       } else {
         alert(data.error || "فشل رفع الصورة");
@@ -142,7 +143,10 @@ export default function StaffMarketplacePortal() {
         setNewCategoryName("");
         setSelectedCategory("");
         fetchData();
-        setActiveTab("items");
+        setTimeout(() => {
+          setShowAddItemModal(false);
+          setFormMsg("");
+        }, 1200);
       } else {
         setFormMsg(data.error || "فشل نشر السلعة");
       }
@@ -179,11 +183,15 @@ export default function StaffMarketplacePortal() {
       const data = await res.json();
       if (data.success) {
         setCatMsg(editingCatId ? "تم تحديث بيانات القسم بنجاح! ✨" : "تمت إضافة القسم الجديد بنجاح! 🎉");
-        setEditingCatId(null);
-        setCatName("");
-        setCatImageUrl("");
-        setCatSortOrder(0);
         fetchData();
+        setTimeout(() => {
+          setShowAddCatModal(false);
+          setEditingCatId(null);
+          setCatName("");
+          setCatImageUrl("");
+          setCatSortOrder(0);
+          setCatMsg("");
+        }, 1200);
       } else {
         setCatMsg(data.error || "فشل حفظ القسم");
       }
@@ -200,6 +208,7 @@ export default function StaffMarketplacePortal() {
     setCatImageUrl(cat.imageUrl || "");
     setCatSortOrder(cat.sortOrder || 0);
     setCatMsg("");
+    setShowAddCatModal(true);
   };
 
   const handleDeleteCategory = async (catId: string) => {
@@ -278,7 +287,7 @@ export default function StaffMarketplacePortal() {
             </Link>
             <div>
               <h1 className="text-xl font-bold">إدارة سوق المبيعات والمستعمل 🏷️</h1>
-              <p className="text-xs text-slate-400">إضافة منشورات، رفع الصور المضغوطة لـ R2، وإدارة الطلبات</p>
+              <p className="text-xs text-slate-400">متابعة المنتجات، إضافة سلع وأقسام، وإدارة طلبات الشراية</p>
             </div>
           </div>
           <Link
@@ -288,6 +297,41 @@ export default function StaffMarketplacePortal() {
           >
             مشاهدة المعرض العام 🌐
           </Link>
+        </div>
+
+        {/* Action Buttons Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-800 p-3 rounded-2xl border border-slate-700">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setFormMsg("");
+                setShowAddItemModal(true);
+              }}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-2 transition active:scale-95"
+            >
+              <span>➕</span>
+              <span>إضافة منشور سلعة جديدة</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setEditingCatId(null);
+                setCatName("");
+                setCatImageUrl("");
+                setCatSortOrder(0);
+                setCatMsg("");
+                setShowAddCatModal(true);
+              }}
+              className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-pink-600/30 flex items-center gap-2 transition active:scale-95"
+            >
+              <span>🏷️</span>
+              <span>إضافة قسم جديد</span>
+            </button>
+          </div>
+
+          <span className="text-xs text-slate-400 font-semibold">
+            الأقسام: <span className="text-purple-400">{stats.totalCategories}</span> | السلع: <span className="text-cyan-400">{stats.totalItems}</span>
+          </span>
         </div>
 
         {/* Stats Section */}
@@ -314,7 +358,7 @@ export default function StaffMarketplacePortal() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs Navigation */}
         <div className="flex gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 overflow-x-auto">
           <button
             onClick={() => setActiveTab("items")}
@@ -330,7 +374,7 @@ export default function StaffMarketplacePortal() {
               activeTab === "categories" ? "bg-purple-600 text-white shadow-md" : "text-slate-400 hover:text-white"
             }`}
           >
-            🏷️ إدارة الأقسام والتسلسل ({categories.length})
+            🏷️ الأقسام والتسلسل ({categories.length})
           </button>
           <button
             onClick={() => setActiveTab("inquiries")}
@@ -340,20 +384,24 @@ export default function StaffMarketplacePortal() {
           >
             👥 الشراية وطلبات المراسلة ({inquiries.length})
           </button>
-          <button
-            onClick={() => setActiveTab("add_item")}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "add_item" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            ➕ إضافة منشور سلعة
-          </button>
         </div>
 
         {/* Tab 1: Items List */}
         {activeTab === "items" && (
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-            <h3 className="font-bold text-sm text-slate-300">السلع المنشورة بالمعرض:</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-300">السلع المنشورة بالمعرض:</h3>
+              <button
+                onClick={() => {
+                  setFormMsg("");
+                  setShowAddItemModal(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+              >
+                <span>➕</span>
+                <span>إضافة سلعة</span>
+              </button>
+            </div>
             {loading ? (
               <div className="text-center py-8 text-slate-400 text-xs">جاري التحميل...</div>
             ) : items.length === 0 ? (
@@ -398,167 +446,77 @@ export default function StaffMarketplacePortal() {
           </div>
         )}
 
-        {/* Tab: Categories Management */}
+        {/* Tab 2: Categories Management List */}
         {activeTab === "categories" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Category Form */}
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 space-y-4">
-              <h3 className="font-bold text-sm text-purple-400">
-                {editingCatId ? "✏️ تعديل القسم" : "➕ إضافة قسم جديد"}
-              </h3>
-
-              {catMsg && (
-                <div
-                  className={`p-3 rounded-xl text-xs font-semibold text-center ${
-                    catMsg.includes("بنجاح")
-                      ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                      : "bg-red-950 text-red-300 border border-red-800"
-                  }`}
-                >
-                  {catMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">اسم القسم *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: طابعات / بايسكلات / بيوت"
-                    value={catName}
-                    onChange={(e) => setCatName(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">صورة القسم (رفع من الهاتف وضغط لـ R2)</label>
-                  <div className="flex flex-col gap-2">
-                    <label className="cursor-pointer bg-slate-900 border border-purple-500/50 hover:border-purple-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
-                      <span className="text-base">📱</span>
-                      <span className="font-semibold text-purple-300">
-                        {uploadingCatImg ? "جاري ضغط الصورة ورفعها لـ R2..." : "اختر صورة من الهاتف..."}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={uploadingCatImg}
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleUploadImage(file, true);
-                        }}
-                      />
-                    </label>
-
-                    {catImageUrl && (
-                      <div className="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
-                        <img src={catImageUrl} alt="معاينة القسم" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setCatImageUrl("")}
-                          className="absolute top-1 left-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">تسلسل / ترتيب الظهور (رقم)</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={catSortOrder}
-                    onChange={(e) => setCatSortOrder(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
-                  />
-                  <span className="text-[10px] text-slate-500 mt-1 block">الأرقام الأصغر تصدر أولاً (مثال: 1 ثم 2 ثم 3)</span>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={catSubmitting || uploadingCatImg}
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-purple-600/30"
-                  >
-                    {catSubmitting ? "جاري الحفظ..." : editingCatId ? "حفظ التعديلات" : "إضافة القسم"}
-                  </button>
-                  {editingCatId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCatId(null);
-                        setCatName("");
-                        setCatImageUrl("");
-                        setCatSortOrder(0);
-                      }}
-                      className="bg-slate-700 text-slate-300 font-bold px-3 py-2.5 rounded-xl"
-                    >
-                      إلغاء
-                    </button>
-                  )}
-                </div>
-              </form>
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-300">الأقسام المتاحة (حسب التسلسل):</h3>
+              <button
+                onClick={() => {
+                  setEditingCatId(null);
+                  setCatName("");
+                  setCatImageUrl("");
+                  setCatSortOrder(0);
+                  setCatMsg("");
+                  setShowAddCatModal(true);
+                }}
+                className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+              >
+                <span>➕</span>
+                <span>إضافة قسم جديد</span>
+              </button>
             </div>
 
-            {/* Categories List */}
-            <div className="md:col-span-2 bg-slate-800 rounded-2xl border border-slate-700 p-5 space-y-4">
-              <h3 className="font-bold text-sm text-slate-300">قائمة الأقسام الحالية (حسب التسلسل):</h3>
-              {categories.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-xs">لا توجد أقسام مضافة بعد</div>
-              ) : (
-                <div className="space-y-3">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
-                          {cat.imageUrl ? (
-                            <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xl">🏷️</span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-sm text-white">{cat.name}</h4>
-                            <span className="bg-purple-950 text-purple-400 border border-purple-800 text-[10px] px-2 py-0.5 rounded font-mono">
-                              تسلسل: {cat.sortOrder}
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500">تاريخ الإنشاء: {new Date(cat.createdAt).toLocaleDateString("ar-EG")}</span>
-                        </div>
+            {categories.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 text-xs">لا توجد أقسام مضافة بعد</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
+                        {cat.imageUrl ? (
+                          <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl">🏷️</span>
+                        )}
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditCategory(cat)}
-                          className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
-                        >
-                          ✏️ تعديل
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="bg-slate-800 hover:bg-slate-700 text-red-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
-                        >
-                          🗑️ حذف
-                        </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-white">{cat.name}</h4>
+                          <span className="bg-purple-950 text-purple-400 border border-purple-800 text-[10px] px-2 py-0.5 rounded font-mono">
+                            تسلسل: {cat.sortOrder}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500">تاريخ الإنشاء: {new Date(cat.createdAt).toLocaleDateString("ar-EG")}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditCategory(cat)}
+                        className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
+                      >
+                        ✏️ تعديل
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="bg-slate-800 hover:bg-slate-700 text-red-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold"
+                      >
+                        🗑️ حذف
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Tab 2: Inquiries & Buyers */}
+        {/* Tab 3: Inquiries & Buyers */}
         {activeTab === "inquiries" && (
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-4">
             <h3 className="font-bold text-sm text-slate-300">سجل طلبات المراسلة والشراية:</h3>
@@ -612,15 +570,27 @@ export default function StaffMarketplacePortal() {
             )}
           </div>
         )}
+      </div>
 
-        {/* Tab 3: Add Item Form */}
-        {activeTab === "add_item" && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 max-w-2xl mx-auto space-y-4">
-            <h3 className="font-bold text-base text-white">إضافة منشور جديد للمعرض</h3>
+      {/* 🟢 Modal 1: Add Item Modal */}
+      {showAddItemModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowAddItemModal(false)}
+              className="absolute top-4 left-4 text-slate-400 hover:text-white text-xl p-1"
+            >
+              ✕
+            </button>
+
+            <h3 className="font-bold text-base text-white mb-4 flex items-center gap-2">
+              <span>🚀</span>
+              <span>إضافة منشور سلعة جديدة للمعرض</span>
+            </h3>
 
             {formMsg && (
               <div
-                className={`p-3 rounded-xl text-xs font-semibold text-center ${
+                className={`p-3 rounded-xl text-xs font-semibold text-center mb-4 ${
                   formMsg.includes("بنجاح")
                     ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                     : "bg-red-950 text-red-300 border border-red-800"
@@ -725,7 +695,7 @@ export default function StaffMarketplacePortal() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">صورة السلعة (رفع مباشر من الهاتف لـ R2 مع ضغط شديد)</label>
+                <label className="block font-semibold text-slate-300 mb-1">صورة السلعة (رفع مباشر من الهاتف مع ضغط R2)</label>
                 <div className="flex flex-col gap-2">
                   <label className="cursor-pointer bg-slate-900 border border-cyan-500/50 hover:border-cyan-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
                     <span className="text-base">📸</span>
@@ -759,17 +729,135 @@ export default function StaffMarketplacePortal() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting || uploadingItemImg}
-                className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm mt-4"
-              >
-                {submitting ? "جاري النشر..." : "🚀 نشر السلعة في المعرض الان"}
-              </button>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting || uploadingItemImg}
+                  className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/30 text-sm"
+                >
+                  {submitting ? "جاري النشر..." : "🚀 نشر السلعة الآن"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddItemModal(false)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-3 rounded-xl text-sm"
+                >
+                  إلغاء
+                </button>
+              </div>
             </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* 🟣 Modal 2: Add / Edit Category Modal */}
+      {showAddCatModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => setShowAddCatModal(false)}
+              className="absolute top-4 left-4 text-slate-400 hover:text-white text-xl p-1"
+            >
+              ✕
+            </button>
+
+            <h3 className="font-bold text-base text-pink-400 mb-4 flex items-center gap-2">
+              <span>🏷️</span>
+              <span>{editingCatId ? "تعديل بيانات القسم" : "إضافة قسم جديد للمعرض"}</span>
+            </h3>
+
+            {catMsg && (
+              <div
+                className={`p-3 rounded-xl text-xs font-semibold text-center mb-4 ${
+                  catMsg.includes("بنجاح")
+                    ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                    : "bg-red-950 text-red-300 border border-red-800"
+                }`}
+              >
+                {catMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">اسم القسم *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: طابعات / بايسكلات / بيوت"
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">صورة القسم (رفع من الهاتف لـ R2)</label>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer bg-slate-900 border border-pink-500/50 hover:border-pink-500 rounded-xl p-3 text-center transition flex items-center justify-center gap-2">
+                    <span className="text-base">📱</span>
+                    <span className="font-semibold text-pink-300">
+                      {uploadingCatImg ? "جاري ضغط الصورة ورفعها لـ R2..." : "اختر صورة القسم من الهاتف..."}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingCatImg}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadImage(file, true);
+                      }}
+                    />
+                  </label>
+
+                  {catImageUrl && (
+                    <div className="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                      <img src={catImageUrl} alt="معاينة القسم" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setCatImageUrl("")}
+                        className="absolute top-1 left-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">تسلسل / ترتيب الظهور (رقم)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={catSortOrder}
+                  onChange={(e) => setCatSortOrder(parseInt(e.target.value) || 0)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">الأرقام الأصغر تصدر أولاً (مثال: 1 ثم 2 ثم 3)</span>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={catSubmitting || uploadingCatImg}
+                  className="flex-1 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-pink-600/30 text-sm"
+                >
+                  {catSubmitting ? "جاري الحفظ..." : editingCatId ? "حفظ التعديلات" : "إضافة القسم الآن"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCatModal(false)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
