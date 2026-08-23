@@ -277,6 +277,10 @@ export function OrderDetailSection({
     switch (blockId) {
       case "shop_info":
         if (isDoubleRoute) return null;
+        // عند تفعيل نظام الخطوات التوجيهي واستلام الطلب من المحل (قيد التوصيل)، نلغي إظهار بطاقة المحل لعدم تشتيت المندوب
+        if (courierSettings?.guidedDeliverySteps && (order.status === "delivering" || order.status === "delivered")) {
+          return null;
+        }
         return (
           <div key="shop" className={`bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border ${courierSettings?.guidedDeliverySteps ? "border-amber-400/80 dark:border-amber-500/50 ring-2 ring-amber-400/20" : "border-slate-200 dark:border-white/10"} shadow-lg p-4 relative overflow-hidden transition-all duration-305 hover:shadow-xl`} style={blockStyle}>
             {courierSettings?.guidedDeliverySteps && (
