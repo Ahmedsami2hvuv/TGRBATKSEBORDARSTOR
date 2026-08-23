@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       const item = await prisma.marketplaceItem.update({
         where: { id: itemId },
         data: { viewsCount: { increment: 1 } },
-        include: { category: true }
+        include: { category: true, staffEmployee: true }
       });
       return NextResponse.json({ success: true, item });
     }
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     const items = await prisma.marketplaceItem.findMany({
       where: whereCondition,
-      include: { category: true },
+      include: { category: true, staffEmployee: true },
       orderBy: { createdAt: "desc" }
     });
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const item = await prisma.marketplaceItem.findUnique({
       where: { id: itemId },
-      include: { category: true }
+      include: { category: true, staffEmployee: true }
     });
 
     if (!item) {
@@ -85,7 +85,12 @@ export async function POST(req: NextRequest) {
       data: { inquiriesCount: { increment: 1 } }
     });
 
-    const waText = `مرحبا\nاني ${buyerName}\nدخلت الك من الموقع مال ابو الاكبر\nاجيتك ع السلعه (${item.title}) الي ناشرها\nالي سعرها: ${item.price || "غير محدد"}`;
+    // استخراج اسم الموظف الناشر
+    const publisherName = item.staffEmployee?.name || item.staffEmployeeName || item.sellerName || "";
+    const publisherSuffix = publisherName ? ` ${publisherName}` : "";
+
+    // صياغة رسالة الواتساب التلقائية بالشكل والتنسيق المطلوب بالضبط
+    const waText = `السلام عليكم\nاني ${buyerName}\nدخلت الك من الموقع مال ابو الاكبر\nاجيتك ع السلعه (${item.title}) الي ناشرها${publisherSuffix}\nالي سعرها: ${item.price || "غير محدد"}`;
     
     let cleanPhone = item.sellerPhone.replace(/[^0-9]/g, "");
     if (cleanPhone.startsWith("0")) {

@@ -149,6 +149,17 @@ export async function POST(req: NextRequest) {
         finalCategoryId = cat.id;
       }
 
+      let staffName = "";
+      if (staffEmployeeId) {
+        const staff = await prisma.staffEmployee.findFirst({
+          where: { OR: [{ id: staffEmployeeId }, { portalToken: staffEmployeeId }] },
+          select: { id: true, name: true }
+        });
+        if (staff) {
+          staffName = staff.name;
+        }
+      }
+
       let item;
       if (id) {
         item = await prisma.marketplaceItem.update({
@@ -160,9 +171,10 @@ export async function POST(req: NextRequest) {
             location: location || "",
             price: price || "",
             sellerPhone: sellerPhone.trim(),
-            sellerName: sellerName || ""
+            sellerName: sellerName || "",
+            staffEmployeeName: staffName || undefined
           },
-          include: { category: true }
+          include: { category: true, staffEmployee: true }
         });
       } else {
         item = await prisma.marketplaceItem.create({
@@ -174,9 +186,10 @@ export async function POST(req: NextRequest) {
             price: price || "",
             sellerPhone: sellerPhone.trim(),
             sellerName: sellerName || "",
-            staffEmployeeId: staffEmployeeId || null
+            staffEmployeeId: staffEmployeeId || null,
+            staffEmployeeName: staffName || ""
           },
-          include: { category: true }
+          include: { category: true, staffEmployee: true }
         });
       }
 

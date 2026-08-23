@@ -277,6 +277,7 @@ model StaffEmployee {
   salaryBalance       Decimal            @default(0) @db.Decimal(14, 4)
   lastSalaryAddedAt   DateTime           @default(now())
   staffTransactions   StaffTransaction[]
+  marketplaceItems    MarketplaceItem[]
 
   @@index([active, createdAt])
 }
@@ -972,6 +973,7 @@ model MarketplaceItem {
   sellerPhone     String
   sellerName      String               @default("")
   staffEmployeeId String?
+  staffEmployeeName String             @default("")
   viewsCount      Int                  @default(0)
   inquiriesCount  Int                  @default(0)
   isActive        Boolean              @default(true)
@@ -979,6 +981,7 @@ model MarketplaceItem {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   category        MarketplaceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  staffEmployee   StaffEmployee?       @relation(fields: [staffEmployeeId], references: [id], onDelete: SetNull)
   inquiries       MarketplaceInquiry[]
 
   @@index([categoryId, isActive])
