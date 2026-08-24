@@ -9,9 +9,11 @@ import { CourierDeleteForm } from "./courier-delete-form";
 import { CourierResetButton } from "./courier-reset-button";
 import { CourierChatToggle } from "./courier-chat-toggle";
 import { CourierHideToggle } from "./courier-hide-toggle";
+import { HiddenCouriersSection } from "./hidden-couriers-section";
 
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
+
 
 export const dynamic = "force-dynamic";
 
@@ -220,18 +222,8 @@ export default async function AdminCouriersPage() {
           )}
         </section>
 
-        {/* قائمة المندوبين المخفيين من التوجيه والإسناد في قسم مستقل */}
-        <section className={`${ad.section} border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/10`}>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className={`${ad.h2} flex items-center gap-2 text-amber-800 dark:text-amber-400`}>
-              <DynamicIcon config={icons} iconKey="ui_eye_off" fallback="🙈" className="w-5 h-5" />
-              المندوبون المخفيون من التوجيه ({hiddenCouriers.length})
-            </h2>
-          </div>
-          <p className={`mt-1 text-sm ${ad.muted}`}>
-            هؤلاء المندوبون مخفيون من قائمة التوجيه عند إسناد الطلبات. يمكنك التبديل وإعادتهم للتوجيه بالضغط على &quot;إظهار في التوجيه&quot;.
-          </p>
-
+        {/* قائمة المندوبين المخفيين من التوجيه والإسناد في قسم مستقل بداخل زر فتح وإغلاق */}
+        <HiddenCouriersSection count={hiddenCouriers.length} icons={icons}>
           {hiddenCouriers.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون من التوجيه حالياً.</p>
           ) : (
@@ -297,7 +289,8 @@ export default async function AdminCouriersPage() {
               })}
             </ul>
           )}
-        </section>
+        </HiddenCouriersSection>
+
       </div>
     );
 
