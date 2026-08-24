@@ -339,3 +339,17 @@ export async function toggleCourierAI(id: string, disabled: boolean) {
     return { error: "فشل تعديل حالة الذكاء الاصطناعي" };
   }
 }
+
+export async function toggleCourierHidden(id: string, hidden: boolean) {
+  try {
+    await prisma.courier.update({
+      where: { id },
+      data: { hiddenFromReports: hidden }
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
+    return { success: true };
+  } catch (e) {
+    return { error: "فشل تعديل حالة الإخفاء" };
+  }
+}
+

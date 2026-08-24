@@ -8,6 +8,7 @@ import { CourierForm } from "./courier-form";
 import { CourierDeleteForm } from "./courier-delete-form";
 import { CourierResetButton } from "./courier-reset-button";
 import { CourierChatToggle } from "./courier-chat-toggle";
+import { CourierHideToggle } from "./courier-hide-toggle";
 
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
@@ -96,6 +97,9 @@ export default async function AdminCouriersPage() {
     const icons = serializePrisma(iconsRaw);
     const baseUrl = getPublicAppUrl();
 
+    const visibleCouriers = couriers.filter((c: any) => !c.hiddenFromReports);
+    const hiddenCouriers = couriers.filter((c: any) => c.hiddenFromReports);
+
     return (
       <div className="space-y-8">
         <p className={ad.muted}>
@@ -140,13 +144,14 @@ export default async function AdminCouriersPage() {
           </div>
         </section>
 
+        {/* قائمة المندوبين الرئيسية (النشطون والظاهرون) */}
         <section className={ad.section}>
-          <h2 className={ad.h2}>القائمة</h2>
-          {couriers.length === 0 ? (
-            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون بعد.</p>
+          <h2 className={ad.h2}>قائمة المندوبين ({visibleCouriers.length})</h2>
+          {visibleCouriers.length === 0 ? (
+            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون ظاهرون حالياً.</p>
           ) : (
             <ul className={`${ad.listDivide} mt-3`}>
-              {couriers.map((c: any) => {
+              {visibleCouriers.map((c: any) => {
                 const mandoubUrl = buildDelegatePortalUrl(c.id, baseUrl);
                 const shareText = buildCourierShareMessage({
                   courierName: c.name,
@@ -169,6 +174,11 @@ export default async function AdminCouriersPage() {
                             بدون حركات
                           </span>
                         )}
+                        {c.blocked && (
+                          <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20">
+                            محظور
+                          </span>
+                        )}
                       </div>
                       <p className={`${ad.listMuted} tabular-nums mt-0.5`}>{c.phone}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -189,7 +199,86 @@ export default async function AdminCouriersPage() {
                           معاينة اللوحة
                         </a>
                         <CourierChatToggle courierId={c.id} initialDisabled={c.chatDisabled} icons={icons} />
+                        <CourierHideToggle courierId={c.id} initialHidden={c.hiddenFromReports} icons={icons} />
+                        <CourierResetButton courierId={c.id} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Link
+                        href={`${SECRET_ADMIN_PATH}/couriers/${c.id}/edit`}
+                        className={`text-sm ${ad.link} flex items-center gap-1`}
+                      >
+                        <DynamicIcon config={icons} iconKey="ui_edit" fallback="تعديل" className="w-4 h-4" />
+                        تعديل
+                      </Link>
+                      <CourierDeleteForm id={c.id} name={c.name} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
+        {/* قائمة المندوبين المخفيين في قسم خاص لوحدهم */}
+        <section className={`${ad.section} border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/10`}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className={`${ad.h2} flex items-center gap-2 text-amber-800 dark:text-amber-400`}>
+              <DynamicIcon config={icons} iconKey="ui_eye_off" fallback="🙈" className="w-5 h-5" />
+              المندوبون المخفيون ({hiddenCouriers.length})
+            </h2>
+          </div>
+          <p className={`mt-1 text-sm ${ad.muted}`}>
+            هؤلاء المندوبون مخفيون من قوائم الإسناد والتقارير اليومية. يمكنك إعادة إظهار أي منهم بالضغط على &quot;إظهار المندوب&quot;.
+          </p>
+
+          {hiddenCouriers.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون حالياً.</p>
+          ) : (
+            <ul className={`${ad.listDivide} mt-4`}>
+              {hiddenCouriers.map((c: any) => {
+                const mandoubUrl = buildDelegatePortalUrl(c.id, baseUrl);
+                const shareText = buildCourierShareMessage({
+                  courierName: c.name,
+                  delegatePortalUrl: mandoubUrl,
+                });
+                return (
+                  <li
+                    key={c.id}
+                    className="flex flex-wrap items-start justify-between gap-3 py-4 border-slate-200/60 dark:border-slate-800/60"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`${ad.listTitle} text-slate-700 dark:text-slate-300`}>{c.name}</p>
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-500/30">
+                          مخفي
+                        </span>
+                        {c.blocked && (
+                          <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20">
+                            محظور
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${ad.listMuted} tabular-nums mt-0.5`}>{c.phone}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <a
+                          href={whatsappAppUrl(c.phone, shareText)}
+                          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-xs font-bold text-slate-900 shadow-md ring-1 ring-amber-300/50 transition hover:from-amber-300 hover:to-amber-400"
+                        >
+                          <DynamicIcon config={icons} iconKey="ui_whatsapp" fallback="💬" className="w-4 h-4" />
+                          واتساب: رابط لوحة المندوب
+                        </a>
+                        <a
+                          href={mandoubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-lg border border-sky-500/60 bg-sky-950/50 px-3 py-1.5 text-xs font-bold text-sky-100"
+                        >
+                          <DynamicIcon config={icons} iconKey="ui_external_link" fallback="↗" className="w-4 h-4" />
+                          معاينة اللوحة
+                        </a>
+                        <CourierChatToggle courierId={c.id} initialDisabled={c.chatDisabled} icons={icons} />
+                        <CourierHideToggle courierId={c.id} initialHidden={c.hiddenFromReports} icons={icons} />
                         <CourierResetButton courierId={c.id} />
                       </div>
                     </div>
@@ -212,6 +301,7 @@ export default async function AdminCouriersPage() {
       </div>
     );
   } catch (err: any) {
+
     return (
       <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
         <h1 className="text-2xl font-bold">Runtime Error in AdminCouriersPage</h1>
