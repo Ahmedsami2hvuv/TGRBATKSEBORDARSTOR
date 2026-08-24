@@ -426,13 +426,36 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
-          <div className="flex gap-2 flex-wrap">
-             <Link href="?fishPrices=true" className="px-5 py-2.5 text-xs font-black rounded-xl bg-gradient-to-r from-sky-500 to-indigo-650 hover:from-sky-600 hover:to-indigo-700 text-white shadow-md active:scale-95 transition-all flex items-center gap-1 shrink-0">🐟 أسعار السمك اليومية</Link>
-             <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.btnDark}>تتبع الطلبات</Link>
-             <Link href={`${SECRET_ADMIN_PATH}/preparation-orders`} className={ad.btnDark}>سجل التجهيز</Link>
-             <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>+ طلب إداري جديد</Link>
+          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center">
+             <Link
+               href={`${SECRET_ADMIN_PATH}/orders/new`}
+               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 active:scale-95 transition-all text-center"
+             >
+               <span>+ طلب إداري جديد</span>
+             </Link>
+
+             <Link
+               href="?fishPrices=true"
+               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-md active:scale-95 transition-all text-center"
+             >
+               <span>🐟 أسعار السمك اليومية</span>
+             </Link>
+
+             <Link
+               href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-sky-300 bg-white text-sky-900 shadow-sm hover:bg-sky-50 active:scale-95 transition-all text-center"
+             >
+               <span>📍 تتبع الطلبات</span>
+             </Link>
+
+             <Link
+               href={`${SECRET_ADMIN_PATH}/preparation-orders`}
+               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-sky-300 bg-white text-sky-900 shadow-sm hover:bg-sky-50 active:scale-95 transition-all text-center"
+             >
+               <span>📋 سجل التجهيز</span>
+             </Link>
           </div>
         </div>
 
