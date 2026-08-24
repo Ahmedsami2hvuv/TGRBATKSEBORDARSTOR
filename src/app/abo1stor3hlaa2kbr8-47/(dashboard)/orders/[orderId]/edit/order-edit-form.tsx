@@ -825,7 +825,9 @@ export function OrderEditForm({
 
       <div className="space-y-1.5">
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>منطقة الزبون</span>
+          <span className={ad.label}>
+            {routeMode === "double" ? "منطقة الزبون المرسل (الجهة الأولى)" : "منطقة الزبون"}
+          </span>
           <AdminRegionSearchPicker
             name="customerRegionId"
             regions={regions.map((r) => ({ id: r.id, name: r.name }))}
@@ -836,7 +838,9 @@ export function OrderEditForm({
           />
         </label>
         <p className={`text-xs leading-relaxed ${ad.muted}`}>
-          يُحسب أجر التوصيل كأعلى قيمة بين أجر توصيل منطقة المحل ومنطقة الزبون.
+          {routeMode === "double"
+            ? "يُحسب أجر التوصيل بناءً على مناطق التوصيل للوجهتين."
+            : "يُحسب أجر التوصيل كأعلى قيمة بين أجر توصيل منطقة المحل ومنطقة الزبون."}
           {selectedRegionName ? (
             <>
               {" "}
@@ -848,7 +852,9 @@ export function OrderEditForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>رقم الزبون (الأول)</span>
+          <span className={ad.label}>
+            {routeMode === "double" ? "رقم الزبون المرسل (الجهة الأولى)" : "رقم الزبون (الأول)"}
+          </span>
           <div className="relative">
             <input
               name="customerPhone"
@@ -866,7 +872,9 @@ export function OrderEditForm({
           </div>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>رقم الزبون (الثاني)</span>
+          <span className={ad.label}>
+            {routeMode === "double" ? "رقم ثانٍ للمرسل (اختياري)" : "رقم الزبون (الثاني)"}
+          </span>
           <input
             name="alternatePhone"
             value={alternatePhone}
@@ -901,7 +909,9 @@ export function OrderEditForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1 text-sm">
           <label className="flex flex-col gap-1">
-            <span className={ad.label}>موقع الزبون (رابط خرائط) — اختياري</span>
+            <span className={ad.label}>
+              {routeMode === "double" ? "موقع الزبون المرسل (رابط خرائط)" : "موقع الزبون (رابط خرائط) — اختياري"}
+            </span>
             <input
               name="customerLocationUrl"
               value={custLocationUrl}
@@ -956,7 +966,9 @@ export function OrderEditForm({
           </p>
         </div>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>أقرب نقطة دالة — اختياري</span>
+          <span className={ad.label}>
+            {routeMode === "double" ? "نقطة دالة للزبون المرسل" : "أقرب نقطة دالة — اختياري"}
+          </span>
           <input
             name="customerLandmark"
             value={custLandmark}
@@ -968,7 +980,9 @@ export function OrderEditForm({
 
       <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={ad.label}>صورة باب الزبون (المستلم/الوجهة الأولى)</span>
+          <span className={ad.label}>
+            {routeMode === "double" ? "صورة باب الزبون المرسل (الجهة الأولى)" : "صورة باب الزبون (المستلم/الوجهة الأولى)"}
+          </span>
           <CustomerDoorPhotoQuick orderId={orderId} hasImage={!!defaultCustomerDoorPhotoUrl} />
         </div>
         {customerDoorSrc ? (
