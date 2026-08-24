@@ -282,7 +282,7 @@ export function OrderDetailSection({
           return null;
         }
         return (
-          <div key="shop" className={`bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border ${courierSettings?.guidedDeliverySteps ? "border-amber-400/80 dark:border-amber-500/50 ring-2 ring-amber-400/20" : "border-slate-200 dark:border-white/10"} shadow-lg p-4 relative overflow-hidden transition-all duration-305 hover:shadow-xl`} style={blockStyle}>
+          <div key="shop" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-amber-500 ring-4 ring-amber-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
             {courierSettings?.guidedDeliverySteps && (
               <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
                 <span>🏬 الخطوة 1: استلام البضاعة من المحل (المرسل)</span>
@@ -365,7 +365,7 @@ export function OrderDetailSection({
       case "customer_info":
         return (
           <div key="customer_parent" className="space-y-4">
-            <div key="customer" className={`bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border ${courierSettings?.guidedDeliverySteps ? "border-emerald-500/80 dark:border-emerald-400/50 ring-2 ring-emerald-400/20" : "border-slate-200 dark:border-white/10"} shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl`} style={blockStyle}>
+            <div key="customer" className={`bg-gradient-to-br from-sky-50/70 via-white to-slate-50/80 dark:from-sky-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-sky-500/80 dark:border-sky-500/70 border-r-[8px] border-r-sky-500"} shadow-xl shadow-sky-500/10 ring-1 ring-sky-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
               {courierSettings?.guidedDeliverySteps && (
                 <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
                   <span>🏠 الخطوة 2: التوصيل للزبون (المستلم النهائي)</span>
@@ -519,7 +519,7 @@ export function OrderDetailSection({
             </div>
 
             {order.routeMode === "double" && (
-              <div key="receiver" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl mt-3" style={blockStyle}>
+              <div key="receiver" className="bg-gradient-to-br from-violet-50/70 via-white to-slate-50/80 dark:from-violet-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 border-violet-500/80 dark:border-violet-500/70 border-r-[8px] border-r-violet-500 shadow-xl shadow-violet-500/10 ring-1 ring-violet-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl mt-3" style={blockStyle}>
                 <div className="flex flex-row gap-4 items-start justify-between">
                   <div className="flex-1 space-y-2 text-right">
                     <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
@@ -664,7 +664,7 @@ export function OrderDetailSection({
         return null;
       case "price_details":
         return (
-          <div key="pricing" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl" style={blockStyle}>
+          <div key="pricing" className="bg-gradient-to-br from-purple-50/70 via-white to-slate-50/80 dark:from-purple-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 border-purple-500/80 dark:border-purple-500/70 border-r-[8px] border-r-purple-500 shadow-xl shadow-purple-500/10 ring-1 ring-purple-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" style={blockStyle}>
             <div className="flex flex-row gap-4 items-start justify-between">
               <div className="flex-1 space-y-2 text-right">
                 <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
@@ -763,7 +763,7 @@ export function OrderDetailSection({
         if ((!hasVoiceNote || !showVoice) && (!hasSummary || !showNotes)) return null;
 
         return (
-          <div key="notes" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl p-6 text-right" style={blockStyle}>
+          <div key="notes" className="bg-gradient-to-br from-amber-50/70 via-white to-slate-50/80 dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2.5rem] border-2 border-amber-500/80 dark:border-amber-500/70 border-r-[8px] border-r-amber-500 shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20 p-6 text-right" style={blockStyle}>
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3 mb-4">
               <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600">
                 <DynamicIcon icon={icons?.ui_note} fallback="📝" width={22} height={22} />
