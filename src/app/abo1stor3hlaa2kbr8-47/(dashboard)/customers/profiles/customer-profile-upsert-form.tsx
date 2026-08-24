@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { type AdminRegionOption } from "@/components/admin-region-search-picker";
 import {
@@ -33,6 +33,120 @@ const initialHint: CustomerProfileFormHint = {
   currentRegionMissingPhoto: false,
   otherRegionNames: [],
 };
+
+/** مكون اختيار المنطقة المحسن التراكمي والمريح للهواتف الذكية */
+function RegionPickerSelect({
+  regions,
+  value,
+  onChange,
+}: {
+  regions: AdminRegionOption[];
+  value: string;
+  onChange: (name: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredRegions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return regions;
+    return regions.filter((r) => r.name.toLowerCase().includes(term));
+  }, [regions, searchTerm]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <input type="hidden" name="regionName" value={value} />
+
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${ad.input} flex items-center justify-between cursor-pointer font-bold bg-white dark:bg-slate-900 border-2 transition-all ${
+          isOpen
+            ? "border-sky-500 ring-2 ring-sky-200 dark:ring-sky-900"
+            : "border-slate-300 dark:border-slate-600"
+        }`}
+      >
+        <span className={value ? "text-slate-900 dark:text-slate-100 font-bold" : "text-slate-400 font-normal"}>
+          {value || "اضغط لاختيار المنطقة..."}
+        </span>
+        <span className="text-slate-400 text-xs ms-2">▼</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1.5 w-full rounded-2xl bg-white dark:bg-slate-900 border-2 border-sky-400 shadow-2xl overflow-hidden p-2 space-y-2 max-h-72 flex flex-col">
+          <div className="relative shrink-0">
+            <input
+              type="text"
+              autoFocus
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ابحث باسم المنطقة هنا..."
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-sm font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-sky-500"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute left-2.5 top-2.5 text-xs text-slate-400 font-bold hover:text-slate-600"
+              >
+                مسح ✕
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800 rounded-xl">
+            {filteredRegions.length > 0 ? (
+              filteredRegions.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(r.name);
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                  className={`w-full text-right px-3.5 py-3 text-sm font-bold transition-colors ${
+                    value === r.name
+                      ? "bg-sky-500 text-white"
+                      : "text-slate-800 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {r.name}
+                </button>
+              ))
+            ) : (
+              <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                لم يتم العثور على منطقة بهذا الاسم.
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(searchTerm);
+                      setIsOpen(false);
+                    }}
+                    className="block mx-auto mt-2 text-sky-600 dark:text-sky-400 font-bold hover:underline"
+                  >
+                    + استخدام «{searchTerm}» كاسم منطقة
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function CustomerProfileUpsertForm({
   regions,
@@ -116,7 +230,6 @@ export function CustomerProfileUpsertForm({
     toast.success("تم مسح Cookie المحفوظ.");
   };
 
-  // مزامنة الحقول الخمسة مع rawText لتشغيل الفحص التلقائي بالخلفية
   const syncRawTextFromFields = (
     newPhone: string,
     newRegion: string,
@@ -189,7 +302,6 @@ export function CustomerProfileUpsertForm({
     };
   }, [rawText]);
 
-  // ملء الحقول تلقائياً عند استيراد نص خام أو جلب رابط طلب
   const fillFieldsFromRawText = async (text: string) => {
     setRawText(text);
     const parsed = await parseCustomerTextAction(text);
@@ -236,6 +348,8 @@ export function CustomerProfileUpsertForm({
           setRemotePhotoUrlInput(r.doorImageUrl);
           setSelectedPhoto(null);
           toast.success("استيراد تلقائي: تفاصيل الزبون + صورة الباب.");
+        } else {
+          toast.success("استيراد تلقائي: تفاصيل الزبون فقط.");
         }
       } finally {
         setLegacyFetchBusy(false);
@@ -449,7 +563,7 @@ export function CustomerProfileUpsertForm({
         </div>
       </div>
 
-      {/* قسم نموذج الحقول مرتب حسب طلب المستخدم بالضبط */}
+      {/* قسم نموذج الحقول */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-sky-500/30 p-6 shadow-xl space-y-6">
         
         {/* 1. رقم الزبون */}
@@ -470,30 +584,17 @@ export function CustomerProfileUpsertForm({
           <p className="text-xs text-slate-400">رقم الهاتف المحلي العراقي الخاص بالزبون.</p>
         </div>
 
-        {/* 2. منطقة الزبون */}
+        {/* 2. منطقة الزبون - مكون الاختيار التراكمي المحسن */}
         <div className="space-y-1.5">
           <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
             2. منطقة الزبون <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="regionName"
-              list="regions-options-list"
-              value={regionName}
-              onChange={(e) => handleRegionChange(e.target.value)}
-              placeholder="اكتب اسم المنطقة أو اختر من القائمة..."
-              className={`${ad.input} text-base font-bold`}
-              required
-              autoComplete="off"
-            />
-            <datalist id="regions-options-list">
-              {regions.map((r) => (
-                <option key={r.id} value={r.name} />
-              ))}
-            </datalist>
-          </div>
-          <p className="text-xs text-slate-400">اختر المنطقة المسجلة في النظام أو اكتب اسمها.</p>
+          <RegionPickerSelect
+            regions={regions}
+            value={regionName}
+            onChange={handleRegionChange}
+          />
+          <p className="text-xs text-slate-400">اضغط لعرض كافة المناطق مباشرة أو البحث باسم المنطقة.</p>
         </div>
 
         {/* 3. رابط لكيشن الزبون */}
@@ -556,7 +657,6 @@ export function CustomerProfileUpsertForm({
           >
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="flex flex-wrap justify-center gap-3">
-                {/* زر فتح الكاميرا مباشرة لالتقاط صورة */}
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
@@ -566,7 +666,6 @@ export function CustomerProfileUpsertForm({
                   <span>التقاط من الكاميرا</span>
                 </button>
 
-                {/* زر اختيار صورة من المعرض/الهاتف */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -577,7 +676,6 @@ export function CustomerProfileUpsertForm({
                 </button>
               </div>
 
-              {/* معاينة الصورة الملتقطة أو المرفوعة */}
               {selectedPhoto ? (
                 <div className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-emerald-300 shadow-sm max-w-xs">
                   <div className="relative h-40 w-full overflow-hidden rounded-lg bg-slate-100">
@@ -628,7 +726,6 @@ export function CustomerProfileUpsertForm({
             </div>
           </div>
 
-          {/* المدخلات المخفية لرفع الملف أو فتح الكاميرا */}
           <input
             ref={cameraInputRef}
             type="file"
