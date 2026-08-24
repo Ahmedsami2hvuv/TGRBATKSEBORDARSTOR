@@ -210,12 +210,87 @@ export function OrderViewContent({
           </div>
         )}
 
+        {/* --- بطاقة ترويسة الطلبية المرتبة والأنيقة --- */}
+        <div className="mb-6 rounded-2xl border border-sky-200 bg-white/95 p-4 shadow-sm sm:p-5 backdrop-blur-sm">
+          {/* السطر الأول: رقم الطلب + شارة الحالة + الشارات الخاصة */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 pb-3.5">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-xl sm:text-2xl font-black text-slate-800">
+                تفاصيل الطلب <span className="inline-block rounded-xl bg-sky-600 px-3 py-1 text-white tabular-nums shadow-sm">#{order.orderNumber}</span>
+              </span>
+              
+              {isReversePickup && (
+                <span className="rounded-xl border border-violet-300 bg-violet-100 px-2.5 py-1 text-xs font-black text-violet-900">
+                  🔄 طلب عكسي
+                </span>
+              )}
+              {isDoubleRoute && (
+                <span className="rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-2.5 py-1 text-xs font-black text-fuchsia-900">
+                  ✌️ وجهتين
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className={`rounded-full px-4 py-1.5 text-xs sm:text-sm font-black shadow-sm ${statusBadgeClass}`}>
+                {STATUS_AR[order.status] ?? order.status}
+              </span>
+            </div>
+          </div>
+
+          {/* السطر الثاني: التواريخ والأوقات بأسلوب أنيق */}
+          <div className="mt-3.5 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5 rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-1.5 font-bold text-sky-900">
+              <span>📅</span>
+              <span className="text-sky-700">تاريخ الرفع:</span>
+              <span className="font-mono [direction:ltr]">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-1.5 font-bold text-rose-900">
+              <span>⏰</span>
+              <span className="text-rose-700">وقت الطلب (المطلوب):</span>
+              <span>{order.orderNoteTime || "فوري"}</span>
+            </div>
+          </div>
+
+          {/* السطر الثالث: أزرار الإجراءات السريعة كبار ومريحين للنقر */}
+          <div className="mt-4 flex flex-wrap items-center gap-2.5 pt-1">
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[42px]"
+            >
+              <span>📝</span>
+              <span>تعديل البيانات</span>
+            </Link>
+
+            {parsedShoppingJson !== null && (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[42px]"
+              >
+                <span>💰</span>
+                <span>تعديل التسعير</span>
+              </Link>
+            )}
+
+            {order.status !== "cancelled" && order.status !== "archived" && (
+              <button
+                type="button"
+                onClick={() => setShowAssignCourierModal(true)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all cursor-pointer min-h-[42px]"
+              >
+                <span>📦</span>
+                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {voiceSrc && (
-            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
+            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3.5 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+                <span className="text-xs font-black text-amber-700 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
               </div>
               <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
             </div>
@@ -224,44 +299,6 @@ export function OrderViewContent({
             <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
           </div>
         </div>
-
-      {isReversePickup && <div className="mb-4 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-950">تنبيه طلب عكسي</div>}
-      {isDoubleRoute && (
-        <div className="mb-4 inline-flex rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-3 py-1.5 text-sm font-black text-fuchsia-900">
-          وجهتين
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto]">
-        <div>
-          <h2 className={ad.h1}>رقم الطلب <span className="inline-block bg-sky-600 text-white rounded-full px-3 py-1 text-2xl font-black tabular-nums">#{order.orderNumber}</span></h2>
-          <div className="mt-1 flex flex-wrap gap-2">
-            <span className="text-xs font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1">
-              📅 تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}
-            </span>
-            <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1">
-              ⏰ وقت الطلب (المطلوب): {order.orderNoteTime || "فوري"}
-            </span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
-            {parsedShoppingJson !== null && (
-              <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</Link>
-            )}
-            {order.status !== "cancelled" && order.status !== "archived" && (
-              <button
-                type="button"
-                onClick={() => setShowAssignCourierModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
-              >
-                <span>📦</span>
-                {order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${statusBadgeClass}`}>{STATUS_AR[order.status] ?? order.status}</span></div>
-      </div>
 
 
       <div className="mt-5 space-y-6 sm:space-y-8">

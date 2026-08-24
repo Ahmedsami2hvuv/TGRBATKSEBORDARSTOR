@@ -189,17 +189,20 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const safeCouriers = JSON.parse(JSON.stringify(couriersRaw));
 
  return (
- <div className="space-y-4">
- {!modalOnly ? (
-   <>
-     <p className={ad.muted}>
-       <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.link}>← تتبع الطلبات</Link>
-     </p>
-     <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
-   </>
- ) : null}
- <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} twoWayTemplates={safeTwoWayTemplates} couriers={safeCouriers} />
- <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
- </div>
+  <div className="space-y-4">
+    {!modalOnly ? (
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <Link
+          href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 px-6 py-3.5 text-base sm:text-lg font-black text-white shadow-lg transition-all w-full sm:w-auto min-h-[54px] border border-slate-700"
+        >
+          <span className="text-xl">←</span>
+          <span>الرجوع إلى تتبع الطلبات</span>
+        </Link>
+      </div>
+    ) : null}
+    <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} twoWayTemplates={safeTwoWayTemplates} couriers={safeCouriers} />
+    <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
+  </div>
  );
 }
