@@ -360,9 +360,19 @@ export function MandoubOrderTable({
   }, []);
 
   useEffect(() => {
-    const handlePopState = () => {
-      if (activeOrderId) setActiveOrderId(null);
-      if (showWallet) setShowWallet(false);
+    const handlePopState = (e: PopStateEvent) => {
+      if (activeOrderId) {
+        if (e.state?.orderId === activeOrderId) {
+          return;
+        }
+        setActiveOrderId(null);
+      }
+      if (showWallet) {
+        if (e.state?.wallet) {
+          return;
+        }
+        setShowWallet(false);
+      }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
