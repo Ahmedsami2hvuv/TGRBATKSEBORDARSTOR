@@ -13,6 +13,7 @@ import {
   upsertCustomerPhoneProfile,
   getCustomerProfileFormHint,
   importLegacyOrderDetailsFromUrl,
+  parseCustomerTextAction,
   type CustomerProfileFormHint,
   type CustomerProfileFormState,
 } from "./actions";
@@ -27,6 +28,8 @@ const initialHint: CustomerProfileFormHint = {
   regionResolved: false,
   currentRegionName: null,
   inCurrentRegion: false,
+  isGloballyBlocked: false,
+  currentRegionIsBlocked: false,
   currentRegionMissingPhoto: false,
   otherRegionNames: [],
 };
@@ -40,22 +43,32 @@ export function CustomerProfileUpsertForm({
     upsertCustomerPhoneProfile,
     initial,
   );
-  
+
   const formRef = useRef<HTMLFormElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // الحقول الخمسة مرتبة حسب الطلب
+  const [phone, setPhone] = useState("");
+  const [regionName, setRegionName] = useState("");
+  const [locationUrl, setLocationUrl] = useState("");
+  const [alternatePhone, setAlternatePhone] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+
+  // حالات سابقة ومستوردة
   const [rawText, setRawText] = useState("");
   const [hint, setHint] = useState<CustomerProfileFormHint>(initialHint);
   const [isChecking, setIsChecking] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [remotePhotoUrlInput, setRemotePhotoUrlInput] = useState("");
   const [legacyOrderPageUrl, setLegacyOrderPageUrl] = useState("");
   const [legacySessionCookie, setLegacySessionCookie] = useState("");
-  const [legacyCookiePanelOpen, setLegacyCookiePanelOpen] = useState(true);
+  const [legacyCookiePanelOpen, setLegacyCookiePanelOpen] = useState(false);
   const [legacyCookieStamp, setLegacyCookieStamp] = useState(0);
   const [legacyFetchBusy, setLegacyFetchBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [remotePhotoPreviewBroken, setRemotePhotoPreviewBroken] = useState(false);
+  const [showAdvancedImport, setShowAdvancedImport] = useState(false);
+
   const legacyOrderPageUrlRef = useRef(legacyOrderPageUrl);
   const legacySessionCookieRef = useRef("");
   const lastAutoImportedLegacyHref = useRef<string | null>(null);
@@ -66,9 +79,8 @@ export function CustomerProfileUpsertForm({
     try {
       const v = sessionStorage.getItem(LEGACY_COOKIE_SESSION_KEY);
       if (v) setLegacySessionCookie(v);
-      if (v?.trim()) setLegacyCookiePanelOpen(false);
     } catch {
-      /* وضع خاص أو منع التخزين */
+      /* ignore */
     }
   }, []);
 
@@ -78,11 +90,11 @@ export function CustomerProfileUpsertForm({
       if (t) {
         sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
         setLegacyCookiePanelOpen(false);
-        toast.success("تم حفظ Cookie في هذا المتصفح (جلسة فقط — لا يُرسل لقاعدة بيانات).");
+        toast.success("تم حفظ Cookie الجلسة.");
       } else {
         sessionStorage.removeItem(LEGACY_COOKIE_SESSION_KEY);
         setLegacyCookiePanelOpen(true);
-        toast.success("تم المسح. ألصق Cookie جديداً إن احتجت.");
+        toast.success("تم المسح.");
       }
       lastAutoImportedLegacyHref.current = null;
       setLegacyCookieStamp((n) => n + 1);
@@ -101,30 +113,51 @@ export function CustomerProfileUpsertForm({
     setLegacyCookiePanelOpen(true);
     lastAutoImportedLegacyHref.current = null;
     setLegacyCookieStamp((n) => n + 1);
-    toast.success("تم مسح Cookie المحفوظ من هذا المتصفح.");
+    toast.success("تم مسح Cookie المحفوظ.");
   };
 
-  /** عند الخروج من المربع: يحفظ تلقائياً إن تغيّر النص (بدون ما تضغط زر كل مرة). */
-  const handleLegacyCookieBlur = () => {
-    try {
-      const t = legacySessionCookie.trim();
-      if (!t) return;
-      const prev = sessionStorage.getItem(LEGACY_COOKIE_SESSION_KEY) ?? "";
-      if (t === prev) return;
-      sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
-      setLegacyCookiePanelOpen(false);
-      lastAutoImportedLegacyHref.current = null;
-      setLegacyCookieStamp((n) => n + 1);
-    } catch {
-      /* ignore */
-    }
+  // مزامنة الحقول الخمسة مع rawText لتشغيل الفحص التلقائي بالخلفية
+  const syncRawTextFromFields = (
+    newPhone: string,
+    newRegion: string,
+    newLoc: string,
+    newAlt: string,
+  ) => {
+    const parts: string[] = [];
+    if (newRegion.trim()) parts.push(`المنطقة: ${newRegion.trim()}`);
+    if (newPhone.trim()) parts.push(`رقم الهاتف: ${newPhone.trim()}`);
+    if (newLoc.trim()) parts.push(`لكيشن الزبون: ${newLoc.trim()}`);
+    if (newAlt.trim()) parts.push(`رقم الهاتف الآخر: ${newAlt.trim()}`);
+    setRawText(parts.join("\n"));
   };
 
-  const legacyCookieReady = legacySessionCookie.trim().length > 0;
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    syncRawTextFromFields(val, regionName, locationUrl, alternatePhone);
+  };
+
+  const handleRegionChange = (val: string) => {
+    setRegionName(val);
+    syncRawTextFromFields(phone, val, locationUrl, alternatePhone);
+  };
+
+  const handleLocationUrlChange = (val: string) => {
+    setLocationUrl(val);
+    syncRawTextFromFields(phone, regionName, val, alternatePhone);
+  };
+
+  const handleAlternatePhoneChange = (val: string) => {
+    setAlternatePhone(val);
+    syncRawTextFromFields(phone, regionName, locationUrl, val);
+  };
 
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      setPhone("");
+      setRegionName("");
+      setLocationUrl("");
+      setAlternatePhone("");
       setRawText("");
       setHint(initialHint);
       setSelectedPhoto(null);
@@ -155,6 +188,16 @@ export function CustomerProfileUpsertForm({
       active = false;
     };
   }, [rawText]);
+
+  // ملء الحقول تلقائياً عند استيراد نص خام أو جلب رابط طلب
+  const fillFieldsFromRawText = async (text: string) => {
+    setRawText(text);
+    const parsed = await parseCustomerTextAction(text);
+    if (parsed.phone) setPhone(parsed.phone);
+    if (parsed.regionName) setRegionName(parsed.regionName);
+    if (parsed.locationUrl) setLocationUrl(parsed.locationUrl);
+    if (parsed.alternatePhone) setAlternatePhone(parsed.alternatePhone);
+  };
 
   useEffect(() => {
     const t0 = legacyOrderPageUrl.trim();
@@ -188,16 +231,11 @@ export function CustomerProfileUpsertForm({
           return;
         }
         lastAutoImportedLegacyHref.current = parsed.href;
-        setRawText(r.rawText);
+        await fillFieldsFromRawText(r.rawText);
         if (r.doorImageUrl) {
           setRemotePhotoUrlInput(r.doorImageUrl);
           setSelectedPhoto(null);
-          if (photoInputRef.current) photoInputRef.current.value = "";
-          toast.success("استيراد تلقائي: معلومات الزبون + رابط صورة باب الزبون.");
-        } else {
-          toast.success(
-            "استيراد تلقائي: معلومات الزبون فقط (لا رابط صورة باب في الصفحة). يمكنك إضافة صورة يدوياً.",
-          );
+          toast.success("استيراد تلقائي: تفاصيل الزبون + صورة الباب.");
         }
       } finally {
         setLegacyFetchBusy(false);
@@ -211,28 +249,24 @@ export function CustomerProfileUpsertForm({
     setRemotePhotoPreviewBroken(false);
   }, [remotePhotoUrlInput]);
 
-  const handleChoosePhoto = () => {
-    photoInputRef.current?.click();
+  const handleDroppedOrSelectedFile = async (file: File) => {
+    try {
+      const compressed = await compressImageForMandoubUpload(file);
+      if (fileInputRef.current) assignFileToInput(fileInputRef.current, compressed);
+      setSelectedPhoto(compressed);
+      setRemotePhotoUrlInput("");
+    } catch (err) {
+      console.error("خطأ في ضغط الصورة:", err);
+      if (fileInputRef.current) assignFileToInput(fileInputRef.current, file);
+      setSelectedPhoto(file);
+      setRemotePhotoUrlInput("");
+    }
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     await handleDroppedOrSelectedFile(file);
-  };
-
-  const handleDroppedOrSelectedFile = async (file: File) => {
-    try {
-      const compressed = await compressImageForMandoubUpload(file);
-      assignFileToInput(photoInputRef.current!, compressed);
-      setSelectedPhoto(compressed);
-      setRemotePhotoUrlInput("");
-    } catch (err) {
-      console.error("خطأ في ضغط الصورة:", err);
-      assignFileToInput(photoInputRef.current!, file);
-      setSelectedPhoto(file);
-      setRemotePhotoUrlInput("");
-    }
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -249,9 +283,6 @@ export function CustomerProfileUpsertForm({
     const plainText = e.dataTransfer.getData("text/plain")?.trim();
     const urlText = textUriList || plainText;
     if (urlText && /^https?:\/\//i.test(urlText)) {
-      if (photoInputRef.current) {
-        photoInputRef.current.value = "";
-      }
       setSelectedPhoto(null);
       setRemotePhotoUrlInput(urlText.trim());
     }
@@ -260,9 +291,10 @@ export function CustomerProfileUpsertForm({
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setRawText(text);
-    } catch (err) {
-      alert('فشل في اللصق. تأكد من السماح بالوصول للحافظة أو استخدم Ctrl+V.');
+      await fillFieldsFromRawText(text);
+      toast.success("تم لصق البيانات وتوزيعها في الحقول تلقائياً.");
+    } catch {
+      toast.error("فشل في اللصق المباشر. يمكنك الاستعانة بخيار التفتيش السريع.");
     }
   };
 
@@ -286,16 +318,13 @@ export function CustomerProfileUpsertForm({
       );
       if (r.ok) {
         lastAutoImportedLegacyHref.current = parsed.href;
-        setRawText(r.rawText);
+        await fillFieldsFromRawText(r.rawText);
         if (r.doorImageUrl) {
           setRemotePhotoUrlInput(r.doorImageUrl);
           setSelectedPhoto(null);
-          if (photoInputRef.current) photoInputRef.current.value = "";
-          toast.success("تم الجلب: معلومات الزبون + رابط صورة باب الزبون.");
+          toast.success("تم الجلب: تفاصيل الزبون + رابط صورة الباب.");
         } else {
-          toast.success(
-            "تم الجلب: معلومات الزبون فقط (لم يُعثر على رابط صورة باب في الصفحة). يمكنك إرفاق صورة يدوياً أو لصق رابط الصورة.",
-          );
+          toast.success("تم الجلب: معلومات الزبون فقط.");
         }
       } else {
         toast.error(r.error);
@@ -320,188 +349,202 @@ export function CustomerProfileUpsertForm({
       encType="multipart/form-data"
       className="space-y-6"
     >
-      <div className="space-y-6">
-        {!legacyCookiePanelOpen ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-sm dark:border-emerald-800 dark:bg-emerald-950/40">
-            <span className="font-bold text-emerald-900 dark:text-emerald-100">
-              ✓ كوكي الموقع القديم محفوظ في هذا المتصفح
-            </span>
-            <button
-              type="button"
-              onClick={() => setLegacyCookiePanelOpen(true)}
-              className="shrink-0 rounded-md border border-emerald-600 bg-white px-3 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-slate-900 dark:text-emerald-200 dark:hover:bg-slate-800"
-            >
-              تعديل الكوكي
-            </button>
-          </div>
-        ) : (
-          <div className="rounded-xl border-2 border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50/90 p-3 shadow-md dark:border-amber-400 dark:from-amber-950/50 dark:to-orange-950/30">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-              <h2 className="text-sm font-black text-amber-950 dark:text-amber-100">
-                Cookie الموقع القديم (مرة واحدة لهذه الجلسة)
-              </h2>
-              {legacyCookieReady ? (
-                <span className="shrink-0 text-xs font-bold text-emerald-700 dark:text-emerald-300">جاهز للاستيراد</span>
-              ) : (
-                <span className="shrink-0 text-xs text-amber-800 dark:text-amber-200">الصق ثم «حفظ» أو اخرج من المربع</span>
-              )}
-            </div>
-            <details className="mt-2 text-xs text-amber-950/90 dark:text-amber-100/90">
-              <summary className="cursor-pointer font-bold text-amber-900 dark:text-amber-100 select-none">
-                كيف أنسخ الكوكي؟
-              </summary>
-              <p className="mt-1.5 leading-relaxed ps-1">
-                من d.ksebstor بعد الدخول: F12 → Network → طلب الصفحة → Headers → انسخ قيمة Cookie كاملة. نفس القيمة
-                لكل روابط الطلبات حتى تنتهي الجلسة هناك.
-              </p>
-            </details>
-            <textarea
-              value={legacySessionCookie}
-              onChange={(e) => setLegacySessionCookie(e.target.value)}
-              onBlur={handleLegacyCookieBlur}
-              rows={3}
-              className={`${ad.input} mt-2 w-full bg-white font-mono text-xs leading-relaxed`}
-              dir="ltr"
-              spellCheck={false}
-              autoComplete="off"
-              placeholder="PHPSESSID=…; …"
-            />
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={persistLegacySessionCookie}
-                className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-black text-white shadow hover:bg-amber-700"
-              >
-                حفظ بالجلسة
-              </button>
-              <button
-                type="button"
-                onClick={clearLegacySessionCookie}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                مسح
-              </button>
-            </div>
-          </div>
-        )}
+      <input type="hidden" name="rawText" value={rawText} />
 
-        <div
-          className={
-            "sticky top-0 z-30 flex flex-col-reverse gap-3 sm:flex-row sm:items-start sm:gap-4 " +
-            "bg-slate-100 dark:bg-slate-800/95 p-4 rounded-xl border border-slate-200 dark:border-slate-600 " +
-            "shadow-sm backdrop-blur-sm"
-          }
-        >
-          <div className="flex-1 min-w-0 flex flex-col gap-2">
-            {state.error ? (
-              <p className={`${ad.error} mb-0`} role="alert">
-                {state.error}
-              </p>
+      {/* الشريط العلوي الثابت للرسائل والتنبيهات وزر الحفظ */}
+      <div
+        className={
+          "sticky top-0 z-30 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between " +
+          "bg-slate-900/90 text-white p-4 rounded-xl border border-slate-700 shadow-xl backdrop-blur-md"
+        }
+      >
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          {state.error ? (
+            <p className="bg-rose-500/20 text-rose-300 border border-rose-500/40 px-3 py-1.5 rounded-lg text-sm font-bold" role="alert">
+              ⚠️ {state.error}
+            </p>
+          ) : null}
+          {state.ok ? (
+            <p className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-lg text-sm font-bold">
+              ✓ تم حفظ الزبون بنجاح وتم تصفير الحقول.
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+            {selectedPhoto ? (
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-500/40">
+                <span>✓ تم اختيار صورة الباب:</span>
+                <span className="font-mono">{selectedPhoto.name}</span>
+              </span>
             ) : null}
-            {state.ok ? (
-              <p className={`${ad.success} mb-0`}>تم حفظ الزبون بنجاح، الصفحة تمت إعادة تعيينها.</p>
+
+            {isChecking ? (
+              <span className="text-sky-400 font-bold animate-pulse">
+                ⏳ جاري التحقق من السجلات...
+              </span>
             ) : null}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {selectedPhoto ? (
-                <span className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 px-3 py-2 rounded-md border border-green-300 dark:border-green-700 text-sm font-medium">
-                  <span className="text-lg leading-none">✓</span>
-                  <span>تم اختيار صورة: {selectedPhoto.name}</span>
-                </span>
-              ) : null}
-              {isChecking ? (
-                <span className="text-sm font-bold text-sky-600 dark:text-sky-400 animate-pulse">
-                  جاري التحقق من الرقم والمنطقة...
-                </span>
-              ) : null}
-              {!isChecking && hint.regionNotFound ? (
-                <span className="text-sm text-amber-800 dark:text-amber-200 font-bold bg-amber-100 dark:bg-amber-950/50 px-3 py-1 rounded-md border border-amber-300 dark:border-amber-700 inline-block shadow-sm max-w-full">
-                  ⚠️ المنطقة «{hint.regionNotFound}» غير موجودة في القائمة. صحّح الاسم كما في صفحة المناطق.
-                </span>
-              ) : null}
-              {!isChecking &&
-              hint.regionResolved &&
-              hint.inCurrentRegion &&
-              hint.currentRegionMissingPhoto &&
-              !selectedPhoto &&
-              !remotePhotoUrlInput.trim() ? (
-                <span className="text-sm text-amber-800 dark:text-amber-200 font-bold bg-amber-100 dark:bg-amber-950/50 px-3 py-2 rounded-md border border-amber-300 dark:border-amber-700 inline-block shadow-sm max-w-full">
-                  هذا الزبون موجود في منطقة «{hint.currentRegionName}» لكن بلا صورة. أرفق صورة أو رابط ثم احفظ لتحديث
-                  السجل.
-                </span>
-              ) : null}
-              {!isChecking &&
-              hint.regionResolved &&
-              !hint.inCurrentRegion &&
-              hint.otherRegionNames.length > 0 ? (
-                <span className="text-sm text-sky-900 dark:text-sky-100 font-bold bg-sky-100 dark:bg-sky-950/50 px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 inline-block shadow-sm max-w-full">
-                  هذا الزبون مسجّل في منطقة/مناطق: {hint.otherRegionNames.join("، ")}. يمكنك حفظ البيانات لإضافته أيضاً
-                  إلى «{hint.currentRegionName}».
-                </span>
-              ) : null}
-              {!isChecking &&
-              hint.regionResolved &&
-              hint.inCurrentRegion &&
-              (!hint.currentRegionMissingPhoto || !!selectedPhoto || !!remotePhotoUrlInput.trim()) ? (
-                <span className="text-sm text-slate-700 dark:text-slate-200 font-bold bg-slate-200/80 dark:bg-slate-700/80 px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 inline-block shadow-sm">
-                  {hint.otherRegionNames.length > 0
-                    ? `مسجّل أيضاً في: ${hint.otherRegionNames.join("، ")}. `
-                    : ""}
-                  سيتم تحديث بيانات الزبون في «{hint.currentRegionName}» عند الحفظ.
-                </span>
-              ) : null}
-              {!isChecking &&
-              hint.regionResolved &&
-              !hint.inCurrentRegion &&
-              hint.otherRegionNames.length === 0 ? (
-                <span className="text-sm text-green-700 dark:text-green-300 font-bold bg-green-100 dark:bg-green-950/50 px-3 py-1 rounded-md border border-green-300 dark:border-green-700 inline-block shadow-sm">
-                  ✓ الرقم جديد لمنطقة «{hint.currentRegionName}».
-                </span>
-              ) : null}
-              {!isChecking && hint.canCheck && !hint.regionResolved && !hint.regionNotFound ? (
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  أدخل اسم المنطقة في السطر «المنطقة: …» لإكمال التحقق.
-                </span>
-              ) : null}
-              {!isChecking &&
-              hint.regionResolved &&
-              (hint.inCurrentRegion || hint.otherRegionNames.length > 0) ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRawText("");
-                    setRemotePhotoUrlInput("");
-                    setSelectedPhoto(null);
-                    if (photoInputRef.current) photoInputRef.current.value = "";
-                    formRef.current?.reset();
-                  }}
-                  className="text-sm bg-slate-500 text-white hover:bg-slate-600 px-3 py-2 rounded-md shadow-sm transition-colors"
-                >
-                  تصفير المربع
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <div className="shrink-0 sm:pt-0.5 sm:self-start">
-            <button
-              type="submit"
-              disabled={pending}
-              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
-            >
-              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
-            </button>
+
+            {!isChecking && hint.regionNotFound ? (
+              <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-md border border-amber-500/40 font-bold">
+                ⚠️ المنطقة غير مسجلة بالنظام.
+              </span>
+            ) : null}
+
+            {!isChecking &&
+            hint.regionResolved &&
+            hint.inCurrentRegion &&
+            hint.currentRegionMissingPhoto &&
+            !selectedPhoto &&
+            !remotePhotoUrlInput.trim() ? (
+              <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-md border border-amber-500/40 font-bold">
+                الزبون مسجل في «{hint.currentRegionName}» ولكن بدون صورة باب.
+              </span>
+            ) : null}
+
+            {!isChecking &&
+            hint.regionResolved &&
+            !hint.inCurrentRegion &&
+            hint.otherRegionNames.length > 0 ? (
+              <span className="bg-sky-500/20 text-sky-300 px-2.5 py-1 rounded-md border border-sky-500/40 font-bold">
+                مسجل في مناطق: {hint.otherRegionNames.join("، ")}.
+              </span>
+            ) : null}
+
+            {!isChecking &&
+            hint.regionResolved &&
+            hint.inCurrentRegion &&
+            (!hint.currentRegionMissingPhoto || !!selectedPhoto || !!remotePhotoUrlInput.trim()) ? (
+              <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700 font-bold">
+                سيتم تحديث سجل الزبون في «{hint.currentRegionName}».
+              </span>
+            ) : null}
+
+            {!isChecking &&
+            hint.regionResolved &&
+            !hint.inCurrentRegion &&
+            hint.otherRegionNames.length === 0 ? (
+              <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-500/40 font-bold">
+                ✓ رقم جديد في منطقة «{hint.currentRegionName}».
+              </span>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 p-4 bg-sky-50 rounded-xl border border-sky-200 shadow-sm">
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePaste}
+            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2.5 px-3 rounded-lg border border-slate-600 transition-colors"
+            title="لصق البيانات من التلغرام أو الحافظة"
+          >
+            📋 لصق سريع
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-base py-2.5 px-6 rounded-xl shadow-lg transition-all disabled:opacity-50"
+          >
+            {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
+          </button>
+        </div>
+      </div>
+
+      {/* قسم نموذج الحقول مرتب حسب طلب المستخدم بالضبط */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-sky-500/30 p-6 shadow-xl space-y-6">
+        
+        {/* 1. رقم الزبون */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+            1. رقم الزبون <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={phone}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            placeholder="مثال: 07700000000 أو 07800000000"
+            className={`${ad.input} font-mono text-base font-bold`}
+            required
+            dir="ltr"
+          />
+          <p className="text-xs text-slate-400">رقم الهاتف المحلي العراقي الخاص بالزبون.</p>
+        </div>
+
+        {/* 2. منطقة الزبون */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+            2. منطقة الزبون <span className="text-rose-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="regionName"
+              list="regions-options-list"
+              value={regionName}
+              onChange={(e) => handleRegionChange(e.target.value)}
+              placeholder="اكتب اسم المنطقة أو اختر من القائمة..."
+              className={`${ad.input} text-base font-bold`}
+              required
+              autoComplete="off"
+            />
+            <datalist id="regions-options-list">
+              {regions.map((r) => (
+                <option key={r.id} value={r.name} />
+              ))}
+            </datalist>
+          </div>
+          <p className="text-xs text-slate-400">اختر المنطقة المسجلة في النظام أو اكتب اسمها.</p>
+        </div>
+
+        {/* 3. رابط لكيشن الزبون */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+            3. رابط لكيشن الزبون
+          </label>
+          <input
+            type="url"
+            name="locationUrl"
+            value={locationUrl}
+            onChange={(e) => handleLocationUrlChange(e.target.value)}
+            placeholder="https://maps.app.goo.gl/..."
+            className={`${ad.input} text-sm font-mono`}
+            dir="ltr"
+          />
+          <p className="text-xs text-slate-400">رابط الموقع الجغرافي من خرائط جوجل (Google Maps).</p>
+        </div>
+
+        {/* 4. رقم آخر للزبون (غير ضروري) */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+            4. رقم آخر للزبون <span className="text-xs font-normal text-slate-400">(غير ضروري)</span>
+          </label>
+          <input
+            type="tel"
+            name="alternatePhone"
+            value={alternatePhone}
+            onChange={(e) => handleAlternatePhoneChange(e.target.value)}
+            placeholder="مثال: 07500000000 (اختياري)"
+            className={`${ad.input} font-mono text-sm`}
+            dir="ltr"
+          />
+          <p className="text-xs text-slate-400">رقم هاتف إضافي للزبون إن وجد.</p>
+        </div>
+
+        {/* 5. صورة باب الزبون ترفع من الهاتف او تلتقط من الكامره */}
+        <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+            5. صورة باب الزبون <span className="text-xs font-normal text-slate-400">(ترفع من الهاتف أو تلتقط من الكاميرا)</span>
+          </label>
+
           <div
-            className={`rounded-xl border-2 border-dashed p-4 bg-white transition-colors ${
-              dragActive ? "border-blue-500 bg-blue-50" : "border-slate-300"
+            className={`rounded-2xl border-2 border-dashed p-5 text-center transition-all ${
+              dragActive
+                ? "border-sky-500 bg-sky-50/80 dark:bg-sky-950/40"
+                : selectedPhoto || remotePhotoUrlInput.trim()
+                ? "border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20"
+                : "border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-900/40"
             }`}
             onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragEnter={(e) => {
               e.preventDefault();
               setDragActive(true);
             }}
@@ -511,106 +554,178 @@ export function CustomerProfileUpsertForm({
             }}
             onDrop={handleDrop}
           >
-            <div className="space-y-2 text-sm">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                <input
-                  type="url"
-                  name="remoteImageUrl"
-                  value={remotePhotoUrlInput}
-                  onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                  placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً إن وُجدت «صورة الباب» وليست «لا توجد صورة»)"
-                  className={`${ad.input} w-full flex-1 bg-white min-w-0`}
-                  dir="ltr"
-                />
-                <div
-                  className="shrink-0 flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-800"
-                  title="معاينة صورة الباب من الرابط"
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="flex flex-wrap justify-center gap-3">
+                {/* زر فتح الكاميرا مباشرة لالتقاط صورة */}
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-md transition-all transform active:scale-95"
                 >
-                  {remotePhotoUrlInput.trim() &&
-                  /^https?:\/\//i.test(remotePhotoUrlInput.trim()) &&
-                  !selectedPhoto &&
-                  !remotePhotoPreviewBroken ? (
-                    <img
-                      src={remotePhotoUrlInput.trim()}
-                      alt=""
-                      className="max-h-full max-w-full object-contain"
-                      onError={() => setRemotePhotoPreviewBroken(true)}
-                    />
-                  ) : (
-                    <span className="px-1 text-center text-[10px] text-slate-500 dark:text-slate-400">
-                      معاينة
-                    </span>
-                  )}
-                </div>
+                  <span className="text-lg">📷</span>
+                  <span>التقاط من الكاميرا</span>
+                </button>
+
+                {/* زر اختيار صورة من المعرض/الهاتف */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-md transition-all transform active:scale-95"
+                >
+                  <span className="text-lg">📁</span>
+                  <span>رفع من الهاتف</span>
+                </button>
               </div>
-              {remotePhotoUrlInput.trim() && !selectedPhoto ? (
-                <p className="text-slate-500 text-[11px]">يُرفع مع «حفظ البيانات».</p>
-              ) : null}
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2 space-y-2 dark:border-slate-600 dark:bg-slate-900/40">
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-bold text-slate-800 dark:text-slate-100">
-                  رابط تفاصيل الطلب (d.ksebstor) — يُستورد تلقائياً بعد لحظة؛ زر الجلب يحدّث يدوياً.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input
-                    type="url"
-                    value={legacyOrderPageUrl}
-                    onChange={(e) => setLegacyOrderPageUrl(e.target.value)}
-                    placeholder="https://d.ksebstor.site/dashboard/orders_status/details/13923"
-                    className={`${ad.input} w-full flex-1 bg-white text-sm`}
-                    dir="ltr"
-                    autoComplete="off"
-                  />
+
+              {/* معاينة الصورة الملتقطة أو المرفوعة */}
+              {selectedPhoto ? (
+                <div className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-emerald-300 shadow-sm max-w-xs">
+                  <div className="relative h-40 w-full overflow-hidden rounded-lg bg-slate-100">
+                    <img
+                      src={URL.createObjectURL(selectedPhoto)}
+                      alt="معاينة صورة الباب"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                    ✓ جاهزة للرفع: {selectedPhoto.name}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => void handleImportLegacyOrder()}
-                    disabled={legacyFetchBusy}
-                    className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+                    onClick={() => {
+                      setSelectedPhoto(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                      if (cameraInputRef.current) cameraInputRef.current.value = "";
+                    }}
+                    className="text-xs text-rose-600 hover:underline font-bold"
                   >
-                    {legacyFetchBusy ? "جارٍ الجلب…" : "إعادة جلب من الرابط"}
+                    حذف الصورة
                   </button>
                 </div>
-              </div>
+              ) : remotePhotoUrlInput.trim() ? (
+                <div className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-sky-300 shadow-sm max-w-xs">
+                  <div className="relative h-40 w-full overflow-hidden rounded-lg bg-slate-100 flex items-center justify-center">
+                    {!remotePhotoPreviewBroken ? (
+                      <img
+                        src={remotePhotoUrlInput.trim()}
+                        alt="معاينة الصورة المستوردة"
+                        className="h-full w-full object-cover"
+                        onError={() => setRemotePhotoPreviewBroken(true)}
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">صورة مستوردة من رابط</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-sky-700 dark:text-sky-300 font-bold">
+                    ✓ صورة باب مستوردة من الرابط
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  اضغط لالتقاط الصورة بكاميرا الجوال، أو اختر صورة باب الزبون من ألبوم الهاتف.
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2 items-end">
-              <textarea
-                name="rawText"
-                value={rawText}
-                onChange={(e) => setRawText(e.target.value)}
-                rows={6}
-                className={`${ad.input} flex-1 min-h-[8rem] resize-y bg-white font-normal`}
-                placeholder="المنطقة: … ثم رقم الجوال (07XXXXXXXXX أو 7XXXXXXXXX أو +964…) في أي سطر — لا يشترط «رقم الهاتف:». أو الصق رابط الطلب أعلاه للاستيراد."
-                dir="auto"
-              />
-              <div className="flex flex-col gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleChoosePhoto}
-                  className="bg-slate-600 text-white hover:bg-slate-700 px-4 py-2 rounded-md shadow-sm transition-colors text-sm font-medium"
-                >
-                  صورة
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePaste}
-                  className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-md shadow-sm transition-colors text-sm font-medium"
-                >
-                  لصق
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* المدخلات المخفية لرفع الملف أو فتح الكاميرا */}
           <input
-            ref={photoInputRef}
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          <input
+            ref={fileInputRef}
             name="photo"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handlePhotoChange}
             className="hidden"
           />
+          <input
+            type="hidden"
+            name="remoteImageUrl"
+            value={remotePhotoUrlInput}
+          />
         </div>
+      </div>
+
+      {/* قسم خيارات المساعدة والاستيراد المتقدم */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-4 space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedImport(!showAdvancedImport)}
+          className="flex items-center justify-between w-full text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900"
+        >
+          <span>🔗 استيراد تلقائي من طلبات الموقع القديم (d.ksebstor)</span>
+          <span>{showAdvancedImport ? "▲ إخفاء" : "▼ إظهار"}</span>
+        </button>
+
+        {showAdvancedImport ? (
+          <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                type="url"
+                value={legacyOrderPageUrl}
+                onChange={(e) => setLegacyOrderPageUrl(e.target.value)}
+                placeholder="رابط تفاصيل الطلب القديم (https://d.ksebstor.site/...)"
+                className={`${ad.input} text-xs font-mono flex-1`}
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => void handleImportLegacyOrder()}
+                disabled={legacyFetchBusy}
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-lg disabled:opacity-50"
+              >
+                {legacyFetchBusy ? "جاري الجلب…" : "جلب البيانات"}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>كوكي الجلسة للموقع القديم:</span>
+              <button
+                type="button"
+                onClick={() => setLegacyCookiePanelOpen(!legacyCookiePanelOpen)}
+                className="text-indigo-600 font-bold hover:underline"
+              >
+                {legacyCookiePanelOpen ? "إغلاق الكوكي" : "تعديل الكوكي"}
+              </button>
+            </div>
+
+            {legacyCookiePanelOpen ? (
+              <div className="space-y-2">
+                <textarea
+                  value={legacySessionCookie}
+                  onChange={(e) => setLegacySessionCookie(e.target.value)}
+                  rows={2}
+                  className={`${ad.input} font-mono text-xs w-full`}
+                  placeholder="PHPSESSID=..."
+                  dir="ltr"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={persistLegacySessionCookie}
+                    className="bg-amber-600 text-white font-bold text-xs px-3 py-1 rounded"
+                  >
+                    حفظ الكوكي
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearLegacySessionCookie}
+                    className="bg-slate-200 text-slate-800 font-bold text-xs px-3 py-1 rounded"
+                  >
+                    مسح
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </form>
   );

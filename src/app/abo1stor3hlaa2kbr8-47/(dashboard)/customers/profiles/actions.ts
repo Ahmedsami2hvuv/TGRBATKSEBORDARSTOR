@@ -620,11 +620,32 @@ async function performUpsertCustomerPhoneProfile(input: {
   return { ok: true, timestamp: Date.now() };
 }
 
+export async function parseCustomerTextAction(rawText: string) {
+  return parseCustomerReferenceText(rawText);
+}
+
 export async function upsertCustomerPhoneProfile(
   _prev: CustomerProfileFormState,
   formData: FormData,
 ): Promise<CustomerProfileFormState> {
-  const rawText = String(formData.get("rawText") ?? "").trim();
+  let rawText = String(formData.get("rawText") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const regionName = String(formData.get("regionName") ?? "").trim();
+  const locationUrl = String(formData.get("locationUrl") ?? "").trim();
+  const alternatePhone = String(formData.get("alternatePhone") ?? "").trim();
+
+  if (phone || regionName) {
+    const parts = [];
+    if (regionName) parts.push(`المنطقة: ${regionName}`);
+    if (phone) parts.push(`رقم الهاتف: ${phone}`);
+    if (locationUrl) parts.push(`لكيشن الزبون: ${locationUrl}`);
+    if (alternatePhone) parts.push(`رقم الهاتف الآخر: ${alternatePhone}`);
+    if (rawText && !rawText.includes(phone)) {
+      parts.push(rawText);
+    }
+    rawText = parts.join("\n");
+  }
+
   const uploaded = await photoFromForm(formData, "photo");
   if (!uploaded.ok) {
     return { error: uploaded.error };
