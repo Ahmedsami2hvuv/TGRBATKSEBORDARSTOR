@@ -38,7 +38,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
     // أتمتة فتح/استعادة حساب المحل تلقائياً في دفتر الديون إذا كان لديه طلب مسلّم غير مسدّد
     try {
       const subtotal = Number(order.orderSubtotal || 0);
-      if (subtotal > 0 && !order.shopCostPaidAt && order.shopId) {
+      if (subtotal > 0 && !order.shopCostPaidAt && order.shopId && order.routeMode !== "double") {
         const shop = await db.shop.findUnique({
           where: { id: order.shopId },
           select: { name: true, phone: true }

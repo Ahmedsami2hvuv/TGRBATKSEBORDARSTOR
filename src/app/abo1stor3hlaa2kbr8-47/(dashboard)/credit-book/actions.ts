@@ -45,6 +45,7 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
   const orders = await prisma.order.findMany({
     where: {
       shopId,
+      routeMode: { not: "double" },
       shopCostPaidAt: null,
       status: { in: ["delivered", "archived"] },
       OR: [
@@ -952,6 +953,7 @@ export async function getPartnerDetails(partnerId: string) {
         const orders = await prisma.order.findMany({
           where: {
             shopId: partner.externalId,
+            routeMode: { not: "double" },
             shopCostPaidAt: null,
             status: { in: ["delivered", "archived"] },
             OR: [
@@ -2110,6 +2112,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       const unpaidOrders = await prisma.order.findMany({
         where: {
           shopId: partner.externalId,
+          routeMode: { not: "double" },
           shopCostPaidAt: null,
           status: { in: ["delivered", "archived"] },
           orderSubtotal: { gt: 0 }
