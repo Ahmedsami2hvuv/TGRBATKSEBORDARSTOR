@@ -603,31 +603,42 @@ export function OrderViewContent({
         </div>
 
 
-        {/* قسم المندوب - مضاف حديثاً بناءً على طلبك */}
+        {/* قسم المندوب المسند على الطلب — تصميم مدمج وأنيق برتوش عصرية */}
         {order.courier && (
-          <div className="rounded-2xl border-2 border-purple-200 bg-purple-50/40 p-5 shadow-sm">
-             <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🚚</span>
-                  <h3 className="text-lg font-black text-purple-900">المندوب المسجل على الطلب</h3>
-                </div>
-                {order.status !== "cancelled" && order.status !== "archived" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAssignCourierModal(true)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
-                  >
-                    <span>🔄</span>
-                    تغيير المندوب
-                  </button>
-                )}
-             </div>
-             <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-3.5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white text-xl shadow-sm">
+                  🛵
+                </span>
                 <div>
-                   <p className="text-2xl font-black text-slate-900">{order.courier.name}</p>
-                   <p className="font-mono text-base font-bold text-purple-800 tabular-nums sm:text-lg [direction:ltr] break-all">{order.courier.phone}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-emerald-800">المندوب المسند للطلب:</span>
+                    <span className="text-base font-black text-slate-900">{order.courier.name}</span>
+                  </div>
+                  {order.courier.phone && (
+                    <a
+                      href={`tel:${order.courier.phone}`}
+                      className="font-mono text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline [direction:ltr] inline-flex items-center gap-1 mt-0.5"
+                    >
+                      <span>📞</span>
+                      <span>{order.courier.phone}</span>
+                    </a>
+                  )}
                 </div>
-             </div>
+              </div>
+
+              {order.status !== "cancelled" && order.status !== "archived" && (
+                <button
+                  type="button"
+                  onClick={() => setShowAssignCourierModal(true)}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer mr-auto"
+                >
+                  <span>🔄</span>
+                  <span>تغيير المندوب</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
