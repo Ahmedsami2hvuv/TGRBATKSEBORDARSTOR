@@ -231,6 +231,143 @@ function ClientOrderFormInner({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
 
+  // إعداد مفتاح التخزين وموقع الزر العائم الساحب
+  const STORAGE_KEY_BTN = "kse_client_submit_btn_pos_v2";
+  const [floatingPos, setFloatingPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0,
+  });
+
+  // قراءة موضع الزر العائم من LocalStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_BTN);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          const maxX = Math.max(10, window.innerWidth - 80);
+          const maxY = Math.max(10, window.innerHeight - 80);
+          const clampedX = Math.max(10, Math.min(parsed.x, maxX));
+          const clampedY = Math.max(10, Math.min(parsed.y, maxY));
+          setFloatingPos({ x: clampedX, y: clampedY });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load submit button position:", e);
+    }
+    // الموقع الافتراضي: أسفل يسار الشاشة للموبايل والتابلت
+    const defaultX = Math.max(15, window.innerWidth - 85);
+    const defaultY = Math.max(15, window.innerHeight - 110);
+    setFloatingPos({ x: defaultX, y: defaultY });
+  }, []);
+
+  // دالة الفحص والتوجيه المباشر للحقل الناقص أو الخاطئ
+  const validateAndScrollToMissingField = (): boolean => {
+    // 1. فحص رقم الزبون
+    const phoneClean = sanitizePhone(customerPhone);
+    if (!customerPhone.trim() || phoneClean.length < 10) {
+      toast.error("يرجى إدخال رقم هاتف زبون صحيح (11 رقم)");
+      if (customerPhoneRef.current) {
+        customerPhoneRef.current.focus();
+        customerPhoneRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        customerPhoneRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
+        setTimeout(() => {
+          customerPhoneRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
+        }, 2500);
+      }
+      return false;
+    }
+
+    // 2. فحص منطقة الزبون
+    if (!selected || q !== selected.name) {
+      toast.error("يرجى اختيار منطقة الزبون (المستلم) من القائمة المنسدلة");
+      if (regionSearchRef.current) {
+        regionSearchRef.current.focus();
+        regionSearchRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        regionSearchRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
+        setTimeout(() => {
+          regionSearchRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
+        }, 2500);
+      }
+      return false;
+    }
+
+    // 3. فحص نوع الطلب
+    if (!orderType.trim()) {
+      toast.error("يرجى إدخال أو اختيار نوع الطلب (مثل: طعام، ملابس...)");
+      if (orderTypeRef.current) {
+        orderTypeRef.current.focus();
+        orderTypeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        orderTypeRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
+        setTimeout(() => {
+          orderTypeRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
+        }, 2500);
+      }
+      return false;
+    }
+
+    // 4. فحص سعر الطلب إن وجد إدخال خاطئ
+    if (orderPrice.trim() && !isPriceValid) {
+      toast.error("يرجى إدخال سعر طلب صحيح بالأرقام فقط");
+      if (orderPriceRef.current) {
+        orderPriceRef.current.focus();
+        orderPriceRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        orderPriceRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
+        setTimeout(() => {
+          orderPriceRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
+        }, 2500);
+      }
+      return false;
+    }
+
+    return true;
+  };
+
+  // أحداث السحب والتحريك للزر العائم
+  const handlePointerDown = (clientX: number, clientY: number) => {
+    if (!floatingPos) return;
+    isDraggingRef.current = false;
+    dragStartRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initialX: floatingPos.x,
+      initialY: floatingPos.y,
+    };
+  };
+
+  const handlePointerMove = (clientX: number, clientY: number) => {
+    const deltaX = clientX - dragStartRef.current.startX;
+    const deltaY = clientY - dragStartRef.current.startY;
+
+    if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+      isDraggingRef.current = true;
+    }
+
+    if (isDraggingRef.current) {
+      const maxX = Math.max(10, window.innerWidth - 80);
+      const maxY = Math.max(10, window.innerHeight - 80);
+      const newX = Math.max(10, Math.min(dragStartRef.current.initialX + deltaX, maxX));
+      const newY = Math.max(10, Math.min(dragStartRef.current.initialY + deltaY, maxY));
+      setFloatingPos({ x: newX, y: newY });
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (isDraggingRef.current && floatingPos) {
+      try {
+        localStorage.setItem(STORAGE_KEY_BTN, JSON.stringify(floatingPos));
+      } catch (err) {
+        console.error("Failed to save button position", err);
+      }
+    }
+  };
+
   // قراءة الهاتف والاسم من التخزين المحلي في البداية لتسهيل ملء البيانات
   useEffect(() => {
     if (typeof window !== "undefined" && !customerPhone) {
@@ -469,6 +606,10 @@ function ClientOrderFormInner({
   }
 
   function onFormSubmit(e: FormEvent<HTMLFormElement>) {
+    if (!validateAndScrollToMissingField()) {
+      e.preventDefault();
+      return;
+    }
     if (allowNoPriceSubmit) {
       setAllowNoPriceSubmit(false);
       return;
@@ -1474,7 +1615,7 @@ function ClientOrderFormInner({
                 ) : null}
 
                 <button type="submit" disabled={pending} className="mt-8 w-full rounded-3xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-5 text-xl font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
-                  {pending ? "جارٍ إرسال الطلب..." : "رفع الطلب للمجهزين"}
+                  {pending ? "جارٍ إرسال الطلب..." : "رفع الطلب للإدارة"}
                 </button>
                 <button type="button" onClick={() => setLearnStep(0)} className="mt-4 text-sm font-bold text-slate-400 hover:text-slate-600 underline">تعديل البيانات</button>
               </div>
@@ -1491,11 +1632,76 @@ function ClientOrderFormInner({
             ) : null}
 
             <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-lg font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-              {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "رفع الطلب للمجهزين"}
+              {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "رفع الطلب للإدارة"}
             </button>
           </>
         )}
       </form>
+
+      {/* الزر العائم الدائري والقابل للتحريك لرفع الطلب للإدارة */}
+      {floatingPos && !state.ok && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${floatingPos.x}px`,
+            top: `${floatingPos.y}px`,
+            zIndex: 9999,
+          }}
+          className="touch-none select-none cursor-grab active:cursor-grabbing"
+          onTouchStart={(e) => {
+            const t = e.touches[0];
+            if (t) handlePointerDown(t.clientX, t.clientY);
+          }}
+          onTouchMove={(e) => {
+            const t = e.touches[0];
+            if (t) handlePointerMove(t.clientX, t.clientY);
+          }}
+          onTouchEnd={() => {
+            const dragged = isDraggingRef.current;
+            handlePointerUp();
+            if (!dragged && !pending) {
+              if (validateAndScrollToMissingField()) {
+                formRef.current?.requestSubmit();
+              }
+            }
+          }}
+          onMouseDown={(e) => {
+            handlePointerDown(e.clientX, e.clientY);
+            const onMouseMove = (ev: MouseEvent) => handlePointerMove(ev.clientX, ev.clientY);
+            const onMouseUp = () => {
+              const dragged = isDraggingRef.current;
+              handlePointerUp();
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
+              if (!dragged && !pending) {
+                if (validateAndScrollToMissingField()) {
+                  formRef.current?.requestSubmit();
+                }
+              }
+            };
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+          }}
+        >
+          <button
+            type="button"
+            disabled={pending}
+            className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-800 text-white shadow-[0_10px_25px_rgba(16,185,129,0.45)] border-2 border-white ring-4 ring-emerald-400/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+            title="رفع الطلب للإدارة (يمكنك سحب وتحريك الزر لأي مكان)"
+          >
+            {pending ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <>
+                <span className="text-lg leading-none mb-0.5">🚀</span>
+                <span className="text-[9px] font-black leading-tight text-center px-1">
+                  رفع الطلب<br />للإدارة
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {blockedPhone && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
