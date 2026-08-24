@@ -267,6 +267,26 @@ function ClientOrderFormInner({
     setFloatingPos({ x: defaultX, y: defaultY });
   }, []);
 
+  // إشعار الزر العائم الجديد لإبلاغ العميل عند فتح حسابه
+  const FLOATING_BTN_NOTICE_KEY = "kse_client_floating_btn_notice_dismissed";
+  const [showFloatingBtnNotice, setShowFloatingBtnNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissed = localStorage.getItem(FLOATING_BTN_NOTICE_KEY);
+      if (!dismissed) {
+        setShowFloatingBtnNotice(true);
+      }
+    }
+  }, []);
+
+  const handleDismissFloatingBtnNotice = () => {
+    setShowFloatingBtnNotice(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(FLOATING_BTN_NOTICE_KEY, "true");
+    }
+  };
+
   // دالة الفحص والتوجيه المباشر للحقل الناقص أو الخاطئ
   const validateAndScrollToMissingField = (): boolean => {
     // 1. فحص رقم الزبون
@@ -632,6 +652,38 @@ function ClientOrderFormInner({
 
   return (
     <>
+      {showFloatingBtnNotice && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
+          <div className="relative bg-white rounded-3xl border-2 border-emerald-200 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 animate-in zoom-in-95 duration-300">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-4xl shadow-inner animate-bounce">
+              🚀
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900">تحديث جديد بخصوص زر رفع الطلب!</h3>
+              <p className="text-sm font-bold text-slate-600 leading-relaxed">
+                أصبح زر <span className="text-emerald-700 font-black">"رفع الطلب للإدارة"</span> عائماً ومتحركاً في الشاشة!
+                <br/>
+                يمكنك الآن <span className="underline decoration-emerald-400">سحبه وتحريك مكانه إلى أي مكان تشاء</span> على الشاشة، وسيقوم الموقع بحفظ مكانه المفضل لك دائماً.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3.5 text-xs font-black text-emerald-800 flex items-center justify-center gap-2">
+              <span>💡</span>
+              <span>جرب سحب الزر العائم بإصبعك لتغيير مكانه فوراً!</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDismissFloatingBtnNotice}
+              className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white py-4 font-black text-base shadow-lg shadow-emerald-200 active:scale-[0.98] transition-all"
+            >
+              حسناً، فهمت ذلك 👍
+            </button>
+          </div>
+        </div>
+      )}
+
       {showCarAlert && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
           <div className="relative bg-white dark:bg-[#09090b] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 animate-in zoom-in-95 duration-200">
