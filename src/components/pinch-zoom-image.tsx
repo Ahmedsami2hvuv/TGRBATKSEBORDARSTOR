@@ -34,6 +34,25 @@ export function ImageZoomModal({
     };
   }, [scale]);
 
+  // التحكم بـ زر الرجوع في الهاتف أو المتصفح لإغلاق الصورة فقط دون إغلاق الطلبية
+  useEffect(() => {
+    const stateId = "img-zoom-" + Math.random().toString(36).substring(2, 9);
+    window.history.pushState({ imageZoomModalId: stateId }, "");
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (window.history.state?.imageZoomModalId === stateId) {
+        window.history.back();
+      }
+    };
+  }, [onClose]);
+
   // حساب المسافة بين نقطتين (لمعرفة المسافة بين الإصبعين)
   const getDistance = (touches: React.TouchList) => {
     if (touches.length < 2) return 0;

@@ -40,6 +40,7 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 
 export type PendingOrderRow = {
   id: string;
@@ -2235,9 +2236,7 @@ ${productsText}`;
       )}
 
       {previewImageUrl && (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/80" onClick={() => setPreviewImageUrl(null)}>
-           <img src={previewImageUrl} className="max-h-screen max-w-full object-contain" style={{ transform: `scale(${previewZoom})` }} onClick={e => e.stopPropagation()} />
-        </div>
+        <ImageZoomModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />
       )}
     </div>
   );
