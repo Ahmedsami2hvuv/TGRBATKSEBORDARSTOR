@@ -22,6 +22,14 @@ import { toast } from "sonner";
 import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
+import { formatBaghdadDateTime } from "@/lib/baghdad-time";
+import { orderStatusBadgeClass } from "@/lib/order-status-style";
+
+const STATUS_AR: Record<string, string> = {
+  assigned: "بانتظار المندوب",
+  delivering: "عند المندوب (تم الاستلام)",
+  delivered: "تم التسليم",
+};
 
 export type MandoubRow = {
   id: string;
@@ -725,22 +733,40 @@ export function MandoubOrderTable({
       {activeOrderData &&
         createPortal(
           <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
-            <div className="sticky top-0 z-[120] flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 p-3 shadow-md backdrop-blur-md">
-              <button
-                onClick={() => {
-                  setActiveOrderId(null);
-                  const p = new URLSearchParams(window.location.search);
-                  p.delete("activeOrderId");
-                  const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
-                  window.history.pushState({}, "", newPath);
-                }}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              >
-                <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-black text-slate-900 dark:text-white truncate">تفاصيل طلب #{activeOrderData.shortId}</p>
-                <p className="text-[10px] font-bold text-slate-500">{activeOrderData.shopName}</p>
+            <div className="sticky top-0 z-[120] flex items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 px-3 py-2.5 shadow-md backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <button
+                  onClick={() => {
+                    setActiveOrderId(null);
+                    const p = new URLSearchParams(window.location.search);
+                    p.delete("activeOrderId");
+                    const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+                    window.history.pushState({}, "", newPath);
+                  }}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 active:scale-95 transition-all"
+                  title="إغلاق"
+                >
+                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-black text-slate-900 dark:text-white">رقم الطلب #{activeOrderData.shortId}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${orderStatusBadgeClass(activeOrderData.orderStatus)}`}>
+                      {STATUS_AR[activeOrderData.orderStatus] ?? activeOrderData.orderStatus}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 flex-wrap">
+                    <span className="text-slate-700 dark:text-slate-300">{activeOrderData.shopName}</span>
+                    {activeOrderData.createdAt && (
+                      <>
+                        <span>•</span>
+                        <span className="text-sky-700 dark:text-sky-400">📅 {formatBaghdadDateTime(activeOrderData.createdAt)}</span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span className="text-rose-700 dark:text-rose-400">⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
