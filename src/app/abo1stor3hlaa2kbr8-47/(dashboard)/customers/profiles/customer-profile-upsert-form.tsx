@@ -34,7 +34,7 @@ const initialHint: CustomerProfileFormHint = {
   otherRegionNames: [],
 };
 
-/** مكون اختيار المنطقة المحسن التراكمي والمريح للهواتف الذكية */
+/** مكون اختيار المنطقة المحسن والتراكمي والمريح للهواتف الذكية */
 function RegionPickerSelect({
   regions,
   value,
@@ -144,6 +144,134 @@ function RegionPickerSelect({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** مكون زر حفظ البيانات العائم والقابل للسحب والتحريك بحرية على الشاشة */
+function DraggableFloatingSubmitButton({ pending }: { pending: boolean }) {
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0,
+  });
+  const movedRef = useRef(false);
+
+  useEffect(() => {
+    const defaultX = Math.max(16, window.innerWidth - 180);
+    const defaultY = Math.max(16, window.innerHeight - 100);
+    setPosition({ x: defaultX, y: defaultY });
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch || !position) return;
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    dragStartRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      initialX: position.x,
+      initialY: position.y,
+    };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const deltaX = touch.clientX - dragStartRef.current.startX;
+    const deltaY = touch.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      movedRef.current = true;
+    }
+
+    const newX = Math.min(Math.max(10, dragStartRef.current.initialX + deltaX), window.innerWidth - 160);
+    const newY = Math.min(Math.max(10, dragStartRef.current.initialY + deltaY), window.innerHeight - 70);
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!position) return;
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: position.x,
+      initialY: position.y,
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current || !position) return;
+      const deltaX = e.clientX - dragStartRef.current.startX;
+      const deltaY = e.clientY - dragStartRef.current.startY;
+
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        movedRef.current = true;
+      }
+
+      const newX = Math.min(Math.max(10, dragStartRef.current.initialX + deltaX), window.innerWidth - 160);
+      const newY = Math.min(Math.max(10, dragStartRef.current.initialY + deltaY), window.innerHeight - 70);
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [position]);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (movedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  if (!position) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        zIndex: 9999,
+        touchAction: "none",
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      className="cursor-move select-none"
+    >
+      <button
+        type="submit"
+        disabled={pending}
+        onClick={handleClick}
+        className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-95 text-white font-black text-sm py-3 px-5 rounded-full shadow-2xl border-2 border-white/40 backdrop-blur-md transition-transform"
+      >
+        <span className="text-lg">💾</span>
+        <span>{pending ? "جارٍ الحفظ…" : "حفظ البيانات"}</span>
+        <span className="text-[10px] opacity-70 border-s border-white/30 ps-1 me-[-2px]">✋</span>
+      </button>
     </div>
   );
 }
@@ -461,11 +589,14 @@ export function CustomerProfileUpsertForm({
       ref={formRef}
       action={formAction}
       encType="multipart/form-data"
-      className="space-y-6"
+      className="space-y-6 pb-20"
     >
       <input type="hidden" name="rawText" value={rawText} />
 
-      {/* الشريط العلوي الثابت للرسائل والتنبيهات وزر الحفظ */}
+      {/* زر حفظ البيانات العائم والقابل للسحب */}
+      <DraggableFloatingSubmitButton pending={pending} />
+
+      {/* الشريط العلوي الثابت للرسائل والتنبيهات وزر اللصق السريع */}
       <div
         className={
           "sticky top-0 z-30 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between " +
@@ -548,17 +679,10 @@ export function CustomerProfileUpsertForm({
           <button
             type="button"
             onClick={handlePaste}
-            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2.5 px-3 rounded-lg border border-slate-600 transition-colors"
+            className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow border border-sky-400 transition-colors"
             title="لصق البيانات من التلغرام أو الحافظة"
           >
             📋 لصق سريع
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-base py-2.5 px-6 rounded-xl shadow-lg transition-all disabled:opacity-50"
-          >
-            {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
           </button>
         </div>
       </div>
