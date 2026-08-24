@@ -339,11 +339,11 @@ export function OrderDetailSection({
               </div>
 
               {/* Shop Door / Logo Photo */}
-              <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                <span className="text-[10px] font-black text-slate-400">صورة المحل</span>
+              <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg">
                       <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() ? (
@@ -351,7 +351,7 @@ export function OrderDetailSection({
                     ) : null}
                   </div>
                 ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
+                  <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
                     لا توجد صورة
                   </div>
                 )}
@@ -473,11 +473,11 @@ export function OrderDetailSection({
                 </div>
 
                 {/* Customer Door Photo */}
-                <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                  <span className="text-[10px] font-black text-slate-400">صورة الباب {isFromProfilePhoto && "(أرشيف)"}</span>
+                <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة الباب {isFromProfilePhoto && "(أرشيف)"}</span>
                   {customerDoorDisplay ? (
                     <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg">
                         <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                       </div>
                       {order.customerDoorPhotoUploadedByName?.trim() ? (
@@ -485,7 +485,7 @@ export function OrderDetailSection({
                       ) : null}
                     </div>
                   ) : (
-                    <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
+                    <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
                       لا توجد صورة
                     </div>
                   )}
@@ -613,17 +613,17 @@ export function OrderDetailSection({
                   </div>
 
                   {/* Second Customer Door Photo */}
-                  <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                    <span className="text-[10px] font-black text-slate-400">صورة باب المستلم {isFromSecondProfilePhoto && "(أرشيف)"}</span>
+                  <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                    <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة باب المستلم {isFromSecondProfilePhoto && "(أرشيف)"}</span>
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center gap-1">
-                        <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md relative">
+                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg relative">
                           <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(secondDoorMerged))} />
                         </div>
                         {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
                       </div>
                     ) : (
-                      <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-350 dark:border-slate-700 text-xs text-slate-400 font-bold">
+                      <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-350 dark:border-slate-700 text-xs text-slate-400 font-bold">
                         لا توجد صورة
                       </div>
                     )}
@@ -733,11 +733,11 @@ export function OrderDetailSection({
               </div>
 
               {/* Order Package Photo */}
-              <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                <span className="text-[10px] font-black text-slate-400">صورة الطلبية</span>
+              <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة الطلبية</span>
                 {order.imageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md bg-white">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg bg-white">
                       <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(order.imageUrl))} />
                     </div>
                     {order.orderImageUploadedByName?.trim() ? (
@@ -745,7 +745,7 @@ export function OrderDetailSection({
                     ) : null}
                   </div>
                 ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
+                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
                     لا توجد صورة
                   </div>
                 )}
