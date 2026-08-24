@@ -659,16 +659,25 @@ function ClientOrderFormInner({
               🚀
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-xl font-black text-slate-900">تحديث جديد بخصوص زر رفع الطلب!</h3>
               <p className="text-sm font-bold text-slate-600 leading-relaxed">
-                أصبح زر <span className="text-emerald-700 font-black">"رفع الطلب للإدارة"</span> عائماً ومتحركاً في الشاشة!
-                <br/>
-                يمكنك الآن <span className="underline decoration-emerald-400">سحبه وتحريك مكانه إلى أي مكان تشاء</span> على الشاشة، وسيقوم الموقع بحفظ مكانه المفضل لك دائماً.
+                أصبح زر <span className="text-emerald-700 font-black">"رفع الطلب للإدارة"</span> عائماً ومتحركاً في الشاشة، كما تم تطويره ليقوم بإرشادك تلقائياً عند وجود أي نقص!
               </p>
+
+              <div className="text-xs font-bold text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-right space-y-2.5 leading-relaxed shadow-inner">
+                <p className="flex items-start gap-2">
+                  <span className="text-emerald-600 text-sm shrink-0">📍</span>
+                  <span><b>زر عائم ومتحرك:</b> يمكنك سحبه وتحريكه إلى أي زاوية تريدها وسيقوم الموقع بحفظ مكانه المفضل لك دائماً.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-emerald-600 text-sm shrink-0">🎯</span>
+                  <span><b>مرشد وذكيات التوجيه:</b> عند النقر عليه، إذا كان طلبك يحتوي على أي حقل ناقص أو خاطئ (مثل رقم الهاتف أو المنطقة)، سيرشدك الزر فوراً وينقل الشاشة تلقائياً للحقل الناقص لتنظيفه أو إكماله!</span>
+                </p>
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3.5 text-xs font-black text-emerald-800 flex items-center justify-center gap-2">
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-xs font-black text-emerald-800 flex items-center justify-center gap-2">
               <span>💡</span>
               <span>جرب سحب الزر العائم بإصبعك لتغيير مكانه فوراً!</span>
             </div>
