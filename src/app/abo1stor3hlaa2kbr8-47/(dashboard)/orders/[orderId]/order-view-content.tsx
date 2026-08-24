@@ -210,14 +210,26 @@ export function OrderViewContent({
           </div>
         )}
 
-        {/* --- بطاقة ترويسة الطلبية المرتبة والأنيقة --- */}
-        <div className="mb-6 rounded-2xl border border-sky-200 bg-white/95 p-4 shadow-sm sm:p-5 backdrop-blur-sm">
-          {/* السطر الأول: رقم الطلب + شارة الحالة + الشارات الخاصة */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 pb-3.5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-xl sm:text-2xl font-black text-slate-800">
-                تفاصيل الطلب <span className="inline-block rounded-xl bg-sky-600 px-3 py-1 text-white tabular-nums shadow-sm">#{order.orderNumber}</span>
+        {/* --- بطاقة ترويسة الطلبية المختصرة والمدمجة --- */}
+        <div className="mb-4 rounded-2xl border border-sky-200 bg-white/95 p-3.5 shadow-sm sm:p-4 backdrop-blur-sm">
+          {/* السطر الأول: رقم الطلب + اسم المندوب + حالة الطلب + الشارات الخاصة */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-sky-100 pb-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-block rounded-xl bg-sky-600 px-3 py-1 text-base sm:text-lg font-black text-white tabular-nums shadow-sm">
+                #{order.orderNumber}
               </span>
+
+              {order.courier ? (
+                <span className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-900">
+                  <span>🛵</span>
+                  <span>المندوب: {order.courier.name}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                  <span>🛵</span>
+                  <span>غير مسند</span>
+                </span>
+              )}
               
               {isReversePickup && (
                 <span className="rounded-xl border border-violet-300 bg-violet-100 px-2.5 py-1 text-xs font-black text-violet-900">
@@ -232,56 +244,64 @@ export function OrderViewContent({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className={`rounded-full px-4 py-1.5 text-xs sm:text-sm font-black shadow-sm ${statusBadgeClass}`}>
+              <span className={`rounded-full px-3.5 py-1 text-xs sm:text-sm font-black shadow-sm ${statusBadgeClass}`}>
                 {STATUS_AR[order.status] ?? order.status}
               </span>
             </div>
           </div>
 
-          {/* السطر الثاني: التواريخ والأوقات بأسلوب أنيق */}
-          <div className="mt-3.5 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-            <div className="flex items-center gap-1.5 rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-1.5 font-bold text-sky-900">
+          {/* السطر الثاني: تاريخ الرفع ووقت الاستلام في سطر واحد مدمج ومختصر */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex items-center gap-1 rounded-lg border border-sky-100 bg-sky-50/80 px-2.5 py-1 font-bold text-sky-900">
               <span>📅</span>
-              <span className="text-sky-700">تاريخ الرفع:</span>
+              <span className="text-sky-700">رفع:</span>
               <span className="font-mono [direction:ltr]">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-1.5 font-bold text-rose-900">
+            <div className="flex items-center gap-1 rounded-lg border border-rose-100 bg-rose-50/80 px-2.5 py-1 font-bold text-rose-900">
               <span>⏰</span>
-              <span className="text-rose-700">وقت الطلب (المطلوب):</span>
+              <span className="text-rose-700">وقت الاستلام:</span>
               <span>{order.orderNoteTime || "فوري"}</span>
             </div>
           </div>
 
-          {/* السطر الثالث: أزرار الإجراءات السريعة كبار ومريحين للنقر */}
-          <div className="mt-4 flex flex-wrap items-center gap-2.5 pt-1">
+          {/* السطر الثالث: أزرار التحكم المتناسقة (تعديل البيانات | تغيير المندوب | تعديل التسعير | تتبع الطلبات) */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 pt-0.5">
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[42px]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px]"
             >
               <span>📝</span>
               <span>تعديل البيانات</span>
             </Link>
 
+            {order.status !== "cancelled" && order.status !== "archived" && (
+              <button
+                type="button"
+                onClick={() => setShowAssignCourierModal(true)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer min-h-[38px]"
+              >
+                <span>📦</span>
+                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
+              </button>
+            )}
+
             {parsedShoppingJson !== null && (
               <Link
                 href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[42px]"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px]"
               >
                 <span>💰</span>
                 <span>تعديل التسعير</span>
               </Link>
             )}
 
-            {order.status !== "cancelled" && order.status !== "archived" && (
-              <button
-                type="button"
-                onClick={() => setShowAssignCourierModal(true)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all cursor-pointer min-h-[42px]"
-              >
-                <span>📦</span>
-                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
-              </button>
-            )}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px] mr-auto"
+            >
+              <span>⬅️</span>
+              <span>تتبع الطلبات</span>
+            </Link>
           </div>
         </div>
 
@@ -603,44 +623,7 @@ export function OrderViewContent({
         </div>
 
 
-        {/* قسم المندوب المسند على الطلب — تصميم مدمج وأنيق برتوش عصرية */}
-        {order.courier && (
-          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-3.5 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white text-xl shadow-sm">
-                  🛵
-                </span>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-emerald-800">المندوب المسند للطلب:</span>
-                    <span className="text-base font-black text-slate-900">{order.courier.name}</span>
-                  </div>
-                  {order.courier.phone && (
-                    <a
-                      href={`tel:${order.courier.phone}`}
-                      className="font-mono text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline [direction:ltr] inline-flex items-center gap-1 mt-0.5"
-                    >
-                      <span>📞</span>
-                      <span>{order.courier.phone}</span>
-                    </a>
-                  )}
-                </div>
-              </div>
 
-              {order.status !== "cancelled" && order.status !== "archived" && (
-                <button
-                  type="button"
-                  onClick={() => setShowAssignCourierModal(true)}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer mr-auto"
-                >
-                  <span>🔄</span>
-                  <span>تغيير المندوب</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         <div className={gridInfoPhoto}>
           <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4">
