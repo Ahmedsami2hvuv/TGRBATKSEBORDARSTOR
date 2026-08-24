@@ -188,7 +188,10 @@ export function UIDesignerClient({ initialTarget, initialSection, initialConfig 
           );
         case "cash_in_hand":
           return (
-            <div key={id} style={{ ...blockStyle, backgroundColor: '#10b981', color: 'white' }} className="p-4 rounded-2xl text-center shadow-lg"><p className="text-[9px] font-bold">الكاش الموجود</p><p className="text-xl font-black">230 </p></div>
+            <div key={id} className="p-3 sm:p-4 rounded-2xl text-center shadow-lg bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white border border-emerald-400/40">
+              <p className="text-[10px] sm:text-xs font-extrabold opacity-95">💵 عندي (كاش بحوزتك)</p>
+              <p className="text-xl sm:text-2xl font-black mt-1">230</p>
+            </div>
           );
         case "site_and_remain":
           return (

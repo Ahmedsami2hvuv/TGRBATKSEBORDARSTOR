@@ -323,11 +323,33 @@ export function MandoubWalletClient({
         );
       case "cash_in_hand":
         return (
-          <div key="cash" className="kse-glass-dark flex items-center justify-between rounded-2xl border-2 border-emerald-500 bg-emerald-100 px-5 py-3 shadow-lg dark:bg-emerald-900/30 dark:border-emerald-800">
-            <p className="flex items-center gap-2 text-lg font-black text-emerald-900 dark:text-emerald-400">
-              <DynamicIcon icon={icons?.wallet_cash} fallback="💵" width={24} height={24} /> عندي
-            </p>
-            <p className="text-3xl font-black tabular-nums text-emerald-950 sm:text-4xl dark:text-emerald-100">{cashInHandStr}</p>
+          <div key="cash" className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-4 sm:p-5 text-white shadow-xl shadow-emerald-600/20 border border-emerald-400/40 transition-all duration-300 hover:shadow-2xl hover:scale-[1.01]">
+            {/* زخرفة خلفية لمظهر فاخر */}
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
+            <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-xl pointer-events-none" />
+            
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-white/20 shadow-inner backdrop-blur-md border border-white/30 text-2xl">
+                  <DynamicIcon icon={icons?.wallet_cash} fallback="💵" width={26} height={26} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg sm:text-xl font-extrabold text-white tracking-wide">عندي</span>
+                    <span className="inline-flex items-center rounded-full bg-emerald-400/30 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-100 backdrop-blur-sm border border-emerald-300/30">
+                      كاش بحوزتك
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-emerald-100/80 font-medium">الكاش الفعلي المتوفر لديك الآن</p>
+                </div>
+              </div>
+              
+              <div className="text-left">
+                <p className="text-2xl sm:text-4xl font-black tabular-nums text-white tracking-tight drop-shadow-md">
+                  {cashInHandStr}
+                </p>
+              </div>
+            </div>
           </div>
         );
       case "available_for_transfer":

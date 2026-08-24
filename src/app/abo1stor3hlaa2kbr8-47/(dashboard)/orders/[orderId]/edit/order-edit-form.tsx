@@ -562,15 +562,17 @@ export function OrderEditForm({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={`/abo1stor3hlaa2kbr8-47/shops/${shopId}/edit`}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100"
-        >
-          تعديل بيانات المحل
-        </Link>
-        <span className="text-sm text-slate-500">هذه الصفحة: تعديل الطلب</span>
-      </div>
+      {routeMode !== "double" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/abo1stor3hlaa2kbr8-47/shops/${shopId}/edit`}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100"
+          >
+            تعديل بيانات المحل
+          </Link>
+          <span className="text-sm text-slate-500">هذه الصفحة: تعديل الطلب</span>
+        </div>
+      )}
 
       <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4">
         <span className={ad.label}>بصمة مُدخل الطلب</span>
@@ -612,37 +614,57 @@ export function OrderEditForm({
         legendClassName={ad.label}
       />
 
-      <div className="space-y-3">
-        <ShopSearchPicker
-          shops={shops}
-          fieldName="shopId"
-          label="المحل"
-          required
-          value={shopId}
-          onValueChange={onShopChange}
-        />
-      </div>
+      {routeMode === "double" ? (
+        <div className="rounded-2xl border-2 border-sky-400 bg-gradient-to-r from-sky-50 to-indigo-50 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-xl font-bold text-white shadow">
+              ⇄
+            </span>
+            <div>
+              <h3 className="text-base font-black text-sky-950">طلب ذو وجهتين (بين زبونين فقط)</h3>
+              <p className="text-xs font-bold text-sky-800">
+                هذا الطلب هو عملية نقل مباشرة بين <strong className="text-emerald-900">الزبون المرسل (الجهة الأولى)</strong> و <strong className="text-sky-900">الزبون المستلم (الجهة الثانية)</strong> بدون ربط بمحل تجاري.
+              </p>
+            </div>
+          </div>
+          <input type="hidden" name="shopId" value={shopId} />
+          <input type="hidden" name="submittedByEmployeeId" value={submittedByEmployeeId} />
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            <ShopSearchPicker
+              shops={shops}
+              fieldName="shopId"
+              label="المحل"
+              required
+              value={shopId}
+              onValueChange={onShopChange}
+            />
+          </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className={ad.label}>عميل المحل (موظف رفع الطلب)</span>
-        <select
-          name="submittedByEmployeeId"
-          value={submittedByEmployeeId}
-          onChange={(e) => setSubmittedByEmployeeId(e.target.value)}
-          className={ad.select}
-        >
-          <option value="">— بدون ربط بموظف محدد (من رفع الطلب من داخل المحل) —</option>
-          {employeesForShop.map((e) => (
-            <option key={e.id} value={e.id}>
-              {(e.name || "").trim() ? e.name.trim() : "موظف بدون اسم"}
-            </option>
-          ))}
-        </select>
-        <span className={`text-xs ${ad.muted}`}>
-          يحدّد من داخل المحل المختار رفع هذا الطلب إلى النظام. منفصل عن «زبون التوصيل» (المستلم) أدناه.
-          عند اختيار موظف يُلغى ارتباط «مُدخل شركة التجهيز» إن وُجد لأن المصدر يصبح موظف المحل.
-        </span>
-      </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>عميل المحل (موظف رفع الطلب)</span>
+            <select
+              name="submittedByEmployeeId"
+              value={submittedByEmployeeId}
+              onChange={(e) => setSubmittedByEmployeeId(e.target.value)}
+              className={ad.select}
+            >
+              <option value="">— بدون ربط بموظف محدد (من رفع الطلب من داخل المحل) —</option>
+              {employeesForShop.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {(e.name || "").trim() ? e.name.trim() : "موظف بدون اسم"}
+                </option>
+              ))}
+            </select>
+            <span className={`text-xs ${ad.muted}`}>
+              يحدّد من داخل المحل المختار رفع هذا الطلب إلى النظام. منفصل عن «زبون التوصيل» (المستلم) أدناه.
+              عند اختيار موظف يُلغى ارتباط «مُدخل شركة التجهيز» إن وُجد لأن المصدر يصبح موظف المحل.
+            </span>
+          </label>
+        </>
+      )}
 
       <input type="hidden" name="customerId" value={customerId} />
 
