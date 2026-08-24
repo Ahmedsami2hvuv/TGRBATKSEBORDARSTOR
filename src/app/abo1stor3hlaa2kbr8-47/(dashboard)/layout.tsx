@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
 import { getSidebarConfig } from "@/lib/sidebar-settings-server";
 
+import { PullToRefresh } from "@/components/pull-to-refresh";
+
 export default async function AdminDashboardLayout({
   children,
 }: {
@@ -14,5 +16,12 @@ export default async function AdminDashboardLayout({
 }) {
   const isAccountant = await getCurrentSessionIsAccountant();
   const sidebarConfig = await getSidebarConfig();
-  return <AdminShell pendingInitialCount={0} isAccountant={isAccountant} initialSidebarConfig={sidebarConfig}>{children}</AdminShell>;
+  return (
+    <>
+      <PullToRefresh />
+      <AdminShell pendingInitialCount={0} isAccountant={isAccountant} initialSidebarConfig={sidebarConfig}>
+        {children}
+      </AdminShell>
+    </>
+  );
 }

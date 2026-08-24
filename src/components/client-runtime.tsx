@@ -88,9 +88,8 @@ export function ClientRuntime({
           target = target.parentElement;
         }
 
-        // إذا كان هناك مودال مفتوح أو كنا نسحب من قمة عنصر داخلي قابل للتمرير
-        // نقوم بعمل preventDefault لمنع تمرير إيماءة السحب للأسفل إلى WebView الأندرويد
-        if (isInsideScrollableAtTop || hasActiveModalOrDrawer) {
+        // حظر التحديث فقط إذا كان هناك نافذة منبثقة/مودال مفتوح، حتى لا يلغي السحب للتحديث في باقي الصفحة
+        if (hasActiveModalOrDrawer) {
           if (window.scrollY === 0 && e.cancelable) {
             e.preventDefault();
           }

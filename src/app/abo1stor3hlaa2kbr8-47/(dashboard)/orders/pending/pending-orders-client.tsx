@@ -552,44 +552,7 @@ ${productsText}`;
     return () => clearTimeout(delayDebounceFn);
   }, [products, placesCount, noProfit, orderId, isDraft]);
 
-  useEffect(() => {
-    let touchStartClientY = 0;
-    const preventPullToRefresh = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      const clientY = touch.clientY;
-      
-      // التحقق من الحاويات الداخلية القابلة للتمرير
-      let target = e.target as HTMLElement | null;
-      let isAtTop = true;
-      while (target) {
-        if (target.scrollHeight > target.clientHeight) {
-          if (target.scrollTop > 0) {
-            isAtTop = false;
-            break;
-          }
-        }
-        target = target.parentElement;
-      }
-
-      if (isAtTop && window.scrollY === 0 && clientY > touchStartClientY) {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-      }
-    };
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartClientY = e.touches[0].clientY;
-      }
-    };
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", preventPullToRefresh, { passive: false });
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", preventPullToRefresh);
-    };
-  }, []);
+  // للسماح بالسحب للتحديث في صفحة الطلبات المعلقة
 
   const unpricedCount = useMemo(() => {
     return products.filter(p => !(parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0)).length;

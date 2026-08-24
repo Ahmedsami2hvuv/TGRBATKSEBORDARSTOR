@@ -132,7 +132,7 @@ html, body {
   min-height: 100vh;
   isolation: isolate;
   background-color: #ffffff;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   transition: background-color 0.3s ease;
 }
 

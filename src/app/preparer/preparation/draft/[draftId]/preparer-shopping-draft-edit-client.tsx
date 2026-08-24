@@ -220,45 +220,7 @@ export function PreparerShoppingDraftEditClient({
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
-  // --- منع السحب للأسفل لإعادة تحميل الصفحة (pull-to-refresh) ---
-  useEffect(() => {
-    let touchStartClientY = 0;
-    const preventPullToRefresh = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      const clientY = touch.clientY;
-      
-      // التحقق من الحاويات الداخلية القابلة للتمرير
-      let target = e.target as HTMLElement | null;
-      let isAtTop = true;
-      while (target) {
-        if (target.scrollHeight > target.clientHeight) {
-          if (target.scrollTop > 0) {
-            isAtTop = false;
-            break;
-          }
-        }
-        target = target.parentElement;
-      }
-
-      if (isAtTop && window.scrollY === 0 && clientY > touchStartClientY) {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-      }
-    };
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartClientY = e.touches[0].clientY;
-      }
-    };
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", preventPullToRefresh, { passive: false });
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", preventPullToRefresh);
-    };
-  }, []);
+  // السماح بالسحب للتحديث
 
   // --- إجبار الكيبورد على البقاء مفتوحاً عند الانتقال بين المواد ---
   useEffect(() => {
