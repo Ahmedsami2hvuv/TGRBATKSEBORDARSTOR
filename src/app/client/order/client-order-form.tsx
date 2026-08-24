@@ -1666,9 +1666,9 @@ function ClientOrderFormInner({
                   </div>
                 ) : null}
 
-                <button type="submit" disabled={pending} className="mt-8 w-full rounded-3xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-5 text-xl font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
-                  {pending ? "جارٍ إرسال الطلب..." : "رفع الطلب للإدارة"}
-                </button>
+                <p className="mt-6 text-sm font-black text-emerald-700 bg-emerald-50 p-3 rounded-2xl border border-emerald-100 animate-pulse">
+                  👇 انقر على زر رفع الطلب للإدارة العائم 🚀 الموجود في الشاشة لرفع طلبك!
+                </p>
                 <button type="button" onClick={() => setLearnStep(0)} className="mt-4 text-sm font-bold text-slate-400 hover:text-slate-600 underline">تعديل البيانات</button>
               </div>
             )}
@@ -1682,10 +1682,6 @@ function ClientOrderFormInner({
                 ⚠️ {state.error}
               </div>
             ) : null}
-
-            <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-lg font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-              {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "رفع الطلب للإدارة"}
-            </button>
           </>
         )}
       </form>
