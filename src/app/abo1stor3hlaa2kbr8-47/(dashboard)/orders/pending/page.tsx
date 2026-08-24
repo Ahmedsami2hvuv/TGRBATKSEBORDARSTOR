@@ -425,36 +425,44 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const finalPreparedCount = activeTab === "new" || activeTab === "completed" ? preparedRows.length : preparedCountRaw;
 
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
-          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
              <Link
                href={`${SECRET_ADMIN_PATH}/orders/new`}
-               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 active:scale-95 transition-all text-center"
+               title="طلب إداري جديد"
+               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm active:scale-95 transition-all whitespace-nowrap shrink-0"
              >
-               <span>+ طلب إداري جديد</span>
+               <span className="text-sm">➕</span>
+               <span>طلب جديد</span>
              </Link>
 
              <Link
                href="?fishPrices=true"
-               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-md active:scale-95 transition-all text-center"
+               title="أسعار السمك اليومية"
+               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm active:scale-95 transition-all whitespace-nowrap shrink-0"
              >
-               <span>🐟 أسعار السمك اليومية</span>
+               <span className="text-sm">🐟</span>
+               <span>أسعار السمك</span>
              </Link>
 
              <Link
                href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-sky-300 bg-white text-sky-900 shadow-sm hover:bg-sky-50 active:scale-95 transition-all text-center"
+               title="تتبع الطلبات"
+               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-sky-300 bg-white hover:bg-sky-50 text-sky-900 shadow-sm active:scale-95 transition-all whitespace-nowrap shrink-0"
              >
-               <span>📍 تتبع الطلبات</span>
+               <span className="text-sm">📍</span>
+               <span>التتبع</span>
              </Link>
 
              <Link
                href={`${SECRET_ADMIN_PATH}/preparation-orders`}
-               className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-sky-300 bg-white text-sky-900 shadow-sm hover:bg-sky-50 active:scale-95 transition-all text-center"
+               title="سجل التجهيز"
+               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-sky-300 bg-white hover:bg-sky-50 text-sky-900 shadow-sm active:scale-95 transition-all whitespace-nowrap shrink-0"
              >
-               <span>📋 سجل التجهيز</span>
+               <span className="text-sm">📋</span>
+               <span>السجل</span>
              </Link>
           </div>
         </div>
