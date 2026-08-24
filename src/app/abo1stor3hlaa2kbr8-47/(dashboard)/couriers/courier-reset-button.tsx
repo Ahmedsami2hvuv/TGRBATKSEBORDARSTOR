@@ -4,10 +4,18 @@ import { useActionState, useEffect, useTransition } from "react";
 import { resetCourierMandoubTotals, type CourierMandoubResetState } from "./actions";
 import { useRouter } from "next/navigation";
 import { customConfirm } from "@/components/global-confirm-dialog";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initialReset: CourierMandoubResetState = {};
 
-export function CourierResetButton({ courierId }: { courierId: string }) {
+export function CourierResetButton({
+  courierId,
+  icons,
+}: {
+  courierId: string;
+  icons?: GlobalIconsConfig;
+}) {
   const boundReset = resetCourierMandoubTotals.bind(null, courierId);
   const [resetState, resetAction, resetPending] = useActionState(
     boundReset,
@@ -49,9 +57,10 @@ export function CourierResetButton({ courierId }: { courierId: string }) {
       type="button"
       onClick={handleResetClick}
       disabled={isLoading}
-      className="inline-flex items-center rounded-lg border border-rose-500/50 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-900 shadow-sm transition hover:bg-rose-100 disabled:opacity-60 cursor-pointer"
+      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300/80 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-2 text-xs font-bold text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
     >
-      {isLoading ? "جارٍ التصفير…" : "تصفير الأرقام"}
+      <DynamicIcon config={icons} iconKey="ui_reset" fallback="🔄" className="w-4 h-4" />
+      <span>{isLoading ? "جارٍ التصفير…" : "تصفير الأرقام"}</span>
     </button>
   );
 }

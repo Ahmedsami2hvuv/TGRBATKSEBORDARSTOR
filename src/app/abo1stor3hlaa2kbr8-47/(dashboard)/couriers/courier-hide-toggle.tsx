@@ -41,11 +41,11 @@ export function CourierHideToggle({
       disabled={loading}
       type="button"
       title={hidden ? "إظهار المندوب عند اختيار مندوب في قائمة الإسناد" : "إخفاء المندوب من قوائم الإسناد (لا يظهر عند اختيار مندوب)"}
-      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all border shadow-sm ${
         hidden
-          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20"
-          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
-      } disabled:opacity-50`}
+          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
+          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+      } disabled:opacity-50 cursor-pointer`}
     >
       <DynamicIcon
         config={icons}
@@ -53,7 +53,7 @@ export function CourierHideToggle({
         fallback={hidden ? "👁️" : "🙈"}
         className="w-4 h-4"
       />
-      {loading ? "جاري..." : hidden ? "إظهار في قوائم الإسناد" : "إخفاء من قوائم الإسناد"}
+      <span>{loading ? "جاري..." : hidden ? "إظهار في قوائم الإسناد" : "إخفاء من قوائم الإسناد"}</span>
     </button>
   );
 }
