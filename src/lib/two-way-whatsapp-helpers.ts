@@ -199,7 +199,7 @@ export function getDefaultTwoWayButtonRules(): TwoWayButtonRule[] {
   ];
 }
 
-import { applyMandoubWaTemplate } from "./mandoub-wa-button-template";
+import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "./mandoub-wa-button-template";
 
 export function renderTwoWayTemplate(input: {
   template: string;
@@ -218,7 +218,8 @@ export function renderTwoWayTemplate(input: {
   courierName?: string;
 }): string {
   if (!input.template || !input.template.trim()) return "";
-  const tpl = input.template.trim();
+  const variants = splitMandoubWaTemplateVariants(input.template.trim());
+  const tpl = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : input.template.trim();
 
   const deliveryStr =
     input.deliveryName ||

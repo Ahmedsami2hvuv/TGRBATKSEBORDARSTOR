@@ -282,14 +282,16 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       };
 
       if (requestLocationBtn && o.customerPhone) {
-        const message = splitMandoubWaTemplateVariants(requestLocationBtn.templateText || "")
-          .map(t => applyMandoubWaTemplate(t, vars))[0] || "";
+        const variants = splitMandoubWaTemplateVariants(requestLocationBtn.templateText || "")
+          .map(t => applyMandoubWaTemplate(t, vars));
+        const message = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : "";
         requestLocationWaUrl = whatsappMeUrl(o.customerPhone, message);
       }
 
       if (notifyCustomerBtn && o.customerPhone) {
-        const message = splitMandoubWaTemplateVariants(notifyCustomerBtn.templateText || "")
-          .map(t => applyMandoubWaTemplate(t, vars))[0] || "";
+        const variants = splitMandoubWaTemplateVariants(notifyCustomerBtn.templateText || "")
+          .map(t => applyMandoubWaTemplate(t, vars));
+        const message = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : "";
         notifyCustomerWaUrl = whatsappMeUrl(o.customerPhone, message);
       }
 

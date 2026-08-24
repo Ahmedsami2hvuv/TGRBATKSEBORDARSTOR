@@ -293,8 +293,9 @@ export function OrderFabDock(props: OrderFabDockProps) {
     }
 
     if (availableContacts.length === 1) {
-      // مستلم واحد فقط -> إرسال مباشر دون سؤاله
-      openUrlFromUserGesture(whatsappMeUrl(availableContacts[0].phone, btn.messages[0] || ""));
+      // مستلم واحد فقط -> إرسال مباشر دون سؤاله مع اختيار صيغة عشوائية
+      const randomMsg = btn.messages.length > 0 ? btn.messages[Math.floor(Math.random() * btn.messages.length)] : "";
+      openUrlFromUserGesture(whatsappMeUrl(availableContacts[0].phone, randomMsg));
       closeAll();
     } else {
       // أكثر من مستلم -> عرض الخيارات المحددة فقط
@@ -446,7 +447,9 @@ export function OrderFabDock(props: OrderFabDockProps) {
               <button
                 key={`${contact.type}-${idx}`}
                 onClick={() => {
-                  openUrlFromUserGesture(whatsappMeUrl(contact.phone, activeMenu.btn.messages[0] || ""));
+                  const msgs = activeMenu.btn.messages;
+                  const randomMsg = msgs.length > 0 ? msgs[Math.floor(Math.random() * msgs.length)] : "";
+                  openUrlFromUserGesture(whatsappMeUrl(contact.phone, randomMsg));
                   closeAll();
                 }}
                 className={`flex h-12 w-44 items-center justify-center rounded-xl shadow-2xl font-black active:scale-95 text-sm ${

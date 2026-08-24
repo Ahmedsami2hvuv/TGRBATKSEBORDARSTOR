@@ -110,12 +110,12 @@ export function WaLocationCustomButtons({
 
   const handleButtonClick = (btn: WaButtonNextItem) => {
     const variants = splitMandoubWaTemplateVariants(btn.templateText || "");
-    if (variants.length <= 1) {
-      // نموذج واحد مباشر
-      sendWaMessage(btn, variants[0] || "");
+    if (variants.length === 0) {
+      sendWaMessage(btn, "");
     } else {
-      // فتح قائمة النماذج المتاحة
-      setOpenModalBtnId(openModalBtnId === btn.id ? null : btn.id);
+      // اختيار صيغة عشوائية فوراً في كل ضغطة
+      const randomIndex = Math.floor(Math.random() * variants.length);
+      sendWaMessage(btn, variants[randomIndex]);
     }
   };
 
@@ -146,9 +146,6 @@ export function WaLocationCustomButtons({
   return (
     <>
       {locationButtons.map((btn) => {
-        const variants = splitMandoubWaTemplateVariants(btn.templateText || "");
-        const isMenuOpen = openModalBtnId === btn.id;
-
         return (
           <div key={btn.id} className="relative inline-block w-full">
             <button
@@ -161,53 +158,7 @@ export function WaLocationCustomButtons({
             >
               <span className="text-sm shrink-0">{btn.iconKey || "📍"}</span>
               <span className="truncate">{btn.label}</span>
-              {variants.length > 1 && (
-                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full font-mono">
-                  {variants.length}
-                </span>
-              )}
             </button>
-
-            {/* قائمة النماذج إذا كانت متعددة */}
-            {isMenuOpen && variants.length > 1 && (
-              <div className="absolute top-full right-0 left-0 z-50 mt-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-slate-900 animate-in fade-in-50 zoom-in-95">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-1.5 mb-1.5 px-1">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                    اختر صيغة النموذج ({btn.label}):
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setOpenModalBtnId(null)}
-                    className="text-slate-400 hover:text-slate-600 text-xs px-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {variants.map((vText, idx) => {
-                    const previewText = applyMandoubWaTemplate(vText, {
-                      ...templateVars,
-                      customer_phone: customerPhone || templateVars.customer_phone || "",
-                    });
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => sendWaMessage(btn, vText)}
-                        className="w-full text-right p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-100 dark:border-white/5 transition flex flex-col gap-0.5"
-                      >
-                        <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                          صيغة رقم {idx + 1}
-                        </span>
-                        <span className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
-                          {previewText}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         );
       })}
