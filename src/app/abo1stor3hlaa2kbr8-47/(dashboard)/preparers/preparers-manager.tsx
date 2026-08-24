@@ -19,7 +19,7 @@ import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import type { GlobalIconsConfig } from "@/lib/icon-settings";
 import { PreparerChatToggle } from "./preparer-chat-toggle";
-
+import { PreparerAssignmentToggle } from "./preparer-assignment-toggle";
 
 const initial: PreparerFormState = {};
 
@@ -30,6 +30,7 @@ export type PreparerManagerRow = {
   telegramUserId: string;
   notes: string;
   active: boolean;
+  availableForAssignment: boolean;
   linkedShopIds: string[];
   canSubmitShopIds: string[];
   authorizedBranchIds: string[];
@@ -333,12 +334,14 @@ function PreparerPortalLink({
   url,
   phone,
   preparerName,
+  availableForAssignment,
   icons,
 }: {
   id: string;
   url: string;
   phone: string;
   preparerName: string;
+  availableForAssignment: boolean;
   icons: GlobalIconsConfig | null;
 }) {
   const [copied, setCopied] = useState(false);
@@ -348,28 +351,28 @@ function PreparerPortalLink({
   const canWhatsApp = waHref !== "#";
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 active:scale-95"
+        className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-slate-800 active:scale-95"
       >
-        <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-4 h-4 text-sky-400" /> فتح بوابة المجهز
+        <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-4 h-4 text-sky-400" /> فتح البوابة
       </a>
       {canWhatsApp && (
         <a
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-700 active:scale-95"
+          className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-emerald-700 active:scale-95"
         >
           <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" className="w-4 h-4" /> واتساب
         </a>
       )}
       <button
         type="button"
-        className="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-sky-100 transition hover:bg-sky-700 active:scale-95"
+        className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-sky-700 active:scale-95"
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(url);
@@ -383,6 +386,7 @@ function PreparerPortalLink({
 
       <form
         action={renewCompanyPortalTokenAction}
+        className="w-full"
         onSubmit={(e) => {
           if (
             !confirm(
@@ -395,11 +399,13 @@ function PreparerPortalLink({
         <input type="hidden" name="id" value={id} />
         <button
           type="submit"
-          className="flex items-center gap-2 rounded-xl border-2 border-rose-100 bg-white px-4 py-2 text-sm font-black text-rose-600 transition hover:bg-rose-50 active:scale-95"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-rose-100 bg-white px-3 py-2.5 text-xs font-black text-rose-600 transition hover:bg-rose-50 active:scale-95"
         >
           <DynamicIcon icon={icons?.ui_refresh} fallback="🔄" className="w-4 h-4" /> إبطال/تجديد
         </button>
       </form>
+
+      <PreparerAssignmentToggle preparerId={id} initialAvailable={availableForAssignment} icons={icons} />
     </div>
   );
 }
@@ -443,28 +449,35 @@ function PreparerCard({
       }`}
     >
       {/* Header Section */}
-      <div className="p-6 sm:p-8">
+      <div className="p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-slate-900 text-2xl font-black text-white shadow-xl shadow-slate-200">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-slate-900 text-xl font-black text-white shadow-lg shadow-slate-200">
               {row.name.substring(0, 1)}
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900">{row.name}</h3>
-              <div className="mt-1 flex items-center gap-3">
-                <span className="text-sm font-bold text-slate-500 tabular-nums">{row.phone || "بدون هاتف"}</span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900">{row.name}</h3>
+              <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="text-xs sm:text-sm font-bold text-slate-500 tabular-nums">{row.phone || "بدون هاتف"}</span>
                 <span
-                  className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                     row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
                   }`}
                 >
                   {row.active ? "نشط" : "متوقف"}
                 </span>
-                <span className="rounded-full bg-sky-100 px-3 py-0.5 text-[10px] font-black text-sky-700">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                    row.availableForAssignment ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-900"
+                  }`}
+                >
+                  {row.availableForAssignment ? "متاح للإسناد" : "مخفي من الإسناد"}
+                </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-black text-slate-700">
                   الراتب اليومي: {row.dailySalary}
                 </span>
                 {row.totalDebtsAmount > 0 && (
-                  <span className="rounded-full bg-rose-100 px-3 py-0.5 text-[10px] font-black text-rose-700">
+                  <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-700">
                     دين: {row.totalDebtsAmount}
                   </span>
                 )}
@@ -485,77 +498,83 @@ function PreparerCard({
             <button
               type="submit"
               disabled={dPending}
-              className="group flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
+              className="group flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
             >
               {dPending ? "..." : <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-5 h-5" />}
             </button>
           </form>
         </div>
 
-        {row.notes && <p className="mt-4 text-sm font-bold text-slate-500">{row.notes}</p>}
+        {row.notes && <p className="mt-3 text-xs sm:text-sm font-bold text-slate-500">{row.notes}</p>}
 
         {/* Portal Links */}
-        <div className="mt-8 border-t border-slate-50 pt-8 flex flex-col gap-4">
+        <div className="mt-6 border-t border-slate-100 pt-6 flex flex-col gap-4">
           <div>
-            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
-            <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} icons={icons} />
+            <p className="mb-3 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
+            <PreparerPortalLink
+              id={row.id}
+              url={row.portalUrl}
+              phone={row.phone}
+              preparerName={row.name}
+              availableForAssignment={row.availableForAssignment}
+              icons={icons}
+            />
           </div>
           <div>
-            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات المزايا</p>
+            <p className="mb-2 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات المزايا</p>
             <div className="flex flex-wrap gap-2">
               <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
-
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <button
             onClick={() => setActiveTab(activeTab === "salary" ? null : "salary")}
-            className={`flex flex-col items-center justify-center gap-2 rounded-3xl p-4 transition-all active:scale-95 ${
+            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
               activeTab === "salary"
-                ? "bg-amber-600 text-white shadow-xl shadow-amber-200"
-                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                ? "bg-amber-600 text-white shadow-lg shadow-amber-200"
+                : "bg-amber-50 text-amber-800 hover:bg-amber-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_salary} fallback="💰" className="text-2xl" />
+            <DynamicIcon icon={icons?.ui_salary} fallback="💰" className="text-xl" />
             <span className="text-xs font-black">الراتب والمحفظة</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "shops" ? null : "shops")}
-            className={`flex flex-col items-center justify-center gap-2 rounded-3xl p-4 transition-all active:scale-95 ${
+            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
               activeTab === "shops"
-                ? "bg-sky-600 text-white shadow-xl shadow-sky-200"
-                : "bg-sky-50 text-sky-700 hover:bg-sky-100"
+                ? "bg-sky-600 text-white shadow-lg shadow-sky-200"
+                : "bg-sky-50 text-sky-800 hover:bg-sky-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="text-2xl" />
+            <DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="text-xl" />
             <span className="text-xs font-black">المحلات المسندة</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "pricing" ? null : "pricing")}
-            className={`flex flex-col items-center justify-center gap-2 rounded-3xl p-4 transition-all active:scale-95 ${
+            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
               activeTab === "pricing"
-                ? "bg-violet-600 text-white shadow-xl shadow-violet-200"
-                : "bg-violet-50 text-violet-700 hover:bg-violet-100"
+                ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
+                : "bg-violet-50 text-violet-800 hover:bg-violet-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="text-2xl" />
+            <DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="text-xl" />
             <span className="text-xs font-black">تسعير المتجر</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")}
-            className={`flex flex-col items-center justify-center gap-2 rounded-3xl p-4 transition-all active:scale-95 ${
+            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
               activeTab === "edit"
-                ? "bg-slate-800 text-white shadow-xl shadow-slate-200"
+                ? "bg-slate-800 text-white shadow-lg shadow-slate-200"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="text-2xl" />
+            <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="text-xl" />
             <span className="text-xs font-black">تعديل الحساب</span>
           </button>
         </div>
@@ -854,18 +873,70 @@ export function PreparersManager({
   allCategories: CategoryOption[];
   icons: GlobalIconsConfig | null;
 }) {
+  const [viewTab, setViewTab] = useState<"visible" | "hidden">("visible");
+
+  const visibleRows = useMemo(() => rows.filter((r) => r.availableForAssignment), [rows]);
+  const hiddenRows = useMemo(() => rows.filter((r) => !r.availableForAssignment), [rows]);
+
+  const currentRows = viewTab === "visible" ? visibleRows : hiddenRows;
+
   return (
     <div className="space-y-8">
       <AddPreparerForm icons={icons} />
 
-      <section className="space-y-4">
-        <h2 className={ad.h2}>قائمة المجهزين ({rows.length})</h2>
-        {rows.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
-            لا يوجد مجهزون بعد. استخدم زر الإضافة أعلاه.
+      <section className="space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <h2 className={ad.h2}>قائمة المجهزين ({rows.length})</h2>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1.5 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setViewTab("visible")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-black transition-all ${
+                viewTab === "visible"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <span>الظاهرون للإسناد</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  viewTab === "visible" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {visibleRows.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab("hidden")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-black transition-all ${
+                viewTab === "hidden"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <span>المخفيون من الإسناد</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  viewTab === "hidden" ? "bg-amber-700 text-white" : "bg-amber-100 text-amber-900"
+                }`}
+              >
+                {hiddenRows.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {currentRows.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm font-bold text-slate-500">
+            {viewTab === "visible"
+              ? "لا يوجد مجهزون متاحون للإسناد حالياً."
+              : "لا يوجد مجهزون مخفيون من الإسناد حالياً."}
           </p>
         ) : (
-          rows.map((row) => (
+          currentRows.map((row) => (
             <PreparerCard
               key={row.id}
               row={row}

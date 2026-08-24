@@ -108,6 +108,20 @@ export async function togglePreparerAI(id: string, disabled: boolean) {
   }
 }
 
+export async function togglePreparerAssignment(id: string, availableForAssignment: boolean) {
+  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
+  try {
+    await prisma.companyPreparer.update({
+      where: { id },
+      data: { availableForAssignment },
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "حدث خطأ أثناء التحديث" };
+  }
+}
+
 export async function deleteCompanyPreparer(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
   const denied = await requireAdmin(); if (denied) return denied;
   const id = String(formData.get("id") ?? "").trim();

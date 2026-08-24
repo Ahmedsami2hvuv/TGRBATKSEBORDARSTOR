@@ -107,6 +107,7 @@ export default async function PreparersPage() {
       portalUrl: buildCompanyPreparerPortalUrl(p.id, p.portalToken, baseUrl),
       chatDisabled: p.chatDisabled,
       aiDisabled: p.aiDisabled,
+      availableForAssignment: p.availableForAssignment ?? true,
       preparerMonthlySalaryResetMode: p.preparerMonthlySalaryResetMode,
       preparerMonthlySalaryResetAt: p.preparerMonthlySalaryResetAt ? p.preparerMonthlySalaryResetAt.toISOString() : null,
       preparerMonthlySalaryResetEveryDays: p.preparerMonthlySalaryResetEveryDays ?? null,
