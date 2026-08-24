@@ -189,13 +189,25 @@ function ClientOrderFormInner({
   const customerPhoneRef = useRef<HTMLInputElement>(null);
   const orderTimeRef = useRef<HTMLInputElement>(null);
   const regionSearchRef = useRef<HTMLInputElement>(null);
+  const regionContainerRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [q, setQ] = useState(initialOrder?.customerRegion.name ?? "");
   const [hits, setHits] = useState<RegionHit[]>([]);
+  const [showRegionHits, setShowRegionHits] = useState(true);
   const [selected, setSelected] = useState<RegionHit | null>(initialOrder?.customerRegion ?? null);
   const latestRegionSearchRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (regionContainerRef.current && !regionContainerRef.current.contains(e.target as Node)) {
+        setShowRegionHits(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [orderPrice, setOrderPrice] = useState(initialOrder?.orderSubtotal ?? "");
   const [orderType, setOrderType] = useState(
@@ -348,7 +360,9 @@ function ClientOrderFormInner({
           // إذا كانت نتيجة قديمة رجعت بعد ما غيّر المستخدم الكتابة/اختيار المنطقة
           // نمنعها من إعادة فتح القائمة.
           if (requestId !== latestRegionSearchRequestIdRef.current) return;
-          setHits(j.regions ?? []);
+          const res = j.regions ?? [];
+          setHits(res);
+          if (res.length > 0) setShowRegionHits(true);
         } catch {
           if (requestId !== latestRegionSearchRequestIdRef.current) return;
           setHits([]);
@@ -673,46 +687,157 @@ function ClientOrderFormInner({
               </label>
 
               {isOldCustomer && previousRegions.length > 0 && (
-                <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3 shadow-inner">
-                  <p className="text-xs font-black text-sky-800 mb-2">هذا الزبون قديم، يرجى اختيار منطقته السابقة:</p>
+                <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200/80 p-3.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 mb-2 text-sky-900">
+                    <span className="text-sm">🕒</span>
+                    <p className="text-xs font-black">مناطق هذا الزبون المسجلة سابقاً (اختيار سريع):</p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {previousRegions.map((r, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setSelected(r);
-                          setQ(r.name);
-                        }}
-                        className="px-3 py-1.5 text-xs font-bold bg-white text-sky-700 hover:bg-sky-100 rounded-xl border border-sky-200 shadow-sm transition active:scale-95"
-                      >
-                        {r.name}
-                      </button>
-                    ))}
+                    {previousRegions.map((r, i) => {
+                      const isThisSelected = selected?.id === r.id || (selected && q === selected.name && q === r.name);
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSelected(r);
+                            setQ(r.name);
+                            setHits([]);
+                            setShowRegionHits(false);
+                          }}
+                          className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition shadow-sm active:scale-95 ${
+                            isThisSelected
+                              ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
+                              : "bg-white text-sky-800 border-sky-200 hover:bg-sky-100 hover:border-sky-300"
+                          }`}
+                        >
+                          <span>📍</span>
+                          <span>{r.name}</span>
+                          {r.deliveryPrice ? (
+                            <span className={`text-[10px] ${isThisSelected ? "text-emerald-100" : "text-sky-600 font-normal"}`}>
+                              ({formatDinarAsAlfWithUnit(r.deliveryPrice)})
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              <div className="relative">
+              <div className="relative" ref={regionContainerRef}>
                 <label className="flex flex-col gap-1.5">
-                  <span className={`text-sm font-bold px-1 ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-600'}`}>
-                    منطقة الزبون (المستلم) *
-                  </span>
-                  <div className="relative">
-                    <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""} ${selected && q === selected.name ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-inner pl-10' : ''}`} placeholder="ابحث عن المنطقة..." required />
+                  <div className="flex items-center justify-between px-1">
+                    <span className={`text-sm font-black flex items-center gap-1.5 ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-700'}`}>
+                      <span>📍</span>
+                      <span>منطقة الزبون (المستلم) *</span>
+                    </span>
                     {selected && q === selected.name && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xl animate-in zoom-in duration-300 pointer-events-none">👍</div>
+                      <span className="text-xs font-bold text-emerald-600 bg-emerald-100/80 px-2 py-0.5 rounded-full animate-in fade-in">
+                        تم اختيار المنطقة ✅
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      ref={regionSearchRef}
+                      value={q}
+                      onFocus={() => setShowRegionHits(true)}
+                      onChange={(e) => {
+                        setQ(e.target.value);
+                        setShowRegionHits(true);
+                        if (selected && e.target.value !== selected.name) {
+                          setSelected(null);
+                        }
+                      }}
+                      className={`${inputClass} ${
+                        isRegionErr ? inputErrorClass : ""
+                      } ${
+                        selected && q === selected.name
+                          ? 'bg-emerald-50/90 border-emerald-400 text-emerald-950 font-black shadow-inner pr-10 pl-24 ring-2 ring-emerald-200/50'
+                          : 'focus:border-sky-500 focus:ring-4 focus:ring-sky-100 pr-10 pl-10'
+                      }`}
+                      placeholder="ابحث عن المنطقة..."
+                      required
+                      autoComplete="off"
+                    />
+
+                    {/* أيقونة موقع في اليمين */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">
+                      {selected && q === selected.name ? '📍' : '🔍'}
+                    </div>
+
+                    {/* زر مسح / تغيير في اليسار */}
+                    {q && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQ("");
+                          setSelected(null);
+                          setHits([]);
+                          regionSearchRef.current?.focus();
+                        }}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 text-xs font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        title="إلغاء التحديد / إفراغ"
+                      >
+                        {selected && q === selected.name ? (
+                          <span className="text-rose-600 bg-rose-100/80 hover:bg-rose-200 px-2.5 py-1 rounded-lg text-xs font-black transition shadow-2xs">
+                            تغيير ✕
+                          </span>
+                        ) : (
+                          <span className="text-base leading-none">✕</span>
+                        )}
+                      </button>
                     )}
                   </div>
                 </label>
 
-                {hits.length > 0 && !(selected && q === selected.name) && (
-                  <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
-                    {hits.map((h) => (
-                      <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
-                        <span className="text-sm font-black text-slate-900">{h.name}</span>
-                      </button>
-                    ))}
+                {hits.length > 0 && showRegionHits && !(selected && q === selected.name) && (
+                  <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border border-sky-200/80 bg-white/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                    <div className="bg-gradient-to-r from-sky-50 to-emerald-50 px-3.5 py-2 border-b border-sky-100 flex items-center justify-between">
+                      <span className="text-[11px] font-black text-sky-800 flex items-center gap-1.5">
+                        <span>📍</span>
+                        <span>اختر منطقتك من القائمة التالية</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-sky-100">
+                        {hits.length} منطقة مطابقة
+                      </span>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                      {hits.map((h) => (
+                        <button
+                          key={h.id}
+                          type="button"
+                          onClick={() => {
+                            setSelected(h);
+                            setQ(h.name);
+                            setHits([]);
+                            setShowRegionHits(false);
+                          }}
+                          className="group flex w-full items-center justify-between px-4 py-3 text-right transition-all hover:bg-sky-50/80 active:bg-sky-100"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100/70 text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors shadow-2xs">
+                              <span className="text-base">📍</span>
+                            </div>
+                            <div className="flex flex-col text-right">
+                              <span className="text-sm font-black text-slate-900 group-hover:text-sky-900 transition-colors">
+                                {h.name}
+                              </span>
+                              {h.deliveryPrice ? (
+                                <span className="text-[11px] font-bold text-emerald-600">
+                                  أجر التوصيل: {formatDinarAsAlfWithUnit(h.deliveryPrice)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <span className="text-xs font-bold text-sky-500 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all flex items-center gap-1">
+                            اختيار ⬅️
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1133,12 +1258,37 @@ function ClientOrderFormInner({
                   )}
                   {hits.length > 0 && !(selected && q === selected.name) && (
                     <div className="absolute z-[100] mt-2 w-full overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                      <p className="bg-indigo-50 py-2 text-[10px] font-black text-indigo-600">هيا اختر إحدى هذه المناطق 👇</p>
-                      {hits.map((h) => (
-                        <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); setLearnStep(4); }} className="flex w-full flex-col px-4 py-4 text-center transition hover:bg-indigo-50 border-b border-slate-50 last:border-0">
-                          <span className="text-base font-black text-slate-900">{h.name}</span>
-                        </button>
-                      ))}
+                      <p className="bg-indigo-50 py-2 text-[11px] font-black text-indigo-600">هيا اختر إحدى هذه المناطق 👇</p>
+                      <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                        {hits.map((h) => (
+                          <button
+                            key={h.id}
+                            type="button"
+                            onClick={() => {
+                              setSelected(h);
+                              setQ(h.name);
+                              setHits([]);
+                              setLearnStep(4);
+                            }}
+                            className="group flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-indigo-50"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">📍</span>
+                              <div className="flex flex-col text-right">
+                                <span className="text-base font-black text-slate-900">{h.name}</span>
+                                {h.deliveryPrice ? (
+                                  <span className="text-xs font-bold text-emerald-600">
+                                    توصيل: {formatDinarAsAlfWithUnit(h.deliveryPrice)}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                              اختر ⬅️
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
