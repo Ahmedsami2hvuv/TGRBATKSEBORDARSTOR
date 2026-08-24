@@ -764,6 +764,7 @@ export function MandoubOrderTable({
                     <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${orderStatusBadgeClass(activeOrderData.orderStatus)}`}>
                       {STATUS_AR[activeOrderData.orderStatus] ?? activeOrderData.orderStatus}
                     </span>
+                    <MandoubOrderDetailActions closeHref="#" orderId={activeOrderData.id} />
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 flex-wrap">
                     <span className="text-slate-700 dark:text-slate-300">{activeOrderData.shopName}</span>

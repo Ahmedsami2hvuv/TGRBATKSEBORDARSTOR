@@ -40,15 +40,15 @@ export function MandoubOrderDetailActions({
   };
 
   return (
-    <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2">
+    <div className="flex flex-shrink-0 items-center gap-1.5">
       <button
         type="button"
         onClick={() => {
           window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId } }));
         }}
-        className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100 active:scale-95"
+        className="inline-flex items-center gap-1 rounded-full border border-emerald-600/80 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900 dark:text-emerald-300 shadow-sm transition hover:bg-emerald-100 active:scale-95 shrink-0"
       >
-        <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-4 h-4" />
+        <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3 h-3" />
         تعديل الطلب
       </button>
     </div>

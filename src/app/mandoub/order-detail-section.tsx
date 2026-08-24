@@ -974,25 +974,18 @@ export function OrderDetailSection({
           isDoubleRoute={isDoubleRoute}
         />
 
-        {isModal ? (
-          <div className="flex items-center justify-between pb-2 mb-1 border-b border-slate-100 dark:border-white/5">
-            <span className="text-xs font-bold text-slate-500">تفاصيل الطلب والخطوات:</span>
-            <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
-          </div>
-        ) : (
+        {isModal ? null : (
           <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
+              <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
               <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900/40">
                 📅 {formatBaghdadDateTime(order.createdAt)}
               </p>
               <p className="text-[11px] font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/40">
                 ⏰ {order.orderNoteTime || "فوري"}
               </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
             </div>
           </div>
         )}
