@@ -126,7 +126,7 @@ export default async function AdminCouriersPage() {
             <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className={ad.link}>
               الطلبات الجديدة
             </Link>{" "}
-            عند الإسناد.
+            عند الإسناد والتوجيه.
           </p>
         </div>
 
@@ -144,11 +144,11 @@ export default async function AdminCouriersPage() {
           </div>
         </section>
 
-        {/* قائمة المندوبين الرئيسية (النشطون والظاهرون) */}
+        {/* قائمة المندوبين المتاحين للتوجيه والإسناد */}
         <section className={ad.section}>
-          <h2 className={ad.h2}>قائمة المندوبين ({visibleCouriers.length})</h2>
+          <h2 className={ad.h2}>المندوبون المتاحون في التوجيه ({visibleCouriers.length})</h2>
           {visibleCouriers.length === 0 ? (
-            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون ظاهرون حالياً.</p>
+            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون متاحون للتوجيه حالياً.</p>
           ) : (
             <ul className={`${ad.listDivide} mt-3`}>
               {visibleCouriers.map((c: any) => {
@@ -220,20 +220,20 @@ export default async function AdminCouriersPage() {
           )}
         </section>
 
-        {/* قائمة المندوبين المخفيين في قسم خاص لوحدهم */}
+        {/* قائمة المندوبين المخفيين من التوجيه والإسناد في قسم مستقل */}
         <section className={`${ad.section} border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/10`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className={`${ad.h2} flex items-center gap-2 text-amber-800 dark:text-amber-400`}>
               <DynamicIcon config={icons} iconKey="ui_eye_off" fallback="🙈" className="w-5 h-5" />
-              المندوبون المخفيون ({hiddenCouriers.length})
+              المندوبون المخفيون من التوجيه ({hiddenCouriers.length})
             </h2>
           </div>
           <p className={`mt-1 text-sm ${ad.muted}`}>
-            هؤلاء المندوبون مخفيون من قوائم الإسناد والتقارير اليومية. يمكنك إعادة إظهار أي منهم بالضغط على &quot;إظهار المندوب&quot;.
+            هؤلاء المندوبون مخفيون من قائمة التوجيه عند إسناد الطلبات. يمكنك التبديل وإعادتهم للتوجيه بالضغط على &quot;إظهار في التوجيه&quot;.
           </p>
 
           {hiddenCouriers.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون حالياً.</p>
+            <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون من التوجيه حالياً.</p>
           ) : (
             <ul className={`${ad.listDivide} mt-4`}>
               {hiddenCouriers.map((c: any) => {
@@ -251,7 +251,7 @@ export default async function AdminCouriersPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={`${ad.listTitle} text-slate-700 dark:text-slate-300`}>{c.name}</p>
                         <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-500/30">
-                          مخفي
+                          مخفي من التوجيه
                         </span>
                         {c.blocked && (
                           <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20">
@@ -300,6 +300,7 @@ export default async function AdminCouriersPage() {
         </section>
       </div>
     );
+
   } catch (err: any) {
 
     return (
