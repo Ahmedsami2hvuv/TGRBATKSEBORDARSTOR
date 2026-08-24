@@ -25,7 +25,7 @@ export function HiddenCouriersSection({
         <div className="flex items-center gap-2.5">
           <DynamicIcon config={icons} iconKey="ui_eye_off" fallback="🕶️" className="w-5 h-5 text-amber-700 dark:text-amber-400" />
           <h2 className="text-base sm:text-lg font-bold text-amber-900 dark:text-amber-300">
-            المندوبون المخفيون من التوجيه ({count})
+            المندوبون المخفيون من قوائم الإسناد ({count})
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -38,7 +38,7 @@ export function HiddenCouriersSection({
       {isOpen && (
         <div className="p-4 pt-0 border-t border-amber-500/20">
           <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            هؤلاء المندوبون مخفيون من قائمة التوجيه عند إسناد الطلبات. يمكنك التبديل وإعادتهم للتوجيه بالضغط على &quot;إظهار في التوجيه&quot;.
+            هؤلاء المندوبون مخفيون من قوائم الإسناد (لا يظهرون عند اختيار مندوب للطلبات). يمكنك إعادتهم بالضغط على &quot;إظهار في قوائم الإسناد&quot;.
           </p>
           {children}
         </div>

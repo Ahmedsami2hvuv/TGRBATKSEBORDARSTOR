@@ -28,7 +28,7 @@ export function CourierHideToggle({
         setHidden(!hidden);
         router.refresh();
       } else {
-        alert(res.error || "فشل تعديل حالة التوجيه");
+        alert(res.error || "فشل تعديل حالة الإخفاء من قوائم الإسناد");
       }
     } finally {
       setLoading(false);
@@ -40,7 +40,7 @@ export function CourierHideToggle({
       onClick={handleToggle}
       disabled={loading}
       type="button"
-      title={hidden ? "إظهار المندوب في قائمة التوجيه والإسناد" : "إخفاء المندوب من التوجيه والإسناد ونقله لقائمة المخفيين"}
+      title={hidden ? "إظهار المندوب عند اختيار مندوب في قائمة الإسناد" : "إخفاء المندوب من قوائم الإسناد (لا يظهر عند اختيار مندوب)"}
       className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
         hidden
           ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20"
@@ -53,7 +53,7 @@ export function CourierHideToggle({
         fallback={hidden ? "👁️" : "🙈"}
         className="w-4 h-4"
       />
-      {loading ? "جاري..." : hidden ? "إظهار في التوجيه" : "إخفاء من التوجيه"}
+      {loading ? "جاري..." : hidden ? "إظهار في قوائم الإسناد" : "إخفاء من قوائم الإسناد"}
     </button>
   );
 }

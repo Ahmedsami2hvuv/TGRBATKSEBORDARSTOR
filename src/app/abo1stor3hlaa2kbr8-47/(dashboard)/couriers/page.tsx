@@ -146,11 +146,11 @@ export default async function AdminCouriersPage() {
           </div>
         </section>
 
-        {/* قائمة المندوبين المتاحين للتوجيه والإسناد */}
+        {/* قائمة المندوبين المتاحين للإسناد */}
         <section className={ad.section}>
-          <h2 className={ad.h2}>المندوبون المتاحون في التوجيه ({visibleCouriers.length})</h2>
+          <h2 className={ad.h2}>المندوبون الظاهرون في قوائم الإسناد ({visibleCouriers.length})</h2>
           {visibleCouriers.length === 0 ? (
-            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون متاحون للتوجيه حالياً.</p>
+            <p className={`mt-3 ${ad.muted}`}>لا يوجد مندوبون ظاهرون في الإسناد حالياً.</p>
           ) : (
             <ul className={`${ad.listDivide} mt-3`}>
               {visibleCouriers.map((c: any) => {
@@ -222,10 +222,10 @@ export default async function AdminCouriersPage() {
           )}
         </section>
 
-        {/* قائمة المندوبين المخفيين من التوجيه والإسناد في قسم مستقل بداخل زر فتح وإغلاق */}
+        {/* قائمة المندوبين المخفيين من قوائم الإسناد في قسم مستقل بداخل زر فتح وإغلاق */}
         <HiddenCouriersSection count={hiddenCouriers.length} icons={icons}>
           {hiddenCouriers.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون من التوجيه حالياً.</p>
+            <p className="mt-4 text-sm text-slate-500 italic">لا يوجد مندوبون مخفيون من قوائم الإسناد حالياً.</p>
           ) : (
             <ul className={`${ad.listDivide} mt-4`}>
               {hiddenCouriers.map((c: any) => {
@@ -243,7 +243,7 @@ export default async function AdminCouriersPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={`${ad.listTitle} text-slate-700 dark:text-slate-300`}>{c.name}</p>
                         <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-500/30">
-                          مخفي من التوجيه
+                          مخفي من الإسناد
                         </span>
                         {c.blocked && (
                           <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20">
@@ -290,6 +290,7 @@ export default async function AdminCouriersPage() {
             </ul>
           )}
         </HiddenCouriersSection>
+
 
       </div>
     );
