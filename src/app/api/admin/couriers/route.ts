@@ -1,6 +1,9 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminToken } from "@/lib/auth";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
 
 export async function GET(request: Request) {
   try {
@@ -22,10 +25,7 @@ export async function GET(request: Request) {
     }
 
     const couriers = await prisma.courier.findMany({
-      where: {
-        hiddenFromReports: false,
-        blocked: false,
-      },
+      where: courierAssignableWhere,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
