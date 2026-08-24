@@ -6,9 +6,10 @@ export function PullToRefresh() {
   const [translateY, setTranslateY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [pullProgress, setPullProgress] = useState(0); // من 0 إلى 100 ليتوافق مع النسب
+  const [pullProgress, setPullProgress] = useState(0); // من 0 إلى 100
 
   const startY = useRef(0);
+  const startX = useRef(0);
   const isPulling = useRef(false);
   const translateYRef = useRef(0);
   const isRefreshingRef = useRef(false);
@@ -23,70 +24,84 @@ export function PullToRefresh() {
   }, [isRefreshing]);
 
   useEffect(() => {
-    // دالة للتحقق مما إذا كان العنصر يقع داخل حاوية تمرير فرعية أو مودال عائم
-    const isInsideScrollableContainer = (target: EventTarget | null): boolean => {
-      if (!target) return false;
-      
-      // إذا كان التمرير متجمداً في الصفحة بالكامل، فهناك مودال مفتوح بالتأكيد
-      if (document.body.style.overflow === "hidden") return true;
+    // دالة ذكية جداً للتحقق مما إذا كان المستخدم في أعلى التمرير تماماً أم قام بالتمرير للأسفل
+    const isAtTopOfScroll = (target: EventTarget | null): boolean => {
+      // 1. التمرير الأساسي للصفحة
+      const windowScrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (windowScrollTop > 5) return false;
 
+      // 2. فحص الحاويات الداخلية القابلة للتمرير (مثل main أو أي div بداخل Dashboard)
       let el = target as HTMLElement | null;
       while (el && el !== document.body && el !== document.documentElement) {
-        const style = window.getComputedStyle(el);
-        const overflowY = style.overflowY;
-        const isScrollable = overflowY === "auto" || overflowY === "scroll";
-        const isFixedOrAbsolute = style.position === "fixed" || style.position === "absolute";
-        
-        // نستثني المكون الحالي للـ PullToRefresh نفسه
-        if (el.className && typeof el.className === "string" && el.className.includes("fixed") && el.className.includes("top-[-50px]")) {
+        // استثناء المكون نفسه
+        if (el.id === "kse-pull-to-refresh-indicator") {
           el = el.parentElement;
           continue;
         }
 
-        if (isScrollable || isFixedOrAbsolute) {
-          return true;
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        const isScrollable = (overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight;
+
+        // إذا كان العنصر قابل للتمرير وكان المستخدم قد نزل فيه أكثر من 5 بكسل
+        if (isScrollable && el.scrollTop > 5) {
+          return false;
         }
+
+        // إذا كان هناك مودال أو نافذة منبثقة عائمة مفتوحة والمستخدم نزل فيها
+        if (el.getAttribute("role") === "dialog" || el.classList.contains("modal") || el.getAttribute("aria-modal") === "true") {
+          if (el.scrollTop > 5) return false;
+        }
+
         el = el.parentElement;
       }
-      return false;
+
+      return true;
     };
 
     // ----------------------------------------------------
-    // أولاً: معالجة أحداث اللمس للهواتف والتابلت
+    // معالجة أحداث اللمس للهواتف والأندرويد والتابلت
     // ----------------------------------------------------
     const handleTouchStart = (e: TouchEvent) => {
-      // إذا كان اللمس داخل حاوية تمرير فرعية أو مودال، نتجاهله تماماً
-      if (e.target && isInsideScrollableContainer(e.target)) {
-        return;
-      }
+      if (e.touches.length !== 1 || isRefreshingRef.current) return;
 
-      const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      if (scrollTop <= 10 && !isRefreshingRef.current) {
+      if (isAtTopOfScroll(e.target)) {
         startY.current = e.touches[0].clientY;
+        startX.current = e.touches[0].clientX;
         isPulling.current = true;
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isPulling.current || isRefreshingRef.current) return;
+      if (e.touches.length !== 1) return;
 
       const currentY = e.touches[0].clientY;
-      const pullDistance = currentY - startY.current;
+      const currentX = e.touches[0].clientX;
+      const pullDistanceY = currentY - startY.current;
+      const pullDistanceX = Math.abs(currentX - startX.current);
 
-      if (pullDistance > 0) {
+      // السحب فقط إذا كانت الحركة رأسية للأسفل (أكبر من الحركة الأفقية)
+      if (pullDistanceY > 0 && pullDistanceY > pullDistanceX) {
+        if (!isAtTopOfScroll(e.target)) {
+          isPulling.current = false;
+          resetPull();
+          return;
+        }
+
         if (e.cancelable) {
           e.preventDefault();
         }
 
-        const resistance = 0.4;
-        const rawDistance = pullDistance * resistance;
-        const distance = Math.min(rawDistance, 100);
+        const resistance = 0.42;
+        const rawDistance = pullDistanceY * resistance;
+        const distance = Math.min(rawDistance, 85);
 
         translateYRef.current = distance;
         setTranslateY(distance);
-        setPullProgress(Math.min((distance / 70) * 100, 150));
+        setPullProgress(Math.min((distance / 55) * 100, 150));
         setIsVisible(true);
-      } else {
+      } else if (pullDistanceY < -10) {
         isPulling.current = false;
         resetPull();
       }
@@ -96,7 +111,7 @@ export function PullToRefresh() {
       if (!isPulling.current || isRefreshingRef.current) return;
       isPulling.current = false;
 
-      if (translateYRef.current >= 70) {
+      if (translateYRef.current >= 55) {
         triggerRefresh();
       } else {
         resetPull();
@@ -104,29 +119,23 @@ export function PullToRefresh() {
     };
 
     // ----------------------------------------------------
-    // ثانياً: معالجة أحداث عجلة الماوس والـ Touchpad للكمبيوتر
+    // معالجة أحداث عجلة الماوس والـ Touchpad للكمبيوتر
     // ----------------------------------------------------
     const handleWheel = (e: WheelEvent) => {
-      // إذا كان التمرير داخل حاوية فرعية أو مودال، نتجاهله تماماً
-      if (e.target && isInsideScrollableContainer(e.target)) {
+      if (!isAtTopOfScroll(e.target) || isRefreshingRef.current) {
         return;
       }
 
-      const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      
-      // إذا كان المستخدم في أعلى الصفحة وقام بالتمرير للأعلى (deltaY < 0 تعني التمرير للأعلى)
-      if (scrollTop <= 5 && e.deltaY < 0 && !isRefreshingRef.current) {
+      if (e.deltaY < 0) {
         if (pullTimeoutRef.current) {
           clearTimeout(pullTimeoutRef.current);
         }
 
         accumulatedDeltaRef.current += Math.abs(e.deltaY);
-        
-        const threshold = 220; // نفس قيمة العتبة المستخدمة في لوحة المدير
+        const threshold = 180;
         const progress = Math.min(100, (accumulatedDeltaRef.current / threshold) * 100);
-        
-        // محاكاة الإزاحة البصرية (translateY) بناءً على التقدم
-        const visualDistance = (progress / 100) * 75; // نصل لأقصى ارتفاع 75 بكسل
+        const visualDistance = (progress / 100) * 70;
+
         setTranslateY(visualDistance);
         setPullProgress(progress);
         setIsVisible(true);
@@ -136,7 +145,7 @@ export function PullToRefresh() {
         } else {
           pullTimeoutRef.current = setTimeout(() => {
             resetPull();
-          }, 800);
+          }, 600);
         }
       }
     };
@@ -144,12 +153,18 @@ export function PullToRefresh() {
     const triggerRefresh = () => {
       setIsRefreshing(true);
       isRefreshingRef.current = true;
-      setTranslateY(60);
-      translateYRef.current = 60;
-      
+      setTranslateY(55);
+      translateYRef.current = 55;
+
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(60);
+        } catch (e) {}
+      }
+
       setTimeout(() => {
         window.location.reload();
-      }, 800);
+      }, 400);
     };
 
     const resetPull = () => {
@@ -159,10 +174,9 @@ export function PullToRefresh() {
       setPullProgress(0);
       setTimeout(() => {
         setIsVisible(false);
-      }, 300);
+      }, 250);
     };
 
-    // تسجيل المستمعين على الجوال والكمبيوتر
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
@@ -173,8 +187,8 @@ export function PullToRefresh() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
-
       window.removeEventListener("wheel", handleWheel);
+
       if (pullTimeoutRef.current) {
         clearTimeout(pullTimeoutRef.current);
       }
@@ -183,22 +197,21 @@ export function PullToRefresh() {
 
   if (!isVisible && !isRefreshing) return null;
 
-  // نسبة الدوران بناءً على pullProgress
   const rotation = (pullProgress / 100) * 360;
 
   return (
     <div
+      id="kse-pull-to-refresh-indicator"
       style={{
         transform: `translate3d(-50%, ${translateY}px, 0)`,
         opacity: isVisible || isRefreshing ? 1 : 0,
-        transition: isPulling.current ? "none" : "transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.3s ease",
+        transition: isPulling.current ? "none" : "transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.2s ease",
       }}
-      className="fixed left-1/2 top-[-50px] z-[99999] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-slate-200/60 bg-white/90 shadow-lg backdrop-blur-md transition-all duration-300 dark:border-slate-800/60 dark:bg-slate-900/90"
+      className="fixed left-1/2 top-[-50px] z-[999999] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-sky-400/40 bg-white shadow-xl backdrop-blur-md dark:border-sky-500/40 dark:bg-slate-900"
     >
       {isRefreshing ? (
-        // أيقونة التحميل الدائرية الدوارة (Spinner)
         <svg
-          className="h-5 w-5 animate-spin text-sky-600 dark:text-sky-400"
+          className="h-5 w-5 animate-spin text-sky-500 dark:text-[#00f3ff]"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -218,19 +231,18 @@ export function PullToRefresh() {
           />
         </svg>
       ) : (
-        // أيقونة السهم الدائري التي تزداد دورانها ووضوحها مع السحب
         <svg
           style={{
             transform: `rotate(${rotation}deg)`,
             opacity: Math.min(pullProgress / 100, 1),
-            transition: "transform 0.1s linear",
+            transition: "transform 0.05s linear",
           }}
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={3}
           stroke="currentColor"
-          className="h-5 w-5 text-sky-600 dark:text-sky-400"
+          className="h-5 w-5 text-sky-500 dark:text-[#00f3ff]"
         >
           <path
             strokeLinecap="round"
