@@ -287,62 +287,53 @@ function ClientOrderFormInner({
     }
   };
 
+  // حالة تنبيه منتصف الشاشة للحقول الناقصة أو الخاطئة
+  const [fieldErrorModal, setFieldErrorModal] = useState<{
+    title: string;
+    message: string;
+    targetRef: React.RefObject<HTMLInputElement | null>;
+  } | null>(null);
+
   // دالة الفحص والتوجيه المباشر للحقل الناقص أو الخاطئ
   const validateAndScrollToMissingField = (): boolean => {
     // 1. فحص رقم الزبون
     const phoneClean = sanitizePhone(customerPhone);
     if (!customerPhone.trim() || phoneClean.length < 10) {
-      toast.error("يرجى إدخال رقم هاتف زبون صحيح (11 رقم)");
-      if (customerPhoneRef.current) {
-        customerPhoneRef.current.focus();
-        customerPhoneRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        customerPhoneRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
-        setTimeout(() => {
-          customerPhoneRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
-        }, 2500);
-      }
+      setFieldErrorModal({
+        title: "رقم الزبون ناقص أو غير صحيح 📱",
+        message: "يرجى إدخال رقم هاتف زبون صحيح مكون من 11 رقم (مثال: 07XXXXXXXXX)",
+        targetRef: customerPhoneRef,
+      });
       return false;
     }
 
     // 2. فحص منطقة الزبون
     if (!selected || q !== selected.name) {
-      toast.error("يرجى اختيار منطقة الزبون (المستلم) من القائمة المنسدلة");
-      if (regionSearchRef.current) {
-        regionSearchRef.current.focus();
-        regionSearchRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        regionSearchRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
-        setTimeout(() => {
-          regionSearchRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
-        }, 2500);
-      }
+      setFieldErrorModal({
+        title: "منطقة الزبون غير محددة 📍",
+        message: "يرجى البحث واختيار منطقة الزبون (المستلم) من القائمة المنسدلة",
+        targetRef: regionSearchRef,
+      });
       return false;
     }
 
     // 3. فحص نوع الطلب
     if (!orderType.trim()) {
-      toast.error("يرجى إدخال أو اختيار نوع الطلب (مثل: طعام، ملابس...)");
-      if (orderTypeRef.current) {
-        orderTypeRef.current.focus();
-        orderTypeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        orderTypeRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
-        setTimeout(() => {
-          orderTypeRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
-        }, 2500);
-      }
+      setFieldErrorModal({
+        title: "نوع الطلب مطلوب 📦",
+        message: "يرجى إدخال أو اختيار نوع الطلب (مثال: طعام، ملابس، كوزمتك...)",
+        targetRef: orderTypeRef,
+      });
       return false;
     }
 
     // 4. فحص سعر الطلب إن وجد إدخال خاطئ
     if (orderPrice.trim() && !isPriceValid) {
-      toast.error("يرجى إدخال سعر طلب صحيح بالأرقام فقط");
-      if (orderPriceRef.current) {
-        orderPriceRef.current.focus();
-        orderPriceRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        orderPriceRef.current.classList.add("ring-4", "ring-rose-400", "border-rose-500");
-        setTimeout(() => {
-          orderPriceRef.current?.classList.remove("ring-4", "ring-rose-400", "border-rose-500");
-        }, 2500);
-      }
+      setFieldErrorModal({
+        title: "سعر الطلب غير صالح 💰",
+        message: "يرجى كتابة سعر الطلب بالأرقام فقط بدون حروف أو رموز",
+        targetRef: orderPriceRef,
+      });
       return false;
     }
 
@@ -652,6 +643,51 @@ function ClientOrderFormInner({
 
   return (
     <>
+      {/* مودال تنبيه منتصف الشاشة للحقول الناقصة أو الخاطئة */}
+      {fieldErrorModal && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/75 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
+          <div className="relative bg-white rounded-3xl border-2 border-rose-200 shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-4xl shadow-inner animate-bounce">
+              ⚠️
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-rose-700">
+                {fieldErrorModal.title}
+              </h3>
+              <p className="text-base font-bold text-slate-800 leading-relaxed px-2">
+                {fieldErrorModal.message}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-rose-50 border border-rose-100 p-3 text-xs font-bold text-rose-800">
+              💡 اضغط الزر أدناه وسينقلك الموقع فوراً للحقل المطلوب.
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const target = fieldErrorModal.targetRef.current;
+                setFieldErrorModal(null);
+                if (target) {
+                  setTimeout(() => {
+                    target.focus();
+                    target.scrollIntoView({ behavior: "smooth", block: "center" });
+                    target.classList.add("ring-4", "ring-rose-500", "border-rose-600");
+                    setTimeout(() => {
+                      target.classList.remove("ring-4", "ring-rose-500", "border-rose-600");
+                    }, 2500);
+                  }, 100);
+                }
+              }}
+              className="w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white py-4 font-black text-base shadow-lg shadow-rose-200 active:scale-[0.98] transition-all"
+            >
+              الانتقال للحقل وتعديله 🎯
+            </button>
+          </div>
+        </div>
+      )}
+
       {showFloatingBtnNotice && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
           <div className="relative bg-white rounded-3xl border-2 border-emerald-200 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 animate-in zoom-in-95 duration-300">
