@@ -351,28 +351,28 @@ function PreparerPortalLink({
   const canWhatsApp = waHref !== "#";
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-slate-800 active:scale-95"
+        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-95"
       >
-        <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-4 h-4 text-sky-400" /> فتح البوابة
+        <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-3.5 h-3.5 text-sky-400" /> فتح البوابة
       </a>
       {canWhatsApp && (
         <a
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-emerald-700 active:scale-95"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
         >
-          <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" className="w-4 h-4" /> واتساب
+          <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" className="w-3.5 h-3.5" /> واتساب
         </a>
       )}
       <button
         type="button"
-        className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-sky-700 active:scale-95"
+        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(url);
@@ -381,12 +381,12 @@ function PreparerPortalLink({
           } catch {}
         }}
       >
-        <DynamicIcon icon={icons?.ui_copy} fallback="📋" className="w-4 h-4" /> {copied ? "تم النسخ!" : "نسخ الرابط"}
+        <DynamicIcon icon={icons?.ui_copy} fallback="📋" className="w-3.5 h-3.5" /> {copied ? "تم النسخ!" : "نسخ الرابط"}
       </button>
 
       <form
         action={renewCompanyPortalTokenAction}
-        className="w-full"
+        className="inline-block"
         onSubmit={(e) => {
           if (
             !confirm(
@@ -399,9 +399,9 @@ function PreparerPortalLink({
         <input type="hidden" name="id" value={id} />
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-rose-100 bg-white px-3 py-2.5 text-xs font-black text-rose-600 transition hover:bg-rose-50 active:scale-95"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 active:scale-95"
         >
-          <DynamicIcon icon={icons?.ui_refresh} fallback="🔄" className="w-4 h-4" /> إبطال/تجديد
+          <DynamicIcon icon={icons?.ui_refresh} fallback="🔄" className="w-3.5 h-3.5" /> إبطال/تجديد
         </button>
       </form>
 
@@ -442,42 +442,42 @@ function PreparerCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[2.5rem] border-2 transition-all ${
+      className={`relative overflow-hidden rounded-3xl border-2 transition-all ${
         row.active
-          ? "border-slate-100 bg-white shadow-xl shadow-slate-200/50"
+          ? "border-slate-100 bg-white shadow-lg shadow-slate-200/40"
           : "border-slate-200 bg-slate-50 opacity-80"
       }`}
     >
       {/* Header Section */}
-      <div className="p-5 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-slate-900 text-xl font-black text-white shadow-lg shadow-slate-200">
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white shadow-md shadow-slate-200">
               {row.name.substring(0, 1)}
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900">{row.name}</h3>
-              <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
-                <span className="text-xs sm:text-sm font-bold text-slate-500 tabular-nums">{row.phone || "بدون هاتف"}</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900">{row.name}</h3>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-xs font-bold text-slate-500 tabular-nums">{row.phone || "بدون هاتف"}</span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                     row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
                   }`}
                 >
                   {row.active ? "نشط" : "متوقف"}
                 </span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                     row.availableForAssignment ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-900"
                   }`}
                 >
                   {row.availableForAssignment ? "متاح للإسناد" : "مخفي من الإسناد"}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-black text-slate-700">
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-700">
                   الراتب اليومي: {row.dailySalary}
                 </span>
                 {row.totalDebtsAmount > 0 && (
-                  <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-700">
+                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">
                     دين: {row.totalDebtsAmount}
                   </span>
                 )}
@@ -498,19 +498,19 @@ function PreparerCard({
             <button
               type="submit"
               disabled={dPending}
-              className="group flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
+              className="group flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
             >
-              {dPending ? "..." : <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-5 h-5" />}
+              {dPending ? "..." : <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-4 h-4" />}
             </button>
           </form>
         </div>
 
-        {row.notes && <p className="mt-3 text-xs sm:text-sm font-bold text-slate-500">{row.notes}</p>}
+        {row.notes && <p className="mt-2 text-xs font-bold text-slate-500">{row.notes}</p>}
 
         {/* Portal Links */}
-        <div className="mt-6 border-t border-slate-100 pt-6 flex flex-col gap-4">
+        <div className="mt-4 border-t border-slate-100 pt-4 flex flex-col gap-3">
           <div>
-            <p className="mb-3 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
+            <p className="mb-2 text-[11px] font-black text-slate-400 uppercase tracking-wider">بوابة المجهز والتحكم</p>
             <PreparerPortalLink
               id={row.id}
               url={row.portalUrl}
@@ -521,61 +521,61 @@ function PreparerCard({
             />
           </div>
           <div>
-            <p className="mb-2 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات المزايا</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="mb-1.5 text-[11px] font-black text-slate-400 uppercase tracking-wider">إعدادات المزايا</p>
+            <div className="flex flex-wrap gap-1.5">
               <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <button
             onClick={() => setActiveTab(activeTab === "salary" ? null : "salary")}
-            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 px-3 transition-all active:scale-95 ${
               activeTab === "salary"
-                ? "bg-amber-600 text-white shadow-lg shadow-amber-200"
-                : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                ? "bg-amber-600 text-white shadow-md shadow-amber-200"
+                : "bg-amber-50 text-amber-900 border border-amber-200/60 hover:bg-amber-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_salary} fallback="💰" className="text-xl" />
-            <span className="text-xs font-black">الراتب والمحفظة</span>
+            <DynamicIcon icon={icons?.ui_salary} fallback="💰" className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-bold">الراتب والمحفظة</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "shops" ? null : "shops")}
-            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 px-3 transition-all active:scale-95 ${
               activeTab === "shops"
-                ? "bg-sky-600 text-white shadow-lg shadow-sky-200"
-                : "bg-sky-50 text-sky-800 hover:bg-sky-100"
+                ? "bg-sky-600 text-white shadow-md shadow-sky-200"
+                : "bg-sky-50 text-sky-900 border border-sky-200/60 hover:bg-sky-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="text-xl" />
-            <span className="text-xs font-black">المحلات المسندة</span>
+            <DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="w-4 h-4 text-sky-600" />
+            <span className="text-xs font-bold">المحلات المسندة</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "pricing" ? null : "pricing")}
-            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 px-3 transition-all active:scale-95 ${
               activeTab === "pricing"
-                ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
-                : "bg-violet-50 text-violet-800 hover:bg-violet-100"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-200"
+                : "bg-violet-50 text-violet-900 border border-violet-200/60 hover:bg-violet-100"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="text-xl" />
-            <span className="text-xs font-black">تسعير المتجر</span>
+            <DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="w-4 h-4 text-violet-600" />
+            <span className="text-xs font-bold">تسعير المتجر</span>
           </button>
 
           <button
             onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")}
-            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3.5 text-center transition-all active:scale-95 ${
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 px-3 transition-all active:scale-95 ${
               activeTab === "edit"
-                ? "bg-slate-800 text-white shadow-lg shadow-slate-200"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                ? "bg-slate-800 text-white shadow-md shadow-slate-200"
+                : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
             }`}
           >
-            <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="text-xl" />
-            <span className="text-xs font-black">تعديل الحساب</span>
+            <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="w-4 h-4 text-slate-600" />
+            <span className="text-xs font-bold">تعديل الحساب</span>
           </button>
         </div>
       </div>

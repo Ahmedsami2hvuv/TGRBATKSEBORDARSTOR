@@ -43,19 +43,19 @@ export function PreparerAssignmentToggle({
       onClick={handleToggle}
       disabled={loading}
       title={available ? "إخفاء المجهز من قائمة الإسناد" : "إظهار المجهز وتفعيله في قائمة الإسناد"}
-      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all active:scale-95 ${
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ${
         available
-          ? "border-2 border-amber-200 bg-amber-50 text-amber-800 shadow-sm hover:bg-amber-100 hover:border-amber-300"
-          : "border-2 border-emerald-300 bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
+          ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+          : "bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-700 shadow-sm"
       } disabled:opacity-50 ${className}`}
     >
       <DynamicIcon
         config={icons}
         iconKey={available ? "ui_eye_off" : "ui_eye"}
         fallback={available ? "👁️" : "👁️‍🗨️"}
-        className="w-4 h-4"
+        className="w-3.5 h-3.5"
       />
-      {loading ? "جارٍ الحفظ…" : available ? "إخفاء من الإسناد" : "إعادة للإسناد (ظاهر)"}
+      {loading ? "جارٍ الحفظ…" : available ? "إخفاء من الإسناد" : "إعادة للإسناد"}
     </button>
   );
 }
