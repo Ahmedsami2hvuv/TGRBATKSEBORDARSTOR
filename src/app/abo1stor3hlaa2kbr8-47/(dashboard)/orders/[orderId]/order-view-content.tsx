@@ -577,49 +577,67 @@ export function OrderViewContent({
                   💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   {order.customerLocationUrl?.trim() ? (
-                    <div className="space-y-1">
-                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن الزبون ↗</a>
-                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
-                    </div>
-                  ) : (
-                    <div className="mt-2">
-                      <AdminCustomerLocationQuick 
-                        orderId={order.id} 
-                        customerPhone={order.customerPhone}
-                        customerPhone2={order.customerPhone2 || undefined}
-                        shopPhone={order.shop?.phone || undefined}
-                        orderStatus={order.status}
-                        templateVars={{
-                          clientshop: order.shop?.name || "",
-                          city: order.customerRegion?.name || "",
-                          total_price: String(order.totalPrice || ""),
-                          delivery: order.courier?.name || "",
-                          location_url: order.customerLocationUrl || "",
-                          landmark: order.customerLandmark || "",
-                          order_number: String(order.orderNumber || ""),
-                          customer_phone: order.customerPhone || "",
-                          customer_phone2: order.customerPhone2 || "",
-                          shop_phone: order.shop?.phone || "",
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    <AdminCustomerOrderHistory
-                      phone={order.customerPhone}
-                      regionId={order.customerRegionId}
-                      currentOrderId={order.id}
-                      customerRegionName={order.customerRegion?.name ?? null}
-                      alternatePhone={order.alternatePhone}
-                      customerLocationUrl={order.customerLocationUrl}
-                      customerLandmark={order.customerLandmark}
-                      customerProfileId={order.customerProfileId}
-                    />
-                    {order.customerProfileId ? (
-                      <Link href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors">ملف الزبون المباشر</Link>
-                    ) : null}
+                    <a
+                      href={order.customerLocationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 min-h-[38px]"
+                    >
+                      <span>📍</span>
+                      <span>لوكيشن الزبون ↗</span>
+                    </a>
+                  ) : null}
+
+                  <AdminCustomerOrderHistory
+                    phone={order.customerPhone}
+                    regionId={order.customerRegionId}
+                    currentOrderId={order.id}
+                    customerRegionName={order.customerRegion?.name ?? null}
+                    alternatePhone={order.alternatePhone}
+                    customerLocationUrl={order.customerLocationUrl}
+                    customerLandmark={order.customerLandmark}
+                    customerProfileId={order.customerProfileId}
+                  />
+
+                  {order.customerProfileId ? (
+                    <Link
+                      href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
+                      className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px]"
+                    >
+                      ملف الزبون المباشر
+                    </Link>
+                  ) : null}
+                </div>
+
+                {order.customerLocationUrl?.trim() ? (
+                  <div className="mt-1">
+                    <ImageUploaderCaption name={order.customerLocationUploadedByName} />
                   </div>
+                ) : (
+                  <div className="mt-2">
+                    <AdminCustomerLocationQuick 
+                      orderId={order.id} 
+                      customerPhone={order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={order.shop?.phone || undefined}
+                      orderStatus={order.status}
+                      templateVars={{
+                        clientshop: order.shop?.name || "",
+                        city: order.customerRegion?.name || "",
+                        total_price: String(order.totalPrice || ""),
+                        delivery: order.courier?.name || "",
+                        location_url: order.customerLocationUrl || "",
+                        landmark: order.customerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: order.shop?.phone || "",
+                      }}
+                    />
+                  </div>
+                )}
                 </div>
               </>
             )}
