@@ -51,6 +51,13 @@ function handlePhoneBlur(value: string, setter: (v: string) => void) {
   }
 }
 
+function formatMatchingRegionsCountText(count: number): string {
+  if (count === 1) return "منطقة مطابقة";
+  if (count === 2) return "منطقتين متطابقتين";
+  if (count >= 3 && count <= 10) return `${count} مناطق مطابقة`;
+  return `${count} منطقة مطابقة`;
+}
+
 
 function buildCustomerCheckoutMessage(productsText: string): string {
   const productLines = productsText
@@ -1038,7 +1045,7 @@ function ClientOrderFormInner({
                         <span>اختر منطقتك من القائمة التالية</span>
                       </span>
                       <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-sky-100">
-                        {hits.length} منطقة مطابقة
+                        {formatMatchingRegionsCountText(hits.length)}
                       </span>
                     </div>
 
