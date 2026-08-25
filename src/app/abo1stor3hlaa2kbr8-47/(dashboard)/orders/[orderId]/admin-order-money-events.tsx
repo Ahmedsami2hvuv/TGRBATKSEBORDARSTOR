@@ -106,11 +106,7 @@ export function AdminOrderMoneyEvents({
     <div className={`${ad.section} space-y-4`} dir="rtl">
       <div>
         <h2 className={ad.h2}>معاملات النقد لهذا الطلب</h2>
-        <p className={`mt-1 text-sm ${ad.muted}`}>
-          صادر (من الزبون) ووارد (للمندوب) كما سجّلها المندوب أو المجهز. «مسح» يبقي
-          أثراً في السجل كمعاملة ملغاة؛ «حذف نهائي» يزيل السجل من النظام بالكامل بعد
-          التأكيد.
-        </p>
+
       </div>
 
       {softState.error ? (
