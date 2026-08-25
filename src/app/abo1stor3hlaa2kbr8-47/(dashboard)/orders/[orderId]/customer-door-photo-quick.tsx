@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import {
   compressImageForMandoubUpload,
   assignFileToInput,
@@ -23,6 +24,7 @@ export function CustomerDoorPhotoQuick({
   hasImage?: boolean;
   isSecondCustomer?: boolean;
 }) {
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     uploadCustomerDoorPhotoFromView.bind(null, orderId),
@@ -35,6 +37,7 @@ export function CustomerDoorPhotoQuick({
     setDeleting(true);
     try {
       await deleteCustomerDoorPhotoAction(orderId, isSecondCustomer);
+      router.refresh();
     } finally {
       setDeleting(false);
     }
@@ -50,7 +53,6 @@ export function CustomerDoorPhotoQuick({
       assignFileToInput(fileRef.current, photoToUpload);
     } catch (err) {
       console.error("خطأ في ضغط الصورة:", err);
-      // متابعة برفع الصورة الأصلية إن فشل الضغط
     }
 
     const fd = new FormData();
@@ -108,7 +110,7 @@ export function CustomerDoorPhotoQuick({
           <button
             type="button"
             disabled={pending || deleting}
-            onClick={handleDelete}
+            onClick={() => void handleDelete()}
             className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
           >
             {deleting ? "جارٍ المسح..." : "مسح الصورة"}

@@ -85,12 +85,16 @@ export async function deleteFromR2(key: string | null | undefined) {
   const r2Client = await getS3Client();
   if (!r2Client) return;
 
-  let actualKey = key;
-  if (key.includes("http")) {
+  let actualKey = key.trim();
+  if (actualKey.includes("http")) {
     try {
-      const url = new URL(key);
+      const url = new URL(actualKey);
       actualKey = decodeURIComponent(url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname);
     } catch (e) { return; }
+  }
+
+  if (actualKey.startsWith("/")) {
+    actualKey = actualKey.slice(1);
   }
 
   try {

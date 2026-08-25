@@ -307,7 +307,11 @@ export async function deleteOrderImageAction(orderId: string): Promise<CustomerD
     where: { id: orderId },
     data: { imageUrl: null, orderImageUploadedByName: null },
   });
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}/edit`);
+  revalidatePath("/mandoub");
   return { ok: true };
 }
 
@@ -335,8 +339,11 @@ export async function deleteCustomerDoorPhotoAction(
       customerDoorPhotoUploadedByName: null
     },
   });
-  // ملاحظة: قد تحتاج لمزامنة PhoneProfile إن كان هذا السلوك مطلوباً
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}/edit`);
+  revalidatePath("/mandoub");
   return { ok: true };
 }
 
@@ -356,11 +363,12 @@ export async function deleteShopDoorPhotoAction(orderId: string): Promise<Custom
     data: { shopDoorPhotoUrl: null, shopDoorPhotoUploadedByName: null },
   });
 
-  // لا نمسح صورة المحل الأساسية لأنها قد تُستخدم في طلبيات أخرى
-  // هذا يضمن أن مسح صورة واحدة لا يؤثر على الطلبيات الأخرى
-
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}/edit`);
   revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+  revalidatePath("/mandoub");
   return { ok: true };
 }
 
