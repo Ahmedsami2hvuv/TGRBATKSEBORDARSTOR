@@ -598,6 +598,7 @@ export function OrderViewContent({
                       }}
                     />
                   </div>
+                )}
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="inline-flex flex-col">
