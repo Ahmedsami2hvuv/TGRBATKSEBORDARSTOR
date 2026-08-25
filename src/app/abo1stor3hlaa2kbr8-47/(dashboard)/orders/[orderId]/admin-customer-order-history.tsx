@@ -44,6 +44,7 @@ export function AdminCustomerOrderHistory({
   customerLocationUrl,
   customerLandmark,
   customerProfileId,
+  buttonText,
 }: {
   phone: string;
   regionId?: string | null;
@@ -54,6 +55,7 @@ export function AdminCustomerOrderHistory({
   customerLocationUrl?: string;
   customerLandmark?: string;
   customerProfileId?: string | null;
+  buttonText?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
