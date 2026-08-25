@@ -29,6 +29,7 @@ import { AdminCustomerLocationQuick } from "./admin-customer-location-quick";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
+import { DeleteAdminVoiceNoteButton } from "./edit/delete-admin-voice-note-button";
 import { AdminCustomerOrderHistory } from "./admin-customer-order-history";
 import { OrderFabDock } from "@/components/order-fab-dock";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
@@ -336,6 +337,7 @@ export function OrderViewContent({
               <div className="rounded-xl border border-rose-200 bg-white p-3 shadow-sm">
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="text-xs font-black text-rose-700 flex items-center gap-1"><span>🎧</span> بصمة المدير (المسجلة)</span>
+                  <DeleteAdminVoiceNoteButton orderId={order.id} compact />
                 </div>
                 <VoiceNoteAudio src={adminVoiceSrc} streamKey={`${order.id}-admin-voice`} className="w-full" />
               </div>

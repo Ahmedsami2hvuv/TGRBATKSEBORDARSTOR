@@ -405,22 +405,17 @@ export function AdminVoiceNoteSection({
         />
 
         {!recording ? (
-          <div className="flex w-full items-center justify-center gap-1">
-            <button
-              type="button"
-              onClick={() => void startRecording()}
-              className={`inline-flex w-full items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95 min-h-[40px] text-center ${
-                src ? "bg-rose-700 hover:bg-rose-800" : "bg-rose-600 hover:bg-rose-700"
-              }`}
-              title={src ? "استبدال البصمة" : "تسجيل البصمة"}
-            >
-              <span>🎙️</span>
-              <span className="truncate">{src ? "بصمة 🎧" : "بصمة"}</span>
-            </button>
-            {src && (
-              <DeleteAdminVoiceNoteButton orderId={orderId} compact />
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => void startRecording()}
+            className={`inline-flex w-full items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95 min-h-[40px] text-center ${
+              src ? "bg-rose-700 hover:bg-rose-800" : "bg-rose-600 hover:bg-rose-700"
+            }`}
+            title={src ? "استبدال البصمة" : "تسجيل البصمة"}
+          >
+            <span>🎙️</span>
+            <span className="truncate">بصمة</span>
+          </button>
         ) : (
           <div className="flex w-full items-center justify-center gap-1">
             <button
