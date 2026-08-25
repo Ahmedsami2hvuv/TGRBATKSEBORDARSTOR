@@ -703,8 +703,8 @@ export function OrderViewContent({
               return (
                 <div className="space-y-2 pt-0.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-slate-600">سعر البضاعة:</span>
-                    <span className="font-mono text-base font-black text-slate-900">{order.orderSubtotal || "0"}</span>
+                    <span className="text-xs sm:text-sm font-bold text-blue-900">سعر البضاعة:</span>
+                    <span className="font-mono text-base font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200/80">{order.orderSubtotal || "0"}</span>
                   </div>
 
                   {hasDebt && (
@@ -715,8 +715,8 @@ export function OrderViewContent({
                   )}
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-slate-600">التوصيل:</span>
-                    <span className="font-mono text-base font-black text-slate-900">{order.deliveryPrice || "0"}</span>
+                    <span className="text-xs sm:text-sm font-bold text-amber-900">التوصيل:</span>
+                    <span className="font-mono text-base font-black text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200/80">{order.deliveryPrice || "0"}</span>
                   </div>
                 </div>
               );

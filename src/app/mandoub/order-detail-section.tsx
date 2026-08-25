@@ -697,26 +697,26 @@ export function OrderDetailSection({
                     const hasDebt = calculatedDebt > 0;
 
                     return (
-                      <div className={`grid ${hasDebt ? 'grid-cols-3' : 'grid-cols-2'} gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5`}>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-slate-400 font-bold">سعر الطلب:</span>
-                          <span className="font-mono font-black text-slate-900 dark:text-white">
+                      <div className={`grid ${hasDebt ? 'grid-cols-3' : 'grid-cols-2'} gap-2 border-t border-slate-100/50 dark:border-white/5 pt-2 mt-1`}>
+                        <div className="flex flex-col gap-0.5 rounded-lg border border-blue-200/80 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-950/30 p-1.5">
+                          <span className="text-[10px] text-blue-900 dark:text-blue-400 font-bold">سعر الطلب:</span>
+                          <span className="font-mono font-black text-blue-700 dark:text-blue-300 text-sm">
                             {order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}
                           </span>
                         </div>
                         
                         {hasDebt && (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[10px] text-rose-500 font-bold">الدين:</span>
-                            <span className="font-mono font-black text-rose-600 dark:text-rose-400">
+                          <div className="flex flex-col gap-0.5 rounded-lg border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 p-1.5">
+                            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold">الدين:</span>
+                            <span className="font-mono font-black text-rose-700 dark:text-rose-300 text-sm animate-pulse">
                               {`${formatDinarAsAlf(calculatedDebt)} الف`}
                             </span>
                           </div>
                         )}
                         
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-slate-400 font-bold">التوصيل:</span>
-                          <span className="font-mono font-black text-slate-900 dark:text-white">
+                        <div className="flex flex-col gap-0.5 rounded-lg border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-950/30 p-1.5">
+                          <span className="text-[10px] text-amber-900 dark:text-amber-400 font-bold">التوصيل:</span>
+                          <span className="font-mono font-black text-amber-800 dark:text-amber-300 text-sm">
                             {order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}
                           </span>
                         </div>
@@ -725,9 +725,9 @@ export function OrderDetailSection({
                   })()}
                 </div>
 
-                <div className="flex flex-col items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50/5 dark:bg-violet-950/10 p-2 text-center shadow-inner mt-2">
-                  <p className="text-[9px] font-black text-violet-900 dark:text-violet-400 uppercase tracking-widest mb-0.5">المبلغ الكلي المطلوب</p>
-                  <p className="font-mono text-xl font-black text-violet-950 dark:text-violet-100 tabular-nums">
+                <div className="flex flex-col items-center justify-center rounded-xl border-2 border-violet-500/30 bg-violet-500/10 dark:bg-violet-950/30 p-2.5 text-center shadow-sm mt-2">
+                  <p className="text-[10px] font-black text-violet-900 dark:text-violet-300 uppercase tracking-widest mb-0.5">المبلغ الكلي المطلوب</p>
+                  <p className="font-mono text-2xl font-black text-violet-950 dark:text-violet-100 tabular-nums">
                     {order.prepaidAll ? "كل شي واصل" : (order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—")}
                   </p>
                 </div>
