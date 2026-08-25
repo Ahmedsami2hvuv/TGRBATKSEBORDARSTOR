@@ -113,7 +113,7 @@ export function CustomerDoorPhotoQuick({
             onClick={() => void handleDelete()}
             className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
           >
-            {deleting ? "جارٍ المسح..." : "مسح الصورة"}
+            {deleting ? "جارٍ المسح..." : "مسح"}
           </button>
         )}
       </div>
