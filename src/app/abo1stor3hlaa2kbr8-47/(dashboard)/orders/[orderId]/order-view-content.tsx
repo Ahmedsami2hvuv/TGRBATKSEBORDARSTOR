@@ -239,7 +239,7 @@ export function OrderViewContent({
                 className="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer min-h-[40px] text-center"
               >
                 <span>📦</span>
-                <span className="truncate">{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
+                <span className="truncate">المندوب</span>
               </button>
             ) : (
               <div />
