@@ -91,12 +91,15 @@ export function WaLocationCustomButtons({
 
     // فحص حالة اللوكيشن
     if (btn.customerLocationRule) {
-      const rules = btn.customerLocationRule.split(",").map((s) => s.trim()).filter(Boolean);
+      const rules = btn.customerLocationRule.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
       if (rules.length > 0 && !rules.includes("any")) {
         let ok = false;
-        if (rules.includes("exists") && (hasCustomerLocation || hasCourierUploadedLocation)) ok = true;
-        if (rules.includes("missing") && !hasCustomerLocation && !hasCourierUploadedLocation) ok = true;
+        const isExistingLoc = Boolean(hasCustomerLocation || hasCourierUploadedLocation);
+
+        if ((rules.includes("exists") || rules.includes("location") || rules.includes("has_location")) && isExistingLoc) ok = true;
+        if ((rules.includes("missing") || rules.includes("no_location")) && !isExistingLoc) ok = true;
         if (rules.includes("courier_gps") && hasCourierUploadedLocation) ok = true;
+
         if (!ok) return false;
       }
     }

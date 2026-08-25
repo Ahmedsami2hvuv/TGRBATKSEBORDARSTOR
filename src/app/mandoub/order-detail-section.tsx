@@ -432,18 +432,46 @@ export function OrderDetailSection({
                         {courierSettings?.showLocationBtn !== false && (
                           <>
                             {mergedCustomerLocationUrl ? (
-                              <a 
-                                href={mergedCustomerLocationUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className={`inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-300 animate-pulse" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn`}
-                                style={{
-                                  fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
-                                  height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
-                                }}
-                              >
-                                {courierSettings?.guidedDeliverySteps ? "🛵 خريطة الزبون" : "📍 موقع الزبون"} {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
-                              </a>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <a 
+                                  href={mergedCustomerLocationUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className={`inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-300 animate-pulse" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md kse-location-btn`}
+                                  style={{
+                                    fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
+                                    height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
+                                  }}
+                                >
+                                  {courierSettings?.guidedDeliverySteps ? "🛵 خريطة الزبون" : "📍 موقع الزبون"} {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                                </a>
+                                <WaLocationCustomButtons
+                                  userRole="mandoub"
+                                  customerPhone={order.customerPhone}
+                                  customerPhone2={order.customerPhone2 || undefined}
+                                  shopPhone={order.shopPhone || undefined}
+                                  orderStatus={order.status}
+                                  hasCustomerLocation={!missingCustomerLocation}
+                                  hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                                  templateVars={{
+                                    clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
+                                    city: order.customerRegion?.name || order.regionLine || "—",
+                                    total_price: currentTotalPriceStr,
+                                    total: currentTotalPriceStr,
+                                    delivery: currentCourierName,
+                                    courier: currentCourierName,
+                                    courierName: currentCourierName,
+                                    deliveryName: currentCourierName,
+                                    location_url: mergedCustomerLocationUrl || "",
+                                    landmark: order.customerLandmark || order.nearestLandmark || "",
+                                    order_number: String(order.orderNumber || ""),
+                                    customer_phone: order.customerPhone || "",
+                                    customer_phone2: order.customerPhone2 || "",
+                                    shop_phone: order.shop?.phone || order.shopPhone || "",
+                                  }}
+                                  customButtons={customWaButtons}
+                                />
+                              </div>
                             ) : (
                               <MandoubUploadLocationInline 
                                 orderId={order.id} 
@@ -454,6 +482,8 @@ export function OrderDetailSection({
                                 customerPhone2={order.customerPhone2 || undefined}
                                 shopPhone={order.shopPhone || undefined}
                                 orderStatus={order.status}
+                                hasCustomerLocation={!missingCustomerLocation}
+                                hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
                                 templateVars={{
                                   clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
                                   city: order.customerRegion?.name || order.regionLine || "—",

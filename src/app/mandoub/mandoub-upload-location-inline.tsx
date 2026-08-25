@@ -33,6 +33,8 @@ export function MandoubUploadLocationInline({
   customerPhone2,
   shopPhone,
   orderStatus,
+  hasCustomerLocation,
+  hasCourierUploadedLocation,
   templateVars,
   customWaButtons,
 }: {
@@ -45,6 +47,8 @@ export function MandoubUploadLocationInline({
   customerPhone2?: string;
   shopPhone?: string;
   orderStatus?: string;
+  hasCustomerLocation?: boolean;
+  hasCourierUploadedLocation?: boolean;
   templateVars?: Record<string, string>;
   customWaButtons?: any[];
 }) {
@@ -183,6 +187,8 @@ export function MandoubUploadLocationInline({
             customerPhone2={customerPhone2}
             shopPhone={shopPhone}
             orderStatus={orderStatus}
+            hasCustomerLocation={hasCustomerLocation}
+            hasCourierUploadedLocation={hasCourierUploadedLocation}
             templateVars={templateVars}
             customButtons={customWaButtons}
           />
