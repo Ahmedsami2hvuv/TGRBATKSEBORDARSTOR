@@ -625,14 +625,10 @@ export function MandoubOrderTable({
                   e.stopPropagation();
                   setPickupOrder(o);
                 }}
-                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
-                title="تم الاستلام (تسجيل دفع للعميل)"
+                className="inline-flex px-3 py-1.5 items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition active:scale-95"
+                title="استلام الشحنة"
               >
-                <DynamicIcon
-                  icon={icons?.order_received}
-                  className="w-full h-full"
-                  fallback={<span className="text-xl">💵</span>}
-                />
+                استلام
               </button>
             );
           }
@@ -644,14 +640,10 @@ export function MandoubOrderTable({
                   e.stopPropagation();
                   setDeliveryOrder(o);
                 }}
-                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
-                title="تم التسليم (تسجيل استلام من الزبون)"
+                className="inline-flex px-3 py-1.5 items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm transition active:scale-95"
+                title="تسليم الشحنة"
               >
-                <DynamicIcon
-                  icon={icons?.order_delivered}
-                  className="w-full h-full"
-                  fallback={<span className="text-xl">🚚</span>}
-                />
+                تسليم
               </button>
             );
           }
