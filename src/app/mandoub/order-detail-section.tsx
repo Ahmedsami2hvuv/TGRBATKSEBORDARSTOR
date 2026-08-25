@@ -41,7 +41,7 @@ import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-butt
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
-  delivering: "عند المندوب (استلام)",
+  delivering: "مستلم",
   delivered: "تسليم",
 };
 

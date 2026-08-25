@@ -28,7 +28,7 @@ import { orderStatusBadgeClass } from "@/lib/order-status-style";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
-  delivering: "عند المندوب (تم الاستلام)",
+  delivering: "مستلم",
   delivered: "تم التسليم",
 };
 

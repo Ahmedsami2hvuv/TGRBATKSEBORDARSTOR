@@ -28,7 +28,7 @@ import { useState } from "react";
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
   assigned: "بانتظار المندوب",
-  delivering: "عند المندوب (تم الاستلام)",
+  delivering: "مستلم",
   delivered: "تم التسليم",
   cancelled: "مرفوض",
   archived: "مؤرشف",
