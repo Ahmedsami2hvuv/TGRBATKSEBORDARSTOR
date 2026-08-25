@@ -117,6 +117,28 @@ export function AdminVoiceNoteSection({
     }
   }, []);
 
+  const nativeMicInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNativeMicFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const input = fileRef.current;
+    if (input) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+    }
+    setPreviewBlob(file);
+    setError(null);
+
+    if (variant === "standalone" || variant === "button") {
+      queueMicrotask(() => {
+        standaloneFormRef.current?.requestSubmit();
+      });
+    }
+  };
+
   const startRecording = async () => {
     setError(null);
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -135,6 +157,10 @@ export function AdminVoiceNoteSection({
     clearFile();
 
     if (!supported) {
+      if (nativeMicInputRef.current) {
+        nativeMicInputRef.current.click();
+        return;
+      }
       setError("التسجيل الصوتي غير متاح في هذا المتصفح.");
       return;
     }
@@ -215,9 +241,13 @@ export function AdminVoiceNoteSection({
         finishRecording();
       }, MAX_MS);
     } catch (err: any) {
-      console.error("Audio recording error:", err);
-      setError("لم نتمكن من الوصول للمايك. اسمح بالوصول من إعدادات المتصفح والتطبيق.");
+      console.error("Audio recording error, triggering native mic fallback:", err);
       setRecording(false);
+      if (nativeMicInputRef.current) {
+        nativeMicInputRef.current.click();
+      } else {
+        setError("لم نتمكن من الوصول للمايك. اسمح بالوصول من إعدادات المتصفح والتطبيق.");
+      }
     }
   };
 
@@ -251,6 +281,16 @@ export function AdminVoiceNoteSection({
         className="sr-only"
         tabIndex={-1}
         aria-hidden
+      />
+      <input
+        ref={nativeMicInputRef}
+        type="file"
+        accept="audio/*"
+        capture="microphone"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleNativeMicFile}
       />
       {supported ? (
         <div className="flex w-full flex-col gap-2">
