@@ -576,7 +576,6 @@ export function OrderViewContent({
                 <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
                   💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
-                <div className="mt-2 space-y-2">
                 {!order.customerLocationUrl?.trim() && (
                   <div className="mt-2">
                     <AdminCustomerLocationQuick 
