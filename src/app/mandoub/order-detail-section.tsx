@@ -301,7 +301,7 @@ export function OrderDetailSection({
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-amber-800 dark:text-amber-400">
-                      {courierSettings?.guidedDeliverySteps ? "المحل (المرسل - مكان الاستلام)" : "معلومات المحل (المرسل)"}
+                      {courierSettings?.guidedDeliverySteps ? "المحل (المرسل - مكان الاستلام)" : "المحل (المرسل)"}
                     </h3>
                   </div>
                 </div>
