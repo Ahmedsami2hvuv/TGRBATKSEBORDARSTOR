@@ -16,13 +16,19 @@ export interface DecimalMathLike {
  */
 export function computeCourierDeliveryEarningDinar(
   vehicle: CourierVehicleType,
-  deliveryPrice: DecimalMathLike | null,
+  deliveryPrice: DecimalMathLike | number | string | null | undefined,
   zeroEarning = false,
-): DecimalMathLike | null {
+): Decimal | null {
   if (deliveryPrice == null) return null;
-  if (zeroEarning) return new Decimal(0) as any;
+  if (zeroEarning) return new Decimal(0);
+
+  const decVal =
+    typeof deliveryPrice === "object" && deliveryPrice !== null && "mul" in deliveryPrice && typeof (deliveryPrice as any).mul === "function"
+      ? (deliveryPrice as unknown as Decimal)
+      : new Decimal(Number(deliveryPrice) || 0);
+
   if (vehicle === "bike") {
-    return deliveryPrice.div(2);
+    return decVal.div(2);
   }
-  return deliveryPrice.mul(2).div(3);
+  return decVal.mul(2).div(3);
 }

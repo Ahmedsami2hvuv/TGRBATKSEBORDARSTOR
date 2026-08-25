@@ -245,7 +245,8 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
             const vehicleType = o.courier?.vehicleType ?? null;
             const deliveryPrice = o.deliveryPrice ?? null;
             if (vehicleType && deliveryPrice != null) {
-              earningToSave = new Decimal(computeCourierDeliveryEarningDinar(vehicleType as any, Number(deliveryPrice)));
+              const computed = computeCourierDeliveryEarningDinar(vehicleType as any, deliveryPrice as any);
+              earningToSave = computed ? new Decimal(computed) : new Decimal(0);
             } else {
               earningToSave = new Decimal(0);
             }
