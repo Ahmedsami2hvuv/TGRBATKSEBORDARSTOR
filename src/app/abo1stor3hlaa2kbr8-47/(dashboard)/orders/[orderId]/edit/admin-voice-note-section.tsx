@@ -36,7 +36,7 @@ export function AdminVoiceNoteSection({
 }: {
   orderId: string;
   defaultAdminVoiceNoteUrl: string | null;
-  variant?: "embedded" | "standalone";
+  variant?: "embedded" | "standalone" | "button";
 }) {
   const router = useRouter();
   const src = resolvePublicAssetSrc(defaultAdminVoiceNoteUrl);
@@ -309,6 +309,78 @@ export function AdminVoiceNoteSection({
       <div className="flex flex-col gap-2">{controls}</div>
     </div>
   );
+
+  if (variant === "button") {
+    return (
+      <form
+        ref={standaloneFormRef}
+        action={async (fd) => {
+          const r = await uploadAdminVoiceNote(fd);
+          if (r.error) {
+            window.alert(r.error);
+            return;
+          }
+          router.refresh();
+        }}
+        className="inline-block w-full"
+      >
+        <input type="hidden" name="orderId" value={orderId} />
+        <input
+          ref={fileRef}
+          type="file"
+          name="adminVoice"
+          accept="audio/*"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden
+        />
+
+        {!recording ? (
+          <div className="flex w-full items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={() => void startRecording()}
+              className={`inline-flex w-full items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95 min-h-[40px] text-center ${
+                src ? "bg-rose-700 hover:bg-rose-800" : "bg-rose-600 hover:bg-rose-700"
+              }`}
+              title={src ? "استبدال بصمة المدير" : "تسجيل بصمة المدير"}
+            >
+              <span>🎙️</span>
+              <span className="truncate">{src ? "بصمة المدير 🎧" : "بصمة المدير"}</span>
+            </button>
+            {src && (
+              <DeleteAdminVoiceNoteButton orderId={orderId} />
+            )}
+          </div>
+        ) : (
+          <div className="flex w-full items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={finishRecording}
+              className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-red-600 px-1.5 py-2 text-xs font-bold text-white shadow-sm animate-pulse min-h-[40px] text-center"
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-white animate-ping" />
+              <span className="truncate">إيقاف ({sec}ث)</span>
+            </button>
+            <button
+              type="button"
+              onClick={cancelRecording}
+              className="inline-flex items-center justify-center rounded-xl bg-slate-200 px-1.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 min-h-[40px]"
+              title="إلغاء التسجيل"
+            >
+              ❌
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <span className="block text-[10px] font-bold text-rose-600 mt-1 text-center">
+            {error}
+          </span>
+        )}
+      </form>
+    );
+  }
 
   if (variant === "standalone") {
     return (

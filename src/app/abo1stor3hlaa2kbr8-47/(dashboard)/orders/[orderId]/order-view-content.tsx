@@ -213,36 +213,42 @@ export function OrderViewContent({
         {/* --- بطاقة ترويسة الطلبية المختصرة والمدمجة --- */}
         <div className="mb-4 rounded-2xl border border-sky-200 bg-white/95 p-3 shadow-sm sm:p-4 backdrop-blur-sm">
           
-          {/* سطر الأزرار العلوية الثلاثة: اليمين (إغلاق الطلب) - الوسط (تعديل البيانات) - اليسار (تغيير المندوب) */}
-          <div className="mb-3.5 grid grid-cols-3 gap-1.5 sm:gap-2">
+          {/* سطر الأزرار العلوية الأربعة: إغلاق - تعديل - تغيير المندوب - بصمة المدير */}
+          <div className="mb-3.5 grid grid-cols-4 gap-1 sm:gap-2">
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-              className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
+              className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
             >
               <span>⬅️</span>
-              <span>إغلاق الطلب</span>
+              <span>إغلاق</span>
             </Link>
 
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="inline-flex items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
+              className="inline-flex items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
             >
               <span>📝</span>
-              <span>تعديل البيانات</span>
+              <span>تعديل</span>
             </Link>
 
             {order.status !== "cancelled" && order.status !== "archived" ? (
               <button
                 type="button"
                 onClick={() => setShowAssignCourierModal(true)}
-                className="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all cursor-pointer min-h-[40px] text-center"
+                className="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer min-h-[40px] text-center"
               >
                 <span>📦</span>
-                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
+                <span className="truncate">{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
               </button>
             ) : (
               <div />
             )}
+
+            <AdminVoiceNoteSection
+              variant="button"
+              orderId={order.id}
+              defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
+            />
           </div>
 
           {/* سطر زر تعديل التسعير التكميلي إن وجد */}
@@ -315,20 +321,27 @@ export function OrderViewContent({
 
         </div>
 
-        {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {voiceSrc && (
-            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3.5 shadow-sm">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-black text-amber-700 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+        {/* بصمات الصوت المسجلة إن وجدت */}
+        {(voiceSrc || adminVoiceSrc) && (
+          <div className="mb-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {voiceSrc && (
+              <div className="rounded-xl border border-amber-200 bg-white p-3 shadow-sm">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-black text-amber-700 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+                </div>
+                <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
               </div>
-              <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
-            </div>
-          )}
-          <div className={voiceSrc ? "" : "sm:col-span-2"}>
-            <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
+            )}
+            {adminVoiceSrc && (
+              <div className="rounded-xl border border-rose-200 bg-white p-3 shadow-sm">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-black text-rose-700 flex items-center gap-1"><span>🎧</span> بصمة المدير (المسجلة)</span>
+                </div>
+                <VoiceNoteAudio src={adminVoiceSrc} streamKey={`${order.id}-admin-voice`} className="w-full" />
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
 
       <div className="mt-5 space-y-6 sm:space-y-8">
