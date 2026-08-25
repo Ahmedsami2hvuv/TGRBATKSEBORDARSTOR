@@ -351,7 +351,7 @@ export function OrderDetailSection({
                         rel="noopener noreferrer"
                         className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                       >
-                        💬 واتس اب
+                        💬 واتس
                       </a>
                     </div>
                   )}
@@ -503,7 +503,7 @@ export function OrderDetailSection({
                             rel="noopener noreferrer"
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
-                            💬 واتس اب
+                            💬 واتس
                           </a>
                         </div>
                       )}
