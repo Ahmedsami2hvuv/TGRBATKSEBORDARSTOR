@@ -119,27 +119,7 @@ export function MandoubDoorPhotoForm({
         </div>
       </form>
 
-      {/* نموذج الرجوع للأصل منفصل ومستقل لمنع تداخل النماذج في HTML */}
-      <form action={revertFormAction} className="flex justify-center pt-0.5">
-        <input type="hidden" name="orderId" value={orderId} />
-        <input type="hidden" name="next" value={nextUrl} />
-        <input type="hidden" name="c" value={c} />
-        <input type="hidden" name="exp" value={exp} />
-        <input type="hidden" name="s" value={s} />
-        <button
-          type="submit"
-          disabled={busy}
-          onClick={(e) => {
-            if (!window.confirm("هل تريد الرجوع إلى الصورة الأصلية؟")) {
-              e.preventDefault();
-            }
-          }}
-          className={btnUndo}
-        >
-          <DynamicIcon iconKey="ui_undo" config={icons} fallback="↩️" className="h-3.5 w-3.5" />
-          الرجوع للأصل
-        </button>
-      </form>
+
 
       {(compressing || pending || revertPending) && (
         <div className="flex items-center justify-center gap-2 py-1 text-xs font-black text-sky-800">
