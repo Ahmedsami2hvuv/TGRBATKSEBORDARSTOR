@@ -344,7 +344,7 @@ export function OrderDetailSection({
                 <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-500/80 dark:border-emerald-400/80 shadow-md shadow-emerald-500/10">
                       <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() ? (
@@ -478,7 +478,7 @@ export function OrderDetailSection({
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة الباب {isFromProfilePhoto && "(أرشيف)"}</span>
                   {customerDoorDisplay ? (
                     <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-500/80 dark:border-sky-400/80 shadow-md shadow-sky-500/10">
                         <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                       </div>
                       {order.customerDoorPhotoUploadedByName?.trim() ? (
@@ -618,7 +618,7 @@ export function OrderDetailSection({
                     <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة باب المستلم {isFromSecondProfilePhoto && "(أرشيف)"}</span>
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center gap-1">
-                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg relative">
+                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-violet-500/80 dark:border-violet-400/80 shadow-md shadow-violet-500/10 relative">
                           <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(secondDoorMerged))} />
                         </div>
                         {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
