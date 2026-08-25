@@ -8,6 +8,7 @@ import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/or
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
+import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import {
   orderStatusBadgeClass,
   orderStatusDetailSurfaceClass,
@@ -28,7 +29,6 @@ import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
-import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { IconPhone, IconWa } from "@/components/order-fab-dock";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { ADMIN_PHONE_FROM_SHOP_LOCAL } from "@/lib/admin-order-from-admin-constants";
@@ -326,14 +326,33 @@ export function OrderDetailSection({
                   )}
                 </div>
 
-                <div className="pt-1.5">
+                <div className="pt-1.5 space-y-2 w-full">
                   {order.shop.locationUrl?.trim() ? (
-                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-300" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md max-w-full`}>
+                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-300" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md`}>
                       {courierSettings?.guidedDeliverySteps ? "🏢 خريطة المحل (لاستلام البضاعة فقط)" : "📍 موقع المحل"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                     </a>
                   ) : (
-                    <div className="inline-block p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
+                    <div className="w-full p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
                       ⚠️ لا يوجد موقع جغرافي للمحل
+                    </div>
+                  )}
+
+                  {shopContactPhone && (
+                    <div className="flex items-center gap-2 w-full">
+                      <a
+                        href={telHref(shopContactPhone)}
+                        className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                      >
+                        📞 اتصال
+                      </a>
+                      <a
+                        href={whatsappMeUrl(shopContactPhone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                      >
+                        💬 واتس اب
+                      </a>
                     </div>
                   )}
                 </div>
@@ -468,6 +487,25 @@ export function OrderDetailSection({
                       </div>
                       {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && order.customerLocationUploadedByName?.trim() && (
                         <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
+                      )}
+
+                      {order.customerPhone && (
+                        <div className="flex items-center gap-2 w-full mt-2">
+                          <a
+                            href={telHref(order.customerPhone)}
+                            className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                          >
+                            📞 اتصال
+                          </a>
+                          <a
+                            href={whatsappMeUrl(order.customerPhone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                          >
+                            💬 واتس اب
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>
