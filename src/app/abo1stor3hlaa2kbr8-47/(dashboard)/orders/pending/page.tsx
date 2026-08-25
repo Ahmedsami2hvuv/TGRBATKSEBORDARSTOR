@@ -183,8 +183,30 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       }
     }
 
+    // تصفية وتنقية المسودات التي تم إكمال طلباتها وتغيير حالتها عن pending (مثل تم التسليم أو الأرشفة)
+    const sentDraftOrderIds = Array.from(new Set(allActiveDrafts.map(d => d.sentOrderId).filter(Boolean))) as string[];
+    const sentOrdersStatusMap = new Map<string, { status: string; archivedAt: Date | null }>();
+
+    if (sentDraftOrderIds.length > 0) {
+      const foundOrders = await prisma.order.findMany({
+        where: { id: { in: sentDraftOrderIds } },
+        select: { id: true, status: true, archivedAt: true }
+      });
+      foundOrders.forEach(o => sentOrdersStatusMap.set(o.id, o));
+    }
+
+    const filteredActiveDrafts = allActiveDrafts.filter(draft => {
+      if (draft.sentOrderId) {
+        const orderInfo = sentOrdersStatusMap.get(draft.sentOrderId);
+        if (orderInfo && (orderInfo.status !== "pending" || orderInfo.archivedAt != null)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
-    const safeAllActiveDrafts = serializePrisma(allActiveDrafts);
+    const safeAllActiveDrafts = serializePrisma(filteredActiveDrafts);
     const safeNewOrders = serializePrisma(newOrders);
     const safePreparedOrders = serializePrisma(preparedOrders);
     const safeCouriers = serializePrisma(couriers);

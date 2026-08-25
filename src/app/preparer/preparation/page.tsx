@@ -60,6 +60,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         titleLine: true,
         status: true,
         createdAt: true,
+        sentOrderId: true,
         customerRegion: { select: { name: true } }
       },
       orderBy: { createdAt: "desc" },
@@ -67,10 +68,31 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     }),
   ]);
 
+  // تصفية المسودات التي تحوي طلبات منجزة أو مسلّمة
+  const sentDraftIds = Array.from(new Set(drafts.map(d => d.sentOrderId).filter(Boolean))) as string[];
+  const sentOrdersMap = new Map<string, { status: string; archivedAt: Date | null }>();
+  if (sentDraftIds.length > 0) {
+    const foundOrders = await prisma.order.findMany({
+      where: { id: { in: sentDraftIds } },
+      select: { id: true, status: true, archivedAt: true }
+    });
+    foundOrders.forEach(o => sentOrdersMap.set(o.id, o));
+  }
+
+  const validDrafts = drafts.filter(draft => {
+    if (draft.sentOrderId) {
+      const orderInfo = sentOrdersMap.get(draft.sentOrderId);
+      if (orderInfo && (orderInfo.status !== "pending" || orderInfo.archivedAt != null)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   // Serialization for Next.js 15
   const safePreparer = serializePrisma(preparerRaw);
   const safeWebStore = serializePrisma(webStorePending);
-  const safeDrafts = serializePrisma(drafts);
+  const safeDrafts = serializePrisma(validDrafts);
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">

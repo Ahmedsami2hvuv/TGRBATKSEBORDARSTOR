@@ -389,6 +389,36 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
         }
       }
     }
+
+    // أتمتة إغلاق وتحديث مسودات التجهيز المرتبطة بالطلب إلى حالة sent
+    try {
+      const normPhone = order.customerPhone ? normalizeIraqMobileLocal11(order.customerPhone) : null;
+      const phoneDigits = order.customerPhone ? order.customerPhone.replace(/\D/g, "") : "";
+      
+      const phoneOrConditions = Array.from(new Set([
+        order.customerPhone,
+        normPhone,
+        phoneDigits
+      ].filter(Boolean))).map(p => ({ customerPhone: p as string }));
+
+      await db.companyPreparerShoppingDraft.updateMany({
+        where: {
+          OR: [
+            { sentOrderId: orderId },
+            ...(phoneOrConditions.length > 0 ? [{
+              OR: phoneOrConditions,
+              status: { in: ["draft", "priced"] }
+            }] : [])
+          ]
+        },
+        data: {
+          status: "sent",
+          sentOrderId: orderId
+        }
+      });
+    } catch (draftErr) {
+      console.error("Failed to mark associated shopping drafts as sent on delivery:", draftErr);
+    }
   } catch (error) {
     console.error("Error in handleOrderDelivered hook:", error);
   }
