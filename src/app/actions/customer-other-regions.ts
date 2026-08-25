@@ -70,19 +70,23 @@ export async function pullCustomerProfileDetails(
       if (toProfile) {
         const dataToUpdate: any = {};
         if (field) {
-          dataToUpdate[field] = fromProfile[field] || toProfile[field];
+          if (fromProfile[field] !== undefined && fromProfile[field] !== null && fromProfile[field] !== "") {
+            dataToUpdate[field] = fromProfile[field];
+          }
         } else {
-          dataToUpdate.locationUrl = toProfile.locationUrl || fromProfile.locationUrl;
-          dataToUpdate.photoUrl = toProfile.photoUrl || fromProfile.photoUrl;
-          dataToUpdate.notes = toProfile.notes || fromProfile.notes;
-          dataToUpdate.landmark = toProfile.landmark || fromProfile.landmark;
-          dataToUpdate.alternatePhone = toProfile.alternatePhone || fromProfile.alternatePhone;
+          if (fromProfile.locationUrl) dataToUpdate.locationUrl = fromProfile.locationUrl;
+          if (fromProfile.photoUrl) dataToUpdate.photoUrl = fromProfile.photoUrl;
+          if (fromProfile.notes) dataToUpdate.notes = fromProfile.notes;
+          if (fromProfile.landmark) dataToUpdate.landmark = fromProfile.landmark;
+          if (fromProfile.alternatePhone) dataToUpdate.alternatePhone = fromProfile.alternatePhone;
         }
         
-        await prisma.customerPhoneProfile.update({
-          where: { id: toProfile.id },
-          data: dataToUpdate,
-        });
+        if (Object.keys(dataToUpdate).length > 0) {
+          await prisma.customerPhoneProfile.update({
+            where: { id: toProfile.id },
+            data: dataToUpdate,
+          });
+        }
       } else {
         const dataToCreate: any = {
           phone,
@@ -115,31 +119,39 @@ export async function pullCustomerProfileDetails(
       const orderUpdateData: any = {};
       
       const updateLocation = () => {
-        if (isSecondDestination) {
-          orderUpdateData.secondCustomerLocationUrl = orderToUpdate.secondCustomerLocationUrl || fromProfile.locationUrl;
-        } else {
-          orderUpdateData.customerLocationUrl = orderToUpdate.customerLocationUrl || fromProfile.locationUrl;
+        if (fromProfile.locationUrl) {
+          if (isSecondDestination) {
+            orderUpdateData.secondCustomerLocationUrl = fromProfile.locationUrl;
+          } else {
+            orderUpdateData.customerLocationUrl = fromProfile.locationUrl;
+          }
         }
       };
 
       const updatePhoto = () => {
-        if (isSecondDestination) {
-          orderUpdateData.secondCustomerDoorPhotoUrl = orderToUpdate.secondCustomerDoorPhotoUrl || fromProfile.photoUrl;
-        } else {
-          orderUpdateData.customerDoorPhotoUrl = orderToUpdate.customerDoorPhotoUrl || fromProfile.photoUrl;
+        if (fromProfile.photoUrl) {
+          if (isSecondDestination) {
+            orderUpdateData.secondCustomerDoorPhotoUrl = fromProfile.photoUrl;
+          } else {
+            orderUpdateData.customerDoorPhotoUrl = fromProfile.photoUrl;
+          }
         }
       };
 
       const updateLandmark = () => {
-        if (isSecondDestination) {
-          orderUpdateData.secondCustomerLandmark = orderToUpdate.secondCustomerLandmark || fromProfile.landmark;
-        } else {
-          orderUpdateData.customerLandmark = orderToUpdate.customerLandmark || fromProfile.landmark;
+        if (fromProfile.landmark) {
+          if (isSecondDestination) {
+            orderUpdateData.secondCustomerLandmark = fromProfile.landmark;
+          } else {
+            orderUpdateData.customerLandmark = fromProfile.landmark;
+          }
         }
       };
 
       const updateAlternatePhone = () => {
-        orderUpdateData.alternatePhone = orderToUpdate.alternatePhone || fromProfile.alternatePhone;
+        if (fromProfile.alternatePhone) {
+          orderUpdateData.alternatePhone = fromProfile.alternatePhone;
+        }
       };
 
       if (!field) {
