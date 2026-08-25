@@ -316,6 +316,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
               showVoiceNotesBtn: courier.showVoiceNotesBtn,
               showMoneyBoxes: courier.showMoneyBoxes,
               showFloatingBar: courier.showFloatingBar !== false,
+              hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
               guidedDeliverySteps: courier.guidedDeliverySteps,
             }}
           />

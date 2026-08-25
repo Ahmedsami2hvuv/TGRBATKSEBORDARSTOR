@@ -17,6 +17,7 @@ type CourierSettings = {
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
   showFloatingBar: boolean;
+  hideShopInfoOnPickup: boolean;
   rotate180Photos: boolean;
   guidedDeliverySteps: boolean;
 };
@@ -131,6 +132,12 @@ export default function CourierSettingsClient({
       icon: "🎈",
       title: "الأزرار العائمة (واتس اب، اتصال، تبليغ الزبون)",
       desc: "إظهار أو إخفاء زر الأزرار العائمة السريعة للاتصال والواتساب على الشاشة (متزامن عبر جميع أجهزتك)",
+    },
+    {
+      key: "hideShopInfoOnPickup" as const,
+      icon: "🏬",
+      title: "إخفاء بطاقة المحل بعد الاستلام",
+      desc: "إخفاء كارت معلومات المحل تلقائياً بمجرد تحول حالة الطلب إلى (مستلم) لتركيز الشاشة على الزبون والتوصيل (متزامن عبر جميع أجهزتك)",
     },
     {
       key: "rotate180Photos" as const,

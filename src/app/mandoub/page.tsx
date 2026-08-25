@@ -1031,6 +1031,7 @@ export default async function MandoubPage({ searchParams }: Props) {
                 showVoiceNotesBtn: courier.showVoiceNotesBtn,
                 showMoneyBoxes: courier.showMoneyBoxes,
                 showFloatingBar: courier.showFloatingBar !== false,
+                hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
                 guidedDeliverySteps: courier.guidedDeliverySteps,
               }}
             />

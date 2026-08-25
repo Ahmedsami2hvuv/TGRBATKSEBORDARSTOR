@@ -128,6 +128,7 @@ export function OrderDetailSection({
     showNotesBtn?: boolean;
     showVoiceNotesBtn?: boolean;
     showFloatingBar?: boolean;
+    hideShopInfoOnPickup?: boolean;
     guidedDeliverySteps?: boolean;
   };
   isModal?: boolean;
@@ -280,8 +281,9 @@ export function OrderDetailSection({
     switch (blockId) {
       case "shop_info":
         if (isDoubleRoute) return null;
-        // عند تفعيل نظام الخطوات التوجيهي واستلام الطلب من المحل (قيد التوصيل)، نلغي إظهار بطاقة المحل لعدم تشتيت المندوب
-        if (courierSettings?.guidedDeliverySteps && (order.status === "delivering" || order.status === "delivered")) {
+        // عند تفعيل خيار إخفاء بطاقة المحل بعد الاستلام (أو نظام الخطوات التوجيهية)، يتم إخفاء بطاقة المحل بمجرد الاستلام
+        const shouldHideShop = (courierSettings?.hideShopInfoOnPickup !== false || courierSettings?.guidedDeliverySteps) && ["delivering", "delivered", "archived"].includes(order.status);
+        if (shouldHideShop) {
           return null;
         }
         return (
