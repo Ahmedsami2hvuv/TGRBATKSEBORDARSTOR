@@ -318,6 +318,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
               showFloatingBar: courier.showFloatingBar !== false,
               hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
               guidedDeliverySteps: courier.guidedDeliverySteps,
+              orderViewTheme: courier.orderViewTheme || "default",
             }}
           />
         </div>

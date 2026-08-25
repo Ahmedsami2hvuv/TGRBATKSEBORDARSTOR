@@ -1033,6 +1033,7 @@ export default async function MandoubPage({ searchParams }: Props) {
                 showFloatingBar: courier.showFloatingBar !== false,
                 hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
                 guidedDeliverySteps: courier.guidedDeliverySteps,
+                orderViewTheme: courier.orderViewTheme || "default",
               }}
             />
           </section>

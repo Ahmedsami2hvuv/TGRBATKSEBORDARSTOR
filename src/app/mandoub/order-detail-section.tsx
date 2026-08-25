@@ -130,6 +130,7 @@ export function OrderDetailSection({
     showFloatingBar?: boolean;
     hideShopInfoOnPickup?: boolean;
     guidedDeliverySteps?: boolean;
+    orderViewTheme?: string;
   };
   isModal?: boolean;
   customWaButtons?: any[];
@@ -1049,7 +1050,62 @@ export function OrderDetailSection({
           />
         )}
 
-        {isModal ? null : (
+        {courierSettings?.orderViewTheme === "theme11" && (
+          <div className="relative mb-5 overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 p-4 sm:p-5 text-white shadow-xl">
+            <div className="flex items-center justify-between gap-2">
+              {closeHref ? (
+                <Link
+                  href={closeHref}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition shadow-sm text-sm font-black"
+                  title="إغلاق"
+                >
+                  ✕
+                </Link>
+              ) : onCloseModal ? (
+                <button
+                  type="button"
+                  onClick={onCloseModal}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition shadow-sm text-sm font-black"
+                  title="إغلاق"
+                >
+                  ✕
+                </button>
+              ) : <div className="w-10" />}
+
+              <div className="text-center flex-1">
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md">
+                  رقم الطلب #{order.orderNumber}
+                </h2>
+                <div className="mt-1 flex items-center justify-center gap-2">
+                  <span className="rounded-full bg-emerald-500/90 border border-emerald-400 px-3 py-0.5 text-xs font-black text-white shadow-sm">
+                    {STATUS_AR[order.status] ?? order.status}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const editBtn = document.getElementById(`edit-order-btn-${order.id}`);
+                  if (editBtn) editBtn.click();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md hover:bg-white/20 transition shadow-sm shrink-0"
+              >
+                <span>✏️</span>
+                <span className="hidden sm:inline">تعديل الطلب</span>
+                <span className="sm:hidden">تعديل</span>
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-center justify-center gap-3 border-t border-white/10 pt-2.5 text-xs font-black text-white/90">
+              <span>🕒 {formatBaghdadDateTime(order.createdAt)}</span>
+              <span>|</span>
+              <span>📅 {order.orderNoteTime || "فوري"}</span>
+            </div>
+          </div>
+        )}
+
+        {isModal || courierSettings?.orderViewTheme === "theme11" ? null : (
           <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>

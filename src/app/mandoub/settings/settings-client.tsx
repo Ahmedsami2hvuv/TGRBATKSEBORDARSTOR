@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
-import { updateCourierSetting } from "./actions";
+import { updateCourierSetting, updateCourierTheme } from "./actions";
 import FontSizeCustomizer from "./font-size-customizer";
 import { MandoubPresenceToggle } from "../mandoub-presence-toggle";
 import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagnostics";
@@ -20,6 +20,7 @@ type CourierSettings = {
   hideShopInfoOnPickup: boolean;
   rotate180Photos: boolean;
   guidedDeliverySteps: boolean;
+  orderViewTheme?: string;
 };
 
 type Props = {
@@ -44,12 +45,32 @@ export default function CourierSettingsClient({
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<string>(initialSettings.orderViewTheme || "default");
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("c", auth.c);
   if (auth.exp) baseQuery.set("exp", auth.exp);
   baseQuery.set("s", auth.s);
+
+  async function handleThemeChange(newTheme: string) {
+    if (newTheme === currentTheme) return;
+    setCurrentTheme(newTheme);
+    setSavingTheme(true);
+    try {
+      const res = await updateCourierTheme(auth, newTheme);
+      if (!res.ok) {
+        alert(res.error || "حدث خطأ أثناء تغيير الثيم");
+        setCurrentTheme(currentTheme);
+      }
+    } catch (e) {
+      console.error("Failed to change theme:", e);
+      setCurrentTheme(currentTheme);
+    } finally {
+      setSavingTheme(false);
+    }
+  }
 
   async function handleToggle(
     key: keyof CourierSettings,
@@ -172,6 +193,62 @@ export default function CourierSettingsClient({
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تخصيص واجهة المندوب: {courierName}</p>
           </div>
         </header>
+
+        {/* قسم ثيمات عرض الطلبية */}
+        <section className="kse-glass-dark mb-6 border border-sky-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🎨</span>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">ثيمات طريقة عرض الطلبية</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">اختر الثيم المفضل لديك لعرض بطاقات تفاصيل الطلب (متزامن عبر جميع أجهزتك)</p>
+              </div>
+            </div>
+            {savingTheme && <span className="text-xs font-bold text-sky-600 animate-pulse">جارٍ الحفظ...</span>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* الوضع الافتراضي */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("default")}
+              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                (currentTheme === "default" || !currentTheme)
+                  ? "border-sky-500 bg-sky-50/80 dark:bg-sky-950/40 ring-2 ring-sky-300 dark:ring-sky-800"
+                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-black text-sm text-slate-900 dark:text-white">الوضع الافتراضي</span>
+                {(currentTheme === "default" || !currentTheme) && (
+                  <span className="text-xs font-black bg-sky-600 text-white px-2 py-0.5 rounded-md">مُفعّل</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">التصميم الحقيقي الحالي للبطاقات والأزرار</p>
+            </button>
+
+            {/* ثيم 11 */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("theme11")}
+              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                currentTheme === "theme11"
+                  ? "border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 ring-2 ring-blue-400 dark:ring-blue-800"
+                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-black text-sm text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                  ✨ ثيم 11 (العصري الفاخر)
+                </span>
+                {currentTheme === "theme11" && (
+                  <span className="text-xs font-black bg-blue-600 text-white px-2 py-0.5 rounded-md">مُفعّل</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">تصميم كبسولي فخم مع أزرار كبسولية ورأس أزرق عصري</p>
+            </button>
+          </div>
+        </section>
 
         {/* قسم الحالة والتنبيهات */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">

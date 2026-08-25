@@ -76,6 +76,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         hideShopInfoOnPickup: true,
         rotate180Photos: true,
         guidedDeliverySteps: true,
+        orderViewTheme: true,
       },
     });
 
@@ -104,6 +105,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
       rotate180Photos: courier.rotate180Photos,
       guidedDeliverySteps: courier.guidedDeliverySteps,
+      orderViewTheme: courier.orderViewTheme || "default",
     };
 
     const auth = {
