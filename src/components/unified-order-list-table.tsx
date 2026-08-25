@@ -269,8 +269,8 @@ export function UnifiedOrderListTable({
               </th>
             ) : null}
             <th className="px-2 py-3.5 font-bold text-sky-900">#</th>
-            <th className="px-2 py-3.5 font-bold text-sky-900">اسم المحل</th>
-            <th className="px-2 py-3.5 font-bold text-sky-900">المنطقة</th>
+            <th className="px-2 py-3.5 font-bold text-sky-900">المرسل</th>
+            <th className="px-2 py-3.5 font-bold text-sky-900">المستلم</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">نوع</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">السعر</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">التوصيل</th>
