@@ -126,6 +126,7 @@ export function OrderDetailSection({
     showWhatsAppBtn?: boolean;
     showNotesBtn?: boolean;
     showVoiceNotesBtn?: boolean;
+    showFloatingBar?: boolean;
     guidedDeliverySteps?: boolean;
   };
   isModal?: boolean;
@@ -990,28 +991,30 @@ export function OrderDetailSection({
           </div>
         )}
 
-        <MandoubFloatingBar
-          orderId={order.id}
-          shopPhone={shopContactPhone}
-          customerPhone={order.customerPhone}
-          customerAlternatePhone={mergedAlternate || ""}
-          secondCustomerPhone={order.secondCustomerPhone || ""}
-          secondCustomerAlternatePhone={mergedSecondAlternate || ""}
-          preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
-          orderStatus={order.status}
-          orderNumber={order.orderNumber}
-          shopName={order.shop.name}
-          city={order.customerRegion?.name ?? ""}
-          totalPrice={currentTotalPriceStr}
-          deliveryName={currentCourierName}
-          customerLocationUrl={mergedCustomerLocationUrl}
-          customerLandmark={mergedLandmark}
-          hasCustomerLocation={!missingCustomerLocation}
-          hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-          showCallBtn={courierSettings?.showCallBtn !== false}
-          showWhatsAppBtn={courierSettings?.showWhatsAppBtn !== false}
-          isDoubleRoute={isDoubleRoute}
-        />
+        {courierSettings?.showFloatingBar !== false && (
+          <MandoubFloatingBar
+            orderId={order.id}
+            shopPhone={shopContactPhone}
+            customerPhone={order.customerPhone}
+            customerAlternatePhone={mergedAlternate || ""}
+            secondCustomerPhone={order.secondCustomerPhone || ""}
+            secondCustomerAlternatePhone={mergedSecondAlternate || ""}
+            preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
+            orderStatus={order.status}
+            orderNumber={order.orderNumber}
+            shopName={order.shop.name}
+            city={order.customerRegion?.name ?? ""}
+            totalPrice={currentTotalPriceStr}
+            deliveryName={currentCourierName}
+            customerLocationUrl={mergedCustomerLocationUrl}
+            customerLandmark={mergedLandmark}
+            hasCustomerLocation={!missingCustomerLocation}
+            hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+            showCallBtn={courierSettings?.showCallBtn !== false}
+            showWhatsAppBtn={courierSettings?.showWhatsAppBtn !== false}
+            isDoubleRoute={isDoubleRoute}
+          />
+        )}
 
         {isModal ? null : (
           <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">

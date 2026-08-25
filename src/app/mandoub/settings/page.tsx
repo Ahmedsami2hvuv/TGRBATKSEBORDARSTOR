@@ -72,6 +72,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         showMoneyBoxes: true,
         showNotesBtn: true,
         showVoiceNotesBtn: true,
+        showFloatingBar: true,
         rotate180Photos: true,
         guidedDeliverySteps: true,
       },
@@ -98,6 +99,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       showMoneyBoxes: courier.showMoneyBoxes,
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
+      showFloatingBar: courier.showFloatingBar !== false,
       rotate180Photos: courier.rotate180Photos,
       guidedDeliverySteps: courier.guidedDeliverySteps,
     };

@@ -16,6 +16,7 @@ type CourierSettings = {
   showMoneyBoxes: boolean;
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
+  showFloatingBar: boolean;
   rotate180Photos: boolean;
   guidedDeliverySteps: boolean;
 };
@@ -124,6 +125,12 @@ export default function CourierSettingsClient({
       icon: "💵",
       title: "صادر ووارد الطلبية",
       desc: "إظهار أو إخفاء مربعات المبالغ المالية (صادر/وارد) من خارج الطلب",
+    },
+    {
+      key: "showFloatingBar" as const,
+      icon: "🎈",
+      title: "الأزرار العائمة (واتس اب، اتصال، تبليغ الزبون)",
+      desc: "إظهار أو إخفاء زر الأزرار العائمة السريعة للاتصال والواتساب على الشاشة (متزامن عبر جميع أجهزتك)",
     },
     {
       key: "rotate180Photos" as const,

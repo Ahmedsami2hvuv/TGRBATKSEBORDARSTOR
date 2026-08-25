@@ -1030,6 +1030,7 @@ export default async function MandoubPage({ searchParams }: Props) {
                 showNotesBtn: courier.showNotesBtn,
                 showVoiceNotesBtn: courier.showVoiceNotesBtn,
                 showMoneyBoxes: courier.showMoneyBoxes,
+                showFloatingBar: courier.showFloatingBar !== false,
                 guidedDeliverySteps: courier.guidedDeliverySteps,
               }}
             />
