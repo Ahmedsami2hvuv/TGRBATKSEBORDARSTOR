@@ -133,9 +133,9 @@ export function AdminCustomerOrderHistory({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
+        className="w-full inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-1.5 py-2 text-[11px] sm:text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
       >
-        {buttonText || "عرض الطلبات"}
+        <span className="truncate">{buttonText || "عرض الطلبات"}</span>
       </button>
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
