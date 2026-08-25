@@ -1543,13 +1543,8 @@ ${productsText}`;
                     </div>
                   </div>
 
-                  {/* شارة السعر والكمية في الأعلى */}
+                  {/* شارة السعر في الأعلى */}
                   <div className="absolute top-1 left-1 flex gap-1 items-center">
-                    {displayQty && displayQty > 1 && (
-                      <span className="font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm bg-rose-600 text-white border border-rose-400/50">
-                        العدد: {displayQty}
-                      </span>
-                    )}
                     {priced ? (
                       <div className="flex gap-0.5">
                         {!hideBuyPrice && (
