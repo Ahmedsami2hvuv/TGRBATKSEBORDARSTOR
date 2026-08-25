@@ -577,46 +577,7 @@ export function OrderViewContent({
                   💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  {order.customerLocationUrl?.trim() ? (
-                    <a
-                      href={order.customerLocationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center bg-emerald-600 px-3 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px]"
-                    >
-                      <span>📍</span>
-                      <span>لوكيشن الزبون ↗</span>
-                    </a>
-                  ) : null}
-
-                  <AdminCustomerOrderHistory
-                    phone={order.customerPhone}
-                    regionId={order.customerRegionId}
-                    currentOrderId={order.id}
-                    customerRegionName={order.customerRegion?.name ?? null}
-                    alternatePhone={order.alternatePhone}
-                    customerLocationUrl={order.customerLocationUrl}
-                    customerLandmark={order.customerLandmark}
-                    customerProfileId={order.customerProfileId}
-                    buttonText="عرض الطلبات"
-                  />
-
-                  {order.customerProfileId ? (
-                    <Link
-                      href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
-                      className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px]"
-                    >
-                      ملف الزبون
-                    </Link>
-                  ) : null}
-                </div>
-
-                {order.customerLocationUrl?.trim() ? (
-                  <div className="mt-1">
-                    <ImageUploaderCaption name={order.customerLocationUploadedByName} />
-                  </div>
-                ) : (
+                {!order.customerLocationUrl?.trim() && (
                   <div className="mt-2">
                     <AdminCustomerLocationQuick 
                       orderId={order.id} 
@@ -639,7 +600,6 @@ export function OrderViewContent({
                     />
                   </div>
                 )}
-                </div>
               </>
             )}
           </div>
@@ -661,6 +621,45 @@ export function OrderViewContent({
                 </div>
               </>
             )}
+          </div>
+
+          {/* شريط أزرار الزبون الموحد الممتد على كامل العرض */}
+          <div className="col-span-full mt-1 flex flex-wrap items-center gap-2 border-t border-emerald-100/80 pt-2.5">
+            {order.customerLocationUrl?.trim() ? (
+              <div className="inline-flex flex-col">
+                <a
+                  href={order.customerLocationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 min-h-[38px]"
+                >
+                  <span>📍</span>
+                  <span>لوكيشن الزبون ↗</span>
+                </a>
+                <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+              </div>
+            ) : null}
+
+            <AdminCustomerOrderHistory
+              phone={order.customerPhone}
+              regionId={order.customerRegionId}
+              currentOrderId={order.id}
+              customerRegionName={order.customerRegion?.name ?? null}
+              alternatePhone={order.alternatePhone}
+              customerLocationUrl={order.customerLocationUrl}
+              customerLandmark={order.customerLandmark}
+              customerProfileId={order.customerProfileId}
+              buttonText="عرض الطلبات"
+            />
+
+            {order.customerProfileId ? (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px]"
+              >
+                ملف الزبون
+              </Link>
+            ) : null}
           </div>
         </div>
 
