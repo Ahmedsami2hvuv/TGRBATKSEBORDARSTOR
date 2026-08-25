@@ -296,17 +296,20 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* السطر الثالث: تاريخ الرفع ووقت الاستلام في سطر واحد مدمج ومختصر */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1 rounded-lg border border-sky-100 bg-sky-50/80 px-2.5 py-1 font-bold text-sky-900">
+          {/* سطر التواريخ والأوقات المدمج إجبارياً في سطر واحد ممتد (Single Line Row) */}
+          <div className="mt-2.5 flex items-center justify-between gap-1.5 rounded-xl border border-sky-100 bg-sky-50/80 p-2 text-[11px] sm:text-xs font-bold text-slate-800 whitespace-nowrap overflow-x-auto">
+            <div className="flex items-center gap-1 shrink-0">
               <span>📅</span>
-              <span className="text-sky-700">رفع:</span>
-              <span className="font-mono [direction:ltr]">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
+              <span className="text-sky-800 font-extrabold">رفع:</span>
+              <span className="font-mono text-slate-900 [direction:ltr]">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
             </div>
-            <div className="flex items-center gap-1 rounded-lg border border-rose-100 bg-rose-50/80 px-2.5 py-1 font-bold text-rose-900">
+
+            <div className="h-3.5 w-px bg-sky-300 shrink-0" />
+
+            <div className="flex items-center gap-1 shrink-0">
               <span>⏰</span>
-              <span className="text-rose-700">وقت الاستلام:</span>
-              <span>{order.orderNoteTime || "فوري"}</span>
+              <span className="text-rose-800 font-extrabold">وقت الاستلام:</span>
+              <span className="text-slate-900 font-black">{order.orderNoteTime || "فوري"}</span>
             </div>
           </div>
 
