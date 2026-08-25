@@ -38,6 +38,7 @@ import { FontSizeContext } from "@/components/font-size-provider";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
+import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
