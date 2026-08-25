@@ -288,6 +288,89 @@ export function OrderDetailSection({
         if (shouldHideShop) {
           return null;
         }
+        if (courierSettings?.orderViewTheme === "theme11") {
+          return (
+            <div key="shop" className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-[3px] border-amber-400 dark:border-amber-500 p-4 sm:p-5 shadow-xl mb-4 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3 mb-3">
+                <h3 className="text-base font-black text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                  <span>🏢</span>
+                  <span>المحل (المرسل)</span>
+                </h3>
+                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md">
+                  <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={20} height={20} />
+                </div>
+              </div>
+
+              <div className="flex flex-row gap-3 sm:gap-4 items-start justify-between">
+                {/* البيانات الكبسولية على اليمين */}
+                <div className="flex-1 space-y-2 text-right">
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                    <span className="text-slate-500">🏢</span>
+                    <span className="font-black text-slate-800 dark:text-white">الإدارة</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                    <span className="text-slate-500">👤</span>
+                    <span className="font-black text-slate-800 dark:text-white">{submitterName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                    <span className="text-slate-500">📍</span>
+                    <span className="font-black text-slate-800 dark:text-white">{order.shop.region?.name || order.shop.name}</span>
+                  </div>
+                  {shopContactPhone && (
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                      <span className="text-slate-500">📞</span>
+                      <span className="font-mono font-black text-slate-800 dark:text-white">{contactLine(shopContactPhone)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* قسم الصورة على اليسار */}
+                <div className="w-[140px] xs:w-[160px] sm:w-[200px] flex flex-col items-center justify-start shrink-0 gap-2">
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-300">صورة المحل</span>
+                  {shopImageUrl ? (
+                    <div className="w-full flex flex-col items-center gap-1">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-amber-400 shadow-md relative">
+                        <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
+                      لا توجد صورة
+                    </div>
+                  )}
+                  {courierSettings?.showDoorBtn !== false && (
+                    <div className="w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+                  )}
+                </div>
+              </div>
+
+              {/* أزرار موقع المحل والاتصال والواتس */}
+              <div className="mt-4 space-y-2">
+                {order.shop.locationUrl?.trim() ? (
+                  <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                    <span>📍 موقع المحل ↗</span>
+                  </a>
+                ) : (
+                  <div className="w-full p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 rounded-2xl text-center text-xs font-bold text-amber-800">
+                    ⚠️ لا يوجد موقع جغرافي للمحل
+                  </div>
+                )}
+
+                {shopContactPhone && (
+                  <div className="flex items-center gap-2 w-full">
+                    <a href={telHref(shopContactPhone)} className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                      📞 اتصال
+                    </a>
+                    <a href={whatsappMeUrl(shopContactPhone)} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                      💬 واتس
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div key="shop" className={`bg-gradient-to-br from-amber-50/70 via-white to-slate-50/80 dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-amber-500 ring-4 ring-amber-400/30" : "border-amber-500/80 dark:border-amber-500/70 border-r-[8px] border-r-amber-500"} shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
             {courierSettings?.guidedDeliverySteps && (
@@ -389,6 +472,151 @@ export function OrderDetailSection({
           </div>
         );
       case "customer_info":
+        if (courierSettings?.orderViewTheme === "theme11") {
+          return (
+            <div key="customer_parent_theme11" className="space-y-4">
+              {/* زر الاستلام الدائري البارز بالمنتصف */}
+              {order.status === "assigned" && (
+                <div className="flex justify-center -my-3 z-30 relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const btn = document.getElementById(`quick-pickup-btn-${order.id}`);
+                      if (btn) btn.click();
+                    }}
+                    className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 border-4 border-white dark:border-slate-900 text-white font-black text-xs shadow-xl flex items-center justify-center flex-col transition active:scale-95"
+                  >
+                    <span>✈️</span>
+                    <span>استلام</span>
+                  </button>
+                </div>
+              )}
+
+              <div key="customer" className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-[3px] border-emerald-400 dark:border-emerald-500 p-4 sm:p-5 shadow-xl mb-4 relative overflow-hidden">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3 mb-3">
+                  <h3 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                    <span>👤</span>
+                    <span>{isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}</span>
+                  </h3>
+                  <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-md">
+                    <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
+                  </div>
+                </div>
+
+                <div className="flex flex-row gap-3 sm:gap-4 items-start justify-between">
+                  {/* بيانات الزبون الكبسولية على اليمين */}
+                  <div className="flex-1 space-y-2 text-right">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                      <span className="text-slate-500">👤</span>
+                      <span className="font-black text-slate-800 dark:text-white">{order.customerRegion?.name || "الزبون"}</span>
+                    </div>
+
+                    {order.customerPhone && (
+                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
+                        <span className="text-slate-500">📞</span>
+                        <span className="font-mono font-black text-slate-800 dark:text-white">{contactLine(order.customerPhone)}</span>
+                      </div>
+                    )}
+
+                    {mergedAlternate && (
+                      <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-xl px-3 py-2 text-xs font-bold">
+                        <span className="text-amber-600">📞</span>
+                        <span className="font-mono font-black text-amber-900 dark:text-amber-100">{mergedAlternate}</span>
+                      </div>
+                    )}
+
+                    {/* أزرار اللوكيشن البرتقالية والخضراء */}
+                    <div className="pt-2 space-y-2">
+                      {courierSettings?.showLocationBtn !== false && (
+                        <div className="space-y-2 w-full">
+                          {mergedCustomerLocationUrl ? (
+                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                              <span>📍 فتح موقع الزبون ↗</span>
+                            </a>
+                          ) : (
+                            <MandoubUploadLocationInline 
+                              orderId={order.id} 
+                              auth={auth} 
+                              nextUrl={nextUrl} 
+                              fontSizeConfig={activeConfig}
+                              customerPhone={order.customerPhone}
+                              customerPhone2={order.customerPhone2 || undefined}
+                              shopPhone={order.shopPhone || undefined}
+                              orderStatus={order.status}
+                              hasCustomerLocation={!missingCustomerLocation}
+                              hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                              templateVars={{
+                                clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
+                                city: order.customerRegion?.name || order.regionLine || "—",
+                                total_price: currentTotalPriceStr,
+                                total: currentTotalPriceStr,
+                                delivery: currentCourierName,
+                                courier: currentCourierName,
+                                courierName: currentCourierName,
+                                deliveryName: currentCourierName,
+                                location_url: mergedCustomerLocationUrl || "",
+                                landmark: order.customerLandmark || order.nearestLandmark || "",
+                                order_number: String(order.orderNumber || ""),
+                                customer_phone: order.customerPhone || "",
+                                customer_phone2: order.customerPhone2 || "",
+                                shop_phone: order.shop?.phone || order.shopPhone || "",
+                              }}
+                              customWaButtons={customWaButtons}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* قسم صورة الباب على اليسار */}
+                  <div className="w-[140px] xs:w-[160px] sm:w-[200px] flex flex-col items-center justify-start shrink-0 gap-2">
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-300">صورة الباب</span>
+                    {customerDoorPhotoUrl ? (
+                      <div className="w-full flex flex-col items-center gap-1">
+                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-400 shadow-md relative">
+                          <img src={imgSrc(customerDoorPhotoUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(customerDoorPhotoUrl))} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-square w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
+                        لا توجد صورة
+                      </div>
+                    )}
+                    {courierSettings?.showDoorBtn !== false && (
+                      <div className="w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+                    )}
+                  </div>
+                </div>
+
+                {/* أزرار الاتصال والواتس وتفاصيل أخرى */}
+                <div className="mt-4 flex items-center gap-2 w-full">
+                  {order.customerPhone && (
+                    <>
+                      <a href={telHref(order.customerPhone)} className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                        📞 اتصال
+                      </a>
+                      <a href={whatsappMeUrl(order.customerPhone)} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                        💬 واتس
+                      </a>
+                    </>
+                  )}
+                  <OtherRegionsCustomerDetails 
+                    phone={order.customerPhone} 
+                    currentRegionId={order.customerRegionId} 
+                    currentRegionName={order.regionLine}
+                    icons={icons} 
+                    fontSizeConfig={activeConfig} 
+                    prefetchedProfiles={(order as any).otherRegionsProfiles}
+                    orderId={order.id}
+                    isSecondDestination={false}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div key="customer_parent" className="space-y-4">
             <div key="customer" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
