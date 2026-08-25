@@ -42,7 +42,7 @@ import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-butt
 import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
 
 const STATUS_AR: Record<string, string> = {
-  assigned: "بانتظار المندوب",
+  assigned: "بانتظار المجهز",
   delivering: "مستلم",
   delivered: "تسليم",
 };
@@ -283,89 +283,104 @@ export function OrderDetailSection({
     switch (blockId) {
       case "shop_info":
         if (isDoubleRoute) return null;
-        // عند تفعيل خيار إخفاء بطاقة المحل بعد الاستلام (أو نظام الخطوات التوجيهية)، يتم إخفاء بطاقة المحل بمجرد الاستلام
         const shouldHideShop = (courierSettings?.hideShopInfoOnPickup !== false || courierSettings?.guidedDeliverySteps) && ["delivering", "delivered", "archived"].includes(order.status);
-        if (shouldHideShop) {
-          return null;
-        }
+        if (shouldHideShop) return null;
+
         if (courierSettings?.orderViewTheme !== "legacy") {
           return (
-            <div key="shop" className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-[3px] border-amber-400 dark:border-amber-500 p-4 sm:p-5 shadow-xl mb-4 relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3 mb-3">
-                <h3 className="text-base font-black text-amber-800 dark:text-amber-400 flex items-center gap-2">
-                  <span>🏢</span>
+            <div key="shop" className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#003399] p-4 shadow-xl mb-4 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
+                <div className="flex-1" />
+                <h3 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
                   <span>المحل (المرسل)</span>
+                  <div className="h-10 w-10 rounded-full bg-[#003399] flex items-center justify-center text-white shadow-md">
+                    <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={22} height={22} />
+                  </div>
                 </h3>
-                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md">
-                  <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={20} height={20} />
-                </div>
               </div>
 
-              <div className="flex flex-row gap-3 sm:gap-4 items-start justify-between">
-                {/* البيانات الكبسولية على اليمين */}
-                <div className="flex-1 space-y-2 text-right">
-                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                    <span className="text-slate-500">🏢</span>
-                    <span className="font-black text-slate-800 dark:text-white">الإدارة</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                    <span className="text-slate-500">👤</span>
-                    <span className="font-black text-slate-800 dark:text-white">{submitterName}</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                    <span className="text-slate-500">📍</span>
-                    <span className="font-black text-slate-800 dark:text-white">{order.shop.region?.name || order.shop.name}</span>
-                  </div>
-                  {shopContactPhone && (
-                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                      <span className="text-slate-500">📞</span>
-                      <span className="font-mono font-black text-slate-800 dark:text-white">{contactLine(shopContactPhone)}</span>
-                    </div>
-                  )}
-                </div>
-
+              <div className="flex flex-row gap-4 items-start justify-between">
                 {/* قسم الصورة على اليسار */}
-                <div className="w-[140px] xs:w-[160px] sm:w-[200px] flex flex-col items-center justify-start shrink-0 gap-2">
-                  <span className="text-xs font-black text-slate-600 dark:text-slate-300">صورة المحل</span>
+                <div className="w-[150px] flex flex-col items-center justify-start shrink-0 gap-2">
                   {shopImageUrl ? (
-                    <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-amber-400 shadow-md relative">
-                        <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                    <div className="w-full relative group">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm relative">
+                        <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                        <div className="absolute bottom-2 left-2 bg-blue-600/80 text-white p-1 rounded-md text-[10px]" onClick={(e) => { e.stopPropagation(); setPreviewImageUrl(imgSrc(shopImageUrl)); }}>
+                           <DynamicIcon icon={icons?.ui_zoom_in} fallback="🔍" width={14} height={14} />
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="aspect-square w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
+                    <div className="aspect-square w-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 text-xs text-slate-400 font-bold p-2">
+                      <DynamicIcon icon={icons?.ui_image} fallback="🖼️" width={32} height={32} className="opacity-20 mb-1" />
                       لا توجد صورة
                     </div>
                   )}
-                  {courierSettings?.showDoorBtn !== false && (
-                    <div className="w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+
+                  <div className="grid grid-cols-2 gap-2 w-full mt-1">
+                    <div className="flex flex-col items-center gap-1">
+                       <div className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition">
+                          <DynamicIcon icon={icons?.ui_camera} fallback="📷" width={20} height={20} className="text-slate-600" />
+                       </div>
+                       <span className="text-[10px] font-black text-slate-700">كاميرا</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                       <div className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition">
+                          <DynamicIcon icon={icons?.ui_image} fallback="🖼️" width={20} height={20} className="text-slate-600" />
+                       </div>
+                       <span className="text-[10px] font-black text-slate-700">معرض</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* البيانات على اليمين */}
+                <div className="flex-1 space-y-2 text-right">
+                  <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                    <span className="font-black text-slate-800">الإدارة</span>
+                    <span className="text-slate-500"><DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={16} height={16} /></span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                    <span className="font-black text-slate-800">{submitterName}</span>
+                    <span className="text-slate-500"><DynamicIcon icon={icons?.ui_user} fallback="👤" width={16} height={16} /></span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm text-right">
+                    <span className="font-black text-slate-800">{order.shop.region?.name || order.shop.name}</span>
+                    <span className="text-slate-500"><DynamicIcon icon={icons?.ui_location} fallback="📍" width={16} height={16} /></span>
+                  </div>
+                  {shopContactPhone && (
+                    <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                      <span className="font-mono font-black text-slate-800">{contactLine(shopContactPhone)}</span>
+                      <span className="text-slate-500"><DynamicIcon icon={icons?.ui_phone} fallback="📞" width={16} height={16} /></span>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    {order.shop.locationUrl?.trim() ? (
+                      <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#0033FF] hover:bg-blue-700 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                        <span>موقع المحل</span>
+                        <DynamicIcon icon={icons?.ui_location} fallback="📍" width={20} height={20} />
+                      </a>
+                    ) : (
+                      <div className="w-full p-2 bg-amber-50 border border-amber-100 rounded-xl text-center text-[10px] font-bold text-amber-800">
+                        ⚠️ لا يوجد موقع جغرافي للمحل
+                      </div>
+                    )}
+                  </div>
+
+                  {shopContactPhone && (
+                    <div className="flex items-center gap-2 w-full mt-2">
+                      <a href={whatsappMeUrl(shopContactPhone)} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#006633] hover:bg-[#005522] px-2 text-xs font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                        <span>واتس</span>
+                        <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={22} height={22} />
+                      </a>
+                      <a href={telHref(shopContactPhone)} className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#003399] hover:bg-[#002277] px-2 text-xs font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                        <span>اتصال</span>
+                        <DynamicIcon icon={icons?.ui_phone} fallback="📞" width={20} height={20} />
+                      </a>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* أزرار موقع المحل والاتصال والواتس */}
-              <div className="mt-4 space-y-2">
-                {order.shop.locationUrl?.trim() ? (
-                  <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
-                    <span>📍 موقع المحل ↗</span>
-                  </a>
-                ) : (
-                  <div className="w-full p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 rounded-2xl text-center text-xs font-bold text-amber-800">
-                    ⚠️ لا يوجد موقع جغرافي للمحل
-                  </div>
-                )}
-
-                {shopContactPhone && (
-                  <div className="flex items-center gap-2 w-full">
-                    <a href={telHref(shopContactPhone)} className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
-                      📞 اتصال
-                    </a>
-                    <a href={whatsappMeUrl(shopContactPhone)} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
-                      💬 واتس
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -477,142 +492,137 @@ export function OrderDetailSection({
             <div key="customer_parent_theme11" className="space-y-4">
               {/* زر الاستلام الدائري البارز بالمنتصف */}
               {order.status === "assigned" && (
-                <div className="flex justify-center -my-3 z-30 relative">
+                <div className="flex justify-center -my-6 z-40 relative">
                   <button
                     type="button"
                     onClick={() => {
                       const btn = document.getElementById(`quick-pickup-btn-${order.id}`);
                       if (btn) btn.click();
                     }}
-                    className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 border-4 border-white dark:border-slate-900 text-white font-black text-xs shadow-xl flex items-center justify-center flex-col transition active:scale-95"
+                    className="h-16 w-16 rounded-full bg-[#003399] border-4 border-white dark:border-slate-900 text-white font-black text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] flex items-center justify-center flex-col transition active:scale-90 hover:bg-blue-800"
                   >
-                    <span>✈️</span>
-                    <span>استلام</span>
+                    <DynamicIcon icon={icons?.ui_send} fallback="✈️" width={24} height={24} className="mb-0.5" />
+                    <span className="text-[10px]">استلام</span>
                   </button>
                 </div>
               )}
 
-              <div key="customer" className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-[3px] border-emerald-400 dark:border-emerald-500 p-4 sm:p-5 shadow-xl mb-4 relative overflow-hidden">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3 mb-3">
-                  <h3 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
-                    <span>👤</span>
+              <div key="customer" className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#006633] p-4 shadow-xl mb-4 relative overflow-hidden mt-6">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
+                   <div className="flex-1" />
+                   <h3 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
                     <span>{isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}</span>
+                    <div className="h-10 w-10 rounded-full bg-[#006633] flex items-center justify-center text-white shadow-md">
+                       <DynamicIcon icon={icons?.ui_user} fallback="👤" width={22} height={22} />
+                    </div>
                   </h3>
-                  <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-md">
-                    <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
-                  </div>
                 </div>
 
-                <div className="flex flex-row gap-3 sm:gap-4 items-start justify-between">
-                  {/* بيانات الزبون الكبسولية على اليمين */}
-                  <div className="flex-1 space-y-2 text-right">
-                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                      <span className="text-slate-500">👤</span>
-                      <span className="font-black text-slate-800 dark:text-white">{order.customerRegion?.name || "الزبون"}</span>
-                    </div>
-
-                    {order.customerPhone && (
-                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs font-bold">
-                        <span className="text-slate-500">📞</span>
-                        <span className="font-mono font-black text-slate-800 dark:text-white">{contactLine(order.customerPhone)}</span>
-                      </div>
-                    )}
-
-                    {mergedAlternate && (
-                      <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 rounded-xl px-3 py-2 text-xs font-bold">
-                        <span className="text-amber-600">📞</span>
-                        <span className="font-mono font-black text-amber-900 dark:text-amber-100">{mergedAlternate}</span>
-                      </div>
-                    )}
-
-                    {/* أزرار اللوكيشن البرتقالية والخضراء */}
-                    <div className="pt-2 space-y-2">
-                      {courierSettings?.showLocationBtn !== false && (
-                        <div className="space-y-2 w-full">
-                          {mergedCustomerLocationUrl ? (
-                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
-                              <span>📍 فتح موقع الزبون ↗</span>
-                            </a>
-                          ) : (
-                            <MandoubUploadLocationInline 
-                              orderId={order.id} 
-                              auth={auth} 
-                              nextUrl={nextUrl} 
-                              fontSizeConfig={activeConfig}
-                              customerPhone={order.customerPhone}
-                              customerPhone2={order.customerPhone2 || undefined}
-                              shopPhone={order.shopPhone || undefined}
-                              orderStatus={order.status}
-                              hasCustomerLocation={!missingCustomerLocation}
-                              hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-                              templateVars={{
-                                clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
-                                city: order.customerRegion?.name || order.regionLine || "—",
-                                total_price: currentTotalPriceStr,
-                                total: currentTotalPriceStr,
-                                delivery: currentCourierName,
-                                courier: currentCourierName,
-                                courierName: currentCourierName,
-                                deliveryName: currentCourierName,
-                                location_url: mergedCustomerLocationUrl || "",
-                                landmark: order.customerLandmark || order.nearestLandmark || "",
-                                order_number: String(order.orderNumber || ""),
-                                customer_phone: order.customerPhone || "",
-                                customer_phone2: order.customerPhone2 || "",
-                                shop_phone: order.shop?.phone || order.shopPhone || "",
-                              }}
-                              customWaButtons={customWaButtons}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
+                <div className="flex flex-row gap-4 items-start justify-between">
                   {/* قسم صورة الباب على اليسار */}
-                  <div className="w-[140px] xs:w-[160px] sm:w-[200px] flex flex-col items-center justify-start shrink-0 gap-2">
-                    <span className="text-xs font-black text-slate-600 dark:text-slate-300">صورة الباب</span>
+                  <div className="w-[150px] flex flex-col items-center justify-start shrink-0 gap-2">
                     {customerDoorDisplay ? (
-                      <div className="w-full flex flex-col items-center gap-1">
-                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-400 shadow-md relative">
+                      <div className="w-full relative group">
+                        <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-dashed border-[#006633]/30 shadow-sm relative flex items-center justify-center bg-slate-50">
                           <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                         </div>
                       </div>
                     ) : (
-                      <div className="aspect-square w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
-                        لا توجد صورة
+                      <div className="aspect-square w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-[#006633]/30 text-xs text-slate-400 font-bold text-center p-4">
+                        <DynamicIcon icon={icons?.ui_image} fallback="🖼️" width={40} height={40} className="opacity-20 mb-2" />
+                        <span>لا توجد صورة</span>
                       </div>
                     )}
-                    {courierSettings?.showDoorBtn !== false && (
-                      <div className="w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+
+                    <div className="grid grid-cols-2 gap-2 w-full mt-1">
+                      <div className="flex flex-col items-center gap-1">
+                         <div className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition">
+                            <DynamicIcon icon={icons?.ui_camera} fallback="📷" width={20} height={20} className="text-slate-600" />
+                         </div>
+                         <span className="text-[10px] font-black text-slate-700">كاميرا</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                         <div className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition">
+                            <DynamicIcon icon={icons?.ui_image} fallback="🖼️" width={20} height={20} className="text-slate-600" />
+                         </div>
+                         <span className="text-[10px] font-black text-slate-700">معرض</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* بيانات الزبون على اليمين */}
+                  <div className="flex-1 space-y-2 text-right">
+                    <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                      <span className="font-black text-slate-800">{order.customerRegion?.name || "الزبون"}</span>
+                      <span className="text-slate-500"><DynamicIcon icon={icons?.ui_user} fallback="👤" width={16} height={16} /></span>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                      <span className="font-black text-slate-800 text-right">-</span>
+                      <span className="text-slate-500"><DynamicIcon icon={icons?.ui_location} fallback="📍" width={16} height={16} /></span>
+                    </div>
+
+                    {order.customerPhone && (
+                      <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                        <span className="font-mono font-black text-slate-800">{contactLine(order.customerPhone)}</span>
+                        <span className="text-slate-500"><DynamicIcon icon={icons?.ui_phone} fallback="📞" width={16} height={16} /></span>
+                      </div>
                     )}
+
+                    <div className="pt-2 space-y-2">
+                      <button className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#009933] hover:bg-green-700 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                         <span>رفع لوكيشن</span>
+                         <DynamicIcon icon={icons?.ui_location} fallback="📍" width={20} height={20} />
+                      </button>
+                      <button className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#004411] hover:bg-green-900 px-4 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                         <span>طلب لوكيشن</span>
+                         <DynamicIcon icon={icons?.ui_gps} fallback="🎯" width={20} height={20} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* أزرار الاتصال والواتس وتفاصيل أخرى */}
                 <div className="mt-4 flex items-center gap-2 w-full">
-                  {order.customerPhone && (
-                    <>
-                      <a href={telHref(order.customerPhone)} className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
-                        📞 اتصال
-                      </a>
-                      <a href={whatsappMeUrl(order.customerPhone)} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
-                        💬 واتس
-                      </a>
-                    </>
-                  )}
-                  <OtherRegionsCustomerDetails 
-                    phone={order.customerPhone} 
-                    currentRegionId={order.customerRegionId} 
-                    currentRegionName={order.regionLine}
-                    icons={icons} 
-                    fontSizeConfig={activeConfig} 
-                    prefetchedProfiles={(order as any).otherRegionsProfiles}
-                    orderId={order.id}
-                    isSecondDestination={false}
-                  />
+                   <a href={telHref(order.customerPhone || "")} className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#003399] hover:bg-[#002277] px-2 text-xs font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                    <span>اتصال</span>
+                    <DynamicIcon icon={icons?.ui_phone} fallback="📞" width={20} height={20} />
+                  </a>
+                  <a href={whatsappMeUrl(order.customerPhone || "")} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#006633] hover:bg-[#005522] px-2 text-xs font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm">
+                    <span>واتس</span>
+                    <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={22} height={22} />
+                  </a>
+                  <div className="flex-[1.2]">
+                    <OtherRegionsCustomerDetails
+                      phone={order.customerPhone}
+                      currentRegionId={order.customerRegionId}
+                      currentRegionName={order.regionLine}
+                      icons={icons}
+                      fontSizeConfig={activeConfig}
+                      prefetchedProfiles={(order as any).otherRegionsProfiles}
+                      orderId={order.id}
+                      isSecondDestination={false}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* قسم ملاحظة الطلب كما في الصورة */}
+              <div className="bg-[#FFF0F0] border border-rose-100 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+                 <div className="h-10 w-10 bg-[#CC3333] rounded-xl flex items-center justify-center text-white shadow-md active:scale-90 transition cursor-pointer" onClick={() => { const btn = document.getElementById(`edit-order-btn-${order.id}`); if (btn) btn.click(); }}>
+                    <DynamicIcon icon={icons?.ui_edit} fallback="✏️" width={20} height={20} />
+                 </div>
+                 <div className="flex-1 text-right px-3">
+                    <p className="text-[10px] font-black text-rose-800">ملاحظة الطلب</p>
+                    <p className="text-[11px] font-bold text-slate-500">انقر لإضافة أو تعديل النقطة الدالة</p>
+                 </div>
+                 <div className="text-rose-600">
+                    <DynamicIcon icon={icons?.ui_location} fallback="📍" width={24} height={24} />
+                 </div>
+              </div>
+            </div>
+          );
+        }
             </div>
           );
         }
@@ -1284,12 +1294,41 @@ export function OrderDetailSection({
         )}
 
         {courierSettings?.orderViewTheme !== "legacy" && (
-          <div className="relative mb-5 overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 p-4 sm:p-5 text-white shadow-xl">
-            <div className="flex items-center justify-between gap-2">
+          <div className="relative mb-5 overflow-hidden rounded-b-[2.5rem] bg-gradient-to-b from-[#003399] to-[#0055cc] p-4 pt-6 text-white shadow-2xl border-b-4 border-blue-400/30">
+            {/* الخلفية المتموجة (محاكاة مبسطة) */}
+            <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-blue-300 blur-3xl" />
+            </div>
+
+            <div className="relative flex items-center justify-between gap-2 z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  const editBtn = document.getElementById(`edit-order-btn-${order.id}`);
+                  if (editBtn) editBtn.click();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md hover:bg-white/20 transition active:scale-95 shadow-lg shrink-0"
+              >
+                <DynamicIcon icon={icons?.ui_edit} fallback="✏️" width={14} height={14} />
+                <span>تعديل الطلب</span>
+              </button>
+
+              <div className="text-center flex-1">
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                  رقم الطلب #{order.orderNumber}
+                </h2>
+                <div className="mt-1 flex justify-center">
+                  <span className="rounded-xl bg-[#00CC00] border-2 border-white/20 px-4 py-1 text-[10px] font-black text-white shadow-inner uppercase tracking-wider">
+                    {STATUS_AR[order.status] ?? order.status}
+                  </span>
+                </div>
+              </div>
+
               {closeHref ? (
                 <Link
                   href={closeHref}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition shadow-sm text-sm font-black"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20 transition active:scale-95 shadow-lg text-lg font-black"
                   title="إغلاق"
                 >
                   ✕
@@ -1298,42 +1337,18 @@ export function OrderDetailSection({
                 <button
                   type="button"
                   onClick={onCloseModal}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition shadow-sm text-sm font-black"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20 transition active:scale-95 shadow-lg text-lg font-black"
                   title="إغلاق"
                 >
                   ✕
                 </button>
               ) : <div className="w-10" />}
-
-              <div className="text-center flex-1">
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md">
-                  رقم الطلب #{order.orderNumber}
-                </h2>
-                <div className="mt-1 flex items-center justify-center gap-2">
-                  <span className="rounded-full bg-emerald-500/90 border border-emerald-400 px-3 py-0.5 text-xs font-black text-white shadow-sm">
-                    {STATUS_AR[order.status] ?? order.status}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const editBtn = document.getElementById(`edit-order-btn-${order.id}`);
-                  if (editBtn) editBtn.click();
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md hover:bg-white/20 transition shadow-sm shrink-0"
-              >
-                <span>✏️</span>
-                <span className="hidden sm:inline">تعديل الطلب</span>
-                <span className="sm:hidden">تعديل</span>
-              </button>
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-3 border-t border-white/10 pt-2.5 text-xs font-black text-white/90">
-              <span>🕒 {formatBaghdadDateTime(order.createdAt)}</span>
-              <span>|</span>
-              <span>📅 {order.orderNoteTime || "فوري"}</span>
+            <div className="mt-4 flex items-center justify-center gap-4 text-[10px] font-black text-white/90 bg-black/10 rounded-full py-1.5 backdrop-blur-sm border border-white/5 max-w-[240px] mx-auto">
+              <span className="flex items-center gap-1"><DynamicIcon icon={icons?.ui_time} fallback="🕒" width={12} height={12} /> {formatBaghdadDateTime(order.createdAt).split(' ')[1]}</span>
+              <span className="opacity-30">|</span>
+              <span className="flex items-center gap-1"><DynamicIcon icon={icons?.ui_calendar} fallback="📅" width={12} height={12} /> {formatBaghdadDateTime(order.createdAt).split(' ')[0]}</span>
             </div>
           </div>
         )}
