@@ -601,42 +601,6 @@ export function OrderViewContent({
                     />
                   </div>
                 )}
-                <div className="mt-2.5 flex flex-nowrap items-center gap-1.5 w-full">
-                  {order.customerLocationUrl?.trim() ? (
-                    <a
-                      href={order.customerLocationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 min-w-0 inline-flex items-center justify-center bg-emerald-600 px-1.5 py-2 text-[11px] sm:text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px] text-center"
-                    >
-                      <span>📍</span>
-                      <span className="truncate">لوكيشن الزبون ↗</span>
-                    </a>
-                  ) : null}
-
-                  <div className="flex-1 min-w-0">
-                    <AdminCustomerOrderHistory
-                      phone={order.customerPhone}
-                      regionId={order.customerRegionId}
-                      currentOrderId={order.id}
-                      customerRegionName={order.customerRegion?.name ?? null}
-                      alternatePhone={order.alternatePhone}
-                      customerLocationUrl={order.customerLocationUrl}
-                      customerLandmark={order.customerLandmark}
-                      customerProfileId={order.customerProfileId}
-                      buttonText="عرض الطلبات"
-                    />
-                  </div>
-
-                  {order.customerProfileId ? (
-                    <Link
-                      href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
-                      className="flex-1 min-w-0 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-1.5 py-2 text-[11px] sm:text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
-                    >
-                      <span className="truncate">ملف الزبون</span>
-                    </Link>
-                  ) : null}
-                </div>
               </>
             )}
           </div>
@@ -658,6 +622,44 @@ export function OrderViewContent({
                 </div>
               </>
             )}
+          </div>
+
+          {/* شريط أزرار الزبون الموحد الممتد عبر كامل عرض كرت الزبون (باتجاه السهم الأحمر) */}
+          <div className="col-span-full mt-2 flex flex-nowrap items-center gap-1.5 w-full">
+            {order.customerLocationUrl?.trim() ? (
+              <a
+                href={order.customerLocationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0 inline-flex items-center justify-center bg-emerald-600 px-2 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px] text-center"
+              >
+                <span>📍</span>
+                <span className="truncate">لوكيشن الزبون ↗</span>
+              </a>
+            ) : null}
+
+            <div className="flex-1 min-w-0">
+              <AdminCustomerOrderHistory
+                phone={order.customerPhone}
+                regionId={order.customerRegionId}
+                currentOrderId={order.id}
+                customerRegionName={order.customerRegion?.name ?? null}
+                alternatePhone={order.alternatePhone}
+                customerLocationUrl={order.customerLocationUrl}
+                customerLandmark={order.customerLandmark}
+                customerProfileId={order.customerProfileId}
+                buttonText="عرض الطلبات"
+              />
+            </div>
+
+            {order.customerProfileId ? (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
+                className="flex-1 min-w-0 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
+              >
+                <span className="truncate">ملف الزبون</span>
+              </Link>
+            ) : null}
           </div>
         </div>
 
