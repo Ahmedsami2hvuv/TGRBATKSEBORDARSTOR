@@ -288,7 +288,7 @@ export function OrderDetailSection({
         if (shouldHideShop) {
           return null;
         }
-        if (courierSettings?.orderViewTheme === "theme11") {
+        if (courierSettings?.orderViewTheme !== "legacy") {
           return (
             <div key="shop" className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-[3px] border-amber-400 dark:border-amber-500 p-4 sm:p-5 shadow-xl mb-4 relative overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3 mb-3">
@@ -472,7 +472,7 @@ export function OrderDetailSection({
           </div>
         );
       case "customer_info":
-        if (courierSettings?.orderViewTheme === "theme11") {
+        if (courierSettings?.orderViewTheme !== "legacy") {
           return (
             <div key="customer_parent_theme11" className="space-y-4">
               {/* زر الاستلام الدائري البارز بالمنتصف */}
@@ -1165,7 +1165,7 @@ export function OrderDetailSection({
     <section
       style={customStyle}
       className={
-        courierSettings?.orderViewTheme === "theme11"
+        courierSettings?.orderViewTheme !== "legacy"
           ? "relative mt-1 p-0.5 sm:p-2 pb-32 text-base leading-relaxed"
           : `kse-glass-dark relative mt-4 border p-4 pb-32 text-base leading-relaxed sm:p-5 sm:pb-36 ${!uiSettings ? orderStatusStartStripeClass(order.status) : ''} ${
               !uiSettings && order.prepaidAll ? "border-emerald-300/85 bg-gradient-to-b from-emerald-50/70 via-white/90 to-teal-50/40 ring-2 ring-emerald-200/55 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]" :
@@ -1283,7 +1283,7 @@ export function OrderDetailSection({
           />
         )}
 
-        {courierSettings?.orderViewTheme === "theme11" && (
+        {courierSettings?.orderViewTheme !== "legacy" && (
           <div className="relative mb-5 overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 p-4 sm:p-5 text-white shadow-xl">
             <div className="flex items-center justify-between gap-2">
               {closeHref ? (
@@ -1338,7 +1338,7 @@ export function OrderDetailSection({
           </div>
         )}
 
-        {isModal || courierSettings?.orderViewTheme === "theme11" ? null : (
+        {isModal || courierSettings?.orderViewTheme !== "legacy" ? null : (
           <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>
