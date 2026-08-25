@@ -41,8 +41,8 @@ import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-butt
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
-  delivering: "عند المندوب (تم الاستلام)",
-  delivered: "تم التسليم",
+  delivering: "عند المندوب (استلام)",
+  delivered: "تسليم",
 };
 
 function imgSrc(url: string): string | null {
@@ -66,7 +66,8 @@ function getCleanValue(...values: (string | null | undefined)[]) {
 
 const locBtnEmerald =
   "inline-flex min-h-[44px] sm:min-h-[48px] max-w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm sm:text-base font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5";
-const contactBtnBase = "inline-flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold shadow-sm transition-colors sm:px-2.5 sm:py-1.5 sm:text-xs";
+const contactBtnBase =
+  "inline-flex min-h-[44px] items-center justify-center rounded-xl text-xs sm:text-sm font-bold active:scale-95 transition-all shadow-sm";
 const callBtnClass = `${contactBtnBase} bg-sky-600 text-white hover:bg-sky-700`;
 const waBtnClass = `${contactBtnBase} bg-emerald-600 text-white hover:bg-emerald-700`;
 
@@ -74,7 +75,7 @@ const gridInfoPhoto =
   "grid grid-cols-[minmax(0,1fr)_minmax(0,12rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.32fr)] sm:gap-6";
 
 const squarePhotoFrame =
-  "aspect-square w-full overflow-hidden rounded-xl border border-sky-200 bg-slate-50";
+  "aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-500/80 dark:border-sky-500/70 bg-sky-50/30 dark:bg-slate-900/40 shadow-sm shadow-sky-500/10";
 const squarePhotoCover = "h-full w-full object-cover";
 const squarePhotoContain = "h-full w-full object-contain";
 

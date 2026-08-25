@@ -72,9 +72,9 @@ export function MandoubCustomerEditForm({
 
   const MANDOUB_STATUS_OPTIONS = [
     { value: "assigned", label: "بانتظار المندوب" },
-    { value: "delivering", label: "تم الاستلام" },
+    { value: "delivering", label: "استلام" },
     ...(defaultOrderStatus === "delivered"
-      ? [{ value: "delivered", label: "تم التسليم" }]
+      ? [{ value: "delivered", label: "تسليم" }]
       : []),
   ];
 

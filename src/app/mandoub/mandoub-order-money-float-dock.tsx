@@ -468,9 +468,9 @@ export function MandoubOrderMoneyFloatDock(props: {
       {statusPickedUp ? (
         <DraggableFloatButton
           id="statusBtn"
-          label={"تم\nالاستلام"}
-          icon={<DynamicIcon icon={icons?.order_received} fallback="📦" />}
-          className="whitespace-pre-line border-2 border-amber-700 bg-amber-400 text-amber-950 hover:bg-amber-500"
+          label="استلام"
+          icon={null}
+          className="whitespace-nowrap border-2 border-amber-700 bg-amber-400 text-amber-950 font-black hover:bg-amber-500 text-xs sm:text-sm"
           pos={positions.statusBtn}
           fabSize={fabSize}
           onMove={(p) => moveOne("statusBtn", p)}
@@ -482,9 +482,9 @@ export function MandoubOrderMoneyFloatDock(props: {
       {statusDelivered ? (
         <DraggableFloatButton
           id="statusBtn"
-          label={"تم\nالتسليم"}
-          icon={<DynamicIcon icon={icons?.order_delivered} fallback="✓" />}
-          className="whitespace-pre-line border-2 border-red-900 bg-red-600 text-white hover:bg-red-700"
+          label="تسليم"
+          icon={null}
+          className="whitespace-nowrap border-2 border-red-900 bg-red-600 text-white font-black hover:bg-red-700 text-xs sm:text-sm"
           pos={positions.statusBtn}
           fabSize={fabSize}
           onMove={(p) => moveOne("statusBtn", p)}
