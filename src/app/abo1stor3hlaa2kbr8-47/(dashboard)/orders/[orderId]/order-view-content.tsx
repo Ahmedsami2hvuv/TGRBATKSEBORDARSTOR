@@ -577,13 +577,13 @@ export function OrderViewContent({
                   💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
-                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
                   {order.customerLocationUrl?.trim() ? (
                     <a
                       href={order.customerLocationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1.5 min-h-[38px]"
+                      className="inline-flex items-center justify-center bg-emerald-600 px-3 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px]"
                     >
                       <span>📍</span>
                       <span>لوكيشن الزبون ↗</span>
@@ -599,14 +599,15 @@ export function OrderViewContent({
                     customerLocationUrl={order.customerLocationUrl}
                     customerLandmark={order.customerLandmark}
                     customerProfileId={order.customerProfileId}
+                    buttonText="عرض الطلبات"
                   />
 
                   {order.customerProfileId ? (
                     <Link
                       href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
-                      className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px]"
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px]"
                     >
-                      ملف الزبون المباشر
+                      ملف الزبون
                     </Link>
                   ) : null}
                 </div>

@@ -131,9 +131,9 @@ export function AdminCustomerOrderHistory({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors"
+        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
       >
-        عرض بيانات الزبون وطلباته السابقة
+        {buttonText || "عرض الطلبات"}
       </button>
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
