@@ -1164,11 +1164,15 @@ export function OrderDetailSection({
   return (
     <section
       style={customStyle}
-      className={`kse-glass-dark relative mt-4 border p-4 pb-32 text-base leading-relaxed sm:p-5 sm:pb-36 ${!uiSettings ? orderStatusStartStripeClass(order.status) : ''} ${
-        !uiSettings && order.prepaidAll ? "border-emerald-300/85 bg-gradient-to-b from-emerald-50/70 via-white/90 to-teal-50/40 ring-2 ring-emerald-200/55 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]" :
-        !uiSettings && reversePickup ? "border-violet-400 bg-violet-100 shadow-md" :
-        !uiSettings && missingCustomerLocation ? "border-sky-200 bg-rose-50/30 ring-2 ring-rose-200" : (!uiSettings ? `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}` : "")
-      }`}
+      className={
+        courierSettings?.orderViewTheme === "theme11"
+          ? "relative mt-1 p-0.5 sm:p-2 pb-32 text-base leading-relaxed"
+          : `kse-glass-dark relative mt-4 border p-4 pb-32 text-base leading-relaxed sm:p-5 sm:pb-36 ${!uiSettings ? orderStatusStartStripeClass(order.status) : ''} ${
+              !uiSettings && order.prepaidAll ? "border-emerald-300/85 bg-gradient-to-b from-emerald-50/70 via-white/90 to-teal-50/40 ring-2 ring-emerald-200/55 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]" :
+              !uiSettings && reversePickup ? "border-violet-400 bg-violet-100 shadow-md" :
+              !uiSettings && missingCustomerLocation ? "border-sky-200 bg-rose-50/30 ring-2 ring-rose-200" : (!uiSettings ? `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}` : "")
+            }`
+      }
     >
 
       {customerDebt !== null && customerDebt > 0 && (
