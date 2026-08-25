@@ -268,7 +268,7 @@ export function OrderViewContent({
               {order.courier ? (
                 <span className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-900">
                   <span>🛵</span>
-                  <span>المندوب: {order.courier.name}</span>
+                  <span>{order.courier.name}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
