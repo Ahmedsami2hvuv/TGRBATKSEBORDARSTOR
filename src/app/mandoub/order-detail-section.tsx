@@ -330,7 +330,7 @@ export function OrderDetailSection({
                 <div className="pt-1.5 space-y-2 w-full">
                   {order.shop.locationUrl?.trim() ? (
                     <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl ${courierSettings?.guidedDeliverySteps ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-300" : "bg-emerald-600 hover:bg-emerald-700"} px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md`}>
-                      {courierSettings?.guidedDeliverySteps ? "🏢 خريطة المحل (لاستلام البضاعة فقط)" : "📍 موقع المحل"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                      {courierSettings?.guidedDeliverySteps ? "🏢 خريطة المحل" : "📍 موقع المحل"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                     </a>
                   ) : (
                     <div className="w-full p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
@@ -442,7 +442,7 @@ export function OrderDetailSection({
                                   height: activeConfig ? `${Math.max(44, activeConfig.locationBtnSize + 22)}px` : undefined
                                 }}
                               >
-                                {courierSettings?.guidedDeliverySteps ? "🛵 خريطة الزبون (للتوصيل والتسليم)" : "📍 موقع الزبون"} {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                                {courierSettings?.guidedDeliverySteps ? "🛵 خريطة الزبون" : "📍 موقع الزبون"} {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                               </a>
                             ) : (
                               <MandoubUploadLocationInline 
