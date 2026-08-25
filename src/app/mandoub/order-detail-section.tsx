@@ -623,9 +623,6 @@ export function OrderDetailSection({
             </div>
           );
         }
-            </div>
-          );
-        }
 
         return (
           <div key="customer_parent" className="space-y-4">
