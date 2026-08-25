@@ -334,13 +334,7 @@ export function MandoubWalletClient({
                   <DynamicIcon icon={icons?.wallet_cash} fallback="💵" width={26} height={26} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl font-extrabold text-white tracking-wide">عندي</span>
-                    <span className="inline-flex items-center rounded-full bg-emerald-400/30 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-100 backdrop-blur-sm border border-emerald-300/30">
-                      كاش بحوزتك
-                    </span>
-                  </div>
-                  <p className="text-[11px] sm:text-xs text-emerald-100/80 font-medium">الكاش الفعلي المتوفر لديك الآن</p>
+                  <span className="text-lg sm:text-xl font-extrabold text-white tracking-wide">عندي</span>
                 </div>
               </div>
               
