@@ -418,7 +418,7 @@ export function AdminVoiceNoteSection({
               <span className="truncate">{src ? "بصمة 🎧" : "بصمة"}</span>
             </button>
             {src && (
-              <DeleteAdminVoiceNoteButton orderId={orderId} />
+              <DeleteAdminVoiceNoteButton orderId={orderId} compact />
             )}
           </div>
         ) : (
@@ -426,18 +426,19 @@ export function AdminVoiceNoteSection({
             <button
               type="button"
               onClick={finishRecording}
-              className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-red-600 px-1.5 py-2 text-xs font-bold text-white shadow-sm animate-pulse min-h-[40px] text-center"
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-600 px-1.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 min-h-[40px] text-center"
+              title="حفظ التسجيل"
             >
-              <span className="inline-block h-2 w-2 rounded-full bg-white animate-ping" />
-              <span className="truncate">إيقاف ({sec}ث)</span>
+              <span>✔</span>
+              <span className="truncate">حفظ ({sec}ث)</span>
             </button>
             <button
               type="button"
               onClick={cancelRecording}
-              className="inline-flex items-center justify-center rounded-xl bg-slate-200 px-1.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 min-h-[40px]"
-              title="إلغاء التسجيل"
+              className="inline-flex items-center justify-center rounded-xl bg-rose-100 border border-rose-300 px-2 py-2 text-xs font-bold text-rose-700 hover:bg-rose-200 active:scale-95 min-h-[40px] whitespace-nowrap"
+              title="إلغاء التسجيل وعدم الحفظ"
             >
-              ❌
+              <span>❌ إلغاء</span>
             </button>
           </div>
         )}

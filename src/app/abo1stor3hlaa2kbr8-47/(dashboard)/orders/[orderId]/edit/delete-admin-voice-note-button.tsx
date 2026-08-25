@@ -6,7 +6,13 @@ import { ad } from "@/lib/admin-ui";
 import { deleteAdminVoiceNote } from "./voice-note-actions";
 import { customConfirm, customAlert } from "@/components/global-confirm-dialog";
 
-export function DeleteAdminVoiceNoteButton({ orderId }: { orderId: string }) {
+export function DeleteAdminVoiceNoteButton({
+  orderId,
+  compact = false,
+}: {
+  orderId: string;
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -30,6 +36,20 @@ export function DeleteAdminVoiceNoteButton({ orderId }: { orderId: string }) {
       router.refresh();
     });
   };
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        disabled={pending}
+        className="inline-flex items-center justify-center rounded-xl bg-rose-100 border border-rose-300 px-2.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-200 active:scale-95 transition-all min-h-[40px]"
+        onClick={handleClick}
+        title="حذف البصمة الحالية"
+      >
+        {pending ? "…" : "🗑️"}
+      </button>
+    );
+  }
 
   return (
     <button
