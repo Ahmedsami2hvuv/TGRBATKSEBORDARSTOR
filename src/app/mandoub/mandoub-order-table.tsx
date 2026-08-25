@@ -625,7 +625,7 @@ export function MandoubOrderTable({
                   e.stopPropagation();
                   setPickupOrder(o);
                 }}
-                className="inline-flex px-3 py-1.5 items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition active:scale-95"
+                className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 border-2 border-amber-300 text-white font-black text-xs shadow-md transition active:scale-90"
                 title="استلام الشحنة"
               >
                 استلام
@@ -640,7 +640,7 @@ export function MandoubOrderTable({
                   e.stopPropagation();
                   setDeliveryOrder(o);
                 }}
-                className="inline-flex px-3 py-1.5 items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm transition active:scale-95"
+                className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 border-2 border-emerald-400 text-white font-black text-xs shadow-md transition active:scale-90"
                 title="تسليم الشحنة"
               >
                 تسليم
