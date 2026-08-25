@@ -21,6 +21,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { toast } from "sonner";
 import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
+import { MandoubOrderDetailActions } from "./mandoub-order-detail-actions";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
