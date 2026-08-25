@@ -371,31 +371,45 @@ class MainActivity : AppCompatActivity() {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
                 
+                val acceptTypes = fileChooserParams?.acceptTypes ?: arrayOf("*/*")
+                val isAudio = acceptTypes.any { it.contains("audio") }
                 val isCapture = fileChooserParams?.isCaptureEnabled ?: false
 
                 if (isCapture) {
-                    val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                    if (takePictureIntent.resolveActivity(packageManager) != null) {
-                        var photoURI: Uri? = null
-                        try {
-                            val photoFile = createImageFile()
-                            photoURI = FileProvider.getUriForFile(
-                                this@MainActivity,
-                                "${packageName}.fileprovider",
-                                photoFile
-                            )
-                        } catch (e: Exception) {
-                            photoURI = null
-                        }
-                        
-                        if (photoURI != null) {
-                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                    if (isAudio) {
+                        val takeAudioIntent = Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
+                        if (takeAudioIntent.resolveActivity(packageManager) != null) {
                             try {
-                                startActivityForResult(takePictureIntent, FILECHOOSER_RESULTCODE)
+                                startActivityForResult(takeAudioIntent, FILECHOOSER_RESULTCODE)
                                 return true
                             } catch (e: Exception) {
                                 // fallback
+                            }
+                        }
+                    } else {
+                        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                        if (takePictureIntent.resolveActivity(packageManager) != null) {
+                            var photoURI: Uri? = null
+                            try {
+                                val photoFile = createImageFile()
+                                photoURI = FileProvider.getUriForFile(
+                                    this@MainActivity,
+                                    "${packageName}.fileprovider",
+                                    photoFile
+                                )
+                            } catch (e: Exception) {
+                                photoURI = null
+                            }
+                            
+                            if (photoURI != null) {
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                                takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                                try {
+                                    startActivityForResult(takePictureIntent, FILECHOOSER_RESULTCODE)
+                                    return true
+                                } catch (e: Exception) {
+                                    // fallback
+                                }
                             }
                         }
                     }
@@ -403,7 +417,7 @@ class MainActivity : AppCompatActivity() {
 
                 val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "image/*"
+                    type = if (isAudio) "audio/*" else if (acceptTypes.any { it.contains("image") }) "image/*" else "*/*"
                 }
                 
                 try {
