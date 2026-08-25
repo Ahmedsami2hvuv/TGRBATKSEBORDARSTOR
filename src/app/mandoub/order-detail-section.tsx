@@ -745,7 +745,7 @@ export function OrderDetailSection({
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={18} height={18} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-violet-850 dark:text-violet-400">تفاصيل الطلب والأسعار</h3>
+                    <h3 className="text-sm font-black text-violet-850 dark:text-violet-400">تفاصيل الطلب</h3>
                   </div>
                 </div>
 
