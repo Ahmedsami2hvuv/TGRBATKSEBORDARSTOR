@@ -417,7 +417,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.grant(request.resources)
+                runOnUiThread {
+                    try {
+                        request?.grant(request?.resources ?: arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
 
             override fun onGeolocationPermissionsShowPrompt(

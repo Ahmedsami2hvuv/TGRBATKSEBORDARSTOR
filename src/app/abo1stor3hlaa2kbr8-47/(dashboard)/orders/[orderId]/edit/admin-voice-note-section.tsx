@@ -16,11 +16,20 @@ function pickRecorderMime(): string {
     "audio/webm;codecs=opus",
     "audio/webm",
     "audio/mp4",
+    "audio/m4a",
+    "audio/aac",
     "audio/ogg;codecs=opus",
     "audio/ogg",
+    "audio/3gpp",
   ];
-  for (const t of types) {
-    if (MediaRecorder.isTypeSupported(t)) return t;
+  if (typeof MediaRecorder.isTypeSupported === "function") {
+    for (const t of types) {
+      try {
+        if (MediaRecorder.isTypeSupported(t)) return t;
+      } catch {
+        /* ignore */
+      }
+    }
   }
   return "";
 }
@@ -56,11 +65,12 @@ export function AdminVoiceNoteSection({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      setSupported(false);
-      return;
-    }
-    if (!pickRecorderMime()) {
+    const hasMedia = Boolean(
+      (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ||
+      (navigator as any).getUserMedia ||
+      (navigator as any).webkitGetUserMedia
+    );
+    if (!hasMedia || typeof MediaRecorder === "undefined") {
       setSupported(false);
     }
   }, []);
@@ -123,16 +133,34 @@ export function AdminVoiceNoteSection({
     mrRef.current = null;
     stopTimers();
     clearFile();
-    const mime = pickRecorderMime();
-    if (!mime || !supported) {
+
+    if (!supported) {
       setError("التسجيل الصوتي غير متاح في هذا المتصفح.");
       return;
     }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let stream: MediaStream;
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } else if ((navigator as any).getUserMedia) {
+        stream = await new Promise((resolve, reject) => {
+          (navigator as any).getUserMedia.call(navigator, { audio: true }, resolve, reject);
+        });
+      } else if ((navigator as any).webkitGetUserMedia) {
+        stream = await new Promise((resolve, reject) => {
+          (navigator as any).webkitGetUserMedia.call(navigator, { audio: true }, resolve, reject);
+        });
+      } else {
+        throw new Error("NO_USER_MEDIA");
+      }
+
       streamRef.current = stream;
       chunksRef.current = [];
-      const mr = new MediaRecorder(stream, { mimeType: mime });
+
+      const mime = pickRecorderMime();
+      const options = mime ? { mimeType: mime } : undefined;
+      const mr = new MediaRecorder(stream, options);
       mrRef.current = mr;
       mr.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -143,7 +171,7 @@ export function AdminVoiceNoteSection({
         streamRef.current = null;
         mrRef.current = null;
         setRecording(false);
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime });
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || "audio/m4a" });
         chunksRef.current = [];
         if (blob.size === 0) {
           setError("لم يُسجَّل صوت. حاول مرة أخرى.");
@@ -155,9 +183,9 @@ export function AdminVoiceNoteSection({
             ? "m4a"
             : blob.type.includes("ogg")
               ? "ogg"
-              : "webm";
+              : "m4a";
         const file = new File([blob], `admin-voice.${ext}`, {
-          type: blob.type || mime,
+          type: blob.type || mime || "audio/m4a",
         });
         const input = fileRef.current;
         if (input) {
@@ -169,7 +197,7 @@ export function AdminVoiceNoteSection({
         const dur = Date.now() - startedAtRef.current;
         setElapsedMs(Math.min(dur, MAX_MS));
 
-        if (variant === "standalone") {
+        if (variant === "standalone" || variant === "button") {
           queueMicrotask(() => {
             standaloneFormRef.current?.requestSubmit();
           });
@@ -186,8 +214,9 @@ export function AdminVoiceNoteSection({
       maxTimerRef.current = setTimeout(() => {
         finishRecording();
       }, MAX_MS);
-    } catch {
-      setError("لم نتمكن من الوصول للمايك. اسمح بالوصول من إعدادات المتصفح.");
+    } catch (err: any) {
+      console.error("Audio recording error:", err);
+      setError("لم نتمكن من الوصول للمايك. اسمح بالوصول من إعدادات المتصفح والتطبيق.");
       setRecording(false);
     }
   };
