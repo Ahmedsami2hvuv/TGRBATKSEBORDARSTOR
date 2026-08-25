@@ -572,10 +572,10 @@ export function OrderDetailSection({
                   {/* قسم صورة الباب على اليسار */}
                   <div className="w-[140px] xs:w-[160px] sm:w-[200px] flex flex-col items-center justify-start shrink-0 gap-2">
                     <span className="text-xs font-black text-slate-600 dark:text-slate-300">صورة الباب</span>
-                    {customerDoorPhotoUrl ? (
+                    {customerDoorDisplay ? (
                       <div className="w-full flex flex-col items-center gap-1">
                         <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-400 shadow-md relative">
-                          <img src={imgSrc(customerDoorPhotoUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(customerDoorPhotoUrl))} />
+                          <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                         </div>
                       </div>
                     ) : (
