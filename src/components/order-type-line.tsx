@@ -9,12 +9,9 @@ const defaultPrefixClass =
 function formatOrderTypeMobileBody(body: string): string {
   const raw = body.trim();
   if (!raw) return "—";
-  const normalized = raw
+  return raw
     .replace(/\s+/g, " ")
     .replace(/\bمستعجل\b/g, "سريع");
-  const parts = normalized.split(" ").filter(Boolean);
-  if (parts.length >= 3) return `${parts.slice(0, 2).join(" ")}\n${parts.slice(2).join(" ")}`;
-  return normalized;
 }
 
 type OrderTypeLineProps = {

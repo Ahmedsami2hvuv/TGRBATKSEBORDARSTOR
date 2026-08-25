@@ -670,9 +670,9 @@ export function OrderViewContent({
           <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-sky-50/40 p-3.5 shadow-sm">
             {/* نوع الطلب */}
             <div className="flex items-center justify-between gap-2 border-b border-sky-100/80 pb-2">
-              <span className="text-xs sm:text-sm font-bold text-slate-700">الطلب:</span>
-              <div className="text-left">
-                <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2.5 py-0.5 rounded-lg text-sm ring-1 ring-violet-300" restClassName="text-sm font-black text-slate-900" />
+              <span className="text-xs sm:text-sm font-bold text-slate-700 whitespace-nowrap">الطلب:</span>
+              <div className="text-left font-black text-slate-900 text-xs sm:text-sm">
+                <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-0.5 rounded-lg text-xs sm:text-sm ring-1 ring-violet-300 inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-slate-900" />
               </div>
             </div>
 
