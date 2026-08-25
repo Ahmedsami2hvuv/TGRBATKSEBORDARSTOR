@@ -211,9 +211,55 @@ export function OrderViewContent({
         )}
 
         {/* --- بطاقة ترويسة الطلبية المختصرة والمدمجة --- */}
-        <div className="mb-4 rounded-2xl border border-sky-200 bg-white/95 p-3.5 shadow-sm sm:p-4 backdrop-blur-sm">
-          {/* السطر الأول: رقم الطلب + اسم المندوب + حالة الطلب + الشارات الخاصة */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-sky-100 pb-3">
+        <div className="mb-4 rounded-2xl border border-sky-200 bg-white/95 p-3 shadow-sm sm:p-4 backdrop-blur-sm">
+          
+          {/* سطر الأزرار العلوية الثلاثة: اليمين (إغلاق الطلب) - الوسط (تعديل البيانات) - اليسار (تغيير المندوب) */}
+          <div className="mb-3.5 grid grid-cols-3 gap-1.5 sm:gap-2">
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+              className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
+            >
+              <span>⬅️</span>
+              <span>إغلاق الطلب</span>
+            </Link>
+
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+              className="inline-flex items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all min-h-[40px] text-center"
+            >
+              <span>📝</span>
+              <span>تعديل البيانات</span>
+            </Link>
+
+            {order.status !== "cancelled" && order.status !== "archived" ? (
+              <button
+                type="button"
+                onClick={() => setShowAssignCourierModal(true)}
+                className="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-2 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all cursor-pointer min-h-[40px] text-center"
+              >
+                <span>📦</span>
+                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
+              </button>
+            ) : (
+              <div />
+            )}
+          </div>
+
+          {/* سطر زر تعديل التسعير التكميلي إن وجد */}
+          {parsedShoppingJson !== null && (
+            <div className="mb-3">
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
+              >
+                <span>💰</span>
+                <span>تعديل التسعير</span>
+              </Link>
+            </div>
+          )}
+
+          {/* السطر الثاني: رقم الطلب + اسم المندوب + حالة الطلب + الشارات الخاصة */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-sky-100 pt-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-block rounded-xl bg-sky-600 px-3 py-1 text-base sm:text-lg font-black text-white tabular-nums shadow-sm">
                 #{order.orderNumber}
@@ -232,12 +278,12 @@ export function OrderViewContent({
               )}
               
               {isReversePickup && (
-                <span className="rounded-xl border border-violet-300 bg-violet-100 px-2.5 py-1 text-xs font-black text-violet-900">
+                <span className="rounded-xl border border-violet-300 bg-violet-100 px-2 py-0.5 text-xs font-black text-violet-900">
                   🔄 طلب عكسي
                 </span>
               )}
               {isDoubleRoute && (
-                <span className="rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-2.5 py-1 text-xs font-black text-fuchsia-900">
+                <span className="rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-2 py-0.5 text-xs font-black text-fuchsia-900">
                   ✌️ وجهتين
                 </span>
               )}
@@ -250,7 +296,7 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* السطر الثاني: تاريخ الرفع ووقت الاستلام في سطر واحد مدمج ومختصر */}
+          {/* السطر الثالث: تاريخ الرفع ووقت الاستلام في سطر واحد مدمج ومختصر */}
           <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
             <div className="flex items-center gap-1 rounded-lg border border-sky-100 bg-sky-50/80 px-2.5 py-1 font-bold text-sky-900">
               <span>📅</span>
@@ -264,45 +310,6 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* السطر الثالث: أزرار التحكم المتناسقة (تعديل البيانات | تغيير المندوب | تعديل التسعير | تتبع الطلبات) */}
-          <div className="mt-3 flex flex-wrap items-center gap-2 pt-0.5">
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px]"
-            >
-              <span>📝</span>
-              <span>تعديل البيانات</span>
-            </Link>
-
-            {order.status !== "cancelled" && order.status !== "archived" && (
-              <button
-                type="button"
-                onClick={() => setShowAssignCourierModal(true)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer min-h-[38px]"
-              >
-                <span>📦</span>
-                <span>{order.courier?.name || order.courierId || order.status !== "pending" ? "تغيير المندوب" : "إسناد للمندوب"}</span>
-              </button>
-            )}
-
-            {parsedShoppingJson !== null && (
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px]"
-              >
-                <span>💰</span>
-                <span>تعديل التسعير</span>
-              </Link>
-            )}
-
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all min-h-[38px] mr-auto"
-            >
-              <span>⬅️</span>
-              <span>تتبع الطلبات</span>
-            </Link>
-          </div>
         </div>
 
         {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
