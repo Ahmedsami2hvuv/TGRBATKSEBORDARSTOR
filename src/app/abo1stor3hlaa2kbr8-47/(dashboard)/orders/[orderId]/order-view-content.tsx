@@ -667,15 +667,27 @@ export function OrderViewContent({
 
 
         <div className={gridInfoPhoto}>
-          <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><p className="text-sm font-bold text-slate-700 mb-1">نوع الطلب</p><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" /></div>
-              <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime || "فوري"}</p></div>
+          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-sky-50/40 p-3.5 shadow-sm">
+            {/* نوع الطلب */}
+            <div className="flex items-center justify-between gap-2 border-b border-sky-100/80 pb-2">
+              <span className="text-xs sm:text-sm font-bold text-slate-700">الطلب:</span>
+              <div className="text-left">
+                <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2.5 py-0.5 rounded-lg text-sm ring-1 ring-violet-300" restClassName="text-sm font-black text-slate-900" />
+              </div>
             </div>
+
+            {/* وقت الطلب */}
+            <div className="flex items-center justify-between gap-2 border-b border-sky-100/80 pb-2">
+              <span className="text-xs sm:text-sm font-bold text-slate-700">الوقت:</span>
+              <span className="text-xs sm:text-sm font-black text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-200">
+                {order.orderNoteTime || "فوري"}
+              </span>
+            </div>
+
+            {/* سعر البضاعة والتوصيل والدين */}
             {(() => {
               const parseNum = (val: string | null | undefined): number => {
                 if (!val) return 0;
-                // استخلاص الأرقام فقط (مثال: "1 الف" أو "1.5" تصبح 1 أو 1.5)
                 const clean = val.replace(/[^\d.]/g, "");
                 const num = parseFloat(clean);
                 return isNaN(num) ? 0 : num;
@@ -687,33 +699,34 @@ export function OrderViewContent({
               
               const calculatedDebt = totRaw - (subRaw + delRaw);
               const hasDebt = calculatedDebt > 0;
-              
-              const { formatDinarAsAlfWithUnit } = require("@/lib/money-alf");
 
               return (
-                <>
-                  <div className={`grid ${hasDebt ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
-                    <div>
-                      <p className="text-xs font-bold text-slate-500">سعر البضاعة</p>
-                      <p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"}</p>
-                    </div>
-                    {hasDebt && (
-                      <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-1 px-2">
-                        <p className="text-xs font-black text-rose-600">الدين</p>
-                        <p className="font-mono text-lg font-black text-rose-700 animate-pulse">
-                          {calculatedDebt}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-bold text-slate-500">التوصيل</p>
-                      <p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"}</p>
-                    </div>
+                <div className="space-y-2 pt-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs sm:text-sm font-bold text-slate-600">سعر البضاعة:</span>
+                    <span className="font-mono text-base font-black text-slate-900">{order.orderSubtotal || "0"}</span>
                   </div>
-                </>
+
+                  {hasDebt && (
+                    <div className="flex items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1">
+                      <span className="text-xs font-black text-rose-600">الدين:</span>
+                      <span className="font-mono text-base font-black text-rose-700 animate-pulse">{calculatedDebt}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs sm:text-sm font-bold text-slate-600">التوصيل:</span>
+                    <span className="font-mono text-base font-black text-slate-900">{order.deliveryPrice || "0"}</span>
+                  </div>
+                </div>
               );
             })()}
-            <div className="rounded-lg border-2 border-violet-500/30 bg-violet-500/10 p-3 shadow-sm"><p className="text-xs font-black text-violet-900 mb-1">المبلغ الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount || "—"}</p></div>
+
+            {/* المبلغ الكلي */}
+            <div className="rounded-xl border-2 border-violet-500/30 bg-violet-500/10 p-2.5 shadow-sm flex items-center justify-between gap-2 mt-2">
+              <span className="text-xs sm:text-sm font-black text-violet-900">المبلغ الكلي:</span>
+              <span className="font-mono text-xl sm:text-2xl font-black text-violet-950 tabular-nums">{order.totalAmount || "—"}</span>
+            </div>
           </div>
           <div className="self-start">
             <p className="mb-1.5 text-sm font-bold text-slate-700">صورة الطلبية</p>
