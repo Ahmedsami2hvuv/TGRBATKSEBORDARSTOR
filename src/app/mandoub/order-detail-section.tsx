@@ -285,7 +285,7 @@ export function OrderDetailSection({
           return null;
         }
         return (
-          <div key="shop" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-amber-500 ring-4 ring-amber-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
+          <div key="shop" className={`bg-gradient-to-br from-amber-50/70 via-white to-slate-50/80 dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-amber-500 ring-4 ring-amber-400/30" : "border-amber-500/80 dark:border-amber-500/70 border-r-[8px] border-r-amber-500"} shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
             {courierSettings?.guidedDeliverySteps && (
               <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
                 <span>🏬 الخطوة 1: استلام البضاعة من المحل (المرسل)</span>
@@ -294,11 +294,11 @@ export function OrderDetailSection({
             <div className="flex flex-row gap-4 items-start justify-between">
               <div className="flex-1 space-y-2 text-right">
                 <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600">
+                  <div className="h-8 w-8 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600">
                     <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={18} height={18} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-400">
+                    <h3 className="text-sm font-black text-amber-800 dark:text-amber-400">
                       {courierSettings?.guidedDeliverySteps ? "المحل (المرسل - مكان الاستلام)" : "معلومات المحل (المرسل)"}
                     </h3>
                   </div>
@@ -365,7 +365,7 @@ export function OrderDetailSection({
                 <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-500/80 dark:border-emerald-400/80 shadow-md shadow-emerald-500/10">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-amber-500/80 dark:border-amber-400/80 shadow-md shadow-amber-500/10">
                       <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() ? (
@@ -387,7 +387,7 @@ export function OrderDetailSection({
       case "customer_info":
         return (
           <div key="customer_parent" className="space-y-4">
-            <div key="customer" className={`bg-gradient-to-br from-sky-50/70 via-white to-slate-50/80 dark:from-sky-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-sky-500/80 dark:border-sky-500/70 border-r-[8px] border-r-sky-500"} shadow-xl shadow-sky-500/10 ring-1 ring-sky-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
+            <div key="customer" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
               {courierSettings?.guidedDeliverySteps && (
                 <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
                   <span>🏠 الخطوة 2: التوصيل للزبون (المستلم النهائي)</span>
@@ -396,11 +396,11 @@ export function OrderDetailSection({
               <div className="flex flex-row gap-4 items-start justify-between">
                 <div className="flex-1 space-y-2 text-right">
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
-                    <div className="h-8 w-8 rounded-lg bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center text-sky-600">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600">
                       <DynamicIcon icon={icons?.ui_user} fallback="👤" width={18} height={18} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-sky-950 dark:text-sky-400">
+                      <h3 className="text-sm font-black text-emerald-950 dark:text-emerald-400">
                         {isDoubleRoute ? "المرسل (الوجهة الأولى)" : courierSettings?.guidedDeliverySteps ? "الزبون (المستلم النهائي)" : "الزبون (المستلم)"}
                       </h3>
                     </div>
@@ -548,7 +548,7 @@ export function OrderDetailSection({
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400">صورة الباب {isFromProfilePhoto && "(أرشيف)"}</span>
                   {customerDoorDisplay ? (
                     <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-500/80 dark:border-sky-400/80 shadow-md shadow-sky-500/10">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-500/80 dark:border-emerald-400/80 shadow-md shadow-emerald-500/10">
                         <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                       </div>
                       {order.customerDoorPhotoUploadedByName?.trim() ? (
