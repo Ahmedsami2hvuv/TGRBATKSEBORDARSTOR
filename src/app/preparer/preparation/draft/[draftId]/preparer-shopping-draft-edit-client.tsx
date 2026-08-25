@@ -960,13 +960,6 @@ export function PreparerShoppingDraftEditClient({
                     priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
                   } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
                 >
-                  {/* شارة عدد المنتج البارزة للمجهز */}
-                  <div className="absolute top-1 left-1 flex gap-1 items-center z-10">
-                    <span className="font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm bg-rose-600 text-white border border-rose-400/50">
-                      {displayQty}x
-                    </span>
-                  </div>
-
                   {/* صورة المنتج */}
                   {productImagesMap[p.line.trim().toLowerCase()] && (
                     <div
