@@ -93,8 +93,8 @@ export function MandoubOrdersSection({
 
   return (
     <>
-      <header className="kse-glass-dark mb-3 flex items-center justify-between gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm rounded-2xl">
-        <div className="flex flex-wrap items-center gap-2">
+      <header className="kse-glass-dark mb-3 flex flex-nowrap items-center justify-between gap-1.5 border border-sky-200/90 px-2 sm:px-3 py-2 shadow-sm rounded-2xl overflow-x-auto no-scrollbar">
+        <div className="flex flex-nowrap items-center gap-1 sm:gap-2 shrink-0">
           <MandoubSettingsDropdown
             auth={auth}
             availableForAssignment={availableForAssignment}
@@ -106,14 +106,14 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setShowQuickSelect((v) => !v)}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
                 showQuickSelect
                   ? "bg-red-600 border-red-700 text-white shadow-inner animate-pulse"
                   : "bg-red-50 border-red-200 text-red-900 hover:bg-red-100"
               }`}
               title="تحديد سريع"
             >
-              <DynamicIcon iconKey="ui_success" config={icons} className="w-5 h-5" fallback="✅" />
+              <DynamicIcon iconKey="ui_success" config={icons} className="w-4 h-4 sm:w-5 sm:h-5" fallback="✅" />
             </button>
           )}
 
@@ -121,14 +121,14 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setIsSortingMode((v) => !v)}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
                 isSortingMode
                   ? "bg-indigo-600 border-indigo-700 text-white shadow-inner"
                   : "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100"
               }`}
               title="ترتيب المسار"
             >
-              <DynamicIcon iconKey="ui_sort" config={icons} className="w-5 h-5" fallback="⇅" />
+              <DynamicIcon iconKey="ui_sort" config={icons} className="w-4 h-4 sm:w-5 sm:h-5" fallback="⇅" />
             </button>
           )}
 
@@ -136,39 +136,39 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setShowSearch((v) => !v)}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
                 showSearch
                   ? "bg-sky-600 border-sky-700 text-white shadow-inner"
                   : "bg-sky-50 border-sky-200 text-sky-900 hover:bg-sky-100"
               }`}
               title="البحث"
             >
-              <DynamicIcon iconKey="ui_search" config={icons} className="w-5 h-5" fallback="🔍" />
+              <DynamicIcon iconKey="ui_search" config={icons} className="w-4 h-4 sm:w-5 sm:h-5" fallback="🔍" />
             </button>
           )}
 
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-900 transition-all hover:scale-105 hover:bg-sky-100 active:scale-95"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-900 transition-all hover:scale-105 hover:bg-sky-100 active:scale-95"
             title="تحديث الصفحة"
           >
-            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-5 h-5 text-sky-600" fallback="🔄" />
+            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600" fallback="🔄" />
           </button>
 
-          <div className="flex items-center gap-1.5 px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl h-10 text-sm font-black text-slate-800 dark:text-[#00f3ff]">
-            <DynamicIcon iconKey="ui_user" config={icons} className="w-4 h-4 text-sky-600" fallback="👤" />
-            <span className="truncate max-w-[120px]">{courierName}</span>
+          <div className="flex h-9 sm:h-10 shrink-0 items-center gap-1 px-2 sm:px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl text-xs sm:text-sm font-black text-slate-800 dark:text-[#00f3ff]">
+            <DynamicIcon iconKey="ui_user" config={icons} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 shrink-0" fallback="👤" />
+            <span className="truncate max-w-[80px] sm:max-w-[120px]">{courierName}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 ms-auto">
           <FullscreenWalletLauncher
             href={`/mandoub/wallet?${baseQuery.toString()}`}
-            className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-2 py-1.5 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 h-10 min-w-[60px]"
+            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-2 sm:px-2.5 text-center text-xs sm:text-sm font-black text-white shadow-sm hover:bg-violet-700 min-w-[50px] sm:min-w-[60px]"
             title="محفظة المندوب"
           >
-            <span className="text-sm font-black text-white" dir="ltr">
+            <span className="text-xs sm:text-sm font-black text-white" dir="ltr">
               {cashInHandStr}
             </span>
           </FullscreenWalletLauncher>
