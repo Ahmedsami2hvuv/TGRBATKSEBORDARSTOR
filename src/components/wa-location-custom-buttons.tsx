@@ -154,12 +154,12 @@ export function WaLocationCustomButtons({
             <button
               type="button"
               onClick={() => handleButtonClick(btn)}
-              className={`flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-600 to-teal-700 px-3 py-2 text-xs font-black text-white shadow-md transition hover:from-emerald-700 hover:to-teal-800 active:scale-95 ${
+              className={`flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-amber-400/90 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-3 py-2 text-xs font-black text-white shadow-md shadow-amber-500/25 transition hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 active:scale-95 ${
                 compact ? "text-[11px] py-1.5 px-2" : ""
               }`}
               title={btn.label}
             >
-              <span className="text-sm shrink-0">{btn.iconKey || "📍"}</span>
+              <span className="text-sm shrink-0">{btn.iconKey || "⚡"}</span>
               <span className="truncate">{btn.label}</span>
             </button>
           </div>
