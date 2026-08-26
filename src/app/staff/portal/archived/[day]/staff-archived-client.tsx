@@ -10,6 +10,8 @@ import {
 } from "@/lib/order-location";
 import { markOrderRatingRequested } from "@/app/staff/portal/actions";
 
+import { normalizeArabicSearchText } from "@/lib/region-name-normalize";
+
 export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], dynamicWaButtons: any[] }) {
   const [q, setQ] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -35,13 +37,20 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
 
   const filtered = useMemo(() => {
     if (!q.trim()) return rows;
-    const t = q.toLowerCase();
-    return rows.filter(r => 
-      (r.shortId || "").includes(t) ||
-      (r.shopName || "").toLowerCase().includes(t) ||
-      (r.customerPhone || "").includes(t) ||
-      (r.regionLine || "").toLowerCase().includes(t)
-    );
+    const qNorm = normalizeArabicSearchText(q);
+    return rows.filter(r => {
+      const combinedText = [
+        r.shortId || "",
+        r.shopName || "",
+        r.customerPhone || "",
+        r.customerAlternatePhone || "",
+        r.regionLine || "",
+        r.assignedCourierName || "",
+        r.summary || "",
+        r.customerName || "",
+      ].join(" ");
+      return normalizeArabicSearchText(combinedText).includes(qNorm);
+    });
   }, [q, rows]);
 
   // دالة التعامل مع النقر على السطر لفتح الواتساب مباشرة وتأشير الطلب

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { formatBaghdadDateLabel } from "@/lib/baghdad-archived-day";
+import { normalizeArabicSearchText } from "@/lib/region-name-normalize";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -23,35 +24,49 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
   // إذا كان هناك بحث، نأتي بالطلبات مباشرة بدل الأيام
   let searchResults: any[] = [];
   if (q) {
-    const where: Prisma.OrderWhereInput = {
-      status: "archived",
-    };
+    const qNorm = normalizeArabicSearchText(q);
     const asNum = parseInt(q, 10);
-    if (!Number.isNaN(asNum) && String(asNum) === q) {
-      where.orderNumber = asNum;
-    } else {
-      where.OR = [
-        { customerPhone: { contains: q } },
-        { orderType: { contains: q, mode: "insensitive" } },
-        { shop: { name: { contains: q, mode: "insensitive" } } },
-        { courier: { name: { contains: q, mode: "insensitive" } } },
-        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-        { customer: { name: { contains: q, mode: "insensitive" } } },
-        { orderNoteTime: { contains: q, mode: "insensitive" } },
-        { customerLandmark: { contains: q, mode: "insensitive" } },
-        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ];
-    }
+    const isNum = !Number.isNaN(asNum) && String(asNum) === q;
 
-    searchResults = await prisma.order.findMany({
-      where,
-      take: 50,
+    const candidateOrders = await prisma.order.findMany({
+      where: { status: "archived" },
+      take: 300,
       orderBy: { archivedAt: "desc" },
-      include: { shop: { select: { name: true } } },
+      include: {
+        shop: { include: { region: true } },
+        customerRegion: true,
+        secondCustomerRegion: true,
+        courier: true,
+        customer: true,
+      },
     });
+
+    searchResults = candidateOrders
+      .filter((o) => {
+        if (isNum && o.orderNumber === asNum) return true;
+
+        const searchableParts = [
+          o.customerRegion?.name || "",
+          o.secondCustomerRegion?.name || "",
+          o.shop?.region?.name || "",
+          o.shop?.name || "",
+          o.courier?.name || "",
+          o.customer?.name || "",
+          o.customerPhone || "",
+          o.alternatePhone || "",
+          o.secondCustomerPhone || "",
+          o.customerLandmark || "",
+          o.secondCustomerLandmark || "",
+          o.summary || "",
+          o.orderType || "",
+          o.orderNoteTime || "",
+          String(o.orderNumber),
+        ];
+
+        const combinedText = searchableParts.join(" ");
+        return normalizeArabicSearchText(combinedText).includes(qNorm);
+      })
+      .slice(0, 50);
   }
 
   const rows = await prisma.$queryRaw<Array<{ day: string; cnt: bigint }>>(
@@ -85,7 +100,7 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
         <div>
           <h1 className={ad.h1}>الطلبات المؤرشفة</h1>
           <p className={`mt-1 ${ad.lead}`}>
-            ابحث عن طلب مؤرشف برقم الطلب أو الهاتف، أو تصفح حسب يوم الأرشفة.
+            ابحث عن طلب مؤرشف بـ (المنطقة، المحل، المندوب، رقم الطلب، الهاتف) أو تصفح حسب اليوم.
           </p>
         </div>
 
@@ -93,7 +108,7 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
           <input
             name="q"
             defaultValue={q}
-            placeholder="بحث سريع في الأرشيف (رقم طلب أو هاتف)..."
+            placeholder="بحث سريع في الأرشيف (منطقة، محل، رقم طلب، هاتف)..."
             className={ad.input}
           />
         </form>

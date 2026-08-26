@@ -7,6 +7,7 @@ import { ad } from "@/lib/admin-ui";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { baghdadDayRangeUtc, formatBaghdadDateLabel } from "@/lib/baghdad-archived-day";
+import { normalizeArabicSearchText } from "@/lib/region-name-normalize";
 import { type TrackingTableRow } from "../../tracking/order-tracking-table-body";
 import { OrderTrackingBulkTable } from "../../tracking/order-tracking-bulk-table";
 import {
@@ -59,33 +60,13 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
     createdAt: { gte: range.gte, lt: range.lt },
   };
 
-  if (q) {
-    where.OR = [
-      { customerPhone: { contains: q } },
-      { orderType: { contains: q, mode: "insensitive" } },
-      { shop: { name: { contains: q, mode: "insensitive" } } },
-      { courier: { name: { contains: q, mode: "insensitive" } } },
-      { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-      { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-      { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-      { customer: { name: { contains: q, mode: "insensitive" } } },
-      { orderNoteTime: { contains: q, mode: "insensitive" } },
-      { customerLandmark: { contains: q, mode: "insensitive" } },
-      { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-      { summary: { contains: q, mode: "insensitive" } },
-    ];
-    const asNum = parseInt(q, 10);
-    if (!Number.isNaN(asNum) && String(asNum) === q) {
-      where.OR.push({ orderNumber: asNum });
-    }
-  }
-
-  const orders = await prisma.order.findMany({
+  const allOrdersOfDay = await prisma.order.findMany({
     where,
     orderBy: { orderNumber: "desc" },
     include: {
       shop: { include: { region: true } },
       customerRegion: true,
+      secondCustomerRegion: true,
       courier: true,
       customer: true,
       moneyEvents: {
@@ -94,6 +75,38 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
       },
     },
   });
+
+  let orders = allOrdersOfDay;
+  if (q) {
+    const qNorm = normalizeArabicSearchText(q);
+    const qAsNum = parseInt(q, 10);
+    const isNumSearch = !Number.isNaN(qAsNum) && String(qAsNum) === q;
+
+    orders = allOrdersOfDay.filter((o) => {
+      if (isNumSearch && o.orderNumber === qAsNum) return true;
+
+      const searchableParts = [
+        o.customerRegion?.name || "",
+        o.secondCustomerRegion?.name || "",
+        o.shop?.region?.name || "",
+        o.shop?.name || "",
+        o.courier?.name || "",
+        o.customer?.name || "",
+        o.customerPhone || "",
+        o.alternatePhone || "",
+        o.secondCustomerPhone || "",
+        o.customerLandmark || "",
+        o.secondCustomerLandmark || "",
+        o.summary || "",
+        o.orderType || "",
+        o.orderNoteTime || "",
+        String(o.orderNumber),
+      ];
+
+      const combinedText = searchableParts.join(" ");
+      return normalizeArabicSearchText(combinedText).includes(qNorm);
+    });
+  }
 
   const couriers = await prisma.courier.findMany({
     where: courierAssignableWhere,
@@ -178,7 +191,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
           <input
             name="q"
             defaultValue={q}
-            placeholder="بحث (محل، رقم طلب، مندوب)..."
+            placeholder="بحث (منطقة، محل، رقم طلب، مندوب)..."
             className={ad.input}
           />
         </form>
