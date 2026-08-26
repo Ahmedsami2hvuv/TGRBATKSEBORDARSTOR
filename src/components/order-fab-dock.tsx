@@ -134,6 +134,9 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isExpanded || isConfiguring) return;
+    if (e.cancelable) {
+      try { e.preventDefault(); } catch {}
+    }
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -153,6 +156,9 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
+    if (e.cancelable) {
+      try { e.preventDefault(); } catch {}
+    }
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
 
@@ -516,7 +522,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
         style={{
           transform: `scale(${scale})`,
           opacity: opacity,
-          transition: isDragging ? 'none' : 'transform 0.2s, background-color 0.3s, opacity 0.3s'
+          transition: isDragging ? 'none' : 'transform 0.2s, background-color 0.3s, opacity 0.3s',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          overscrollBehavior: 'none',
         }}
       >
         {isExpanded ? (
