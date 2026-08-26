@@ -523,6 +523,19 @@ export function OrderDetailSection({
                 )}
               </div>
             </div>
+            {shouldHideShop && (
+              <button
+                type="button"
+                onClick={() => setIsShopCardExpanded(false)}
+                className="w-full py-1.5 px-4 mt-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-full text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 shadow-xs transition active:scale-[0.98]"
+                title="انقر لإغلاق تفاصيل المحل"
+              >
+                <span>إغلاق تفاصيل المحل</span>
+                <span className="text-[10px] bg-amber-600 text-white rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-xs">
+                  ▲
+                </span>
+              </button>
+            )}
           </div>
         );
       case "customer_info":
