@@ -175,6 +175,7 @@ export function OrderDetailSection({
   }, [isModal]);
 
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
 
 
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
@@ -284,13 +285,65 @@ export function OrderDetailSection({
       case "shop_info":
         if (isDoubleRoute) return null;
         const shouldHideShop = (courierSettings?.hideShopInfoOnPickup !== false || courierSettings?.guidedDeliverySteps) && ["delivering", "delivered", "archived"].includes(order.status);
-        if (shouldHideShop) return null;
+        if (shouldHideShop && !isShopCardExpanded) {
+          return (
+            <div
+              key="shop_collapsed"
+              onClick={() => setIsShopCardExpanded(true)}
+              className="cursor-pointer bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-slate-100 dark:from-amber-950/30 dark:to-slate-900 border-2 border-amber-400/80 rounded-2xl p-3 shadow-md mb-4 flex items-center justify-between transition active:scale-[0.99] hover:bg-amber-500/20"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 text-white font-black text-sm shadow-sm">
+                  🏬
+                </span>
+                <div>
+                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1.5 flex-wrap">
+                    <span>المحل (المرسل):</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.name}</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                      ✓ تم الاستلام (بردة مطوية)
+                    </span>
+                  </h4>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                    انقر هنا لسحب البردة وعرض تفاصيل المحل والاتصال 📞
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {shopContactPhone && (
+                  <a
+                    href={telHref(shopContactPhone)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:scale-95 transition"
+                    title="اتصال سريع بالمحل"
+                  >
+                    📞
+                  </a>
+                )}
+                <span className="text-xs font-black bg-amber-500 text-white px-2.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1">
+                  <span>سحب البردة</span>
+                  <span>⬇️</span>
+                </span>
+              </div>
+            </div>
+          );
+        }
 
         if (courierSettings?.orderViewTheme === "theme11") {
           return (
             <div key="shop" className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#003399] p-4 shadow-xl mb-4 relative overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
-                <div className="flex-1" />
+                <div className="flex-1">
+                  {shouldHideShop && (
+                    <button
+                      type="button"
+                      onClick={() => setIsShopCardExpanded(false)}
+                      className="inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-700 text-[11px] font-black text-amber-900 dark:text-amber-200 px-2.5 py-1 rounded-xl shadow-xs transition"
+                    >
+                      <span>⬆️ طي البردة</span>
+                    </button>
+                  )}
+                </div>
                 <h3 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
                   <span>المحل (المرسل)</span>
                   <div className="h-10 w-10 rounded-full bg-[#003399] flex items-center justify-center text-white shadow-md">
