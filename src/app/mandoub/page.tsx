@@ -798,7 +798,13 @@ export default async function MandoubPage({ searchParams }: Props) {
       id: o.id,
       shortId: String(o.orderNumber),
       orderStatus: o.status,
-      shopName: ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
+      shopName: (() => {
+        if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
+        if (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()) {
+          return "الإدارة";
+        }
+        return o.shop.name;
+      })(),
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine: o.customerRegion?.name?.trim() || "—",
       landmarkLine,
@@ -938,7 +944,13 @@ export default async function MandoubPage({ searchParams }: Props) {
     customerLandmark: o.customerLandmark,
     secondCustomerLandmark: o.secondCustomerLandmark,
     orderNoteTime: o.orderNoteTime?.trim() ?? "",
-    shopName: ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
+      shopName: (() => {
+        if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
+        if (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()) {
+          return "الإدارة";
+        }
+        return o.shop.name;
+      })(),
     regionName: o.customerRegion?.name ?? "",
     secondRegionName: o.secondCustomerRegion?.name ?? "",
     secondCustomerRegionId: o.secondCustomerRegionId,

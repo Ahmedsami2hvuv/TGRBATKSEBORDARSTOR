@@ -187,6 +187,13 @@ export function OrderDetailSection({
     (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
   const shopContactPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : order.shop.phone?.trim() || "");
 
+  const effectiveShopName =
+    order.submittedByCompanyPreparer?.name &&
+    order.shop?.name &&
+    order.shop.name.trim() === order.submittedByCompanyPreparer.name.trim()
+      ? "الإدارة"
+      : order.shop.name;
+
   const customerDoorDisplay = getCleanValue(
     order.customerDoorPhotoUrl,
     order.customer?.customerDoorPhotoUrl,
@@ -294,7 +301,7 @@ export function OrderDetailSection({
               className="w-full py-1.5 px-4 mb-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-full text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 shadow-xs transition active:scale-[0.98]"
               title="انقر لفتح تفاصيل المحل"
             >
-              <span>المحل (المرسل): {order.shop.name}</span>
+              <span>المحل (المرسل): {effectiveShopName}</span>
               <span className="text-[10px] bg-[#003399] text-white rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-xs">
                 ▼
               </span>
@@ -371,7 +378,7 @@ export function OrderDetailSection({
                     <span className="text-slate-500"><DynamicIcon icon={icons?.ui_user} fallback="👤" width={16} height={16} /></span>
                   </div>
                   <div className="flex items-center justify-end gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold shadow-sm text-right">
-                    <span className="font-black text-slate-800">{order.shop.region?.name || order.shop.name}</span>
+                    <span className="font-black text-slate-800">{order.shop.region?.name || effectiveShopName}</span>
                     <span className="text-slate-500"><DynamicIcon icon={icons?.ui_location} fallback="📍" width={16} height={16} /></span>
                   </div>
                   {shopContactPhone && (
