@@ -9,6 +9,7 @@ import { formatDinarAsAlf } from "@/lib/money-alf";
 import { baghdadDayRangeUtc, formatBaghdadDateLabel } from "@/lib/baghdad-archived-day";
 import { normalizeArabicSearchText } from "@/lib/region-name-normalize";
 import { type TrackingTableRow } from "../../tracking/order-tracking-table-body";
+import { ArchivedDayClientView } from "./archived-day-client-view";
 import { OrderTrackingBulkTable } from "../../tracking/order-tracking-bulk-table";
 import {
   isWardMismatch,
@@ -180,29 +181,14 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
           الرئيسية
         </Link>
       </p>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className={ad.h1}>{formatBaghdadDateLabel(day)}</h1>
-          <p className={`mt-1 ${ad.muted}`}>
-            طلبات رُفِعت في هذا اليوم وأُرشِفت مرتبة تسلسلياً (يظهر المندوب الذي قام بالتوصيل).
-          </p>
-        </div>
-        <form className="flex-1 max-w-sm">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="بحث (منطقة، محل، رقم طلب، مندوب)..."
-            className={ad.input}
-          />
-        </form>
-      </div>
 
-      <div className="space-y-3">
-        <OrderTrackingBulkTable rows={tableRows} couriers={couriers} />
-        <p className={ad.orderListCountFooter}>
-          عدد الطلبات: <span className="font-bold text-sky-900">{tableRows.length}</span>
-        </p>
-      </div>
+      <ArchivedDayClientView
+        dayLabel={formatBaghdadDateLabel(day)}
+        initialQ={q}
+        rows={tableRows}
+        couriers={couriers}
+      />
     </div>
   );
 }
+

@@ -287,45 +287,18 @@ export function OrderDetailSection({
         const shouldHideShop = (courierSettings?.hideShopInfoOnPickup !== false || courierSettings?.guidedDeliverySteps) && ["delivering", "delivered", "archived"].includes(order.status);
         if (shouldHideShop && !isShopCardExpanded) {
           return (
-            <div
-              key="shop_collapsed"
+            <button
+              type="button"
+              key="shop_collapsed_strip"
               onClick={() => setIsShopCardExpanded(true)}
-              className="cursor-pointer bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-slate-100 dark:from-amber-950/30 dark:to-slate-900 border-2 border-amber-400/80 rounded-2xl p-3 shadow-md mb-4 flex items-center justify-between transition active:scale-[0.99] hover:bg-amber-500/20"
+              className="w-full py-1.5 px-4 mb-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-full text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 shadow-xs transition active:scale-[0.98]"
+              title="انقر لفتح تفاصيل المحل"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 text-white font-black text-sm shadow-sm">
-                  🏬
-                </span>
-                <div>
-                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1.5 flex-wrap">
-                    <span>المحل (المرسل):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.name}</span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                      ✓ تم الاستلام (بردة مطوية)
-                    </span>
-                  </h4>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                    انقر هنا لسحب البردة وعرض تفاصيل المحل والاتصال 📞
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {shopContactPhone && (
-                  <a
-                    href={telHref(shopContactPhone)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:scale-95 transition"
-                    title="اتصال سريع بالمحل"
-                  >
-                    📞
-                  </a>
-                )}
-                <span className="text-xs font-black bg-amber-500 text-white px-2.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1">
-                  <span>سحب البردة</span>
-                  <span>⬇️</span>
-                </span>
-              </div>
-            </div>
+              <span>المحل (المرسل): {order.shop.name}</span>
+              <span className="text-[10px] bg-[#003399] text-white rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-xs">
+                ▼
+              </span>
+            </button>
           );
         }
 
@@ -435,6 +408,19 @@ export function OrderDetailSection({
                   )}
                 </div>
               </div>
+              {shouldHideShop && (
+                <button
+                  type="button"
+                  onClick={() => setIsShopCardExpanded(false)}
+                  className="w-full py-1.5 px-4 mt-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-full text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 shadow-xs transition active:scale-[0.98]"
+                  title="انقر لإغلاق تفاصيل المحل"
+                >
+                  <span>إغلاق تفاصيل المحل</span>
+                  <span className="text-[10px] bg-[#003399] text-white rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-xs">
+                    ▲
+                  </span>
+                </button>
+              )}
             </div>
           );
         }
