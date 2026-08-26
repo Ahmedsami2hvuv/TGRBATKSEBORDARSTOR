@@ -467,11 +467,11 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
             </Link>
 
             <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
-              <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className="flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] text-center whitespace-nowrap">
-                الطلبات الجديدة
-              </Link>
               <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className="flex items-center justify-center rounded-2xl bg-sky-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-sky-950 active:scale-[0.98] text-center whitespace-nowrap">
                 + إضافة طلب من الإدارة
+              </Link>
+              <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className="flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] text-center whitespace-nowrap">
+                الطلبات الجديدة
               </Link>
             </div>
           </div>
