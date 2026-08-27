@@ -637,25 +637,19 @@ export function PickupMoneyForm({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (Date.now() - mountTimeRef.current < 300) return;
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   if (amountRef.current) {
                     amountRef.current.value = remainingAlfHint;
                   }
                   setAmount(remainingAlfHint);
-                  if (pickupSubmitModeRef.current) {
-                    pickupSubmitModeRef.current.value = "";
-                  }
                   setTimeout(() => {
-                    if (mainSubmitRef.current) {
-                      mainSubmitRef.current.click();
-                    } else {
-                      formRef.current?.requestSubmit();
-                    }
-                  }, 40);
+                    requestPickupMainSubmit();
+                  }, 30);
                 }}
                 className="magical-money-block-green flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
-                title="اضغط لتعبئة المبلغ المطلوب دفعه فوراً"
+                title="اضغط لتعبئة المبلغ المطلوب دفعه وحفظه فوراً"
               >
                 <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
                   <span>{remainingAlfHint}</span>
@@ -1072,25 +1066,19 @@ export function DeliveryMoneyForm({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (Date.now() - mountTimeRef.current < 300) return;
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   if (amountRef.current) {
                     amountRef.current.value = remainingAlfHint;
                   }
                   setAmount(remainingAlfHint);
-                  if (deliverySubmitModeRef.current) {
-                    deliverySubmitModeRef.current.value = "";
-                  }
                   setTimeout(() => {
-                    if (mainSubmitRef.current) {
-                      mainSubmitRef.current.click();
-                    } else {
-                      formRef.current?.requestSubmit();
-                    }
-                  }, 40);
+                    requestDeliveryMainSubmit();
+                  }, 30);
                 }}
                 className="magical-money-block-red flex shrink-0 items-center justify-center rounded-xl border-2 border-red-600 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
-                title="اضغط لتعبئة المبلغ المطلوب استلامه فوراً"
+                title="اضغط لتعبئة المبلغ المطلوب استلامه وحفظه فوراً"
               >
                 <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
                   <span>{remainingAlfHint}</span>
