@@ -18,15 +18,15 @@ export function MandoubModalContainer({
     if (!el) return;
 
     const preventTouchGesture = (e: TouchEvent) => {
-      // حظر تسرب السحب كلياً لمتصفح الأندرويد ومنع Pull-to-refresh
-      if (e.cancelable) {
+      const target = e.target as HTMLElement | null;
+      const isInteractive = target?.closest('button, input, textarea, a, select, [role="button"]');
+
+      // حظر تسرب السحب كلياً على الخلفية والحواف لمنع Pull-to-refresh مع السماح التام للأزرار بالتفاعل والنقر
+      if (!isInteractive && e.cancelable) {
         try {
           e.preventDefault();
         } catch {}
       }
-      try {
-        e.stopPropagation();
-      } catch {}
     };
 
     el.addEventListener("touchstart", preventTouchGesture, { passive: false });

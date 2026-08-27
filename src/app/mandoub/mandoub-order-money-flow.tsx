@@ -638,20 +638,27 @@ export function PickupMoneyForm({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
                   if (amountRef.current) {
                     amountRef.current.value = remainingAlfHint;
                   }
                   setAmount(remainingAlfHint);
                   setTimeout(() => {
                     requestPickupMainSubmit();
-                  }, 30);
+                  }, 40);
                 }}
-                className="magical-money-block-green flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
+                onTouchEnd={(e) => {
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
+                  setAmount(remainingAlfHint);
+                  setTimeout(() => {
+                    requestPickupMainSubmit();
+                  }, 40);
+                }}
+                className="magical-money-block-green flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer select-none pointer-events-auto"
                 title="اضغط لتعبئة المبلغ المطلوب دفعه وحفظه فوراً"
               >
-                <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
+                <span className="relative z-10 flex items-center gap-1 drop-shadow-md pointer-events-none">
                   <span>{remainingAlfHint}</span>
                   <span className="text-[10px] font-bold opacity-90">د.ع</span>
                 </span>
@@ -1067,20 +1074,27 @@ export function DeliveryMoneyForm({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
                   if (amountRef.current) {
                     amountRef.current.value = remainingAlfHint;
                   }
                   setAmount(remainingAlfHint);
                   setTimeout(() => {
                     requestDeliveryMainSubmit();
-                  }, 30);
+                  }, 40);
                 }}
-                className="magical-money-block-red flex shrink-0 items-center justify-center rounded-xl border-2 border-red-600 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
+                onTouchEnd={(e) => {
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
+                  setAmount(remainingAlfHint);
+                  setTimeout(() => {
+                    requestDeliveryMainSubmit();
+                  }, 40);
+                }}
+                className="magical-money-block-red flex shrink-0 items-center justify-center rounded-xl border-2 border-red-600 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer select-none pointer-events-auto"
                 title="اضغط لتعبئة المبلغ المطلوب استلامه وحفظه فوراً"
               >
-                <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
+                <span className="relative z-10 flex items-center gap-1 drop-shadow-md pointer-events-none">
                   <span>{remainingAlfHint}</span>
                   <span className="text-[10px] font-bold opacity-90">د.ع</span>
                 </span>

@@ -311,11 +311,12 @@ function DraggableFloatPanel({
     if (!el) return;
 
     const preventPanelTouch = (e: TouchEvent) => {
-      // منع تسرب السحب كلياً لمتصفح الأندرويد لمنع Pull-to-refresh
-      if (e.cancelable) {
+      const target = e.target as HTMLElement | null;
+      const isInteractive = target?.closest('button, input, textarea, a, select, [role="button"]');
+
+      if (!isInteractive && e.cancelable) {
         try { e.preventDefault(); } catch {}
       }
-      try { e.stopPropagation(); } catch {}
     };
 
     el.addEventListener("touchstart", preventPanelTouch, { passive: false });
