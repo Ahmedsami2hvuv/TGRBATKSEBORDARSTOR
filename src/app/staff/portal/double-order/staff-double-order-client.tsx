@@ -159,232 +159,251 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
         </div>
       )}
 
-      {/* بيانات البائع */}
+      {/* قسم أرقام الهواتف والمناطق (المرسل والمستلم جنب إلى جنب) */}
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">بيانات البائع (المرسل)</h2>
+        <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">بيانات أطراف الطلب (المرسل والمستلم)</h2>
 
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف البائع *</label>
-          <input
-            name="sellerPhone"
-            value={sellerPhone}
-            onChange={e => setSellerPhone(e.target.value)}
-            placeholder="07XXXXXXXXX"
-            className={inputClass}
-            required
-          />
+        {/* 1. رقم المستلم بصف رقم المرسل */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف المرسل (البائع) *</label>
+            <input
+              name="sellerPhone"
+              value={sellerPhone}
+              onChange={e => setSellerPhone(e.target.value)}
+              placeholder="07XXXXXXXXX"
+              className={inputClass}
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف المستلم (المشتري) *</label>
+            <input
+              name="buyerPhone"
+              value={buyerPhone}
+              onChange={e => setBuyerPhone(e.target.value)}
+              placeholder="07XXXXXXXXX"
+              className={inputClass}
+              required
+            />
+          </div>
         </div>
 
-        <div className="space-y-1 relative">
-           <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة البائع *</label>
-           <input
-             value={sellerQ}
-             onChange={e => {setSellerQ(e.target.value); setSelectedSellerRegion(null);}}
-             placeholder="ابحث عن منطقة البائع..."
-             className={inputClass}
-             required
-           />
-           {sellerHits.length > 0 && !selectedSellerRegion && (
-             <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
-               {sellerHits.map(h => (
-                 <button
-                   key={h.id}
-                   type="button"
-                   onClick={() => {setSelectedSellerRegion(h); setSellerQ(h.name);}}
-                   className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50"
-                 >
-                   {h.name}
-                 </button>
-               ))}
-             </div>
-           )}
+        {/* 2. منطقة المستلم بصف منطقة المرسل */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1 relative">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة المرسل (البائع) *</label>
+            <input
+              value={sellerQ}
+              onChange={e => {setSellerQ(e.target.value); setSelectedSellerRegion(null);}}
+              placeholder="ابحث عن منطقة البائع..."
+              className={inputClass}
+              required
+            />
+            {sellerHits.length > 0 && !selectedSellerRegion && (
+              <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
+                {sellerHits.map(h => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => {setSelectedSellerRegion(h); setSellerQ(h.name);}}
+                    className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50"
+                  >
+                    {h.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1 relative">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة المستلم (المشتري) *</label>
+            <input
+              value={buyerQ}
+              onChange={e => {setBuyerQ(e.target.value); setSelectedBuyerRegion(null);}}
+              placeholder="ابحث عن منطقة المشتري..."
+              className={inputClass}
+              required
+            />
+            {buyerHits.length > 0 && !selectedBuyerRegion && (
+              <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
+                {buyerHits.map(h => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBuyerRegion(h);
+                      setBuyerQ(h.name);
+                      setDeliveryPrice(parseFloat(h.deliveryPrice));
+                    }}
+                    className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50"
+                  >
+                    {h.name} ({formatDinarAsAlfWithUnit(h.deliveryPrice)})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {sellerProfile && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 animate-in fade-in slide-in-from-top-1">
-            <p className="text-[10px] font-black text-emerald-800 mb-1">بيانات البائع المحفوظة:</p>
-            <p className="text-xs font-bold text-slate-700">{sellerProfile.landmark || "لا توجد ملاحظات دالة"}</p>
-            {sellerProfile.isBlocked && <p className="text-[10px] text-rose-600 font-black mt-1">⚠️ هذا الرقم محظور في هذه المنطقة!</p>}
+        {/* تفاصيل الملفات المحفوظة */}
+        {(sellerProfile || buyerProfile) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {sellerProfile ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-[10px] font-black text-emerald-800 mb-1">بيانات المرسل المحفوظة:</p>
+                <p className="text-xs font-bold text-slate-700">{sellerProfile.landmark || "لا توجد ملاحظات دالة"}</p>
+                {sellerProfile.isBlocked && <p className="text-[10px] text-rose-600 font-black mt-1">⚠️ هذا الرقم محظور في هذه المنطقة!</p>}
+              </div>
+            ) : <div />}
+            {buyerProfile ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-[10px] font-black text-emerald-800 mb-1">بيانات المستلم المحفوظة:</p>
+                <p className="text-xs font-bold text-slate-700">{buyerProfile.landmark || "لا توجد ملاحظات دالة"}</p>
+                {buyerProfile.isBlocked && <p className="text-[10px] text-rose-600 font-black mt-1">⚠️ هذا الرقم محظور في هذه المنطقة!</p>}
+              </div>
+            ) : <div />}
           </div>
         )}
       </section>
 
-      {/* بيانات المشتري */}
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">بيانات المشتري (المستلم)</h2>
-
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف المشتري *</label>
-          <input
-            name="buyerPhone"
-            value={buyerPhone}
-            onChange={e => setBuyerPhone(e.target.value)}
-            placeholder="07XXXXXXXXX"
-            className={inputClass}
-            required
-          />
-        </div>
-
-        <div className="space-y-1 relative">
-           <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة المشتري *</label>
-           <input
-             value={buyerQ}
-             onChange={e => {setBuyerQ(e.target.value); setSelectedBuyerRegion(null);}}
-             placeholder="ابحث عن منطقة المشتري..."
-             className={inputClass}
-             required
-           />
-           {buyerHits.length > 0 && !selectedBuyerRegion && (
-             <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
-               {buyerHits.map(h => (
-                 <button
-                   key={h.id}
-                   type="button"
-                   onClick={() => {
-                     setSelectedBuyerRegion(h);
-                     setBuyerQ(h.name);
-                     setDeliveryPrice(parseFloat(h.deliveryPrice));
-                   }}
-                   className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50"
-                 >
-                   {h.name} ({formatDinarAsAlfWithUnit(h.deliveryPrice)})
-                 </button>
-               ))}
-             </div>
-           )}
-        </div>
-
-        {buyerProfile && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 animate-in fade-in slide-in-from-top-1">
-            <p className="text-[10px] font-black text-emerald-800 mb-1">بيانات المشتري المحفوظة:</p>
-            <p className="text-xs font-bold text-slate-700">{buyerProfile.landmark || "لا توجد ملاحظات دالة"}</p>
-            {buyerProfile.isBlocked && <p className="text-[10px] text-rose-600 font-black mt-1">⚠️ هذا الرقم محظور في هذه المنطقة!</p>}
-          </div>
-        )}
-      </section>
-
-      {/* الحسابات */}
+      {/* الحسابات والتوقيت */}
       <section className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/30 p-4">
         <h2 className="text-xs font-black text-sky-700 uppercase tracking-widest">تفاصيل المبلغ والتوقيت</h2>
 
-        <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب *</label>
-                <div className="flex flex-wrap gap-2">
-                  {commonOrderTypes.map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setOrderType(t)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        orderType === t
-                        ? "bg-sky-600 text-white shadow-md scale-105"
-                        : "bg-white border border-slate-200 text-slate-600 hover:bg-sky-50"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                <input
-                    name="orderType"
-                    value={orderType}
-                    onChange={e => setOrderType(e.target.value)}
-                    placeholder="أو اكتب نوعاً مخصصاً هنا..."
-                    className={inputClass}
-                    required
-                />
-            </div>
-            <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب *</label>
-                <input
-                    name="orderTime"
-                    value={orderTime}
-                    onChange={e => setOrderTime(e.target.value)}
-                    placeholder="فوري، غداً، الساعة ٤..."
-                    className={inputClass}
-                    required
-                />
-            </div>
-        </div>
-
+        {/* 3. خانة الشراء بصف خانة البيع */}
         <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">المبلغ للبائع</label>
-                <input
-                    type="number"
-                    value={sellerAmount || ""}
-                    onChange={e => setSellerAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className={inputClass}
-                />
-            </div>
-            <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">الربح</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={profit || ""}
-                    onChange={e => setProfit(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className={`${inputClass} flex-1`}
-                  />
-                  <button
-                      type="button"
-                      onClick={() => setProfit(prev => Math.max(0, prev - 1))}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm"
-                  >
-                      -1
-                  </button>
-                  <button
-                      type="button"
-                      onClick={() => setProfit(prev => prev + 1)}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-100 text-sky-700 font-bold active:scale-90 shadow-sm"
-                  >
-                      +1
-                  </button>
-                </div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">سعر الشراء (المبلغ للبائع)</label>
+            <input
+              type="number"
+              value={sellerAmount || ""}
+              onChange={e => setSellerAmount(parseFloat(e.target.value) || 0)}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">سعر البيع (الكلي للمستلم)</label>
+            <input
+              type="text"
+              readOnly
+              value={formatDinarAsAlfWithUnit(totalAmount)}
+              className={`${inputClass} bg-sky-100/70 text-sky-950 font-black cursor-not-allowed`}
+            />
+          </div>
         </div>
 
-        <div className="space-y-2">
+        {/* الربح وسعر التوصيل */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">الربح</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={profit || ""}
+                onChange={e => setProfit(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className={`${inputClass} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={() => setProfit(prev => Math.max(0, prev - 1))}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm"
+              >
+                -1
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfit(prev => prev + 1)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-100 text-sky-700 font-bold active:scale-90 shadow-sm"
+              >
+                +1
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
             <label className="text-[11px] font-bold text-slate-500 mr-1">سعر التوصيل</label>
             <div className="flex items-center gap-2">
-                <input
-                    type="number"
-                    value={deliveryPrice || ""}
-                    onChange={e => setDeliveryPrice(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className={`${inputClass} flex-1 text-sky-900`}
-                />
-                <button
-                    type="button"
-                    onClick={() => {
-                      const basePrice = parseFloat(selectedBuyerRegion?.deliveryPrice || "0");
-                      setDeliveryPrice(prev => Math.max(basePrice, prev - 1));
-                    }}
-                    className="w-12 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm disabled:opacity-30"
-                    disabled={deliveryPrice <= parseFloat(selectedBuyerRegion?.deliveryPrice || "0")}
-                >
-                    -1
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setDeliveryPrice(prev => prev + 1)}
-                    className="w-12 h-10 flex items-center justify-center rounded-xl bg-sky-600 text-white font-bold active:scale-90 shadow-lg"
-                >
-                    +1
-                </button>
+              <input
+                type="number"
+                value={deliveryPrice || ""}
+                onChange={e => setDeliveryPrice(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className={`${inputClass} flex-1 text-sky-900`}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const basePrice = parseFloat(selectedBuyerRegion?.deliveryPrice || "0");
+                  setDeliveryPrice(prev => Math.max(basePrice, prev - 1));
+                }}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm disabled:opacity-30"
+                disabled={deliveryPrice <= parseFloat(selectedBuyerRegion?.deliveryPrice || "0")}
+              >
+                -1
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryPrice(prev => prev + 1)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-600 text-white font-bold active:scale-90 shadow-lg"
+              >
+                +1
+              </button>
             </div>
-            <p className="text-[9px] font-bold text-slate-400 italic">* يمكنك زيادة سعر التوصيل، ولا يمكن تقليله عن السعر الأصلي للمنطقة ({formatDinarAsAlfWithUnit(selectedBuyerRegion?.deliveryPrice || 0)}).</p>
+          </div>
+        </div>
+
+        {/* 4. نوع الطلب ووقت الطلب جنباً إلى جنب */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-sky-100">
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب *</label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {commonOrderTypes.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setOrderType(t)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    orderType === t
+                    ? "bg-sky-600 text-white shadow-md scale-105"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-sky-50"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <input
+              name="orderType"
+              value={orderType}
+              onChange={e => setOrderType(e.target.value)}
+              placeholder="أو اكتب نوعاً مخصصاً..."
+              className={inputClass}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب *</label>
+            <input
+              name="orderTime"
+              value={orderTime}
+              onChange={e => setOrderTime(e.target.value)}
+              placeholder="فوري، غداً، الساعة ٤..."
+              className={inputClass}
+              required
+            />
+          </div>
         </div>
 
         <div className="mt-4 p-4 rounded-2xl bg-slate-900 text-white">
-            <div className="flex justify-between items-center">
-                <span className="text-xs font-bold opacity-70">المبلغ الكلي المطلوب من المشتري:</span>
-                <span className="text-xl font-black text-sky-400">{formatDinarAsAlfWithUnit(totalAmount)}</span>
-            </div>
-            <p className="text-[10px] mt-1 opacity-50 text-center">(مبلغ البائع + الربح + التوصيل)</p>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold opacity-70">المبلغ الكلي المطلوب من المستلم (سعر البيع):</span>
+            <span className="text-xl font-black text-sky-400">{formatDinarAsAlfWithUnit(totalAmount)}</span>
+          </div>
+          <p className="text-[10px] mt-1 opacity-50 text-center">(سعر الشراء + الربح + التوصيل)</p>
         </div>
       </section>
 
