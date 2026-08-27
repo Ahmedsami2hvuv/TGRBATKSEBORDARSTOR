@@ -38,7 +38,15 @@ export function MandoubModalContainer({
     return () => {
       el.removeEventListener("touchstart", preventTouchGesture);
       el.removeEventListener("touchmove", preventTouchGesture);
-      document.body.style.overflow = origOverflow;
+      document.body.style.overflow = origOverflow || "";
+      document.body.style.pointerEvents = "";
+      document.documentElement.style.overflow = "";
+      if (typeof window !== "undefined") {
+        try {
+          (document.activeElement as HTMLElement)?.blur();
+          window.focus();
+        } catch {}
+      }
     };
   }, []);
 

@@ -175,6 +175,15 @@ export function MandoubOrderMoneyFlow({
     setDeliveryOpen(false);
     setPickupAdvanceToDelivering(false);
     setDeliveryAdvanceToDelivered(false);
+    if (typeof window !== "undefined") {
+      try {
+        document.body.style.overflow = "";
+        document.body.style.pointerEvents = "";
+        document.documentElement.style.overflow = "";
+        (document.activeElement as HTMLElement)?.blur();
+        window.focus();
+      } catch {}
+    }
   };
 
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
