@@ -629,18 +629,28 @@ export function PickupMoneyForm({
             required
           />
           {remainingAlfHint && (
-            <button
-              type="button"
-              onClick={() => {
-                if (Date.now() - mountTimeRef.current < 300) return;
-                setAmount(remainingAlfHint);
-                setTimeout(requestPickupMainSubmit, 10);
-              }}
-              className="flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-800 bg-emerald-100 px-4 font-black text-emerald-950 shadow-sm"
-              title="تعبئة المتبقي"
-            >
-              {remainingAlfHint}
-            </button>
+            <div className="relative shrink-0 flex items-center">
+              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
+              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-3 left-1 text-xs star-particle-2 z-10 select-none">💫</span>
+              <span className="pointer-events-none absolute -top-2 left-1/2 text-[10px] star-particle-3 z-10 select-none">⭐</span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (Date.now() - mountTimeRef.current < 300) return;
+                  setAmount(remainingAlfHint);
+                  setTimeout(requestPickupMainSubmit, 10);
+                }}
+                className="magical-money-block-green flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
+                title="اضغط لتعبئة المبلغ المطلوب دفعه فوراً"
+              >
+                <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
+                  <span>{remainingAlfHint}</span>
+                  <span className="text-[10px] font-bold opacity-90">د.ع</span>
+                </span>
+              </button>
+            </div>
           )}
         </div>
         <input type="hidden" name="mismatchReason" value="" />
@@ -1042,18 +1052,28 @@ export function DeliveryMoneyForm({
             required
           />
           {remainingAlfHint && (
-            <button
-              type="button"
-              onClick={() => {
-                if (Date.now() - mountTimeRef.current < 300) return;
-                setAmount(remainingAlfHint);
-                setTimeout(requestDeliveryMainSubmit, 10);
-              }}
-              className="flex shrink-0 items-center justify-center rounded-xl border-2 border-red-800 bg-red-100 px-4 font-black text-red-950 shadow-sm"
-              title="تعبئة المتبقي"
-            >
-              {remainingAlfHint}
-            </button>
+            <div className="relative shrink-0 flex items-center">
+              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
+              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-3 left-1 text-xs star-particle-2 z-10 select-none">💫</span>
+              <span className="pointer-events-none absolute -top-2 left-1/2 text-[10px] star-particle-3 z-10 select-none">⭐</span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (Date.now() - mountTimeRef.current < 300) return;
+                  setAmount(remainingAlfHint);
+                  setTimeout(requestDeliveryMainSubmit, 10);
+                }}
+                className="magical-money-block-red flex shrink-0 items-center justify-center rounded-xl border-2 border-red-600 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
+                title="اضغط لتعبئة المبلغ المطلوب استلامه فوراً"
+              >
+                <span className="relative z-10 flex items-center gap-1 drop-shadow-md">
+                  <span>{remainingAlfHint}</span>
+                  <span className="text-[10px] font-bold opacity-90">د.ع</span>
+                </span>
+              </button>
+            </div>
           )}
         </div>
         <input type="hidden" name="mismatchReason" value="" />
