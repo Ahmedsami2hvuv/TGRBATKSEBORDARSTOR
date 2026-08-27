@@ -639,8 +639,20 @@ export function PickupMoneyForm({
                 type="button"
                 onClick={() => {
                   if (Date.now() - mountTimeRef.current < 300) return;
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
                   setAmount(remainingAlfHint);
-                  setTimeout(requestPickupMainSubmit, 10);
+                  if (pickupSubmitModeRef.current) {
+                    pickupSubmitModeRef.current.value = "";
+                  }
+                  setTimeout(() => {
+                    if (mainSubmitRef.current) {
+                      mainSubmitRef.current.click();
+                    } else {
+                      formRef.current?.requestSubmit();
+                    }
+                  }, 40);
                 }}
                 className="magical-money-block-green flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
                 title="اضغط لتعبئة المبلغ المطلوب دفعه فوراً"
@@ -1062,8 +1074,20 @@ export function DeliveryMoneyForm({
                 type="button"
                 onClick={() => {
                   if (Date.now() - mountTimeRef.current < 300) return;
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
                   setAmount(remainingAlfHint);
-                  setTimeout(requestDeliveryMainSubmit, 10);
+                  if (deliverySubmitModeRef.current) {
+                    deliverySubmitModeRef.current.value = "";
+                  }
+                  setTimeout(() => {
+                    if (mainSubmitRef.current) {
+                      mainSubmitRef.current.click();
+                    } else {
+                      formRef.current?.requestSubmit();
+                    }
+                  }, 40);
                 }}
                 className="magical-money-block-red flex shrink-0 items-center justify-center rounded-xl border-2 border-red-600 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 px-4 py-2.5 font-black text-white text-base shadow-lg active:scale-95 transition-all cursor-pointer"
                 title="اضغط لتعبئة المبلغ المطلوب استلامه فوراً"
