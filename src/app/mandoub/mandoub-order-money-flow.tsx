@@ -683,7 +683,7 @@ export function PickupMoneyForm({
               className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-sm font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60"
               title="تحويل الحالة إلى «عند المندوب» دون تسجيل مبلغ صادر في هذه الخطوة"
             >
-              بدون
+              لم أدفع
             </button>
           ) : null}
           <button
@@ -1096,9 +1096,9 @@ export function DeliveryMoneyForm({
                 }
               }}
               className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-2 text-sm font-black text-red-950 shadow-sm transition hover:bg-red-100 disabled:opacity-60"
-              title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد في هذه خطوة"
+              title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد في هذه الخطوة"
             >
-              بدون
+              لم أستلم
             </button>
           ) : null}
           <button
