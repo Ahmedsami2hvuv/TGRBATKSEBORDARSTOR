@@ -1553,18 +1553,10 @@ ${productsText}`;
                       active ? "text-indigo-900 dark:text-indigo-100" :
                       priced ? "text-white" : "text-slate-800 dark:text-slate-200"
                     }`}>
-                      {priced && <span className="shrink-0">✅</span>}
-                      <span className="flex items-center gap-1 flex-wrap">
-                        <span>{p.line}</span>
-                        {displayQty && (
-                          <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
-                            ×{displayQty}
-                          </span>
-                        )}
-                      </span>
+                      <span>{p.line}</span>
                     </p>
 
-                    <div className="flex flex-col gap-0.5 mt-1">
+                    <div className="flex flex-col gap-0.5 mt-1 pb-4">
                       {branch && (
                         <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap self-start ${
                           isSelected ? 'bg-sky-100/80 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300' :
@@ -1587,6 +1579,15 @@ ${productsText}`;
                       )}
                     </div>
                   </div>
+
+                  {/* شارة العدد في الركن الأيسر السفلي للمنتج */}
+                  {displayQty && (
+                    <div className="absolute bottom-1 left-1 z-10">
+                      <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
+                        {displayQty}×
+                      </span>
+                    </div>
+                  )}
 
                   {/* شارة السعر في الأعلى */}
                   <div className="absolute top-1 left-1 flex gap-1 items-center">

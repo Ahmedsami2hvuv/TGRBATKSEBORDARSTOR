@@ -996,20 +996,10 @@ export function PreparerShoppingDraftEditClient({
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
                       <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 flex-wrap ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
-                        {priced && <span className="shrink-0">✅</span>}
-                        <span className="flex items-center gap-1 flex-wrap">
-                          <span>{p.line}</span>
-                          <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
-                            priced && !isOthers 
-                              ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
-                              : "bg-rose-600 text-white border border-rose-500 shadow-sm"
-                          }`}>
-                            ×{displayQty}
-                          </span>
-                        </span>
+                        <span>{p.line}</span>
                       </p>
 
-                    <div className="flex items-center justify-between gap-1 mt-1">
+                    <div className="flex items-center justify-between gap-1 mt-1 pb-4">
                         <div className="flex flex-wrap items-center gap-1 min-w-0">
                             {productBranchMap[p.line.trim().toLowerCase()] && (
                               <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}>
@@ -1031,6 +1021,15 @@ export function PreparerShoppingDraftEditClient({
                         </div>
                     </div>
                 </div>
+
+                {/* شارة العدد في الركن الأيسر السفلي للمنتج */}
+                {displayQty && (
+                  <div className="absolute bottom-1 left-1 z-10">
+                    <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
+                      {displayQty}×
+                    </span>
+                  </div>
+                )}
 
                 {/* شارة السعر - مطلقة لتوفير المساحة الرأسية */}
                 <div className="absolute top-1 left-1">
