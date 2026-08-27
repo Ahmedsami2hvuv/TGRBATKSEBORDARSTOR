@@ -168,8 +168,27 @@ function DraggableFloatButton({
 
   const labelPx = Math.max(8, Math.round(eff * (sizeScale < 1 ? 0.2 : 0.21)));
 
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = nodeRef.current;
+    if (!el) return;
+    const preventTouch = (e: TouchEvent) => {
+      if (e.cancelable) {
+        try { e.preventDefault(); } catch {}
+      }
+    };
+    el.addEventListener("touchstart", preventTouch, { passive: false });
+    el.addEventListener("touchmove", preventTouch, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", preventTouch);
+      el.removeEventListener("touchmove", preventTouch);
+    };
+  }, []);
+
   return (
     <div
+      ref={nodeRef}
       className="pointer-events-auto touch-none select-none"
       style={{
         position: "fixed",
