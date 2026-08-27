@@ -326,7 +326,7 @@ export function OrderDetailSection({
               className="w-full py-1.5 px-4 mb-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-full text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 shadow-xs transition active:scale-[0.98]"
               title="انقر لفتح تفاصيل المحل"
             >
-              <span>المحل (المرسل): {effectiveShopName}</span>
+              <span>تفاصيل المحل (المرسل)</span>
               <span className="text-[10px] bg-[#003399] text-white rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-xs">
                 ▼
               </span>
@@ -1419,7 +1419,7 @@ export function OrderDetailSection({
 
               <div className="text-center flex-1">
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                  رقم الطلب #{order.orderNumber}
+                  #{order.orderNumber}
                 </h2>
                 <div className="mt-1 flex justify-center">
                   <span className="rounded-xl bg-[#00CC00] border-2 border-white/20 px-4 py-1 text-[10px] font-black text-white shadow-inner uppercase tracking-wider">
@@ -1459,7 +1459,7 @@ export function OrderDetailSection({
         {isModal || courierSettings?.orderViewTheme === "theme11" ? null : (
           <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-black text-slate-900 dark:text-white">رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white"><span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
               <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
               <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900/40">
