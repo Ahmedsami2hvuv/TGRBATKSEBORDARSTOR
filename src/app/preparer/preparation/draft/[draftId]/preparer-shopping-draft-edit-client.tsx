@@ -116,6 +116,12 @@ export function PreparerShoppingDraftEditClient({
   const [noProfit, setNoProfit] = useState(!!(initialDraft.data as any)?.noProfit);
   const [products, setProducts] = useState<ProductRow[]>(() => parseProducts(initialDraft.data));
 
+  const isStoreOrder = useMemo(() => {
+    const t = (titleLine || initialDraft.titleLine || "").toString().toLowerCase();
+    const subSource = (initialDraft as any)?.submissionSource || (initialDraft.data as any)?.submissionSource;
+    return subSource === "web_store" || t.includes("متجر") || t.includes("store");
+  }, [titleLine, initialDraft]);
+
   const handleToggleNoProfit = (newVal: boolean) => {
     setNoProfit(newVal);
     const updatedProducts = products.map(p => {
@@ -1022,8 +1028,8 @@ export function PreparerShoppingDraftEditClient({
                     </div>
                 </div>
 
-                {/* شارة العدد في الركن الأيسر السفلي للمنتج */}
-                {displayQty && (
+                {/* شارة العدد في الركن الأيسر السفلي للمنتج (تظهر لطلبات المتجر فقط) */}
+                {isStoreOrder && displayQty && (
                   <div className="absolute bottom-1 left-1 z-10">
                     <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
                       {displayQty}×
