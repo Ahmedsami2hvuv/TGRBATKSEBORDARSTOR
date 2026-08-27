@@ -340,27 +340,56 @@ function findStoreProductDetails(line: string, storeProducts: any[]): { salePric
 }
 
 // دالة مساعدة للحصول على فرع وصورة المنتج من قائمة منتجات المتجر
-function findStoreProductBranchAndPhoto(line: string, storeProducts: any[]): { branchName: string | null; photoUrl: string | null } {
-  if (!line || !storeProducts || storeProducts.length === 0) return { branchName: null, photoUrl: null };
+function findStoreProductBranchAndPhoto(
+  line: string,
+  storeProducts: any[],
+  isStoreOrder: boolean = false,
+  productObj?: any
+): { branchName: string | null; photoUrl: string | null } {
+  if (!line) return { branchName: null, photoUrl: null };
   const cleanedLine = cleanText(line);
-  if (!cleanedLine) return { branchName: null, photoUrl: null };
 
-  for (const product of storeProducts) {
-    const cleanedName = cleanText(product.name);
-    if (cleanedName && (cleanedLine === cleanedName || cleanedLine.includes(cleanedName))) {
-      let photoUrl: string | null = null;
-      if (product.photoUrls && Array.isArray(product.photoUrls) && product.photoUrls.length > 0) {
-        photoUrl = product.photoUrls[0];
-      } else if (typeof product.photoUrls === 'string' && product.photoUrls) {
-        photoUrl = product.photoUrls;
+  // لطلبات التجهيز والتحليل (غير المتجر): تلغى الصور تماماً وممنوع جلب أو عرض أي صور
+  let photoUrl: string | null = null;
+
+  // في طلبات المتجر فقط: نتحقق أولاً إذا كان المنتج يمتلك صورة مباشرة مخصصة له في الطلب
+  if (isStoreOrder && productObj) {
+    if (productObj.photoUrl) photoUrl = productObj.photoUrl;
+    else if (productObj.image) photoUrl = productObj.image;
+    else if (Array.isArray(productObj.photoUrls) && productObj.photoUrls.length > 0) photoUrl = productObj.photoUrls[0];
+    else if (typeof productObj.photoUrls === 'string' && productObj.photoUrls) photoUrl = productObj.photoUrls;
+  }
+
+  let branchName: string | null = null;
+
+  if (storeProducts && storeProducts.length > 0 && cleanedLine) {
+    for (const product of storeProducts) {
+      const cleanedName = cleanText(product.name);
+      // مطابقة تامة حصراً لاسم المنتج أو تطابق معرف المنتج الاصلي
+      const isExactMatch = cleanedName && (cleanedLine === cleanedName);
+      const isIdMatch = productObj && (product.id === productObj.productId || product.id === productObj.id);
+
+      if (isExactMatch || isIdMatch) {
+        branchName = product.branch?.name || null;
+        // إذا كان طلب متجر ولم تكن الصورة محددة مسبقاً، نأخذ صورة المنتج المطابق حصراً
+        if (isStoreOrder && !photoUrl) {
+          if (product.photoUrls && Array.isArray(product.photoUrls) && product.photoUrls.length > 0) {
+            photoUrl = product.photoUrls[0];
+          } else if (typeof product.photoUrls === 'string' && product.photoUrls) {
+            photoUrl = product.photoUrls;
+          }
+        }
+        return { branchName, photoUrl: isStoreOrder ? photoUrl : null };
       }
-      return {
-        branchName: product.branch?.name || null,
-        photoUrl
-      };
+
+      // إيجاد الفرع فقط لطلبات التجهيز دون إرجاع صور إذا كانت مطابقة جزئية لاسم المنتج/المحل
+      if (!branchName && cleanedName && (cleanedLine.includes(cleanedName) || cleanedName.includes(cleanedLine))) {
+        branchName = product.branch?.name || null;
+      }
     }
   }
-  return { branchName: null, photoUrl: null };
+
+  return { branchName, photoUrl: isStoreOrder ? photoUrl : null };
 }
 
 export function OrderPricingPanel({
@@ -395,10 +424,25 @@ export function OrderPricingPanel({
   currentPreparerIds?: string[];
   regions?: { id: string; name: string }[];
   fishPricesRaw?: string;
+  isStoreOrder?: boolean;
 }) {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
+
+  const isStoreOrder = useMemo(() => {
+    if (typeof isStoreOrderProp === "boolean") return isStoreOrderProp;
+    const subLabel = (initialData?.submissionLabel || "").toString();
+    const orderType = (initialData?.orderType || initialData?.titleLine || "").toString();
+    const isWebStore = initialData?.submissionSource === "web_store" || initialData?.isStoreOrder === true;
+
+    return (
+      isWebStore ||
+      subLabel === "طلب متجر" ||
+      orderType.toLowerCase().includes("متجر") ||
+      orderType.toLowerCase().includes("store")
+    );
+  }, [initialData, isStoreOrderProp]);
   const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
   const [filterType, setFilterType] = useState<'all' | 'unpriced' | 'priced'>('all');
   const [searchTerm, setSearchTerm] = useState("");
@@ -960,12 +1004,12 @@ ${productsText}`;
   const branches = useMemo(() => {
     const bSet = new Set<string>();
     products.forEach(p => {
-      const details = findStoreProductBranchAndPhoto(p.line, storeProducts);
+      const details = findStoreProductBranchAndPhoto(p.line, storeProducts, isStoreOrder, p);
       const b = details.branchName || "أخرى";
       bSet.add(b);
     });
     return Array.from(bSet).sort((a, b) => a.localeCompare(b, 'ar'));
-  }, [products, storeProducts]);
+  }, [products, storeProducts, isStoreOrder]);
 
   const stats = useMemo(() => {
     const total = products.length;
@@ -976,7 +1020,7 @@ ${productsText}`;
 
   const orderedForButtons = useMemo(() => {
     const withIndex = products.map((p, idx) => {
-      const details = findStoreProductBranchAndPhoto(p.line, storeProducts);
+      const details = findStoreProductBranchAndPhoto(p.line, storeProducts, isStoreOrder, p);
       return {
         p,
         idx,
@@ -3955,6 +3999,11 @@ export default function PendingOrdersClient({
                     hideContainer={true}
                     storeProducts={storeProducts}
                     fishPricesRaw={fishPricesText}
+                    isStoreOrder={
+                      o.orderType?.toLowerCase().includes("متجر") ||
+                      o.orderType?.toLowerCase().includes("store") ||
+                      o.submissionLabel === "طلب متجر"
+                    }
                     onClose={() => {
                       setActivePricingOrderId(null);
                     }}
