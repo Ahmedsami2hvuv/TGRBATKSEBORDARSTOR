@@ -622,6 +622,20 @@ export function PreparerShoppingDraftEditClient({
     }
 
     return filtered.sort((a, b) => {
+      // 0. المواد المسندة للمجهز الحالي ("لك") تظهر في الأعلام أولاً في الطلب المشترك
+      const getPrepRank = (item: typeof a) => {
+        const assigned = item.p.assignedPreparerId;
+        if (assigned && assigned === preparerId) return 1; // "لك" في القمة أولاً
+        if (!assigned) return 2; // مادة غير مسندة لمجهز محدد
+        return 3; // مسندة لمجهز آخر
+      };
+
+      const rankA = getPrepRank(a);
+      const rankB = getPrepRank(b);
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
       const aPriced = a.p.buyAlf !== "" && a.p.sellAlf !== "";
       const bPriced = b.p.buyAlf !== "" && b.p.sellAlf !== "";
 
@@ -638,7 +652,7 @@ export function PreparerShoppingDraftEditClient({
       // 3. الترتيب الأصلي
       return a.idx - b.idx;
     });
-  }, [products, productBranchMap, searchTerm, activeBranch]);
+  }, [products, productBranchMap, searchTerm, activeBranch, preparerId]);
 
   function applyPricingPanel(goToNext = false) {
     setPricingErr(null);
