@@ -109,10 +109,11 @@ export async function findMandoubOrderForCourier(
   return prisma.order.findFirst({
     where: {
       id: orderId,
-      status: { in: ["assigned", "delivering", "delivered"] },
+      status: { in: ["assigned", "delivering", "delivered", "archived"] },
       OR: [
         { assignedCourierId: courierId },
         { courierEarningForCourierId: courierId },
+        { moneyEvents: { some: { courierId } } },
       ],
     },
     include: mandoubOrderDetailInclude,

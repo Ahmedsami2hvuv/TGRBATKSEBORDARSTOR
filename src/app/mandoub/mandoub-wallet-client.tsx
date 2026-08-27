@@ -94,19 +94,45 @@ function ledgerDirLabel(line: MandoubWalletLedgerLine): string {
   return line.kind;
 }
 
+function normalizeSearchNumbers(str: string): string {
+  if (!str) return "";
+  return str.replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦ realm ٧٨٩".indexOf(d).toString() !== -1 ? "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString() : d);
+}
+
 function buildWalletSearchText(line: MandoubWalletLedgerLine) {
-  const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", {
+  const d = new Date(line.createdAt);
+  
+  const dateFormattedNum = d.toLocaleString("en-US", {
     day: "numeric",
     month: "numeric",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
 
-  return [
+  const dateFormattedAr = d.toLocaleDateString("ar-IQ-u-nu-latn", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const hourStr = d.getHours().toString();
+  const minuteStr = d.getMinutes().toString().padStart(2, "0");
+  const dayStr = d.getDate().toString();
+  const monthStr = (d.getMonth() + 1).toString();
+
+  const alfAmount = formatDinarAsAlf(line.amountDinar);
+  const alfExpected = line.expectedDinar != null ? formatDinarAsAlf(line.expectedDinar) : "";
+  const dirLabel = ledgerDirLabel(line);
+
+  const rawFields = [
     line.orderNumber?.toString(),
     line.amountDinar?.toString(),
+    alfAmount,
     line.expectedDinar?.toString(),
+    alfExpected,
     line.balanceAfter?.toString(),
     line.balanceEarnings?.toString(),
     line.balanceAdmin?.toString(),
@@ -114,22 +140,40 @@ function buildWalletSearchText(line: MandoubWalletLedgerLine) {
     line.regionName,
     line.orderNotes,
     line.miscLabel,
-    ledgerDirLabel(line),
-    dateStr,
+    dirLabel,
+    dateFormattedNum,
+    dateFormattedAr,
+    hourStr,
+    minuteStr,
+    dayStr,
+    monthStr,
     line.createdAt,
     line.deletedReason,
     line.deletedByDisplayName,
-  ]
+  ];
+
+  return rawFields
     .filter(Boolean)
+    .map((f) => String(f).replace(/[٠-٩]/g, (x) => "٠١٢٣٤٥٦٧٨٩".indexOf(x).toString()))
     .join(" ")
     .toLowerCase();
 }
 
 function matchesWalletQuery(line: MandoubWalletLedgerLine, query: string) {
-  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!tokens.length) return true;
+  const cleanQuery = query
+    .trim()
+    .toLowerCase()
+    .replace(/[٠-٩]/g, (x) => "٠١٢٣٤٥٦٧٨٩".indexOf(x).toString());
+
+  if (!cleanQuery) return true;
+
+  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
   const searchable = buildWalletSearchText(line);
-  return tokens.every((token) => searchable.includes(token));
+
+  return tokens.every((token) => {
+    const cleanToken = token.replace(/^#/, "");
+    return searchable.includes(token) || (cleanToken && searchable.includes(cleanToken));
+  });
 }
 
 export type MandoubLedgerFilter = "ward" | "sader" | "site" | "all";
