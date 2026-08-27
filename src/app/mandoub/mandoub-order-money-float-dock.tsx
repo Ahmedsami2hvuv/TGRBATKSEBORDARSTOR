@@ -183,6 +183,9 @@ function DraggableFloatButton({
       title="اسحب للتحريك — يُحفظ المكان لكل الطلبات — اضغط مطولاً لضبط حجم الأزرار"
       onPointerDownCapture={(e) => {
         if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (e.cancelable) {
+          try { e.preventDefault(); } catch {}
+        }
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         longPressFiredRef.current = false;
         dragRef.current = {
@@ -207,6 +210,9 @@ function DraggableFloatButton({
       onPointerMove={(e) => {
         const d = dragRef.current;
         if (!d) return;
+        if (e.cancelable) {
+          try { e.preventDefault(); } catch {}
+        }
         const dx = e.clientX - d.startX;
         const dy = e.clientY - d.startY;
         if (Math.hypot(dx, dy) > DRAG_THRESHOLD) {
