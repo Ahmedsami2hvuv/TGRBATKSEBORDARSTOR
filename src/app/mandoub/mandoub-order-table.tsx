@@ -23,6 +23,7 @@ import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
 import { MandoubOrderDetailActions } from "./mandoub-order-detail-actions";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
+import { MandoubModalContainer } from "./mandoub-modal-container";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
 
@@ -653,8 +654,8 @@ export function MandoubOrderTable({
 
       {pickupOrder &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
+          <MandoubModalContainer onClose={() => setPickupOrder(null)}>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between border-b pb-3">
                 <h3 className="text-lg font-bold text-slate-900">تسجيل استلام - طلب #{pickupOrder.shortId}</h3>
                 <button
@@ -687,14 +688,14 @@ export function MandoubOrderTable({
                 noRedirect
               />
             </div>
-          </div>,
+          </MandoubModalContainer>,
           document.body,
         )}
 
       {deliveryOrder &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
+          <MandoubModalContainer onClose={() => setDeliveryOrder(null)}>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between border-b pb-3">
                 <h3 className="text-lg font-bold text-slate-900">تسجيل تسليم - طلب #{deliveryOrder.shortId}</h3>
                 <button
@@ -728,7 +729,7 @@ export function MandoubOrderTable({
                 noRedirect
               />
             </div>
-          </div>,
+          </MandoubModalContainer>,
           document.body,
         )}
 

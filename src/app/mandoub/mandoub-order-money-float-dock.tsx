@@ -304,9 +304,32 @@ function DraggableFloatPanel({
   children: ReactNode;
 }) {
   const drag = useDragPersist(id, pos, onMove, onFinalize, fabSize);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+
+    const preventPanelTouch = (e: TouchEvent) => {
+      // منع تسرب السحب كلياً لمتصفح الأندرويد لمنع Pull-to-refresh
+      if (e.cancelable) {
+        try { e.preventDefault(); } catch {}
+      }
+      try { e.stopPropagation(); } catch {}
+    };
+
+    el.addEventListener("touchstart", preventPanelTouch, { passive: false });
+    el.addEventListener("touchmove", preventPanelTouch, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", preventPanelTouch);
+      el.removeEventListener("touchmove", preventPanelTouch);
+    };
+  }, []);
 
   return (
     <div
+      ref={panelRef}
       className="pointer-events-auto touch-none select-none"
       style={{
         position: "fixed",
@@ -316,6 +339,7 @@ function DraggableFloatPanel({
         maxHeight: MONEY_FLOAT_DIMS.panelH,
         zIndex: Z_PANEL,
         touchAction: "none",
+        overscrollBehavior: "none",
       }}
       dir="rtl"
       lang="ar"
