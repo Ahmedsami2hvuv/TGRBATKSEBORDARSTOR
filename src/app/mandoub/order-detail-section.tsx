@@ -682,13 +682,35 @@ export function OrderDetailSection({
                     <DynamicIcon icon={icons?.ui_edit} fallback="✏️" width={20} height={20} />
                  </div>
                  <div className="flex-1 text-right px-3">
-                    <p className="text-[10px] font-black text-rose-800">ملاحظة الطلب</p>
-                    <p className="text-[11px] font-bold text-slate-500">انقر لإضافة أو تعديل النقطة الدالة</p>
+                    <p className="text-[10px] font-black text-rose-800">ملاحظة الطلب / النقطة الدالة</p>
+                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                      {mergedLandmark || "انقر لإضافة أو تعديل النقطة الدالة"}
+                    </p>
                  </div>
                  <div className="text-rose-600">
                     <DynamicIcon icon={icons?.ui_location} fallback="📍" width={24} height={24} />
                  </div>
               </div>
+
+              {/* قسم الاستدلال الذكي المضيء للزبون */}
+              {isSmartHintValid(smartHintLine) && (
+                <div className="mt-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/50 dark:to-teal-950/40 border-2 border-emerald-300 dark:border-emerald-700/70 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1 justify-end">
+                      <span>💡 الاستدلال الذكي</span>
+                    </p>
+                    <p 
+                      className="text-xs font-black text-emerald-950 dark:text-emerald-100 mt-1"
+                      style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
+                    >
+                      {smartHintLine!.trim()}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0 mr-2">
+                    💡
+                  </div>
+                </div>
+              )}
             </div>
           );
         }

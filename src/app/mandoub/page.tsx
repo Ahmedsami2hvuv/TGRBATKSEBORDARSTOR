@@ -669,15 +669,16 @@ export default async function MandoubPage({ searchParams }: Props) {
     regionId?: string | null;
   }): string {
     const fallback = String(params.fallbackLandmark ?? "").trim();
-    if (!String(params.locationUrl || "").trim()) {
+    const cleanUrl = String(params.locationUrl || "").trim();
+
+    const customerLoc = cleanUrl ? extractLatLngFromLocationInput(cleanUrl) : null;
+
+    if (!customerLoc) {
       return fallback ? `قريب من (${fallback})` : "—";
     }
-    const customerLoc = extractLatLngFromLocationInput(params.locationUrl);
-    if (!customerLoc) return fallback ? `قريب من (${fallback})` : "—";
 
     const validWaypoints = allWaypoints
       .map((wp) => {
-        // التحقق أولاً من المضلع السكني إذا كان متوفراً وصالحاً
         if (wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3) {
           const poly = wp.polygonCoords as Array<{ latitude: number; longitude: number }>;
           const isInside = isPointInPolygonLocal(customerLoc, poly);
@@ -699,23 +700,25 @@ export default async function MandoubPage({ searchParams }: Props) {
           wp.latitude,
           wp.longitude
         );
+        const maxDist = Math.max(wp.radiusMeters || 100, 2500);
         return {
           name: wp.name?.trim() || "مدخل",
           regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
           distanceM,
-          radiusMeters: wp.radiusMeters,
+          radiusMeters: maxDist,
           isInPolygon: false,
         };
       })
       .filter((wp) => wp.isInPolygon || wp.distanceM <= wp.radiusMeters)
       .sort((a, b) => a.distanceM - b.distanceM);
 
-    if (validWaypoints.length === 0) {
-      return fallback ? `قريب من (${fallback})` : "—";
+    if (validWaypoints.length > 0) {
+      const nearest = validWaypoints[0];
+      const distanceText = nearest.isInPolygon ? "" : nearest.distanceM > 200 ? ` (~${Math.round(nearest.distanceM)}م)` : "";
+      return `في (${nearest.name}${distanceText})${fallback ? ` — قريب من (${fallback})` : ""}`;
     }
 
-    const nearest = validWaypoints[0];
-    return `في (${nearest.name})`;
+    return fallback ? `قريب من (${fallback})` : "—";
   }
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
