@@ -408,6 +408,7 @@ export function OrderPricingPanel({
   currentPreparerIds = [],
   regions = [],
   fishPricesRaw = "",
+  isStoreOrder: isStoreOrderProp,
 }: {
   orderId: string;
   initialData: any;
