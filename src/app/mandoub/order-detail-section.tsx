@@ -145,7 +145,7 @@ export function OrderDetailSection({
   }, []);
   const activeConfig = isMounted ? fontSizeConfig : null;
 
-  // حل مشكلة السحب للتحديث (Pull-to-refresh) كلياً وجذرياً في تطبيق المندوب على الموبايل والأندرويد
+  // حل مشكلة السحب للتحديث مع السماح الكامل بالتمرير الحر صعوداً ونزولاً داخل تفاصيل الطلب
   useEffect(() => {
     let lastTouchY = 0;
 
@@ -160,8 +160,23 @@ export function OrderDetailSection({
       const touchY = e.touches[0].clientY;
       const touchYDelta = touchY - lastTouchY;
 
-      // إذا كانت الصفحة عند أعلى نقطة والسحب لأسفل، نلغي إيماءة التحديث تماماً
-      if (window.scrollY <= 2 && touchYDelta > 0) {
+      // في حالة فتح الطلبية كـ Modal عائم، نعتمد على تمرير الحاوية بداخلها وليس الشاشة الخلفية
+      if (isModal) {
+        const scrollTarget = e.target as HTMLElement | null;
+        const scrollableParent = scrollTarget?.closest('.overflow-y-auto, .overflow-auto');
+        const isAtTop = scrollableParent ? scrollableParent.scrollTop <= 0 : true;
+
+        // فقط إذا كان المستخدم عند أعلى النقطة بداخل المودال والسحب نازل لأسفل التحديث
+        if (isAtTop && touchYDelta > 0) {
+          if (e.cancelable) {
+            try { e.preventDefault(); } catch {}
+          }
+        }
+        return;
+      }
+
+      // في الصفحة العادية: فقط عند قمة رأس الشاشة والسحب لأسفل
+      if (window.scrollY <= 0 && touchYDelta > 0) {
         if (e.cancelable) {
           try { e.preventDefault(); } catch {}
         }

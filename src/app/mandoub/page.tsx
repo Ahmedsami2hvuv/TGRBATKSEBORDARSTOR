@@ -663,6 +663,21 @@ export default async function MandoubPage({ searchParams }: Props) {
     return inside;
   }
 
+  function isBadWaypointName(name: string): boolean {
+    if (!name) return true;
+    const n = name.trim().toLowerCase();
+    return (
+      n.includes("محرمة") ||
+      n.includes("محرمه") ||
+      n.includes("تست") ||
+      n.includes("test") ||
+      n.includes("dummy") ||
+      n.includes("م814") ||
+      n.includes("ممر") ||
+      n.length < 2
+    );
+  }
+
   function computeSmartHint(params: {
     locationUrl: string;
     fallbackLandmark?: string | null;
@@ -678,6 +693,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     }
 
     const validWaypoints = allWaypoints
+      .filter((wp) => !isBadWaypointName(wp.name || ""))
       .map((wp) => {
         if (wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3) {
           const poly = wp.polygonCoords as Array<{ latitude: number; longitude: number }>;
@@ -685,8 +701,8 @@ export default async function MandoubPage({ searchParams }: Props) {
           
           if (isInside) {
             return {
-              name: wp.name?.trim() || "مدخل",
-              regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+              name: wp.name?.trim() || "مربع سكني",
+              regionName: wp.region?.name?.trim() || "",
               distanceM: 0,
               radiusMeters: 10,
               isInPolygon: true,
@@ -700,16 +716,16 @@ export default async function MandoubPage({ searchParams }: Props) {
           wp.latitude,
           wp.longitude
         );
-        const maxDist = Math.max(wp.radiusMeters || 100, 2500);
+        const maxDist = Math.max(wp.radiusMeters || 100, 1500);
         return {
-          name: wp.name?.trim() || "مدخل",
-          regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+          name: wp.name?.trim() || "",
+          regionName: wp.region?.name?.trim() || "",
           distanceM,
           radiusMeters: maxDist,
           isInPolygon: false,
         };
       })
-      .filter((wp) => wp.isInPolygon || wp.distanceM <= wp.radiusMeters)
+      .filter((wp) => wp.name && (wp.isInPolygon || wp.distanceM <= wp.radiusMeters))
       .sort((a, b) => a.distanceM - b.distanceM);
 
     if (validWaypoints.length > 0) {
