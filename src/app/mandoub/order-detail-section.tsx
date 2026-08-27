@@ -145,32 +145,42 @@ export function OrderDetailSection({
   }, []);
   const activeConfig = isMounted ? fontSizeConfig : null;
 
-  // حل مشكلة السحب للتحديث (Pull-to-refresh) في تطبيق الأندرويد عند فتح الطلبية كـ Modal
+  // حل مشكلة السحب للتحديث (Pull-to-refresh) كلياً وجذرياً في تطبيق المندوب على الموبايل والأندرويد
   useEffect(() => {
-    if (!isModal) return;
+    let lastTouchY = 0;
 
-    const originalMinHeight = document.documentElement.style.minHeight;
-    const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        lastTouchY = e.touches[0].clientY;
+      }
+    };
 
-    // تعطيل التمرير السلس مؤقتاً لتجنب التأثيرات البصرية
-    document.documentElement.style.scrollBehavior = "auto";
-    
-    // جعل الصفحة أطول قليلاً لضمان عمل السكرول
-    document.documentElement.style.minHeight = "101vh";
-    
-    // تمرير الصفحة بمقدار 1 بكسل ليكون scrollY > 0 وبالتالي يتم تعطيل السحب للتحديث في الأندرويد
-    if (window.scrollY === 0) {
-      window.scrollTo(0, 1);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touchY = e.touches[0].clientY;
+      const touchYDelta = touchY - lastTouchY;
+
+      // إذا كانت الصفحة عند أعلى نقطة والسحب لأسفل، نلغي إيماءة التحديث تماماً
+      if (window.scrollY <= 2 && touchYDelta > 0) {
+        if (e.cancelable) {
+          try { e.preventDefault(); } catch {}
+        }
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    if (isModal) {
+      document.body.style.overflow = "hidden";
     }
 
-    // تجميد تمرير الصفحة الخلفية
-    document.body.style.overflow = "hidden";
-
     return () => {
-      // استعادة الإعدادات الأصلية
-      document.body.style.overflow = "";
-      document.documentElement.style.minHeight = originalMinHeight;
-      document.documentElement.style.scrollBehavior = originalScrollBehavior;
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      if (isModal) {
+        document.body.style.overflow = "";
+      }
     };
   }, [isModal]);
 
