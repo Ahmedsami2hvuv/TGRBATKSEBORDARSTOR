@@ -324,16 +324,20 @@ function MandoubFullBlockCardGrid({
               </span>
             </div>
 
-            {/* سطر التفاصيل المالية والنوع والزبون */}
+            {/* سطر التفاصيل المالية والنوع والوقت والتاريخ */}
             <div className="space-y-1">
-              <div className="flex items-center justify-between gap-1.5 text-xs font-black text-slate-800 dark:text-slate-100">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-1.5 flex-wrap text-xs font-black text-slate-800 dark:text-slate-100">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
                     {displayGoodsType}
                   </span>
                   <span className="text-slate-400 font-bold">←</span>
                   <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40">
                     {displayTotal}
+                  </span>
+                  <span className="text-slate-400 font-bold">←</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold text-[11px]">
+                    {o.orderNoteTime || o.timeLine || "فوري"} • {o.dateLine}
                   </span>
                 </div>
 
@@ -345,12 +349,6 @@ function MandoubFullBlockCardGrid({
                   📞 {o.phoneLine}
                 </div>
               )}
-            </div>
-
-            {/* السطر السفلي: وقت وتاريخ الطلب */}
-            <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-              <span>📅 {o.dateLine}</span>
-              <span className="text-rose-600 dark:text-rose-400 font-black">⏰ {o.orderNoteTime || o.timeLine || "فوري"}</span>
             </div>
           </div>
         );
