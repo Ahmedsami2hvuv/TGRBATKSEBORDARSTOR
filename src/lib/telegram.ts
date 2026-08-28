@@ -151,19 +151,34 @@ export async function sendTelegramMessageWithKeyboardToChat(
   options?: TelegramSendOptions,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
   if (!botToken) {
-    // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
     console.warn("[telegram] sendTelegramMessageWithKeyboardToChat called without botToken and no auto-config possible.");
   }
 
-  const data = await telegramRaw("sendMessage", {
+  let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+  let data = await telegramRaw("sendMessage", {
     chat_id: chatId,
-    text,
+    text: formattedText,
     parse_mode: "HTML",
     disable_web_page_preview: true,
     reply_markup: replyMarkup,
     disable_notification: options?.disable_notification,
     protect_content: options?.protect_content,
   }, botToken);
+
+  if (!data.ok) {
+    console.warn(`[telegram] Keyboard HTML parse failed (${data.description}), falling back to plain text send...`);
+    const plainText = text.replace(/\*\*/g, '');
+    data = await telegramRaw("sendMessage", {
+      chat_id: chatId,
+      text: plainText,
+      disable_web_page_preview: true,
+      reply_markup: replyMarkup,
+      disable_notification: options?.disable_notification,
+      protect_content: options?.protect_content,
+    }, botToken);
+  }
+
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -281,18 +296,34 @@ export async function sendTelegramHtmlToChat(
   options?: TelegramSendOptions,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!botToken) {
-    // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
     console.warn("[telegram] sendTelegramMessageWithKeyboardToChat called without botToken and no auto-config possible.");
   }
 
-  const data = await telegramRaw("sendMessage", {
+  // تحويل Markdown الـ bold للـ HTML
+  let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+  let data = await telegramRaw("sendMessage", {
     chat_id: chatId,
-    text,
+    text: formattedText,
     parse_mode: "HTML",
     disable_web_page_preview: true,
     disable_notification: options?.disable_notification,
     protect_content: options?.protect_content,
   }, botToken);
+
+  // إذا رفض تلغرام تنسيق الـ HTML (مثلاً بسبب أقواس أو رموز)، نرسلها فوراً كنص عادي لتصل دائماً للمستخدم!
+  if (!data.ok) {
+    console.warn(`[telegram] HTML parse failed (${data.description}), falling back to plain text send...`);
+    const plainText = text.replace(/\*\*/g, '');
+    data = await telegramRaw("sendMessage", {
+      chat_id: chatId,
+      text: plainText,
+      disable_web_page_preview: true,
+      disable_notification: options?.disable_notification,
+      protect_content: options?.protect_content,
+    }, botToken);
+  }
+
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
