@@ -51,6 +51,17 @@ export function MandoubOrderDetailActions({
         <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3 h-3" />
         تعديل الطلب
       </button>
+
+      {(onCloseModal || (closeHref && closeHref !== "#")) && (
+        <button
+          type="button"
+          onClick={handleClose}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white font-black shadow-md border border-white active:scale-90 transition-all cursor-pointer mr-1"
+          title="إغلاق"
+        >
+          <span className="text-sm font-black leading-none">✕</span>
+        </button>
+      )}
     </div>
   );
 }
