@@ -226,6 +226,8 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (m?.[1]) return { kind: "cust_field_door", customerId: m[1] };
   m = /^rgs:(.+)$/.exec(t);
   if (m?.[1]) return { kind: "select_order_region", regionId: m[1] };
+  m = /^pspr:(.+)$/.exec(t);
+  if (m?.[1]) return { kind: "select_prep_preparer", preparerId: m[1] };
   return null;
 }
 
@@ -1158,6 +1160,44 @@ export async function handleTelegramAdminCallback(
           return true;
         }
 
+        // إذا كان الطلب مسودة تجهيز، ننتقل لخطوة عرض أزرار المجهزين!
+        if (p.isPrepDraft) {
+          p.regionId = region.id;
+          p.regionName = region.name;
+
+          const preparers = await prisma.companyPreparer.findMany({
+            where: { active: true },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" }
+          });
+
+          await prisma.telegramBotSession.update({
+            where: { telegramUserId },
+            data: { step: "admin_select_prep_preparer", payload: JSON.stringify(p) }
+          });
+
+          const inlineKeyboard: any[] = [];
+          for (let i = 0; i < preparers.length; i += 2) {
+            const row: any[] = [];
+            const p1 = preparers[i];
+            row.push({ text: `👨‍🍳 ${p1.name}`, callback_data: `pspr:${p1.id}` });
+            if (i + 1 < preparers.length) {
+              const p2 = preparers[i + 1];
+              row.push({ text: `👨‍🍳 ${p2.name}`, callback_data: `pspr:${p2.id}` });
+            }
+            inlineKeyboard.push(row);
+          }
+          inlineKeyboard.push([{ text: "❌ إلغاء", callback_data: "main" }]);
+
+          const prepMsg = `🛒 **تم تثبيت المنطقة: ${region.name}**\n\n📝 **المواد:**\n${p.itemsList}\n📞 **الهاتف:** ${p.customerPhone}\n\n👨‍🍳 **اختر المجهز الذي تريد إسناد التجهيز له:**`;
+
+          const edited = await editTelegramMessage(chatId, messageId, prepMsg, { inline_keyboard: inlineKeyboard }, botToken);
+          if (!edited.ok) {
+            await sendTelegramMessageWithKeyboardToChat(chatId, prepMsg, { inline_keyboard: inlineKeyboard }, botToken);
+          }
+          return true;
+        }
+
         const finalDeliveryPrice = region.deliveryPrice.toNumber();
         const totalAmount = Number(p.price) + Number(finalDeliveryPrice);
 
@@ -1203,6 +1243,46 @@ export async function handleTelegramAdminCallback(
         if (!edited.ok) {
           await sendTelegramMessageWithKeyboardToChat(chatId, confirmMsg, {
             inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+          }, botToken);
+        }
+        return true;
+      }
+      case "select_prep_preparer": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "admin_select_prep_preparer") return true;
+        const p = JSON.parse(session.payload || "{}");
+
+        const preparer = await prisma.companyPreparer.findUnique({ where: { id: (parsed as any).preparerId } });
+        if (!preparer) {
+          await answerCallbackQuery(cq.id, "المجهز غير موجود", true, botToken);
+          return true;
+        }
+
+        const draft = await prisma.companyPreparerShoppingDraft.create({
+          data: {
+            preparerId: preparer.id,
+            rawListText: p.itemsList,
+            customerPhone: p.customerPhone || "غير محدد",
+            customerRegionId: p.regionId || null,
+            titleLine: `تجهيز ${p.regionName || "منطقة"}`,
+            status: "draft"
+          }
+        });
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { step: "idle", payload: "" }
+        });
+
+        const successMsg = `✅ **تم إنشاء مسودة التجهيز وإسنادها للمجهز بنجاح!**\n\n- **رقم التجهيز:** #${draft.draftNumber}\n- **المجهز:** ${preparer.name}\n- **المنطقة:** ${p.regionName || "غير محدد"}\n- **الهاتف:** ${p.customerPhone || "غير محدد"}\n\n📝 **المواد المطلوبة:**\n${p.itemsList}`;
+
+        const edited = await editTelegramMessage(chatId, messageId, successMsg, {
+          inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        }, botToken);
+
+        if (!edited.ok) {
+          await sendTelegramMessageWithKeyboardToChat(chatId, successMsg, {
+            inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "main" }]]
           }, botToken);
         }
         return true;

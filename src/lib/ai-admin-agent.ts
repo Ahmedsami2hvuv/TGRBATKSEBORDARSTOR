@@ -15,7 +15,7 @@ const AI_TOOLS = [
     functionDeclarations: [
       {
         name: "create_order",
-        description: "إضافة ورصد طلب جديد في النظام فوراً عند وجود تفاصيل المحل والمنطقة وسعر الطلب وهاتف الزبون.",
+        description: "إضافة ورصد طلب مبيعات جديد في النظام عند وجود تفاصيل المحل والمنطقة وسعر الطلب وهاتف الزبون.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -29,6 +29,19 @@ const AI_TOOLS = [
             orderNoteTime: { type: "STRING", description: "وقت التسليم" }
           },
           required: ["shopQuery", "regionQuery", "price"]
+        }
+      },
+      {
+        name: "create_prep_shopping_draft",
+        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات (مثل: طماطة، خيار، بتيته، بصل).",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            regionQuery: { type: "STRING", description: "اسم المنطقة" },
+            customerPhone: { type: "STRING", description: "رقم هاتف الزبون (إن وجد)" },
+            itemsList: { type: "STRING", description: "قائمة المواد والمشتريات المطلوبة بالتفصيل" }
+          },
+          required: ["regionQuery", "itemsList"]
         }
       },
       {
@@ -62,6 +75,140 @@ const AI_TOOLS = [
   }
 ];
 
+export async function executeCreatePrepShoppingDraft(
+  args: any,
+  context?: { telegramUserId?: string; chatId?: string; botToken?: string }
+) {
+  const { regionQuery, customerPhone, itemsList } = args;
+
+  let matchingRegions = await prisma.region.findMany({
+    where: { name: { contains: regionQuery.trim(), mode: "insensitive" } },
+    select: { id: true, name: true, deliveryPrice: true },
+    orderBy: { name: "asc" }
+  });
+
+  if (matchingRegions.length === 0) {
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const ranked = rankRegionsByQuery(regionQuery, allRegions, 5);
+    if (ranked.length > 0) matchingRegions = ranked;
+  }
+
+  const phone = (customerPhone || "").trim() || "غير محدد";
+
+  // إذا وجدنا أكثر من منطقة متشابهة، نعرض أزرار المناطق أولاً للتجهيز
+  if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
+    const payload = {
+      isPrepDraft: true,
+      customerPhone: phone,
+      itemsList: itemsList,
+      regionQuery: regionQuery
+    };
+
+    await prisma.telegramBotSession.upsert({
+      where: { telegramUserId: context.telegramUserId },
+      create: {
+        telegramUserId: context.telegramUserId,
+        chatId: context.chatId,
+        step: "admin_select_order_region",
+        payload: JSON.stringify(payload),
+      },
+      update: {
+        step: "admin_select_order_region",
+        payload: JSON.stringify(payload),
+      }
+    });
+
+    const inlineKeyboard: any[] = [];
+    for (let i = 0; i < matchingRegions.length; i += 2) {
+      const row: any[] = [];
+      const r1 = matchingRegions[i];
+      row.push({ text: `📍 ${r1.name}`, callback_data: `rgs:${r1.id}` });
+      if (i + 1 < matchingRegions.length) {
+        const r2 = matchingRegions[i + 1];
+        row.push({ text: `📍 ${r2.name}`, callback_data: `rgs:${r2.id}` });
+      }
+      inlineKeyboard.push(row);
+    }
+    inlineKeyboard.push([{ text: "❌ إلغاء التجهيز", callback_data: "main" }]);
+
+    await sendTelegramMessageWithKeyboardToChat(
+      context.chatId,
+      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${itemsList}\n\n❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\nيرجى اختيار المنطقة الدقيقة أدناه للانتقال لاختيار المجهز ⬇️`,
+      { inline_keyboard: inlineKeyboard },
+      context.botToken
+    ).catch(() => {});
+
+    return `🛒 **تم تحليل مسودة التجهيز!** يرجى اختيار المنطقة الدقيقة من الأزرار أدناه ⬇️`;
+  }
+
+  // إذا كانت المنطقة فريدة، ننتقل فوراً لخطوة اختيار المجهز بالأزرار!
+  const region = matchingRegions[0];
+  const preparers = await prisma.companyPreparer.findMany({
+    where: { active: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" }
+  });
+
+  if (preparers.length > 0 && context?.chatId && context?.telegramUserId) {
+    const payload = {
+      isPrepDraft: true,
+      customerPhone: phone,
+      itemsList: itemsList,
+      regionId: region?.id,
+      regionName: region?.name || regionQuery
+    };
+
+    await prisma.telegramBotSession.upsert({
+      where: { telegramUserId: context.telegramUserId },
+      create: {
+        telegramUserId: context.telegramUserId,
+        chatId: context.chatId,
+        step: "admin_select_prep_preparer",
+        payload: JSON.stringify(payload),
+      },
+      update: {
+        step: "admin_select_prep_preparer",
+        payload: JSON.stringify(payload),
+      }
+    });
+
+    const inlineKeyboard: any[] = [];
+    for (let i = 0; i < preparers.length; i += 2) {
+      const row: any[] = [];
+      const p1 = preparers[i];
+      row.push({ text: `👨‍🍳 ${p1.name}`, callback_data: `pspr:${p1.id}` });
+      if (i + 1 < preparers.length) {
+        const p2 = preparers[i + 1];
+        row.push({ text: `👨‍🍳 ${p2.name}`, callback_data: `pspr:${p2.id}` });
+      }
+      inlineKeyboard.push(row);
+    }
+    inlineKeyboard.push([{ text: "❌ إلغاء", callback_data: "main" }]);
+
+    await sendTelegramMessageWithKeyboardToChat(
+      context.chatId,
+      `🛒 **تم تحديد المواد والمنطقة (${region?.name || regionQuery}) بنجاح!**\n\n📝 **المواد:**\n${itemsList}\n📞 **الهاتف:** ${phone}\n\n👨‍🍳 **اختر المجهز الذي تريد إسناد التجهيز له:**`,
+      { inline_keyboard: inlineKeyboard },
+      context.botToken
+    ).catch(() => {});
+
+    return `🛒 **تم تحليل التجهيز!** اختر المجهز المطلوب من الأزرار أدناه 👨‍🍳⬇️`;
+  }
+
+  // إذا لم يكن هناك مجهزون مسجلون، ننشئ مسودة التجهيز فوراً
+  const draft = await prisma.companyPreparerShoppingDraft.create({
+    data: {
+      rawListText: itemsList,
+      customerPhone: phone,
+      customerRegionId: region?.id,
+      titleLine: `تجهيز ${region?.name || regionQuery}`,
+      status: "draft"
+    }
+  });
+
+  return `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **المواد:**\n${itemsList}`;
+}
+
 export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
   const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
 
@@ -71,34 +218,26 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
 
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
-  // 1. البحث عن كافة المناطق المتطابقة أو المتشابهة مع الكلمة المكتوبة
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: regionQuery.trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
     orderBy: { name: "asc" }
   });
 
-  // إذا لم نجد نتائج بالبحث المباشر، نحاول استخدام التصنيف المرتب
   if (matchingRegions.length === 0) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     const ranked = rankRegionsByQuery(regionQuery, allRegions, 5);
-    if (ranked.length > 0) {
-      matchingRegions = ranked;
-    }
+    if (ranked.length > 0) matchingRegions = ranked;
   }
 
-  // تنظيف السعر: إذا كان 10 أو 25 نحوله لآلاف الدينار تلقائياً
   let numPrice = Number(price) || 0;
-  if (numPrice > 0 && numPrice < 1000) {
-    numPrice = numPrice * 1000;
-  }
-
+  if (numPrice > 0 && numPrice < 1000) numPrice = numPrice * 1000;
   const phone = (customerPhone || "").trim() || "غير محدد";
 
-  // 2. إذا وجدنا أكثر من منطقة متشابهة، نعرض أزرار تفاعلية للمدير في التليجرام!
   if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
     const payload = {
       shopId: shop.id,
+      shopName: shop.name,
       customerPhone: phone,
       customerName: customerName || "",
       orderType: orderType || "طلب جديد",
@@ -107,7 +246,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
       regionQuery: regionQuery
     };
 
-    // حفظ الطلب المؤقت في جلسة المدير
     await prisma.telegramBotSession.upsert({
       where: { telegramUserId: context.telegramUserId },
       create: {
@@ -145,7 +283,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     return `⏳ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}".** يرجى النقر على زر المنطقة المطلوب تثبيتها أدناه ⬇️`;
   }
 
-  // 3. إذا كانت هناك منطقة واحدة فقط أو تم اختيارها مباشرة
   const region = matchingRegions[0];
   const finalDeliveryPrice = deliveryPrice != null ? deliveryPrice : (region?.deliveryPrice.toNumber() || 5000);
   const totalAmount = numPrice + Number(finalDeliveryPrice);
@@ -223,9 +360,6 @@ async function executeDebtTransaction(args: any) {
   return `✅ **تم تسجيل المعاملة المالية بنجاح!**\n- **الطرف:** ${targetName}\n- **المبلغ:** ${formatDinarAsAlf(amount)}\n- **النوع:** ${isBorrowed ? "دين على الحساب" : "دفع / تسديد"}\n- **التفاصيل:** ${note || "لا يوجد"}`;
 }
 
-/**
- * ذاكرة مؤقتة لسياق المحادثة المترابطة لكل مدير
- */
 const chatHistoryMemory = new Map<string, Array<{ role: "user" | "model"; text: string }>>();
 
 function getChatHistory(userId: string): Array<{ role: "user" | "model"; text: string }> {
@@ -254,10 +388,11 @@ export async function processAdminAiMessage(
     return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل في العراق.
+  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
-إذا قدم لك المدير تفاصيل طلب (اسم محل، منطقة، سعر، نوع طلب)، استخدم الأداة create_order فوراً لرفع الطلب بالنظام دون أن تطلب مناقشات أو أسئلة!
-تذكر الرسائل السابقة في المحادثة واجمع البيانات منها لتنفيذ الأوامر فوراً.`;
+إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته وبصل)، استخدم الأداة create_prep_shopping_draft فوراً!
+إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم الأداة create_order فوراً!
+تذكر الرسائل السابقة واجمع البيانات منها لتنفيذ الأوامر فوراً.`;
 
   appendChatHistory(telegramUserId, "user", userText);
   const history = getChatHistory(telegramUserId);
@@ -294,7 +429,8 @@ export async function processAdminAiMessage(
             if (part.functionCall) {
               const fn = part.functionCall;
               let reply = "";
-              if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+              if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
               else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
               else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
 
