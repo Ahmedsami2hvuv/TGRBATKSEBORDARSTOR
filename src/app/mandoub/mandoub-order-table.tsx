@@ -245,106 +245,112 @@ function MandoubFullBlockCardGrid({
             }}
             className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden text-xs space-y-2`}
           >
-            {/* السطر العلوي التجميعي: اليمين: الأزرار/الحالة | الوسط: الوقت والتاريخ | اليسار: رقم الطلب */}
+            {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة على اليمين ، ورقم الطلب على اليسار */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
-              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                {showSelectColumn && (
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => onToggleOne && onToggleOne(o.id)}
-                    className="size-5 rounded border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                )}
+              <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {showSelectColumn && (
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => onToggleOne && onToggleOne(o.id)}
+                      className="size-5 rounded border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  )}
 
-                {isSortingMode && moveRow && !isDelivered && (
-                  <div className="flex items-center gap-1">
+                  {isSortingMode && moveRow && !isDelivered && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveRow(o.id, "up")}
+                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                        title="تحريك للأعلى"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveRow(o.id, "down")}
+                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                        title="تحريك للأسفل"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
+
+                  {!isSortingMode && isAssigned && (
                     <button
                       type="button"
-                      onClick={() => moveRow(o.id, "up")}
-                      className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
-                      title="تحريك للأعلى"
+                      onClick={() => setPickupOrder(o)}
+                      className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                     >
-                      ▲
+                      استلام
                     </button>
+                  )}
+                  {!isSortingMode && isDelivering && (
                     <button
                       type="button"
-                      onClick={() => moveRow(o.id, "down")}
-                      className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
-                      title="تحريك للأسفل"
+                      onClick={() => setDeliveryOrder(o)}
+                      className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                     >
-                      ▼
+                      تسليم
                     </button>
-                  </div>
-                )}
+                  )}
+                  {!isSortingMode && isDelivered && (
+                    <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-[11px] font-black text-white shrink-0">
+                      تم التسليم
+                    </span>
+                  )}
+                  {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
+                    <span className={`rounded-lg px-2 py-0.5 text-[11px] font-black shrink-0 ${statusBadgeBg}`}>
+                      {STATUS_AR[o.orderStatus] ?? o.orderStatus}
+                    </span>
+                  )}
+                </div>
 
-                {!isSortingMode && isAssigned && (
-                  <button
-                    type="button"
-                    onClick={() => setPickupOrder(o)}
-                    className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1"
-                  >
-                    استلام
-                  </button>
-                )}
-                {!isSortingMode && isDelivering && (
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryOrder(o)}
-                    className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1"
-                  >
-                    تسليم
-                  </button>
-                )}
-                {!isSortingMode && isDelivered && (
-                  <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-[11px] font-black text-white">
-                    تم التسليم
-                  </span>
-                )}
-                {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
-                  <span className={`rounded-lg px-2 py-0.5 text-[11px] font-black ${statusBadgeBg}`}>
-                    {STATUS_AR[o.orderStatus] ?? o.orderStatus}
-                  </span>
-                )}
+                {/* بجانبه مباشرة: اسم المحل ← المنطقة (السهم يتجه لليسار) */}
+                <div className="flex items-center gap-1 text-xs font-black text-slate-800 dark:text-slate-100 truncate">
+                  <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
+                  <span className="text-slate-400 font-bold shrink-0">←</span>
+                  <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                </div>
               </div>
 
-              {/* الوسط: الوقت والتاريخ في نفس السطر بدون أي رموز تعبيرية */}
-              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 truncate">
-                <span className="text-rose-600 dark:text-rose-400 font-black">{o.orderNoteTime || o.timeLine || "فوري"}</span>
-                <span>•</span>
-                <span>{o.dateLine}</span>
-              </div>
-
-              {/* أقصى اليسار: رقم الطلب بدون رموز */}
+              {/* أقصى اليسار: رقم الطلب */}
               <span className="text-sm font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
                 #{o.shortId}
               </span>
             </div>
 
-            {/* سطر المعلومات المباشر الخفيف والتسلسلي بدون أي رموز تعبيرية ولا برواز محيط */}
+            {/* سطر التفاصيل المالية والنوع والزبون */}
             <div className="space-y-1">
-              <div className="flex items-center gap-1.5 flex-wrap text-xs font-black text-slate-800 dark:text-slate-100">
-                <span className="text-emerald-800 dark:text-emerald-400 font-black">{o.shopName}</span>
-                <span className="text-slate-400 font-bold">➔</span>
-                <span className="text-sky-800 dark:text-sky-300 font-black">{o.regionLine}</span>
-                <span className="text-slate-400 font-bold">➔</span>
-                <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
-                  {displayGoodsType}
-                </span>
-                <span className="text-slate-400 font-bold">➔</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40">
-                  {displayTotal}
-                </span>
+              <div className="flex items-center justify-between gap-1.5 text-xs font-black text-slate-800 dark:text-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
+                    {displayGoodsType}
+                  </span>
+                  <span className="text-slate-400 font-bold">←</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40">
+                    {displayTotal}
+                  </span>
+                </div>
+
+                {o.customerName && <span className="text-[11px] text-slate-600 dark:text-slate-400 truncate">👤 {o.customerName}</span>}
               </div>
 
-              {/* الزبون والهاتف بشكل مباشر ناعم */}
-              {(o.customerName || o.phoneLine) && (
-                <div className="flex items-center justify-between gap-1 text-[11px] font-bold text-slate-500 pt-0.5">
-                  {o.customerName && <span className="truncate">{o.customerName}</span>}
-                  {o.phoneLine && <span className="font-mono text-slate-600 dark:text-slate-400 text-[10px]">📞 {o.phoneLine}</span>}
+              {o.phoneLine && (
+                <div className="flex items-center justify-end text-[10px] font-mono font-bold text-slate-500">
+                  📞 {o.phoneLine}
                 </div>
               )}
+            </div>
+
+            {/* السطر السفلي: وقت وتاريخ الطلب */}
+            <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+              <span>📅 {o.dateLine}</span>
+              <span className="text-rose-600 dark:text-rose-400 font-black">⏰ {o.orderNoteTime || o.timeLine || "فوري"}</span>
             </div>
           </div>
         );

@@ -168,32 +168,33 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
     return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتشغيل الذكاء الاصطناعي.";
   }
 
-  const systemInstructionText = `أنت الذكاء الاصطناعي Gemini والمساعد الشخصي لمدير المشروع والمبيعات والتوصيل في العراق.
-تتحدث باللغة العربية بأسلوب ذكي وحر ومباشر مع مديرك.
-تجيب على أي سؤال يطرحه المدير مهما كان (طقس، أسئلة، دردشة، أو أوامر عمل).
-إذا كان في رسالته طلب إضافة طلب أو إسناد مندوب أو ديون واستخدمت الأدوات ونفذتها، أبلغ بالنتيجة.
-ممنوع استخدام أي نصوص مبرمجة أو مكررة ثنائية. اجعل كل إجابة نابعة من تفكيرك كذكاء اصطناعي 100%.`;
+  const systemPrompt = `أنت الذكاء الاصطناعي Gemini والمساعد الشخصي الذكي لمدير المشروع في العراق.
+تتحدث باللغة العربية بأسلوب ذكي، محترف، وودود مع مديرك.
+تجيب على أي سؤال أو استفسار أو محادثة بشكل حر ومباشر 100%.`;
+
+  const fullPrompt = `${systemPrompt}\n\nسؤال/طلب المدير: ${userText}`;
 
   let lastApiError = "";
 
   for (const keyRecord of allKeys) {
-    // الاعتماد فقط على الموديل الرسمي الفعال في جوجل بدون النماذج الموقوفة
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
+    // تجربة الـ Endpoints الرسمية المدعومة عالمياً من Google AI Studio
+    const apiUrls = [
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyRecord.key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${keyRecord.key}`
+    ];
 
-    for (const model of models) {
+    for (const url of apiUrls) {
       try {
-        // 1. تجربة المحادثة المباشرة الموثوقة أولاً
-        const resPure = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemInstructionText }] },
-              contents: [{ role: "user", parts: [{ text: userText }] }],
-            }),
-          }
-        );
+        // 1. تجربة النص الحر الفائق التوافقية
+        const resPure = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }]
+          }),
+        });
 
         if (resPure.ok) {
           const dataPure = await resPure.json();
@@ -204,23 +205,19 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
           }
         } else {
           const errText = await resPure.text().catch(() => "");
-          lastApiError = `[Model: ${model}, Status: ${resPure.status}] ${errText}`;
-          console.warn(`[gemini-ai] Error on ${model}:`, lastApiError);
+          lastApiError = `[URL: ${url.split('?')[0]}, Status: ${resPure.status}] ${errText}`;
+          console.warn(`[gemini-ai] Error on ${url}:`, lastApiError);
         }
 
-        // 2. تجربة الطلب بالأدوات إن كان المطلوب إجراء عملية
-        const resTools = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemInstructionText }] },
-              contents: [{ role: "user", parts: [{ text: userText }] }],
-              tools: AI_TOOLS,
-            }),
-          }
-        );
+        // 2. تجربة الطلب التفاعلي المربوط بالأدوات
+        const resTools = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            tools: AI_TOOLS,
+          }),
+        });
 
         if (resTools.ok) {
           const dataTools = await resTools.json();
@@ -241,7 +238,7 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
         }
       } catch (err: any) {
         lastApiError = err.message || String(err);
-        console.error(`[ai-admin-agent] Exception on ${model}:`, err);
+        console.error(`[ai-admin-agent] Exception on url:`, err);
       }
     }
   }
