@@ -1393,152 +1393,272 @@ export function AdminCreateOrderForm({
  <div className="rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 shadow-sm transition-all">
  <div className="flex justify-between items-start gap-3">
  <div className="space-y-1 flex-1">
- <p className="font-bold text-sky-800">بيانات محفوظة للمستلم:</p>
- <p className="text-xs">المنطقة: {regions.find(r => r.id === secondPrefill.customerRegionId)?.name || '—'}</p>
- <p className="text-xs italic text-slate-600">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
- </div>
- {secondPrefill.customerDoorPhotoUrl && (
- <img src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
- )}
- </div>
- <button 
-  type="button" 
-  disabled={secondPrefillApplied}
-  className={`mt-2 w-full rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all ${
-    secondPrefillApplied 
-      ? "bg-slate-400 cursor-not-allowed" 
-      : "bg-sky-600 hover:bg-sky-700"
-  }`}
-  onClick={() => {
-    setSecondRegionId(secondPrefill.customerRegionId ?? "");
-    setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
-    setSecondLandmark(secondPrefill.customerLandmark ?? "");
-    setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
-    setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
-    setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
-    setSecondPrefillApplied(true);
-  }}
- >
-  {secondPrefillApplied ? "تم تطبيق البيانات بنجاح ✅" : "تطبيق بيانات المستلم"}
- </button>
- </div>
- )}
+  {/* أرقام المرسل والمستلم جنباً إلى جنب */}
+  <div className="grid grid-cols-2 gap-3">
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>رقم المرسل</span>
+      <input
+        name="firstCustomerPhone"
+        className={ad.input}
+        value={firstPhone}
+        onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
+        onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
+        inputMode="numeric"
+        required
+      />
+    </label>
 
- {secondSavedDoorPhotoUrl && (
-  <div className="rounded-xl border border-sky-300 bg-sky-50/50 p-3 flex items-center gap-3 animate-in fade-in duration-300">
-    <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة باب المستلم الثاني" />
-    <div className="flex-1 text-right">
-      <p className="text-xs font-black text-sky-800">📸 تم تطبيق صورة باب المستلم بنجاح</p>
-      <p className="text-[10px] text-slate-500 mt-0.5">سيتم إرفاق هذه الصورة تلقائياً مع الطلب للمندوب.</p>
-    </div>
-    <button 
-      type="button" 
-      onClick={() => {
-        setSecondSavedDoorPhotoUrl(null);
-        setSecondRawDoorPhotoUrl(null);
-        setSecondPrefillApplied(false);
-      }}
-      className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer border-0 bg-transparent"
-    >
-      إلغاء الصورة
-    </button>
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>رقم المستلم</span>
+      <input
+        name="secondCustomerPhone"
+        className={ad.input}
+        value={secondPhone}
+        onChange={(e) => setSecondPhone(sanitizePhone(e.target.value))}
+        onBlur={(e) => handlePhoneBlur(e.target.value, setSecondPhone)}
+        required
+      />
+    </label>
   </div>
- )}
 
-                 {/* سعر الطلب */}
-                 
-                 {/* نوع الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                    <span className={ad.label}>نوع الطلب</span>
-                    {suggestions.types.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                        {suggestions.types.map((type, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setOrderType(type)}
-                            className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                   <input
-                     name="orderType"
-                     required
-                     className={ad.input}
-                     placeholder="مثال: مستلزمات"
-                     value={orderType}
-                     onChange={(e) => setOrderType(e.target.value)}
-                   />
-                 </label>
+  {/* مناطق المرسل والمستلم جنباً إلى جنب */}
+  <div className="grid grid-cols-2 gap-3">
+    <RegionSearchPicker
+      fieldName="firstCustomerRegionId"
+      label="منطقة المرسل"
+      required
+      value={firstRegionId}
+      onValueChange={setFirstRegionId}
+      regionsLookup={regions}
+    />
 
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <label className="flex flex-col gap-1 text-sm">
-                     <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
-                      <input
-                        name="purchasePrice"
-                        className={ad.input}
-                        placeholder="مثال: 15"
-                        inputMode="decimal"
-                        value={purchasePrice}
-                        onChange={(e) => setPurchasePrice(e.target.value)}
-                      />
-                    </label>
+    <RegionSearchPicker
+      fieldName="secondCustomerRegionId"
+      label="منطقة المستلم"
+      required
+      value={secondRegionId}
+      onValueChange={setSecondRegionId}
+      regionsLookup={regions}
+    />
+  </div>
 
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className={ad.label}>سعر البيع (للزبون)</span>
-                      {suggestions.subtotals.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                          {suggestions.subtotals.map((sub, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setOrderSubtotal(sub)}
-                              className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                            >
-                              {sub}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                     <input
-                       name="orderSubtotal"
-                       required
-                       className={ad.input}
-                       inputMode="decimal"
-                       value={orderSubtotal}
-                       onChange={(e) => setOrderSubtotal(e.target.value)}
-                     />
-                   </label>
+  {/* بيانات حفظ المرسل (إن وجدت) */}
+  {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المرسل...</p>}
+  {firstPrefill && (
+  <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
+  <div className="flex justify-between items-start gap-3">
+  <div className="space-y-1 flex-1">
+  <p className="font-bold text-emerald-800">بيانات محفوظة للمرسل:</p>
+  <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
+  <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
+  </div>
+  {firstPrefill.customerDoorPhotoUrl && (
+  <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+  )}
+  </div>
+  <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+  setFirstRegionId(firstPrefill.customerRegionId ?? "");
+  setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
+  setFirstLandmark(firstPrefill.customerLandmark ?? "");
+  setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
+  setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+  setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+  setFirstPrefillApplied(true);
+  }}>تطبيق بيانات المرسل</button>
+  </div>
+  )}
 
-                    <div className="flex flex-col gap-1 text-sm">
-                      <span className={ad.label}>كلفة التوصيل</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setDeliveryAdjustment(prev => prev - 1)}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
-                        >
-                          -
-                        </button>
-                        <div className="flex-1 h-10 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold">
-                          <span className="text-slate-700 text-lg tabular-nums">
-                            {(() => {
-                              const shop = shops.find(s => s.id === (submissionMode === "from_shop" ? shopId : ""));
-                              const shopPrice = Number(shop?.regionDeliveryPrice || 0);
-                              const reg1Price = Number(regions.find(r => r.id === firstRegionId)?.deliveryPrice || 0);
+  {/* بيانات حفظ المستلم (إن وجدت) */}
+  {secondPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المستلم...</p>}
+  {secondPrefill && (
+  <div className="rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 shadow-sm transition-all">
+  <div className="flex justify-between items-start gap-3">
+  <div className="space-y-1 flex-1">
+  <p className="font-bold text-sky-800">بيانات محفوظة للمستلم:</p>
+  <p className="text-xs">المنطقة: {regions.find(r => r.id === secondPrefill.customerRegionId)?.name || '—'}</p>
+  <p className="text-xs italic text-slate-600">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
+  </div>
+  {secondPrefill.customerDoorPhotoUrl && (
+  <img src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+  )}
+  </div>
+  <button 
+   type="button" 
+   disabled={secondPrefillApplied}
+   className={`mt-2 w-full rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all ${
+     secondPrefillApplied 
+       ? "bg-slate-400 cursor-not-allowed" 
+       : "bg-sky-600 hover:bg-sky-700"
+   }`}
+   onClick={() => {
+     setSecondRegionId(secondPrefill.customerRegionId ?? "");
+     setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
+     setSecondLandmark(secondPrefill.customerLandmark ?? "");
+     setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
+     setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
+     setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
+     setSecondPrefillApplied(true);
+   }}
+  >
+   {secondPrefillApplied ? "تم تطبيق البيانات بنجاح ✅" : "تطبيق بيانات المستلم"}
+  </button>
+  </div>
+  )}
 
-                              const base = Math.max(shopPrice, reg1Price);
-                              return base + deliveryAdjustment;
-                            })()}
-                          </span>
-                          {deliveryAdjustment !== 0 && (
-                            <span className="text-[9px] text-emerald-600 -mt-1">
-                              (تعديل {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment})
-                            </span>
-                          )}
+  {secondSavedDoorPhotoUrl && (
+   <div className="rounded-xl border border-sky-300 bg-sky-50/50 p-3 flex items-center gap-3 animate-in fade-in duration-300">
+     <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة باب المستلم الثاني" />
+     <div className="flex-1 text-right">
+       <p className="text-xs font-black text-sky-800">📸 تم تطبيق صورة باب المستلم بنجاح</p>
+       <p className="text-[10px] text-slate-500 mt-0.5">سيتم إرفاق هذه الصورة تلقائياً مع الطلب للمندوب.</p>
+     </div>
+     <button 
+       type="button" 
+       onClick={() => {
+         setSecondSavedDoorPhotoUrl(null);
+         setSecondRawDoorPhotoUrl(null);
+         setSecondPrefillApplied(false);
+       }}
+       className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer border-0 bg-transparent"
+     >
+       إلغاء الصورة
+     </button>
+   </div>
+  )}
+
+  {/* نوع الطلب ووقت الطلب جنباً إلى جنب */}
+  <div className="grid grid-cols-2 gap-3">
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>نوع الطلب</span>
+      {suggestions.types.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+          {suggestions.types.map((type, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setOrderType(type)}
+              className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+      )}
+      <input
+        name="orderType"
+        required
+        className={ad.input}
+        placeholder="مثال: مستلزمات"
+        value={orderType}
+        onChange={(e) => setOrderType(e.target.value)}
+      />
+    </label>
+
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>وقت الطلب (إجباري)</span>
+      {suggestions.times.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+          {suggestions.times.map((time, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setOrderNoteTime(time)}
+              className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+            >
+              {time}
+            </button>
+          ))}
+        </div>
+      )}
+      <input
+        name="orderNoteTime"
+        required
+        className={ad.input}
+        placeholder="مثال: الان"
+        value={orderNoteTime}
+        onChange={(e) => setOrderNoteTime(e.target.value)}
+      />
+    </label>
+  </div>
+
+  {/* سعر الشراء وسعر البيع جنباً إلى جنب */}
+  <div className="grid grid-cols-2 gap-3">
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
+      <input
+        name="purchasePrice"
+        className={ad.input}
+        placeholder="مثال: 15"
+        inputMode="decimal"
+        value={purchasePrice}
+        onChange={(e) => setPurchasePrice(e.target.value)}
+      />
+    </label>
+
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>سعر البيع (للزبون)</span>
+      {suggestions.subtotals.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+          {suggestions.subtotals.map((sub, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setOrderSubtotal(sub)}
+              className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      )}
+      <input
+        name="orderSubtotal"
+        required
+        className={ad.input}
+        placeholder="اكتب السعر"
+        inputMode="decimal"
+        value={orderSubtotal}
+        onChange={(e) => setOrderSubtotal(e.target.value)}
+      />
+    </label>
+  </div>
+
+  {/* كلفة التوصيل والأزرار */}
+  <div className="flex flex-col gap-1 text-sm">
+    <span className={ad.label}>كلفة التوصيل</span>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setDeliveryAdjustment(prev => prev - 1)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
+      >
+        -
+      </button>
+      <div className="flex-1 h-10 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold">
+        <span className="text-slate-700 text-lg tabular-nums">
+          {(() => {
+            const shop = shops.find(s => s.id === (submissionMode === "from_shop" ? shopId : ""));
+            const shopPrice = Number(shop?.regionDeliveryPrice || 0);
+            const reg1Price = Number(regions.find(r => r.id === firstRegionId)?.deliveryPrice || 0);
+
+            const base = Math.max(shopPrice, reg1Price);
+            return base + deliveryAdjustment;
+          })()}
+        </span>
+        {deliveryAdjustment !== 0 && (
+          <span className="text-[9px] text-emerald-600 -mt-1">
+            (تعديل {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment})
+          </span>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => setDeliveryAdjustment(prev => prev + 1)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
+      >
+        +
+      </button>
+    </div>
                         </div>
                         <button
                           type="button"
