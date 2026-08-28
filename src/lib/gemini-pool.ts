@@ -7,67 +7,53 @@ export type GeminiKeyRecord = {
 };
 
 /**
- * جلب مفتاح Gemini شغال ومتاح مع تدوير المفاتيح
+ * جلب جميع مفاتيح Gemini المتاحة من قاعدة البيانات من الجداول المختلفة
  */
-export async function getNextActiveGeminiKey(): Promise<GeminiKeyRecord | null> {
+export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
+  const keysList: GeminiKeyRecord[] = [];
+
+  // 1. مفاتيح من جدول GeminiApiKey
   try {
-    // 1. البحث أولاً في جدول GeminiApiKey الجديد
-    const dbKey = await prisma.geminiApiKey.findFirst({
-      where: {
-        active: true,
-        errorCount: { lt: 10 },
-      },
-      orderBy: [
-        { lastUsedAt: "asc" },
-        { createdAt: "asc" },
-      ],
+    const dbKeys = await prisma.geminiApiKey.findMany({
+      where: { active: true },
+      orderBy: { lastUsedAt: "asc" }
     });
-
-    if (dbKey?.key?.trim()) {
-      await prisma.geminiApiKey.update({
-        where: { id: dbKey.id },
-        data: { lastUsedAt: new Date() },
-      }).catch(() => {});
-
-      return { id: dbKey.id, key: dbKey.key.trim(), label: dbKey.label };
+    for (const k of dbKeys) {
+      if (k.key?.trim()) {
+        keysList.push({ id: k.id, key: k.key.trim(), label: k.label || "GeminiApiKey" });
+      }
     }
-  } catch (err) {
-    console.error("[gemini-pool] Error fetching GeminiApiKey:", err);
-  }
+  } catch (e) {}
 
+  // 2. مفاتيح من جدول AIConfig (أي مفتاح يبدأ بـ AIzaSy أو مزوده gemini/google)
   try {
-    // 2. البحث ثانياً في جدول AIConfig المربوط بصفحة إعدادات الذكاء الاصطناعي الحالي بالموقع
-    const aiConfig = await prisma.aIConfig.findFirst({
-      where: {
-        isActive: true,
-        OR: [
-          { provider: { contains: "gemini", mode: "insensitive" } },
-          { provider: { contains: "google", mode: "insensitive" } },
-          { apiKey: { startsWith: "AIzaSy" } },
-        ]
-      },
-      orderBy: { updatedAt: "desc" }
+    const aiConfigs = await prisma.aIConfig.findMany({
+      where: { isActive: true }
     });
-
-    if (aiConfig?.apiKey?.trim()) {
-      return { id: `aiconfig_${aiConfig.id}`, key: aiConfig.apiKey.trim(), label: aiConfig.label || "Gemini (AIConfig)" };
+    for (const c of aiConfigs) {
+      if (c.apiKey?.trim() && (c.apiKey.startsWith("AIzaSy") || c.provider.toLowerCase().includes("gemini") || c.provider.toLowerCase().includes("google"))) {
+        // تجنب التكرار
+        if (!keysList.some(k => k.key === c.apiKey.trim())) {
+          keysList.push({ id: `aiconfig_${c.id}`, key: c.apiKey.trim(), label: c.label || "AIConfig Key" });
+        }
+      }
     }
-  } catch (err) {
-    console.error("[gemini-pool] Error fetching AIConfig:", err);
-  }
+  } catch (e) {}
 
-  // 3. التراجع للمفتاح الموجود في البيئة .env
+  // 3. مفاتيح البيئة .env
   const envKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
-  if (envKey) {
-    return { id: "env", key: envKey, label: "مفتاح النظام (.env)" };
+  if (envKey && !keysList.some(k => k.key === envKey)) {
+    keysList.push({ id: "env", key: envKey, label: "Env Key" });
   }
 
-  return null;
+  return keysList;
 }
 
-/**
- * الابلاغ عن نجاح استخدام المفتاح
- */
+export async function getNextActiveGeminiKey(): Promise<GeminiKeyRecord | null> {
+  const list = await getAllActiveGeminiKeys();
+  return list.length > 0 ? list[0] : null;
+}
+
 export async function markGeminiKeySuccess(keyId: string): Promise<void> {
   if (keyId.startsWith("env") || keyId.startsWith("aiconfig_")) return;
   try {
@@ -78,9 +64,6 @@ export async function markGeminiKeySuccess(keyId: string): Promise<void> {
   } catch (e) {}
 }
 
-/**
- * الإبلاغ عن خطأ نفاد الحد المسموح
- */
 export async function markGeminiKeyError(keyId: string, isQuotaError: boolean = false): Promise<void> {
   if (keyId.startsWith("env") || keyId.startsWith("aiconfig_")) return;
   try {
