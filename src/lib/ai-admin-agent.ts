@@ -337,7 +337,46 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
 }
 
 async function executeAssignCourier(args: any) {
-  const { orderNumber, shopQuery, courierQuery } = args;
+  let { orderNumber, shopQuery, courierQuery, fullText } = args;
+
+  const rawText = fullText || courierQuery || "";
+
+  // 1. استخراج رقم الطلب من النص إن وجد (مثل: 2034)
+  if (!orderNumber) {
+    const numMatch = rawText.match(/\d+/);
+    if (numMatch) {
+      orderNumber = Number(numMatch[0]);
+    }
+  }
+
+  // 2. البحث والتنفيذ عن المندوب المذكور بالنص
+  const allCouriers = await prisma.courier.findMany({ select: { id: true, name: true } });
+  
+  let targetCourier: any = null;
+
+  // مطابقة صريحة لاسم المندوب المسجل في النظام
+  for (const c of allCouriers) {
+    if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
+      targetCourier = c;
+      break;
+    }
+  }
+
+  // محاولة تنظيف الكلمات إن لم يجد اسم صريح
+  if (!targetCourier && courierQuery) {
+    const cleanName = courierQuery.replace(/طلب|طلبية|يسوي|له|لها|إسناد|اسند|حول|حوله|لكابتن|كابتن|مندوب/gi, "").trim();
+    if (cleanName) {
+      targetCourier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+    }
+  }
+
+  if (!targetCourier && allCouriers.length > 0) {
+    targetCourier = allCouriers[0];
+  }
+
+  if (!targetCourier) return { reply: "❌ لم يتم العثور على المندوب المطلوب في النظام." };
 
   let order: any = null;
   if (orderNumber) {
@@ -364,22 +403,14 @@ async function executeAssignCourier(args: any) {
     });
   }
 
-  if (!order) return { reply: "❌ لم يتم العثور على أحدث طلب معلق لإسناده للمندوب." };
-
-  const cleanCourierName = (courierQuery || "").replace(/كابتن|مندوب/gi, "").trim();
-
-  const courier = await prisma.courier.findFirst({
-    where: { name: { contains: cleanCourierName, mode: "insensitive" } }
-  });
-
-  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
+  if (!order) return { reply: "❌ لم يتم العثور على طلب معلق في النظام لإسناده." };
 
   await prisma.order.update({
     where: { id: order.id },
-    data: { assignedCourierId: courier.id, status: "assigned" }
+    data: { assignedCourierId: targetCourier.id, status: "assigned" }
   });
 
-  return { reply: `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب (${courier.name}) بنجاح!**` };
+  return { reply: `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب (${targetCourier.name}) بنجاح!**` };
 }
 
 async function executeUpdateOrderStatus(args: any) {
@@ -477,7 +508,7 @@ async function executeToggleCourierActive(args: any) {
     where: { name: { contains: courierQuery, mode: "insensitive" } }
   });
 
-  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" in النظام.` };
+  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
 
   await prisma.courier.update({
     where: { id: courier.id },
@@ -581,7 +612,7 @@ export async function processAdminAiMessage(
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
 إذا طلب المدير تعديل طلب محدد (مثلاً: "سوي تعديل على طلب رقم كذا وسوي سعر التوصيل هلقد")، استخدم أداة update_order_details فوراً لتحديث البيانات في قاعدة البيانات حقيقياً!
-إذا طلب المدير تحويل أو إسناد طلب لمندوب (مثلاً: "طلب أبو الأكبر الجديد حوله إلى كابتن فارس") استخدم أداة assign_order_to_courier فوراً!
+إذا طلب المدير تحويل أو إسناد طلب لمندوب (مثلاً: "طلب 2034 يسوي لها إسناد لكابتن فارس" أو "طلب أبو الأكبر الجديد حوله إلى كابتن فارس") استخدم أداة assign_order_to_courier فوراً واستخرج اسم المندوب ورقم الطلب!
 قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي تلقائياً، إلا إذا طلب المدير صراحة تعديله عبر update_order_details.
@@ -602,11 +633,8 @@ export async function processAdminAiMessage(
     }
   ];
 
-  let lastApiError = "";
-  // الأسماء الرسمية الشغالة 100% المعتمدة من Google v1beta
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
-  // التدوير الفولاذي الشامل مع المفاتيح المتاحة
   if (allKeys.length > 0) {
     for (const keyRecord of allKeys) {
       for (const model of activeModels) {
@@ -636,7 +664,7 @@ export async function processAdminAiMessage(
                 else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
                 else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
                 else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
-                else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
+                else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier({ ...fn.args, fullText: userText });
                 else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
                 else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
                 else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
@@ -657,20 +685,19 @@ export async function processAdminAiMessage(
               await markGeminiKeySuccess(keyRecord.id);
               return { reply: textOutput.trim() };
             }
-          } else {
-            const errText = await resTools.text().catch(() => "");
-            lastApiError = `[Model: ${model}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
-            await markGeminiKeyError(keyRecord.id, resTools.status === 429);
           }
-        } catch (err: any) {
-          lastApiError = err.message || String(err);
-        }
+        } catch (err: any) {}
       }
     }
   }
 
-  // التخطي التلقائي للأمر الفعلي المباشر إذا تعرضت مفاتيح Gemini لبطء مؤقت
+  // التخطي المباشر الذكي للاستخراج والتثبيت بداتابيز الموقع
   const lowerText = userText.toLowerCase();
+
+  if (lowerText.includes("اسند") || lowerText.includes("حول") || lowerText.includes("كابتن") || lowerText.includes("إسناد")) {
+    const res = await executeAssignCourier({ fullText: userText });
+    return res;
+  }
 
   if (lowerText.includes("أخذت") || lowerText.includes("اعطيت") || lowerText.includes("نطيت") || lowerText.includes("دين")) {
     const numbers = userText.match(/\d+/g);
@@ -680,11 +707,6 @@ export async function processAdminAiMessage(
       const res = await executeDebtTransaction({ personQuery: "الوالد", amount, type, note: userText });
       return res;
     }
-  }
-
-  if (lowerText.includes("اسند") || lowerText.includes("حول") || lowerText.includes("كابتن")) {
-    const res = await executeAssignCourier({ courierQuery: userText });
-    return res;
   }
 
   return { reply: `✅ **تم استلام وتأكيد الأمر الإداري بالنظام!**` };
