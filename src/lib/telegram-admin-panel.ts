@@ -1254,16 +1254,17 @@ export async function handleTelegramAdminCallback(
         if (!session || session.step !== "admin_select_prep_preparer") return true;
         const p = JSON.parse(session.payload || "{}");
 
-        const preparer = await prisma.companyPreparer.findUnique({ where: { id: (parsed as any).preparerId } });
-        if (!preparer) {
-          await answerCallbackQuery(cq.id, "المجهز غير موجود", true, botToken);
-          return true;
-        }
+        const targetPreparerId = (parsed as any).preparerId;
+        const isNone = targetPreparerId === "none";
+
+        const preparer = !isNone ? await prisma.companyPreparer.findUnique({ where: { id: targetPreparerId } }) : null;
+
+        const cleanList = (p.itemsList || "").trim() || "مواد تجهيز ومشتريات";
 
         const draft = await prisma.companyPreparerShoppingDraft.create({
           data: {
-            preparerId: preparer.id,
-            rawListText: p.itemsList,
+            preparerId: preparer ? preparer.id : null,
+            rawListText: cleanList,
             customerPhone: p.customerPhone || "غير محدد",
             customerRegionId: p.regionId || null,
             titleLine: `تجهيز ${p.regionName || "منطقة"}`,
@@ -1276,7 +1277,7 @@ export async function handleTelegramAdminCallback(
           data: { step: "idle", payload: "" }
         });
 
-        const successMsg = `✅ **تم إنشاء مسودة التجهيز وإسنادها للمجهز بنجاح!**\n\n- **رقم التجهيز:** #${draft.draftNumber}\n- **المجهز:** ${preparer.name}\n- **المنطقة:** ${p.regionName || "غير محدد"}\n- **الهاتف:** ${p.customerPhone || "غير محدد"}\n\n📝 **المواد المطلوبة:**\n${p.itemsList}`;
+        const successMsg = `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المجهز:** ${preparer ? preparer.name : "غير محدد حالياً"}\n- **المنطقة:** ${p.regionName || "غير محدد"}\n- **الهاتف:** ${p.customerPhone || "غير محدد"}\n\n📝 **قائمة المواد والمشتريات:**\n${cleanList}`;
 
         const edited = await editTelegramMessage(chatId, messageId, successMsg, {
           inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "main" }]]

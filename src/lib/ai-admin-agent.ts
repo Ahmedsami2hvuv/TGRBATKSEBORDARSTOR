@@ -107,8 +107,8 @@ export async function executeCreatePrepShoppingDraft(
   }
 
   const phone = (customerPhone || "").trim() || "غير محدد";
+  const cleanItems = (itemsList || "").trim() || "مواد تجهيز عامة";
 
-  // فحص هل هناك تطابق تام 100% أم خيارات متعددة
   const exactMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
   const shouldAskRegion = !exactMatch || matchingRegions.length > 1;
 
@@ -116,7 +116,7 @@ export async function executeCreatePrepShoppingDraft(
     const payload = {
       isPrepDraft: true,
       customerPhone: phone,
-      itemsList: itemsList,
+      itemsList: cleanItems,
       regionQuery: regionQuery
     };
 
@@ -151,7 +151,7 @@ export async function executeCreatePrepShoppingDraft(
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${itemsList}\n\n❓ **اختر المنطقة الدقيقة بالنقر على أحد الأزرار أدناه:**`,
+      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${cleanItems}\n\n❓ **اختر المنطقة الدقيقة بالنقر على أحد الأزرار أدناه:**`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
@@ -160,17 +160,18 @@ export async function executeCreatePrepShoppingDraft(
   }
 
   const region = exactMatch || matchingRegions[0];
+
+  // جلب كافة المجهزين المسجلين بالنظام بدون أي تصفية خاطئة!
   const preparers = await prisma.companyPreparer.findMany({
-    where: { active: true },
     select: { id: true, name: true },
     orderBy: { name: "asc" }
   });
 
-  if (preparers.length > 0 && context?.chatId && context?.telegramUserId) {
+  if (context?.chatId && context?.telegramUserId) {
     const payload = {
       isPrepDraft: true,
       customerPhone: phone,
-      itemsList: itemsList,
+      itemsList: cleanItems,
       regionId: region?.id,
       regionName: region?.name || regionQuery
     };
@@ -190,31 +191,34 @@ export async function executeCreatePrepShoppingDraft(
     });
 
     const inlineKeyboard: any[] = [];
-    for (let i = 0; i < preparers.length; i += 2) {
-      const row: any[] = [];
-      const p1 = preparers[i];
-      row.push({ text: `👨‍🍳 ${p1.name}`, callback_data: `pspr:${p1.id}` });
-      if (i + 1 < preparers.length) {
-        const p2 = preparers[i + 1];
-        row.push({ text: `👨‍🍳 ${p2.name}`, callback_data: `pspr:${p2.id}` });
+    if (preparers.length > 0) {
+      for (let i = 0; i < preparers.length; i += 2) {
+        const row: any[] = [];
+        const p1 = preparers[i];
+        row.push({ text: `👨‍🍳 ${p1.name}`, callback_data: `pspr:${p1.id}` });
+        if (i + 1 < preparers.length) {
+          const p2 = preparers[i + 1];
+          row.push({ text: `👨‍🍳 ${p2.name}`, callback_data: `pspr:${p2.id}` });
+        }
+        inlineKeyboard.push(row);
       }
-      inlineKeyboard.push(row);
     }
+    inlineKeyboard.push([{ text: "⚡ بدون تحديد مجهز الآن", callback_data: "pspr:none" }]);
     inlineKeyboard.push([{ text: "❌ إلغاء", callback_data: "main" }]);
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `🛒 **تم تحديد المواد والمنطقة (${region?.name || regionQuery}) بنجاح!**\n\n📝 **المواد:**\n${itemsList}\n📞 **الهاتف:** ${phone}\n\n👨‍🍳 **اختر المجهز الذي تريد إسناد التجهيز له:**`,
+      `🛒 **تم تحديد مواد التجهيز والمنطقة (${region?.name || regionQuery}) بنجاح!**\n\n📝 **المواد المطلوبة:**\n${cleanItems}\n📞 **الهاتف:** ${phone}\n\n👨‍🍳 **يرجى اختيار اسم المجهز لإسناد التجهيز له:**`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
 
-    return `🛒 **تم تحليل التجهيز!** اختر المجهز المطلوب من الأزرار أدناه 👨‍🍳⬇️`;
+    return `🛒 **تم تحليل التجهيز والمواد!** يرجى اختيار اسم المجهز من الأزرار أدناه 👨‍🍳⬇️`;
   }
 
   const draft = await prisma.companyPreparerShoppingDraft.create({
     data: {
-      rawListText: itemsList,
+      rawListText: cleanItems,
       customerPhone: phone,
       customerRegionId: region?.id,
       titleLine: `تجهيز ${region?.name || regionQuery}`,
@@ -222,7 +226,7 @@ export async function executeCreatePrepShoppingDraft(
     }
   });
 
-  return `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **المواد:**\n${itemsList}`;
+  return `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **المواد:**\n${cleanItems}`;
 }
 
 export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
@@ -520,7 +524,7 @@ export async function processAdminAiMessage(
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
 إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
 إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
-إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
+إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد كـ طماطة وخيار وبتيته وبصل)، استخدم create_prep_shopping_draft فوراً وحافظ على قائمة المنتجات كاملة!
 إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
 
   appendChatHistory(telegramUserId, "user", userText);
