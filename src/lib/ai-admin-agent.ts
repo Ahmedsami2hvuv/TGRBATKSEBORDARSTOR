@@ -207,21 +207,30 @@ async function executeQuerySystemSummary(args: any) {
  * المساعد الرئيسي للذكاء الاصطناعي لمعالجة الرسائل
  */
 export async function processAdminAiMessage(userText: string): Promise<string> {
+  const trimmed = userText.trim().toLowerCase();
+
+  // التحايا البسيطة المباشرة
+  if (["مرحبا", "مرحباً", "هلو", "السلام عليكم", "سلام عليكم", "شلونك", "صباح الخير", "مساء الخير"].includes(trimmed)) {
+    return "أهلاً وسهلاً بك يا مديرنا العزيز! 🌹\nأنَا مساعدك الذكي الخاص بنظام الإدارة. كيف أستطيع مساعدتك اليوم؟\n\nيمكنك طلب إدخال طلب جديد، تسجّيل ديون، إسناد طلبات للمناديب، أو الاستعلام عن أي شيء في النظام!";
+  }
+
   let keyRecord = await getNextActiveGeminiKey();
   if (!keyRecord) {
     return "⚠️ لا يوجد مفتاح Gemini API فعال حالياً. يرجى إضافة المفاتيح في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemPrompt = `أنت مساعد الذكاء الاصطناعي الذكي الخص بنظام الإدارة والمبيعات والمناطق والمحلات والتوصيل في العراق.
-تتحدث باللغة العربية البسيطة والمحترفة.
-عند طلب إضافة طلب جديد، اسند البيانات للأدوات المتاحة create_order.
-عند طلب إسناد طلب لمندوب، استخدم assign_order_to_courier.
-عند طلب تسجيل دين أو مبالغ مالية، استخدم register_debt_transaction.
-كن دقيقاً وساعد المدير دائماً.`;
+  const systemInstructionText = `أنت "مساعد بوت الإدارة الذكي" الخص بمشروع وموقع المبيعات والتوصيل في العراق.
+تتحدث مع مدير المشروع بلهجة عربية بسيطة، محترفة، وودودة جداً.
+تُجيب بشكل مباشر وذكي وتتفاعل معه كشخص حقيقي يساعده في إدارة عمله.
+إذا كانت الرسالة تحية أو سلام، رحّب به بحرارة واسأله كيف تساعده.
+إذا كان في رسالته طلب إضافة طلب أو إسناد مندوب أو ديون أو استعلام، استخدم الأدوات المتاحة فقط عندما يكون هناك أفعال محددة، وبخلاف ذلك أجب بنص محادثة لطيف ومفيد.`;
 
   const requestBody = {
+    systemInstruction: {
+      parts: [{ text: systemInstructionText }]
+    },
     contents: [
-      { role: "user", parts: [{ text: `${systemPrompt}\n\nطلب المدير: ${userText}` }] }
+      { role: "user", parts: [{ text: userText }] }
     ],
     tools: AI_TOOLS,
   };
@@ -273,11 +282,13 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
       }
 
       const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-      if (textOutput) return textOutput;
+      if (textOutput && textOutput.trim()) {
+        return textOutput.trim();
+      }
     } catch (err: any) {
       console.error(`[ai-admin-agent] Error trying model ${model}:`, err);
     }
   }
 
-  return "✅ تم استلام وفهم الطلب بنجاح.";
+  return "أهلاً بك يا مديرنا! كيف أستطيع مساعدتك اليوم بخصوص الطلبات، المناديب، أو الديون؟";
 }

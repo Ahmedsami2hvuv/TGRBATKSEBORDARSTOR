@@ -181,141 +181,127 @@ function MandoubFullBlockCardGrid({
 }) {
   if (!rows.length) {
     return (
-      <div className="py-12 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="py-8 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs">
         لا توجد طلبات للعرض في هذه القائمة
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 pb-12">
       {rows.map((o) => {
         const isAssigned = o.orderStatus === "assigned";
         const isDelivering = o.orderStatus === "delivering";
         const isDelivered = o.orderStatus === "delivered";
 
+        // تحديد اللون حسب الحالة (الأحمر بانتظار المندوب، الأصفر مستلم، الأخضر مسلم)
+        const statusBorderColor = isAssigned
+          ? "border-red-500 bg-red-50/20 dark:bg-red-950/10"
+          : isDelivering
+          ? "border-amber-400 bg-amber-50/20 dark:bg-amber-950/10"
+          : "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10";
+
+        const statusBadgeBg = isAssigned
+          ? "bg-red-600 text-white"
+          : isDelivering
+          ? "bg-amber-500 text-white"
+          : "bg-emerald-600 text-white";
+
+        // حساب المبلغ الكلي الظاهر بدقة
+        const displayTotal = o.totalAmountDinar != null
+          ? `${o.totalAmountDinar} ألف`
+          : o.priceStr || "—";
+
         return (
           <div
             key={o.id}
             onClick={() => onOpenRow(o.id)}
-            className="group relative flex flex-col justify-between rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-md hover:shadow-xl transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden"
+            className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden text-xs`}
           >
-            {/* شريط الإضاءة الملون الجانبي للحالة */}
-            <div
-              className={`absolute top-0 right-0 bottom-0 w-2.5 ${
-                isAssigned
-                  ? "bg-amber-500"
-                  : isDelivering
-                  ? "bg-sky-500"
-                  : "bg-emerald-500"
-              }`}
-            />
-
             <div>
-              {/* هيدر البلوك العلوي */}
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3 pr-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
-                    #{o.shortId}
-                  </span>
-                  <span
-                    className={`rounded-xl px-3 py-1 text-xs font-black shadow-xs ${orderStatusBadgeClass(
-                      o.orderStatus
-                    )}`}
-                  >
-                    {STATUS_AR[o.orderStatus] ?? o.orderStatus}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {/* هيدر الكارت: الزر على اليمين ورقم الطلب على اليسار */}
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
+                {/* اليمين: زر استلام / تسليم أو الشارة */}
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   {isAssigned && (
                     <button
                       type="button"
                       onClick={() => setPickupOrder(o)}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition"
+                      className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1"
                     >
-                      استلام 📦
+                      <span>استلام</span>
                     </button>
                   )}
                   {isDelivering && (
                     <button
                       type="button"
                       onClick={() => setDeliveryOrder(o)}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition"
+                      className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1"
                     >
-                      تسليم 🚀
+                      <span>تسليم</span>
                     </button>
                   )}
-                </div>
-              </div>
-
-              {/* شبكة البلوك الكامل لتفاصيل المحل والزبون */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pr-2">
-                {/* المحل (المرسل) */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    المحل (المرسل)
-                  </p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1">
-                    <span>🏬</span> {o.shopName}
-                  </p>
-                  {o.shopRegionName && (
-                    <p className="text-slate-500 font-bold flex items-center gap-1">
-                      <span>📍</span> {o.shopRegionName}
-                    </p>
+                  {isDelivered && (
+                    <span className="rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] font-black text-white">
+                      تم التسليم
+                    </span>
+                  )}
+                  {!isAssigned && !isDelivering && !isDelivered && (
+                    <span className={`rounded-lg px-2.5 py-0.5 text-[11px] font-black ${statusBadgeBg}`}>
+                      {STATUS_AR[o.orderStatus] ?? o.orderStatus}
+                    </span>
                   )}
                 </div>
 
-                {/* الزبون (المستلم) */}
-                <div className="bg-sky-50/70 dark:bg-sky-950/30 rounded-2xl p-3 border border-sky-100 dark:border-sky-900/40 space-y-1">
-                  <p className="text-[10px] font-black text-sky-600 dark:text-sky-400 uppercase tracking-wider">
-                    الزبون (المستلم)
-                  </p>
-                  <p className="text-sm font-black text-sky-950 dark:text-sky-200 flex items-center gap-1">
-                    <span>👤</span> {o.customerName || "—"}
-                  </p>
-                  <p className="text-sky-800 dark:text-sky-300 font-extrabold flex items-center gap-1">
-                    <span>📍</span> {o.regionLine}
-                  </p>
+                {/* اليسار: رقم الطلب */}
+                <span className="text-sm font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                  #{o.shortId}
+                </span>
+              </div>
+
+              {/* تفاصيل المحل والزبون بدون نصوص تكرارية ثقيلة */}
+              <div className="space-y-1">
+                {/* سطر المحل */}
+                <div className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200 truncate">
+                  <span className="text-sm">🏬</span>
+                  <span className="font-black text-emerald-800 dark:text-emerald-400">{o.shopName}</span>
+                  {o.shopRegionName && <span className="text-[10px] text-slate-400">({o.shopRegionName})</span>}
+                </div>
+
+                {/* سطر الزبون والمنطقة والهاتف */}
+                <div className="flex items-center justify-between gap-1 text-[11px]">
+                  <div className="flex items-center gap-1 font-extrabold text-sky-900 dark:text-sky-300 min-w-0 truncate">
+                    <span>📍</span>
+                    <span className="truncate">{o.customerName ? `${o.customerName} • ${o.regionLine}` : o.regionLine}</span>
+                  </div>
                   {o.phoneLine && (
-                    <p className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                    <span className="font-mono font-bold text-slate-500 shrink-0 text-[10px]">
                       📞 {o.phoneLine}
-                    </p>
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* سطر المبالغ والتفاصيل المالية */}
-              <div className="mt-3 grid grid-cols-3 gap-2 bg-slate-100/70 dark:bg-slate-800/80 rounded-2xl p-2.5 text-center pr-2">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500">نوع البضاعة</p>
-                  <p className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
-                    {o.goodsTypeLine || "عام"}
-                  </p>
+              {/* سطر السعر الكلي البارز فقط (إلغاء التوصيل) */}
+              <div className="mt-2.5 flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-slate-500">السعر الكلي:</span>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {displayTotal}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500">التوصيل</p>
-                  <p className="text-xs font-black text-sky-600 dark:text-sky-400">
-                    {o.deliveryPriceLine}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500">السعر الإجمالي</p>
-                  <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                    {o.priceLine}
-                  </p>
-                </div>
+                {o.goodsTypeLine && (
+                  <span className="text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    {o.goodsTypeLine}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* فوتر البلوك (الوقت والتاريخ) */}
-            <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 pr-2">
-              <span className="flex items-center gap-1">
-                <span>📅</span> {o.dateLine}
-              </span>
-              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                <span>⏰</span> {o.orderNoteTime || o.timeLine || "فوري"}
-              </span>
+            {/* الوقت والتاريخ بالشريط السفلي الناعم */}
+            <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+              <span>📅 {o.dateLine}</span>
+              <span className="text-rose-600 dark:text-rose-400 font-black">⏰ {o.orderNoteTime || o.timeLine || "فوري"}</span>
             </div>
           </div>
         );
