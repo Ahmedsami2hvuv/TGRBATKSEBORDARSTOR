@@ -1004,3 +1004,15 @@ model MarketplaceInquiry {
   @@index([itemId, createdAt])
 }
 
+model GeminiApiKey {
+  id         String    @id @default(cuid())
+  key        String    @unique
+  label      String?
+  active     Boolean   @default(true)
+  errorCount Int       @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+

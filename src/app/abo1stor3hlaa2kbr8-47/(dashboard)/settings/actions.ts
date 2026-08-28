@@ -514,4 +514,45 @@ export async function saveSidebarConfigAction(config: SidebarConfig) {
   }
 }
 
+export async function addGeminiApiKeyAction(key: string, label?: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    const trimmed = key.trim();
+    if (!trimmed) return { error: "يرجى كتابة المفتاح" };
+    await prisma.geminiApiKey.create({
+      data: { key: trimmed, label: label?.trim() || null }
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "فشل إضافة مفتاح Gemini" };
+  }
+}
+
+export async function toggleGeminiApiKeyActiveAction(id: string, active: boolean) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.geminiApiKey.update({
+      where: { id },
+      data: { active, errorCount: 0 }
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "فشل تحديث حالة المفتاح" };
+  }
+}
+
+export async function deleteGeminiApiKeyAction(id: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.geminiApiKey.delete({ where: { id } });
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "فشل حذف المفتاح" };
+  }
+}
+
+
 
