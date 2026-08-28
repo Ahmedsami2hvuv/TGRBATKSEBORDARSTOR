@@ -191,168 +191,199 @@ function MandoubFullBlockCardGrid({
 }) {
   if (!rows.length) {
     return (
-      <div className="py-6 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs">
+      <div className="py-6 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-sm">
         لا توجد طلبات للعرض في هذه القائمة
       </div>
     );
   }
 
+  // تجميع الطلبات حسب اليوم (التاريخ)
+  const groupedByDate: { date: string; items: OrderTableRowData[] }[] = [];
+  rows.forEach((row) => {
+    const d = row.dateLine || "طلبات أخرى";
+    const lastGroup = groupedByDate[groupedByDate.length - 1];
+    if (lastGroup && lastGroup.date === d) {
+      lastGroup.items.push(row);
+    } else {
+      groupedByDate.push({ date: d, items: [row] });
+    }
+  });
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 pb-12">
-      {rows.map((o) => {
-        const isAssigned = o.orderStatus === "assigned";
-        const isDelivering = o.orderStatus === "delivering";
-        const isDelivered = o.orderStatus === "delivered";
-
-        const selected = isSelected ? isSelected(o.id) : false;
-
-        // تحديد اللون حسب الحالة (الأحمر بانتظار المندوب، الأصفر مستلم، الأخضر مسلم)
-        const statusBorderColor = selected
-          ? "border-indigo-600 ring-2 ring-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20"
-          : isAssigned
-          ? "border-red-500 bg-red-50/20 dark:bg-red-950/10"
-          : isDelivering
-          ? "border-amber-400 bg-amber-50/20 dark:bg-amber-950/10"
-          : "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10";
-
-        const statusBadgeBg = isAssigned
-          ? "bg-red-600 text-white"
-          : isDelivering
-          ? "bg-amber-500 text-white"
-          : "bg-emerald-600 text-white";
-
-        // حساب المبلغ الكلي الظاهر بدقة
-        const displayTotal = o.totalAmountDinar != null
-          ? `${o.totalAmountDinar} ألف`
-          : o.priceStr || "—";
-
-        // قراءة نوع البضاعة الحقيقي المباشر بدلاً من كلمة "عام"
-        const displayGoodsType = o.orderType && o.orderType !== "عام"
-          ? o.orderType
-          : o.summary && o.summary.trim()
-          ? o.summary
-          : o.orderType || "—";
-
-        return (
-          <div
-            key={o.id}
-            onClick={() => {
-              if (showSelectColumn && onToggleOne) {
-                onToggleOne(o.id);
-              } else {
-                onOpenRow(o.id);
-              }
-            }}
-            className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden text-xs space-y-2`}
-          >
-            {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة على اليمين ، ورقم الطلب على اليسار */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
-                {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
-                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {showSelectColumn && (
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => onToggleOne && onToggleOne(o.id)}
-                      className="size-5 rounded border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    />
-                  )}
-
-                  {isSortingMode && moveRow && !isDelivered && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveRow(o.id, "up")}
-                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
-                        title="تحريك للأعلى"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveRow(o.id, "down")}
-                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
-                        title="تحريك للأسفل"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-
-                  {!isSortingMode && isAssigned && (
-                    <button
-                      type="button"
-                      onClick={() => setPickupOrder(o)}
-                      className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
-                    >
-                      استلام
-                    </button>
-                  )}
-                  {!isSortingMode && isDelivering && (
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryOrder(o)}
-                      className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
-                    >
-                      تسليم
-                    </button>
-                  )}
-                  {!isSortingMode && isDelivered && (
-                    <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-[11px] font-black text-white shrink-0">
-                      تم التسليم
-                    </span>
-                  )}
-                  {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
-                    <span className={`rounded-lg px-2 py-0.5 text-[11px] font-black shrink-0 ${statusBadgeBg}`}>
-                      {STATUS_AR[o.orderStatus] ?? o.orderStatus}
-                    </span>
-                  )}
-                </div>
-
-                {/* بجانبه مباشرة: اسم المحل ← المنطقة (السهم يتجه لليسار) */}
-                <div className="flex items-center gap-1 text-xs font-black text-slate-800 dark:text-slate-100 truncate">
-                  <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
-                  <span className="text-slate-400 font-bold shrink-0">←</span>
-                  <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
-                </div>
-              </div>
-
-              {/* أقصى اليسار: رقم الطلب */}
-              <span className="text-sm font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
-                #{o.shortId}
+    <div className="space-y-6 pb-12">
+      {groupedByDate.map((group) => (
+        <div key={group.date} className="space-y-3">
+          {/* شريط الفاصل الزمني بين الأيام */}
+          <div className="flex items-center gap-3 pt-1">
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex items-center gap-2 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/80 dark:bg-indigo-950/50 px-3.5 py-1.5 text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-200 shadow-xs">
+              <span>📅 {group.date}</span>
+              <span className="rounded-full bg-indigo-200 dark:bg-indigo-800 px-2 py-0.5 text-[11px] font-black text-indigo-900 dark:text-indigo-100">
+                {group.items.length} طلب
               </span>
             </div>
-
-            {/* سطر التفاصيل المالية والنوع والوقت والتاريخ */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-1.5 flex-wrap text-xs font-black text-slate-800 dark:text-slate-100">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
-                    {displayGoodsType}
-                  </span>
-                  <span className="text-slate-400 font-bold">←</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40">
-                    {displayTotal}
-                  </span>
-                  <span className="text-slate-400 font-bold">←</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-bold text-[11px]">
-                    {o.orderNoteTime || o.timeLine || "فوري"} • {o.dateLine}
-                  </span>
-                </div>
-
-                {o.customerName && <span className="text-[11px] text-slate-600 dark:text-slate-400 truncate">👤 {o.customerName}</span>}
-              </div>
-
-              {o.phoneLine && (
-                <div className="flex items-center justify-end text-[10px] font-mono font-bold text-slate-500">
-                  📞 {o.phoneLine}
-                </div>
-              )}
-            </div>
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
           </div>
-        );
-      })}
+
+          {/* شبكة الكروت التابعة لهذا اليوم */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {group.items.map((o) => {
+              const isAssigned = o.orderStatus === "assigned";
+              const isDelivering = o.orderStatus === "delivering";
+              const isDelivered = o.orderStatus === "delivered";
+
+              const selected = isSelected ? isSelected(o.id) : false;
+
+              // تحديد اللون حسب الحالة (الأحمر بانتظار المندوب، الأصفر مستلم، الأخضر مسلم)
+              const statusBorderColor = selected
+                ? "border-indigo-600 ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30"
+                : isAssigned
+                ? "border-red-500 bg-red-50/20 dark:bg-red-950/10"
+                : isDelivering
+                ? "border-amber-400 bg-amber-50/20 dark:bg-amber-950/10"
+                : "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10";
+
+              const statusBadgeBg = isAssigned
+                ? "bg-red-600 text-white"
+                : isDelivering
+                ? "bg-amber-500 text-white"
+                : "bg-emerald-600 text-white";
+
+              // حساب المبلغ الكلي الظاهر بدقة
+              const displayTotal = o.totalAmountDinar != null
+                ? `${o.totalAmountDinar} ألف`
+                : o.priceStr || "—";
+
+              // قراءة نوع البضاعة الحقيقي المباشر بدلاً من كلمة "عام"
+              const displayGoodsType = o.orderType && o.orderType !== "عام"
+                ? o.orderType
+                : o.summary && o.summary.trim()
+                ? o.summary
+                : o.orderType || "—";
+
+              return (
+                <div
+                  key={o.id}
+                  onClick={() => {
+                    if (showSelectColumn && onToggleOne) {
+                      onToggleOne(o.id);
+                    } else {
+                      onOpenRow(o.id);
+                    }
+                  }}
+                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3.5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2.5`}
+                >
+                  {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة ورقم الطلب بخط حاد كبير */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                      {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {showSelectColumn && (
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => onToggleOne && onToggleOne(o.id)}
+                            className="size-5 rounded border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                        )}
+
+                        {isSortingMode && moveRow && !isDelivered && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveRow(o.id, "up")}
+                              className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                              title="تحريك للأعلى"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveRow(o.id, "down")}
+                              className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                              title="تحريك للأسفل"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        )}
+
+                        {!isSortingMode && isAssigned && (
+                          <button
+                            type="button"
+                            onClick={() => setPickupOrder(o)}
+                            className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                          >
+                            استلام
+                          </button>
+                        )}
+                        {!isSortingMode && isDelivering && (
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryOrder(o)}
+                            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                          >
+                            تسليم
+                          </button>
+                        )}
+                        {!isSortingMode && isDelivered && (
+                          <span className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-black text-white shrink-0">
+                            تم التسليم
+                          </span>
+                        )}
+                        {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
+                          <span className={`rounded-lg px-2.5 py-1 text-xs font-black shrink-0 ${statusBadgeBg}`}>
+                            {STATUS_AR[o.orderStatus] ?? o.orderStatus}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* بجانبه مباشرة: اسم المحل ← المنطقة بخط كبير وواضح */}
+                      <div className="flex items-center gap-1.5 text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 truncate">
+                        <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
+                        <span className="text-slate-400 font-bold shrink-0">←</span>
+                        <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                      </div>
+                    </div>
+
+                    {/* أقصى اليسار: رقم الطلب بخط كبير بارز */}
+                    <span className="text-base font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
+                      #{o.shortId}
+                    </span>
+                  </div>
+
+                  {/* سطر التفاصيل المالية والنوع والوقت والتاريخ بخطوط واضحة جداً */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+                          {displayGoodsType}
+                        </span>
+                        <span className="text-slate-400 font-bold">←</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40">
+                          {displayTotal}
+                        </span>
+                        <span className="text-slate-400 font-bold">←</span>
+                        <span className="text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm">
+                          {o.orderNoteTime || o.timeLine || "فوري"}
+                        </span>
+                      </div>
+
+                      {o.customerName && <span className="text-xs text-slate-600 dark:text-slate-400 font-bold truncate">👤 {o.customerName}</span>}
+                    </div>
+
+                    {o.phoneLine && (
+                      <div className="flex items-center justify-end text-xs font-mono font-bold text-slate-500">
+                        📞 {o.phoneLine}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
