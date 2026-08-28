@@ -45,6 +45,21 @@ const AI_TOOLS = [
         }
       },
       {
+        name: "update_order_details",
+        description: "تعديل وتحديث تفاصيل طلب مبيعات محدد في النظام (مثل تعديل سعر التوصيل، تعديل سعر الطلب، هاتف الزبون، أو المواد).",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            orderNumber: { type: "NUMBER", description: "رقم الطلب المراد تعديله" },
+            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل الجديد إذا طلب المدير تعديله صراحة" },
+            orderSubtotal: { type: "NUMBER", description: "سعر أصل البضاعة/الطلب الجديد إذا طلب المدير تعديله صراحة" },
+            customerPhone: { type: "STRING", description: "رقم هاتف الزبون الجديد إن وجد" },
+            orderType: { type: "STRING", description: "تفاصيل ووصف المواد والمنتجات الجديدة إن وجدت" }
+          },
+          required: ["orderNumber"]
+        }
+      },
+      {
         name: "create_prep_shopping_draft",
         description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات (مثل: طماطة، خيار، بتيته، بصل).",
         parameters: {
@@ -159,6 +174,41 @@ const AI_TOOLS = [
     ]
   }
 ];
+
+export async function executeUpdateOrderDetails(args: any) {
+  const { orderNumber, deliveryPrice, orderSubtotal, customerPhone, orderType } = args;
+
+  if (!orderNumber) return { reply: "❌ يرجى تحديد رقم الطلب المراد تعديله." };
+
+  const existingOrder = await prisma.order.findUnique({
+    where: { orderNumber: Number(orderNumber) },
+    include: { shop: true, customerRegion: true }
+  });
+
+  if (!existingOrder) return { reply: `❌ لم يتم العثور على الطلب رقم #${orderNumber} في النظام.` };
+
+  const currentSubtotal = orderSubtotal != null ? Number(orderSubtotal) : existingOrder.orderSubtotal.toNumber();
+  const currentDelivery = deliveryPrice != null ? Number(deliveryPrice) : existingOrder.deliveryPrice.toNumber();
+  const newTotal = currentSubtotal + currentDelivery;
+
+  const updateData: any = {
+    orderSubtotal: new Decimal(currentSubtotal),
+    deliveryPrice: new Decimal(currentDelivery),
+    totalAmount: new Decimal(newTotal)
+  };
+
+  if (customerPhone?.trim()) updateData.customerPhone = customerPhone.trim();
+  if (orderType?.trim()) updateData.orderType = orderType.trim();
+
+  const updated = await prisma.order.update({
+    where: { id: existingOrder.id },
+    data: updateData
+  });
+
+  return {
+    reply: `✅ **تم تعديل وتحديث تفاصيل الطلب #${updated.orderNumber} بالنظام بنجاح!**\n\n- **سعر الطلب:** ${currentSubtotal}\n- **سعر التوصيل:** ${currentDelivery}\n- **المبلغ الإجمالي الجديد:** ${newTotal}${customerPhone ? `\n- **الهاتف:** ${customerPhone}` : ""}`
+  };
+}
 
 export async function executeCreatePrepShoppingDraft(
   args: any,
@@ -545,9 +595,10 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
+إذا طلب المدير تعديل طلب محدد (مثلاً: "سوي تعديل على طلب رقم كذا وسوي سعر التوصيل هلقد")، استخدم أداة update_order_details فوراً لتحديث البيانات في قاعدة البيانات حقيقياً!
 قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
-ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
+ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي تلقائياً، إلا إذا طلب المدير صراحة تعديله عبر update_order_details.
 إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
 إذا قال المدير "أخذت من فلان / نطيت فلان / أعطيت لفلان" استخدم register_debt_transaction.
 إذا طلب المدير إسناد طلب لمندوب (مثلاً: "طلب فلان المحل سوي له إسناد إلى فلان" أو "سوي لي مندوب جديد") استخدم الأدوات المخصصة فوراً.
@@ -595,7 +646,8 @@ export async function processAdminAiMessage(
             if (part.functionCall) {
               const fn = part.functionCall;
               let result: any = null;
-              if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+              if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
+              else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
               else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
               else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
               else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
