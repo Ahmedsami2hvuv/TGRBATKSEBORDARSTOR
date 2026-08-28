@@ -3,6 +3,7 @@ package com.aboakbar.admin
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -11,6 +12,7 @@ import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -20,6 +22,7 @@ import androidx.core.content.ContextCompat
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
@@ -34,6 +37,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var btnRetryMic: Button
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
+    private lateinit var buttonsContainer: LinearLayout
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
@@ -52,6 +56,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnRetryMic = findViewById(R.id.btnRetryMic)
         etCommandInput = findViewById(R.id.etCommandInput)
         btnSendText = findViewById(R.id.btnSendText)
+        buttonsContainer = findViewById(R.id.buttonsContainer)
 
         textToSpeech = TextToSpeech(this, this)
 
@@ -106,7 +111,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
-            // زيادة مهلة الصمت التامة لـ 5 ثوانٍ ليعطي وقتاً للتفكير والتحدث براحة دون قطعه!
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
         }
@@ -129,7 +133,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onError(error: Int) {
-                tvStatus.text = "⚠️ لم أتمكن من التقاط الصوت، يمكنك النقر على زر التحدث أو كتابة الأمر بالنص أدناه"
+                tvStatus.text = "⚠️ يمكنك النقر على زر إعادة تحدث أو كتابة الأمر بالنص أدناه"
                 progressBar.visibility = View.GONE
             }
 
@@ -155,6 +159,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private fun sendToAdminVoiceApi(text: String) {
         tvStatus.text = "🚀 جاري التنفيذ والتثبيت بالنظام..."
         progressBar.visibility = View.VISIBLE
+        buttonsContainer.removeAllViews()
 
         val client = OkHttpClient()
         val json = JSONObject()
@@ -188,6 +193,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
                             tvResponse.text = reply
                             speakOut(reply)
+
+                            val buttonsArray = obj.optJSONArray("buttons")
+                            renderDynamicButtons(buttonsArray)
                         } else {
                             val errText = obj.optString("error", "فشل التنفيذ")
                             tvStatus.text = "⚠️ خطأ في المعالجة"
@@ -200,6 +208,37 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
             }
         })
+    }
+
+    private fun renderDynamicButtons(buttonsArray: JSONArray?) {
+        buttonsContainer.removeAllViews()
+        if (buttonsArray == null || buttonsArray.length() == 0) return
+
+        for (i in 0 until buttonsArray.length()) {
+            val btnObj = buttonsArray.optJSONObject(i) ?: continue
+            val btnText = btnObj.optString("text", "")
+            val btnAction = btnObj.optString("action", "")
+
+            val actionBtn = Button(this).apply {
+                text = btnText
+                textSize = 15f
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#0D9488"))
+                setPadding(16, 12, 16, 12)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 8, 0, 8)
+                }
+
+                setOnClickListener {
+                    tvTranscript.text = "💬 \"$btnText\""
+                    sendToAdminVoiceApi(btnText)
+                }
+            }
+            buttonsContainer.addView(actionBtn)
+        }
     }
 
     override fun onInit(status: Int) {

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { processAdminAiMessage } from "@/lib/ai-admin-agent";
 
-/**
- * نقطة الاتصال البرمجية لاستقبال الأوامر الصوتية والنصية المباشرة (سواء GET أو POST)
- */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -16,12 +13,13 @@ export async function GET(req: Request) {
       });
     }
 
-    const aiReply = await processAdminAiMessage(text, "voice_admin_get");
+    const res = await processAdminAiMessage(text, "voice_admin_get");
 
     return NextResponse.json({
       ok: true,
       prompt: text,
-      reply: aiReply
+      reply: res.reply,
+      buttons: res.buttons || []
     });
   } catch (error: any) {
     console.error("[admin-voice-api GET] Error:", error);
@@ -39,12 +37,13 @@ export async function POST(req: Request) {
     }
 
     const userId = body.userId || "voice_admin";
-    const aiReply = await processAdminAiMessage(text, userId);
+    const res = await processAdminAiMessage(text, userId);
 
     return NextResponse.json({
       ok: true,
       prompt: text,
-      reply: aiReply
+      reply: res.reply,
+      buttons: res.buttons || []
     });
   } catch (error: any) {
     console.error("[admin-voice-api POST] Error:", error);

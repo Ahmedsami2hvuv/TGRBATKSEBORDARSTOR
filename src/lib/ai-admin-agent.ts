@@ -46,13 +46,14 @@ const AI_TOOLS = [
       },
       {
         name: "create_prep_shopping_draft",
-        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات.",
+        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات (مثل: طماطة، خيار، بتيته، بصل).",
         parameters: {
           type: "OBJECT",
           properties: {
             regionQuery: { type: "STRING", description: "اسم المنطقة" },
             customerPhone: { type: "STRING", description: "رقم هاتف الزبون (إن وجد)" },
-            itemsList: { type: "STRING", description: "قائمة المواد والمشتريات المطلوبة بالتفصيل" }
+            itemsList: { type: "STRING", description: "قائمة المواد والمشتريات المطلوبة بالتفصيل" },
+            preparerQuery: { type: "STRING", description: "اسم المجهز المراد إسناد التجهيز له إن ذكر صراحة في الرسالة" }
           },
           required: ["regionQuery", "itemsList"]
         }
@@ -84,12 +85,12 @@ const AI_TOOLS = [
       },
       {
         name: "assign_order_to_courier",
-        description: "إسناد طلب محدد لمندوب.",
+        description: "إسناد طلب محدد أو أحدث طلب لمحل محدد لمندوب.",
         parameters: {
           type: "OBJECT",
           properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب" },
-            shopQuery: { type: "STRING", description: "اسم المحل" },
+            orderNumber: { type: "NUMBER", description: "رقم الطلب (إن وجد)" },
+            shopQuery: { type: "STRING", description: "اسم المحل (مثل: أبو الأكبر، لوازم الكوثر)" },
             courierQuery: { type: "STRING", description: "اسم المندوب المراد إسناد الطلب له" }
           },
           required: ["courierQuery"]
@@ -162,8 +163,8 @@ const AI_TOOLS = [
 export async function executeCreatePrepShoppingDraft(
   args: any,
   context?: { telegramUserId?: string; chatId?: string; botToken?: string }
-) {
-  const { regionQuery, customerPhone, itemsList } = args;
+): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
+  const { regionQuery, customerPhone, itemsList, preparerQuery } = args;
 
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
@@ -181,113 +182,28 @@ export async function executeCreatePrepShoppingDraft(
   const cleanItems = (itemsList || "").trim() || "مواد تجهيز ومشتريات";
 
   const exactMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
-  const shouldAskRegion = !exactMatch || matchingRegions.length > 1;
-
-  if (shouldAskRegion && matchingRegions.length > 0 && context?.chatId && context?.telegramUserId) {
-    const payload = {
-      isPrepDraft: true,
-      customerPhone: phone,
-      itemsList: cleanItems,
-      regionQuery: regionQuery
-    };
-
-    await prisma.telegramBotSession.upsert({
-      where: { telegramUserId: context.telegramUserId },
-      create: {
-        telegramUserId: context.telegramUserId,
-        chatId: context.chatId,
-        step: "admin_select_order_region",
-        payload: JSON.stringify(payload),
-      },
-      update: {
-        step: "admin_select_order_region",
-        payload: JSON.stringify(payload),
-      }
-    });
-
-    const inlineKeyboard: any[] = [];
-    for (let i = 0; i < matchingRegions.length; i += 2) {
-      const row: any[] = [];
-      const r1 = matchingRegions[i];
-      const p1 = getRegionStrictDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (توصيل: ${p1})`, callback_data: `rgs:${r1.id}` });
-      if (i + 1 < matchingRegions.length) {
-        const r2 = matchingRegions[i + 1];
-        const p2 = getRegionStrictDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (توصيل: ${p2})`, callback_data: `rgs:${r2.id}` });
-      }
-      inlineKeyboard.push(row);
-    }
-    inlineKeyboard.push([{ text: "❌ إلغاء التجهيز", callback_data: "main" }]);
-
-    await sendTelegramMessageWithKeyboardToChat(
-      context.chatId,
-      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${cleanItems}\n\n❓ **اختر المنطقة الدقيقة بالنقر على أحد الأزرار أدناه:**`,
-      { inline_keyboard: inlineKeyboard },
-      context.botToken
-    ).catch(() => {});
-
-    return `🛒 **تم تحليل مسودة التجهيز!** يرجى اختيار المنطقة الدقيقة من الأزرار أدناه ⬇️`;
-  }
-
   const region = exactMatch || matchingRegions[0];
+
+  let assignedPreparer: any = null;
+  if (preparerQuery) {
+    assignedPreparer = await prisma.companyPreparer.findFirst({
+      where: { name: { contains: (preparerQuery || "").trim(), mode: "insensitive" } }
+    });
+  }
 
   const preparers = await prisma.companyPreparer.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" }
   });
 
-  if (context?.chatId && context?.telegramUserId) {
-    const payload = {
-      isPrepDraft: true,
-      customerPhone: phone,
-      itemsList: cleanItems,
-      regionId: region?.id,
-      regionName: region?.name || regionQuery
-    };
-
-    await prisma.telegramBotSession.upsert({
-      where: { telegramUserId: context.telegramUserId },
-      create: {
-        telegramUserId: context.telegramUserId,
-        chatId: context.chatId,
-        step: "admin_select_prep_preparer",
-        payload: JSON.stringify(payload),
-      },
-      update: {
-        step: "admin_select_prep_preparer",
-        payload: JSON.stringify(payload),
-      }
-    });
-
-    const inlineKeyboard: any[] = [];
-    if (preparers.length > 0) {
-      for (let i = 0; i < preparers.length; i += 2) {
-        const row: any[] = [];
-        const p1 = preparers[i];
-        row.push({ text: `👨‍🍳 ${p1.name}`, callback_data: `pspr:${p1.id}` });
-        if (i + 1 < preparers.length) {
-          const p2 = preparers[i + 1];
-          row.push({ text: `👨‍🍳 ${p2.name}`, callback_data: `pspr:${p2.id}` });
-        }
-        inlineKeyboard.push(row);
-      }
-    }
-    inlineKeyboard.push([{ text: "⚡ بدون تحديد مجهز الآن", callback_data: "pspr:none" }]);
-    inlineKeyboard.push([{ text: "❌ إلغاء", callback_data: "main" }]);
-
-    await sendTelegramMessageWithKeyboardToChat(
-      context.chatId,
-      `🛒 **تم تحديد مواد التجهيز والمنطقة (${region?.name || regionQuery}) بنجاح!**\n\n📝 **المواد المطلوبة:**\n${cleanItems}\n📞 **الهاتف:** ${phone}\n\n👨‍🍳 **يرجى اختيار اسم المجهز لإسناد التجهيز له:**`,
-      { inline_keyboard: inlineKeyboard },
-      context.botToken
-    ).catch(() => {});
-
-    return `🛒 **تم تحليل التجهيز والمواد!** يرجى اختيار اسم المجهز من الأزرار أدناه 👨‍🍳⬇️`;
-  }
+  const preparerButtons = preparers.map(p => ({
+    text: `👨‍🍳 ${p.name}`,
+    action: `assign_prep_${p.id}`
+  }));
 
   const draft = await prisma.companyPreparerShoppingDraft.create({
     data: {
+      preparerId: assignedPreparer ? assignedPreparer.id : null,
       rawListText: cleanItems,
       customerPhone: phone,
       customerRegionId: region?.id,
@@ -296,7 +212,14 @@ export async function executeCreatePrepShoppingDraft(
     }
   });
 
-  return `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **المواد:**\n${cleanItems}`;
+  const preparerText = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
+
+  const replyText = `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- ${preparerText}\n\n📝 **المواد المطلوبة:**\n${cleanItems}`;
+
+  return {
+    reply: replyText,
+    buttons: preparerButtons
+  };
 }
 
 export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
@@ -312,58 +235,8 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   });
 
   const exactShopMatch = matchingShops.find(s => s.name.trim().toLowerCase() === (shopQuery || "").trim().toLowerCase());
-  const shouldAskShop = !exactShopMatch || matchingShops.length > 1;
-
-  if (shouldAskShop && matchingShops.length > 0 && context?.chatId && context?.telegramUserId) {
-    const payload = {
-      customerPhone: phone,
-      customerName: customerName || "",
-      orderType: orderType || "طلب جديد",
-      price: numPrice,
-      orderNoteTime: orderNoteTime || "فوري",
-      regionQuery: regionQuery,
-      shopQuery: shopQuery
-    };
-
-    await prisma.telegramBotSession.upsert({
-      where: { telegramUserId: context.telegramUserId },
-      create: {
-        telegramUserId: context.telegramUserId,
-        chatId: context.chatId,
-        step: "admin_select_order_shop",
-        payload: JSON.stringify(payload),
-      },
-      update: {
-        step: "admin_select_order_shop",
-        payload: JSON.stringify(payload),
-      }
-    });
-
-    const inlineKeyboard: any[] = [];
-    for (let i = 0; i < matchingShops.length; i += 2) {
-      const row: any[] = [];
-      const s1 = matchingShops[i];
-      row.push({ text: `🏪 ${s1.name}`, callback_data: `shps:${s1.id}` });
-      if (i + 1 < matchingShops.length) {
-        const s2 = matchingShops[i + 1];
-        row.push({ text: `🏪 ${s2.name}`, callback_data: `shps:${s2.id}` });
-      }
-      inlineKeyboard.push(row);
-    }
-    inlineKeyboard.push([{ text: "❌ إلغاء الطلب", callback_data: "main" }]);
-
-    await sendTelegramMessageWithKeyboardToChat(
-      context.chatId,
-      `❓ **عثرنا على أكثر من خيار للمحل المتطابق مع "${shopQuery}":**\n\nيرجى اختيار اسم المحل المطلوب بالنقر على الزر أدناه ⬇️`,
-      { inline_keyboard: inlineKeyboard },
-      context.botToken
-    ).catch(() => {});
-
-    return `⏳ **اختر اسم المحل المطلوب من الأزرار أدناه ⬇️**`;
-  }
-
   const shop = exactShopMatch || matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
+  if (!shop) return { reply: "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها." };
 
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
@@ -378,59 +251,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   }
 
   const exactRegionMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
-  const shouldAskRegion = !exactRegionMatch || matchingRegions.length > 1;
-
-  if (shouldAskRegion && matchingRegions.length > 0 && context?.chatId && context?.telegramUserId) {
-    const payload = {
-      shopId: shop.id,
-      shopName: shop.name,
-      customerPhone: phone,
-      customerName: customerName || "",
-      orderType: orderType || "طلب جديد",
-      price: numPrice,
-      orderNoteTime: orderNoteTime || "فوري",
-      regionQuery: regionQuery
-    };
-
-    await prisma.telegramBotSession.upsert({
-      where: { telegramUserId: context.telegramUserId },
-      create: {
-        telegramUserId: context.telegramUserId,
-        chatId: context.chatId,
-        step: "admin_select_order_region",
-        payload: JSON.stringify(payload),
-      },
-      update: {
-        step: "admin_select_order_region",
-        payload: JSON.stringify(payload),
-      }
-    });
-
-    const inlineKeyboard: any[] = [];
-    for (let i = 0; i < matchingRegions.length; i += 2) {
-      const row: any[] = [];
-      const r1 = matchingRegions[i];
-      const p1 = getRegionStrictDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (توصيل: ${p1})`, callback_data: `rgs:${r1.id}` });
-      if (i + 1 < matchingRegions.length) {
-        const r2 = matchingRegions[i + 1];
-        const p2 = getRegionStrictDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (توصيل: ${p2})`, callback_data: `rgs:${r2.id}` });
-      }
-      inlineKeyboard.push(row);
-    }
-    inlineKeyboard.push([{ text: "❌ إلغاء الطلب", callback_data: "main" }]);
-
-    await sendTelegramMessageWithKeyboardToChat(
-      context.chatId,
-      `🏪 **المحل:** ${shop.name}\n❓ **اختر المنطقة الدقيقة من الأزرار أدناه (مع تسعيرة التوصيل الثابتة لكل منطقة):**`,
-      { inline_keyboard: inlineKeyboard },
-      context.botToken
-    ).catch(() => {});
-
-    return `⏳ **اختر المنطقة المطلوب التوصيل لها من الأزرار أدناه ⬇️**`;
-  }
-
   const region = exactRegionMatch || matchingRegions[0];
   const finalDeliveryPrice = getRegionStrictDeliveryPrice(region);
   const totalAmount = numPrice + finalDeliveryPrice;
@@ -461,7 +281,9 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   notifyTelegramNewOrder(order.id).catch(() => {});
   pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل الثابت:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`;
+  return {
+    reply: `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل الثابت:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`
+  };
 }
 
 async function executeAssignCourier(args: any) {
@@ -470,30 +292,42 @@ async function executeAssignCourier(args: any) {
   let order: any = null;
   if (orderNumber) {
     order = await prisma.order.findUnique({ where: { orderNumber: Number(orderNumber) } });
-  } else if (shopQuery) {
-    const shop = await prisma.shop.findFirst({ where: { name: { contains: shopQuery, mode: "insensitive" } } });
+  }
+
+  if (!order && shopQuery) {
+    const shop = await prisma.shop.findFirst({
+      where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } }
+    });
+
     if (shop) {
       order = await prisma.order.findFirst({
-        where: { shopId: shop.id, status: "pending" },
+        where: { shopId: shop.id, status: { in: ["pending", "assigned"] } },
         orderBy: { createdAt: "desc" }
       });
     }
   }
 
-  if (!order) return "❌ لم يتم العثور على الطلب المحدد لإسناده.";
+  if (!order) {
+    order = await prisma.order.findFirst({
+      where: { status: { in: ["pending", "assigned"] } },
+      orderBy: { createdAt: "desc" }
+    });
+  }
+
+  if (!order) return { reply: "❌ لم يتم العثور على الطلب المحدد لإسناده." };
 
   const courier = await prisma.courier.findFirst({
-    where: { name: { contains: courierQuery, mode: "insensitive" } }
+    where: { name: { contains: (courierQuery || "").trim(), mode: "insensitive" } }
   });
 
-  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
 
   await prisma.order.update({
     where: { id: order.id },
     data: { assignedCourierId: courier.id, status: "assigned" }
   });
 
-  return `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب ${courier.name} بنجاح!**`;
+  return { reply: `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب (${courier.name}) بنجاح!**` };
 }
 
 async function executeUpdateOrderStatus(args: any) {
@@ -512,7 +346,7 @@ async function executeUpdateOrderStatus(args: any) {
     }
   }
 
-  if (!order) return "❌ لم يتم العثور على الطلب المحدد لتحديث حالته.";
+  if (!order) return { reply: "❌ لم يتم العثور على الطلب المحدد لتحديث حالته." };
 
   let mappedStatus = "pending";
   const st = (statusText || "").toLowerCase();
@@ -526,7 +360,7 @@ async function executeUpdateOrderStatus(args: any) {
     data: { status: mappedStatus }
   });
 
-  return `✅ **تم تغيير حالة الطلب #${order.orderNumber} إلى (${statusText}) بنجاح!**`;
+  return { reply: `✅ **تم تغيير حالة الطلب #${order.orderNumber} إلى (${statusText}) بنجاح!**` };
 }
 
 async function executeBulkUpdateCourierOrdersStatus(args: any) {
@@ -536,7 +370,7 @@ async function executeBulkUpdateCourierOrdersStatus(args: any) {
     where: { name: { contains: courierQuery, mode: "insensitive" } }
   });
 
-  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
 
   const statusToApply = (newStatus || "delivered_and_received").includes("استلام") ? "delivered" : "completed";
 
@@ -545,7 +379,7 @@ async function executeBulkUpdateCourierOrdersStatus(args: any) {
     data: { status: statusToApply }
   });
 
-  return `✅ **تم تحويل كافة طلبات المندوب ${courier.name} المعلقة (${updated.count} طلب) إلى حالة تم الاستلام/المكتملة بنجاح!**`;
+  return { reply: `✅ **تم تحويل كافة طلبات المندوب ${courier.name} المعلقة (${updated.count} طلب) إلى حالة تم الاستلام/المكتملة بنجاح!**` };
 }
 
 async function executeZeroCourierBalance(args: any) {
@@ -555,14 +389,14 @@ async function executeZeroCourierBalance(args: any) {
     where: { name: { contains: courierQuery, mode: "insensitive" } }
   });
 
-  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
 
   await prisma.courier.update({
     where: { id: courier.id },
     data: { lastSalaryWithdrawalAt: new Date() }
   });
 
-  return `✅ **تم تصفير حساب ومستحقات المندوب ${courier.name} بنجاح!**`;
+  return { reply: `✅ **تم تصفير حساب ومستحقات المندوب ${courier.name} بنجاح!**` };
 }
 
 async function executeCreateNewCourier(args: any) {
@@ -571,7 +405,7 @@ async function executeCreateNewCourier(args: any) {
   const name = (courierName || "").trim();
   const phone = (courierPhone || "").trim() || "غير محدد";
 
-  if (!name) return "❌ يرجى تحديد اسم المندوب الجديد.";
+  if (!name) return { reply: "❌ يرجى تحديد اسم المندوب الجديد." };
 
   const courier = await prisma.courier.create({
     data: {
@@ -581,7 +415,7 @@ async function executeCreateNewCourier(args: any) {
     }
   });
 
-  return `✅ **تم إضافة المندوب الجديد (${courier.name}) بنجاح للنظام!**\n- **الهاتف:** ${phone}`;
+  return { reply: `✅ **تم إضافة المندوب الجديد (${courier.name}) بنجاح للنظام!**\n- **الهاتف:** ${phone}` };
 }
 
 async function executeToggleCourierActive(args: any) {
@@ -591,7 +425,7 @@ async function executeToggleCourierActive(args: any) {
     where: { name: { contains: courierQuery, mode: "insensitive" } }
   });
 
-  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
 
   await prisma.courier.update({
     where: { id: courier.id },
@@ -600,7 +434,7 @@ async function executeToggleCourierActive(args: any) {
 
   const stateText = active ? "تفعيل وإظهار" : "إخفاء وتطبيق التعطيل على";
 
-  return `✅ **تم ${stateText} المندوب ${courier.name} بنجاح!**`;
+  return { reply: `✅ **تم ${stateText} المندوب ${courier.name} بنجاح!**` };
 }
 
 async function executeZeroPartnerDebt(args: any) {
@@ -611,7 +445,7 @@ async function executeZeroPartnerDebt(args: any) {
     where: { name: { contains: targetName, mode: "insensitive" } }
   });
 
-  if (!partner) return `❌ لم يتم العثور على حساب "${targetName}" بدفتر الديون.`;
+  if (!partner) return { reply: `❌ لم يتم العثور على حساب "${targetName}" بدفتر الديون.` };
 
   await prisma.creditBookTransaction.create({
     data: {
@@ -622,7 +456,7 @@ async function executeZeroPartnerDebt(args: any) {
     }
   });
 
-  return `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون بنجاح!**`;
+  return { reply: `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون بنجاح!**` };
 }
 
 async function executeDebtTransaction(args: any) {
@@ -632,7 +466,7 @@ async function executeDebtTransaction(args: any) {
   const numAmount = Number(amount) || 0;
 
   if (numAmount <= 0) {
-    return "❌ يرجى تحديد المبلغ المالي صراحة لتسجيله في دفتر الديون.";
+    return { reply: "❌ يرجى تحديد المبلغ المالي صراحة لتسجيله في دفتر الديون." };
   }
 
   let partner = await prisma.creditBookPartner.findFirst({
@@ -681,7 +515,7 @@ async function executeDebtTransaction(args: any) {
 
   const kindText = kind === "took" ? "أخذت (تسديد / يطلبنا)" : "أعطيت (دين نطلبه)";
 
-  return `✅ **تم تسجيل وتثبيت المعاملة بدفتر الديون بنجاح!**\n\n- **الطرف / الحساب:** ${partner.name}\n- **المبلغ:** ${numAmount}\n- **نوع العملية:** ${kindText}\n- **الملاحظات:** ${note || "لا يوجد"}`;
+  return { reply: `✅ **تم تسجيل وتثبيت المعاملة بدفتر الديون بنجاح!**\n\n- **الطرف / الحساب:** ${partner.name}\n- **المبلغ:** ${numAmount}\n- **نوع العملية:** ${kindText}\n- **الملاحظات:** ${note || "لا يوجد"}` };
 }
 
 const chatHistoryMemory = new Map<string, Array<{ role: "user" | "model"; text: string }>>();
@@ -702,21 +536,22 @@ export async function processAdminAiMessage(
   telegramUserId: string = "default",
   chatId?: string,
   botToken?: string
-): Promise<string> {
+): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
   const allKeys = await getAllActiveGeminiKeys();
 
   if (allKeys.length === 0) {
-    return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
+    return { reply: "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي." };
   }
 
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
+قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) تعني فوراً واستثنائياً أنها "مسودة طلب تجهيز مواد ومشتريات"، ويجب عليك استدعاء أداة create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
 إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
 إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
 إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
-إذا طلب المدير إسناد طلب لمندوب استخدم assign_order_to_courier.
+إذا طلب المدير إسناد طلب لمندوب (مثلاً: "طلب فلان المحل سوي له إسناد إلى فلان") استخدم assign_order_to_courier.
 إذا طلب المدير تغيير حالة طلب أو رفضه استخدم update_order_status.
 إذا طلب المدير تحويل طلبات مندوب معينة إلى تم الاستلام استخدم bulk_update_courier_orders_status.
 إذا طلب المدير تصفير مندوب استخدم zero_courier_balance.
@@ -759,22 +594,24 @@ export async function processAdminAiMessage(
           for (const part of parts) {
             if (part.functionCall) {
               const fn = part.functionCall;
-              let reply = "";
-              if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
-              else if (fn.name === "zero_partner_debt") reply = await executeZeroPartnerDebt(fn.args);
-              else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
-              else if (fn.name === "update_order_status") reply = await executeUpdateOrderStatus(fn.args);
-              else if (fn.name === "bulk_update_courier_orders_status") reply = await executeBulkUpdateCourierOrdersStatus(fn.args);
-              else if (fn.name === "zero_courier_balance") reply = await executeZeroCourierBalance(fn.args);
-              else if (fn.name === "create_new_courier") reply = await executeCreateNewCourier(fn.args);
-              else if (fn.name === "toggle_courier_active") reply = await executeToggleCourierActive(fn.args);
+              let result: any = null;
+              if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
+              else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
+              else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
+              else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
+              else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
+              else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
+              else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
+              else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
 
-              if (reply) {
-                appendChatHistory(telegramUserId, "model", reply);
+              if (result) {
+                const textReply = typeof result === "string" ? result : result.reply;
+                const buttons = typeof result === "object" ? result.buttons : undefined;
+                appendChatHistory(telegramUserId, "model", textReply);
                 await markGeminiKeySuccess(keyRecord.id);
-                return reply;
+                return { reply: textReply, buttons };
               }
             }
           }
@@ -783,33 +620,11 @@ export async function processAdminAiMessage(
           if (textOutput?.trim()) {
             appendChatHistory(telegramUserId, "model", textOutput.trim());
             await markGeminiKeySuccess(keyRecord.id);
-            return textOutput.trim();
+            return { reply: textOutput.trim() };
           }
         } else {
           const errText = await resTools.text().catch(() => "");
           lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
-        }
-
-        const resPure = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              contents: contentsPayload,
-            }),
-          }
-        );
-
-        if (resPure.ok) {
-          const dataPure = await resPure.json();
-          const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (textReply?.trim()) {
-            appendChatHistory(telegramUserId, "model", textReply.trim());
-            await markGeminiKeySuccess(keyRecord.id);
-            return textReply.trim();
-          }
         }
       } catch (err: any) {
         lastApiError = err.message || String(err);
@@ -817,5 +632,5 @@ export async function processAdminAiMessage(
     }
   }
 
-  return `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}`;
+  return { reply: `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}` };
 }
