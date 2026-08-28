@@ -8,6 +8,23 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
+ * استخراج سعر التوصيل بأمان مطلق وبدون أي استثناءات
+ */
+function safeGetDeliveryPrice(region?: any, explicitDeliveryPrice?: any): number {
+  if (explicitDeliveryPrice != null && !isNaN(Number(explicitDeliveryPrice))) {
+    return Number(explicitDeliveryPrice);
+  }
+  if (!region || region.deliveryPrice == null) return 5000;
+  if (typeof region.deliveryPrice?.toNumber === "function") {
+    return region.deliveryPrice.toNumber();
+  }
+  if (typeof region.deliveryPrice === "number") {
+    return region.deliveryPrice;
+  }
+  return Number(region.deliveryPrice) || 5000;
+}
+
+/**
  * أدوات النظام لتنفيذ العمليات الذكية
  */
 const AI_TOOLS = [
@@ -82,20 +99,19 @@ export async function executeCreatePrepShoppingDraft(
   const { regionQuery, customerPhone, itemsList } = args;
 
   let matchingRegions = await prisma.region.findMany({
-    where: { name: { contains: regionQuery.trim(), mode: "insensitive" } },
+    where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
     orderBy: { name: "asc" }
   });
 
   if (matchingRegions.length === 0) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionQuery, allRegions, 5);
+    const ranked = rankRegionsByQuery(regionQuery || "", allRegions, 5);
     if (ranked.length > 0) matchingRegions = ranked;
   }
 
   const phone = (customerPhone || "").trim() || "غير محدد";
 
-  // إذا وجدنا أكثر من منطقة متشابهة، نعرض أزرار المناطق أولاً للتجهيز
   if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
     const payload = {
       isPrepDraft: true,
@@ -122,10 +138,12 @@ export async function executeCreatePrepShoppingDraft(
     for (let i = 0; i < matchingRegions.length; i += 2) {
       const row: any[] = [];
       const r1 = matchingRegions[i];
-      row.push({ text: `📍 ${r1.name}`, callback_data: `rgs:${r1.id}` });
+      const p1 = safeGetDeliveryPrice(r1);
+      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(p1)})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
-        row.push({ text: `📍 ${r2.name}`, callback_data: `rgs:${r2.id}` });
+        const p2 = safeGetDeliveryPrice(r2);
+        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(p2)})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -141,7 +159,6 @@ export async function executeCreatePrepShoppingDraft(
     return `🛒 **تم تحليل مسودة التجهيز!** يرجى اختيار المنطقة الدقيقة من الأزرار أدناه ⬇️`;
   }
 
-  // إذا كانت المنطقة فريدة، ننتقل فوراً لخطوة اختيار المجهز بالأزرار!
   const region = matchingRegions[0];
   const preparers = await prisma.companyPreparer.findMany({
     where: { active: true },
@@ -195,7 +212,6 @@ export async function executeCreatePrepShoppingDraft(
     return `🛒 **تم تحليل التجهيز!** اختر المجهز المطلوب من الأزرار أدناه 👨‍🍳⬇️`;
   }
 
-  // إذا لم يكن هناك مجهزون مسجلون، ننشئ مسودة التجهيز فوراً
   const draft = await prisma.companyPreparerShoppingDraft.create({
     data: {
       rawListText: itemsList,
@@ -219,14 +235,14 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
   let matchingRegions = await prisma.region.findMany({
-    where: { name: { contains: regionQuery.trim(), mode: "insensitive" } },
+    where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
     orderBy: { name: "asc" }
   });
 
   if (matchingRegions.length === 0) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionQuery, allRegions, 5);
+    const ranked = rankRegionsByQuery(regionQuery || "", allRegions, 5);
     if (ranked.length > 0) matchingRegions = ranked;
   }
 
@@ -264,10 +280,12 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     for (let i = 0; i < matchingRegions.length; i += 2) {
       const row: any[] = [];
       const r1 = matchingRegions[i];
-      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(r1.deliveryPrice)})`, callback_data: `rgs:${r1.id}` });
+      const p1 = safeGetDeliveryPrice(r1);
+      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(p1)})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
-        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(r2.deliveryPrice)})`, callback_data: `rgs:${r2.id}` });
+        const p2 = safeGetDeliveryPrice(r2);
+        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(p2)})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -284,7 +302,7 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   }
 
   const region = matchingRegions[0];
-  const finalDeliveryPrice = deliveryPrice != null ? deliveryPrice : (region?.deliveryPrice.toNumber() || 5000);
+  const finalDeliveryPrice = safeGetDeliveryPrice(region, deliveryPrice);
   const totalAmount = numPrice + Number(finalDeliveryPrice);
 
   const order = await prisma.order.create({
@@ -405,98 +423,77 @@ export async function processAdminAiMessage(
   let lastApiError = "";
 
   for (const keyRecord of allKeys) {
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+    const models = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
 
     for (const model of models) {
-      let attempts = 0;
-      const maxAttempts = 2;
+      try {
+        const resTools = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: contentsPayload,
+              tools: AI_TOOLS,
+            }),
+          }
+        );
 
-      while (attempts < maxAttempts) {
-        attempts++;
-        try {
-          const resTools = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: contentsPayload,
-                tools: AI_TOOLS,
-              }),
-            }
-          );
+        if (resTools.ok) {
+          const dataTools = await resTools.json();
+          const parts = dataTools.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            if (part.functionCall) {
+              const fn = part.functionCall;
+              let reply = "";
+              if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
+              else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
 
-          if (resTools.ok) {
-            const dataTools = await resTools.json();
-            const parts = dataTools.candidates?.[0]?.content?.parts || [];
-            for (const part of parts) {
-              if (part.functionCall) {
-                const fn = part.functionCall;
-                let reply = "";
-                if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-                else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-                else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
-                else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
-
-                if (reply) {
-                  appendChatHistory(telegramUserId, "model", reply);
-                  await markGeminiKeySuccess(keyRecord.id);
-                  return reply;
-                }
+              if (reply) {
+                appendChatHistory(telegramUserId, "model", reply);
+                await markGeminiKeySuccess(keyRecord.id);
+                return reply;
               }
             }
-
-            const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-            if (textOutput?.trim()) {
-              appendChatHistory(telegramUserId, "model", textOutput.trim());
-              await markGeminiKeySuccess(keyRecord.id);
-              return textOutput.trim();
-            }
-          } else {
-            const errText = await resTools.text().catch(() => "");
-            lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
-            
-            // إذا كان الخطأ 503 ضغط سيرفرات، ننتظر قسطاً قصيراً ونكرر المحاولة أو ننتقل للموديل التالي
-            if (resTools.status === 503 || resTools.status === 429) {
-              await new Promise((r) => setTimeout(r, 600));
-              continue;
-            }
           }
 
-          // محاولة الاستدعاء المباشر النقي بدون أدوات كخيار احتياطي
-          const resPure = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: contentsPayload,
-              }),
-            }
-          );
-
-          if (resPure.ok) {
-            const dataPure = await resPure.json();
-            const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (textReply?.trim()) {
-              appendChatHistory(telegramUserId, "model", textReply.trim());
-              await markGeminiKeySuccess(keyRecord.id);
-              return textReply.trim();
-            }
-          } else {
-            const errTextPure = await resPure.text().catch(() => "");
-            lastApiError = `[Model: ${model}, Status: ${resPure.status}] ${errTextPure}`;
-            if (resPure.status === 503 || resPure.status === 429) {
-              await new Promise((r) => setTimeout(r, 600));
-              continue;
-            }
+          const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+          if (textOutput?.trim()) {
+            appendChatHistory(telegramUserId, "model", textOutput.trim());
+            await markGeminiKeySuccess(keyRecord.id);
+            return textOutput.trim();
           }
-        } catch (e: any) {
-          lastApiError = `[Model: ${model}] ${e?.message || e}`;
+        } else {
+          const errText = await resTools.text().catch(() => "");
+          lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
         }
-        break; // للخروج من حلقة المحاولات والذهاب للموديل التالي إذا فشلت هذه المحاولة
+
+        const resPure = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: contentsPayload,
+            }),
+          }
+        );
+
+        if (resPure.ok) {
+          const dataPure = await resPure.json();
+          const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (textReply?.trim()) {
+            appendChatHistory(telegramUserId, "model", textReply.trim());
+            await markGeminiKeySuccess(keyRecord.id);
+            return textReply.trim();
+          }
+        }
+      } catch (err: any) {
+        lastApiError = err.message || String(err);
       }
     }
   }
