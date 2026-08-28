@@ -259,49 +259,36 @@ function MandoubFullBlockCardGrid({
                 </span>
               </div>
 
-              {/* تفاصيل المحل والزبون بدون نصوص تكرارية ثقيلة */}
-              <div className="space-y-1">
-                {/* سطر المحل */}
-                <div className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200 truncate">
-                  <span className="text-sm">🏬</span>
-                  <span className="font-black text-emerald-800 dark:text-emerald-400">{o.shopName}</span>
-                  {o.shopRegionName && <span className="text-[10px] text-slate-400">({o.shopRegionName})</span>}
+              {/* سطر المسار التسلسلي: اسم المحل ⬅️ المنطقة ⬅️ نوع الطلب ⬅️ السعر الكلي */}
+              <div className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-2 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-black text-slate-800 dark:text-slate-100">
+                  <span className="text-emerald-700 dark:text-emerald-400 font-black">🏬 {o.shopName}</span>
+                  <span className="text-slate-400 font-bold">⬅️</span>
+                  <span className="text-sky-700 dark:text-sky-300 font-black">📍 {o.regionLine}</span>
+                  <span className="text-slate-400 font-bold">⬅️</span>
+                  <span className="text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
+                    📦 {o.goodsTypeLine || "عام"}
+                  </span>
+                  <span className="text-slate-400 font-bold">⬅️</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40">
+                    💵 {displayTotal}
+                  </span>
                 </div>
 
-                {/* سطر الزبون والمنطقة والهاتف */}
-                <div className="flex items-center justify-between gap-1 text-[11px]">
-                  <div className="flex items-center gap-1 font-extrabold text-sky-900 dark:text-sky-300 min-w-0 truncate">
-                    <span>📍</span>
-                    <span className="truncate">{o.customerName ? `${o.customerName} • ${o.regionLine}` : o.regionLine}</span>
+                {/* تفاصيل إضافية مدمجة للزبون والهاتف والوقت */}
+                <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-500 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center gap-1 truncate">
+                    {o.customerName && <span className="truncate">👤 {o.customerName}</span>}
+                    {o.phoneLine && <span className="font-mono text-slate-600 dark:text-slate-400">📞 {o.phoneLine}</span>}
                   </div>
-                  {o.phoneLine && (
-                    <span className="font-mono font-bold text-slate-500 shrink-0 text-[10px]">
-                      📞 {o.phoneLine}
-                    </span>
-                  )}
+                  <span className="text-rose-600 dark:text-rose-400 shrink-0 font-black">⏰ {o.orderNoteTime || o.timeLine || "فوري"}</span>
                 </div>
-              </div>
-
-              {/* سطر السعر الكلي البارز فقط (إلغاء التوصيل) */}
-              <div className="mt-2.5 flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold text-slate-500">السعر الكلي:</span>
-                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {displayTotal}
-                  </span>
-                </div>
-                {o.goodsTypeLine && (
-                  <span className="text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                    {o.goodsTypeLine}
-                  </span>
-                )}
               </div>
             </div>
 
             {/* الوقت والتاريخ بالشريط السفلي الناعم */}
-            <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+            <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400">
               <span>📅 {o.dateLine}</span>
-              <span className="text-rose-600 dark:text-rose-400 font-black">⏰ {o.orderNoteTime || o.timeLine || "فوري"}</span>
             </div>
           </div>
         );
