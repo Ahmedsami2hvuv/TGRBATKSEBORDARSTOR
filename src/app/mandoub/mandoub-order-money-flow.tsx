@@ -644,26 +644,31 @@ export function PickupMoneyForm({
           name="advanceStatus"
           value={advanceToDelivering ? "delivering" : ""}
         />
-        {/* سطر الإدخال اليدوي مع الزر المربع النجمي المباشر على اليسار */}
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            ref={amountRef}
-            name="amountAlf"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            onKeyDown={onPickupAmountKeyDown}
-            className={`${moneySaderAmountInputClass} animate-placeholder flex-1 text-center text-sm sm:text-base h-12 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-black`}
-            placeholder="السعر يدوياً"
-            inputMode="decimal"
-            enterKeyHint="done"
-            required
-          />
+        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
+        <div className="flex items-center justify-between gap-3 pt-2">
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          <div className="w-28 sm:w-32 shrink-0 space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <input
+              ref={amountRef}
+              name="amountAlf"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={onPickupAmountKeyDown}
+              className={`${moneySaderAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              placeholder="اكتب السعر"
+              inputMode="decimal"
+              enterKeyHint="done"
+              required
+            />
+          </div>
 
+          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
           {remainingAlfHint && (
-            <div className="relative shrink-0">
+            <div className="relative flex-1 flex justify-end min-w-0">
               {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
-              <span className="pointer-events-none absolute -bottom-2 left-0 text-xs star-particle-2 z-10 select-none">💫</span>
+              <span className="pointer-events-none absolute -top-4 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-3 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
 
               <button
                 type="button"
@@ -686,11 +691,17 @@ export function PickupMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-green h-12 px-3 flex items-center justify-center gap-1 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 font-black text-white shadow-lg active:scale-95 transition-all cursor-pointer select-none"
+                className="magical-money-block-green w-full max-w-[210px] h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <span className="text-sm sm:text-base font-black tracking-tight">{remainingAlfHint}</span>
-                <span className="text-[10px] font-bold opacity-90">ألف ⚡</span>
+                <div className="flex items-baseline gap-1 text-xl sm:text-2xl font-black drop-shadow-md">
+                  <span>{remainingAlfHint}</span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90">د.ع</span>
+                </div>
+                <span className="text-xs font-black text-emerald-100 flex items-center gap-1 mt-0.5">
+                  <span>تأكيد المباشر</span>
+                  <span>⚡</span>
+                </span>
               </button>
             </div>
           )}
@@ -1080,26 +1091,31 @@ export function DeliveryMoneyForm({
         />
         <input ref={latRef} type="hidden" name="lat" value="" />
         <input ref={lngRef} type="hidden" name="lng" value="" />
-        {/* سطر الإدخال اليدوي مع الزر المربع النجمي المباشر على اليسار */}
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            ref={amountRef}
-            name="amountAlf"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            onKeyDown={onDeliveryAmountKeyDown}
-            className={`${moneyWardAmountInputClass} animate-placeholder flex-1 text-center text-sm sm:text-base h-12 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-black`}
-            placeholder="السعر يدوياً"
-            inputMode="decimal"
-            enterKeyHint="done"
-            required
-          />
+        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
+        <div className="flex items-center justify-between gap-3 pt-2">
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          <div className="w-28 sm:w-32 shrink-0 space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <input
+              ref={amountRef}
+              name="amountAlf"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={onDeliveryAmountKeyDown}
+              className={`${moneyWardAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              placeholder="اكتب السعر"
+              inputMode="decimal"
+              enterKeyHint="done"
+              required
+            />
+          </div>
 
+          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
           {remainingAlfHint && (
-            <div className="relative shrink-0">
+            <div className="relative flex-1 flex justify-end min-w-0">
               {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
-              <span className="pointer-events-none absolute -bottom-2 left-0 text-xs star-particle-2 z-10 select-none">💫</span>
+              <span className="pointer-events-none absolute -top-4 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-3 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
 
               <button
                 type="button"
@@ -1122,11 +1138,17 @@ export function DeliveryMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-red h-12 px-3 flex items-center justify-center gap-1 rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 font-black text-white shadow-lg active:scale-95 transition-all cursor-pointer select-none"
+                className="magical-money-block-red w-full max-w-[210px] h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <span className="text-sm sm:text-base font-black tracking-tight">{remainingAlfHint}</span>
-                <span className="text-[10px] font-bold opacity-90">ألف ⚡</span>
+                <div className="flex items-baseline gap-1 text-xl sm:text-2xl font-black drop-shadow-md">
+                  <span>{remainingAlfHint}</span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90">د.ع</span>
+                </div>
+                <span className="text-xs font-black text-rose-100 flex items-center gap-1 mt-0.5">
+                  <span>تأكيد المباشر</span>
+                  <span>⚡</span>
+                </span>
               </button>
             </div>
           )}
