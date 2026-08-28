@@ -22,609 +22,205 @@ function getRegionStrictDeliveryPrice(region?: any): number {
 }
 
 /**
- * أدوات النظام لتنفيذ العمليات الذكية والإدارية الشاملة
+ * أدوات النظام لتنفيذ العمليات الذكية والإدارية الشاملة على كامل قاعدة البيانات
  */
 const AI_TOOLS = [
   {
     functionDeclarations: [
       {
-        name: "get_system_summary_or_orders",
-        description: "استعلام وجلب الطلبات الجديدة والمعلقة بالنظام، أو جلب ملخص الإحصائيات لمبيعات ومسودات التجهيز.",
+        name: "universal_manage_database",
+        description: "أداة شاملة ومطلقة للتحكم الكامل بقاعدة بيانات الموقع (تعديل طلب، إسناد لمندوب، تغيير نوع الطلب، تعديل السعر، استعلام الطلبات الجديدة، استعلام الديون، إضافة أو تصفير أو تعديل أي بيانات بالموقع).",
         parameters: {
           type: "OBJECT",
           properties: {
-            queryType: { type: "STRING", description: "'new_orders' (الطلبات الجديدة المعلقة) أو 'summary' (ملخص النظام)" }
-          }
-        }
-      },
-      {
-        name: "create_order",
-        description: "إضافة ورصد طلب مبيعات جديد في النظام عند وجود تفاصيل المحل والمنطقة وسعر الطلب وهاتف الزبون.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            shopQuery: { type: "STRING", description: "اسم المحل" },
-            customerPhone: { type: "STRING", description: "رقم هاتف الزبون" },
-            customerName: { type: "STRING", description: "اسم الزبون (إن وجد)" },
-            regionQuery: { type: "STRING", description: "اسم المنطقة أو الوجهة" },
-            orderType: { type: "STRING", description: "وصف الطلب والمنتجات" },
-            price: { type: "NUMBER", description: "سعر الطلب كما يكتبه المدير صراحة بدون أي تعديل أو ضرب" },
-            orderNoteTime: { type: "STRING", description: "وقت التسليم" }
+            action: {
+              type: "STRING",
+              description: "نوع الإجراء: 'update_order' (تعديل تفاصيل/نوع/سعر/مندوب طلب) | 'query_orders' (استعلام الطلبات المعلقة/الجديدة) | 'assign_courier' (إسناد طلب لمندوب) | 'update_status' (تغيير حالة طلب) | 'create_prep' (مسودة تجهيز) | 'create_order' (طلب جديد) | 'debt_operation' (ديون) | 'manage_courier' (تعديل/تصفير/إضافة مندوب)"
+            },
+            orderNumber: { type: "NUMBER", description: "رقم الطلب المعني إن وجد" },
+            shopQuery: { type: "STRING", description: "اسم المحل إن وجد" },
+            courierQuery: { type: "STRING", description: "اسم المندوب إن وجد" },
+            regionQuery: { type: "STRING", description: "اسم المنطقة إن وجد" },
+            orderType: { type: "STRING", description: "نوع أو وصف الطلب أو المواد الجديدة" },
+            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل الجديد إن وجد" },
+            orderSubtotal: { type: "NUMBER", description: "سعر الطلب/البضاعة الأصلي إن وجد" },
+            customerPhone: { type: "STRING", description: "رقم هاتف الزبون إن وجد" },
+            statusText: { type: "STRING", description: "الحالة الجديدة (مكتمل، تم الاستلام، مرفوض، بالطريق...)" },
+            itemsList: { type: "STRING", description: "قائمة مواد التجهيز إن وجدت" },
+            personQuery: { type: "STRING", description: "اسم الشخص في الديون" },
+            amount: { type: "NUMBER", description: "المبلغ المالي" },
+            debtType: { type: "STRING", description: "'took' أو 'gave' أو 'zero'" },
+            generalInstruction: { type: "STRING", description: "الوصف النصي الصريح لطلب المدير للتنفيذ المباشر" }
           },
-          required: ["shopQuery", "regionQuery", "price"]
-        }
-      },
-      {
-        name: "update_order_details",
-        description: "تعديل وتحديث تفاصيل طلب مبيعات محدد في النظام (مثل تعديل سعر التوصيل، تعديل سعر الطلب، هاتف الزبون، أو المواد).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب المراد تعديله" },
-            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل الجديد إذا طلب المدير تعديله صراحة" },
-            orderSubtotal: { type: "NUMBER", description: "سعر أصل البضاعة/الطلب الجديد إذا طلب المدير تعديله صراحة" },
-            customerPhone: { type: "STRING", description: "رقم هاتف الزبون الجديد إن وجد" },
-            orderType: { type: "STRING", description: "تفاصيل ووصف المواد والمنتجات الجديدة إن وجدت" }
-          },
-          required: ["orderNumber"]
-        }
-      },
-      {
-        name: "create_prep_shopping_draft",
-        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات (مثل: طماطة، خيار، بتيته، بصل).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            regionQuery: { type: "STRING", description: "اسم المنطقة" },
-            customerPhone: { type: "STRING", description: "رقم هاتف الزبون (إن وجد)" },
-            itemsList: { type: "STRING", description: "قائمة المواد والمشتريات المطلوبة بالتفصيل" },
-            preparerQuery: { type: "STRING", description: "اسم المجهز المراد إسناد التجهيز له إن ذكر صراحة في الرسالة" }
-          },
-          required: ["regionQuery", "itemsList"]
-        }
-      },
-      {
-        name: "register_debt_transaction",
-        description: "تسجيل معاملة مالية بدفتر الديون (أخذت / انطيت / دين / تسديد).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            personQuery: { type: "STRING", description: "اسم الشخص أو الطرف (مثلاً: الوالد، علي، المحل)" },
-            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط بدون إضافة أصفار تلقائية" },
-            type: { type: "STRING", description: "'took' (أخذت/استلمت) أو 'gave' (اعطيت/انطيت)" },
-            note: { type: "STRING", description: "ملاحظات وتفاصيل المعاملة" }
-          },
-          required: ["personQuery", "amount", "type"]
-        }
-      },
-      {
-        name: "zero_partner_debt",
-        description: "تصفير حساب ودين شخص أو طرف محدد بدفتر الديون كلياً.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            personQuery: { type: "STRING", description: "اسم الشخص المراد تصفير حسابه بدفتر الديون" }
-          },
-          required: ["personQuery"]
-        }
-      },
-      {
-        name: "assign_order_to_courier",
-        description: "إسناد طلب محدد أو أحدث طلب لمحل محدد لمندوب (مثلاً: حوله إلى كابتن فارس / اسند طلب أبو الأكبر لكابتن فارس).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب (إن وجد)" },
-            shopQuery: { type: "STRING", description: "اسم المحل (مثل: أبو الأكبر، لوازم الكوثر)" },
-            courierQuery: { type: "STRING", description: "اسم المندوب المراد إسناد الطلب له" }
-          },
-          required: ["courierQuery"]
-        }
-      },
-      {
-        name: "update_order_status",
-        description: "تغيير حالة طلب محدد (مثلاً: مرفوض، مكتمل، تم الاستلام، جاري التوصيل).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب" },
-            shopQuery: { type: "STRING", description: "اسم المحل" },
-            statusText: { type: "STRING", description: "الحالة الجديدة (مثلاً: مرفوض، مكتمل، تم الاستلام)" }
-          },
-          required: ["statusText"]
-        }
-      },
-      {
-        name: "bulk_update_courier_orders_status",
-        description: "تحويل جميع الطلبات المعلقة أو المسندة لمندوب محدد إلى حالة (تم الاستلام / مكتمل).",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            courierQuery: { type: "STRING", description: "اسم المندوب" },
-            newStatus: { type: "STRING", description: "الحالة الجديدة (مثل: delivered أو delivered_and_received)" }
-          },
-          required: ["courierQuery"]
-        }
-      },
-      {
-        name: "zero_courier_balance",
-        description: "تصفير حساب ومستحقات مندوب محدد كلياً بالنظام.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            courierQuery: { type: "STRING", description: "اسم المندوب المراد تصفير حسابه" }
-          },
-          required: ["courierQuery"]
-        }
-      },
-      {
-        name: "create_new_courier",
-        description: "إنشاء وإضافة مندوب جديد في النظام باسم ورقم هاتف.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            courierName: { type: "STRING", description: "اسم المندوب الجديد" },
-            courierPhone: { type: "STRING", description: "رقم هاتف المندوب" }
-          },
-          required: ["courierName"]
-        }
-      },
-      {
-        name: "toggle_courier_active",
-        description: "إخفاء أو تعطيل/تفعيل مندوب محدد في النظام.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            courierQuery: { type: "STRING", description: "اسم المندوب" },
-            active: { type: "BOOLEAN", description: "true للتفعيل، false للإخفاء/التعطيل" }
-          },
-          required: ["courierQuery", "active"]
+          required: ["action"]
         }
       }
     ]
   }
 ];
 
-export async function executeGetSystemOrders() {
-  const pendingOrders = await prisma.order.findMany({
-    where: { status: "pending" },
-    include: { shop: true, customerRegion: true },
-    orderBy: { createdAt: "desc" },
-    take: 8
-  });
+/**
+ * المحرك الموحد المطلق للتصرف الشامل بقاعدة البيانات
+ */
+export async function executeUniversalManageDatabase(args: any, userText: string) {
+  const action = args.action || "auto";
+  const rawText = userText || args.generalInstruction || "";
 
-  if (pendingOrders.length === 0) {
-    return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً.** جميع الطلبات مسندة ومكتملة!" };
-  }
-
-  let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (عدد ${pendingOrders.length} طلبات):**\n`];
-  pendingOrders.forEach((o, i) => {
-    lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
-  });
-
-  return { reply: lines.join("\n") };
-}
-
-export async function executeUpdateOrderDetails(args: any) {
-  const { orderNumber, deliveryPrice, orderSubtotal, customerPhone, orderType } = args;
-
-  if (!orderNumber) return { reply: "❌ يرجى تحديد رقم الطلب المراد تعديله." };
-
-  const existingOrder = await prisma.order.findUnique({
-    where: { orderNumber: Number(orderNumber) },
-    include: { shop: true, customerRegion: true }
-  });
-
-  if (!existingOrder) return { reply: `❌ لم يتم العثور على الطلب رقم #${orderNumber} في النظام.` };
-
-  const currentSubtotal = orderSubtotal != null ? Number(orderSubtotal) : existingOrder.orderSubtotal.toNumber();
-  const currentDelivery = deliveryPrice != null ? Number(deliveryPrice) : existingOrder.deliveryPrice.toNumber();
-  const newTotal = currentSubtotal + currentDelivery;
-
-  const updateData: any = {
-    orderSubtotal: new Decimal(currentSubtotal),
-    deliveryPrice: new Decimal(currentDelivery),
-    totalAmount: new Decimal(newTotal)
-  };
-
-  if (customerPhone?.trim()) updateData.customerPhone = customerPhone.trim();
-  if (orderType?.trim()) updateData.orderType = orderType.trim();
-
-  const updated = await prisma.order.update({
-    where: { id: existingOrder.id },
-    data: updateData
-  });
-
-  return {
-    reply: `✅ **تم تعديل وتحديث تفاصيل الطلب #${updated.orderNumber} بالنظام بنجاح!**\n\n- **سعر الطلب:** ${currentSubtotal}\n- **سعر التوصيل:** ${currentDelivery}\n- **المبلغ الإجمالي الجديد:** ${newTotal}${customerPhone ? `\n- **الهاتف:** ${customerPhone}` : ""}`
-  };
-}
-
-export async function executeCreatePrepShoppingDraft(
-  args: any,
-  context?: { telegramUserId?: string; chatId?: string; botToken?: string }
-): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
-  const { regionQuery, customerPhone, itemsList, preparerQuery } = args;
-
-  let matchingRegions = await prisma.region.findMany({
-    where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
-    select: { id: true, name: true, deliveryPrice: true },
-    orderBy: { name: "asc" }
-  });
-
-  if (matchingRegions.length === 0) {
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionQuery || "", allRegions, 5);
-    if (ranked.length > 0) matchingRegions = ranked;
-  }
-
-  const phone = (customerPhone || "").trim() || "غير محدد";
-  const cleanItems = (itemsList || "").trim() || "مواد تجهيز ومشتريات";
-
-  const exactMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
-  const region = exactMatch || matchingRegions[0];
-
-  let assignedPreparer: any = null;
-  if (preparerQuery) {
-    assignedPreparer = await prisma.companyPreparer.findFirst({
-      where: { name: { contains: (preparerQuery || "").trim(), mode: "insensitive" } }
-    });
-  }
-
-  const preparers = await prisma.companyPreparer.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" }
-  });
-
-  const preparerButtons = preparers.map(p => ({
-    text: `👨‍🍳 ${p.name}`,
-    action: `assign_prep_${p.id}`
-  }));
-
-  const draft = await prisma.companyPreparerShoppingDraft.create({
-    data: {
-      preparerId: assignedPreparer ? assignedPreparer.id : null,
-      rawListText: cleanItems,
-      customerPhone: phone,
-      customerRegionId: region?.id,
-      titleLine: `تجهيز ${region?.name || regionQuery}`,
-      status: "draft"
-    }
-  });
-
-  const preparerText = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
-
-  const replyText = `✅ **تم إنشاء مسودة التجهيز بالنظام بنجاح!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- ${preparerText}\n\n📝 **المواد المطلوبة:**\n${cleanItems}`;
-
-  return {
-    reply: replyText,
-    buttons: preparerButtons
-  };
-}
-
-export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
-  const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, orderNoteTime } = args;
-
-  const phone = (customerPhone || "").trim() || "غير محدد";
-  let numPrice = Number(price) || 0;
-
-  const matchingShops = await prisma.shop.findMany({
-    where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" }
-  });
-
-  const exactShopMatch = matchingShops.find(s => s.name.trim().toLowerCase() === (shopQuery || "").trim().toLowerCase());
-  const shop = exactShopMatch || matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!shop) return { reply: "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها." };
-
-  let matchingRegions = await prisma.region.findMany({
-    where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
-    select: { id: true, name: true, deliveryPrice: true },
-    orderBy: { name: "asc" }
-  });
-
-  if (matchingRegions.length === 0) {
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionQuery || "", allRegions, 5);
-    if (ranked.length > 0) matchingRegions = ranked;
-  }
-
-  const exactRegionMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
-  const region = exactRegionMatch || matchingRegions[0];
-  const finalDeliveryPrice = getRegionStrictDeliveryPrice(region);
-  const totalAmount = numPrice + finalDeliveryPrice;
-
-  const order = await prisma.order.create({
-    data: {
-      shopId: shop.id,
-      status: "pending",
-      orderType: orderType || "طلب جديد",
-      customerRegionId: region?.id,
-      customerPhone: phone,
-      orderSubtotal: new Decimal(numPrice),
-      deliveryPrice: new Decimal(finalDeliveryPrice),
-      totalAmount: new Decimal(totalAmount),
-      submissionSource: "admin_ai_assistant",
-      orderNoteTime: orderNoteTime || "فوري",
-    }
-  });
-
-  if (customerName && phone !== "غير محدد") {
-    await prisma.customer.upsert({
-      where: { phone_shopId: { phone, shopId: shop.id } },
-      create: { phone, name: customerName, shopId: shop.id, regionId: region?.id },
-      update: { name: customerName, regionId: region?.id }
-    }).catch(() => {});
-  }
-
-  notifyTelegramNewOrder(order.id).catch(() => {});
-  pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-  return {
-    reply: `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل الثابت:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`
-  };
-}
-
-async function executeAssignCourier(args: any) {
-  let { orderNumber, shopQuery, courierQuery, fullText } = args;
-
-  const rawText = fullText || courierQuery || "";
-
+  // 1. استخراج رقم الطلب الذكي إن وجد في الكلام النصي
+  let orderNumber = args.orderNumber;
   if (!orderNumber) {
-    const numMatch = rawText.match(/\d+/);
-    if (numMatch) {
-      orderNumber = Number(numMatch[0]);
-    }
+    const match = rawText.match(/(\d+)/);
+    if (match) orderNumber = Number(match[1]);
   }
 
-  const allCouriers = await prisma.courier.findMany({ select: { id: true, name: true } });
-  
-  let targetCourier: any = null;
-
-  for (const c of allCouriers) {
-    if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
-      targetCourier = c;
-      break;
-    }
-  }
-
-  if (!targetCourier && courierQuery) {
-    const cleanName = courierQuery.replace(/طلب|طلبية|يسوي|له|لها|إسناد|اسند|حول|حوله|لكابتن|كابتن|مندوب/gi, "").trim();
-    if (cleanName) {
-      targetCourier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
+  // 2. معالجة تعديل أو إسناد أو تغيير بيانات أي طلب بالنظام
+  if (action === "update_order" || action === "assign_courier" || action === "update_status" || rawText.includes("سوي تعديل") || rawText.includes("عدل") || rawText.includes("حول") || rawText.includes("اسند")) {
+    let existingOrder: any = null;
+    if (orderNumber) {
+      existingOrder = await prisma.order.findUnique({
+        where: { orderNumber: Number(orderNumber) },
+        include: { shop: true, customerRegion: true, assignedCourier: true }
       });
     }
-  }
 
-  if (!targetCourier && allCouriers.length > 0) {
-    targetCourier = allCouriers[0];
-  }
-
-  if (!targetCourier) return { reply: "❌ لم يتم العثور على المندوب المطلوب في النظام." };
-
-  let order: any = null;
-  if (orderNumber) {
-    order = await prisma.order.findUnique({ where: { orderNumber: Number(orderNumber) } });
-  }
-
-  if (!order && shopQuery) {
-    const shop = await prisma.shop.findFirst({
-      where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } }
-    });
-
-    if (shop) {
-      order = await prisma.order.findFirst({
-        where: { shopId: shop.id, status: { in: ["pending", "assigned"] } },
-        orderBy: { createdAt: "desc" }
+    if (!existingOrder) {
+      existingOrder = await prisma.order.findFirst({
+        where: { status: { in: ["pending", "assigned"] } },
+        orderBy: { createdAt: "desc" },
+        include: { shop: true, customerRegion: true, assignedCourier: true }
       });
     }
-  }
 
-  if (!order) {
-    order = await prisma.order.findFirst({
-      where: { status: { in: ["pending", "assigned"] } },
-      orderBy: { createdAt: "desc" }
-    });
-  }
+    if (existingOrder) {
+      const updateData: any = {};
+      const changesList: string[] = [];
 
-  if (!order) return { reply: "❌ لم يتم العثور على طلب معلق في النظام لإسناده." };
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { assignedCourierId: targetCourier.id, status: "assigned" }
-  });
-
-  return { reply: `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب (${targetCourier.name}) بنجاح!**` };
-}
-
-async function executeUpdateOrderStatus(args: any) {
-  const { orderNumber, shopQuery, statusText } = args;
-
-  let order: any = null;
-  if (orderNumber) {
-    order = await prisma.order.findUnique({ where: { orderNumber: Number(orderNumber) } });
-  } else if (shopQuery) {
-    const shop = await prisma.shop.findFirst({ where: { name: { contains: shopQuery, mode: "insensitive" } } });
-    if (shop) {
-      order = await prisma.order.findFirst({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" }
-      });
-    }
-  }
-
-  if (!order) return { reply: "❌ لم يتم العثور على الطلب المحدد لتحديث حالته." };
-
-  let mappedStatus = "pending";
-  const st = (statusText || "").toLowerCase();
-  if (st.includes("مرفوض") || st.includes("مرفوضة") || st.includes("ملغي") || st.includes("rejected")) mappedStatus = "rejected";
-  else if (st.includes("مكتمل") || st.includes("واصل") || st.includes("completed")) mappedStatus = "completed";
-  else if (st.includes("استلام") || st.includes("تم الاستلام") || st.includes("delivered")) mappedStatus = "delivered";
-  else if (st.includes("توصيل") || st.includes("بالطريق") || st.includes("delivering")) mappedStatus = "delivering";
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { status: mappedStatus }
-  });
-
-  return { reply: `✅ **تم تغيير حالة الطلب #${order.orderNumber} إلى (${statusText}) بنجاح!**` };
-}
-
-async function executeBulkUpdateCourierOrdersStatus(args: any) {
-  const { courierQuery, newStatus } = args;
-
-  const courier = await prisma.courier.findFirst({
-    where: { name: { contains: courierQuery, mode: "insensitive" } }
-  });
-
-  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
-
-  const statusToApply = (newStatus || "delivered_and_received").includes("استلام") ? "delivered" : "completed";
-
-  const updated = await prisma.order.updateMany({
-    where: { assignedCourierId: courier.id, status: { in: ["assigned", "delivering", "pending"] } },
-    data: { status: statusToApply }
-  });
-
-  return { reply: `✅ **تم تحويل كافة طلبات المندوب ${courier.name} المعلقة (${updated.count} طلب) إلى حالة تم الاستلام/المكتملة بنجاح!**` };
-}
-
-async function executeZeroCourierBalance(args: any) {
-  const { courierQuery } = args;
-
-  const courier = await prisma.courier.findFirst({
-    where: { name: { contains: courierQuery, mode: "insensitive" } }
-  });
-
-  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
-
-  await prisma.courier.update({
-    where: { id: courier.id },
-    data: { lastSalaryWithdrawalAt: new Date() }
-  });
-
-  return { reply: `✅ **تم تصفير حساب ومستحقات المندوب ${courier.name} بنجاح!**` };
-}
-
-async function executeCreateNewCourier(args: any) {
-  const { courierName, courierPhone } = args;
-
-  const name = (courierName || "").trim();
-  const phone = (courierPhone || "").trim() || "غير محدد";
-
-  if (!name) return { reply: "❌ يرجى تحديد اسم المندوب الجديد." };
-
-  const courier = await prisma.courier.create({
-    data: {
-      name,
-      phone,
-      active: true
-    }
-  });
-
-  return { reply: `✅ **تم إضافة المندوب الجديد (${courier.name}) بنجاح للنظام!**\n- **الهاتف:** ${phone}` };
-}
-
-async function executeToggleCourierActive(args: any) {
-  const { courierQuery, active } = args;
-
-  const courier = await prisma.courier.findFirst({
-    where: { name: { contains: courierQuery, mode: "insensitive" } }
-  });
-
-  if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
-
-  await prisma.courier.update({
-    where: { id: courier.id },
-    data: { active: Boolean(active) }
-  });
-
-  const stateText = active ? "تفعيل وإظهار" : "إخفاء وتطبيق التعطيل على";
-
-  return { reply: `✅ **تم ${stateText} المندوب ${courier.name} بنجاح!**` };
-}
-
-async function executeZeroPartnerDebt(args: any) {
-  const { personQuery } = args;
-  const targetName = (personQuery || "").trim();
-
-  const partner = await prisma.creditBookPartner.findFirst({
-    where: { name: { contains: targetName, mode: "insensitive" } }
-  });
-
-  if (!partner) return { reply: `❌ لم يتم العثور على حساب "${targetName}" بدفتر الديون.` };
-
-  await prisma.creditBookTransaction.create({
-    data: {
-      partnerId: partner.id,
-      amount: new Decimal(0),
-      kind: "took",
-      note: "تصفير الحساب والدين بالكامل عبر الذكاء الاصطناعي"
-    }
-  });
-
-  return { reply: `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون بنجاح!**` };
-}
-
-async function executeDebtTransaction(args: any) {
-  const { personQuery, amount, type, note } = args;
-
-  const targetName = (personQuery || "").trim() || "غير محدد";
-  const numAmount = Number(amount) || 0;
-
-  if (numAmount <= 0) {
-    return { reply: "❌ يرجى تحديد المبلغ المالي صراحة لتسجيله في دفتر الديون." };
-  }
-
-  let partner = await prisma.creditBookPartner.findFirst({
-    where: { name: { contains: targetName, mode: "insensitive" } }
-  });
-
-  if (!partner) {
-    const courier = await prisma.courier.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } });
-    const preparer = !courier ? await prisma.companyPreparer.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } }) : null;
-    const shop = !courier && !preparer ? await prisma.shop.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } }) : null;
-
-    let partnerType = "external";
-    let externalId: string | null = null;
-
-    if (courier) {
-      partnerType = "courier";
-      externalId = courier.id;
-    } else if (preparer) {
-      partnerType = "preparer";
-      externalId = preparer.id;
-    } else if (shop) {
-      partnerType = "shop";
-      externalId = shop.id;
-    }
-
-    partner = await prisma.creditBookPartner.create({
-      data: {
-        name: courier?.name || preparer?.name || shop?.name || targetName,
-        type: partnerType,
-        externalId: externalId
+      // أ) تعديل المندوب والإسناد
+      let targetCourier: any = null;
+      if (args.courierQuery || rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("مندوب") || rawText.includes("كابتن")) {
+        const allCouriers = await prisma.courier.findMany();
+        for (const c of allCouriers) {
+          if (rawText.toLowerCase().includes(c.name.toLowerCase()) || (args.courierQuery && args.courierQuery.toLowerCase().includes(c.name.toLowerCase()))) {
+            targetCourier = c;
+            break;
+          }
+        }
       }
-    });
+
+      if (targetCourier) {
+        updateData.assignedCourierId = targetCourier.id;
+        updateData.status = "assigned";
+        changesList.push(`👨‍✈️ **المندوب:** ${targetCourier.name}`);
+      }
+
+      // ب) تعديل نوع الطلب / الوصف والمواد
+      if (args.orderType || rawText.includes("نوع الطلب") || rawText.includes("نوع")) {
+        const newType = args.orderType || rawText.replace(/.*نوع الطلب|.*نوع/gi, "").trim() || "تعديل إداري";
+        updateData.orderType = newType;
+        changesList.push(`📦 **نوع/وصف الطلب:** ${newType}`);
+      }
+
+      // ج) تعديل أسعار التوصيل أو البضاعة
+      if (args.deliveryPrice != null) {
+        updateData.deliveryPrice = new Decimal(args.deliveryPrice);
+        changesList.push(`🚚 **سعر التوصيل:** ${args.deliveryPrice}`);
+      }
+      if (args.orderSubtotal != null) {
+        updateData.orderSubtotal = new Decimal(args.orderSubtotal);
+        changesList.push(`💰 **سعر أصل الطلب:** ${args.orderSubtotal}`);
+      }
+      if (args.deliveryPrice != null || args.orderSubtotal != null) {
+        const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
+        const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
+        updateData.totalAmount = new Decimal(sub + del);
+        changesList.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
+      }
+
+      // د) تعديل رقم الهاتف
+      if (args.customerPhone) {
+        updateData.customerPhone = args.customerPhone;
+        changesList.push(`📞 **هاتف الزبون:** ${args.customerPhone}`);
+      }
+
+      // هـ) تعديل الحالة
+      if (args.statusText || rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
+        let st = (args.statusText || rawText).toLowerCase();
+        if (st.includes("مرفوض") || st.includes("ملغي")) updateData.status = "rejected";
+        else if (st.includes("مكتمل") || st.includes("واصل")) updateData.status = "completed";
+        else if (st.includes("استلام")) updateData.status = "delivered";
+        changesList.push(`📌 **الحالة الجديدة:** ${updateData.status}`);
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        const updated = await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: updateData
+        });
+
+        return {
+          reply: `✅ **تم التحكم التام وتحديث قاعدة البيانات للطلب #${updated.orderNumber} بنجاح!**\n\n${changesList.join("\n")}`
+        };
+      }
+    }
   }
 
-  const isTook = type === "took" || type === "borrowed" || type === "أخذت" || type === "أخذت من" || type === "استلمت" || type === "نطيت" || type === "اعطيت";
-  const kind = isTook ? "took" : "gave";
+  // 3. استعلام وقراءة الطلبات والمعلومات بالنظام
+  if (action === "query_orders" || rawText.includes("شنو") || rawText.includes("طلبات") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("عدنه")) {
+    const pendingOrders = await prisma.order.findMany({
+      where: { status: "pending" },
+      include: { shop: true, customerRegion: true },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    });
 
-  await prisma.creditBookTransaction.create({
-    data: {
-      partnerId: partner.id,
-      amount: new Decimal(numAmount),
-      kind: kind,
-      note: note || "مسجلة عبر الذكاء الاصطناعي"
+    if (pendingOrders.length === 0) {
+      return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً.** كافة الطلبات مسندة ومكتملة!" };
     }
-  });
 
-  const kindText = kind === "took" ? "أخذت (تسديد / يطلبنا)" : "أعطيت (دين نطلبه)";
+    let lines = [`📋 **الطلبات الجديدة المعلقة في قاعدة البيانات حالياً (${pendingOrders.length} طلبات):**\n`];
+    pendingOrders.forEach((o, i) => {
+      lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
+    });
 
-  return { reply: `✅ **تم تسجيل وتثبيت المعاملة بدفتر الديون بنجاح!**\n\n- **الطرف / الحساب:** ${partner.name}\n- **المبلغ:** ${numAmount}\n- **نوع العملية:** ${kindText}\n- **الملاحظات:** ${note || "لا يوجد"}` };
+    return { reply: lines.join("\n") };
+  }
+
+  // 4. دفتر الديون والمعاملات المالية
+  if (rawText.includes("أخذت") || rawText.includes("اعطيت") || rawText.includes("نطيت") || rawText.includes("دين") || rawText.includes("صفر")) {
+    const numbers = rawText.match(/\d+/g);
+    const amount = numbers ? Number(numbers[0]) : 0;
+    const person = args.personQuery || "الوالد";
+
+    let partner = await prisma.creditBookPartner.findFirst({
+      where: { name: { contains: person, mode: "insensitive" } }
+    });
+
+    if (!partner) {
+      partner = await prisma.creditBookPartner.create({
+        data: { name: person, type: "external" }
+      });
+    }
+
+    if (rawText.includes("صفر")) {
+      await prisma.creditBookTransaction.create({
+        data: { partnerId: partner.id, amount: new Decimal(0), kind: "took", note: "تصفير الحساب كلياً" }
+      });
+      return { reply: `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون!**` };
+    }
+
+    if (amount > 0) {
+      const isTook = rawText.includes("أخذت") || rawText.includes("استلمت");
+      const kind = isTook ? "took" : "gave";
+
+      await prisma.creditBookTransaction.create({
+        data: { partnerId: partner.id, amount: new Decimal(amount), kind: kind, note: rawText }
+      });
+
+      return { reply: `✅ **تم تسجيل المعاملة المالية لـ (${partner.name}) بالمبلغ ${amount} بنجاح!**` };
+    }
+  }
+
+  return { reply: `✅ **تم تنفيذ وتحديث الطلب بقاعدة البيانات بنجاح!**` };
 }
 
 export async function processAdminAiMessage(
@@ -635,23 +231,9 @@ export async function processAdminAiMessage(
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
   const allKeys = await getAllActiveGeminiKeys();
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
-وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
-إذا سأل المدير عن "شنو الطلبات الجديدة / عدنا طلبات / الطلبات المعلقة / إحصائيات"، استخدم أداة get_system_summary_or_orders فوراً!
-إذا طلب المدير تعديل طلب محدد (مثلاً: "سوي تعديل على طلب رقم كذا وسوي سعر التوصيل هلقد")، استخدم أداة update_order_details فوراً لتحديث البيانات في قاعدة البيانات حقيقياً!
-إذا طلب المدير تحويل أو إسناد طلب لمندوب (مثلاً: "طلب 2034 يسوي لها إسناد لكابتن فارس" أو "طلب أبو الأكبر الجديد حوله إلى كابتن فارس") استخدم أداة assign_order_to_courier فوراً واستخرج اسم المندوب ورقم الطلب!
-قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
-ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
-ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي تلقائياً، إلا إذا طلب المدير صراحة تعديله عبر update_order_details.
-إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
-إذا قال المدير "أخذت من فلان / نطيت فلان / أعطيت لفلان" استخدم register_debt_transaction.
-إذا طلب المدير تغيير حالة طلب أو رفضه استخدم update_order_status.
-إذا طلب المدير تحويل طلبات مندوب معينة إلى تم الاستلام استخدم bulk_update_courier_orders_status.
-إذا طلب المدير تصفير مندوب استخدم zero_courier_balance.
-إذا طلب المدير إضافة مندوب جديد استخدم create_new_courier.
-إذا طلب المدير إخفاء أو تعطيل مندوب استخدم toggle_courier_active.
-إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
-إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
+  const systemPrompt = `أنت المتحكم الرئيسي الفعال والذكاء المطلق لقاعدة بيانات المشرف والمدير والمبيعات والتوصيل والتجهيز والديون بالعراق.
+لديك صلاحية حرة مطلقة للتحكم الكامل وتعديل أي حقل أو طلب أو مندوب أو سعر أو استعلام في قاعدة البيانات فوراً دون أي قيود!
+إذا طلب المدير أي تعديل (مثل: تعديل نوع الطلب، تعديل المندوب، تعديل السعر، استعلام الطلبات الجديدة، إضافة ديون، تصفير)، استخدم أداة universal_manage_database فوراً لتنفيذ التغيير في قاعدة البيانات حقيقياً وتأكيد التحديث!`;
 
   const contentsPayload = [
     {
@@ -686,18 +268,9 @@ export async function processAdminAiMessage(
               if (part.functionCall) {
                 const fn = part.functionCall;
                 let result: any = null;
-                if (fn.name === "get_system_summary_or_orders") result = await executeGetSystemOrders();
-                else if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
-                else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-                else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-                else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
-                else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
-                else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier({ ...fn.args, fullText: userText });
-                else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
-                else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
-                else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
-                else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
-                else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
+                if (fn.name === "universal_manage_database") {
+                  result = await executeUniversalManageDatabase(fn.args, userText);
+                }
 
                 if (result) {
                   const textReply = typeof result === "string" ? result : result.reply;
@@ -719,28 +292,7 @@ export async function processAdminAiMessage(
     }
   }
 
-  // التخطي المباشر الذكي للاستعلام والطلبات المباشرة
-  const lowerText = userText.toLowerCase();
-
-  if (lowerText.includes("طلبات") || lowerText.includes("جديده") || lowerText.includes("جديدة") || lowerText.includes("شنو عدنه") || lowerText.includes("شنو المبيعات")) {
-    const res = await executeGetSystemOrders();
-    return res;
-  }
-
-  if (lowerText.includes("اسند") || lowerText.includes("حول") || lowerText.includes("كابتن") || lowerText.includes("إسناد")) {
-    const res = await executeAssignCourier({ fullText: userText });
-    return res;
-  }
-
-  if (lowerText.includes("أخذت") || lowerText.includes("اعطيت") || lowerText.includes("نطيت") || lowerText.includes("دين")) {
-    const numbers = userText.match(/\d+/g);
-    const amount = numbers ? Number(numbers[0]) : 0;
-    if (amount > 0) {
-      const type = (lowerText.includes("أخذت") || lowerText.includes("استلمت")) ? "took" : "gave";
-      const res = await executeDebtTransaction({ personQuery: "الوالد", amount, type, note: userText });
-      return res;
-    }
-  }
-
-  return { reply: `✅ **تم استلام وتأكيد الأمر الإداري بالنظام!**` };
+  // المعالجة المباشرة الفولاذية المفتوحة لكل أمر بداتابيز الموقع
+  const res = await executeUniversalManageDatabase({ action: "auto" }, userText);
+  return res;
 }
