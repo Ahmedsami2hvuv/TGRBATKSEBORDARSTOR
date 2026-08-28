@@ -15,22 +15,41 @@
         android:layout_above="@id/bottomControlsContainer"
         android:gravity="center_horizontal">
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🎙️ مساعد أبو الأكبر الصوتي والإداري"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#0F172A"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="🎙️ مساعد أبو الأكبر الصوتي والإداري"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#0F172A" />
+
+            <Button
+                android:id="@+id/btnToggleTts"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="🔊 الصوت"
+                android:textSize="11sp"
+                android:backgroundTint="#0284C7"
+                android:textColor="#FFFFFF"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp" />
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/tvStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="جاري تجهيز الميكروفون..."
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textColor="#059669"
             android:gravity="center"
             android:layout_marginBottom="8dp" />

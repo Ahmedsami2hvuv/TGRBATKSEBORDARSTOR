@@ -501,7 +501,7 @@ async function executeDebtTransaction(args: any) {
     });
   }
 
-  const isTook = type === "took" || type === "borrowed" || type === "أخذت" || type === "أخذت من" || type === "استلمت";
+  const isTook = type === "took" || type === "borrowed" || type === "أخذت" || type === "أخذت من" || type === "استلمت" || type === "نطيت" || type === "اعطيت";
   const kind = isTook ? "took" : "gave";
 
   await prisma.creditBookTransaction.create({
@@ -545,13 +545,12 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
-قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) تعني فوراً واستثنائياً أنها "مسودة طلب تجهيز مواد ومشتريات"، ويجب عليك استدعاء أداة create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
+قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
 إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
-إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
-إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
-إذا طلب المدير إسناد طلب لمندوب (مثلاً: "طلب فلان المحل سوي له إسناد إلى فلان") استخدم assign_order_to_courier.
+إذا قال المدير "أخذت من فلان / نطيت فلان / أعطيت لفلان" استخدم register_debt_transaction.
+إذا طلب المدير إسناد طلب لمندوب (مثلاً: "طلب فلان المحل سوي له إسناد إلى فلان" أو "سوي لي مندوب جديد") استخدم الأدوات المخصصة فوراً.
 إذا طلب المدير تغيير حالة طلب أو رفضه استخدم update_order_status.
 إذا طلب المدير تحويل طلبات مندوب معينة إلى تم الاستلام استخدم bulk_update_courier_orders_status.
 إذا طلب المدير تصفير مندوب استخدم zero_courier_balance.
@@ -570,10 +569,11 @@ export async function processAdminAiMessage(
 
   let lastApiError = "";
 
-  for (const keyRecord of allKeys) {
-    const models = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+  // التدوير السريع واللحظي بين كافة المفاتيح والموديلات المعتمدة المضمونة
+  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
 
-    for (const model of models) {
+  for (const keyRecord of allKeys) {
+    for (const model of activeModels) {
       try {
         const resTools = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
@@ -632,5 +632,5 @@ export async function processAdminAiMessage(
     }
   }
 
-  return { reply: `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}` };
+  return { reply: `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini حالياً.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}` };
 }

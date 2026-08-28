@@ -38,9 +38,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
     private lateinit var buttonsContainer: LinearLayout
+    private lateinit var btnToggleTts: Button
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
+    private var isTtsMuted = false
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val SERVER_URL = "https://aboakbr.com/api/ai/admin-voice"
 
@@ -57,11 +59,26 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         etCommandInput = findViewById(R.id.etCommandInput)
         btnSendText = findViewById(R.id.btnSendText)
         buttonsContainer = findViewById(R.id.buttonsContainer)
+        btnToggleTts = findViewById(R.id.btnToggleTts)
 
         textToSpeech = TextToSpeech(this, this)
 
         btnClose.setOnClickListener { finish() }
         btnRetryMic.setOnClickListener { checkPermissionAndStartListening() }
+
+        btnToggleTts.setOnClickListener {
+            isTtsMuted = !isTtsMuted
+            if (isTtsMuted) {
+                textToSpeech?.stop()
+                btnToggleTts.text = "🔇 مكتوم"
+                btnToggleTts.setBackgroundColor(Color.parseColor("#64748B"))
+                Toast.makeText(this, "تم إيقاف القراءة الصوتية", Toast.LENGTH_SHORT).show()
+            } else {
+                btnToggleTts.text = "🔊 مفعل"
+                btnToggleTts.setBackgroundColor(Color.parseColor("#0284C7"))
+                Toast.makeText(this, "تم تفعيل القراءة الصوتية", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         btnSendText.setOnClickListener {
             val typedText = etCommandInput.text.toString().trim()
@@ -192,7 +209,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             val reply = obj.optString("reply", "")
                             tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
                             tvResponse.text = reply
-                            speakOut(reply)
+
+                            if (!isTtsMuted) {
+                                speakOut(reply)
+                            }
 
                             val buttonsArray = obj.optJSONArray("buttons")
                             renderDynamicButtons(buttonsArray)
@@ -248,6 +268,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun speakOut(text: String) {
+        if (isTtsMuted) return
         val cleanText = text.replace(Regex("[*#\\-]|https?://\\S+"), "")
         textToSpeech?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
     }
