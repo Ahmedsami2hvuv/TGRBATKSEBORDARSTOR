@@ -8,6 +8,31 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
+ * تحويل المبالغ والأرقام المنطوقة بالحروف العربية إلى أرقام رقمية صريحة
+ */
+function parseArabicWordsToNumber(text: string): number | null {
+  if (!text) return null;
+  const t = text.toLowerCase().trim();
+
+  // تحويل الكلمات الشهيرة
+  if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف") || t.includes("5000")) return 5000;
+  if (t.includes("عشرة الاف") || t.includes("عشر الاف") || t.includes("10 الاف") || t.includes("10000")) return 10000;
+  if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف") || t.includes("3000")) return 3000;
+  if (t.includes("اربعة الاف") || t.includes("اربع الاف") || t.includes("4 الاف") || t.includes("4000")) return 4000;
+  if (t.includes("الفين") || t.includes("2000")) return 2000;
+  if (t.includes("الف") || t.includes("1000")) return 1000;
+
+  if (t.includes("خمسة") || t.includes("خمسه")) return 5;
+  if (t.includes("عشرة") || t.includes("عشره")) return 10;
+  if (t.includes("ثلاثة") || t.includes("ثلاثه")) return 3;
+  if (t.includes("اربعة") || t.includes("اربعه")) return 4;
+  if (t.includes("واحد") || t.includes("وحدة")) return 1;
+  if (t.includes("اثنان") || t.includes("ثنين")) return 2;
+
+  return null;
+}
+
+/**
  * أدوات التحكم الفائقة بالشركات والمندوبين والمحلات والإعدادات وكافة مفاصل النظام
  */
 const SUPER_AI_TOOLS = [
@@ -107,29 +132,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. قسم إدارة المناطق ورسوم التوصيل (REGIONS & PRICING)
-  // ==========================================
-  if (domain === "regions" || rawText.includes("منطقة") || rawText.includes("رسوم التوصيل")) {
-    if (operation === "update" || rawText.includes("سعر التوصيل للمنطقة") || rawText.includes("عدل توصيل المنطقة")) {
-      const numbers = rawText.match(/\d+/g);
-      const newPrice = numbers ? Number(numbers[0]) : 5000;
-      const cleanRegionName = (targetIdOrName || rawText).replace(/منطقة|عدل|سعر|توصيل|رسوم|\d+/gi, "").trim();
-
-      const region = await prisma.region.findFirst({
-        where: { name: { contains: cleanRegionName, mode: "insensitive" } }
-      });
-
-      if (region) {
-        await prisma.region.update({
-          where: { id: region.id },
-          data: { deliveryPrice: new Decimal(newPrice) }
-        });
-        return { reply: `✅ **تم تعديل سعر التوصيل الثابت لمنطقة (${region.name}) إلى ${newPrice} دينار بنجاح!**` };
-      }
-    }
-  }
-
-  // ==========================================
   // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات (SMART MULTI-FILTER ORDER FINDER)
   // ==========================================
   const allNumbers = (rawText.match(/\d+/g) || []).map(Number);
@@ -146,13 +148,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     if (candidateNum) orderNumber = candidateNum;
   }
 
-  // ب) استخراج السعر الجديد المستهدف
-  if (allNumbers.length > 0) {
+  // ب) استخراج السعر سواء أكان أرقاماً أم حروفاً عربية (مثل "خمسة" -> 5)
+  const wordPrice = parseArabicWordsToNumber(rawText);
+  if (wordPrice != null) {
+    targetNewPrice = wordPrice;
+  } else if (allNumbers.length > 0) {
     const priceCandidates = allNumbers.filter(n => n !== orderNumber);
     if (priceCandidates.length > 0) {
       targetNewPrice = priceCandidates[priceCandidates.length - 1];
-    } else if (allNumbers.length === 1 && !rawText.match(/(?:طلب|طلبية|#)\s*\d+/i)) {
-      targetNewPrice = allNumbers[0];
     }
   }
 
@@ -216,15 +219,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل نوع/تفاصيل الطلب
-    if (rawText.includes("نوع") || rawText.includes("تفاصيل") || rawText.includes("مادة")) {
-      const newType = rawText.replace(/.*نوع الطلب|.*نوع|.*تفاصيل/gi, "").trim() || "تعديل إداري";
-      updateData.orderType = newType;
-      changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
-    }
-
-    // ج) تعديل أسعار الطلب والتوصيل
-    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سويه") || rawText.includes("سوي") || rawText.includes("توصيل"))) {
+    // ب) تعديل أسعار الطلب والتوصيل بدقة حاسمة (عند وجود كلمة سعر أو سعره أو سويه)
+    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سعره") || rawText.includes("سويه") || rawText.includes("سوي") || rawText.includes("توصيل"))) {
       if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
         changes.push(`🚚 **سعر التوصيل الجديد:** ${targetNewPrice}`);
@@ -237,6 +233,13 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
       updateData.totalAmount = new Decimal(sub + del);
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
+    }
+
+    // ج) تعديل نوع/تفاصيل الطلب حصراً إذا طلب تعديل النوع صراحة ولم يطلب تعديل السعر
+    if (updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع"))) {
+      const newType = rawText.replace(/.*نوع الطلب|.*نوع/gi, "").trim() || "تعديل إداري";
+      updateData.orderType = newType;
+      changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
     }
 
     // د) تعديل حالة الطلب
