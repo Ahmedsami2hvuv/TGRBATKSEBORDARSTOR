@@ -41,8 +41,8 @@ const AI_TOOLS = [
             customerName: { type: "STRING", description: "اسم الزبون (إن وجد)" },
             regionQuery: { type: "STRING", description: "اسم المنطقة أو الوجهة" },
             orderType: { type: "STRING", description: "وصف الطلب والمنتجات" },
-            price: { type: "NUMBER", description: "سعر الطلب بالدينار العراقي (مثلاً 10000 أو 25000)" },
-            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل بالدينار العراقي" },
+            price: { type: "NUMBER", description: "سعر الطلب كما يكتبه المدير صراحة بدون أي ضرب بـ 1000 (مثلاً 10 أو 25)" },
+            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل" },
             orderNoteTime: { type: "STRING", description: "وقت التسليم" }
           },
           required: ["shopQuery", "regionQuery", "price"]
@@ -76,14 +76,14 @@ const AI_TOOLS = [
       },
       {
         name: "register_debt_transaction",
-        description: "تسجيل معاملة ديون أو مبالغ مالية.",
+        description: "تسجيل معاملة مالية بدفتر الديون (أخذت / انطيت / دين / تسديد).",
         parameters: {
           type: "OBJECT",
           properties: {
-            personQuery: { type: "STRING", description: "اسم الشخص" },
-            amount: { type: "NUMBER", description: "المبلغ بالدينار" },
-            type: { type: "STRING", description: "'borrowed' أو 'paid'" },
-            note: { type: "STRING", description: "الملاحظات" }
+            personQuery: { type: "STRING", description: "اسم الشخص أو الطرف (مثلاً: الوالد، علي، المحل)" },
+            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط (مثلاً 5 أو 10 أو 5000) بدون إضافة أصفار تلقائية" },
+            type: { type: "STRING", description: "'took' (أخذت/استلمت) أو 'gave' (اعطيت/انطيت)" },
+            note: { type: "STRING", description: "ملاحظات وتفاصيل المعاملة" }
           },
           required: ["personQuery", "amount", "type"]
         }
@@ -246,8 +246,8 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     if (ranked.length > 0) matchingRegions = ranked;
   }
 
+  // عدم ضرب أو تحويل أي رقم بـ 1000 إطلاقاً! اعتماد المبلغ الصريح كما هو من المستخدم
   let numPrice = Number(price) || 0;
-  if (numPrice > 0 && numPrice < 1000) numPrice = numPrice * 1000;
   const phone = (customerPhone || "").trim() || "غير محدد";
 
   if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
@@ -281,11 +281,11 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
       const row: any[] = [];
       const r1 = matchingRegions[i];
       const p1 = safeGetDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(p1)})`, callback_data: `rgs:${r1.id}` });
+      row.push({ text: `📍 ${r1.name} (${p1})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
         const p2 = safeGetDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(p2)})`, callback_data: `rgs:${r2.id}` });
+        row.push({ text: `📍 ${r2.name} (${p2})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -331,7 +331,7 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   notifyTelegramNewOrder(order.id).catch(() => {});
   pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل:** ${formatDinarAsAlf(finalDeliveryPrice)}\n- **المبلغ الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
+  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`;
 }
 
 async function executeAssignCourier(args: any) {
@@ -366,16 +366,69 @@ async function executeAssignCourier(args: any) {
   return `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب ${courier.name} بنجاح!**`;
 }
 
+/**
+ * التسجيل الفعلي والمباشر للمعاملات المالية في دفتر الديون (Credit Book)
+ */
 async function executeDebtTransaction(args: any) {
   const { personQuery, amount, type, note } = args;
 
-  const courier = await prisma.courier.findFirst({ where: { name: { contains: personQuery, mode: "insensitive" } } });
-  const preparer = !courier ? await prisma.companyPreparer.findFirst({ where: { name: { contains: personQuery, mode: "insensitive" } } }) : null;
+  const targetName = (personQuery || "").trim() || "غير محدد";
+  const numAmount = Number(amount) || 0;
 
-  const targetName = courier?.name || preparer?.name || personQuery;
-  const isBorrowed = type === "borrowed";
+  if (numAmount <= 0) {
+    return "❌ يرجى تحديد المبلغ المالي صراحة لتسجيله في دفتر الديون.";
+  }
 
-  return `✅ **تم تسجيل المعاملة المالية بنجاح!**\n- **الطرف:** ${targetName}\n- **المبلغ:** ${formatDinarAsAlf(amount)}\n- **النوع:** ${isBorrowed ? "دين على الحساب" : "دفع / تسديد"}\n- **التفاصيل:** ${note || "لا يوجد"}`;
+  // 1. البحث عن الطرف / الشريك في قاعدة البيانات أو إيجاد الكيان المرتبط
+  let partner = await prisma.creditBookPartner.findFirst({
+    where: { name: { contains: targetName, mode: "insensitive" } }
+  });
+
+  if (!partner) {
+    const courier = await prisma.courier.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } });
+    const preparer = !courier ? await prisma.companyPreparer.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } }) : null;
+    const shop = !courier && !preparer ? await prisma.shop.findFirst({ where: { name: { contains: targetName, mode: "insensitive" } } }) : null;
+
+    let partnerType = "external";
+    let externalId: string | null = null;
+
+    if (courier) {
+      partnerType = "courier";
+      externalId = courier.id;
+    } else if (preparer) {
+      partnerType = "preparer";
+      externalId = preparer.id;
+    } else if (shop) {
+      partnerType = "shop";
+      externalId = shop.id;
+    }
+
+    partner = await prisma.creditBookPartner.create({
+      data: {
+        name: courier?.name || preparer?.name || shop?.name || targetName,
+        type: partnerType,
+        externalId: externalId
+      }
+    });
+  }
+
+  // 2. تحديد نوع العملية: took (أخذت - تسديد / يطلبنا) أو gave (أعطيت - دين نطلبه)
+  const isTook = type === "took" || type === "borrowed" || type === "أخذت" || type === "أخذت من" || type === "استلمت";
+  const kind = isTook ? "took" : "gave";
+
+  // 3. إنشاء المعاملة المالية الفعلية في جدول CreditBookTransaction
+  await prisma.creditBookTransaction.create({
+    data: {
+      partnerId: partner.id,
+      amount: new Decimal(numAmount),
+      kind: kind,
+      note: note || "مسجلة عبر الذكاء الاصطناعي"
+    }
+  });
+
+  const kindText = kind === "took" ? "أخذت (تسديد / يطلبنا)" : "أعطيت (دين نطلبه)";
+
+  return `✅ **تم تسجيل وتثبيت المعاملة بدفتر الديون بنجاح!**\n\n- **الطرف / الحساب:** ${partner.name}\n- **المبلغ:** ${numAmount}\n- **نوع العملية:** ${kindText}\n- **الملاحظات:** ${note || "لا يوجد"}`;
 }
 
 const chatHistoryMemory = new Map<string, Array<{ role: "user" | "model"; text: string }>>();
@@ -406,11 +459,13 @@ export async function processAdminAiMessage(
     return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز في العراق.
+  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
-إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته وبصل)، استخدم الأداة create_prep_shopping_draft فوراً!
-إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم الأداة create_order فوراً!
-تذكر الرسائل السابقة واجمع البيانات منها لتنفيذ الأوامر فوراً.`;
+ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
+إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
+إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
+إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
+إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
 
   appendChatHistory(telegramUserId, "user", userText);
   const history = getChatHistory(telegramUserId);
