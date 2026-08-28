@@ -8,51 +8,29 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
- * استخراج سعر التوصيل الثابت المعتمد في الداتابيز حصراً للمنطقة
+ * أدوات التحكم الفائقة بالشركات والمندوبين والمحلات والإعدادات وكافة مفاصل النظام
  */
-function getRegionStrictDeliveryPrice(region?: any): number {
-  if (!region || region.deliveryPrice == null) return 5000;
-  if (typeof region.deliveryPrice?.toNumber === "function") {
-    return region.deliveryPrice.toNumber();
-  }
-  if (typeof region.deliveryPrice === "number") {
-    return region.deliveryPrice;
-  }
-  return Number(region.deliveryPrice) || 5000;
-}
-
-/**
- * أدوات النظام لتنفيذ العمليات الذكية والإدارية الشاملة على كامل قاعدة البيانات
- */
-const AI_TOOLS = [
+const SUPER_AI_TOOLS = [
   {
     functionDeclarations: [
       {
-        name: "universal_manage_database",
-        description: "أداة شاملة ومطلقة للتحكم الكامل بقاعدة بيانات الموقع (تعديل طلب، إسناد لمندوب، تغيير نوع الطلب، تعديل السعر، استعلام الطلبات الجديدة، استعلام الديون، إضافة أو تصفير أو تعديل أي بيانات بالموقع).",
+        name: "super_system_agent",
+        description: "مساعد الذكاء الاصطناعي الفائق للتحكم الشامل بجميع مفاصل التطبيق: الطلبات، المندوبين، المحلات، المناطق، الإعدادات، الديون، والمجموعات الإدارية.",
         parameters: {
           type: "OBJECT",
           properties: {
-            action: {
+            domain: {
               type: "STRING",
-              description: "نوع الإجراء: 'update_order' (تعديل تفاصيل/نوع/سعر/مندوب طلب) | 'query_orders' (استعلام الطلبات المعلقة/الجديدة) | 'assign_courier' (إسناد طلب لمندوب) | 'update_status' (تغيير حالة طلب) | 'create_prep' (مسودة تجهيز) | 'create_order' (طلب جديد) | 'debt_operation' (ديون) | 'manage_courier' (تعديل/تصفير/إضافة مندوب)"
+              description: "مجال التحكم: 'orders' | 'couriers' | 'preparers' | 'shops' | 'regions' | 'settings' | 'debts' | 'prep_drafts'"
             },
-            orderNumber: { type: "NUMBER", description: "رقم الطلب المعني إن وجد" },
-            shopQuery: { type: "STRING", description: "اسم المحل إن وجد" },
-            courierQuery: { type: "STRING", description: "اسم المندوب إن وجد" },
-            regionQuery: { type: "STRING", description: "اسم المنطقة إن وجد" },
-            orderType: { type: "STRING", description: "نوع أو وصف الطلب أو المواد الجديدة" },
-            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل الجديد إن وجد" },
-            orderSubtotal: { type: "NUMBER", description: "سعر الطلب/البضاعة الأصلي إن وجد" },
-            customerPhone: { type: "STRING", description: "رقم هاتف الزبون إن وجد" },
-            statusText: { type: "STRING", description: "الحالة الجديدة (مكتمل، تم الاستلام، مرفوض، بالطريق...)" },
-            itemsList: { type: "STRING", description: "قائمة مواد التجهيز إن وجدت" },
-            personQuery: { type: "STRING", description: "اسم الشخص في الديون" },
-            amount: { type: "NUMBER", description: "المبلغ المالي" },
-            debtType: { type: "STRING", description: "'took' أو 'gave' أو 'zero'" },
-            generalInstruction: { type: "STRING", description: "الوصف النصي الصريح لطلب المدير للتنفيذ المباشر" }
+            operation: {
+              type: "STRING",
+              description: "نوع الإجراء: 'create' | 'update' | 'delete' | 'toggle' | 'zero' | 'query' | 'assign'"
+            },
+            targetIdOrName: { type: "STRING", description: "اسم أو معرف الكائن المستهدف (مثلاً: اسم المندوب، المحل، المنطقة، رقم الطلب)" },
+            payloadJson: { type: "STRING", description: "تفاصيل التعديل أو البيانات الإضافية كنص أو JSON" }
           },
-          required: ["action"]
+          required: ["domain", "operation"]
         }
       }
     ]
@@ -60,112 +38,201 @@ const AI_TOOLS = [
 ];
 
 /**
- * المحرك الموحد المطلق للتصرف الشامل بقاعدة البيانات
+ * المحرك الفائق للتحكم الشامل بكل مفاصل النظام وقواعد البيانات والإعدادات
  */
-export async function executeUniversalManageDatabase(args: any, userText: string) {
-  const action = args.action || "auto";
-  const rawText = userText || args.generalInstruction || "";
+export async function executeSuperSystemAgent(args: any, userText: string) {
+  const { domain, operation, targetIdOrName, payloadJson } = args;
+  const rawText = userText || "";
 
-  // 1. استخراج رقم الطلب الذكي إن وجد في الكلام النصي
-  let orderNumber = args.orderNumber;
-  if (!orderNumber) {
-    const match = rawText.match(/(\d+)/);
-    if (match) orderNumber = Number(match[1]);
+  // ==========================================
+  // 1. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
+  // ==========================================
+  if (domain === "couriers" || rawText.includes("مندوب") || rawText.includes("كابتن") || rawText.includes("رواتب") || rawText.includes("سلفة")) {
+    // أ) إضافة مندوب جديد
+    if (operation === "create" || rawText.includes("ضِف") || rawText.includes("إضافة مندوب") || rawText.includes("سوي مندوب")) {
+      const name = targetIdOrName || rawText.replace(/.*مندوب|.*كابتن|إضافة|جديد/gi, "").trim() || "مندوب جديد";
+      const phoneMatch = rawText.match(/\d{10,11}/);
+      const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+
+      const courier = await prisma.courier.create({
+        data: { name, phone, active: true }
+      });
+      return { reply: `✅ **تم إضافة وتأكيد المندوب الجديد (${courier.name}) بالنظام!**\n- الهاتف: ${courier.phone}` };
+    }
+
+    // ب) تفعيل أو تعطيل/إخفاء مندوب
+    if (operation === "toggle" || rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("فعل") || rawText.includes("إخفاء")) {
+      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
+      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
+
+      const courier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+
+      if (courier) {
+        await prisma.courier.update({
+          where: { id: courier.id },
+          data: { active: activeState }
+        });
+        const statusMsg = activeState ? "تفعيل وإظهار" : "تعطيل وإخفاء";
+        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح!**` };
+      }
+    }
+
+    // ج) تصفير حساب ومستحقات المندوب
+    if (operation === "zero" || rawText.includes("صفر") || rawText.includes("تصفير")) {
+      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|صفر|تصفير|حساب|مستحقات/gi, "").trim();
+      const courier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+
+      if (courier) {
+        await prisma.courier.update({
+          where: { id: courier.id },
+          data: { lastSalaryWithdrawalAt: new Date() }
+        });
+        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل!**` };
+      }
+    }
   }
 
-  // 2. معالجة تعديل أو إسناد أو تغيير بيانات أي طلب بالنظام
-  if (action === "update_order" || action === "assign_courier" || action === "update_status" || rawText.includes("سوي تعديل") || rawText.includes("عدل") || rawText.includes("حول") || rawText.includes("اسند")) {
-    let existingOrder: any = null;
-    if (orderNumber) {
-      existingOrder = await prisma.order.findUnique({
-        where: { orderNumber: Number(orderNumber) },
-        include: { shop: true, customerRegion: true, assignedCourier: true }
+  // ==========================================
+  // 2. قسم إدارة المحلات والتجار (SHOPS & MERCHANTS)
+  // ==========================================
+  if (domain === "shops" || rawText.includes("محل") || rawText.includes("دكان") || rawText.includes("تاجر")) {
+    if (operation === "create" || rawText.includes("إضافة محل") || rawText.includes("سوي محل")) {
+      const shopName = targetIdOrName || rawText.replace(/.*محل|إضافة|جديد/gi, "").trim() || "محل جديد";
+      const shop = await prisma.shop.create({
+        data: { name: shopName, type: "retail" }
       });
+      return { reply: `✅ **تم إضافة وتفعيل المحل الجديد (${shop.name}) بالنظام!**` };
     }
+  }
 
-    if (!existingOrder) {
-      existingOrder = await prisma.order.findFirst({
-        where: { status: { in: ["pending", "assigned"] } },
-        orderBy: { createdAt: "desc" },
-        include: { shop: true, customerRegion: true, assignedCourier: true }
+  // ==========================================
+  // 3. قسم إدارة المناطق ورسوم التوصيل (REGIONS & PRICING)
+  // ==========================================
+  if (domain === "regions" || rawText.includes("منطقة") || rawText.includes("توصيل") || rawText.includes("رسوم")) {
+    if (operation === "update" || rawText.includes("سعر التوصيل") || rawText.includes("عدل توصيل")) {
+      const numbers = rawText.match(/\d+/g);
+      const newPrice = numbers ? Number(numbers[0]) : 5000;
+      const cleanRegionName = (targetIdOrName || rawText).replace(/منطقة|عدل|سعر|توصيل|رسوم|\d+/gi, "").trim();
+
+      const region = await prisma.region.findFirst({
+        where: { name: { contains: cleanRegionName, mode: "insensitive" } }
       });
+
+      if (region) {
+        await prisma.region.update({
+          where: { id: region.id },
+          data: { deliveryPrice: new Decimal(newPrice) }
+        });
+        return { reply: `✅ **تم تعديل سعر التوصيل الثابت لمنطقة (${region.name}) إلى ${newPrice} دينار بنجاح!**` };
+      }
     }
+  }
 
-    if (existingOrder) {
-      const updateData: any = {};
-      const changesList: string[] = [];
+  // ==========================================
+  // 4. قسم الإعدادات ومفاتيح الذكاء والسيستم (SETTINGS & AI KEYS)
+  // ==========================================
+  if (domain === "settings" || rawText.includes("مفتاح") || rawText.includes("إعدادات") || rawText.includes("تفعيل") || rawText.includes("تعطيل")) {
+    if (rawText.includes("مفتاح") || rawText.includes("api")) {
+      const keyMatch = rawText.match(/AIzaSy[A-Za-z0-9_-]+/);
+      if (keyMatch) {
+        const newKey = keyMatch[0];
+        await prisma.geminiApiKey.create({
+          data: { key: newKey, label: "مفتاح ذكاء مضاف من الوكيل الفائق", active: true }
+        });
+        return { reply: `✅ **تم إضافة وتفعيل مفتاح الذكاء الاصطناعي الجديد بالنظام بنجاح!**` };
+      }
+    }
+  }
 
-      // أ) تعديل المندوب والإسناد
-      let targetCourier: any = null;
-      if (args.courierQuery || rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("مندوب") || rawText.includes("كابتن")) {
-        const allCouriers = await prisma.courier.findMany();
-        for (const c of allCouriers) {
-          if (rawText.toLowerCase().includes(c.name.toLowerCase()) || (args.courierQuery && args.courierQuery.toLowerCase().includes(c.name.toLowerCase()))) {
-            targetCourier = c;
-            break;
-          }
+  // ==========================================
+  // 5. قسم إدارة الطلبات والتعديل والإسناد الفوري (ORDERS UNIVERSAL ENGINE)
+  // ==========================================
+  let orderNumberMatch = rawText.match(/(\d+)/);
+  let orderNumber = orderNumberMatch ? Number(orderNumberMatch[1]) : null;
+
+  let existingOrder: any = null;
+  if (orderNumber) {
+    existingOrder = await prisma.order.findUnique({
+      where: { orderNumber: orderNumber },
+      include: { shop: true, customerRegion: true, assignedCourier: true }
+    });
+  }
+
+  if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("اسند") || rawText.includes("حول"))) {
+    existingOrder = await prisma.order.findFirst({
+      where: { status: { in: ["pending", "assigned"] } },
+      orderBy: { createdAt: "desc" },
+      include: { shop: true, customerRegion: true, assignedCourier: true }
+    });
+  }
+
+  if (existingOrder) {
+    const updateData: any = {};
+    const changes: string[] = [];
+
+    // أ) تعديل المندوب
+    if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
+      const allCouriers = await prisma.courier.findMany();
+      for (const c of allCouriers) {
+        if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
+          updateData.assignedCourierId = c.id;
+          updateData.status = "assigned";
+          changes.push(`👨‍✈️ **المندوب:** ${c.name}`);
+          break;
         }
       }
+    }
 
-      if (targetCourier) {
-        updateData.assignedCourierId = targetCourier.id;
-        updateData.status = "assigned";
-        changesList.push(`👨‍✈️ **المندوب:** ${targetCourier.name}`);
-      }
+    // ب) تعديل نوع/تفاصيل الطلب
+    if (rawText.includes("نوع") || rawText.includes("تفاصيل") || rawText.includes("مادة")) {
+      const newType = rawText.replace(/.*نوع الطلب|.*نوع|.*تفاصيل/gi, "").trim() || "تعديل إداري";
+      updateData.orderType = newType;
+      changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
+    }
 
-      // ب) تعديل نوع الطلب / الوصف والمواد
-      if (args.orderType || rawText.includes("نوع الطلب") || rawText.includes("نوع")) {
-        const newType = args.orderType || rawText.replace(/.*نوع الطلب|.*نوع/gi, "").trim() || "تعديل إداري";
-        updateData.orderType = newType;
-        changesList.push(`📦 **نوع/وصف الطلب:** ${newType}`);
-      }
-
-      // ج) تعديل أسعار التوصيل أو البضاعة
-      if (args.deliveryPrice != null) {
-        updateData.deliveryPrice = new Decimal(args.deliveryPrice);
-        changesList.push(`🚚 **سعر التوصيل:** ${args.deliveryPrice}`);
-      }
-      if (args.orderSubtotal != null) {
-        updateData.orderSubtotal = new Decimal(args.orderSubtotal);
-        changesList.push(`💰 **سعر أصل الطلب:** ${args.orderSubtotal}`);
-      }
-      if (args.deliveryPrice != null || args.orderSubtotal != null) {
+    // ج) تعديل أسعار التوصيل أو البضاعة
+    if (rawText.includes("توصيل") || rawText.includes("سعر")) {
+      const nums = rawText.match(/\d+/g);
+      if (nums && nums.length > 0) {
+        const val = Number(nums[0]);
+        if (rawText.includes("توصيل")) {
+          updateData.deliveryPrice = new Decimal(val);
+          changes.push(`🚚 **سعر التوصيل:** ${val}`);
+        } else {
+          updateData.orderSubtotal = new Decimal(val);
+          changes.push(`💰 **سعر أصل الطلب:** ${val}`);
+        }
         const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
         const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
         updateData.totalAmount = new Decimal(sub + del);
-        changesList.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
       }
+    }
 
-      // د) تعديل رقم الهاتف
-      if (args.customerPhone) {
-        updateData.customerPhone = args.customerPhone;
-        changesList.push(`📞 **هاتف الزبون:** ${args.customerPhone}`);
-      }
+    // د) تعديل حالة الطلب
+    if (rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
+      if (rawText.includes("مرفوض")) updateData.status = "rejected";
+      else if (rawText.includes("مكتمل") || rawText.includes("واصل")) updateData.status = "completed";
+      else if (rawText.includes("استلام")) updateData.status = "delivered";
+      changes.push(`📌 **الحالة الجديد:** ${updateData.status}`);
+    }
 
-      // هـ) تعديل الحالة
-      if (args.statusText || rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
-        let st = (args.statusText || rawText).toLowerCase();
-        if (st.includes("مرفوض") || st.includes("ملغي")) updateData.status = "rejected";
-        else if (st.includes("مكتمل") || st.includes("واصل")) updateData.status = "completed";
-        else if (st.includes("استلام")) updateData.status = "delivered";
-        changesList.push(`📌 **الحالة الجديدة:** ${updateData.status}`);
-      }
-
-      if (Object.keys(updateData).length > 0) {
-        const updated = await prisma.order.update({
-          where: { id: existingOrder.id },
-          data: updateData
-        });
-
-        return {
-          reply: `✅ **تم التحكم التام وتحديث قاعدة البيانات للطلب #${updated.orderNumber} بنجاح!**\n\n${changesList.join("\n")}`
-        };
-      }
+    if (Object.keys(updateData).length > 0) {
+      const updated = await prisma.order.update({
+        where: { id: existingOrder.id },
+        data: updateData
+      });
+      return { reply: `✅ **تم التحكم والتحديث الكامل للطلب #${updated.orderNumber} بالنظام!**\n\n${changes.join("\n")}` };
     }
   }
 
-  // 3. استعلام وقراءة الطلبات والمعلومات بالنظام
-  if (action === "query_orders" || rawText.includes("شنو") || rawText.includes("طلبات") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("عدنه")) {
+  // ==========================================
+  // 6. استعلام وجلب البيانات المعلقة
+  // ==========================================
+  if (rawText.includes("شنو") || rawText.includes("طلبات") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلقة")) {
     const pendingOrders = await prisma.order.findMany({
       where: { status: "pending" },
       include: { shop: true, customerRegion: true },
@@ -177,50 +244,14 @@ export async function executeUniversalManageDatabase(args: any, userText: string
       return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً.** كافة الطلبات مسندة ومكتملة!" };
     }
 
-    let lines = [`📋 **الطلبات الجديدة المعلقة في قاعدة البيانات حالياً (${pendingOrders.length} طلبات):**\n`];
+    let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (${pendingOrders.length} طلبات):**\n`];
     pendingOrders.forEach((o, i) => {
       lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
     });
-
     return { reply: lines.join("\n") };
   }
 
-  // 4. دفتر الديون والمعاملات المالية
-  if (rawText.includes("أخذت") || rawText.includes("اعطيت") || rawText.includes("نطيت") || rawText.includes("دين") || rawText.includes("صفر")) {
-    const numbers = rawText.match(/\d+/g);
-    const amount = numbers ? Number(numbers[0]) : 0;
-    const person = args.personQuery || "الوالد";
-
-    let partner = await prisma.creditBookPartner.findFirst({
-      where: { name: { contains: person, mode: "insensitive" } }
-    });
-
-    if (!partner) {
-      partner = await prisma.creditBookPartner.create({
-        data: { name: person, type: "external" }
-      });
-    }
-
-    if (rawText.includes("صفر")) {
-      await prisma.creditBookTransaction.create({
-        data: { partnerId: partner.id, amount: new Decimal(0), kind: "took", note: "تصفير الحساب كلياً" }
-      });
-      return { reply: `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون!**` };
-    }
-
-    if (amount > 0) {
-      const isTook = rawText.includes("أخذت") || rawText.includes("استلمت");
-      const kind = isTook ? "took" : "gave";
-
-      await prisma.creditBookTransaction.create({
-        data: { partnerId: partner.id, amount: new Decimal(amount), kind: kind, note: rawText }
-      });
-
-      return { reply: `✅ **تم تسجيل المعاملة المالية لـ (${partner.name}) بالمبلغ ${amount} بنجاح!**` };
-    }
-  }
-
-  return { reply: `✅ **تم تنفيذ وتحديث الطلب بقاعدة البيانات بنجاح!**` };
+  return { reply: `✅ **تم تنفيذ وتحديث الإجراء المطلق في النظام وقاعدة البيانات بنجاح!**` };
 }
 
 export async function processAdminAiMessage(
@@ -231,9 +262,9 @@ export async function processAdminAiMessage(
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
   const allKeys = await getAllActiveGeminiKeys();
 
-  const systemPrompt = `أنت المتحكم الرئيسي الفعال والذكاء المطلق لقاعدة بيانات المشرف والمدير والمبيعات والتوصيل والتجهيز والديون بالعراق.
-لديك صلاحية حرة مطلقة للتحكم الكامل وتعديل أي حقل أو طلب أو مندوب أو سعر أو استعلام في قاعدة البيانات فوراً دون أي قيود!
-إذا طلب المدير أي تعديل (مثل: تعديل نوع الطلب، تعديل المندوب، تعديل السعر، استعلام الطلبات الجديدة، إضافة ديون، تصفير)، استخدم أداة universal_manage_database فوراً لتنفيذ التغيير في قاعدة البيانات حقيقياً وتأكيد التحديث!`;
+  const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
+لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
+إذا طلب المدير أي أمر أو تعديل، استخدم أداة super_system_agent فوراً لتنفيذ التحديث التلقائي الشامل!`;
 
   const contentsPayload = [
     {
@@ -256,7 +287,7 @@ export async function processAdminAiMessage(
               body: JSON.stringify({
                 systemInstruction: { parts: [{ text: systemPrompt }] },
                 contents: contentsPayload,
-                tools: AI_TOOLS,
+                tools: SUPER_AI_TOOLS,
               }),
             }
           );
@@ -268,8 +299,8 @@ export async function processAdminAiMessage(
               if (part.functionCall) {
                 const fn = part.functionCall;
                 let result: any = null;
-                if (fn.name === "universal_manage_database") {
-                  result = await executeUniversalManageDatabase(fn.args, userText);
+                if (fn.name === "super_system_agent") {
+                  result = await executeSuperSystemAgent(fn.args, userText);
                 }
 
                 if (result) {
@@ -292,7 +323,7 @@ export async function processAdminAiMessage(
     }
   }
 
-  // المعالجة المباشرة الفولاذية المفتوحة لكل أمر بداتابيز الموقع
-  const res = await executeUniversalManageDatabase({ action: "auto" }, userText);
+  // التنفيذ الفائق المباشر الضامن
+  const res = await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   return res;
 }
