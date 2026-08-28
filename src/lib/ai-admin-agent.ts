@@ -405,77 +405,98 @@ export async function processAdminAiMessage(
   let lastApiError = "";
 
   for (const keyRecord of allKeys) {
-    const models = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 
     for (const model of models) {
-      try {
-        const resTools = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              contents: contentsPayload,
-              tools: AI_TOOLS,
-            }),
-          }
-        );
+      let attempts = 0;
+      const maxAttempts = 2;
 
-        if (resTools.ok) {
-          const dataTools = await resTools.json();
-          const parts = dataTools.candidates?.[0]?.content?.parts || [];
-          for (const part of parts) {
-            if (part.functionCall) {
-              const fn = part.functionCall;
-              let reply = "";
-              if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
-              else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          const resTools = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: contentsPayload,
+                tools: AI_TOOLS,
+              }),
+            }
+          );
 
-              if (reply) {
-                appendChatHistory(telegramUserId, "model", reply);
-                await markGeminiKeySuccess(keyRecord.id);
-                return reply;
+          if (resTools.ok) {
+            const dataTools = await resTools.json();
+            const parts = dataTools.candidates?.[0]?.content?.parts || [];
+            for (const part of parts) {
+              if (part.functionCall) {
+                const fn = part.functionCall;
+                let reply = "";
+                if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+                else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+                else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
+                else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
+
+                if (reply) {
+                  appendChatHistory(telegramUserId, "model", reply);
+                  await markGeminiKeySuccess(keyRecord.id);
+                  return reply;
+                }
               }
+            }
+
+            const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+            if (textOutput?.trim()) {
+              appendChatHistory(telegramUserId, "model", textOutput.trim());
+              await markGeminiKeySuccess(keyRecord.id);
+              return textOutput.trim();
+            }
+          } else {
+            const errText = await resTools.text().catch(() => "");
+            lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
+            
+            // إذا كان الخطأ 503 ضغط سيرفرات، ننتظر قسطاً قصيراً ونكرر المحاولة أو ننتقل للموديل التالي
+            if (resTools.status === 503 || resTools.status === 429) {
+              await new Promise((r) => setTimeout(r, 600));
+              continue;
             }
           }
 
-          const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-          if (textOutput?.trim()) {
-            appendChatHistory(telegramUserId, "model", textOutput.trim());
-            await markGeminiKeySuccess(keyRecord.id);
-            return textOutput.trim();
-          }
-        } else {
-          const errText = await resTools.text().catch(() => "");
-          lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
-        }
+          // محاولة الاستدعاء المباشر النقي بدون أدوات كخيار احتياطي
+          const resPure = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: contentsPayload,
+              }),
+            }
+          );
 
-        const resPure = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              contents: contentsPayload,
-            }),
+          if (resPure.ok) {
+            const dataPure = await resPure.json();
+            const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textReply?.trim()) {
+              appendChatHistory(telegramUserId, "model", textReply.trim());
+              await markGeminiKeySuccess(keyRecord.id);
+              return textReply.trim();
+            }
+          } else {
+            const errTextPure = await resPure.text().catch(() => "");
+            lastApiError = `[Model: ${model}, Status: ${resPure.status}] ${errTextPure}`;
+            if (resPure.status === 503 || resPure.status === 429) {
+              await new Promise((r) => setTimeout(r, 600));
+              continue;
+            }
           }
-        );
-
-        if (resPure.ok) {
-          const dataPure = await resPure.json();
-          const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (textReply?.trim()) {
-            appendChatHistory(telegramUserId, "model", textReply.trim());
-            await markGeminiKeySuccess(keyRecord.id);
-            return textReply.trim();
-          }
+        } catch (e: any) {
+          lastApiError = `[Model: ${model}] ${e?.message || e}`;
         }
-      } catch (err: any) {
-        lastApiError = err.message || String(err);
+        break; // للخروج من حلقة المحاولات والذهاب للموديل التالي إذا فشلت هذه المحاولة
       }
     }
   }
