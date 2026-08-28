@@ -177,24 +177,22 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
   let lastApiError = "";
 
   for (const keyRecord of allKeys) {
-    // تجربة الـ Endpoints الرسمية المدعومة عالمياً من Google AI Studio
-    const apiUrls = [
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyRecord.key}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${keyRecord.key}`
-    ];
+    // النماذج الرسمية الفعالة والمعتمدة حالياً في Google AI Studio
+    const models = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-pro"];
 
-    for (const url of apiUrls) {
+    for (const model of models) {
       try {
-        // 1. تجربة النص الحر الفائق التوافقية
-        const resPure = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }]
-          }),
-        });
+        // 1. تجربة النص الحر المباشر
+        const resPure = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }]
+            }),
+          }
+        );
 
         if (resPure.ok) {
           const dataPure = await resPure.json();
@@ -205,19 +203,22 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
           }
         } else {
           const errText = await resPure.text().catch(() => "");
-          lastApiError = `[URL: ${url.split('?')[0]}, Status: ${resPure.status}] ${errText}`;
-          console.warn(`[gemini-ai] Error on ${url}:`, lastApiError);
+          lastApiError = `[Model: ${model}, Status: ${resPure.status}] ${errText}`;
+          console.warn(`[gemini-ai] Error on ${model}:`, lastApiError);
         }
 
         // 2. تجربة الطلب التفاعلي المربوط بالأدوات
-        const resTools = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }],
-            tools: AI_TOOLS,
-          }),
-        });
+        const resTools = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              tools: AI_TOOLS,
+            }),
+          }
+        );
 
         if (resTools.ok) {
           const dataTools = await resTools.json();
@@ -238,7 +239,7 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
         }
       } catch (err: any) {
         lastApiError = err.message || String(err);
-        console.error(`[ai-admin-agent] Exception on url:`, err);
+        console.error(`[ai-admin-agent] Exception on model ${model}:`, err);
       }
     }
   }
