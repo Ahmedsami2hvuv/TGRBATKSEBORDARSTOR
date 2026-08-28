@@ -109,8 +109,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // ==========================================
   // 3. قسم إدارة المناطق ورسوم التوصيل (REGIONS & PRICING)
   // ==========================================
-  if (domain === "regions" || rawText.includes("منطقة") || rawText.includes("توصيل") || rawText.includes("رسوم")) {
-    if (operation === "update" || rawText.includes("سعر التوصيل") || rawText.includes("عدل توصيل")) {
+  if (domain === "regions" || rawText.includes("منطقة") || rawText.includes("رسوم التوصيل")) {
+    if (operation === "update" || rawText.includes("سعر التوصيل للمنطقة") || rawText.includes("عدل توصيل المنطقة")) {
       const numbers = rawText.match(/\d+/g);
       const newPrice = numbers ? Number(numbers[0]) : 5000;
       const cleanRegionName = (targetIdOrName || rawText).replace(/منطقة|عدل|سعر|توصيل|رسوم|\d+/gi, "").trim();
@@ -130,26 +130,31 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 4. قسم الإعدادات ومفاتيح الذكاء والسيستم (SETTINGS & AI KEYS)
-  // ==========================================
-  if (domain === "settings" || rawText.includes("مفتاح") || rawText.includes("إعدادات") || rawText.includes("تفعيل") || rawText.includes("تعطيل")) {
-    if (rawText.includes("مفتاح") || rawText.includes("api")) {
-      const keyMatch = rawText.match(/AIzaSy[A-Za-z0-9_-]+/);
-      if (keyMatch) {
-        const newKey = keyMatch[0];
-        await prisma.geminiApiKey.create({
-          data: { key: newKey, label: "مفتاح ذكاء مضاف من الوكيل الفائق", active: true }
-        });
-        return { reply: `✅ **تم إضافة وتفعيل مفتاح الذكاء الاصطناعي الجديد بالنظام بنجاح!**` };
-      }
-    }
-  }
-
-  // ==========================================
   // 5. قسم إدارة الطلبات والتعديل والإسناد الفوري (ORDERS UNIVERSAL ENGINE)
   // ==========================================
-  let orderNumberMatch = rawText.match(/(\d+)/);
-  let orderNumber = orderNumberMatch ? Number(orderNumberMatch[1]) : null;
+  // أداة الفصل الذكي بين رقم الطلب والسعر المطلوب تعديله
+  const allNumbers = (rawText.match(/\d+/g) || []).map(Number);
+  
+  let orderNumber: number | null = null;
+  let targetNewPrice: number | null = null;
+
+  // استخراج رقم الطلب المقترن بكلمة (طلب/طلبية/#) أو الرقم الأول المكون من 3-5 خانات
+  const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d+)/i);
+  if (orderNumMatch) {
+    orderNumber = Number(orderNumMatch[1]);
+  } else if (allNumbers.length > 0) {
+    orderNumber = allNumbers.find(n => n >= 100) || allNumbers[0];
+  }
+
+  // استخراج السعر الجديد (الرقم المختلف عن رقم الطلب)
+  if (allNumbers.length > 0) {
+    const priceCandidates = allNumbers.filter(n => n !== orderNumber);
+    if (priceCandidates.length > 0) {
+      targetNewPrice = priceCandidates[priceCandidates.length - 1];
+    } else if (allNumbers.length === 1 && !rawText.match(/(?:طلب|طلبية|#)\s*\d+/i)) {
+      targetNewPrice = allNumbers[0];
+    }
+  }
 
   let existingOrder: any = null;
   if (orderNumber) {
@@ -159,7 +164,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("اسند") || rawText.includes("حول"))) {
+  if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
     existingOrder = await prisma.order.findFirst({
       where: { status: { in: ["pending", "assigned"] } },
       orderBy: { createdAt: "desc" },
@@ -191,22 +196,20 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
     }
 
-    // ج) تعديل أسعار التوصيل أو البضاعة
-    if (rawText.includes("توصيل") || rawText.includes("سعر")) {
-      const nums = rawText.match(/\d+/g);
-      if (nums && nums.length > 0) {
-        const val = Number(nums[0]);
-        if (rawText.includes("توصيل")) {
-          updateData.deliveryPrice = new Decimal(val);
-          changes.push(`🚚 **سعر التوصيل:** ${val}`);
-        } else {
-          updateData.orderSubtotal = new Decimal(val);
-          changes.push(`💰 **سعر أصل الطلب:** ${val}`);
-        }
-        const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
-        const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
-        updateData.totalAmount = new Decimal(sub + del);
+    // ج) تعديل أسعار الطلب والتوصيل بدقة فائقة
+    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سويه") || rawText.includes("سوي") || rawText.includes("توصيل"))) {
+      if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
+        updateData.deliveryPrice = new Decimal(targetNewPrice);
+        changes.push(`🚚 **سعر التوصيل الجديد:** ${targetNewPrice}`);
+      } else {
+        updateData.orderSubtotal = new Decimal(targetNewPrice);
+        changes.push(`💰 **سعر الطلب/البضاعة الجديد:** ${targetNewPrice}`);
       }
+
+      const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
+      const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
+      updateData.totalAmount = new Decimal(sub + del);
+      changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
     // د) تعديل حالة الطلب
@@ -222,7 +225,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         where: { id: existingOrder.id },
         data: updateData
       });
-      return { reply: `✅ **تم التحكم والتحديث الكامل للطلب #${updated.orderNumber} بالنظام!**\n\n${changes.join("\n")}` };
+      return { reply: `✅ **تم تعديل وتحديث تفاصيل الطلب #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}` };
     }
   }
 
