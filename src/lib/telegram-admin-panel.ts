@@ -224,6 +224,8 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (m?.[1]) return { kind: "cust_field_lmk", customerId: m[1] };
   m = /^cud:([a-z0-9]+)$/.exec(t);
   if (m?.[1]) return { kind: "cust_field_door", customerId: m[1] };
+  m = /^rgs:(.+)$/.exec(t);
+  if (m?.[1]) return { kind: "select_order_region", regionId: m[1] };
   return null;
 }
 
@@ -1143,6 +1145,66 @@ export async function handleTelegramAdminCallback(
           customerId: parsed.customerId,
           field: "door",
         });
+        return true;
+      }
+      case "select_order_region": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "admin_select_order_region") return true;
+        const p = JSON.parse(session.payload || "{}");
+
+        const region = await prisma.region.findUnique({ where: { id: (parsed as any).regionId } });
+        if (!region) {
+          await answerCallbackQuery(cq.id, "المنطقة غير موجودة", true, botToken);
+          return true;
+        }
+
+        const finalDeliveryPrice = region.deliveryPrice.toNumber();
+        const totalAmount = Number(p.price) + Number(finalDeliveryPrice);
+
+        const order = await prisma.order.create({
+          data: {
+            shopId: p.shopId,
+            status: "pending",
+            orderType: p.orderType || "طلب جديد",
+            customerRegionId: region.id,
+            customerPhone: p.customerPhone || "غير محدد",
+            orderSubtotal: new Decimal(p.price),
+            deliveryPrice: new Decimal(finalDeliveryPrice),
+            totalAmount: new Decimal(totalAmount),
+            submissionSource: "admin_ai_assistant",
+            orderNoteTime: p.orderNoteTime || "فوري",
+          }
+        });
+
+        if (p.customerName && p.customerPhone && p.customerPhone !== "غير محدد") {
+          await prisma.customer.upsert({
+            where: { phone_shopId: { phone: p.customerPhone, shopId: p.shopId } },
+            create: { phone: p.customerPhone, name: p.customerName, shopId: p.shopId, regionId: region.id },
+            update: { name: p.customerName, regionId: region.id }
+          }).catch(() => {});
+        }
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { step: "idle", payload: "" }
+        });
+
+        const { notifyTelegramNewOrder } = await import("./telegram-notify");
+        const { pushNotifyAdminsNewPendingOrder } = await import("./web-push-server");
+        notifyTelegramNewOrder(order.id).catch(() => {});
+        pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        const confirmMsg = `✅ **تم تأكيد وإضافة الطلب بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${p.shopName || "المحل"}\n- **المنطقة المختارة:** ${region.name}\n- **الهاتف:** ${p.customerPhone}\n- **أجرة التوصيل:** ${formatDinarAsAlf(finalDeliveryPrice)}\n- **الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
+
+        const edited = await editTelegramMessage(chatId, messageId, confirmMsg, {
+          inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        }, botToken);
+
+        if (!edited.ok) {
+          await sendTelegramMessageWithKeyboardToChat(chatId, confirmMsg, {
+            inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+          }, botToken);
+        }
         return true;
       }
       case "section": {

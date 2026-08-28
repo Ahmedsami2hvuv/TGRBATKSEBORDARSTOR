@@ -5,6 +5,7 @@ import { rankRegionsByQuery } from "./arabic-region-search";
 import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
+import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
  * أدوات النظام لتنفيذ العمليات الذكية
@@ -61,7 +62,7 @@ const AI_TOOLS = [
   }
 ];
 
-async function executeCreateOrder(args: any) {
+export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
   const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
 
   const shop = await prisma.shop.findFirst({
@@ -70,15 +71,19 @@ async function executeCreateOrder(args: any) {
 
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
-  let region = await prisma.region.findFirst({
-    where: { name: { contains: regionQuery, mode: "insensitive" } }
+  // 1. البحث عن كافة المناطق المتطابقة أو المتشابهة مع الكلمة المكتوبة
+  let matchingRegions = await prisma.region.findMany({
+    where: { name: { contains: regionQuery.trim(), mode: "insensitive" } },
+    select: { id: true, name: true, deliveryPrice: true },
+    orderBy: { name: "asc" }
   });
 
-  if (!region) {
+  // إذا لم نجد نتائج بالبحث المباشر، نحاول استخدام التصنيف المرتب
+  if (matchingRegions.length === 0) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionQuery, allRegions, 1);
+    const ranked = rankRegionsByQuery(regionQuery, allRegions, 5);
     if (ranked.length > 0) {
-      region = await prisma.region.findUnique({ where: { id: ranked[0].id } });
+      matchingRegions = ranked;
     }
   }
 
@@ -88,9 +93,62 @@ async function executeCreateOrder(args: any) {
     numPrice = numPrice * 1000;
   }
 
+  const phone = (customerPhone || "").trim() || "غير محدد";
+
+  // 2. إذا وجدنا أكثر من منطقة متشابهة، نعرض أزرار تفاعلية للمدير في التليجرام!
+  if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
+    const payload = {
+      shopId: shop.id,
+      customerPhone: phone,
+      customerName: customerName || "",
+      orderType: orderType || "طلب جديد",
+      price: numPrice,
+      orderNoteTime: orderNoteTime || "فوري",
+      regionQuery: regionQuery
+    };
+
+    // حفظ الطلب المؤقت في جلسة المدير
+    await prisma.telegramBotSession.upsert({
+      where: { telegramUserId: context.telegramUserId },
+      create: {
+        telegramUserId: context.telegramUserId,
+        chatId: context.chatId,
+        step: "admin_select_order_region",
+        payload: JSON.stringify(payload),
+      },
+      update: {
+        step: "admin_select_order_region",
+        payload: JSON.stringify(payload),
+      }
+    });
+
+    const inlineKeyboard: any[] = [];
+    for (let i = 0; i < matchingRegions.length; i += 2) {
+      const row: any[] = [];
+      const r1 = matchingRegions[i];
+      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(r1.deliveryPrice)})`, callback_data: `rgs:${r1.id}` });
+      if (i + 1 < matchingRegions.length) {
+        const r2 = matchingRegions[i + 1];
+        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(r2.deliveryPrice)})`, callback_data: `rgs:${r2.id}` });
+      }
+      inlineKeyboard.push(row);
+    }
+    inlineKeyboard.push([{ text: "❌ إلغاء الطلب", callback_data: "main" }]);
+
+    await sendTelegramMessageWithKeyboardToChat(
+      context.chatId,
+      `❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\n\nيرجى النقر على زر المنطقة الدقيقة أدناه لتثبيت الطلب:`,
+      { inline_keyboard: inlineKeyboard },
+      context.botToken
+    ).catch(() => {});
+
+    return `⏳ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}".** يرجى النقر على زر المنطقة المطلوب تثبيتها أدناه ⬇️`;
+  }
+
+  // 3. إذا كانت هناك منطقة واحدة فقط أو تم اختيارها مباشرة
+  const region = matchingRegions[0];
   const finalDeliveryPrice = deliveryPrice != null ? deliveryPrice : (region?.deliveryPrice.toNumber() || 5000);
   const totalAmount = numPrice + Number(finalDeliveryPrice);
-  const phone = (customerPhone || "").trim() || "غير محدد";
 
   const order = await prisma.order.create({
     data: {
@@ -118,7 +176,7 @@ async function executeCreateOrder(args: any) {
   notifyTelegramNewOrder(order.id).catch(() => {});
   pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-  return `✅ **تم إضافة الطلب بالنظام بنجاح وسرعة!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **المبلغ الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
+  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل:** ${formatDinarAsAlf(finalDeliveryPrice)}\n- **المبلغ الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
 }
 
 async function executeAssignCourier(args: any) {
@@ -177,26 +235,30 @@ function getChatHistory(userId: string): Array<{ role: "user" | "model"; text: s
 function appendChatHistory(userId: string, role: "user" | "model", text: string) {
   const list = getChatHistory(userId);
   list.push({ role, text });
-  if (list.length > 10) list.shift(); // الحفاظ على آخر 10 رسائل
+  if (list.length > 10) list.shift();
   chatHistoryMemory.set(userId, list);
 }
 
 /**
  * المحرك المباشر والحي للذكاء الاصطناعي Gemini AI
  */
-export async function processAdminAiMessage(userText: string, telegramUserId: string = "default"): Promise<string> {
+export async function processAdminAiMessage(
+  userText: string,
+  telegramUserId: string = "default",
+  chatId?: string,
+  botToken?: string
+): Promise<string> {
   const allKeys = await getAllActiveGeminiKeys();
 
   if (allKeys.length === 0) {
     return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمباعيات والتوصيل في العراق.
+  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
 إذا قدم لك المدير تفاصيل طلب (اسم محل، منطقة، سعر، نوع طلب)، استخدم الأداة create_order فوراً لرفع الطلب بالنظام دون أن تطلب مناقشات أو أسئلة!
 تذكر الرسائل السابقة في المحادثة واجمع البيانات منها لتنفيذ الأوامر فوراً.`;
 
-  // تجهيز ذاكرة السجل للمحادثة
   appendChatHistory(telegramUserId, "user", userText);
   const history = getChatHistory(telegramUserId);
 
@@ -212,7 +274,6 @@ export async function processAdminAiMessage(userText: string, telegramUserId: st
 
     for (const model of models) {
       try {
-        // 1. تنفيذ الأدوات والعمليات أولاً بالدرجة الأولى!
         const resTools = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
           {
@@ -233,7 +294,7 @@ export async function processAdminAiMessage(userText: string, telegramUserId: st
             if (part.functionCall) {
               const fn = part.functionCall;
               let reply = "";
-              if (fn.name === "create_order") reply = await executeCreateOrder(fn.args);
+              if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
               else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
               else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
 
@@ -256,7 +317,6 @@ export async function processAdminAiMessage(userText: string, telegramUserId: st
           lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
         }
 
-        // 2. المحاولة بطلب النص المباشر
         const resPure = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
           {
