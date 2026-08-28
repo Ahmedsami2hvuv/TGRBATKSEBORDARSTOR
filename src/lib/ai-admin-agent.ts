@@ -48,7 +48,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // 1. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
   // ==========================================
   if (domain === "couriers" || rawText.includes("مندوب") || rawText.includes("كابتن") || rawText.includes("رواتب") || rawText.includes("سلفة")) {
-    // أ) إضافة مندوب جديد
     if (operation === "create" || rawText.includes("ضِف") || rawText.includes("إضافة مندوب") || rawText.includes("سوي مندوب")) {
       const name = targetIdOrName || rawText.replace(/.*مندوب|.*كابتن|إضافة|جديد/gi, "").trim() || "مندوب جديد";
       const phoneMatch = rawText.match(/\d{10,11}/);
@@ -60,7 +59,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       return { reply: `✅ **تم إضافة وتأكيد المندوب الجديد (${courier.name}) بالنظام!**\n- الهاتف: ${courier.phone}` };
     }
 
-    // ب) تفعيل أو تعطيل/إخفاء مندوب
     if (operation === "toggle" || rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("فعل") || rawText.includes("إخفاء")) {
       const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
       const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
@@ -79,7 +77,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تصفير حساب ومستحقات المندوب
     if (operation === "zero" || rawText.includes("صفر") || rawText.includes("تصفير")) {
       const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|صفر|تصفير|حساب|مستحقات/gi, "").trim();
       const courier = await prisma.courier.findFirst({
@@ -158,7 +155,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   if (orderNumber) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
-      include: { shop: true, customerRegion: true, assignedCourier: true }
+      include: { shop: true, customerRegion: true, courier: true }
     });
   }
 
@@ -166,7 +163,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     existingOrder = await prisma.order.findFirst({
       where: { status: { in: ["pending", "assigned"] } },
       orderBy: { createdAt: "desc" },
-      include: { shop: true, customerRegion: true, assignedCourier: true }
+      include: { shop: true, customerRegion: true, courier: true }
     });
   }
 
@@ -217,7 +214,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (rawText.includes("مرفوض")) updateData.status = "rejected";
       else if (rawText.includes("مكتمل") || rawText.includes("واصل")) updateData.status = "completed";
       else if (rawText.includes("استلام")) updateData.status = "delivered";
-      changes.push(`📌 **الحالة الجديد:** ${updateData.status}`);
+      changes.push(`📌 **الحالة الجديدة:** ${updateData.status}`);
     }
 
     if (Object.keys(updateData).length > 0) {
@@ -323,7 +320,6 @@ export async function processAdminAiMessage(
     }
   }
 
-  // التنفيذ الفائق المباشر الضامن
   const res = await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   return res;
 }
