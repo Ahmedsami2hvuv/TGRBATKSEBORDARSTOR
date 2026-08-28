@@ -644,61 +644,56 @@ export function PickupMoneyForm({
           name="advanceStatus"
           value={advanceToDelivering ? "delivering" : ""}
         />
-        {/* الزر السحري الضخم المباشر والمميز بالنقر السريع */}
-        {remainingAlfHint && (
-          <div className="relative w-full my-2">
-            {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-            <span className="pointer-events-none absolute -top-3 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
-            <span className="pointer-events-none absolute -bottom-2 left-2 text-sm star-particle-2 z-10 select-none">💫</span>
-            <span className="pointer-events-none absolute -top-2 left-1/2 text-xs star-particle-3 z-10 select-none">⭐</span>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (amountRef.current) {
-                  amountRef.current.value = remainingAlfHint;
-                }
-                if (pickupSubmitModeRef.current) {
-                  pickupSubmitModeRef.current.value = "";
-                }
-                if (noteRef.current) {
-                  noteRef.current.value = "";
-                }
-                setAmount(remainingAlfHint);
-                setNote("");
-                setTimeout(() => {
-                  if (formRef.current) {
-                    formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
-                  }
-                }, 40);
-              }}
-              className="magical-money-block-green w-full flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 py-3.5 px-4 font-black text-white text-base sm:text-lg shadow-xl active:scale-95 transition-all cursor-pointer select-none pointer-events-auto group"
-              title="اضغط لتعبئة المبلغ المطلوب دفعه وحفظه فوراً"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-md pointer-events-none">
-                <span>تأكيد المبلغ المباشر ({remainingAlfHint} ألف د.ع)</span>
-                <span className="text-lg">⚡</span>
-              </span>
-            </button>
-          </div>
-        )}
-
-        {/* خانة كتابة السعر يدوياً مصغرة وبأحجام ناعمة للمبلغ المختلف */}
-        <div className="space-y-1 pt-1">
-          <label className="text-[11px] font-bold text-slate-500 block text-center">أو أدخل سلساً مبلغاً مختلفاً يدوياً:</label>
+        {/* سطر الإدخال اليدوي مع الزر المربع النجمي المباشر على اليسار */}
+        <div className="flex items-center gap-2 pt-1">
           <input
             ref={amountRef}
             name="amountAlf"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={onPickupAmountKeyDown}
-            className={`${moneySaderAmountInputClass} text-center text-sm py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800`}
-            placeholder="اكتب المبلغ يدوياً هنا"
+            className={`${moneySaderAmountInputClass} animate-placeholder flex-1 text-center text-sm sm:text-base h-12 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-black`}
+            placeholder="السعر يدوياً"
             inputMode="decimal"
             enterKeyHint="done"
             required
           />
+
+          {remainingAlfHint && (
+            <div className="relative shrink-0">
+              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
+              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-2 left-0 text-xs star-particle-2 z-10 select-none">💫</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
+                  if (pickupSubmitModeRef.current) {
+                    pickupSubmitModeRef.current.value = "";
+                  }
+                  if (noteRef.current) {
+                    noteRef.current.value = "";
+                  }
+                  setAmount(remainingAlfHint);
+                  setNote("");
+                  setTimeout(() => {
+                    if (formRef.current) {
+                      formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
+                    }
+                  }, 40);
+                }}
+                className="magical-money-block-green h-12 px-3 flex items-center justify-center gap-1 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 font-black text-white shadow-lg active:scale-95 transition-all cursor-pointer select-none"
+                title="اضغط لتأكيد وإرسال المبلغ مباشرة"
+              >
+                <span className="text-sm sm:text-base font-black tracking-tight">{remainingAlfHint}</span>
+                <span className="text-[10px] font-bold opacity-90">ألف ⚡</span>
+              </button>
+            </div>
+          )}
         </div>
         <input type="hidden" name="mismatchReason" value="" />
         {isMismatch && (
@@ -1085,61 +1080,56 @@ export function DeliveryMoneyForm({
         />
         <input ref={latRef} type="hidden" name="lat" value="" />
         <input ref={lngRef} type="hidden" name="lng" value="" />
-        {/* الزر السحري الضخم المباشر والمميز بالنقر السريع */}
-        {remainingAlfHint && (
-          <div className="relative w-full my-2">
-            {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-            <span className="pointer-events-none absolute -top-3 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
-            <span className="pointer-events-none absolute -bottom-2 left-2 text-sm star-particle-2 z-10 select-none">💫</span>
-            <span className="pointer-events-none absolute -top-2 left-1/2 text-xs star-particle-3 z-10 select-none">⭐</span>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (amountRef.current) {
-                  amountRef.current.value = remainingAlfHint;
-                }
-                if (deliverySubmitModeRef.current) {
-                  deliverySubmitModeRef.current.value = "";
-                }
-                if (noteRef.current) {
-                  noteRef.current.value = "";
-                }
-                setAmount(remainingAlfHint);
-                setNote("");
-                setTimeout(() => {
-                  if (formRef.current) {
-                    formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
-                  }
-                }, 40);
-              }}
-              className="magical-money-block-red w-full flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 py-3.5 px-4 font-black text-white text-base sm:text-lg shadow-xl active:scale-95 transition-all cursor-pointer select-none pointer-events-auto group"
-              title="اضغط لتعبئة المبلغ المطلوب استلامه وحفظه فوراً"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-md pointer-events-none">
-                <span>تأكيد المبلغ المباشر ({remainingAlfHint} ألف د.ع)</span>
-                <span className="text-lg">⚡</span>
-              </span>
-            </button>
-          </div>
-        )}
-
-        {/* خانة كتابة السعر يدوياً مصغرة وبأحجام ناعمة للمبلغ المختلف */}
-        <div className="space-y-1 pt-1">
-          <label className="text-[11px] font-bold text-slate-500 block text-center">أو أدخل سلساً مبلغاً مختلفاً يدوياً:</label>
+        {/* سطر الإدخال اليدوي مع الزر المربع النجمي المباشر على اليسار */}
+        <div className="flex items-center gap-2 pt-1">
           <input
             ref={amountRef}
             name="amountAlf"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={onDeliveryAmountKeyDown}
-            className={`${moneyWardAmountInputClass} text-center text-sm py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800`}
-            placeholder="اكتب المبلغ يدوياً هنا"
+            className={`${moneyWardAmountInputClass} animate-placeholder flex-1 text-center text-sm sm:text-base h-12 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-black`}
+            placeholder="السعر يدوياً"
             inputMode="decimal"
             enterKeyHint="done"
             required
           />
+
+          {remainingAlfHint && (
+            <div className="relative shrink-0">
+              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
+              <span className="pointer-events-none absolute -top-3 -right-2 text-xs star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-2 left-0 text-xs star-particle-2 z-10 select-none">💫</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (amountRef.current) {
+                    amountRef.current.value = remainingAlfHint;
+                  }
+                  if (deliverySubmitModeRef.current) {
+                    deliverySubmitModeRef.current.value = "";
+                  }
+                  if (noteRef.current) {
+                    noteRef.current.value = "";
+                  }
+                  setAmount(remainingAlfHint);
+                  setNote("");
+                  setTimeout(() => {
+                    if (formRef.current) {
+                      formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
+                    }
+                  }, 40);
+                }}
+                className="magical-money-block-red h-12 px-3 flex items-center justify-center gap-1 rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 font-black text-white shadow-lg active:scale-95 transition-all cursor-pointer select-none"
+                title="اضغط لتأكيد وإرسال المبلغ مباشرة"
+              >
+                <span className="text-sm sm:text-base font-black tracking-tight">{remainingAlfHint}</span>
+                <span className="text-[10px] font-bold opacity-90">ألف ⚡</span>
+              </button>
+            </div>
+          )}
         </div>
         <input type="hidden" name="mismatchReason" value="" />
         {(isMismatch || prepaidConfirmState === "took_money") && (
