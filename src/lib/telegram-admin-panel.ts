@@ -228,6 +228,8 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (m?.[1]) return { kind: "select_order_region", regionId: m[1] };
   m = /^pspr:(.+)$/.exec(t);
   if (m?.[1]) return { kind: "select_prep_preparer", preparerId: m[1] };
+  m = /^shps:(.+)$/.exec(t);
+  if (m?.[1]) return { kind: "select_order_shop", shopId: m[1] };
   return null;
 }
 
@@ -1283,6 +1285,115 @@ export async function handleTelegramAdminCallback(
         if (!edited.ok) {
           await sendTelegramMessageWithKeyboardToChat(chatId, successMsg, {
             inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "main" }]]
+          }, botToken);
+        }
+        return true;
+      }
+      case "select_order_shop": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "admin_select_order_shop") return true;
+        const p = JSON.parse(session.payload || "{}");
+
+        const shop = await prisma.shop.findUnique({ where: { id: (parsed as any).shopId } });
+        if (!shop) {
+          await answerCallbackQuery(cq.id, "المحل غير موجود", true, botToken);
+          return true;
+        }
+
+        p.shopId = shop.id;
+        p.shopName = shop.name;
+
+        // البحث عن المناطق المتشابهة
+        let matchingRegions = await prisma.region.findMany({
+          where: { name: { contains: (p.regionQuery || "").trim(), mode: "insensitive" } },
+          select: { id: true, name: true, deliveryPrice: true },
+          orderBy: { name: "asc" }
+        });
+
+        if (matchingRegions.length === 0) {
+          const { rankRegionsByQuery } = await import("./arabic-region-search");
+          const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+          const ranked = rankRegionsByQuery(p.regionQuery || "", allRegions, 5);
+          if (ranked.length > 0) matchingRegions = ranked;
+        }
+
+        if (matchingRegions.length > 1) {
+          await prisma.telegramBotSession.update({
+            where: { telegramUserId },
+            data: { step: "admin_select_order_region", payload: JSON.stringify(p) }
+          });
+
+          const inlineKeyboard: any[] = [];
+          for (let i = 0; i < matchingRegions.length; i += 2) {
+            const row: any[] = [];
+            const r1 = matchingRegions[i];
+            const delPrice1 = r1.deliveryPrice?.toNumber ? r1.deliveryPrice.toNumber() : Number(r1.deliveryPrice) || 5000;
+            row.push({ text: `📍 ${r1.name} (${delPrice1})`, callback_data: `rgs:${r1.id}` });
+            if (i + 1 < matchingRegions.length) {
+              const r2 = matchingRegions[i + 1];
+              const delPrice2 = r2.deliveryPrice?.toNumber ? r2.deliveryPrice.toNumber() : Number(r2.deliveryPrice) || 5000;
+              row.push({ text: `📍 ${r2.name} (${delPrice2})`, callback_data: `rgs:${r2.id}` });
+            }
+            inlineKeyboard.push(row);
+          }
+          inlineKeyboard.push([{ text: "❌ إلغاء الطلب", callback_data: "main" }]);
+
+          const regionMsg = `🏪 **تم اختيار المحل: ${shop.name}**\n❓ **عثرنا على أكثر من منطقة متشابهة لـ "${p.regionQuery}":**\n\nيرجى النقر على زر المنطقة الدقيقة أدناه لتثبيت الطلب:`;
+
+          const edited = await editTelegramMessage(chatId, messageId, regionMsg, { inline_keyboard: inlineKeyboard }, botToken);
+          if (!edited.ok) {
+            await sendTelegramMessageWithKeyboardToChat(chatId, regionMsg, { inline_keyboard: inlineKeyboard }, botToken);
+          }
+          return true;
+        }
+
+        // إذا كانت المنطقة فريدة، ننشئ الطلب فوراً
+        const region = matchingRegions[0];
+        const finalDeliveryPrice = region?.deliveryPrice?.toNumber ? region.deliveryPrice.toNumber() : Number(region?.deliveryPrice) || 5000;
+        const totalAmount = Number(p.price) + Number(finalDeliveryPrice);
+
+        const order = await prisma.order.create({
+          data: {
+            shopId: shop.id,
+            status: "pending",
+            orderType: p.orderType || "طلب جديد",
+            customerRegionId: region?.id,
+            customerPhone: p.customerPhone || "غير محدد",
+            orderSubtotal: new Decimal(p.price),
+            deliveryPrice: new Decimal(finalDeliveryPrice),
+            totalAmount: new Decimal(totalAmount),
+            submissionSource: "admin_ai_assistant",
+            orderNoteTime: p.orderNoteTime || "فوري",
+          }
+        });
+
+        if (p.customerName && p.customerPhone && p.customerPhone !== "غير محدد") {
+          await prisma.customer.upsert({
+            where: { phone_shopId: { phone: p.customerPhone, shopId: shop.id } },
+            create: { phone: p.customerPhone, name: p.customerName, shopId: shop.id, regionId: region?.id },
+            update: { name: p.customerName, regionId: region?.id }
+          }).catch(() => {});
+        }
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { step: "idle", payload: "" }
+        });
+
+        const { notifyTelegramNewOrder } = await import("./telegram-notify");
+        const { pushNotifyAdminsNewPendingOrder } = await import("./web-push-server");
+        notifyTelegramNewOrder(order.id).catch(() => {});
+        pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        const confirmMsg = `✅ **تم تأكيد وإضافة الطلب بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || p.regionQuery}\n- **الهاتف:** ${p.customerPhone}\n- **سعر التوصيل:** ${finalDeliveryPrice}\n- **الإجمالي:** ${totalAmount}`;
+
+        const edited = await editTelegramMessage(chatId, messageId, confirmMsg, {
+          inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        }, botToken);
+
+        if (!edited.ok) {
+          await sendTelegramMessageWithKeyboardToChat(chatId, confirmMsg, {
+            inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
           }, botToken);
         }
         return true;

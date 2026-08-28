@@ -139,11 +139,11 @@ export async function executeCreatePrepShoppingDraft(
       const row: any[] = [];
       const r1 = matchingRegions[i];
       const p1 = safeGetDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (${formatDinarAsAlf(p1)})`, callback_data: `rgs:${r1.id}` });
+      row.push({ text: `📍 ${r1.name} (${p1})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
         const p2 = safeGetDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (${formatDinarAsAlf(p2)})`, callback_data: `rgs:${r2.id}` });
+        row.push({ text: `📍 ${r2.name} (${p2})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -228,12 +228,69 @@ export async function executeCreatePrepShoppingDraft(
 export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
   const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
 
-  const shop = await prisma.shop.findFirst({
-    where: { name: { contains: shopQuery, mode: "insensitive" } }
-  }) || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
+  const phone = (customerPhone || "").trim() || "غير محدد";
+  let numPrice = Number(price) || 0;
 
+  // 1. البحث عن كافة المحلات المتطابقة أو المتشابهة مع الكلمة المكتوبة
+  const matchingShops = await prisma.shop.findMany({
+    where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" }
+  });
+
+  // إذا وجدنا أكثر من محل متشابه، نعرض أزرار المحلات أولاً للمدير!
+  if (matchingShops.length > 1 && context?.chatId && context?.telegramUserId) {
+    const payload = {
+      customerPhone: phone,
+      customerName: customerName || "",
+      orderType: orderType || "طلب جديد",
+      price: numPrice,
+      orderNoteTime: orderNoteTime || "فوري",
+      regionQuery: regionQuery,
+      shopQuery: shopQuery
+    };
+
+    await prisma.telegramBotSession.upsert({
+      where: { telegramUserId: context.telegramUserId },
+      create: {
+        telegramUserId: context.telegramUserId,
+        chatId: context.chatId,
+        step: "admin_select_order_shop",
+        payload: JSON.stringify(payload),
+      },
+      update: {
+        step: "admin_select_order_shop",
+        payload: JSON.stringify(payload),
+      }
+    });
+
+    const inlineKeyboard: any[] = [];
+    for (let i = 0; i < matchingShops.length; i += 2) {
+      const row: any[] = [];
+      const s1 = matchingShops[i];
+      row.push({ text: `🏪 ${s1.name}`, callback_data: `shps:${s1.id}` });
+      if (i + 1 < matchingShops.length) {
+        const s2 = matchingShops[i + 1];
+        row.push({ text: `🏪 ${s2.name}`, callback_data: `shps:${s2.id}` });
+      }
+      inlineKeyboard.push(row);
+    }
+    inlineKeyboard.push([{ text: "❌ إلغاء الطلب", callback_data: "main" }]);
+
+    await sendTelegramMessageWithKeyboardToChat(
+      context.chatId,
+      `❓ **عثرنا على أكثر من محل متشابه لـ "${shopQuery}":**\n\nيرجى اختيار اسم المحل المطلوب بالنقر على الزر أدناه ⬇️`,
+      { inline_keyboard: inlineKeyboard },
+      context.botToken
+    ).catch(() => {});
+
+    return `⏳ **عثرنا على أكثر من محل متشابه لـ "${shopQuery}".** يرجى اختيار المحل المطلوب من الأزرار أدناه ⬇️`;
+  }
+
+  const shop = matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
+  // 2. البحث عن المناطق المتشابهة
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
@@ -245,10 +302,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     const ranked = rankRegionsByQuery(regionQuery || "", allRegions, 5);
     if (ranked.length > 0) matchingRegions = ranked;
   }
-
-  // عدم ضرب أو تحويل أي رقم بـ 1000 إطلاقاً! اعتماد المبلغ الصريح كما هو من المستخدم
-  let numPrice = Number(price) || 0;
-  const phone = (customerPhone || "").trim() || "غير محدد";
 
   if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
     const payload = {
@@ -293,7 +346,7 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\n\nيرجى النقر على زر المنطقة الدقيقة أدناه لتثبيت الطلب:`,
+      `🏪 **المحل:** ${shop.name}\n❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\n\nيرجى النقر على زر المنطقة الدقيقة أدناه لتثبيت الطلب:`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
@@ -379,7 +432,6 @@ async function executeDebtTransaction(args: any) {
     return "❌ يرجى تحديد المبلغ المالي صراحة لتسجيله في دفتر الديون.";
   }
 
-  // 1. البحث عن الطرف / الشريك في قاعدة البيانات أو إيجاد الكيان المرتبط
   let partner = await prisma.creditBookPartner.findFirst({
     where: { name: { contains: targetName, mode: "insensitive" } }
   });
@@ -412,11 +464,9 @@ async function executeDebtTransaction(args: any) {
     });
   }
 
-  // 2. تحديد نوع العملية: took (أخذت - تسديد / يطلبنا) أو gave (أعطيت - دين نطلبه)
   const isTook = type === "took" || type === "borrowed" || type === "أخذت" || type === "أخذت من" || type === "استلمت";
   const kind = isTook ? "took" : "gave";
 
-  // 3. إنشاء المعاملة المالية الفعلية في جدول CreditBookTransaction
   await prisma.creditBookTransaction.create({
     data: {
       partnerId: partner.id,
