@@ -28,6 +28,16 @@ const AI_TOOLS = [
   {
     functionDeclarations: [
       {
+        name: "get_system_summary_or_orders",
+        description: "استعلام وجلب الطلبات الجديدة والمعلقة بالنظام، أو جلب ملخص الإحصائيات لمبيعات ومسودات التجهيز.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            queryType: { type: "STRING", description: "'new_orders' (الطلبات الجديدة المعلقة) أو 'summary' (ملخص النظام)" }
+          }
+        }
+      },
+      {
         name: "create_order",
         description: "إضافة ورصد طلب مبيعات جديد في النظام عند وجود تفاصيل المحل والمنطقة وسعر الطلب وهاتف الزبون.",
         parameters: {
@@ -174,6 +184,26 @@ const AI_TOOLS = [
     ]
   }
 ];
+
+export async function executeGetSystemOrders() {
+  const pendingOrders = await prisma.order.findMany({
+    where: { status: "pending" },
+    include: { shop: true, customerRegion: true },
+    orderBy: { createdAt: "desc" },
+    take: 8
+  });
+
+  if (pendingOrders.length === 0) {
+    return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً.** جميع الطلبات مسندة ومكتملة!" };
+  }
+
+  let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (عدد ${pendingOrders.length} طلبات):**\n`];
+  pendingOrders.forEach((o, i) => {
+    lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
+  });
+
+  return { reply: lines.join("\n") };
+}
 
 export async function executeUpdateOrderDetails(args: any) {
   const { orderNumber, deliveryPrice, orderSubtotal, customerPhone, orderType } = args;
@@ -341,7 +371,6 @@ async function executeAssignCourier(args: any) {
 
   const rawText = fullText || courierQuery || "";
 
-  // 1. استخراج رقم الطلب من النص إن وجد (مثل: 2034)
   if (!orderNumber) {
     const numMatch = rawText.match(/\d+/);
     if (numMatch) {
@@ -349,12 +378,10 @@ async function executeAssignCourier(args: any) {
     }
   }
 
-  // 2. البحث والتنفيذ عن المندوب المذكور بالنص
   const allCouriers = await prisma.courier.findMany({ select: { id: true, name: true } });
   
   let targetCourier: any = null;
 
-  // مطابقة صريحة لاسم المندوب المسجل في النظام
   for (const c of allCouriers) {
     if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
       targetCourier = c;
@@ -362,7 +389,6 @@ async function executeAssignCourier(args: any) {
     }
   }
 
-  // محاولة تنظيف الكلمات إن لم يجد اسم صريح
   if (!targetCourier && courierQuery) {
     const cleanName = courierQuery.replace(/طلب|طلبية|يسوي|له|لها|إسناد|اسند|حول|حوله|لكابتن|كابتن|مندوب/gi, "").trim();
     if (cleanName) {
@@ -611,6 +637,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
+إذا سأل المدير عن "شنو الطلبات الجديدة / عدنا طلبات / الطلبات المعلقة / إحصائيات"، استخدم أداة get_system_summary_or_orders فوراً!
 إذا طلب المدير تعديل طلب محدد (مثلاً: "سوي تعديل على طلب رقم كذا وسوي سعر التوصيل هلقد")، استخدم أداة update_order_details فوراً لتحديث البيانات في قاعدة البيانات حقيقياً!
 إذا طلب المدير تحويل أو إسناد طلب لمندوب (مثلاً: "طلب 2034 يسوي لها إسناد لكابتن فارس" أو "طلب أبو الأكبر الجديد حوله إلى كابتن فارس") استخدم أداة assign_order_to_courier فوراً واستخرج اسم المندوب ورقم الطلب!
 قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
@@ -659,7 +686,8 @@ export async function processAdminAiMessage(
               if (part.functionCall) {
                 const fn = part.functionCall;
                 let result: any = null;
-                if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
+                if (fn.name === "get_system_summary_or_orders") result = await executeGetSystemOrders();
+                else if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
                 else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
                 else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
                 else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
@@ -691,8 +719,13 @@ export async function processAdminAiMessage(
     }
   }
 
-  // التخطي المباشر الذكي للاستخراج والتثبيت بداتابيز الموقع
+  // التخطي المباشر الذكي للاستعلام والطلبات المباشرة
   const lowerText = userText.toLowerCase();
+
+  if (lowerText.includes("طلبات") || lowerText.includes("جديده") || lowerText.includes("جديدة") || lowerText.includes("شنو عدنه") || lowerText.includes("شنو المبيعات")) {
+    const res = await executeGetSystemOrders();
+    return res;
+  }
 
   if (lowerText.includes("اسند") || lowerText.includes("حول") || lowerText.includes("كابتن") || lowerText.includes("إسناد")) {
     const res = await executeAssignCourier({ fullText: userText });
