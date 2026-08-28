@@ -1049,8 +1049,7 @@ export function AdminCreateOrderForm({
  </label>
  )}
 
- <div className="grid grid-cols-2 gap-3">
-<RegionSearchPicker
+ <RegionSearchPicker
  fieldName="firstCustomerRegionId"
  label="منطقة الزبون"
  required
@@ -1058,16 +1057,8 @@ export function AdminCreateOrderForm({
  onValueChange={setFirstRegionId}
  regionsLookup={regions}
  />
-<RegionSearchPicker
- fieldName="secondCustomerRegionId"
- label="منطقة المستلم"
- required
- value={secondRegionId}
- onValueChange={setSecondRegionId}
- regionsLookup={regions}
- />
-</div>
-{firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
+
+ {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
  {firstPrefill && (
  <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
  <div className="flex justify-between items-start gap-3">
@@ -1125,8 +1116,7 @@ export function AdminCreateOrderForm({
     </div>
   )}
 
- <div className="grid grid-cols-2 gap-3">
-<label className="flex flex-col gap-1 text-sm">
+ <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>نوع الطلب</span>
  {suggestions.types.length > 0 && (
    <div className="flex flex-wrap gap-1.5 mb-1 px-1">
@@ -1151,33 +1141,8 @@ export function AdminCreateOrderForm({
  onChange={(e) => setOrderType(e.target.value)}
  />
  </label>
-<label className="flex flex-col gap-1 text-sm">
-                   <span className={ad.label}>وقت الطلب (إجباري)</span>
-                   {suggestions.times.length > 0 && (
-                     <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                       {suggestions.times.map((time, idx) => (
-                         <button
-                           key={idx}
-                           type="button"
-                           onClick={() => setOrderNoteTime(time)}
-                           className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                         >
-                           {time}
-                         </button>
-                       ))}
-                     </div>
-                   )}
-                   <input
-                     name="orderNoteTime"
-                     required
-                     className={ad.input}
-                     placeholder="مثال: الان"
-                     value={orderNoteTime}
-                     onChange={(e) => setOrderNoteTime(e.target.value)}
-                   />
-                 </label>
-</div>
-<div className="grid grid-cols-2 gap-3">
+
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <label className="flex flex-col gap-1 text-sm">
                      <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
                       <input
@@ -1274,6 +1239,32 @@ export function AdminCreateOrderForm({
                    </button>
                  </div>
 
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>وقت الطلب (إجباري)</span>
+                   {suggestions.times.length > 0 && (
+                     <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                       {suggestions.times.map((time, idx) => (
+                         <button
+                           key={idx}
+                           type="button"
+                           onClick={() => setOrderNoteTime(time)}
+                           className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                         >
+                           {time}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+                   <input
+                     name="orderNoteTime"
+                     required
+                     className={ad.input}
+                     placeholder="مثال: الان"
+                     value={orderNoteTime}
+                     onChange={(e) => setOrderNoteTime(e.target.value)}
+                   />
+                 </label>
+
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>أقرب نقطة دالة</span>
  <input
@@ -1329,8 +1320,7 @@ export function AdminCreateOrderForm({
  </>
  ) : (
  <>
- <div className="grid grid-cols-2 gap-3">
-<label className="flex flex-col gap-1 text-sm">
+ <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم المرسل</span>
  <input
  name="firstCustomerPhone"
@@ -1342,7 +1332,8 @@ export function AdminCreateOrderForm({
   required
  />
  </label>
-<label className="flex flex-col gap-1 text-sm">
+
+ <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم المستلم</span>
  <input
  name="secondCustomerPhone"
@@ -1353,7 +1344,6 @@ export function AdminCreateOrderForm({
   required
  />
  </label>
-</div>
 
  <RegionSearchPicker
  fieldName="firstCustomerRegionId"
@@ -1388,6 +1378,15 @@ export function AdminCreateOrderForm({
  }}>تطبيق بيانات المرسل</button>
  </div>
  )}
+
+ <RegionSearchPicker
+ fieldName="secondCustomerRegionId"
+ label="منطقة المستلم"
+ required
+ value={secondRegionId}
+ onValueChange={setSecondRegionId}
+ regionsLookup={regions}
+ />
 
  {secondPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المستلم...</p>}
  {secondPrefill && (
@@ -1448,34 +1447,63 @@ export function AdminCreateOrderForm({
 
                  {/* سعر الطلب */}
                  
-                 {/* نوع الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                    <span className={ad.label}>نوع الطلب</span>
-                    {suggestions.types.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                        {suggestions.types.map((type, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setOrderType(type)}
-                            className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                   <input
-                     name="orderType"
-                     required
-                     className={ad.input}
-                     placeholder="مثال: مستلزمات"
-                     value={orderType}
-                     onChange={(e) => setOrderType(e.target.value)}
-                   />
-                 </label>
+                 {/* نوع الطلب ووقت الطلب جنباً إلى جنب */}
+                 <div className="grid grid-cols-2 gap-3">
+                   <label className="flex flex-col gap-1 text-sm">
+                      <span className={ad.label}>نوع الطلب</span>
+                      {suggestions.types.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                          {suggestions.types.map((type, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setOrderType(type)}
+                              className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                     <input
+                       name="orderType"
+                       required
+                       className={ad.input}
+                       placeholder="مثال: مستلزمات"
+                       value={orderType}
+                       onChange={(e) => setOrderType(e.target.value)}
+                     />
+                   </label>
 
-<div className="grid grid-cols-2 gap-3">
+                   <label className="flex flex-col gap-1 text-sm">
+                     <span className={ad.label}>وقت الطلب (إجباري)</span>
+                      {suggestions.times.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                          {suggestions.times.map((time, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setOrderNoteTime(time)}
+                              className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                            >
+                              {time}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                     <input
+                       name="orderNoteTime"
+                       required
+                       className={ad.input}
+                       placeholder="مثال: الان"
+                       value={orderNoteTime}
+                       onChange={(e) => setOrderNoteTime(e.target.value)}
+                     />
+                   </label>
+                 </div>
+
+                 {/* سعر الشراء وسعر البيع جنباً إلى جنب */}
+                 <div className="grid grid-cols-2 gap-3">
                    <label className="flex flex-col gap-1 text-sm">
                      <span className={ad.label}>سعر الشراء (للمحل/السوق)</span>
                       <input
@@ -1513,9 +1541,10 @@ export function AdminCreateOrderForm({
                        onChange={(e) => setOrderSubtotal(e.target.value)}
                      />
                    </label>
+                 </div>
 
-                    <div className="flex flex-col gap-1 text-sm">
-                      <span className={ad.label}>كلفة التوصيل</span>
+                 <div className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>كلفة التوصيل</span>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -1571,32 +1600,7 @@ export function AdminCreateOrderForm({
                    </button>
                  </div>
 
-                 {/* وقت الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                   <span className={ad.label}>وقت الطلب (إجباري)</span>
-                    {suggestions.times.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
-                        {suggestions.times.map((time, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setOrderNoteTime(time)}
-                            className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                   <input
-                     name="orderNoteTime"
-                     required
-                     className={ad.input}
-                     placeholder="مثال: الان"
-                     value={orderNoteTime}
-                     onChange={(e) => setOrderNoteTime(e.target.value)}
-                   />
-                 </label>
+
 
  {/* اقرب نقطة داله للمرسل */}
  <label className="flex flex-col gap-1 text-sm">
