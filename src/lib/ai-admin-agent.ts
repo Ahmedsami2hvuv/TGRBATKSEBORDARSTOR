@@ -130,23 +130,23 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 5. قسم إدارة الطلبات والتعديل والإسناد الفوري (ORDERS UNIVERSAL ENGINE)
+  // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات (SMART MULTI-FILTER ORDER FINDER)
   // ==========================================
-  // أداة الفصل الذكي بين رقم الطلب والسعر المطلوب تعديله
   const allNumbers = (rawText.match(/\d+/g) || []).map(Number);
   
   let orderNumber: number | null = null;
   let targetNewPrice: number | null = null;
 
-  // استخراج رقم الطلب المقترن بكلمة (طلب/طلبية/#) أو الرقم الأول المكون من 3-5 خانات
+  // أ) استخراج رقم الطلب إذا ذكر صراحة
   const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d+)/i);
   if (orderNumMatch) {
     orderNumber = Number(orderNumMatch[1]);
   } else if (allNumbers.length > 0) {
-    orderNumber = allNumbers.find(n => n >= 100) || allNumbers[0];
+    const candidateNum = allNumbers.find(n => n >= 100);
+    if (candidateNum) orderNumber = candidateNum;
   }
 
-  // استخراج السعر الجديد (الرقم المختلف عن رقم الطلب)
+  // ب) استخراج السعر الجديد المستهدف
   if (allNumbers.length > 0) {
     const priceCandidates = allNumbers.filter(n => n !== orderNumber);
     if (priceCandidates.length > 0) {
@@ -157,6 +157,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   let existingOrder: any = null;
+
+  // 1. البحث الصريح برقم الطلب
   if (orderNumber) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -164,6 +166,31 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
+  // 2. البحث الذكي باسم المحل و/أو المنطقة و/أو الحالة المذكورة في النص
+  if (!existingOrder) {
+    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+    const matchingShop = allShops.find(s => rawText.toLowerCase().includes(s.name.toLowerCase()));
+
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
+    const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
+
+    let statusFilter: any = { in: ["pending", "assigned", "delivering"] };
+    if (rawText.includes("جديد") || rawText.includes("معلق")) statusFilter = "pending";
+    else if (rawText.includes("مسند") || rawText.includes("واصل")) statusFilter = "assigned";
+
+    const whereClause: any = {};
+    if (matchingShop) whereClause.shopId = matchingShop.id;
+    if (matchingRegion) whereClause.customerRegionId = matchingRegion.id;
+    whereClause.status = statusFilter;
+
+    existingOrder = await prisma.order.findFirst({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      include: { shop: true, customerRegion: true, courier: true }
+    });
+  }
+
+  // 3. التراجع لأحدث طلب بالنظام في حالة لم يحدد رقم طلب ولا محل
   if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
     existingOrder = await prisma.order.findFirst({
       where: { status: { in: ["pending", "assigned"] } },
@@ -196,7 +223,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
     }
 
-    // ج) تعديل أسعار الطلب والتوصيل بدقة فائقة
+    // ج) تعديل أسعار الطلب والتوصيل
     if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سويه") || rawText.includes("سوي") || rawText.includes("توصيل"))) {
       if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -225,7 +252,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         where: { id: existingOrder.id },
         data: updateData
       });
-      return { reply: `✅ **تم تعديل وتحديث تفاصيل الطلب #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}` };
+      return { reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}` };
     }
   }
 
