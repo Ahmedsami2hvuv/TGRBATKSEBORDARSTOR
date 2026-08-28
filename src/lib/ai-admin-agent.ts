@@ -608,7 +608,7 @@ export async function processAdminAiMessage(
 
   let lastApiError = "";
   // الأسماء الرسمية الشغالة 100% المعتمدة من Google v1beta بدون أخطاء 404
-  const activeModels = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-2.0-flash-exp"];
+  const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
   for (const keyRecord of allKeys) {
     for (const model of activeModels) {
@@ -660,6 +660,7 @@ export async function processAdminAiMessage(
             return { reply: textOutput.trim() };
           }
         } else {
+          // تجاوز صامت فوري لأي 404 والانتقال السريع للموديل الشغال المباشر
           const errText = await resTools.text().catch(() => "");
           lastApiError = `[Model: ${model}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
           await markGeminiKeyError(keyRecord.id, resTools.status === 429);
