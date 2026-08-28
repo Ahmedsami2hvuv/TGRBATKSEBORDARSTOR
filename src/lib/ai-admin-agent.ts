@@ -14,7 +14,6 @@ function parseArabicWordsToNumber(text: string): number | null {
   if (!text) return null;
   const t = text.toLowerCase().trim();
 
-  // تحويل الكلمات الشهيرة
   if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف") || t.includes("5000")) return 5000;
   if (t.includes("عشرة الاف") || t.includes("عشر الاف") || t.includes("10 الاف") || t.includes("10000")) return 10000;
   if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف") || t.includes("3000")) return 3000;
@@ -194,7 +193,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // 3. التراجع لأحدث طلب بالنظام في حالة لم يحدد رقم طلب ولا محل
-  if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
+  if (!existingOrder && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("منطقة") || rawText.includes("اسند") || rawText.includes("حول"))) {
     existingOrder = await prisma.order.findFirst({
       where: { status: { in: ["pending", "assigned"] } },
       orderBy: { createdAt: "desc" },
@@ -219,8 +218,35 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل أسعار الطلب والتوصيل بدقة حاسمة (عند وجود كلمة سعر أو سعره أو سويه)
-    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سعره") || rawText.includes("سويه") || rawText.includes("سوي") || rawText.includes("توصيل"))) {
+    // ب) تعديل منطقة الطلب والزبون الحقيقية (Order Region Update)
+    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة")) {
+      const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+      
+      // استخراج اسم المنطقة من النص المكتوب
+      let targetRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
+      
+      if (!targetRegion) {
+        const cleanRegionText = rawText.replace(/.*منطقة|.*منطقه|.*رايح|عدل|غير|سوي/gi, "").trim();
+        const ranked = rankRegionsByQuery(cleanRegionText, allRegions, 1);
+        if (ranked.length > 0) targetRegion = ranked[0];
+      }
+
+      if (targetRegion) {
+        updateData.customerRegionId = targetRegion.id;
+        const newDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5000;
+        updateData.deliveryPrice = new Decimal(newDeliveryPrice);
+
+        const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
+        updateData.totalAmount = new Decimal(currentSubtotal + newDeliveryPrice);
+
+        changes.push(`📍 **المنطقة والوجهة الجديدة:** ${targetRegion.name}`);
+        changes.push(`🚚 **سعر التوصيل الثابت للمنطقة:** ${newDeliveryPrice}`);
+        changes.push(`💵 **المبلغ الإجمالي الجديد:** ${currentSubtotal + newDeliveryPrice}`);
+      }
+    }
+
+    // ج) تعديل أسعار الطلب والتوصيل الصريحة
+    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سعره") || rawText.includes("سويه") || rawText.includes("سوي"))) {
       if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
         changes.push(`🚚 **سعر التوصيل الجديد:** ${targetNewPrice}`);
@@ -235,14 +261,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // ج) تعديل نوع/تفاصيل الطلب حصراً إذا طلب تعديل النوع صراحة ولم يطلب تعديل السعر
-    if (updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع"))) {
+    // د) تعديل نوع/تفاصيل الطلب حصراً إذا طلب تعديل النوع صراحة
+    if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع"))) {
       const newType = rawText.replace(/.*نوع الطلب|.*نوع/gi, "").trim() || "تعديل إداري";
       updateData.orderType = newType;
       changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
     }
 
-    // د) تعديل حالة الطلب
+    // هـ) تعديل حالة الطلب
     if (rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
       if (rawText.includes("مرفوض")) updateData.status = "rejected";
       else if (rawText.includes("مكتمل") || rawText.includes("واصل")) updateData.status = "completed";
