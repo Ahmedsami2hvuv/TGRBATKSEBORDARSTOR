@@ -45,7 +45,7 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * مطابقة ذكية مرنة لأسماء المحلات (مثال: "بركات" -> "مطبخ البركات"، "اكسسوارات" -> "اكسسوارات ابي الخصيب")
+ * مطابقة ذكية مرنة لأسماء المحلات
  */
 async function findMatchingShopByQuery(queryText: string) {
   const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
@@ -54,7 +54,6 @@ async function findMatchingShopByQuery(queryText: string) {
   const cleanQuery = cleanArabicTextForMatch(queryText);
   const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "محل", "سوي", "عدل", "غير", "سويه", "فارس", "احمد", "نجم"].includes(w));
 
-  // 1. مطابقة احتواء صريحة للكلمات
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
     if (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanQuery)) {
@@ -68,6 +67,24 @@ async function findMatchingShopByQuery(queryText: string) {
   }
 
   return null;
+}
+
+/**
+ * استخراج المنتجات والمواد من نص رسالة التجهيز
+ */
+function extractPrepItemsFromText(text: string): string {
+  if (!text) return "مواد تجهيز ومشتريات";
+
+  // استخراج النص بعد كلمات التجهيز أو استخراج السطور التي تحتوي مواد
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const itemsLines = lines.filter(l => !l.startsWith("طلب") && !l.includes("077") && !l.includes("078") && !l.includes("075"));
+
+  if (itemsLines.length > 0) {
+    return itemsLines.join("\n");
+  }
+
+  const cleanText = text.replace(/.*تجهيز|.*منطقة|.*هاتف|07\d{9}/gi, "").trim();
+  return cleanText || text;
 }
 
 /**
@@ -108,7 +125,48 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const rawText = userText || "";
 
   // ==========================================
-  // 1. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
+  // 1. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS & ORDERS)
+  // ==========================================
+  if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات")) {
+    const extractedItems = extractPrepItemsFromText(rawText);
+    const phoneMatch = rawText.match(/07\d{9}/);
+    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+
+    // جلب المنطقة المطابقة
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase())) || allRegions[0];
+
+    // جلب المجهز إن وجد في الكلام
+    const allPreparers = await prisma.companyPreparer.findMany();
+    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
+
+    // 1. إنشاء مسودة التجهيز مع حفظ كافة المنتجات في rawListText
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        preparerId: assignedPreparer ? assignedPreparer.id : null,
+        rawListText: extractedItems,
+        customerPhone: phone,
+        customerRegionId: matchingRegion?.id,
+        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
+        status: "draft"
+      }
+    });
+
+    const preparerButtons = allPreparers.map(p => ({
+      text: `👨‍🍳 ${p.name}`,
+      action: `assign_prep_${p.id}`
+    }));
+
+    const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
+
+    return {
+      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${matchingRegion?.name || "عامة"}\n- **الهاتف:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
+      buttons: preparerButtons
+    };
+  }
+
+  // ==========================================
+  // 2. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
   // ==========================================
   if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
     if (operation === "create" || rawText.includes("ضِف مندوب") || rawText.includes("إضافة مندوب")) {
@@ -194,7 +252,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 2. المطابقة الذكية الدقيقة باسم المحل (مثل: مطبخ البركات، اكسسوارات ابي الخصيب، حسام بيوتي)
+  // 2. المطابقة الذكية الدقيقة باسم المحل
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
@@ -278,11 +336,11 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // د) تعديل نوع/تفاصيل الطلب حصراً إذا طلب تعديل النوع صراحة
-    if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع"))) {
-      const newType = rawText.replace(/.*نوع الطلب|.*نوع/gi, "").trim() || "تعديل إداري";
+    // د) تعديل نوع/تفاصيل المنتجات
+    if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
+      const newType = extractPrepItemsFromText(rawText);
       updateData.orderType = newType;
-      changes.push(`📦 **نوع/وصف الطلب:** ${newType}`);
+      changes.push(`📦 **قائمة المنتجات والنوع الجديدة:**\n${newType}`);
     }
 
     // هـ) تعديل حالة الطلب
