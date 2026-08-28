@@ -694,9 +694,14 @@ export function PickupMoneyForm({
                 className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <span className="text-3xl sm:text-4xl font-black drop-shadow-md tracking-tight">
-                  {remainingAlfHint}
-                </span>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                    {remainingAlfHint}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                    ألف
+                  </span>
+                </div>
               </button>
             </div>
           )}
@@ -1136,9 +1141,14 @@ export function DeliveryMoneyForm({
                 className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <span className="text-3xl sm:text-4xl font-black drop-shadow-md tracking-tight">
-                  {remainingAlfHint}
-                </span>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                    {remainingAlfHint}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                    ألف
+                  </span>
+                </div>
               </button>
             </div>
           )}
