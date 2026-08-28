@@ -8,12 +8,9 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
- * استخراج سعر التوصيل بأمان مطلق وبدون أي استثناءات
+ * استخراج سعر التوصيل الثابت المعتمد في الداتابيز حصراً للمنطقة
  */
-function safeGetDeliveryPrice(region?: any, explicitDeliveryPrice?: any): number {
-  if (explicitDeliveryPrice != null && !isNaN(Number(explicitDeliveryPrice))) {
-    return Number(explicitDeliveryPrice);
-  }
+function getRegionStrictDeliveryPrice(region?: any): number {
   if (!region || region.deliveryPrice == null) return 5000;
   if (typeof region.deliveryPrice?.toNumber === "function") {
     return region.deliveryPrice.toNumber();
@@ -41,8 +38,7 @@ const AI_TOOLS = [
             customerName: { type: "STRING", description: "اسم الزبون (إن وجد)" },
             regionQuery: { type: "STRING", description: "اسم المنطقة أو الوجهة" },
             orderType: { type: "STRING", description: "وصف الطلب والمنتجات" },
-            price: { type: "NUMBER", description: "سعر الطلب كما يكتبه المدير صراحة بدون أي ضرب بـ 1000 (مثلاً 10 أو 25)" },
-            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل" },
+            price: { type: "NUMBER", description: "سعر الطلب كما يكتبه المدير صراحة بدون أي تعديل أو ضرب" },
             orderNoteTime: { type: "STRING", description: "وقت التسليم" }
           },
           required: ["shopQuery", "regionQuery", "price"]
@@ -81,7 +77,7 @@ const AI_TOOLS = [
           type: "OBJECT",
           properties: {
             personQuery: { type: "STRING", description: "اسم الشخص أو الطرف (مثلاً: الوالد، علي، المحل)" },
-            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط (مثلاً 5 أو 10 أو 5000) بدون إضافة أصفار تلقائية" },
+            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط (مثلاً 5 أو 10) بدون إضافة أصفار تلقائية" },
             type: { type: "STRING", description: "'took' (أخذت/استلمت) أو 'gave' (اعطيت/انطيت)" },
             note: { type: "STRING", description: "ملاحظات وتفاصيل المعاملة" }
           },
@@ -112,7 +108,11 @@ export async function executeCreatePrepShoppingDraft(
 
   const phone = (customerPhone || "").trim() || "غير محدد";
 
-  if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
+  // فحص هل هناك تطابق تام 100% أم خيارات متعددة
+  const exactMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
+  const shouldAskRegion = !exactMatch || matchingRegions.length > 1;
+
+  if (shouldAskRegion && matchingRegions.length > 0 && context?.chatId && context?.telegramUserId) {
     const payload = {
       isPrepDraft: true,
       customerPhone: phone,
@@ -138,12 +138,12 @@ export async function executeCreatePrepShoppingDraft(
     for (let i = 0; i < matchingRegions.length; i += 2) {
       const row: any[] = [];
       const r1 = matchingRegions[i];
-      const p1 = safeGetDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (${p1})`, callback_data: `rgs:${r1.id}` });
+      const p1 = getRegionStrictDeliveryPrice(r1);
+      row.push({ text: `📍 ${r1.name} (توصيل: ${p1})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
-        const p2 = safeGetDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (${p2})`, callback_data: `rgs:${r2.id}` });
+        const p2 = getRegionStrictDeliveryPrice(r2);
+        row.push({ text: `📍 ${r2.name} (توصيل: ${p2})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -151,7 +151,7 @@ export async function executeCreatePrepShoppingDraft(
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${itemsList}\n\n❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\nيرجى اختيار المنطقة الدقيقة أدناه للانتقال لاختيار المجهز ⬇️`,
+      `🛒 **تم تحليل مسودة التجهيز للمواد:**\n${itemsList}\n\n❓ **اختر المنطقة الدقيقة بالنقر على أحد الأزرار أدناه:**`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
@@ -159,7 +159,7 @@ export async function executeCreatePrepShoppingDraft(
     return `🛒 **تم تحليل مسودة التجهيز!** يرجى اختيار المنطقة الدقيقة من الأزرار أدناه ⬇️`;
   }
 
-  const region = matchingRegions[0];
+  const region = exactMatch || matchingRegions[0];
   const preparers = await prisma.companyPreparer.findMany({
     where: { active: true },
     select: { id: true, name: true },
@@ -226,20 +226,22 @@ export async function executeCreatePrepShoppingDraft(
 }
 
 export async function executeCreateOrder(args: any, context?: { telegramUserId?: string; chatId?: string; botToken?: string }) {
-  const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
+  const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, orderNoteTime } = args;
 
   const phone = (customerPhone || "").trim() || "غير محدد";
   let numPrice = Number(price) || 0;
 
-  // 1. البحث عن كافة المحلات المتطابقة أو المتشابهة مع الكلمة المكتوبة
+  // 1. فحص المحلات المتشابهة
   const matchingShops = await prisma.shop.findMany({
     where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true },
     orderBy: { name: "asc" }
   });
 
-  // إذا وجدنا أكثر من محل متشابه، نعرض أزرار المحلات أولاً للمدير!
-  if (matchingShops.length > 1 && context?.chatId && context?.telegramUserId) {
+  const exactShopMatch = matchingShops.find(s => s.name.trim().toLowerCase() === (shopQuery || "").trim().toLowerCase());
+  const shouldAskShop = !exactShopMatch || matchingShops.length > 1;
+
+  if (shouldAskShop && matchingShops.length > 0 && context?.chatId && context?.telegramUserId) {
     const payload = {
       customerPhone: phone,
       customerName: customerName || "",
@@ -279,18 +281,18 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `❓ **عثرنا على أكثر من محل متشابه لـ "${shopQuery}":**\n\nيرجى اختيار اسم المحل المطلوب بالنقر على الزر أدناه ⬇️`,
+      `❓ **عثرنا على أكثر من خيار للمحل المتطابق مع "${shopQuery}":**\n\nيرجى اختيار اسم المحل المطلوب بالنقر على الزر أدناه ⬇️`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
 
-    return `⏳ **عثرنا على أكثر من محل متشابه لـ "${shopQuery}".** يرجى اختيار المحل المطلوب من الأزرار أدناه ⬇️`;
+    return `⏳ **اختر اسم المحل المطلوب من الأزرار أدناه ⬇️**`;
   }
 
-  const shop = matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
+  const shop = exactShopMatch || matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
-  // 2. البحث عن المناطق المتشابهة
+  // 2. فحص المناطق المتشابهة
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
@@ -303,7 +305,10 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     if (ranked.length > 0) matchingRegions = ranked;
   }
 
-  if (matchingRegions.length > 1 && context?.chatId && context?.telegramUserId) {
+  const exactRegionMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
+  const shouldAskRegion = !exactRegionMatch || matchingRegions.length > 1;
+
+  if (shouldAskRegion && matchingRegions.length > 0 && context?.chatId && context?.telegramUserId) {
     const payload = {
       shopId: shop.id,
       shopName: shop.name,
@@ -333,12 +338,12 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
     for (let i = 0; i < matchingRegions.length; i += 2) {
       const row: any[] = [];
       const r1 = matchingRegions[i];
-      const p1 = safeGetDeliveryPrice(r1);
-      row.push({ text: `📍 ${r1.name} (${p1})`, callback_data: `rgs:${r1.id}` });
+      const p1 = getRegionStrictDeliveryPrice(r1);
+      row.push({ text: `📍 ${r1.name} (توصيل: ${p1})`, callback_data: `rgs:${r1.id}` });
       if (i + 1 < matchingRegions.length) {
         const r2 = matchingRegions[i + 1];
-        const p2 = safeGetDeliveryPrice(r2);
-        row.push({ text: `📍 ${r2.name} (${p2})`, callback_data: `rgs:${r2.id}` });
+        const p2 = getRegionStrictDeliveryPrice(r2);
+        row.push({ text: `📍 ${r2.name} (توصيل: ${p2})`, callback_data: `rgs:${r2.id}` });
       }
       inlineKeyboard.push(row);
     }
@@ -346,17 +351,17 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
 
     await sendTelegramMessageWithKeyboardToChat(
       context.chatId,
-      `🏪 **المحل:** ${shop.name}\n❓ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}":**\n\nيرجى النقر على زر المنطقة الدقيقة أدناه لتثبيت الطلب:`,
+      `🏪 **المحل:** ${shop.name}\n❓ **اختر المنطقة الدقيقة من الأزرار أدناه (مع تسعيرة التوصيل الثابتة لكل منطقة):**`,
       { inline_keyboard: inlineKeyboard },
       context.botToken
     ).catch(() => {});
 
-    return `⏳ **عثرنا على أكثر من منطقة متشابهة لـ "${regionQuery}".** يرجى النقر على زر المنطقة المطلوب تثبيتها أدناه ⬇️`;
+    return `⏳ **اختر المنطقة المطلوب التوصيل لها من الأزرار أدناه ⬇️**`;
   }
 
-  const region = matchingRegions[0];
-  const finalDeliveryPrice = safeGetDeliveryPrice(region, deliveryPrice);
-  const totalAmount = numPrice + Number(finalDeliveryPrice);
+  const region = exactRegionMatch || matchingRegions[0];
+  const finalDeliveryPrice = getRegionStrictDeliveryPrice(region);
+  const totalAmount = numPrice + finalDeliveryPrice;
 
   const order = await prisma.order.create({
     data: {
@@ -384,7 +389,7 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   notifyTelegramNewOrder(order.id).catch(() => {});
   pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`;
+  return `✅ **تم إضافة الطلب بالنظام بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${phone}\n- **سعر التوصيل الثابت:** ${finalDeliveryPrice}\n- **المبلغ الإجمالي:** ${totalAmount}`;
 }
 
 async function executeAssignCourier(args: any) {
@@ -512,6 +517,7 @@ export async function processAdminAiMessage(
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
+ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
 إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
 إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
 إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
