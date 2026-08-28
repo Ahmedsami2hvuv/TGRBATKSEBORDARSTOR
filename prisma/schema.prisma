@@ -327,6 +327,7 @@ model Courier {
   hideShopInfoOnPickup        Boolean                  @default(true)
   rotate180Photos             Boolean                  @default(false)
   guidedDeliverySteps         Boolean                  @default(false)
+  useFullBlockView            Boolean                  @default(false)
   orderViewTheme              String                   @default("default")
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)

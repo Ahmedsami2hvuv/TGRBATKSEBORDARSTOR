@@ -20,6 +20,7 @@ type CourierSettings = {
   hideShopInfoOnPickup: boolean;
   rotate180Photos: boolean;
   guidedDeliverySteps: boolean;
+  useFullBlockView: boolean;
   orderViewTheme?: string;
 };
 
@@ -171,6 +172,12 @@ export default function CourierSettingsClient({
       icon: "🗺️",
       title: "نظام خطوات الاستلام والتوصيل التوجيهي",
       desc: "مخصص للمندوبين الجدد لمنع الخلط بين موقع المحل (الاستلام) وموقع الزبون (التسليم) وإبراز العناوين واللوكيشن خطوة بخطوة",
+    },
+    {
+      key: "useFullBlockView" as const,
+      icon: "📦",
+      title: "عرض الطلبات على شكل بلوك كامل بدلاً من جدول أفقي",
+      desc: "عرض جميع تفاصيل الطلبية بداخل بطاقة/بلوك واحد متكامل ومباشر دون الحاجة للسحب أفقياً لليسار (متزامن عبر جميع أجهزتك)",
     },
   ];
 

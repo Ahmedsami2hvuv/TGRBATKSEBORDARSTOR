@@ -166,6 +166,164 @@ function buildOrderDetailHref(
 const initialBulk: MandoubBulkStatusState = {};
 const initialCash: MandoubCashState = {};
 
+function MandoubFullBlockCardGrid({
+  rows,
+  onOpenRow,
+  setPickupOrder,
+  setDeliveryOrder,
+  icons,
+}: {
+  rows: OrderTableRowData[];
+  onOpenRow: (id: string) => void;
+  setPickupOrder: (row: any) => void;
+  setDeliveryOrder: (row: any) => void;
+  icons: GlobalIconsConfig | null;
+}) {
+  if (!rows.length) {
+    return (
+      <div className="py-12 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        لا توجد طلبات للعرض في هذه القائمة
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12">
+      {rows.map((o) => {
+        const isAssigned = o.orderStatus === "assigned";
+        const isDelivering = o.orderStatus === "delivering";
+        const isDelivered = o.orderStatus === "delivered";
+
+        return (
+          <div
+            key={o.id}
+            onClick={() => onOpenRow(o.id)}
+            className="group relative flex flex-col justify-between rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-md hover:shadow-xl transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden"
+          >
+            {/* شريط الإضاءة الملون الجانبي للحالة */}
+            <div
+              className={`absolute top-0 right-0 bottom-0 w-2.5 ${
+                isAssigned
+                  ? "bg-amber-500"
+                  : isDelivering
+                  ? "bg-sky-500"
+                  : "bg-emerald-500"
+              }`}
+            />
+
+            <div>
+              {/* هيدر البلوك العلوي */}
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3 pr-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-lg font-black text-slate-900 dark:text-white">
+                    #{o.shortId}
+                  </span>
+                  <span
+                    className={`rounded-xl px-3 py-1 text-xs font-black shadow-xs ${orderStatusBadgeClass(
+                      o.orderStatus
+                    )}`}
+                  >
+                    {STATUS_AR[o.orderStatus] ?? o.orderStatus}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  {isAssigned && (
+                    <button
+                      type="button"
+                      onClick={() => setPickupOrder(o)}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition"
+                    >
+                      استلام 📦
+                    </button>
+                  )}
+                  {isDelivering && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryOrder(o)}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition"
+                    >
+                      تسليم 🚀
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* شبكة البلوك الكامل لتفاصيل المحل والزبون */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pr-2">
+                {/* المحل (المرسل) */}
+                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    المحل (المرسل)
+                  </p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1">
+                    <span>🏬</span> {o.shopName}
+                  </p>
+                  {o.shopRegionName && (
+                    <p className="text-slate-500 font-bold flex items-center gap-1">
+                      <span>📍</span> {o.shopRegionName}
+                    </p>
+                  )}
+                </div>
+
+                {/* الزبون (المستلم) */}
+                <div className="bg-sky-50/70 dark:bg-sky-950/30 rounded-2xl p-3 border border-sky-100 dark:border-sky-900/40 space-y-1">
+                  <p className="text-[10px] font-black text-sky-600 dark:text-sky-400 uppercase tracking-wider">
+                    الزبون (المستلم)
+                  </p>
+                  <p className="text-sm font-black text-sky-950 dark:text-sky-200 flex items-center gap-1">
+                    <span>👤</span> {o.customerName || "—"}
+                  </p>
+                  <p className="text-sky-800 dark:text-sky-300 font-extrabold flex items-center gap-1">
+                    <span>📍</span> {o.regionLine}
+                  </p>
+                  {o.phoneLine && (
+                    <p className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                      📞 {o.phoneLine}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* سطر المبالغ والتفاصيل المالية */}
+              <div className="mt-3 grid grid-cols-3 gap-2 bg-slate-100/70 dark:bg-slate-800/80 rounded-2xl p-2.5 text-center pr-2">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500">نوع البضاعة</p>
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
+                    {o.goodsTypeLine || "عام"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500">التوصيل</p>
+                  <p className="text-xs font-black text-sky-600 dark:text-sky-400">
+                    {o.deliveryPriceLine}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500">السعر الإجمالي</p>
+                  <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                    {o.priceLine}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* فوتر البلوك (الوقت والتاريخ) */}
+            <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 pr-2">
+              <span className="flex items-center gap-1">
+                <span>📅</span> {o.dateLine}
+              </span>
+              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                <span>⏰</span> {o.orderNoteTime || o.timeLine || "فوري"}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MandoubOrderTable({
   rows,
   auth,
@@ -554,103 +712,119 @@ export function MandoubOrderTable({
         </div>
       )}
 
-      <UnifiedOrderListTable
-        rows={tableRowsToRender}
-        colCount={9}
-        showSelectColumn={showQuickSelect}
-        isRowSelectable={() => true}
-        isSelected={(id) => selectedIds.has(id)}
-        allSelected={allSelected}
-        onToggleAll={toggleAll}
-        onToggleOne={toggleOne}
-        onOpenRow={(id) => {
-          if (isSortingMode) return;
-          setActiveOrderId(id);
-          const p = new URLSearchParams(window.location.search);
-          p.set("activeOrderId", id);
-          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
-        }}
-        onRowReorder={isSortingMode ? handleRowReorder : undefined}
-        canDragRow={(o) => o.orderStatus !== "delivered"}
-        canDropOnRow={(o) => o.orderStatus !== "delivered"}
-        selectAllTitle="تحديد الكل"
-        selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
-        selectedTitle="تحديد"
-        selectedAriaPrefix="تحديد الطلب"
-        showStatusDotInSelectCol={false}
-        renderOrderIdBadge={(o) => {
-          if (!isSortingMode || o.orderStatus === "delivered") return null;
-          return (
-            <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => moveRow(o.id, 'up')}
-                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                title="تحريك للأعلى"
-              >
-                <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
-              </button>
+      {courierSettings?.useFullBlockView && !isSortingMode ? (
+        <MandoubFullBlockCardGrid
+          rows={tableRowsToRender}
+          onOpenRow={(id) => {
+            if (isSortingMode) return;
+            setActiveOrderId(id);
+            const p = new URLSearchParams(window.location.search);
+            p.set("activeOrderId", id);
+            window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
+          }}
+          setPickupOrder={(o) => setPickupOrder(o)}
+          setDeliveryOrder={(o) => setDeliveryOrder(o)}
+          icons={icons}
+        />
+      ) : (
+        <UnifiedOrderListTable
+          rows={tableRowsToRender}
+          colCount={9}
+          showSelectColumn={showQuickSelect}
+          isRowSelectable={() => true}
+          isSelected={(id) => selectedIds.has(id)}
+          allSelected={allSelected}
+          onToggleAll={toggleAll}
+          onToggleOne={toggleOne}
+          onOpenRow={(id) => {
+            if (isSortingMode) return;
+            setActiveOrderId(id);
+            const p = new URLSearchParams(window.location.search);
+            p.set("activeOrderId", id);
+            window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
+          }}
+          onRowReorder={isSortingMode ? handleRowReorder : undefined}
+          canDragRow={(o) => o.orderStatus !== "delivered"}
+          canDropOnRow={(o) => o.orderStatus !== "delivered"}
+          selectAllTitle="تحديد الكل"
+          selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
+          selectedTitle="تحديد"
+          selectedAriaPrefix="تحديد الطلب"
+          showStatusDotInSelectCol={false}
+          renderOrderIdBadge={(o) => {
+            if (!isSortingMode || o.orderStatus === "delivered") return null;
+            return (
+              <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => moveRow(o.id, 'up')}
+                  className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                  title="تحريك للأعلى"
+                >
+                  <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
+                </button>
 
-              <div
-                className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md group/handle"
-                title="اضغط واسحب للترتيب"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                  <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
-                  <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
-                  <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
-                  <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
-                  <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
-                  <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
-                </svg>
+                <div
+                  className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md group/handle"
+                  title="اضغط واسحب للترتيب"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
+                    <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
+                    <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
+                  </svg>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => moveRow(o.id, 'down')}
+                  className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                  title="تحريك للأسفل"
+                >
+                  <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => moveRow(o.id, 'down')}
-                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                title="تحريك للأسفل"
-              >
-                <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
-              </button>
-            </div>
-          );
-        }}
-        renderBelowOrderId={(o) => {
-          if (isSortingMode) return null;
-          if (o.orderStatus === "assigned") {
-            return (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPickupOrder(o);
-                }}
-                className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 border-2 border-amber-300 text-white font-black text-xs shadow-md transition active:scale-90"
-                title="استلام الشحنة"
-              >
-                استلام
-              </button>
             );
-          }
-          if (o.orderStatus === "delivering") {
-            return (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeliveryOrder(o);
-                }}
-                className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 border-2 border-emerald-400 text-white font-black text-xs shadow-md transition active:scale-90"
-                title="تسليم الشحنة"
-              >
-                تسليم
-              </button>
-            );
-          }
-          return null;
-        }}
-      />
+          }}
+          renderBelowOrderId={(o) => {
+            if (isSortingMode) return null;
+            if (o.orderStatus === "assigned") {
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPickupOrder(o);
+                  }}
+                  className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 border-2 border-amber-300 text-white font-black text-xs shadow-md transition active:scale-90"
+                  title="استلام الشحنة"
+                >
+                  استلام
+                </button>
+              );
+            }
+            if (o.orderStatus === "delivering") {
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeliveryOrder(o);
+                  }}
+                  className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 border-2 border-emerald-400 text-white font-black text-xs shadow-md transition active:scale-90"
+                  title="تسليم الشحنة"
+                >
+                  تسليم
+                </button>
+              );
+            }
+            return null;
+          }}
+        />
+      )}
 
       {pickupOrder &&
         createPortal(
