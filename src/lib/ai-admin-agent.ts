@@ -75,15 +75,14 @@ async function findMatchingShopByQuery(queryText: string) {
 function extractPrepItemsFromText(text: string): string {
   if (!text) return "مواد تجهيز ومشتريات";
 
-  // استخراج النص بعد كلمات التجهيز أو استخراج السطور التي تحتوي مواد
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const itemsLines = lines.filter(l => !l.startsWith("طلب") && !l.includes("077") && !l.includes("078") && !l.includes("075"));
+  const itemsLines = lines.filter(l => !l.startsWith("طلب") && !l.includes("077") && !l.includes("078") && !l.includes("075") && !l.match(/^7\d{9}/));
 
   if (itemsLines.length > 0) {
     return itemsLines.join("\n");
   }
 
-  const cleanText = text.replace(/.*تجهيز|.*منطقة|.*هاتف|07\d{9}/gi, "").trim();
+  const cleanText = text.replace(/.*تجهيز|.*منطقة|.*هاتف|07\d{9}|7\d{9}/gi, "").trim();
   return cleanText || text;
 }
 
@@ -127,20 +126,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // ==========================================
   // 1. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS & ORDERS)
   // ==========================================
-  if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات")) {
+  if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
     const extractedItems = extractPrepItemsFromText(rawText);
-    const phoneMatch = rawText.match(/07\d{9}/);
+    const phoneMatch = rawText.match(/07\d{9}|7\d{9}/);
     const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
 
-    // جلب المنطقة المطابقة
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase())) || allRegions[0];
 
-    // جلب المجهز إن وجد في الكلام
     const allPreparers = await prisma.companyPreparer.findMany();
     const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
 
-    // 1. إنشاء مسودة التجهيز مع حفظ كافة المنتجات في rawListText
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
         preparerId: assignedPreparer ? assignedPreparer.id : null,
@@ -166,68 +162,22 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
-  // ==========================================
-  if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
-    if (operation === "create" || rawText.includes("ضِف مندوب") || rawText.includes("إضافة مندوب")) {
-      const name = targetIdOrName || rawText.replace(/.*مندوب|.*كابتن|إضافة|جديد/gi, "").trim() || "مندوب جديد";
-      const phoneMatch = rawText.match(/\d{10,11}/);
-      const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
-
-      const courier = await prisma.courier.create({
-        data: { name, phone, active: true }
-      });
-      return { reply: `✅ **تم إضافة وتأكيد المندوب الجديد (${courier.name}) بالنظام!**\n- الهاتف: ${courier.phone}` };
-    }
-
-    if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
-      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
-      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
-
-      const courier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
-      });
-
-      if (courier) {
-        await prisma.courier.update({
-          where: { id: courier.id },
-          data: { active: activeState }
-        });
-        const statusMsg = activeState ? "تفعيل وإظهار" : "تعطيل وإخفاء";
-        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح!**` };
-      }
-    }
-
-    if (operation === "zero" || rawText.includes("صفر حساب المندوب")) {
-      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|صفر|تصفير|حساب|مستحقات/gi, "").trim();
-      const courier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
-      });
-
-      if (courier) {
-        await prisma.courier.update({
-          where: { id: courier.id },
-          data: { lastSalaryWithdrawalAt: new Date() }
-        });
-        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل!**` };
-      }
-    }
-  }
-
-  // ==========================================
   // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات (SMART MULTI-FILTER ORDER FINDER)
   // ==========================================
-  const allNumbers = (rawText.match(/\d+/g) || []).map(Number);
+  // استبعاد أرقام الهواتف كلياً (أي رقم يزيد عن 6 أرقام أو يبدأ بـ 07 / 77 / 78 / 75)
+  const allNumbers = (rawText.match(/\d+/g) || [])
+    .map(Number)
+    .filter(n => n > 0 && n < 100000); // إبقاء الأرقام الخاصة بالطلبات والأسعار الحقيقية فقط
   
   let orderNumber: number | null = null;
   let targetNewPrice: number | null = null;
 
   // أ) استخراج رقم الطلب إذا ذكر صراحة
-  const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d+)/i);
+  const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d{1,5})/i);
   if (orderNumMatch) {
     orderNumber = Number(orderNumMatch[1]);
   } else if (allNumbers.length > 0) {
-    const candidateNum = allNumbers.find(n => n >= 100);
+    const candidateNum = allNumbers.find(n => n >= 100 && n <= 99999);
     if (candidateNum) orderNumber = candidateNum;
   }
 
@@ -245,7 +195,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   let existingOrder: any = null;
 
   // 1. البحث الصريح برقم الطلب
-  if (orderNumber) {
+  if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
       include: { shop: true, customerRegion: true, courier: true }
