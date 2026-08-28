@@ -737,9 +737,11 @@ export function MandoubOrderTable({
       {activeOrderData &&
         createPortal(
           <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
-            <div className="sticky top-0 z-[120] flex items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 px-3 py-2.5 shadow-md backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {/* الهيدر العلوي المثبت للطلب */}
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm">
+              <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveOrderId(null);
                     const p = new URLSearchParams(window.location.search);
@@ -747,26 +749,23 @@ export function MandoubOrderTable({
                     const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
                     window.history.pushState({}, "", newPath);
                   }}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 active:scale-95 transition-all"
-                  title="إغلاق"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white font-black shadow-lg border-2 border-white dark:border-slate-800 active:scale-90 transition-all cursor-pointer"
+                  title="إغلاق النافذة"
                 >
-                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+                  <span className="text-lg font-black leading-none">✕</span>
                 </button>
+
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-black text-slate-900 dark:text-white">رقم الطلب #{activeOrderData.shortId}</span>
+                    <span className="text-base font-black text-slate-900 dark:text-white">#{activeOrderData.shortId}</span>
                     <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${orderStatusBadgeClass(activeOrderData.orderStatus)}`}>
                       {STATUS_AR[activeOrderData.orderStatus] ?? activeOrderData.orderStatus}
                     </span>
                     <MandoubOrderDetailActions closeHref="#" orderId={activeOrderData.id} />
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 flex-wrap">
-                    <span className="text-slate-700 dark:text-slate-300">{activeOrderData.shopName}</span>
                     {activeOrderData.createdAt && (
-                      <>
-                        <span>•</span>
-                        <span className="text-sky-700 dark:text-sky-400">📅 {formatBaghdadDateTime(activeOrderData.createdAt)}</span>
-                      </>
+                      <span className="text-sky-700 dark:text-sky-400">📅 {formatBaghdadDateTime(activeOrderData.createdAt)}</span>
                     )}
                     <span>•</span>
                     <span className="text-rose-700 dark:text-rose-400">⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}</span>
