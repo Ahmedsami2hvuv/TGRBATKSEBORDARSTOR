@@ -95,6 +95,11 @@ type OrderViewModel = {
   submittedBy: { name: string; phone: string } | null;
   submittedByCompanyPreparer: { name: string; phone: string } | null;
   preparerShoppingJson: any;
+  customerLocationSetByCourierAt?: string | Date | null;
+  secondCustomerAlternatePhone?: string | null;
+  customerPhone2?: string | null;
+  totalPrice?: number | string | null;
+  secondCustomerRegionId?: string | null;
 };
 
 export function OrderViewContent({
@@ -120,6 +125,7 @@ export function OrderViewContent({
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
 
   // حالات مودال تغيير المندوب المباشر
   const [showAssignCourierModal, setShowAssignCourierModal] = useState(false);
@@ -374,48 +380,260 @@ export function OrderViewContent({
           />
         )}
         
-        {/* --- SENDER / SHOP --- */}
-        <div className={gridInfoPhoto}>
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-emerald-800">
-              {order.routeMode === "double" ? "المرسل (الوجهة الأولى)" : "المحل"}
+        {/* --- SENDER / SHOP (كارت المحل - المرسل بتصميم المندوب الموحد) --- */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#003399] p-4 shadow-xl mb-4 relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
+            <div className="flex-1">
+              {!isDoubleRoute && (
+                <button
+                  type="button"
+                  onClick={() => setIsShopCardExpanded(!isShopCardExpanded)}
+                  className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-700 text-[11px] font-black text-blue-900 dark:text-blue-200 px-2.5 py-1 rounded-xl shadow-xs transition"
+                >
+                  <span>{isShopCardExpanded ? "⬆️ طي تفاصيل المحل" : "🔽 عرض تفاصيل المحل"}</span>
+                </button>
+              )}
+            </div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <span>{order.routeMode === "double" ? "المرسل (الوجهة الأولى)" : "المحل (المرسل)"}</span>
+              <div className="h-9 w-9 rounded-full bg-[#003399] flex items-center justify-center text-white shadow-md text-base font-black">
+                🏢
+              </div>
             </h3>
-            {order.routeMode === "double" ? (
-              <>
-                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="min-w-0">
-                    <span className={compactPhoneText}>{order.customerPhone}</span>
+          </div>
+
+          <div className={gridInfoPhoto}>
+            <div className="space-y-2">
+              {order.routeMode === "double" ? (
+                <>
+                  <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                    <div className="min-w-0">
+                      <span className={compactPhoneText}>{order.customerPhone}</span>
+                    </div>
+                    {order.alternatePhone && (
+                      <div className="mt-2 min-w-0 border-t border-emerald-100 pt-2">
+                        <span className={compactPhoneText}>{order.alternatePhone}</span>
+                      </div>
+                    )}
                   </div>
-                  {order.alternatePhone && (
-                    <div className="mt-2 min-w-0 border-t border-emerald-100 pt-2">
-                      <span className={compactPhoneText}>{order.alternatePhone}</span>
+                  <OtherRegionsCustomerDetails 
+                    phone={order.customerPhone} 
+                    currentRegionId={order.customerRegionId} 
+                    currentRegionName={order.customerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={false}
+                  />
+                  <InlineLandmarkEditor
+                    orderId={order.id}
+                    initialLandmark={order.customerLandmark}
+                    isSecondDestination={false}
+                    label="📍 دالة:"
+                  />
+                  <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                    💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {order.customerLocationUrl?.trim() ? (
+                      <div className="space-y-1">
+                        <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المرسل ↗</a>
+                        <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <AdminCustomerLocationQuick 
+                          orderId={order.id} 
+                          customerPhone={order.customerPhone}
+                          customerPhone2={order.customerPhone2 || undefined}
+                          shopPhone={order.shop?.phone || undefined}
+                          orderStatus={order.status}
+                          templateVars={{
+                            clientshop: order.shop?.name || "",
+                            city: order.shop?.region?.name || "",
+                            total_price: String(order.totalPrice || ""),
+                            delivery: order.courier?.name || "",
+                            location_url: order.customerLocationUrl || "",
+                            landmark: order.customerLandmark || "",
+                            order_number: String(order.orderNumber || ""),
+                            customer_phone: order.customerPhone || "",
+                            customer_phone2: order.customerPhone2 || "",
+                            shop_phone: order.shop?.phone || "",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {isSystemAdminOrder ? <p className="text-2xl sm:text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-end gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                        <span className="font-black text-slate-800 dark:text-slate-100">{order.shop.name}</span>
+                        <span className="text-slate-500">🏢</span>
+                      </div>
+                      {order.shop.region?.name && (
+                        <div className="flex items-center justify-end gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                          <span className="font-black text-slate-800 dark:text-slate-100">{order.shop.region.name}</span>
+                          <span className="text-slate-500">📍</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-end gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold shadow-sm">
+                        <span className="font-black text-sky-900 dark:text-sky-300">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span>
+                        <span className="text-slate-500">👤 المسؤول:</span>
+                      </div>
+                      <div className="pt-1">
+                        {order.shopLocationUrl?.trim() ? (
+                          <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#0033FF] hover:bg-blue-700 px-4 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-md">
+                            <span>فتح موقع المحل</span>
+                            <span>📍</span>
+                          </a>
+                        ) : (
+                          <div className="w-full p-2 bg-amber-50 border border-amber-100 rounded-xl text-center text-[11px] font-bold text-amber-800">
+                            ⚠️ لا يوجد موقع جغرافي للمحل
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                <OtherRegionsCustomerDetails 
-                  phone={order.customerPhone} 
-                  currentRegionId={order.customerRegionId} 
-                  currentRegionName={order.customerRegion?.name}
-                  orderId={order.id}
-                  isSecondDestination={false}
-                />
-                <InlineLandmarkEditor
-                  orderId={order.id}
-                  initialLandmark={order.customerLandmark}
-                  isSecondDestination={false}
-                  label="📍 دالة:"
-                />
-                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                  💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
-                </p>
-                <div className="mt-2 space-y-2">
-                  {order.customerLocationUrl?.trim() ? (
-                    <div className="space-y-1">
-                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المرسل ↗</a>
-                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                  }
+                </>
+              )}
+            </div>
+            <div className="self-start">
+              {order.routeMode === "double" ? (
+                <>
+                  {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                  <div className="mt-2 space-y-2">
+                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                    <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
+                  </div>
+                </>
+              ) : (
+                !isSystemAdminOrder && (
+                  <>
+                    {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgShopDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                    <div className="mt-2 space-y-2">
+                      <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
+                      <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
                     </div>
-                  ) : (
+                  </>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* --- RECEIVER / CUSTOMER (كارت الزبون - المستلم بتصميم المندوب الموحد) --- */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-emerald-600 p-4 shadow-xl mb-4 relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 mr-auto">
+              <span>{order.routeMode === "double" ? "المستلم (الوجهة الثانية)" : "الزبون (المستلم)"}</span>
+              <div className="h-9 w-9 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-md text-base font-black">
+                👤
+              </div>
+            </h3>
+          </div>
+
+          <div className={gridInfoPhoto}>
+            <div className="space-y-2">
+              {order.routeMode === "double" ? (
+                <>
+                  <p className="text-slate-800 font-bold">{order.secondCustomerRegion?.name ?? "—"}</p>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                    <div className="min-w-0">
+                      <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
+                    </div>
+                  </div>
+                  <OtherRegionsCustomerDetails 
+                    phone={order.secondCustomerPhone || order.customerPhone} 
+                    currentRegionId={order.secondCustomerRegionId} 
+                    currentRegionName={order.secondCustomerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={true}
+                  />
+                  <InlineLandmarkEditor
+                    orderId={order.id}
+                    initialLandmark={order.secondCustomerLandmark}
+                    isSecondDestination={true}
+                    label="📍 دالة:"
+                  />
+                  <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                    💡 {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {order.secondCustomerLocationUrl?.trim() ? (
+                      <div className="space-y-1">
+                        <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المستلم ↗</a>
+                        <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <AdminCustomerLocationQuick 
+                          orderId={order.id} 
+                          target="second" 
+                          customerPhone={order.secondCustomerPhone || order.customerPhone}
+                          customerPhone2={order.customerPhone2 || undefined}
+                          shopPhone={order.shop?.phone || undefined}
+                          orderStatus={order.status}
+                          templateVars={{
+                            clientshop: order.shop?.name || "",
+                            city: order.secondCustomerRegion?.name || "",
+                            total_price: String(order.totalPrice || ""),
+                            delivery: order.courier?.name || "",
+                            location_url: order.secondCustomerLocationUrl || "",
+                            landmark: order.secondCustomerLandmark || "",
+                            order_number: String(order.orderNumber || ""),
+                            customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                            customer_phone2: order.customerPhone2 || "",
+                            shop_phone: order.shop?.phone || "",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl px-3 py-2 text-xs font-black text-emerald-900 dark:text-emerald-200">
+                    <span>📍 المنطقة:</span>
+                    <span>{order.customerRegion?.name ?? "غير محددة"}</span>
+                  </div>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                    <div className="min-w-0">
+                      <span className={compactPhoneText}>{order.customerPhone}</span>
+                    </div>
+                    {(order.alternatePhone || order.secondCustomerPhone) && (
+                      <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
+                        {order.alternatePhone && (
+                          <div className="min-w-0">
+                            <span className={compactPhoneText}>{order.alternatePhone}</span>
+                          </div>
+                        )}
+                        {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
+                          <div className="min-w-0">
+                            <span className={compactPhoneText}>{order.secondCustomerPhone}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <OtherRegionsCustomerDetails 
+                    phone={order.customerPhone} 
+                    currentRegionId={order.customerRegionId} 
+                    currentRegionName={order.customerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={false}
+                  />
+                  <InlineLandmarkEditor
+                    orderId={order.id}
+                    initialLandmark={order.customerLandmark}
+                    isSecondDestination={false}
+                    label="📍 دالة:"
+                  />
+                  <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                    💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                  </p>
+                  {!order.customerLocationUrl?.trim() && (
                     <div className="mt-2">
                       <AdminCustomerLocationQuick 
                         orderId={order.id} 
@@ -425,7 +643,7 @@ export function OrderViewContent({
                         orderStatus={order.status}
                         templateVars={{
                           clientshop: order.shop?.name || "",
-                          city: order.shop?.region?.name || "",
+                          city: order.customerRegion?.name || "",
                           total_price: String(order.totalPrice || ""),
                           delivery: order.courier?.name || "",
                           location_url: order.customerLocationUrl || "",
@@ -438,228 +656,66 @@ export function OrderViewContent({
                       />
                     </div>
                   )}
-                </div>
-              </>
-            ) : (
-              <>
-                {isSystemAdminOrder ? <p className="text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
-                  <>
-                    <p className="font-bold text-slate-900">{order.shop.name}</p>
-                    {order.shop.region?.name && (
-                      <p className="text-xs font-semibold text-slate-500">{order.shop.region.name}</p>
-                    )}
-                    <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
-                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
-                  </>
-                }
-              </>
-            )}
-          </div>
-          <div className="self-start">
-            {order.routeMode === "double" ? (
-              <>
-                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
-                <div className="mt-2 space-y-2">
-                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
-                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
-                </div>
-              </>
-            ) : (
-              !isSystemAdminOrder && (
+                </>
+              )}
+            </div>
+            <div className="self-start">
+              {order.routeMode === "double" ? (
                 <>
-                  {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgShopDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                   {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor2)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                   <div className="mt-2 space-y-2">
-                    <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
-                    <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
+                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.secondCustomerDoorPhotoUrl} isSecondCustomer />
+                    <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                   </div>
                 </>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* --- RECEIVER / CUSTOMER --- */}
-        <div className={gridInfoPhoto}>
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-emerald-800">
-              {order.routeMode === "double" ? "المستلم (الوجهة الثانية)" : "الزبون"}
-            </h3>
-            {order.routeMode === "double" ? (
-              <>
-                <p className="text-slate-800 font-bold">{order.secondCustomerRegion?.name ?? "—"}</p>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="min-w-0">
-                    <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
+              ) : (
+                <>
+                   {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                  <div className="mt-2 space-y-2">
+                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                    <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
                   </div>
-                </div>
-                <OtherRegionsCustomerDetails 
-                  phone={order.secondCustomerPhone || order.customerPhone} 
-                  currentRegionId={order.secondCustomerRegionId} 
-                  currentRegionName={order.secondCustomerRegion?.name}
-                  orderId={order.id}
-                  isSecondDestination={true}
-                />
-                <InlineLandmarkEditor
-                  orderId={order.id}
-                  initialLandmark={order.secondCustomerLandmark}
-                  isSecondDestination={true}
-                  label="📍 دالة:"
-                />
-                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                  💡 {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
-                </p>
-                <div className="mt-2 space-y-2">
-                  {order.secondCustomerLocationUrl?.trim() ? (
-                    <div className="space-y-1">
-                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center justify-center bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-black text-white rounded-xl shadow-md hover:bg-emerald-700 active:scale-95 transition-all gap-1.5">لوكيشن المستلم ↗</a>
-                      <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
-                    </div>
-                  ) : (
-                    <div className="mt-2">
-                      <AdminCustomerLocationQuick 
-                        orderId={order.id} 
-                        target="second" 
-                        customerPhone={order.secondCustomerPhone || order.customerPhone}
-                        customerPhone2={order.customerPhone2 || undefined}
-                        shopPhone={order.shop?.phone || undefined}
-                        orderStatus={order.status}
-                        templateVars={{
-                          clientshop: order.shop?.name || "",
-                          city: order.secondCustomerRegion?.name || "",
-                          total_price: String(order.totalPrice || ""),
-                          delivery: order.courier?.name || "",
-                          location_url: order.secondCustomerLocationUrl || "",
-                          landmark: order.secondCustomerLandmark || "",
-                          order_number: String(order.orderNumber || ""),
-                          customer_phone: order.secondCustomerPhone || order.customerPhone || "",
-                          customer_phone2: order.customerPhone2 || "",
-                          shop_phone: order.shop?.phone || "",
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="min-w-0">
-                    <span className={compactPhoneText}>{order.customerPhone}</span>
-                  </div>
-                  {(order.alternatePhone || order.secondCustomerPhone) && (
-                    <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
-                      {order.alternatePhone && (
-                        <div className="min-w-0">
-                          <span className={compactPhoneText}>{order.alternatePhone}</span>
-                        </div>
-                      )}
-                      {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
-                        <div className="min-w-0">
-                          <span className={compactPhoneText}>{order.secondCustomerPhone}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <OtherRegionsCustomerDetails 
-                  phone={order.customerPhone} 
-                  currentRegionId={order.customerRegionId} 
-                  currentRegionName={order.customerRegion?.name}
-                  orderId={order.id}
-                  isSecondDestination={false}
-                />
-                <InlineLandmarkEditor
-                  orderId={order.id}
-                  initialLandmark={order.customerLandmark}
-                  isSecondDestination={false}
-                  label="📍 دالة:"
-                />
-                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                  💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
-                </p>
-                {!order.customerLocationUrl?.trim() && (
-                  <div className="mt-2">
-                    <AdminCustomerLocationQuick 
-                      orderId={order.id} 
-                      customerPhone={order.customerPhone}
-                      customerPhone2={order.customerPhone2 || undefined}
-                      shopPhone={order.shop?.phone || undefined}
-                      orderStatus={order.status}
-                      templateVars={{
-                        clientshop: order.shop?.name || "",
-                        city: order.customerRegion?.name || "",
-                        total_price: String(order.totalPrice || ""),
-                        delivery: order.courier?.name || "",
-                        location_url: order.customerLocationUrl || "",
-                        landmark: order.customerLandmark || "",
-                        order_number: String(order.orderNumber || ""),
-                        customer_phone: order.customerPhone || "",
-                        customer_phone2: order.customerPhone2 || "",
-                        shop_phone: order.shop?.phone || "",
-                      }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          <div className="self-start">
-            {order.routeMode === "double" ? (
-              <>
-                 {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor2)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
-                <div className="mt-2 space-y-2">
-                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.secondCustomerDoorPhotoUrl} isSecondCustomer />
-                  <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
-                </div>
-              </>
-            ) : (
-              <>
-                 {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
-                <div className="mt-2 space-y-2">
-                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
-                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* شريط أزرار الزبون الموحد الممتد عبر كامل عرض كرت الزبون (باتجاه السهم الأحمر) */}
-          <div className="col-span-full mt-2 flex flex-nowrap items-center gap-1.5 w-full">
-            {order.customerLocationUrl?.trim() ? (
-              <a
-                href={order.customerLocationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 min-w-0 inline-flex items-center justify-center bg-emerald-600 px-2 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px] text-center"
-              >
-                <span>📍</span>
-                <span className="truncate">لوكيشن الزبون ↗</span>
-              </a>
-            ) : null}
-
-            <div className="flex-1 min-w-0">
-              <AdminCustomerOrderHistory
-                phone={order.customerPhone}
-                regionId={order.customerRegionId}
-                currentOrderId={order.id}
-                customerRegionName={order.customerRegion?.name ?? null}
-                alternatePhone={order.alternatePhone}
-                customerLocationUrl={order.customerLocationUrl}
-                customerLandmark={order.customerLandmark}
-                customerProfileId={order.customerProfileId}
-                buttonText="عرض الطلبات"
-              />
+                </>
+              )}
             </div>
 
-            {order.customerProfileId ? (
-              <Link
-                href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
-                className="flex-1 min-w-0 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
-              >
-                <span className="truncate">ملف الزبون</span>
-              </Link>
-            ) : null}
+            {/* شريط أزرار الزبون الموحد الممتد عبر كامل عرض كرت الزبون */}
+            <div className="col-span-full mt-2 flex flex-nowrap items-center gap-1.5 w-full">
+              {order.customerLocationUrl?.trim() ? (
+                <a
+                  href={order.customerLocationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 min-w-0 inline-flex items-center justify-center bg-emerald-600 px-2 py-2 text-xs font-bold text-white rounded-xl shadow-sm hover:bg-emerald-700 active:scale-95 transition-all gap-1 min-h-[38px] text-center"
+                >
+                  <span>📍</span>
+                  <span className="truncate">لوكيشن الزبون ↗</span>
+                </a>
+              ) : null}
+
+              <div className="flex-1 min-w-0">
+                <AdminCustomerOrderHistory
+                  phone={order.customerPhone}
+                  regionId={order.customerRegionId}
+                  currentOrderId={order.id}
+                  customerRegionName={order.customerRegion?.name ?? null}
+                  alternatePhone={order.alternatePhone}
+                  customerLocationUrl={order.customerLocationUrl}
+                  customerLandmark={order.customerLandmark}
+                  customerProfileId={order.customerProfileId}
+                  buttonText="عرض الطلبات"
+                />
+              </div>
+
+              {order.customerProfileId ? (
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
+                  className="flex-1 min-w-0 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
+                >
+                  <span className="truncate">ملف الزبون</span>
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
 
