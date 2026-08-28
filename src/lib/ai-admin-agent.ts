@@ -569,8 +569,8 @@ export async function processAdminAiMessage(
 
   let lastApiError = "";
 
-  // التدوير السريع واللحظي بين كافة المفاتيح والموديلات المعتمدة المضمونة
-  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+  // الموديلات الفعالة والمستقرة حصراً لحسابات Gemini الـ 5
+  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
 
   for (const keyRecord of allKeys) {
     for (const model of activeModels) {
@@ -624,7 +624,8 @@ export async function processAdminAiMessage(
           }
         } else {
           const errText = await resTools.text().catch(() => "");
-          lastApiError = `[Model: ${model}, Status: ${resTools.status}] ${errText}`;
+          lastApiError = `[Model: ${model}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
+          await markGeminiKeyError(keyRecord.id, resTools.status === 429);
         }
       } catch (err: any) {
         lastApiError = err.message || String(err);
