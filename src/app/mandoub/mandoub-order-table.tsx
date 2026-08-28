@@ -172,12 +172,22 @@ function MandoubFullBlockCardGrid({
   setPickupOrder,
   setDeliveryOrder,
   icons,
+  showSelectColumn,
+  isSelected,
+  onToggleOne,
+  isSortingMode,
+  moveRow,
 }: {
   rows: OrderTableRowData[];
   onOpenRow: (id: string) => void;
   setPickupOrder: (row: any) => void;
   setDeliveryOrder: (row: any) => void;
   icons: GlobalIconsConfig | null;
+  showSelectColumn?: boolean;
+  isSelected?: (id: string) => boolean;
+  onToggleOne?: (id: string) => void;
+  isSortingMode?: boolean;
+  moveRow?: (id: string, direction: "up" | "down") => void;
 }) {
   if (!rows.length) {
     return (
@@ -194,8 +204,12 @@ function MandoubFullBlockCardGrid({
         const isDelivering = o.orderStatus === "delivering";
         const isDelivered = o.orderStatus === "delivered";
 
+        const selected = isSelected ? isSelected(o.id) : false;
+
         // تحديد اللون حسب الحالة (الأحمر بانتظار المندوب، الأصفر مستلم، الأخضر مسلم)
-        const statusBorderColor = isAssigned
+        const statusBorderColor = selected
+          ? "border-indigo-600 ring-4 ring-indigo-500/30 bg-indigo-50/40 dark:bg-indigo-950/20"
+          : isAssigned
           ? "border-red-500 bg-red-50/20 dark:bg-red-950/10"
           : isDelivering
           ? "border-amber-400 bg-amber-50/20 dark:bg-amber-950/10"
@@ -215,15 +229,51 @@ function MandoubFullBlockCardGrid({
         return (
           <div
             key={o.id}
-            onClick={() => onOpenRow(o.id)}
+            onClick={() => {
+              if (showSelectColumn && onToggleOne) {
+                onToggleOne(o.id);
+              } else {
+                onOpenRow(o.id);
+              }
+            }}
             className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden text-xs`}
           >
             <div>
-              {/* هيدر الكارت: الزر على اليمين ورقم الطلب على اليسار */}
+              {/* هيدر الكارت: زر التحديد / الترتيب / الإجراء على اليمين ورقم الطلب على اليسار */}
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
-                {/* اليمين: زر استلام / تسليم أو الشارة */}
+                {/* اليمين: التحديد / الترتيب / الأزرار */}
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                  {isAssigned && (
+                  {showSelectColumn && (
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => onToggleOne && onToggleOne(o.id)}
+                      className="size-5 rounded-md border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  )}
+
+                  {isSortingMode && moveRow && !isDelivered && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveRow(o.id, "up")}
+                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                        title="تحريك للأعلى"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveRow(o.id, "down")}
+                        className="flex size-7 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white font-bold transition shadow-xs"
+                        title="تحريك للأسفل"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
+
+                  {!isSortingMode && isAssigned && (
                     <button
                       type="button"
                       onClick={() => setPickupOrder(o)}
@@ -232,7 +282,7 @@ function MandoubFullBlockCardGrid({
                       <span>استلام</span>
                     </button>
                   )}
-                  {isDelivering && (
+                  {!isSortingMode && isDelivering && (
                     <button
                       type="button"
                       onClick={() => setDeliveryOrder(o)}
@@ -241,12 +291,12 @@ function MandoubFullBlockCardGrid({
                       <span>تسليم</span>
                     </button>
                   )}
-                  {isDelivered && (
+                  {!isSortingMode && isDelivered && (
                     <span className="rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] font-black text-white">
                       تم التسليم
                     </span>
                   )}
-                  {!isAssigned && !isDelivering && !isDelivered && (
+                  {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
                     <span className={`rounded-lg px-2.5 py-0.5 text-[11px] font-black ${statusBadgeBg}`}>
                       {STATUS_AR[o.orderStatus] ?? o.orderStatus}
                     </span>
@@ -685,11 +735,15 @@ export function MandoubOrderTable({
         </div>
       )}
 
-      {courierSettings?.useFullBlockView && !isSortingMode ? (
+      {courierSettings?.useFullBlockView ? (
         <MandoubFullBlockCardGrid
           rows={tableRowsToRender}
           onOpenRow={(id) => {
             if (isSortingMode) return;
+            if (showQuickSelect) {
+              toggleOne(id);
+              return;
+            }
             setActiveOrderId(id);
             const p = new URLSearchParams(window.location.search);
             p.set("activeOrderId", id);
@@ -698,6 +752,11 @@ export function MandoubOrderTable({
           setPickupOrder={(o) => setPickupOrder(o)}
           setDeliveryOrder={(o) => setDeliveryOrder(o)}
           icons={icons}
+          showSelectColumn={showQuickSelect}
+          isSelected={(id) => selectedIds.has(id)}
+          onToggleOne={toggleOne}
+          isSortingMode={isSortingMode}
+          moveRow={moveRow}
         />
       ) : (
         <UnifiedOrderListTable
