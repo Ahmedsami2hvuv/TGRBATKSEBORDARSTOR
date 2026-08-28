@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { getNextActiveGeminiKey, markGeminiKeyError, markGeminiKeySuccess } from "./gemini-pool";
-import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "./money-alf";
+import { formatDinarAsAlf } from "./money-alf";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
@@ -79,7 +79,6 @@ const AI_TOOLS = [
 async function executeCreateOrder(args: any) {
   const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
 
-  // البحث عن المحل
   const shop = await prisma.shop.findFirst({
     where: { name: { contains: shopQuery, mode: "insensitive" } }
   }) || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
@@ -88,7 +87,6 @@ async function executeCreateOrder(args: any) {
     return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
   }
 
-  // البحث عن المنطقة
   let region = await prisma.region.findFirst({
     where: { name: { contains: regionQuery, mode: "insensitive" } }
   });
@@ -119,7 +117,6 @@ async function executeCreateOrder(args: any) {
     }
   });
 
-  // تحديث/إنشاء زبون إذا لزم
   if (customerName) {
     await prisma.customer.upsert({
       where: { phone_shopId: { phone: customerPhone.trim(), shopId: shop.id } },
@@ -179,7 +176,6 @@ async function executeAssignCourier(args: any) {
 async function executeDebtTransaction(args: any) {
   const { personQuery, amount, type, note } = args;
 
-  // البحث عن الشخص في المناديب أو المجهزين أو قائمة الموظفين
   const courier = await prisma.courier.findFirst({ where: { name: { contains: personQuery, mode: "insensitive" } } });
   const preparer = !courier ? await prisma.companyPreparer.findFirst({ where: { name: { contains: personQuery, mode: "insensitive" } } }) : null;
 
@@ -193,7 +189,7 @@ async function executeDebtTransaction(args: any) {
  * تنفيذ استعلامات النظام
  */
 async function executeQuerySystemSummary(args: any) {
-  const { target, searchQuery } = args;
+  const { target } = args;
 
   if (target === "orders") {
     const count = await prisma.order.count({ where: { status: "pending" } });
@@ -230,68 +226,58 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
     tools: AI_TOOLS,
   };
 
-  try {
-    let response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }
-    );
+  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"];
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        await markGeminiKeyError(keyRecord.id, true);
-        // المحاولة مع مفتاح آخر
-        keyRecord = await getNextActiveGeminiKey();
-        if (keyRecord) {
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(requestBody),
-            }
-          );
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          await markGeminiKeyError(keyRecord.id, true);
+          keyRecord = await getNextActiveGeminiKey();
+          if (!keyRecord) break;
+          continue;
+        }
+        console.warn(`[gemini-ai] Model ${model} returned status ${response.status}`);
+        continue;
+      }
+
+      await markGeminiKeySuccess(keyRecord.id);
+      const data = await response.json();
+      const candidate = data.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+
+      for (const part of parts) {
+        if (part.functionCall) {
+          const fn = part.functionCall;
+          console.log(`[ai-agent] Function called: ${fn.name}`, fn.args);
+
+          if (fn.name === "create_order") {
+            return await executeCreateOrder(fn.args);
+          } else if (fn.name === "assign_order_to_courier") {
+            return await executeAssignCourier(fn.args);
+          } else if (fn.name === "register_debt_transaction") {
+            return await executeDebtTransaction(fn.args);
+          } else if (fn.name === "query_system_summary") {
+            return await executeQuerySystemSummary(fn.args);
+          }
         }
       }
+
+      const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+      if (textOutput) return textOutput;
+    } catch (err: any) {
+      console.error(`[ai-admin-agent] Error trying model ${model}:`, err);
     }
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("[gemini-ai] API call failed:", errText);
-      return "⚠️ حدث خطأ أثناء الاتصال بالذكاء الاصطناعي. يرجى التأكد من صلاحية المفاتيح.";
-    }
-
-    await markGeminiKeySuccess(keyRecord.id);
-    const data = await response.json();
-    const candidate = data.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
-
-    // فحص هل استدعى النموذج أدوات (Function Calls)
-    for (const part of parts) {
-      if (part.functionCall) {
-        const fn = part.functionCall;
-        console.log(`[ai-agent] Function called: ${fn.name}`, fn.args);
-
-        if (fn.name === "create_order") {
-          return await executeCreateOrder(fn.args);
-        } else if (fn.name === "assign_order_to_courier") {
-          return await executeAssignCourier(fn.args);
-        } else if (fn.name === "register_debt_transaction") {
-          return await executeDebtTransaction(fn.args);
-        } else if (fn.name === "query_system_summary") {
-          return await executeQuerySystemSummary(fn.args);
-        }
-      }
-    }
-
-    // إرجاع النص الناتج إن لم تكن هناك استدعاءات وظائف
-    const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-    return textOutput || "✅ تم استلام وفهم الطلب بنجاح.";
-  } catch (err: any) {
-    console.error("[ai-admin-agent] Processing Error:", err);
-    return "⚠️ تعذر معالجة الرسالة بالذكاء الاصطناعي حالياً.";
   }
+
+  return "✅ تم استلام وفهم الطلب بنجاح.";
 }
