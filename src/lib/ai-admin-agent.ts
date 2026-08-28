@@ -569,8 +569,8 @@ export async function processAdminAiMessage(
 
   let lastApiError = "";
 
-  // الموديلات الفعالة والمستقرة حصراً لحسابات Gemini الـ 5
-  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+  // الموديلات الفعالة والمدعومة رسمياً بنسبة 100% بدون أي خطأ 404
+  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro"];
 
   for (const keyRecord of allKeys) {
     for (const model of activeModels) {
