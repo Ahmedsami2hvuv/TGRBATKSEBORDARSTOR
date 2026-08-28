@@ -691,16 +691,11 @@ export function PickupMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-green w-full max-w-[210px] h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <div className="flex items-baseline gap-1 text-xl sm:text-2xl font-black drop-shadow-md">
-                  <span>{remainingAlfHint}</span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90">د.ع</span>
-                </div>
-                <span className="text-xs font-black text-emerald-100 flex items-center gap-1 mt-0.5">
-                  <span>تأكيد المباشر</span>
-                  <span>⚡</span>
+                <span className="text-3xl sm:text-4xl font-black drop-shadow-md tracking-tight">
+                  {remainingAlfHint}
                 </span>
               </button>
             </div>
@@ -1138,16 +1133,11 @@ export function DeliveryMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-red w-full max-w-[210px] h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
-                <div className="flex items-baseline gap-1 text-xl sm:text-2xl font-black drop-shadow-md">
-                  <span>{remainingAlfHint}</span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90">د.ع</span>
-                </div>
-                <span className="text-xs font-black text-rose-100 flex items-center gap-1 mt-0.5">
-                  <span>تأكيد المباشر</span>
-                  <span>⚡</span>
+                <span className="text-3xl sm:text-4xl font-black drop-shadow-md tracking-tight">
+                  {remainingAlfHint}
                 </span>
               </button>
             </div>
