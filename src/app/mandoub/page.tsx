@@ -1064,6 +1064,7 @@ export default async function MandoubPage({ searchParams }: Props) {
                 showFloatingBar: courier.showFloatingBar !== false,
                 hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
                 guidedDeliverySteps: courier.guidedDeliverySteps,
+                useFullBlockView: (courier as any).useFullBlockView === true,
                 orderViewTheme: courier.orderViewTheme || "default",
               }}
             />
