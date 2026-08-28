@@ -1579,7 +1579,6 @@ export function AdminCreateOrderForm({
                         </button>
                       </div>
                     </div>
-                 </div>
 
                  <div className="grid grid-cols-2 gap-3 mt-2">
                    <button
