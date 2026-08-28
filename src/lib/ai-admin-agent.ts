@@ -22,7 +22,7 @@ function getRegionStrictDeliveryPrice(region?: any): number {
 }
 
 /**
- * أدوات النظام لتنفيذ العمليات الذكية
+ * أدوات النظام لتنفيذ العمليات الذكية والإدارية الشاملة
  */
 const AI_TOOLS = [
   {
@@ -46,7 +46,7 @@ const AI_TOOLS = [
       },
       {
         name: "create_prep_shopping_draft",
-        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات (مثل: طماطة، خيار، بتيته، بصل).",
+        description: "إنشاء مسودة طلب تجهيز ومشتريات من رسالة التجهيز النصية التي تحتوي على منطقة، رقم هاتف، وقائمة مواد ومشتريات.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -58,30 +58,101 @@ const AI_TOOLS = [
         }
       },
       {
-        name: "assign_order_to_courier",
-        description: "إسناد طلب لمندوب محدد.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب" },
-            shopQuery: { type: "STRING", description: "اسم المحل" },
-            courierQuery: { type: "STRING", description: "اسم المندوب" }
-          },
-          required: ["courierQuery"]
-        }
-      },
-      {
         name: "register_debt_transaction",
         description: "تسجيل معاملة مالية بدفتر الديون (أخذت / انطيت / دين / تسديد).",
         parameters: {
           type: "OBJECT",
           properties: {
             personQuery: { type: "STRING", description: "اسم الشخص أو الطرف (مثلاً: الوالد، علي، المحل)" },
-            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط (مثلاً 5 أو 10) بدون إضافة أصفار تلقائية" },
+            amount: { type: "NUMBER", description: "المبلغ كما ينطقه المدير بالضبط بدون إضافة أصفار تلقائية" },
             type: { type: "STRING", description: "'took' (أخذت/استلمت) أو 'gave' (اعطيت/انطيت)" },
             note: { type: "STRING", description: "ملاحظات وتفاصيل المعاملة" }
           },
           required: ["personQuery", "amount", "type"]
+        }
+      },
+      {
+        name: "zero_partner_debt",
+        description: "تصفير حساب ودين شخص أو طرف محدد بدفتر الديون كلياً.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            personQuery: { type: "STRING", description: "اسم الشخص المراد تصفير حسابه بدفتر الديون" }
+          },
+          required: ["personQuery"]
+        }
+      },
+      {
+        name: "assign_order_to_courier",
+        description: "إسناد طلب محدد لمندوب.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            orderNumber: { type: "NUMBER", description: "رقم الطلب" },
+            shopQuery: { type: "STRING", description: "اسم المحل" },
+            courierQuery: { type: "STRING", description: "اسم المندوب المراد إسناد الطلب له" }
+          },
+          required: ["courierQuery"]
+        }
+      },
+      {
+        name: "update_order_status",
+        description: "تغيير حالة طلب محدد (مثلاً: مرفوض، مكتمل، تم الاستلام، جاري التوصيل).",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            orderNumber: { type: "NUMBER", description: "رقم الطلب" },
+            shopQuery: { type: "STRING", description: "اسم المحل" },
+            statusText: { type: "STRING", description: "الحالة الجديدة (مثلاً: مرفوض، مكتمل، تم الاستلام)" }
+          },
+          required: ["statusText"]
+        }
+      },
+      {
+        name: "bulk_update_courier_orders_status",
+        description: "تحويل جميع الطلبات المعلقة أو المسندة لمندوب محدد إلى حالة (تم الاستلام / مكتمل).",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            courierQuery: { type: "STRING", description: "اسم المندوب" },
+            newStatus: { type: "STRING", description: "الحالة الجديدة (مثل: delivered أو delivered_and_received)" }
+          },
+          required: ["courierQuery"]
+        }
+      },
+      {
+        name: "zero_courier_balance",
+        description: "تصفير حساب ومستحقات مندوب محدد كلياً بالنظام.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            courierQuery: { type: "STRING", description: "اسم المندوب المراد تصفير حسابه" }
+          },
+          required: ["courierQuery"]
+        }
+      },
+      {
+        name: "create_new_courier",
+        description: "إنشاء وإضافة مندوب جديد في النظام باسم ورقم هاتف.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            courierName: { type: "STRING", description: "اسم المندوب الجديد" },
+            courierPhone: { type: "STRING", description: "رقم هاتف المندوب" }
+          },
+          required: ["courierName"]
+        }
+      },
+      {
+        name: "toggle_courier_active",
+        description: "إخفاء أو تعطيل/تفعيل مندوب محدد في النظام.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            courierQuery: { type: "STRING", description: "اسم المندوب" },
+            active: { type: "BOOLEAN", description: "true للتفعيل، false للإخفاء/التعطيل" }
+          },
+          required: ["courierQuery", "active"]
         }
       }
     ]
@@ -107,7 +178,7 @@ export async function executeCreatePrepShoppingDraft(
   }
 
   const phone = (customerPhone || "").trim() || "غير محدد";
-  const cleanItems = (itemsList || "").trim() || "مواد تجهيز عامة";
+  const cleanItems = (itemsList || "").trim() || "مواد تجهيز ومشتريات";
 
   const exactMatch = matchingRegions.find(r => r.name.trim().toLowerCase() === (regionQuery || "").trim().toLowerCase());
   const shouldAskRegion = !exactMatch || matchingRegions.length > 1;
@@ -161,7 +232,6 @@ export async function executeCreatePrepShoppingDraft(
 
   const region = exactMatch || matchingRegions[0];
 
-  // جلب كافة المجهزين المسجلين بالنظام بدون أي تصفية خاطئة!
   const preparers = await prisma.companyPreparer.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" }
@@ -235,7 +305,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   const phone = (customerPhone || "").trim() || "غير محدد";
   let numPrice = Number(price) || 0;
 
-  // 1. فحص المحلات المتشابهة
   const matchingShops = await prisma.shop.findMany({
     where: { name: { contains: (shopQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true },
@@ -296,7 +365,6 @@ export async function executeCreateOrder(args: any, context?: { telegramUserId?:
   const shop = exactShopMatch || matchingShops[0] || await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
   if (!shop) return "❌ لم يتم العثور على أية محلات في النظام لرفع الطلب باسمها.";
 
-  // 2. فحص المناطق المتشابهة
   let matchingRegions = await prisma.region.findMany({
     where: { name: { contains: (regionQuery || "").trim(), mode: "insensitive" } },
     select: { id: true, name: true, deliveryPrice: true },
@@ -428,9 +496,135 @@ async function executeAssignCourier(args: any) {
   return `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب ${courier.name} بنجاح!**`;
 }
 
-/**
- * التسجيل الفعلي والمباشر للمعاملات المالية في دفتر الديون (Credit Book)
- */
+async function executeUpdateOrderStatus(args: any) {
+  const { orderNumber, shopQuery, statusText } = args;
+
+  let order: any = null;
+  if (orderNumber) {
+    order = await prisma.order.findUnique({ where: { orderNumber: Number(orderNumber) } });
+  } else if (shopQuery) {
+    const shop = await prisma.shop.findFirst({ where: { name: { contains: shopQuery, mode: "insensitive" } } });
+    if (shop) {
+      order = await prisma.order.findFirst({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" }
+      });
+    }
+  }
+
+  if (!order) return "❌ لم يتم العثور على الطلب المحدد لتحديث حالته.";
+
+  let mappedStatus = "pending";
+  const st = (statusText || "").toLowerCase();
+  if (st.includes("مرفوض") || st.includes("مرفوضة") || st.includes("ملغي") || st.includes("rejected")) mappedStatus = "rejected";
+  else if (st.includes("مكتمل") || st.includes("واصل") || st.includes("completed")) mappedStatus = "completed";
+  else if (st.includes("استلام") || st.includes("تم الاستلام") || st.includes("delivered")) mappedStatus = "delivered";
+  else if (st.includes("توصيل") || st.includes("بالطريق") || st.includes("delivering")) mappedStatus = "delivering";
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { status: mappedStatus }
+  });
+
+  return `✅ **تم تغيير حالة الطلب #${order.orderNumber} إلى (${statusText}) بنجاح!**`;
+}
+
+async function executeBulkUpdateCourierOrdersStatus(args: any) {
+  const { courierQuery, newStatus } = args;
+
+  const courier = await prisma.courier.findFirst({
+    where: { name: { contains: courierQuery, mode: "insensitive" } }
+  });
+
+  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+
+  const statusToApply = (newStatus || "delivered_and_received").includes("استلام") ? "delivered" : "completed";
+
+  const updated = await prisma.order.updateMany({
+    where: { assignedCourierId: courier.id, status: { in: ["assigned", "delivering", "pending"] } },
+    data: { status: statusToApply }
+  });
+
+  return `✅ **تم تحويل كافة طلبات المندوب ${courier.name} المعلقة (${updated.count} طلب) إلى حالة تم الاستلام/المكتملة بنجاح!**`;
+}
+
+async function executeZeroCourierBalance(args: any) {
+  const { courierQuery } = args;
+
+  const courier = await prisma.courier.findFirst({
+    where: { name: { contains: courierQuery, mode: "insensitive" } }
+  });
+
+  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+
+  await prisma.courier.update({
+    where: { id: courier.id },
+    data: { lastSalaryWithdrawalAt: new Date() }
+  });
+
+  return `✅ **تم تصفير حساب ومستحقات المندوب ${courier.name} بنجاح!**`;
+}
+
+async function executeCreateNewCourier(args: any) {
+  const { courierName, courierPhone } = args;
+
+  const name = (courierName || "").trim();
+  const phone = (courierPhone || "").trim() || "غير محدد";
+
+  if (!name) return "❌ يرجى تحديد اسم المندوب الجديد.";
+
+  const courier = await prisma.courier.create({
+    data: {
+      name,
+      phone,
+      active: true
+    }
+  });
+
+  return `✅ **تم إضافة المندوب الجديد (${courier.name}) بنجاح للنظام!**\n- **الهاتف:** ${phone}`;
+}
+
+async function executeToggleCourierActive(args: any) {
+  const { courierQuery, active } = args;
+
+  const courier = await prisma.courier.findFirst({
+    where: { name: { contains: courierQuery, mode: "insensitive" } }
+  });
+
+  if (!courier) return `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.`;
+
+  await prisma.courier.update({
+    where: { id: courier.id },
+    data: { active: Boolean(active) }
+  });
+
+  const stateText = active ? "تفعيل وإظهار" : "إخفاء وتطبيق التعطيل على";
+
+  return `✅ **تم ${stateText} المندوب ${courier.name} بنجاح!**`;
+}
+
+async function executeZeroPartnerDebt(args: any) {
+  const { personQuery } = args;
+  const targetName = (personQuery || "").trim();
+
+  const partner = await prisma.creditBookPartner.findFirst({
+    where: { name: { contains: targetName, mode: "insensitive" } }
+  });
+
+  if (!partner) return `❌ لم يتم العثور على حساب "${targetName}" بدفتر الديون.`;
+
+  await prisma.creditBookTransaction.create({
+    data: {
+      partnerId: partner.id,
+      amount: new Decimal(0),
+      kind: "took",
+      note: "تصفير الحساب والدين بالكامل عبر الذكاء الاصطناعي"
+    }
+  });
+
+  return `✅ **تم تصفير حساب ودين (${partner.name}) بالكامل بدفتر الديون بنجاح!**`;
+}
+
 async function executeDebtTransaction(args: any) {
   const { personQuery, amount, type, note } = args;
 
@@ -503,9 +697,6 @@ function appendChatHistory(userId: string, role: "user" | "model", text: string)
   chatHistoryMemory.set(userId, list);
 }
 
-/**
- * المحرك المباشر والحي للذكاء الاصطناعي Gemini AI
- */
 export async function processAdminAiMessage(
   userText: string,
   telegramUserId: string = "default",
@@ -518,13 +709,20 @@ export async function processAdminAiMessage(
     return "⚠️ لا يوجد أي مفتاح Gemini API فعال حالياً في النظام. يرجى إضافة مفتاح API في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون في العراق.
+  const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي، فأسعار التوصيل يتم جلبها حصراً وآلياً من أسعار المناطق المعتمدة في النظام.
+إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
 إذا قال المدير "أخذت من فلان" استخدم register_debt_transaction بنوع 'took'.
 إذا قال المدير "أعطيت لفلان / انطيت فلان" استخدم register_debt_transaction بنوع 'gave'.
-إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد كـ طماطة وخيار وبتيته وبصل)، استخدم create_prep_shopping_draft فوراً وحافظ على قائمة المنتجات كاملة!
+إذا طلب المدير إسناد طلب لمندوب استخدم assign_order_to_courier.
+إذا طلب المدير تغيير حالة طلب أو رفضه استخدم update_order_status.
+إذا طلب المدير تحويل طلبات مندوب معينة إلى تم الاستلام استخدم bulk_update_courier_orders_status.
+إذا طلب المدير تصفير مندوب استخدم zero_courier_balance.
+إذا طلب المدير إضافة مندوب جديد استخدم create_new_courier.
+إذا طلب المدير إخفاء أو تعطيل مندوب استخدم toggle_courier_active.
+إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
 إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
 
   appendChatHistory(telegramUserId, "user", userText);
@@ -564,8 +762,14 @@ export async function processAdminAiMessage(
               let reply = "";
               if (fn.name === "create_prep_shopping_draft") reply = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
               else if (fn.name === "create_order") reply = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
               else if (fn.name === "register_debt_transaction") reply = await executeDebtTransaction(fn.args);
+              else if (fn.name === "zero_partner_debt") reply = await executeZeroPartnerDebt(fn.args);
+              else if (fn.name === "assign_order_to_courier") reply = await executeAssignCourier(fn.args);
+              else if (fn.name === "update_order_status") reply = await executeUpdateOrderStatus(fn.args);
+              else if (fn.name === "bulk_update_courier_orders_status") reply = await executeBulkUpdateCourierOrdersStatus(fn.args);
+              else if (fn.name === "zero_courier_balance") reply = await executeZeroCourierBalance(fn.args);
+              else if (fn.name === "create_new_courier") reply = await executeCreateNewCourier(fn.args);
+              else if (fn.name === "toggle_courier_active") reply = await executeToggleCourierActive(fn.args);
 
               if (reply) {
                 appendChatHistory(telegramUserId, "model", reply);
@@ -613,5 +817,5 @@ export async function processAdminAiMessage(
     }
   }
 
-  return `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتأكد من أن المفتاح المضاف فعال ولم ينتهِ رصيده.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}`;
+  return `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}`;
 }

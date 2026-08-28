@@ -10,6 +10,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -31,6 +32,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: Button
     private lateinit var btnRetryMic: Button
+    private lateinit var etCommandInput: EditText
+    private lateinit var btnSendText: Button
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
@@ -47,11 +50,24 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         progressBar = findViewById(R.id.progressBar)
         btnClose = findViewById(R.id.btnClose)
         btnRetryMic = findViewById(R.id.btnRetryMic)
+        etCommandInput = findViewById(R.id.etCommandInput)
+        btnSendText = findViewById(R.id.btnSendText)
 
         textToSpeech = TextToSpeech(this, this)
 
         btnClose.setOnClickListener { finish() }
         btnRetryMic.setOnClickListener { checkPermissionAndStartListening() }
+
+        btnSendText.setOnClickListener {
+            val typedText = etCommandInput.text.toString().trim()
+            if (typedText.isNotEmpty()) {
+                tvTranscript.text = "💬 \"$typedText\""
+                etCommandInput.setText("")
+                sendToAdminVoiceApi(typedText)
+            } else {
+                Toast.makeText(this, "يرجى كتابة الأمر أولاً", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         checkPermissionAndStartListening()
     }
@@ -90,11 +106,14 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
+            // زيادة مهلة الصمت التامة لـ 5 ثوانٍ ليعطي وقتاً للتفكير والتحدث براحة دون قطعه!
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                tvStatus.text = "🎙️ الميكروفون شغال... تفضل أتكلم بالأمر"
+                tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
                 progressBar.visibility = View.VISIBLE
             }
 
@@ -110,7 +129,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onError(error: Int) {
-                tvStatus.text = "⚠️ لم أتمكن من التقاط الصوت بوضوح، انقر الميكروفون وأعد المحاولة"
+                tvStatus.text = "⚠️ لم أتمكن من التقاط الصوت، يمكنك النقر على زر التحدث أو كتابة الأمر بالنص أدناه"
                 progressBar.visibility = View.GONE
             }
 
