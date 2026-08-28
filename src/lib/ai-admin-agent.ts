@@ -7,11 +7,11 @@ import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 
 /**
- * تعريف أدوات الذكاء الاصطناعي لتنفيذ المهام
+ * تعريف أدوات الذكاء الاصطناعي بالـ CamelCase الصحيح لـ Gemini REST API
  */
 const AI_TOOLS = [
   {
-    function_declarations: [
+    functionDeclarations: [
       {
         name: "create_order",
         description: "إضافة طلب جديد في النظام بناءً على تفاصيل المحل والزبون والمنطقة والأسعار.",
@@ -24,8 +24,8 @@ const AI_TOOLS = [
             regionQuery: { type: "STRING", description: "اسم المنطقة أو الحي" },
             orderType: { type: "STRING", description: "تفاصيل ووصف المنتجات أو نوع الطلب" },
             price: { type: "NUMBER", description: "سعر المنتجات بالدينار العراقي (مثلاً 25000)" },
-            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل بالدينار العراقي (إن ذكر، وإلا يترك تلقائي حسب المنطقة)" },
-            orderNoteTime: { type: "STRING", description: "وقت التسليم المحدد من قبل الزبون (مثلاً فوري، باجر بـ 4)" }
+            deliveryPrice: { type: "NUMBER", description: "سعر التوصيل بالدينار العراقي (إن ذكر)" },
+            orderNoteTime: { type: "STRING", description: "وقت التسليم المحدد من قبل الزبون (مثلاً فوري، باجر)" }
           },
           required: ["shopQuery", "customerPhone", "regionQuery", "price"]
         }
@@ -36,8 +36,8 @@ const AI_TOOLS = [
         parameters: {
           type: "OBJECT",
           properties: {
-            orderNumber: { type: "NUMBER", description: "رقم الطلب المحدد (مثلاً 1024)" },
-            shopQuery: { type: "STRING", description: "اسم المحل إذا لم يتم ذكر رقم الطلب" },
+            orderNumber: { type: "NUMBER", description: "رقم الطلب المحدد" },
+            shopQuery: { type: "STRING", description: "اسم المحل" },
             courierQuery: { type: "STRING", description: "اسم المندوب" }
           },
           required: ["courierQuery"]
@@ -51,7 +51,7 @@ const AI_TOOLS = [
           properties: {
             personQuery: { type: "STRING", description: "اسم الشخص أو المندوب أو المحل" },
             amount: { type: "NUMBER", description: "المبلغ بالدينار العراقي" },
-            type: { type: "STRING", description: "نوع المعاملة: 'borrowed' (أخذت منه) أو 'paid' (سددت له)" },
+            type: { type: "STRING", description: "نوع المعاملة: 'borrowed' أو 'paid'" },
             note: { type: "STRING", description: "ملاحظات وتفاصيل المعاملة" }
           },
           required: ["personQuery", "amount", "type"]
@@ -59,12 +59,12 @@ const AI_TOOLS = [
       },
       {
         name: "query_system_summary",
-        description: "الاستعلام عن معلومات النظام مثل إحصائيات الطلبات، ديون شخص، أو حالة مناديب.",
+        description: "الاستعلام عن معلومات النظام مثل إحصائيات الطلبات، ديون، أو حالة مناديب.",
         parameters: {
           type: "OBJECT",
           properties: {
-            target: { type: "STRING", description: "هدف الاستعلام: 'orders' للطلبات، 'couriers' للمناديب، 'debts' للديون" },
-            searchQuery: { type: "STRING", description: "اسم شخص أو منطقة للاستعلام الخص نصاً" }
+            target: { type: "STRING", description: "هدف الاستعلام: 'orders', 'couriers', 'debts'" },
+            searchQuery: { type: "STRING", description: "بحث مخصص" }
           },
           required: ["target"]
         }
@@ -73,9 +73,6 @@ const AI_TOOLS = [
   }
 ];
 
-/**
- * تنفيذ دالة إنشاء طلب
- */
 async function executeCreateOrder(args: any) {
   const { shopQuery, customerPhone, customerName, regionQuery, orderType, price, deliveryPrice, orderNoteTime } = args;
 
@@ -128,12 +125,9 @@ async function executeCreateOrder(args: any) {
   notifyTelegramNewOrder(order.id).catch(() => {});
   pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-  return `✅ **تم إنشاء الطلب بنجاح عبر الذكاء الاصطناعي!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${customerPhone}\n- **السعر الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
+  return `✅ **تم إضافة الطلب بنجاح!**\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${shop.name}\n- **المنطقة:** ${region?.name || regionQuery}\n- **الهاتف:** ${customerPhone}\n- **المبلغ الإجمالي:** ${formatDinarAsAlf(totalAmount)}`;
 }
 
-/**
- * تنفيذ دالة إسناد الطلب للمندوب
- */
 async function executeAssignCourier(args: any) {
   const { orderNumber, shopQuery, courierQuery } = args;
 
@@ -170,9 +164,6 @@ async function executeAssignCourier(args: any) {
   return `✅ **تم إسناد الطلب #${order.orderNumber} للمندوب ${courier.name} بنجاح!**`;
 }
 
-/**
- * تنفيذ دالة تسجيل المعاملات والديون
- */
 async function executeDebtTransaction(args: any) {
   const { personQuery, amount, type, note } = args;
 
@@ -182,80 +173,86 @@ async function executeDebtTransaction(args: any) {
   const targetName = courier?.name || preparer?.name || personQuery;
   const isBorrowed = type === "borrowed";
 
-  return `✅ **تم تسجيل المعاملة المالية بنجاح!**\n- **الطرف:** ${targetName}\n- **المبلغ:** ${formatDinarAsAlf(amount)}\n- **النوع:** ${isBorrowed ? "دين مسجل على الحساب" : "تسديد/دفع"}\n- **الملاحظات:** ${note || "لا يوجد"}`;
+  return `✅ **تم تسجيل المعاملة المالية بنجاح!**\n- **الطرف:** ${targetName}\n- **المبلغ:** ${formatDinarAsAlf(amount)}\n- **النوع:** ${isBorrowed ? "دين على الحساب" : "دفع / تسديد"}\n- **التفاصيل:** ${note || "لا يوجد"}`;
 }
 
-/**
- * تنفيذ استعلامات النظام
- */
 async function executeQuerySystemSummary(args: any) {
   const { target } = args;
 
   if (target === "orders") {
     const count = await prisma.order.count({ where: { status: "pending" } });
-    return `📊 **حالة الطلبات:**\n- عدد الطلبات المعلقة حالياً: **${count}** طلب.`;
+    return `📊 **حالة الطلبات:**\nعدد الطلبات المعلقة حالياً هو **${count}** طلب.`;
   } else if (target === "couriers") {
     const couriers = await prisma.courier.findMany({ select: { name: true, phone: true, blocked: true }, take: 10 });
     const list = couriers.map(c => `• ${c.name} (${c.phone}) - ${c.blocked ? "محظور" : "نشط"}`).join("\n");
     return `🛵 **قائمة المناديب:**\n${list}`;
   }
 
-  return "ℹ️ لا تتوفر معلومات إضافية لهذا الاستعلام حالياً.";
+  return "ℹ️ استعلام عام من الذكاء الاصطناعي.";
 }
 
 /**
- * المساعد الرئيسي للذكاء الاصطناعي لمعالجة الرسائل
+ * المحرك المباشر للذكاء الاصطناعي Gemini AI
  */
 export async function processAdminAiMessage(userText: string): Promise<string> {
-  const trimmed = userText.trim().toLowerCase();
-
-  // التحايا البسيطة المباشرة
-  if (["مرحبا", "مرحباً", "هلو", "السلام عليكم", "سلام عليكم", "شلونك", "صباح الخير", "مساء الخير"].includes(trimmed)) {
-    return "أهلاً وسهلاً بك يا مديرنا العزيز! 🌹\nأنَا مساعدك الذكي الخاص بنظام الإدارة. كيف أستطيع مساعدتك اليوم؟\n\nيمكنك طلب إدخال طلب جديد، تسجّيل ديون، إسناد طلبات للمناديب، أو الاستعلام عن أي شيء في النظام!";
-  }
-
   let keyRecord = await getNextActiveGeminiKey();
   if (!keyRecord) {
     return "⚠️ لا يوجد مفتاح Gemini API فعال حالياً. يرجى إضافة المفاتيح في صفحة الإعدادات لتفعيل الذكاء الاصطناعي.";
   }
 
-  const systemInstructionText = `أنت "مساعد بوت الإدارة الذكي" الخص بمشروع وموقع المبيعات والتوصيل في العراق.
-تتحدث مع مدير المشروع بلهجة عربية بسيطة، محترفة، وودودة جداً.
-تُجيب بشكل مباشر وذكي وتتفاعل معه كشخص حقيقي يساعده في إدارة عمله.
-إذا كانت الرسالة تحية أو سلام، رحّب به بحرارة واسأله كيف تساعده.
-إذا كان في رسالته طلب إضافة طلب أو إسناد مندوب أو ديون أو استعلام، استخدم الأدوات المتاحة فقط عندما يكون هناك أفعال محددة، وبخلاف ذلك أجب بنص محادثة لطيف ومفيد.`;
+  const systemInstructionText = `أنت الذكاء الاصطناعي حقيقي والمساعد الذكي الخص بنظام الإدارة والتوصيل لدى مدير المشروع في العراق.
+تتحدث باللغة العربية البسيطة مع المدير، وتجيب عن أسئلته وتتجاوب معه بتفاعل طبيعي وذكي جداً وبدون استخدام جمل ثنائية جامدة إطلاقاً.
+إذا طلب منك المدير إنشاء طلب جديد بدون تزويدك بالبيانات، اسأله عن التفاصيل فوراً (اسم المحل، رقم الهاتف، المنطقة، والسعر).
+إذا زودك بالتفاصيل، استخدم الأداة create_order لتنفيذ الطلب.
+تجاوب بشكل حي ومباشر مع أي سؤال أو استفسار أو دردشة من المدير.`;
 
-  const requestBody = {
-    systemInstruction: {
-      parts: [{ text: systemInstructionText }]
-    },
-    contents: [
-      { role: "user", parts: [{ text: userText }] }
-    ],
+  // 1. المحاولة الأولى: استخدام الأدوية مع Gemini
+  const bodyWithTools = {
+    systemInstruction: { parts: [{ text: systemInstructionText }] },
+    contents: [{ role: "user", parts: [{ text: userText }] }],
     tools: AI_TOOLS,
+  };
+
+  // 2. محاولة السحب بدون أدوية (المحادثة الحرة) لتجنب أية أخطاء في المخطط
+  const bodyPureText = {
+    systemInstruction: { parts: [{ text: systemInstructionText }] },
+    contents: [{ role: "user", parts: [{ text: userText }] }],
   };
 
   const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"];
 
   for (const model of models) {
     try {
-      const response = await fetch(
+      let response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify(bodyWithTools),
         }
       );
+
+      // في حال وجود خطأ في المخطط أو الأدوات 400 Bad Request، نجرب إرسال الطلب كمحادثة ذكاء اصطناعي مباشرة بدون أدوات
+      if (!response.ok && response.status === 400) {
+        console.warn(`[gemini-ai] Tools schema error on model ${model}, retrying without tools...`);
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyPureText),
+          }
+        );
+      }
 
       if (!response.ok) {
         if (response.status === 429) {
           await markGeminiKeyError(keyRecord.id, true);
           keyRecord = await getNextActiveGeminiKey();
           if (!keyRecord) break;
-          continue;
         }
-        console.warn(`[gemini-ai] Model ${model} returned status ${response.status}`);
+        const errJson = await response.text().catch(() => "");
+        console.warn(`[gemini-ai] Model ${model} returned status ${response.status}:`, errJson);
         continue;
       }
 
@@ -267,7 +264,7 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
       for (const part of parts) {
         if (part.functionCall) {
           const fn = part.functionCall;
-          console.log(`[ai-agent] Function called: ${fn.name}`, fn.args);
+          console.log(`[ai-agent] Executing Function: ${fn.name}`, fn.args);
 
           if (fn.name === "create_order") {
             return await executeCreateOrder(fn.args);
@@ -286,9 +283,28 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
         return textOutput.trim();
       }
     } catch (err: any) {
-      console.error(`[ai-admin-agent] Error trying model ${model}:`, err);
+      console.error(`[ai-admin-agent] Exception on model ${model}:`, err);
     }
   }
 
-  return "أهلاً بك يا مديرنا! كيف أستطيع مساعدتك اليوم بخصوص الطلبات، المناديب، أو الديون؟";
+  // التراجع الأخير المضمون: استدعاء حاد للنص الحر فقط من Gemini
+  try {
+    if (keyRecord) {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPureText),
+        }
+      );
+      if (resp.ok) {
+        const d = await resp.json();
+        const output = d.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (output) return output;
+      }
+    }
+  } catch (e) {}
+
+  return "تدلل يا مديرنا! اعطيني تفاصيل الطلب: اسم المحل، رقم الهاتف، المنطقة، والسعر وسأقوم بإضافته فوراً بالنظام!";
 }
