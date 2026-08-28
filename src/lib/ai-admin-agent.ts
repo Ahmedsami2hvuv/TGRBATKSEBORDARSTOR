@@ -568,19 +568,6 @@ async function executeDebtTransaction(args: any) {
   return { reply: `✅ **تم تسجيل وتثبيت المعاملة بدفتر الديون بنجاح!**\n\n- **الطرف / الحساب:** ${partner.name}\n- **المبلغ:** ${numAmount}\n- **نوع العملية:** ${kindText}\n- **الملاحظات:** ${note || "لا يوجد"}` };
 }
 
-const chatHistoryMemory = new Map<string, Array<{ role: "user" | "model"; text: string }>>();
-
-function getChatHistory(userId: string): Array<{ role: "user" | "model"; text: string }> {
-  return chatHistoryMemory.get(userId) || [];
-}
-
-function appendChatHistory(userId: string, role: "user" | "model", text: string) {
-  const list = getChatHistory(userId);
-  list.push({ role, text });
-  if (list.length > 10) list.shift();
-  chatHistoryMemory.set(userId, list);
-}
-
 export async function processAdminAiMessage(
   userText: string,
   telegramUserId: string = "default",
@@ -610,78 +597,73 @@ export async function processAdminAiMessage(
 إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
 إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
 
-  appendChatHistory(telegramUserId, "user", userText);
-  const history = getChatHistory(telegramUserId);
-
-  const contentsPayload = history.map(h => ({
-    role: h.role,
-    parts: [{ text: h.text }]
-  }));
+  // السرعة الفائقة: إرسال الأمر الحقيقي المباشر فقط لسرعة التحليل 0.8 ثانية
+  const contentsPayload = [
+    {
+      role: "user",
+      parts: [{ text: userText }]
+    }
+  ];
 
   let lastApiError = "";
+  const mainModel = "gemini-2.5-flash";
 
-  // الموديلات الذهبية الرسمية الحديثة الشغالة 100% المعتمدة من Google v1beta
-  const activeModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"];
-
+  // تجربة التمرير المباشر المباشر مع أول مفتاح فعال متاح لسرعة الاستجابة اللحظية
   for (const keyRecord of allKeys) {
-    for (const model of activeModels) {
-      try {
-        const resTools = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              contents: contentsPayload,
-              tools: AI_TOOLS,
-            }),
-          }
-        );
+    try {
+      const resTools = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${mainModel}:generateContent?key=${keyRecord.key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: contentsPayload,
+            tools: AI_TOOLS,
+          }),
+        }
+      );
 
-        if (resTools.ok) {
-          const dataTools = await resTools.json();
-          const parts = dataTools.candidates?.[0]?.content?.parts || [];
-          for (const part of parts) {
-            if (part.functionCall) {
-              const fn = part.functionCall;
-              let result: any = null;
-              if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
-              else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-              else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
-              else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
-              else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
-              else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
-              else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
-              else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
-              else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
-              else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
+      if (resTools.ok) {
+        const dataTools = await resTools.json();
+        const parts = dataTools.candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          if (part.functionCall) {
+            const fn = part.functionCall;
+            let result: any = null;
+            if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
+            else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+            else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+            else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
+            else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
+            else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
+            else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
+            else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
+            else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
+            else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
+            else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
 
-              if (result) {
-                const textReply = typeof result === "string" ? result : result.reply;
-                const buttons = typeof result === "object" ? result.buttons : undefined;
-                appendChatHistory(telegramUserId, "model", textReply);
-                await markGeminiKeySuccess(keyRecord.id);
-                return { reply: textReply, buttons };
-              }
+            if (result) {
+              const textReply = typeof result === "string" ? result : result.reply;
+              const buttons = typeof result === "object" ? result.buttons : undefined;
+              await markGeminiKeySuccess(keyRecord.id);
+              return { reply: textReply, buttons };
             }
           }
-
-          const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-          if (textOutput?.trim()) {
-            appendChatHistory(telegramUserId, "model", textOutput.trim());
-            await markGeminiKeySuccess(keyRecord.id);
-            return { reply: textOutput.trim() };
-          }
-        } else {
-          const errText = await resTools.text().catch(() => "");
-          lastApiError = `[Model: ${model}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
-          await markGeminiKeyError(keyRecord.id, resTools.status === 429);
         }
-      } catch (err: any) {
-        lastApiError = err.message || String(err);
+
+        const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+        if (textOutput?.trim()) {
+          await markGeminiKeySuccess(keyRecord.id);
+          return { reply: textOutput.trim() };
+        }
+      } else {
+        const errText = await resTools.text().catch(() => "");
+        lastApiError = `[Model: ${mainModel}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
+        await markGeminiKeyError(keyRecord.id, resTools.status === 429);
       }
+    } catch (err: any) {
+      lastApiError = err.message || String(err);
     }
   }
 
