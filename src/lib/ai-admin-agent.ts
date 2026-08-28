@@ -100,7 +100,7 @@ const AI_TOOLS = [
       },
       {
         name: "assign_order_to_courier",
-        description: "إسناد طلب محدد أو أحدث طلب لمحل محدد لمندوب.",
+        description: "إسناد طلب محدد أو أحدث طلب لمحل محدد لمندوب (مثلاً: حوله إلى كابتن فارس / اسند طلب أبو الأكبر لكابتن فارس).",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -364,10 +364,12 @@ async function executeAssignCourier(args: any) {
     });
   }
 
-  if (!order) return { reply: "❌ لم يتم العثور على الطلب المحدد لإسناده." };
+  if (!order) return { reply: "❌ لم يتم العثور على أحدث طلب معلق لإسناده للمندوب." };
+
+  const cleanCourierName = (courierQuery || "").replace(/كابتن|مندوب/gi, "").trim();
 
   const courier = await prisma.courier.findFirst({
-    where: { name: { contains: (courierQuery || "").trim(), mode: "insensitive" } }
+    where: { name: { contains: cleanCourierName, mode: "insensitive" } }
   });
 
   if (!courier) return { reply: `❌ لم يتم العثور على المندوب "${courierQuery}" في النظام.` };
@@ -583,12 +585,12 @@ export async function processAdminAiMessage(
   const systemPrompt = `أنت الذكاء الاصطناعي الفعال ومساعد مدير المشروع والمبيعات والتوصيل والتجهيز ودفتر الديون والإدارة في العراق.
 وظيفتك الأساسية: تنفيذ الأوامر المباشرة فوراً وبدون أي كلام إنشائي أو أسئلة زائدة إطلاقاً!
 إذا طلب المدير تعديل طلب محدد (مثلاً: "سوي تعديل على طلب رقم كذا وسوي سعر التوصيل هلقد")، استخدم أداة update_order_details فوراً لتحديث البيانات في قاعدة البيانات حقيقياً!
+إذا طلب المدير تحويل أو إسناد طلب لمندوب (مثلاً: "طلب أبو الأكبر الجديد حوله إلى كابتن فارس") استخدم أداة assign_order_to_courier فوراً!
 قاعدة جوهرية حاسمة لتشخيص رسائل التجهيز: أي رسالة تتضمن (اسم منطقة + رقم هاتف زبون + قائمة مواد ومشتريات كـ طماطة وخيار وبتيته) أو تحتوي على جملة (طلب تجهيز / سوي لي طلب تجهيز) تعني فوراً استدعاء create_prep_shopping_draft فوراً وحفظ كافة المنتجات!
 ملاحظة حاسمة جداً للمبالغ: اعتماد المبالغ كما هي صراحة من المدير (مثلاً 5 تعني 5، 10 تعني 10)، ممنوع منعاً باتاً إضافة أصفار أو تحويلها بضربها بـ 1000!
 ممنوع منعاً باتاً تحديد أو تغيير سعر التوصيل من الذكاء الاصطناعي تلقائياً، إلا إذا طلب المدير صراحة تعديله عبر update_order_details.
 إذا قال المدير "صفر فلان / صفر دين فلان" استخدم zero_partner_debt.
 إذا قال المدير "أخذت من فلان / نطيت فلان / أعطيت لفلان" استخدم register_debt_transaction.
-إذا طلب المدير إسناد طلب لمندوب (مثلاً: "طلب فلان المحل سوي له إسناد إلى فلان" أو "سوي لي مندوب جديد") استخدم الأدوات المخصصة فوراً.
 إذا طلب المدير تغيير حالة طلب أو رفضه استخدم update_order_status.
 إذا طلب المدير تحويل طلبات مندوب معينة إلى تم الاستلام استخدم bulk_update_courier_orders_status.
 إذا طلب المدير تصفير مندوب استخدم zero_courier_balance.
@@ -597,7 +599,6 @@ export async function processAdminAiMessage(
 إذا قدم لك المدير رسالة تجهيز نصية تحوي (منطقة + هاتف + قائمة مواد)، استخدم create_prep_shopping_draft فوراً!
 إذا قدم لك المدير تفاصيل طلب مبيعات، استخدم create_order فوراً!`;
 
-  // السرعة الفائقة: إرسال الأمر الحقيقي المباشر فقط لسرعة التحليل 0.8 ثانية
   const contentsPayload = [
     {
       role: "user",
@@ -606,64 +607,66 @@ export async function processAdminAiMessage(
   ];
 
   let lastApiError = "";
-  const mainModel = "gemini-2.5-flash";
+  // الأسماء الرسمية الشغالة 100% المعتمدة من Google v1beta بدون أخطاء 404
+  const activeModels = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-2.0-flash-exp"];
 
-  // تجربة التمرير المباشر المباشر مع أول مفتاح فعال متاح لسرعة الاستجابة اللحظية
   for (const keyRecord of allKeys) {
-    try {
-      const resTools = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${mainModel}:generateContent?key=${keyRecord.key}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: contentsPayload,
-            tools: AI_TOOLS,
-          }),
-        }
-      );
+    for (const model of activeModels) {
+      try {
+        const resTools = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: contentsPayload,
+              tools: AI_TOOLS,
+            }),
+          }
+        );
 
-      if (resTools.ok) {
-        const dataTools = await resTools.json();
-        const parts = dataTools.candidates?.[0]?.content?.parts || [];
-        for (const part of parts) {
-          if (part.functionCall) {
-            const fn = part.functionCall;
-            let result: any = null;
-            if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
-            else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
-            else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
-            else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
-            else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
-            else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
-            else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
-            else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
-            else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
-            else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
-            else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
+        if (resTools.ok) {
+          const dataTools = await resTools.json();
+          const parts = dataTools.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            if (part.functionCall) {
+              const fn = part.functionCall;
+              let result: any = null;
+              if (fn.name === "update_order_details") result = await executeUpdateOrderDetails(fn.args);
+              else if (fn.name === "create_prep_shopping_draft") result = await executeCreatePrepShoppingDraft(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "create_order") result = await executeCreateOrder(fn.args, { telegramUserId, chatId, botToken });
+              else if (fn.name === "register_debt_transaction") result = await executeDebtTransaction(fn.args);
+              else if (fn.name === "zero_partner_debt") result = await executeZeroPartnerDebt(fn.args);
+              else if (fn.name === "assign_order_to_courier") result = await executeAssignCourier(fn.args);
+              else if (fn.name === "update_order_status") result = await executeUpdateOrderStatus(fn.args);
+              else if (fn.name === "bulk_update_courier_orders_status") result = await executeBulkUpdateCourierOrdersStatus(fn.args);
+              else if (fn.name === "zero_courier_balance") result = await executeZeroCourierBalance(fn.args);
+              else if (fn.name === "create_new_courier") result = await executeCreateNewCourier(fn.args);
+              else if (fn.name === "toggle_courier_active") result = await executeToggleCourierActive(fn.args);
 
-            if (result) {
-              const textReply = typeof result === "string" ? result : result.reply;
-              const buttons = typeof result === "object" ? result.buttons : undefined;
-              await markGeminiKeySuccess(keyRecord.id);
-              return { reply: textReply, buttons };
+              if (result) {
+                const textReply = typeof result === "string" ? result : result.reply;
+                const buttons = typeof result === "object" ? result.buttons : undefined;
+                await markGeminiKeySuccess(keyRecord.id);
+                return { reply: textReply, buttons };
+              }
             }
           }
-        }
 
-        const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-        if (textOutput?.trim()) {
-          await markGeminiKeySuccess(keyRecord.id);
-          return { reply: textOutput.trim() };
+          const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+          if (textOutput?.trim()) {
+            await markGeminiKeySuccess(keyRecord.id);
+            return { reply: textOutput.trim() };
+          }
+        } else {
+          const errText = await resTools.text().catch(() => "");
+          lastApiError = `[Model: ${model}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
+          await markGeminiKeyError(keyRecord.id, resTools.status === 429);
         }
-      } else {
-        const errText = await resTools.text().catch(() => "");
-        lastApiError = `[Model: ${mainModel}, Key: ${keyRecord.label || "Key"}, Status: ${resTools.status}] ${errText}`;
-        await markGeminiKeyError(keyRecord.id, resTools.status === 429);
+      } catch (err: any) {
+        lastApiError = err.message || String(err);
       }
-    } catch (err: any) {
-      lastApiError = err.message || String(err);
     }
   }
 
