@@ -177,12 +177,39 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
   let lastApiError = "";
 
   for (const keyRecord of allKeys) {
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"];
+    // الاعتماد فقط على الموديل الرسمي الفعال في جوجل بدون النماذج الموقوفة
+    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
     for (const model of models) {
       try {
-        // تجربة الاتصال المباشر بالحصول على نص الذكاء الاصطناعي
-        const res = await fetch(
+        // 1. تجربة المحادثة المباشرة الموثوقة أولاً
+        const resPure = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemInstructionText }] },
+              contents: [{ role: "user", parts: [{ text: userText }] }],
+            }),
+          }
+        );
+
+        if (resPure.ok) {
+          const dataPure = await resPure.json();
+          const textReply = dataPure.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (textReply?.trim()) {
+            await markGeminiKeySuccess(keyRecord.id);
+            return textReply.trim();
+          }
+        } else {
+          const errText = await resPure.text().catch(() => "");
+          lastApiError = `[Model: ${model}, Status: ${resPure.status}] ${errText}`;
+          console.warn(`[gemini-ai] Error on ${model}:`, lastApiError);
+        }
+
+        // 2. تجربة الطلب بالأدوات إن كان المطلوب إجراء عملية
+        const resTools = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
           {
             method: "POST",
@@ -195,56 +222,22 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
           }
         );
 
-        if (!res.ok) {
-          const errText = await res.text().catch(() => "");
-          lastApiError = `[Model: ${model}, Status: ${res.status}] ${errText}`;
-          console.warn(`[gemini-ai] Error on ${model}:`, lastApiError);
-          
-          if (res.status === 429) {
-            await markGeminiKeyError(keyRecord.id, true);
-          }
-
-          // محاولة بدون أدوات لتجنب أي تعارض في الهيكلية
-          const resPure = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemInstructionText }] },
-                contents: [{ role: "user", parts: [{ text: userText }] }],
-              }),
-            }
-          );
-
-          if (resPure.ok) {
-            const data = await resPure.json();
-            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (reply?.trim()) {
-              await markGeminiKeySuccess(keyRecord.id);
-              return reply.trim();
+        if (resTools.ok) {
+          const dataTools = await resTools.json();
+          const parts = dataTools.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            if (part.functionCall) {
+              const fn = part.functionCall;
+              if (fn.name === "create_order") return await executeCreateOrder(fn.args);
+              if (fn.name === "assign_order_to_courier") return await executeAssignCourier(fn.args);
+              if (fn.name === "register_debt_transaction") return await executeDebtTransaction(fn.args);
             }
           }
-          continue;
-        }
-
-        const data = await res.json();
-        const candidate = data.candidates?.[0];
-        const parts = candidate?.content?.parts || [];
-
-        for (const part of parts) {
-          if (part.functionCall) {
-            const fn = part.functionCall;
-            if (fn.name === "create_order") return await executeCreateOrder(fn.args);
-            if (fn.name === "assign_order_to_courier") return await executeAssignCourier(fn.args);
-            if (fn.name === "register_debt_transaction") return await executeDebtTransaction(fn.args);
+          const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+          if (textOutput?.trim()) {
+            await markGeminiKeySuccess(keyRecord.id);
+            return textOutput.trim();
           }
-        }
-
-        const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
-        if (textOutput?.trim()) {
-          await markGeminiKeySuccess(keyRecord.id);
-          return textOutput.trim();
         }
       } catch (err: any) {
         lastApiError = err.message || String(err);
@@ -253,6 +246,5 @@ export async function processAdminAiMessage(userText: string): Promise<string> {
     }
   }
 
-  // إرجاع خطأ شفاف وحقيقي 100% دون أي جملة مبرمجة!
   return `⚠️ تعذر الحصول على رد من الذكاء الاصطناعي Gemini.\nتأكد من أن المفتاح المضاف فعال ولم ينتهِ رصيده.\nتفاصيل الخطأ: ${lastApiError.slice(0, 150)}`;
 }
