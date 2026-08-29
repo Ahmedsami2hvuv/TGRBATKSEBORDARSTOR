@@ -5,9 +5,10 @@ import { Mic, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Bot } from "lu
 
 export function AdminFloatingAiWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 100 });
+  const [position, setPosition] = useState({ x: 20, y: 80 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [hasMoved, setHasMoved] = useState(false);
 
   const [inputMessage, setInputMessage] = useState("");
   const [transcript, setTranscript] = useState("");
@@ -20,45 +21,65 @@ export function AdminFloatingAiWidget() {
 
   const recognitionRef = useRef<any>(null);
 
-  // إعداد سحب وإفلات الزر العائم بالحاسوب والهاتف
-  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة
+  const handleStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+
     setIsDragging(true);
-    setDragOffset({
-      x: window.innerWidth - clientX - position.x,
-      y: window.innerHeight - clientY - position.y
+    setHasMoved(false);
+    setDragStart({
+      x: clientX - position.x,
+      y: clientY - position.y
     });
   };
 
-  const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
+  const handleMoveDrag = (e: MouseEvent | TouchEvent) => {
     if (!isDragging) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
 
-    const newX = Math.max(10, Math.min(window.innerWidth - 70, window.innerWidth - clientX - dragOffset.x));
-    const newY = Math.max(10, Math.min(window.innerHeight - 70, window.innerHeight - clientY - dragOffset.y));
+    const deltaX = Math.abs(clientX - (dragStart.x + position.x));
+    const deltaY = Math.abs(clientY - (dragStart.y + position.y));
+    if (deltaX > 5 || deltaY > 5) {
+      setHasMoved(true);
+    }
+
+    const maxX = typeof window !== "undefined" ? window.innerWidth - 70 : 300;
+    const maxY = typeof window !== "undefined" ? window.innerHeight - 70 : 600;
+
+    const newX = Math.max(10, Math.min(maxX, clientX - dragStart.x));
+    const newY = Math.max(10, Math.min(maxY, clientY - dragStart.y));
+
     setPosition({ x: newX, y: newY });
   };
 
-  const handleTouchEnd = () => {
+  const handleEndDrag = () => {
     setIsDragging(false);
   };
 
   useEffect(() => {
     if (isDragging) {
-      const moveHandler = (e: MouseEvent) => handleTouchMove(e as any);
-      const upHandler = () => handleTouchEnd();
-      window.addEventListener("mousemove", moveHandler);
-      window.addEventListener("mouseup", upHandler);
+      const onMouseMove = (e: MouseEvent) => handleMoveDrag(e);
+      const onTouchMove = (e: TouchEvent) => handleMoveDrag(e);
+      const onMouseUp = () => handleEndDrag();
+      const onTouchEnd = () => handleEndDrag();
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("touchmove", onTouchMove);
+      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("touchend", onTouchEnd);
+
       return () => {
-        window.removeEventListener("mousemove", moveHandler);
-        window.removeEventListener("mouseup", upHandler);
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("mouseup", onMouseUp);
+        window.removeEventListener("touchend", onTouchEnd);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragStart, position]);
 
-  // إعداد محرك الناطق والتعرف الصوتي على المتصفح
+  // إعداد محرك الناطق والتعرف الصوتي
   const speakResponse = (text: string) => {
     if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const cleanText = text.replace(/[*#\-]|https?:\/\/\S+/g, "");
@@ -99,7 +120,7 @@ export function AdminFloatingAiWidget() {
         sendApiCommand(text);
       };
 
-      rec.onerror = (event: any) => {
+      rec.onerror = () => {
         setIsListening(false);
         setStatusText("⚠️ يمكنك الكتابة أو النقر لإعادة التحدث.");
       };
@@ -152,58 +173,66 @@ export function AdminFloatingAiWidget() {
 
   return (
     <>
-      {/* 1. Floating Action Draggable Button الزر العائم المباشر */}
+      {/* 1. الزر العائم المباشر الذكي القابل للتحريك في أي مكان بالشاشة */}
       <div
         style={{
           position: "fixed",
-          bottom: `${position.y}px`,
           left: `${position.x}px`,
-          zIndex: 99999,
+          top: `${position.y}px`,
+          zIndex: 999999,
           touchAction: "none"
         }}
         className="flex items-center gap-2 select-none"
       >
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          onMouseDown={handleTouchStart}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className="relative flex items-center justify-center w-14 h-14 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white cursor-grab active:cursor-grabbing"
-          title="مساعد أبو الأكبر الذكي - اسحب لتحريك المكان بالنقر المباشر"
+        <div
+          onMouseDown={handleStartDrag}
+          onTouchStart={handleStartDrag}
+          onClick={() => {
+            if (!hasMoved) setIsOpen(!isOpen);
+          }}
+          className="group relative flex items-center justify-center w-14 h-14 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-150 border-2 border-white cursor-grab active:cursor-grabbing"
+          title="مساعد أبو الأكبر الذكي العائم - انقر للفتح أو اسحب لتحريك المكان"
         >
           <Sparkles className="w-6 h-6 animate-pulse" />
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <Move className="w-3 h-3 absolute top-1 right-1 opacity-60 group-hover:opacity-100" />
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
           </span>
-        </button>
+        </div>
       </div>
 
-      {/* 2. Floating AI Assistant Modal/Window نافذة المساعد العائمة للموقع */}
+      {/* 2. نافذة المساعد العائمة القابلة للتحريك أيضاً بنفس السلاسة */}
       {isOpen && (
         <div
           style={{
             position: "fixed",
-            bottom: `${Math.min(position.y + 60, window.innerHeight - 520)}px`,
-            left: `${Math.min(position.x, window.innerWidth - 380)}px`,
-            zIndex: 999999
+            left: `${Math.min(position.x, typeof window !== "undefined" ? window.innerWidth - 380 : 300)}px`,
+            top: `${Math.min(position.y + 60, typeof window !== "undefined" ? window.innerHeight - 520 : 400)}px`,
+            zIndex: 1000000
           }}
           className="w-[92vw] max-w-[370px] h-[520px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 text-slate-800 dir-rtl"
         >
-          {/* Header */}
-          <div className="bg-slate-900 text-white p-3.5 flex items-center justify-between shadow-md">
+          {/* Header & Move Handle */}
+          <div
+            onMouseDown={handleStartDrag}
+            onTouchStart={handleStartDrag}
+            className="bg-slate-900 text-white p-3 flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing select-none"
+          >
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-emerald-600 rounded-lg">
+              <div className="p-1.5 bg-emerald-600 rounded-lg flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-sm leading-tight">مساعد أبو الأكبر الذكي</h3>
-                <p className="text-[11px] text-emerald-400 font-medium">أوامر المبيعات والتجهيز والديون</p>
+                <h3 className="font-bold text-xs leading-tight flex items-center gap-1">
+                  مساعد أبو الأكبر الذكي
+                  <Move className="w-3 h-3 text-slate-400" />
+                </h3>
+                <p className="text-[10px] text-emerald-400 font-medium">اسحب الشريط العائم لتحريك الشاشة</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
@@ -222,15 +251,15 @@ export function AdminFloatingAiWidget() {
             </div>
           </div>
 
-          {/* Status & Subtitle */}
-          <div className="bg-slate-50 border-b border-slate-100 p-2.5 text-center">
+          {/* Status Bar */}
+          <div className="bg-slate-50 border-b border-slate-100 p-2 text-center">
             <p className={`text-xs font-semibold ${isListening ? "text-emerald-600 animate-pulse" : "text-slate-600"}`}>
               {statusText}
             </p>
           </div>
 
           {/* Chat Body */}
-          <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-slate-50/50">
+          <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
             {transcript && (
               <div className="bg-slate-200 text-slate-900 p-3 rounded-xl text-xs font-medium self-end mr-auto max-w-[85%] border border-slate-300">
                 💬 &quot;{transcript}&quot;
