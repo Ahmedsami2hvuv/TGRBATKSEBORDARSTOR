@@ -235,23 +235,26 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.61 تغيير حالة طلب برقم محدد صريح بالمنطوق (مثل: طلب رقم 2042 حوله إلى مرفوض)
+  // 0.61 تغيير حالة طلب برقم محدد صريح بالمنطوق (مثل: طلب رقم 2042 حوله إلى مرفوض / طير طلب 2042)
   if (
     cleanQ.includes("حوله الى") ||
     cleanQ.includes("حوله إلى") ||
     cleanQ.includes("حوله لـ") ||
     cleanQ.includes("حوله") ||
     cleanQ.includes("غير حالة") ||
-    cleanQ.includes("سوي طلب")
+    cleanQ.includes("سوي طلب") ||
+    cleanQ.includes("طير") ||
+    cleanQ.includes("ذبه") ||
+    cleanQ.includes("ودي")
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
     const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
 
     let targetStatus = "rejected";
-    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض")) targetStatus = "rejected";
+    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض") || cleanQ.includes("طير")) targetStatus = "rejected";
     else if (cleanQ.includes("مسلم") || cleanQ.includes("تم التسليم") || cleanQ.includes("مكتمل")) targetStatus = "completed";
     else if (cleanQ.includes("مستلم") || cleanQ.includes("تم الاستلام") || cleanQ.includes("واصل")) targetStatus = "delivered";
-    else if (cleanQ.includes("مؤرشف") || cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف")) targetStatus = "archived";
+    else if (cleanQ.includes("مؤرشف") || cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف") || cleanQ.includes("ذبه بالارشيف")) targetStatus = "archived";
     else if (cleanQ.includes("مسند") || cleanQ.includes("إسناد")) targetStatus = "assigned";
     else if (cleanQ.includes("جديد") || cleanQ.includes("معلق")) targetStatus = "pending";
 
