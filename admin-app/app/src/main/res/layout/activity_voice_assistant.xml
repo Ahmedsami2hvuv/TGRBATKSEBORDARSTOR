@@ -164,13 +164,12 @@
             android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 3. الكبسولة المتوهجة الملونة لـ Gemini Live بالمنتصف (بدون أي كتابة داخلها 100%) -->
-        <View
+        <!-- 3. كبسولة Gemini Live المضيئة ذات الألوان المطموشة بالدمج الناعم في المنتصف والمتفاعلة مع الصوت -->
+        <com.aboakbar.admin.GeminiLivePillView
             android:id="@+id/btnGeminiPill"
             android:layout_width="0dp"
             android:layout_height="52dp"
             android:layout_weight="1"
-            android:background="@drawable/gemini_gradient_pill_glow"
             android:layout_marginEnd="10dp" />
 
         <!-- 4. زر سهم الإرسال (دائرة بيضاء بإطار أسود دائري صريح) -->

@@ -1,12 +1,10 @@
 package com.aboakbar.admin
 
 import android.Manifest
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,7 +14,6 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.view.View
-import android.view.animation.LinearInterpolator
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -43,7 +40,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: ImageButton
     private lateinit var btnMicToggle: ImageButton
-    private lateinit var btnGeminiPill: View
+    private lateinit var btnGeminiPill: GeminiLivePillView
     private lateinit var btnSendTextAction: ImageButton
     private lateinit var btnKeyboardToggle: ImageButton
     private lateinit var textInputContainer: LinearLayout
@@ -67,10 +64,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     // سجل الدردشة التراكمية في الجلسة المفتوحة المباشرة
     private val sessionHistory = JSONArray()
 
-    // محرك الألوان الحالمة الساحرة بداخل الكبسولة دون تغيير الحجم
-    private var colorAnimator: ValueAnimator? = null
-    private lateinit var dreamyGradientDrawable: GradientDrawable
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_assistant)
@@ -91,8 +84,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnToggleTts = findViewById(R.id.btnToggleTts)
         transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
         responseContainer = findViewById(R.id.responseContainer)
-
-        setupDreamyColorGradientPill()
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
@@ -173,59 +164,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         checkPermissionAndStartListening()
     }
 
-    /**
-     * إعداد كبسولة الألوان الحالمة المتوهجة بدون تغيير الحجم نهائياً 100%
-     */
-    private fun setupDreamyColorGradientPill() {
-        dreamyGradientDrawable = GradientDrawable(
-            GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(
-                Color.parseColor("#38BDF8"), // أزرق زاهي
-                Color.parseColor("#F472B6"), // وردي ناعم
-                Color.parseColor("#FBBF24"), // أصفر حالم
-                Color.parseColor("#A855F7")  // بنفسجي ساحر
-            )
-        ).apply {
-            cornerRadius = 100f
-        }
-
-        btnGeminiPill.background = dreamyGradientDrawable
-
-        colorAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 3000
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
-            interpolator = LinearInterpolator()
-            addUpdateListener { animation ->
-                val fraction = animation.animatedValue as Float
-                val interpolatedColors = intArrayOf(
-                    blendColors(Color.parseColor("#38BDF8"), Color.parseColor("#A855F7"), fraction),
-                    blendColors(Color.parseColor("#F472B6"), Color.parseColor("#38BDF8"), fraction),
-                    blendColors(Color.parseColor("#FBBF24"), Color.parseColor("#F472B6"), fraction),
-                    blendColors(Color.parseColor("#A855F7"), Color.parseColor("#FBBF24"), fraction)
-                )
-                dreamyGradientDrawable.colors = interpolatedColors
-            }
-        }
-        colorAnimator?.start()
-    }
-
-    private fun blendColors(color1: Int, color2: Int, ratio: Float): Int {
-        val inverseRatio = 1f - ratio
-        val a = Color.alpha(color1) * inverseRatio + Color.alpha(color2) * ratio
-        val r = Color.red(color1) * inverseRatio + Color.red(color2) * ratio
-        val g = Color.green(color1) * inverseRatio + Color.green(color2) * ratio
-        val b = Color.blue(color1) * inverseRatio + Color.blue(color2) * ratio
-        return Color.argb(a.toInt(), r.toInt(), g.toInt(), b.toInt())
-    }
-
     private fun clearSessionHistoryAndFinish() {
         try {
             while (sessionHistory.length() > 0) {
                 sessionHistory.remove(0)
             }
         } catch (e: Exception) {}
-        colorAnimator?.cancel()
         finish()
     }
 
@@ -337,9 +281,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onRmsChanged(rmsdB: Float) {
-                // الحجم ثابت 100% بدون تكبير أو تصغير! فقط سرعة وتفاعل حركة الألوان بداخل الكبسولة
-                val speedFactor = 1000L + (10f - rmsdB.coerceIn(0f, 10f)).toLong() * 200L
-                colorAnimator?.duration = speedFactor.coerceIn(400L, 3000L)
+                // إرسال نبرة الصوت لـ GeminiLivePillView لتتفاعل بقع الطمس الضوئية الناعمة بالمنتصف
+                btnGeminiPill.setAudioRms(rmsdB)
             }
 
             override fun onBufferReceived(buffer: ByteArray?) {}
@@ -500,7 +443,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     override fun onDestroy() {
-        colorAnimator?.cancel()
         stopListening()
         speechRecognizer?.destroy()
         textToSpeech?.stop()
