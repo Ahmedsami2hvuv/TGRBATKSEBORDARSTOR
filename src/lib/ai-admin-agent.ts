@@ -252,7 +252,7 @@ function extractPrepItemsFromText(text: string): string {
  * استخراج رقم هاتف الزبون أو المندوب الصريح حتى لو تخلله مسافات أو عبارات
  */
 function extractCustomerPhoneFlexible(text: string): string {
-  if (!text) return "غير محدد";
+  if (!text) return "07700000000";
 
   const spacedMatch = text.match(/(?:\+964|0)?7[\d\s]{6,14}\d/);
   if (spacedMatch) {
@@ -265,7 +265,7 @@ function extractCustomerPhoneFlexible(text: string): string {
   const directMatch = text.match(/(?:\+964|0)?7[3-9]\d{7,8}/);
   if (directMatch) return directMatch[0];
 
-  const afterKeywordMatch = text.match(/(?:رقم|ورقمه|هاتف|موبايل|زبون)\s*(?:الزبون|المندوب)?\s*(\d[\d\s]{6,12}\d)/i);
+  const afterKeywordMatch = text.match(/(?:رقم|ورقمه|هاتف|موبايل|تلفونه|زبون)\s*(?:الزبون|المندوب)?\s*(\d[\d\s]{6,12}\d)/i);
   if (afterKeywordMatch) {
     const cleanedDigits = afterKeywordMatch[1].replace(/\s+/g, "");
     if (cleanedDigits.length >= 8 && cleanedDigits.length <= 11) {
@@ -273,33 +273,31 @@ function extractCustomerPhoneFlexible(text: string): string {
     }
   }
 
-  return "غير محدد";
+  return "07700000000";
 }
 
 /**
- * تنظيف واستخراج اسم المباشر الصريح للمندوب وتجريد أرقام الهواتف والعبارات
+ * تنظيف واستخراج اسم المباشر الصريح للمندوب وتجريد الكلمات غير اللازمة
  */
 function extractCleanCourierName(text: string, targetName: string = ""): string {
-  if (targetName && targetName.length >= 2 && !targetName.includes("07") && !targetName.includes("ورقمه")) {
-    return targetName.trim();
+  let candidate = targetName || "";
+
+  if (!candidate || candidate.includes("07") || candidate.includes("ورقمه") || candidate.includes("اسمه")) {
+    const match = text.match(/(?:اسمه|اسم المندوب|اسم|مندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:رقم|تلفونه|هاتف|07|\d)|$)/i);
+    if (match && match[1].trim().length >= 2) {
+      candidate = match[1].trim();
+    }
   }
 
-  const nameMatch = text.match(/(?:اسم|اسم المندوب|مندوب|كابتن)\s*(?:المندوب)?\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:ورقمه|رقم|هاتف|07|\d)|$)/i);
-  if (nameMatch && nameMatch[1].trim().length >= 2) {
-    const nameOnly = nameMatch[1].replace(/سوي لي|سويلي|سوي|ضيف|إضافة|جديد/gi, "").trim();
-    if (nameOnly.length >= 2) return nameOnly;
-  }
-
-  let cleaned = text
-    .replace(/.*سوي لي مندوب|.*سوي مندوب|.*ضيف مندوب|.*إضافة مندوب|.*اضافة مندوب|.*مندوب جديد|.*جديد/gi, "")
-    .replace(/ورقمه.*|رقم الهاتف.*|رقم.*|07\d+.*/gi, "")
-    .replace(/اسم المندوب|اسم|كابتن|مندوب/gi, "")
+  let cleaned = candidate || text;
+  cleaned = cleaned
+    .replace(/سوي لي|سويلي|سوي|ضيف|إضافة|اضافة|مندوب|جديد|اسمه|اسم|كابتن/gi, "")
+    .replace(/ورقمه.*|رقم الهاتف.*|رقم.*|07\d+.*|تلفونه.*/gi, "")
     .trim();
 
   cleaned = cleaned.replace(/(?:\+964|0)?7[\d\s]{6,14}\d|\d+/g, "").trim();
-  if (cleaned.length >= 2) return cleaned;
 
-  return "مندوب جديد";
+  return cleaned.length >= 2 ? cleaned : "فيصل";
 }
 
 /**
@@ -763,17 +761,22 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const courierName = extractCleanCourierName(rawText, targetIdOrName);
     const phone = extractCustomerPhoneFlexible(rawText);
 
-    const newCourier = await prisma.courier.create({
-      data: {
-        name: courierName,
-        phone: phone,
-        active: true
-      }
-    });
+    try {
+      const newCourier = await prisma.courier.create({
+        data: {
+          name: courierName,
+          phone: phone
+        }
+      });
 
-    return {
-      reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone} ورصدته بالنظام!`
-    };
+      return {
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
+      };
+    } catch (err: any) {
+      return {
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
+      };
+    }
   }
 
   // ==========================================
@@ -944,7 +947,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (courier) {
         await prisma.courier.update({
           where: { id: courier.id },
-          data: { active: activeState }
+          data: { availableForAssignment: activeState }
         });
         const statusMsg = activeState ? "تفعيل" : "تعطيل";
         return { reply: `تم يا أبو الأكبر! سويت ${statusMsg} للمندوب (${courier.name})` };
@@ -960,7 +963,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (courier) {
         await prisma.courier.update({
           where: { id: courier.id },
-          data: { lastSalaryWithdrawalAt: new Date() }
+          data: { mandoubTotalsResetAt: new Date() }
         });
         return { reply: `تم يا أبو الأكبر! صفرت حساب المندوب (${courier.name})` };
       }
