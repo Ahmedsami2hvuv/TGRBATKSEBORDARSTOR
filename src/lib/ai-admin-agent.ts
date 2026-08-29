@@ -210,61 +210,51 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "last_rejected_order" };
   }
 
-  // 0.6 إلغاء أو رفض طلب معين
-  if (
-    cleanQ.includes("إلغاء") ||
-    cleanQ.includes("الغاء") ||
-    cleanQ.includes("سوي لها إلغاء") ||
-    cleanQ.includes("سويله إلغاء") ||
-    cleanQ.includes("سويله رفض") ||
-    cleanQ.includes("حوله إلى مرفوض") ||
-    cleanQ.includes("حوله الى مرفوض") ||
-    cleanQ.includes("حوله مرفوض") ||
-    (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض") && !cleanQ.includes("ملغي"))
-  ) {
-    const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
+  // 0.60 الالتقاط التلقائي الشامل لأي رقم طلب ومعه أي لفظ حالة (مثل: طلب رقم 2054 سوي مرفوض / طلب 2042 حوله إلى مرفوض / 2042 مرفوض)
+  const orderNumMatchGeneral = text.match(/\b\d{3,5}\b/);
+  const orderNumGeneral = orderNumMatchGeneral ? Number(orderNumMatchGeneral[0]) : null;
 
-    let shopNameMatch = text.match(/(?:طلب|طلب محل|محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:اللي|الي|بحالة|بحاله|جديدة|جديده|سوي|سويلها|إلغاء|رفض)|$)/i);
-    let shopName = shopNameMatch ? shopNameMatch[1].trim() : null;
+  if (
+    orderNumGeneral &&
+    (cleanQ.includes("مرفوض") ||
+      cleanQ.includes("ملغي") ||
+      cleanQ.includes("إلغاء") ||
+      cleanQ.includes("الغاء") ||
+      cleanQ.includes("رفض") ||
+      cleanQ.includes("طير") ||
+      cleanQ.includes("مسلم") ||
+      cleanQ.includes("تسليم") ||
+      cleanQ.includes("مكتمل") ||
+      cleanQ.includes("مستلم") ||
+      cleanQ.includes("استلام") ||
+      cleanQ.includes("واصل") ||
+      cleanQ.includes("مؤرشف") ||
+      cleanQ.includes("ارشيف") ||
+      cleanQ.includes("أرشيف") ||
+      cleanQ.includes("مسند") ||
+      cleanQ.includes("إسناد") ||
+      cleanQ.includes("اسناد") ||
+      cleanQ.includes("جديد") ||
+      cleanQ.includes("معلق"))
+  ) {
+    let targetStatus = "rejected";
+    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض") || cleanQ.includes("طير")) targetStatus = "rejected";
+    else if (cleanQ.includes("مسلم") || cleanQ.includes("تسليم") || cleanQ.includes("مكتمل")) targetStatus = "completed";
+    else if (cleanQ.includes("مستلم") || cleanQ.includes("استلام") || cleanQ.includes("واصل")) targetStatus = "delivered";
+    else if (cleanQ.includes("مؤرشف") || cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف")) targetStatus = "archived";
+    else if (cleanQ.includes("مسند") || cleanQ.includes("إسناد") || cleanQ.includes("اسناد")) targetStatus = "assigned";
+    else if (cleanQ.includes("جديد") || cleanQ.includes("معلق")) targetStatus = "pending";
 
     return {
-      category: "order_cancel_or_reject",
-      order_number: orderNum,
-      shop_name: shopName
+      category: "order_single_status_change",
+      order_number: orderNumGeneral,
+      target_status: targetStatus
     };
   }
 
-  // 0.61 تغيير حالة طلب برقم محدد صريح بالمنطوق (مثل: طلب رقم 2042 حوله إلى مرفوض / طير طلب 2042)
-  if (
-    cleanQ.includes("حوله الى") ||
-    cleanQ.includes("حوله إلى") ||
-    cleanQ.includes("حوله لـ") ||
-    cleanQ.includes("حوله") ||
-    cleanQ.includes("غير حالة") ||
-    cleanQ.includes("سوي طلب") ||
-    cleanQ.includes("طير") ||
-    cleanQ.includes("ذبه") ||
-    cleanQ.includes("ودي")
-  ) {
-    const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
-
-    let targetStatus = "rejected";
-    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض") || cleanQ.includes("طير")) targetStatus = "rejected";
-    else if (cleanQ.includes("مسلم") || cleanQ.includes("تم التسليم") || cleanQ.includes("مكتمل")) targetStatus = "completed";
-    else if (cleanQ.includes("مستلم") || cleanQ.includes("تم الاستلام") || cleanQ.includes("واصل")) targetStatus = "delivered";
-    else if (cleanQ.includes("مؤرشف") || cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف") || cleanQ.includes("ذبه بالارشيف")) targetStatus = "archived";
-    else if (cleanQ.includes("مسند") || cleanQ.includes("إسناد")) targetStatus = "assigned";
-    else if (cleanQ.includes("جديد") || cleanQ.includes("معلق")) targetStatus = "pending";
-
-    if (orderNum) {
-      return {
-        category: "order_single_status_change",
-        order_number: orderNum,
-        target_status: targetStatus
-      };
-    }
+  // 0.61 أسئلة التعريف والترحيب العامة (مثل: من أنت، مين انت)
+  if (cleanQ.includes("من انت") || cleanQ.includes("من انت") || cleanQ.includes("مين انت") || cleanQ.includes("شنو انت")) {
+    return { category: "who_are_you" };
   }
 
   // 1. التحديث الجماعي لحالات طلبات محلات أو مندوبين معينين
@@ -843,6 +833,12 @@ export async function executeSuperSystemAgent(
         });
 
         return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)` };
+      }
+
+      case "who_are_you": {
+        return {
+          reply: "أنا المساعد الذكي الخاص بنظامك يا أبو الأكبر! أتحكم بالطلبات، المندوبين، المجهزين، والديون فورياً بـ 0 ميلي ثانية! 🚀"
+        };
       }
 
       case "order_single_status_change": {
