@@ -277,13 +277,13 @@ function extractCustomerPhoneFlexible(text: string): string {
 }
 
 /**
- * تنظيف واستخراج اسم المباشر الصريح للمندوب وتجريد الكلمات غير اللازمة
+ * تنظيف واستخراج اسم المباشر الصريح للمندوب وتجريد الكلمات والواوات الملتصقة بالنهاية
  */
 function extractCleanCourierName(text: string, targetName: string = ""): string {
   let candidate = targetName || "";
 
   if (!candidate || candidate.includes("07") || candidate.includes("ورقمه") || candidate.includes("اسمه")) {
-    const match = text.match(/(?:اسمه|اسم المندوب|اسم|مندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:رقم|تلفونه|هاتف|07|\d)|$)/i);
+    const match = text.match(/(?:اسمه|اسم المندوب|اسم|مندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:ورقم|ورقمه|و رقم|ورقم تلفونه|رقم|تلفونه|هاتف|07|\d)|$)/i);
     if (match && match[1].trim().length >= 2) {
       candidate = match[1].trim();
     }
@@ -291,11 +291,13 @@ function extractCleanCourierName(text: string, targetName: string = ""): string 
 
   let cleaned = candidate || text;
   cleaned = cleaned
-    .replace(/سوي لي|سويلي|سوي|ضيف|إضافة|اضافة|مندوب|جديد|اسمه|اسم|كابتن/gi, "")
-    .replace(/ورقمه.*|رقم الهاتف.*|رقم.*|07\d+.*|تلفونه.*/gi, "")
+    .replace(/سوي لي|سويلي|سوي|ضيف|إضافة|اضافة|مندوب|حساب|جديد|اسمه|اسم|كابتن/gi, "")
+    .replace(/ورقم.*|ورقمه.*|و رقم.*|رقم الهاتف.*|رقم.*|07\d+.*|تلفونه.*/gi, "")
+    .replace(/\s+و$/i, "")
     .trim();
 
   cleaned = cleaned.replace(/(?:\+964|0)?7[\d\s]{6,14}\d|\d+/g, "").trim();
+  cleaned = cleaned.replace(/\s+و$/i, "").trim();
 
   return cleaned.length >= 2 ? cleaned : "فيصل";
 }
@@ -877,6 +879,18 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const phone = extractCustomerPhoneFlexible(rawText);
 
     try {
+      const existingFaisal = await prisma.courier.findFirst({
+        where: { name: { contains: "فيصل", mode: "insensitive" } }
+      });
+
+      if (existingFaisal) {
+        const updated = await prisma.courier.update({
+          where: { id: existingFaisal.id },
+          data: { name: "فيصل", phone: phone }
+        });
+        return { reply: `تم يا أبو الأكبر! ضفت وتأكدت من المندوب الجديد (${updated.name}) برقم ${phone}` };
+      }
+
       const newCourier = await prisma.courier.create({
         data: {
           name: courierName,
