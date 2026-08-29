@@ -74,6 +74,31 @@ async function findMatchingShopByQuery(queryText: string) {
 }
 
 /**
+ * البحث والدعم الفائق للمناطق المطابقة الحقيقية (جيكور، جيكور حزبه 1، حمدان، إلخ)
+ */
+function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]): any[] {
+  const cleanQ = cleanArabicTextForMatch(queryText);
+  if (!cleanQ) return allRegions.slice(0, 4);
+
+  // 1. تصفية الأثر بالكلمات المستخرجة فقط (مثلاً: جيكور أو حمدان)
+  const words = cleanQ.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "منطقة", "منطقه", "مستلم", "سويه", "عدل", "غير"].includes(w));
+  const mainKeyword = words.length > 0 ? words[words.length - 1] : cleanQ;
+
+  // 2. تصفية المناطق التي تحتوي اسم الكلمة صراحةً في الداتابيز
+  const exactContains = allRegions.filter(r => {
+    const cleanR = cleanArabicTextForMatch(r.name);
+    return cleanR.includes(mainKeyword) || mainKeyword.includes(cleanR);
+  });
+
+  if (exactContains.length > 0) {
+    return exactContains;
+  }
+
+  // 3. التراجع للبحث الذكي في حال عدم وجود مطابقة اسم صريحة
+  return rankRegionsByQuery(mainKeyword, allRegions, 4);
+}
+
+/**
  * استخراج المنتجات والمواد من نص رسالة التجهيز
  */
 function extractPrepItemsFromText(text: string): string {
@@ -343,13 +368,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    let matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
-    
-    if (!matchingRegion) {
-      const ranked = rankRegionsByQuery(rawText, allRegions, 1);
-      if (ranked.length > 0) matchingRegion = ranked[0];
-    }
-    const region = matchingRegion || allRegions[0];
+    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+    const region = matchedRegions[0] || allRegions[0];
 
     const phone = extractCustomerPhoneFlexible(rawText);
 
@@ -530,25 +550,25 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // تعديل اسم المنطقة والالتزام التلقائي بسعر التوصيل المسجل بالداتابيز حصراً مع إظهار أزرار الخيارات إذا تعددت
+    // تعديل اسم المنطقة وجلب الخيارات المطابقة الصريحة (جيكور، جيكور حزبه 1، إلخ) مع إصلاح رقم سعر التوصيل صراحة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      const cleanRegionText = rawText.replace(/.*منطقة|.*منطقه|.*رايح|عدل|غير|سوي|اسم/gi, "").trim();
+      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+      let targetRegion = matchedRegions[0] || allRegions[0];
 
-      const ranked = rankRegionsByQuery(cleanRegionText, allRegions, 4);
-      let targetRegion = ranked.length > 0 ? ranked[0] : allRegions[0];
-
-      if (ranked.length > 1) {
-        regionButtons = ranked.map(r => ({
-          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice})`,
-          action: `set_region_${existingOrder.id}_${r.id}`
-        }));
+      if (matchedRegions.length > 1) {
+        regionButtons = matchedRegions.map(r => {
+          const priceNum = r.deliveryPrice ? Number(r.deliveryPrice) : 5;
+          return {
+            text: `📍 ${r.name} (توصيل: ${priceNum})`,
+            action: `set_region_${existingOrder.id}_${r.id}`
+          };
+        });
       }
 
       if (targetRegion) {
         updateData.customerRegionId = targetRegion.id;
-        // سعر التوصيل الثابت المأخوذ حصراً من جدول المنطقة بـ داتابيز الموقع
-        const regionDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5;
+        const regionDeliveryPrice = targetRegion.deliveryPrice ? Number(targetRegion.deliveryPrice) : 5;
         updateData.deliveryPrice = new Decimal(regionDeliveryPrice);
 
         const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
@@ -595,7 +615,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         data: updateData
       });
 
-      const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **إذا كنت تقصد منطقة أخرى، يمكنك النقر مباشرةً من الخيارات:**" : "";
+      const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **المناطق المطابقة المتوفرة (انقر على الخيار المناسب):**" : "";
 
       return {
         reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}${optionsNote}`,
