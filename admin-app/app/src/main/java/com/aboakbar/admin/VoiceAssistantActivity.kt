@@ -93,7 +93,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
 
         btnGeminiPill.setOnClickListener {
-            if (!isListening && !isMicPaused) {
+            if (!isListening) {
+                isMicPaused = false
+                btnMicToggle.text = "🎙️"
+                btnMicToggle.setBackgroundColor(Color.WHITE)
                 checkPermissionAndStartListening()
             }
         }
@@ -131,6 +134,33 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
         }
 
+        checkPermissionAndStartListening()
+    }
+
+    /**
+     * عند ضغط المدير على زر الباور مطولاً والمساعد الصوتي مفتوح أصلًا في الشاشة،
+     * يتم إرسال Intent جديد ويتم استدعاء onNewIntent للبدء التلقائي في الاستماع للأمر الجديد فوراً!
+     */
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        restartListeningOnPowerButton()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isListening && !isMicPaused && speechRecognizer != null) {
+            checkPermissionAndStartListening()
+        }
+    }
+
+    private fun restartListeningOnPowerButton() {
+        textToSpeech?.stop()
+        stopListening()
+        isMicPaused = false
+        btnMicToggle.text = "🎙️"
+        btnMicToggle.setBackgroundColor(Color.WHITE)
+        tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
         checkPermissionAndStartListening()
     }
 
@@ -203,7 +233,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             override fun onError(error: Int) {
                 isListening = false
-                tvStatus.text = "⚠️ انقر على الميكروفون للتحدث أو اكتب بالنص"
+                tvStatus.text = "⚠️ انقر على الميكروفون للتحدث أو اضغط الباور مجدداً"
                 progressBar.visibility = View.GONE
             }
 
