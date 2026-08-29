@@ -113,7 +113,7 @@
             android:name="com.onesignal.NotificationServiceExtension"
             android:value="com.aboakbar.admin.MyNotificationServiceExtension" />
 
-        <!-- Default small icon for OneSignal and Firebase (used in notification grouping) -->
+        <!-- Default small icon for OneSignal and Firebase -->
         <meta-data
             android:name="com.onesignal.NotificationIcon.DEFAULT"
             android:resource="@drawable/ic_notification_small" />
@@ -123,7 +123,7 @@
 
         <activity
             android:name="com.aboakbar.admin.VoiceAssistantActivity"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            android:theme="@style/Theme.TransparentVoiceAssistant"
             android:label="تطبيق المدير - المساعد الرقمي"
             android:launchMode="singleTask"
             android:exported="true">

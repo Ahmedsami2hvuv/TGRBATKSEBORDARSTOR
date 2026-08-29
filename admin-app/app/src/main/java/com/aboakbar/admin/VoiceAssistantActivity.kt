@@ -42,6 +42,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var btnSendText: Button
     private lateinit var buttonsContainer: LinearLayout
     private lateinit var btnToggleTts: Button
+    private lateinit var transparentClickDismiss: View
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
@@ -68,16 +69,18 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnSendText = findViewById(R.id.btnSendText)
         buttonsContainer = findViewById(R.id.buttonsContainer)
         btnToggleTts = findViewById(R.id.btnToggleTts)
+        transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
 
         textToSpeech = TextToSpeech(this, this)
 
         btnClose.setOnClickListener { finish() }
+        transparentClickDismiss.setOnClickListener { finish() }
 
         btnMicToggle.setOnClickListener {
             if (isListening) {
                 stopListening()
                 isMicPaused = true
-                tvStatus.text = "🛑 الميكروفون متوقف - يمكنك الكتابة فقط"
+                tvStatus.text = "🛑 الميكروفون متوقف - اكتب بالنص"
                 btnMicToggle.text = "🔇"
                 btnMicToggle.setBackgroundColor(Color.parseColor("#E2E8F0"))
                 Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
@@ -154,7 +157,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startListening()
             } else {
-                tvStatus.text = "⚠️ يتطلب المساعد الإذن باستخدام الميكروفون"
+                tvStatus.text = "⚠️ يتطلب المساعد إذن الميكروفون"
                 Toast.makeText(this, "يرجى منح إذن الميكروفون لاستخدام المساعد الصوتي", Toast.LENGTH_LONG).show()
             }
         }
@@ -162,7 +165,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     private fun startListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            tvStatus.text = "⚠️ خدمة التعرف الصوتي غير متوفرة بالهاتف"
+            tvStatus.text = "⚠️ التعرف الصوتي غير متوفر بالهاتف"
             return
         }
 
@@ -194,13 +197,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {
                 isListening = false
-                tvStatus.text = "⚡ جاري تحليل وإرسال الأمر للسيرفر..."
+                tvStatus.text = "⚡ جاري معالجة وإرسال الأمر..."
                 progressBar.visibility = View.VISIBLE
             }
 
             override fun onError(error: Int) {
                 isListening = false
-                tvStatus.text = "⚠️ يمكنك النقر على الميكروفون للتحدث أو الكتابة بالنص"
+                tvStatus.text = "⚠️ انقر على الميكروفون للتحدث أو اكتب بالنص"
                 progressBar.visibility = View.GONE
             }
 
@@ -225,7 +228,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun sendToAdminVoiceApi(text: String) {
-        tvStatus.text = "🚀 جاري التنفيذ والتثبيت بالنظام..."
+        tvStatus.text = "🚀 جاري التنفيذ بالتطبيق..."
         progressBar.visibility = View.VISIBLE
         buttonsContainer.removeAllViews()
 
@@ -292,15 +295,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             val actionBtn = Button(this).apply {
                 text = btnText
-                textSize = 15f
+                textSize = 14f
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#0284C7"))
-                setPadding(16, 12, 16, 12)
+                setPadding(14, 10, 14, 10)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(0, 8, 0, 8)
+                    setMargins(0, 6, 0, 6)
                 }
 
                 setOnClickListener {

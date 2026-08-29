@@ -45,22 +45,28 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * مطابقة ذكية مرنة لأسماء المحلات
+ * مطابقة ذكية مرنة لأسماء المحلات المباشرة (مثل أبو الأكبر، أبو سند، مطبخ البركات)
  */
 async function findMatchingShopByQuery(queryText: string) {
   const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
   if (allShops.length === 0) return null;
 
   const cleanQuery = cleanArabicTextForMatch(queryText);
-  const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "محل", "سوي", "عدل", "غير", "سويه", "فارس", "احمد", "نجم"].includes(w));
 
+  // 1. مطابقة صريحة لاسم المحل بالكامل
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
-    if (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanQuery)) {
+    if (cleanShopName.length > 2 && (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanQuery))) {
       return shop;
     }
+  }
+
+  // 2. مطابقة أجزاء اسم المحل بدون الكلمات العامة
+  const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "سوي", "عدل", "غير", "سويه"].includes(w));
+  for (const shop of allShops) {
+    const cleanShopName = cleanArabicTextForMatch(shop.name);
     for (const w of words) {
-      if (cleanShopName.includes(w)) {
+      if (w.length > 2 && cleanShopName.includes(w)) {
         return shop;
       }
     }
@@ -134,7 +140,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     rawText.includes("طلب جديد") ||
     rawText.includes("انشئ طلب")
   ) {
-    // أ) جلب أو مطابقة المحل
+    // أ) جلب أو مطابقة المحل الصريح المذكور بالحرف
     const matchingShop = await findMatchingShopByQuery(rawText);
     const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
 
@@ -184,7 +190,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         deliveryPrice: new Decimal(deliveryPriceNum),
         totalAmount: new Decimal(totalAmountNum),
         submissionSource: "admin_ai_assistant",
-        orderNoteTime: rawText.includes("الان") ? "فوري" : "عادي",
+        orderNoteTime: rawText.includes("الان") || rawText.includes("هسه") ? "فوري" : "عادي",
       }
     });
 
