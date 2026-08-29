@@ -957,12 +957,14 @@ export async function executeSuperSystemAgent(
         }
 
         let orderType = "اقمشه";
-        if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
+        if (fullText.includes("ورد")) orderType = "ورد";
+        else if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
         else if (fullText.includes("روبيان")) orderType = "روبيان";
         else if (fullText.includes("مواد")) orderType = "مواد متنوعة";
 
         let noteTime = "غير محدد";
-        if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
+        if (fullText.includes("الان") || fullText.includes("الآن")) noteTime = "الان";
+        else if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
         else if (fullText.includes("مغرب")) noteTime = "مغرباً";
         else if (fullText.includes("فوري")) noteTime = "فوري";
 
