@@ -116,7 +116,6 @@ function extractCustomerPhoneFlexible(text: string): string {
 function extractCleanOrderType(text: string): string {
   if (!text) return "طلب جديد";
 
-  // إزالة جميع عبارات وأوامر التعديل وأرقام الطلبات صراحة
   let cleaned = text
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
@@ -124,7 +123,6 @@ function extractCleanOrderType(text: string): string {
     .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*/gi, "")
     .trim();
 
-  // إزالة أي أرقام هواتف أو رموز متبقية
   cleaned = cleaned.replace(/(?:\+964|0)?7[3-9]\d{7,8}|\d+/g, "").trim();
 
   if (cleaned.length >= 1 && cleaned.length <= 40) {
@@ -483,7 +481,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const wordPrice = parseArabicWordsToNumber(rawText);
   if (wordPrice != null) {
     targetNewPrice = wordPrice;
-  } else if (allNumbers.length > 0) {
+  } else if (allNumbers.length > 0 && (rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب") || rawText.includes("سعر التوصيل"))) {
     const priceCandidates = allNumbers.filter(n => n !== orderNumber);
     if (priceCandidates.length > 0) {
       targetNewPrice = priceCandidates[priceCandidates.length - 1];
@@ -518,6 +516,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   if (existingOrder) {
     const updateData: any = {};
     const changes: string[] = [];
+    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
 
     if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
       const allCouriers = await prisma.courier.findMany();
@@ -531,32 +530,39 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة")) {
+    // تعديل اسم المنطقة والالتزام التلقائي بسعر التوصيل المسجل بالداتابيز حصراً مع إظهار أزرار الخيارات إذا تعددت
+    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      let targetRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
-      
-      if (!targetRegion) {
-        const cleanRegionText = rawText.replace(/.*منطقة|.*منطقه|.*رايح|عدل|غير|سوي/gi, "").trim();
-        const ranked = rankRegionsByQuery(cleanRegionText, allRegions, 1);
-        if (ranked.length > 0) targetRegion = ranked[0];
+      const cleanRegionText = rawText.replace(/.*منطقة|.*منطقه|.*رايح|عدل|غير|سوي|اسم/gi, "").trim();
+
+      const ranked = rankRegionsByQuery(cleanRegionText, allRegions, 4);
+      let targetRegion = ranked.length > 0 ? ranked[0] : allRegions[0];
+
+      if (ranked.length > 1) {
+        regionButtons = ranked.map(r => ({
+          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice})`,
+          action: `set_region_${existingOrder.id}_${r.id}`
+        }));
       }
 
       if (targetRegion) {
         updateData.customerRegionId = targetRegion.id;
-        const newDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5;
-        updateData.deliveryPrice = new Decimal(newDeliveryPrice);
+        // سعر التوصيل الثابت المأخوذ حصراً من جدول المنطقة بـ داتابيز الموقع
+        const regionDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5;
+        updateData.deliveryPrice = new Decimal(regionDeliveryPrice);
 
         const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
-        updateData.totalAmount = new Decimal(currentSubtotal + newDeliveryPrice);
+        updateData.totalAmount = new Decimal(currentSubtotal + regionDeliveryPrice);
 
         changes.push(`📍 **المنطقة والوجهة الجديدة:** ${targetRegion.name}`);
-        changes.push(`🚚 **سعر التوصيل الثابت للمنطقة:** ${newDeliveryPrice}`);
-        changes.push(`💵 **المبلغ الإجمالي الجديد:** ${currentSubtotal + newDeliveryPrice}`);
+        changes.push(`🚚 **سعر التوصيل المسجل للمنطقة:** ${regionDeliveryPrice}`);
+        changes.push(`💵 **المبلغ الإجمالي الجديد:** ${currentSubtotal + regionDeliveryPrice}`);
       }
     }
 
-    if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سعره") || rawText.includes("سويه") || rawText.includes("سوي"))) {
-      if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
+    // تعديل أسعار الطلب والتوصيل الصريحة فقط عند ذكر "سعر التوصيل" أو "سعر البضاعة"
+    if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
+      if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
         changes.push(`🚚 **سعر التوصيل الجديد:** ${targetNewPrice}`);
       } else {
@@ -570,7 +576,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // تنظيف واستخراج نوع البضاعة والطلب المحدث حصراً دون حشو التعليمات
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
@@ -589,7 +594,13 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         where: { id: existingOrder.id },
         data: updateData
       });
-      return { reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}` };
+
+      const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **إذا كنت تقصد منطقة أخرى، يمكنك النقر مباشرةً من الخيارات:**" : "";
+
+      return {
+        reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}${optionsNote}`,
+        buttons: regionButtons
+      };
     }
   }
 
