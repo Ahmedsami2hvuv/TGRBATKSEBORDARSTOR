@@ -592,8 +592,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
+    const isResetStatusToPending = rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة") || rawText.includes("رجعه") || rawText.includes("رجعها");
 
-    // أ) الإسناد الصريح للمندوب
+    // أ) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -664,9 +665,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    // هـ) تعديل الحالة الصريح (فقط عند عدم وجود أمر إسناد للمندوب)
+    // هـ) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
-      if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
+      if (isResetStatusToPending) {
+        updateData.status = "pending";
+        updateData.assignedCourierId = null;
+        changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
+        changes.push(`👨‍✈️ **المندوب:** تم إلغاء الإسناد وإعادة الطلب جديداً`);
+      } else if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
         updateData.status = "rejected";
         changes.push(`📌 **الحالة الجديدة:** مرفوض`);
       } else if (rawText.includes("مكتمل") || rawText.includes("واصل")) {
