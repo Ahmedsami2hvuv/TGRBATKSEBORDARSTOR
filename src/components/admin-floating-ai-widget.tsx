@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Bot } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Bot, Keyboard, MessageSquare } from "lucide-react";
 
 export function AdminFloatingAiWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 80 });
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [position, setPosition] = useState({ x: 20, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hasMoved, setHasMoved] = useState(false);
@@ -13,15 +14,16 @@ export function AdminFloatingAiWidget() {
   const [inputMessage, setInputMessage] = useState("");
   const [transcript, setTranscript] = useState("");
   const [responseText, setResponseText] = useState("");
-  const [statusText, setStatusText] = useState("جاهز للاستماع والتنفيذ...");
+  const [statusText, setStatusText] = useState("المساعد الصوتي الذكي جاهز");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isMicPaused, setIsMicPaused] = useState(false); // زر إيقاف الميكروفون
   const [isMuted, setIsMuted] = useState(false);
   const [dynamicButtons, setDynamicButtons] = useState<Array<{ text: string; action: string }>>([]);
 
   const recognitionRef = useRef<any>(null);
 
-  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة
+  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة (حاسوب وهاتف)
   const handleStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -45,8 +47,8 @@ export function AdminFloatingAiWidget() {
       setHasMoved(true);
     }
 
-    const maxX = typeof window !== "undefined" ? window.innerWidth - 70 : 300;
-    const maxY = typeof window !== "undefined" ? window.innerHeight - 70 : 600;
+    const maxX = typeof window !== "undefined" ? window.innerWidth - 80 : 300;
+    const maxY = typeof window !== "undefined" ? window.innerHeight - 80 : 600;
 
     const newX = Math.max(10, Math.min(maxX, clientX - dragStart.x));
     const newY = Math.max(10, Math.min(maxY, clientY - dragStart.y));
@@ -79,7 +81,7 @@ export function AdminFloatingAiWidget() {
     }
   }, [isDragging, dragStart, position]);
 
-  // إعداد محرك الناطق والتعرف الصوتي
+  // ناطق الاستجابة الصوتي
   const speakResponse = (text: string) => {
     if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const cleanText = text.replace(/[*#\-]|https?:\/\/\S+/g, "");
@@ -89,12 +91,27 @@ export function AdminFloatingAiWidget() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // الميكروفون والتعرف الصوتي
+  const toggleVoiceListening = () => {
+    if (isListening) {
+      // إيقاف الميكروفون
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsListening(false);
+      setIsMicPaused(true);
+      setStatusText("🛑 الميكروفون متوقف - يمكنك الكتابة بالنص فقط");
+    } else {
+      // تشغيل الميكروفون
+      setIsMicPaused(false);
+      startVoiceListening();
+    }
+  };
+
   const startVoiceListening = () => {
     if (typeof window === "undefined") return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setStatusText("⚠️ التعرف الصوتي غير مدعوم بهذا المتصفح، يمكنك الكتابة بالنص أدناه.");
+      setStatusText("⚠️ التعرف الصوتي غير مدعوم بهذا المتصفح، استخدم الكتابة بالنص.");
       return;
     }
 
@@ -110,7 +127,8 @@ export function AdminFloatingAiWidget() {
 
       rec.onstart = () => {
         setIsListening(true);
-        setStatusText("🎙️ الميكروفون شغال... تحدث براحتك بالأمر");
+        setIsMicPaused(false);
+        setStatusText("🎙️ جاري الاستماع... اتحدث بأمرك الآن");
       };
 
       rec.onresult = (event: any) => {
@@ -122,7 +140,7 @@ export function AdminFloatingAiWidget() {
 
       rec.onerror = () => {
         setIsListening(false);
-        setStatusText("⚠️ يمكنك الكتابة أو النقر لإعادة التحدث.");
+        setStatusText("⚠️ تعذر سماع الصوت، يمكنك النقر للمحاولة أو الكتابة.");
       };
 
       rec.onend = () => {
@@ -140,7 +158,7 @@ export function AdminFloatingAiWidget() {
   const sendApiCommand = async (textToSend: string) => {
     if (!textToSend.trim()) return;
     setIsLoading(true);
-    setStatusText("🚀 جاري معالجة الأمر والتنفيذ بالنظام...");
+    setStatusText("⚡ جاري المعالجة والتنفيذ بالنظام...");
     setDynamicButtons([]);
 
     try {
@@ -161,7 +179,7 @@ export function AdminFloatingAiWidget() {
         }
         speakResponse(data.reply || "");
       } else {
-        setStatusText("⚠️ خطأ في معالجة الطلب.");
+        setStatusText("⚠️ خطأ في المعالجة.");
         setResponseText(data.error || data.message || "حدث خطأ غير متوقع.");
       }
     } catch (err: any) {
@@ -173,7 +191,7 @@ export function AdminFloatingAiWidget() {
 
   return (
     <>
-      {/* 1. الزر العائم المباشر الذكي القابل للتحريك في أي مكان بالشاشة */}
+      {/* 1. الكرة البلورية المتوهجة العائمة لـ Gemini Live (Orb Floating Trigger) */}
       <div
         style={{
           position: "fixed",
@@ -188,99 +206,113 @@ export function AdminFloatingAiWidget() {
           onMouseDown={handleStartDrag}
           onTouchStart={handleStartDrag}
           onClick={() => {
-            if (!hasMoved) setIsOpen(!isOpen);
+            if (!hasMoved) {
+              const newOpen = !isOpen;
+              setIsOpen(newOpen);
+              if (newOpen && !isMicPaused) startVoiceListening();
+            }
           }}
-          className="group relative flex items-center justify-center w-14 h-14 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-150 border-2 border-white cursor-grab active:cursor-grabbing"
-          title="مساعد أبو الأكبر الذكي العائم - انقر للفتح أو اسحب لتحريك المكان"
+          className="group relative flex items-center justify-center w-16 h-16 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing border-2 border-white/80 overflow-hidden transition-transform duration-150 hover:scale-105 active:scale-95 bg-gradient-to-tr from-blue-600 via-indigo-500 to-sky-200"
+          title="مساعد أبو الأكبر الذكي - اسحب لتحريك المكان"
         >
-          <Sparkles className="w-6 h-6 animate-pulse" />
-          <Move className="w-3 h-3 absolute top-1 right-1 opacity-60 group-hover:opacity-100" />
-          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-          </span>
+          {/* التأثير البلوري السائل المضيء كـ Gemini Live */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-sky-400 via-indigo-600 to-blue-300 opacity-90 animate-pulse"></div>
+          <div className="absolute inset-1 rounded-full bg-gradient-to-b from-white/40 to-transparent blur-[2px]"></div>
+
+          <Sparkles className="relative w-7 h-7 text-white animate-spin-slow drop-shadow-md" />
+          <Move className="w-3.5 h-3.5 text-white/80 absolute top-1 right-1 opacity-70 group-hover:opacity-100" />
         </div>
       </div>
 
-      {/* 2. نافذة المساعد العائمة القابلة للتحريك أيضاً بنفس السلاسة */}
+      {/* 2. شريط المساعد الصوتي العائم والمستنسخ بالضبط من Gemini Live (Gemini Floating Bar & Window) */}
       {isOpen && (
         <div
           style={{
             position: "fixed",
             left: `${Math.min(position.x, typeof window !== "undefined" ? window.innerWidth - 380 : 300)}px`,
-            top: `${Math.min(position.y + 60, typeof window !== "undefined" ? window.innerHeight - 520 : 400)}px`,
+            top: `${Math.min(position.y + 75, typeof window !== "undefined" ? window.innerHeight - 520 : 400)}px`,
             zIndex: 1000000
           }}
-          className="w-[92vw] max-w-[370px] h-[520px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 text-slate-800 dir-rtl"
+          className="w-[92vw] max-w-[370px] bg-slate-950/95 backdrop-blur-xl text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-slate-800 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 dir-rtl"
         >
-          {/* Header & Move Handle */}
+          {/* Gemini Bar Header & Drag Control */}
           <div
             onMouseDown={handleStartDrag}
             onTouchStart={handleStartDrag}
-            className="bg-slate-900 text-white p-3 flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing select-none"
+            className="p-3.5 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
           >
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-emerald-600 rounded-lg flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-sky-300 p-0.5 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-sky-400 animate-pulse" />
+                </div>
               </div>
               <div>
-                <h3 className="font-bold text-xs leading-tight flex items-center gap-1">
-                  مساعد أبو الأكبر الذكي
+                <h3 className="font-bold text-xs leading-tight flex items-center gap-1.5 text-slate-100">
+                  المساعد الصوتي الذكي
                   <Move className="w-3 h-3 text-slate-400" />
                 </h3>
-                <p className="text-[10px] text-emerald-400 font-medium">اسحب الشريط العائم لتحريك الشاشة</p>
+                <p className="text-[10px] text-sky-400 font-medium">{statusText}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setIsMuted(!isMuted)}
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
-                  isMuted ? "bg-slate-700 text-slate-400" : "bg-emerald-600 text-white"
+                className={`p-2 rounded-full text-xs font-semibold flex items-center justify-center transition-all ${
+                  isMuted ? "bg-slate-800 text-slate-400" : "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                 }`}
-                title={isMuted ? "تفعيل الناطق الصوتي" : "إيقاف الناطق الصوتي"}
+                title={isMuted ? "تفعيل الناطق الصوتي" : "كتم الناطق الصوتي"}
               >
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-full transition-colors"
+                title="إغلاق المساعد"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4.5 h-4.5" />
               </button>
             </div>
           </div>
 
-          {/* Status Bar */}
-          <div className="bg-slate-50 border-b border-slate-100 p-2 text-center">
-            <p className={`text-xs font-semibold ${isListening ? "text-emerald-600 animate-pulse" : "text-slate-600"}`}>
-              {statusText}
-            </p>
-          </div>
-
-          {/* Chat Body */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
-            {transcript && (
-              <div className="bg-slate-200 text-slate-900 p-3 rounded-xl text-xs font-medium self-end mr-auto max-w-[85%] border border-slate-300">
-                💬 &quot;{transcript}&quot;
+          {/* Gemini Live Visualizer Orb & Chat Content Area */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 min-h-[220px] max-h-[300px] bg-slate-950/50">
+            {/* الشكل البلوري المتوهج المتحرك أثناء الاستماع والمعالجة */}
+            <div className="flex flex-col items-center justify-center py-3">
+              <div className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                isListening
+                  ? "scale-110 shadow-[0_0_40px_rgba(59,130,246,0.8)] bg-gradient-to-tr from-blue-500 via-indigo-500 to-sky-300 animate-pulse"
+                  : isLoading
+                  ? "scale-105 shadow-[0_0_30px_rgba(168,85,247,0.8)] bg-gradient-to-tr from-purple-600 to-pink-500 animate-spin-slow"
+                  : "shadow-[0_0_20px_rgba(59,130,246,0.4)] bg-gradient-to-tr from-slate-800 to-blue-900"
+              }`}>
+                <div className="w-16 h-16 rounded-full bg-slate-950/80 backdrop-blur-md flex items-center justify-center">
+                  {isLoading ? (
+                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                  ) : isListening ? (
+                    <Mic className="w-8 h-8 text-sky-400 animate-bounce" />
+                  ) : (
+                    <Sparkles className="w-8 h-8 text-blue-400" />
+                  )}
+                </div>
               </div>
-            )}
+            </div>
 
-            {isLoading && (
-              <div className="flex items-center gap-2 text-slate-500 text-xs p-3 bg-white rounded-xl shadow-sm border border-slate-100 w-fit">
-                <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                جاري تنفيذ وتثبيت الأمر...
+            {transcript && (
+              <div className="bg-slate-900/90 text-slate-100 p-3 rounded-2xl text-xs font-medium border border-slate-800 shadow-inner">
+                🎙️ &quot;{transcript}&quot;
               </div>
             )}
 
             {responseText && (
-              <div className="bg-white text-slate-800 p-3.5 rounded-xl shadow-sm border border-slate-100 text-xs leading-relaxed space-y-2 whitespace-pre-wrap">
+              <div className="bg-slate-900/90 text-slate-200 p-3.5 rounded-2xl border border-slate-800 text-xs leading-relaxed space-y-2 whitespace-pre-wrap">
                 {responseText}
 
                 {/* الأزرار التفاعلية المباشرة */}
                 {dynamicButtons.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-                    <p className="text-[11px] text-slate-500 font-bold">خيارات التجهيز والمجهزين المفصلة:</p>
+                  <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+                    <p className="text-[11px] text-slate-400 font-bold">خيارات التجهيز والمجهزين المفصلة:</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {dynamicButtons.map((btn, idx) => (
                         <button
@@ -289,7 +321,7 @@ export function AdminFloatingAiWidget() {
                             setTranscript(btn.text);
                             sendApiCommand(btn.text);
                           }}
-                          className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg border border-emerald-200 transition-colors text-center"
+                          className="p-2 bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 font-bold text-[11px] rounded-xl border border-blue-800/60 transition-colors text-center"
                         >
                           {btn.text}
                         </button>
@@ -301,48 +333,88 @@ export function AdminFloatingAiWidget() {
             )}
           </div>
 
-          {/* Controls Input Bottom */}
-          <div className="p-3 bg-white border-t border-slate-200 flex flex-col gap-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (inputMessage.trim()) {
-                  setTranscript(inputMessage);
-                  sendApiCommand(inputMessage);
-                  setInputMessage("");
-                }
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="اكتب الأمر الإداري أو التجهيز..."
-                className="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-              <button
-                type="submit"
-                disabled={!inputMessage.trim() || isLoading}
-                className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          {/* Gemini Live Control Bar بنفس التصميم والزرار الموضحة بالصور */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5">
+            {/* شريط الإدخال النصي عند رغبة المدير بالكتابة فقط */}
+            {showTextInput && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (inputMessage.trim()) {
+                    setTranscript(inputMessage);
+                    sendApiCommand(inputMessage);
+                    setInputMessage("");
+                  }
+                }}
+                className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
               >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="اكتب الأمر النصي هنا..."
+                  className="flex-1 px-3.5 py-2.5 text-xs bg-slate-950 text-white rounded-2xl border border-slate-700 focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="p-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/30"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            )}
 
-            <div className="flex items-center justify-between gap-2 pt-1">
+            {/* الأزرار البيضاء العائمة المطابقة لـ Gemini Live Screen بالضبط */}
+            <div className="flex items-center justify-between gap-2 px-1 py-1">
+              {/* 1. زر إغلاق X */}
               <button
-                type="button"
-                onClick={startVoiceListening}
-                disabled={isListening || isLoading}
-                className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                onClick={() => setIsOpen(false)}
+                className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-lg active:scale-95"
+                title="إغلاق المساعد"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* 2. زر تشغيل / إيقاف الميكروفون المباشر */}
+              <button
+                onClick={toggleVoiceListening}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 ${
                   isListening
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:opacity-90"
+                    : isMicPaused
+                    ? "bg-slate-700 text-slate-300"
+                    : "bg-white text-slate-900 hover:bg-slate-200"
                 }`}
+                title={isListening ? "إيقاف الاستماع الصوتي" : "تفعيل الميكروفون الصوتي"}
               >
-                <Mic className="w-4 h-4" />
-                {isListening ? "جاري الاستماع..." : "🎙️ التحدث صوتاً"}
+                {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              </button>
+
+              {/* 3. الشعار المتوهج البيضاوي المستنسخ لـ Gemini Live في المنتصف مع خاصية السحب */}
+              <div
+                onMouseDown={handleStartDrag}
+                onTouchStart={handleStartDrag}
+                onClick={() => {
+                  if (!isListening && !isMicPaused) startVoiceListening();
+                }}
+                className="flex-1 h-12 rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing flex items-center justify-center gap-1.5 text-white font-bold text-xs hover:opacity-95 transition-opacity px-3"
+                title="Gemini Live Bar - اسحب لتحريك الشاشة أو انقر لبدء التحدث"
+              >
+                <Sparkles className="w-4 h-4 animate-spin-slow" />
+                <span className="text-[11px] font-semibold">{isListening ? "جاري التحدث..." : "Gemini Live"}</span>
+              </div>
+
+              {/* 4. زر فتح الكتابة النصية والمكالمات (Keyboard / Text Toggle) */}
+              <button
+                onClick={() => setShowTextInput(!showTextInput)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                  showTextInput ? "bg-blue-600 text-white" : "bg-white text-slate-900 hover:bg-slate-200"
+                }`}
+                title="فتح مربع الكتابة النصية"
+              >
+                <Keyboard className="w-5 h-5" />
               </button>
             </div>
           </div>
