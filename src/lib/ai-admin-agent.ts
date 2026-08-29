@@ -60,7 +60,7 @@ async function findMatchingShopByQuery(queryText: string) {
     }
   }
 
-  const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "سوي", "عدل", "غير", "سويه"].includes(w));
+  const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "سوي", "عدل", "غير", "سويه", "محل", "جديد"].includes(w));
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
     for (const w of words) {
@@ -78,9 +78,9 @@ async function findMatchingShopByQuery(queryText: string) {
  */
 function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]): any[] {
   const cleanQ = cleanArabicTextForMatch(queryText);
-  if (!cleanQ) return allRegions.slice(0, 4);
+  if (!cleanQ) return [];
 
-  const words = cleanQ.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "منطقة", "منطقه", "مستلم", "سويه", "عدل", "غير"].includes(w));
+  const words = cleanQ.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "منطقة", "منطقه", "مستلم", "سويه", "عدل", "غير", "محل"].includes(w));
   const mainKeyword = words.length > 0 ? words[words.length - 1] : cleanQ;
 
   const exactContains = allRegions.filter(r => {
@@ -172,7 +172,7 @@ function extractCleanCourierName(text: string, targetName: string = ""): string 
 }
 
 /**
- * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وحظر كلمة طلب نهائياً
+ * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وحظر كلمة طلب أو أسماء المحلات
  */
 function extractCleanOrderType(text: string): string {
   if (!text) return "مواد متنوعة";
@@ -180,7 +180,7 @@ function extractCleanOrderType(text: string): string {
   let cleaned = text
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
-    .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|عدل|غير|سوي لي|سوي|خلي/gi, "")
+    .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|عدل|غير|سوي لي|سوي|خلي|جديد من محل|محل/gi, "")
     .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*/gi, "")
     .replace(/طلب|طلبية|طلبيه|طلبيا/gi, "")
     .replace(/\b(?:على|ع|إلى|الي|من|باسم)\b/gi, "")
@@ -190,13 +190,13 @@ function extractCleanOrderType(text: string): string {
 
   const words = cleaned
     .split(/\s+/)
-    .filter(w => w.length >= 2 && !w.includes("طلب") && !w.includes("عدل") && !w.includes("سويه"));
+    .filter(w => w.length >= 2 && !w.includes("طلب") && !w.includes("عدل") && !w.includes("سويه") && !w.includes("محل"));
 
   if (words.length > 0) {
     return words.join(" ");
   }
 
-  return "سمك";
+  return "صمون";
 }
 
 /**
@@ -397,7 +397,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-    const matchingRegion = matchedRegions[0] || allRegions[0];
+    const matchingRegion = matchedRegions[0] || null;
 
     const allPreparers = await prisma.companyPreparer.findMany();
     const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
@@ -407,7 +407,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         preparerId: assignedPreparer ? assignedPreparer.id : null,
         rawListText: extractedItems,
         customerPhone: phone,
-        customerRegionId: matchingRegion?.id,
+        customerRegionId: matchingRegion?.id || null,
         titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
         status: "draft"
       }
@@ -421,7 +421,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
 
     return {
-      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام يا أبو الأكبر!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
+      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام يا أبو الأكبر!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "غير محددة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
       buttons: preparerButtons
     };
   }
@@ -439,15 +439,46 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       rawText.includes("انشئ طلب"))
   ) {
     const matchingShop = await findMatchingShopByQuery(rawText);
-    const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
 
-    if (!firstShop) {
-      return { reply: "❌ لم يتم العثور على أي محل في النظام لرفع الطلب باسمه." };
+    // إذا لم يجد اسم المحل الصريح المطابق، يطلب من أبو الأكبر الاختيار ويخرج أزرار المحلات
+    if (!matchingShop) {
+      const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+      const shopButtons = allShops.slice(0, 6).map(s => ({
+        text: `🏪 ${s.name}`,
+        action: `select_shop_${s.id}`
+      }));
+
+      const shopNameExtracted = rawText.match(/(?:محل|من محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|رقم|سعر)|$)/i);
+      const triedShopName = shopNameExtracted ? shopNameExtracted[1].trim() : "غير محدد";
+
+      return {
+        reply: `⚠️ **يا أبو الأكبر:** لم أتمكن من الجزم باسم المحل المطابق (${triedShopName}) بقواعد البيانات!\n\n👇 **يرجى النقر على اسم المحل المطلوب أدناه لرفع الطلب باسمه مباشرة:**`,
+        buttons: shopButtons
+      };
     }
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-    const region = matchedRegions[0] || allRegions[0];
+    const hasRegionMention = rawText.includes("منطقة") || rawText.includes("منطقه") || rawText.includes("عنوان") || rawText.includes("جيكور") || rawText.includes("حمدان") || rawText.includes("ابي الخصيب");
+    
+    let selectedRegion: any = null;
+    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
+
+    if (hasRegionMention) {
+      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+      selectedRegion = matchedRegions[0] || null;
+      if (matchedRegions.length > 1) {
+        regionButtons = matchedRegions.map(r => ({
+          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
+          action: `select_region_${r.id}`
+        }));
+      }
+    } else {
+      // إذا لم يذكر اسم المنطقة إطلاقاً، يخرج خيارات المناطق لأبو الأكبر بالنقر المباشر
+      regionButtons = allRegions.slice(0, 5).map(r => ({
+        text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
+        action: `select_region_${r.id}`
+      }));
+    }
 
     const phone = extractCustomerPhoneFlexible(rawText);
 
@@ -455,17 +486,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
-    const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5;
+    const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : (hasRegionMention ? 5 : 0);
     const totalAmountNum = priceNum + deliveryPriceNum;
 
     const orderType = extractCleanOrderType(rawText);
 
     const order = await prisma.order.create({
       data: {
-        shopId: firstShop.id,
+        shopId: matchingShop.id,
         status: "pending",
         orderType: orderType,
-        customerRegionId: region?.id,
+        customerRegionId: selectedRegion?.id || null,
         customerPhone: phone,
         orderSubtotal: new Decimal(priceNum),
         deliveryPrice: new Decimal(deliveryPriceNum),
@@ -478,8 +509,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     notifyTelegramNewOrder(order.id).catch(() => {});
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
+    const regionNote = selectedRegion ? selectedRegion.name : "⚠️ غير محددة (يرجى اختيار المنطقة أدناه)";
+    const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **انقر على المنطقة المناسبة لتأكيد سعر التوصيل:**" : "";
+
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${matchingShop.name}\n- **المنطقة والوجهة:** ${regionNote}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}${optionsNote}`,
+      buttons: regionButtons
     };
   }
 
@@ -551,7 +586,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   let existingOrder: any = null;
 
-  // 1. البحث الصريح بواسطة رقم الطلب إن وجد
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -559,7 +593,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 2. تضييق نطاق البحث الذكي (اسم المحل + حالة الطلب المحددة في الجملة)
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
@@ -584,7 +617,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 3. تنفيذ الإجراء المباشر الدقيق المطلق على الطلب المحدد
   if (existingOrder) {
     const updateData: any = {};
     const changes: string[] = [];
@@ -594,7 +626,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
     const isResetStatusToPending = rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة") || rawText.includes("رجعه") || rawText.includes("رجعها");
 
-    // أ) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -612,7 +643,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل اسم المنطقة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -642,7 +672,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل الأسعار
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -658,14 +687,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // د) تعديل نوع البضاعة والمنتج
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    // هـ) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
