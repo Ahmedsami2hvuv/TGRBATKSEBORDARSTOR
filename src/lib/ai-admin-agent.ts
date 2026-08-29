@@ -216,22 +216,41 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH GUARANTEED PREPARER & ITEMS)
+  // 0.0 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // ==========================================
+  if (rawText.startsWith("assign_prep_")) {
+    const parts = rawText.split("_");
+    const draftId = parts[2];
+    const preparerId = parts[3];
+
+    const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
+
+    if (draft && preparer) {
+      const updated = await prisma.companyPreparerShoppingDraft.update({
+        where: { id: draft.id },
+        data: { preparerId: preparer.id }
+      });
+
+      return {
+        reply: `تم يا أبو الأكبر! أسندت طلب التجهيز #${updated.draftNumber} إلى المجهز (${preparer.name})`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
-
     const itemsText = extractPrepItemsFromText(fullText);
 
+    // فحص إن كان تم ذكر مجهز صريح بالنص
     const allPreparers = await prisma.companyPreparer.findMany();
     let assignedPreparer = allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()));
 
     if (!assignedPreparer && (fullText.includes("ميثاق") || fullText.includes("ابو رضا"))) {
       assignedPreparer = allPreparers.find(p => p.name.includes("ميثاق"));
-    }
-
-    if (!assignedPreparer && allPreparers.length > 0) {
-      assignedPreparer = allPreparers[0];
     }
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
@@ -254,12 +273,24 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       }
     });
 
-    const preparerName = assignedPreparer ? assignedPreparer.name : "المجهز الرئيسي";
     const regionTitle = matchingRegion ? matchingRegion.name : "جيكور";
 
-    return {
-      reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${preparerName})\n📝 المواد: ${itemsText}`
-    };
+    if (assignedPreparer) {
+      return {
+        reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${assignedPreparer.name})\n📝 المواد: ${itemsText}`
+      };
+    } else {
+      // إرسال أزرار تفاعلية أنيقة بأقسام وأسماء كافة المجهزين والموردين بالداتابيز بالنقر المباشر 100%!
+      const preparerButtons = allPreparers.slice(0, 5).map(p => ({
+        text: `👨‍🍳 إسناد لـ: ${p.name}`,
+        action: `assign_prep_${draft.id}_${p.id}`
+      }));
+
+      return {
+        reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle})\n📝 المواد: ${itemsText}\n\n👇 **اختر المجهز المطلوب بالنقر المباشر أدناه:**`,
+        buttons: preparerButtons
+      };
+    }
   }
 
   // ==========================================
