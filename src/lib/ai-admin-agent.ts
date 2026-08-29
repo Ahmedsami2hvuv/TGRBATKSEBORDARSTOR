@@ -906,7 +906,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // ==========================================
   let orderNumber: number | null = null;
 
-  // 1. التقاط رقم الطلب الصريح المكون من 3-5 أرقام (مثل 2047 أو 2033) حتى لو كان أول كلمة بالرسالة
   const explicitNumMatch = rawText.match(/(?:طلب|طلبية|#|رقمه|رقم)?\s*(\d{3,5})/i);
   if (explicitNumMatch) {
     orderNumber = Number(explicitNumMatch[1]);
@@ -916,7 +915,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   let existingOrder: any = null;
 
-  // 1. البحث الصريح والتأكيد بواسطة رقم الطلب المباشر
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -924,7 +922,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 2. تضييق نطاق البحث بحسب المحل إن لم يذكر رقم الطلب الصريح
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
@@ -959,7 +956,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
   }
 
-  // 3. تنفيذ الإجراء المباشر الدقيق المطلق على الطلب المحدد لـ كافة الحقول الشاملة
   if (existingOrder) {
     const updateData: any = {};
     const changes: string[] = [];
@@ -969,7 +965,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
     const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة");
 
-    // أ) تعديل وتثبيت رقم هاتف الزبون الأساسي (customerPhone)
     if (rawText.includes("رقم الزبون") || rawText.includes("رقم الهاتف") || rawText.includes("هاتف") || rawText.includes("موبايل") || rawText.includes("غير الرقم") || rawText.includes("خلي الرقم")) {
       const newPhone = extractCustomerPhoneFlexible(rawText);
       if (newPhone && newPhone !== "غير محدد") {
@@ -978,7 +973,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل رقم الهاتف الثاني/البديل للزبون (alternatePhone / secondCustomerPhone)
     if (rawText.includes("الرقم الثاني") || rawText.includes("الرقم البديل") || rawText.includes("رقم بديل") || rawText.includes("هاتف ثاني")) {
       const altPhone = extractCustomerPhoneFlexible(rawText);
       if (altPhone && altPhone !== "غير محدد") {
@@ -988,7 +982,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل أقرب نقطة دالة / العلامة البارزة (customerLandmark)
     if (rawText.includes("نقطة دالة") || rawText.includes("نقطه داله") || rawText.includes("علامة بارزة") || rawText.includes("قريب على") || rawText.includes("مقابل")) {
       const landmarkMatch = rawText.match(/(?:نقطة دالة|نقطه داله|علامة بارزة|قريب على|مقابل)\s*(.+)$/i);
       const landmarkText = landmarkMatch ? landmarkMatch[1].trim() : rawText.trim();
@@ -998,21 +991,18 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // د) تعديل دين الزبون القديم على الطلب (customerOldDebt)
     if (rawText.includes("دين قديم") || rawText.includes("دين الزبون القديم") || rawText.includes("طلب قديم")) {
       const debtAmount = wordPrice != null ? wordPrice : 0;
       updateData.customerOldDebt = new Decimal(debtAmount);
       changes.push(`💳 **دين الزبون القديم المسجل:** ${debtAmount}`);
     }
 
-    // هـ) تعديل سعر الشراء والتكلفة (purchasePrice)
     if (rawText.includes("سعر الشراء") || rawText.includes("التكلفة") || rawText.includes("تكلفة البضاعة")) {
       const pPrice = wordPrice != null ? wordPrice : 0;
       updateData.purchasePrice = new Decimal(pPrice);
       changes.push(`🏷️ **سعر الشراء/التكلفة الجديد:** ${pPrice}`);
     }
 
-    // و) تعديل رابط موقع الخريطة / اللوكيشن للزبون (customerLocationUrl)
     if (rawText.includes("موقع الزبون") || rawText.includes("لوكيشن") || rawText.includes("خريطة")) {
       const urlMatch = rawText.match(/(https?:\/\/\S+|maps\S+)/i);
       if (urlMatch) {
@@ -1021,7 +1011,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ز) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -1039,7 +1028,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ح) تعديل اسم المنطقة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم") || rawText.includes("جيكور") || rawText.includes("حمدان")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -1069,7 +1057,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ط) تعديل الأسعار والمبالغ صراحة وبثبات 100%
     if (!rawText.includes("سعر الشراء") && (wordPrice != null || rawText.includes("سعر") || rawText.includes("السعر"))) {
       const finalPriceToSet = wordPrice != null ? wordPrice : 5;
 
@@ -1087,7 +1074,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد النهائي:** ${sub + del}`);
     }
 
-    // ي) تعديل نوع البضاعة والمنتج النظيف صراحةً
     if (rawText.includes("نوع الطلب") || rawText.includes("نوع البضاعة") || rawText.includes("نوع المنتج") || rawText.includes("تغيير نوع") || rawText.includes("نوع") || rawText.includes("صمان") || rawText.includes("صمون")) {
       const cleanType = extractCleanOrderType(rawText, existingOrder.shop?.name);
       if (cleanType && cleanType.length >= 2) {
@@ -1096,14 +1082,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ك) تعديل وقت الاستلام والتوصيل الصريح (orderNoteTime)
     if (rawText.includes("وقت الطلب") || rawText.includes("وقت الاستلام") || rawText.includes("غدا") || rawText.includes("صباحا")) {
       const timeVal = extractCleanOrderNoteTime(rawText);
       updateData.orderNoteTime = timeVal;
       changes.push(`⏰ **وقت الاستلام والتوصيل الجديد:** ${timeVal}`);
     }
 
-    // ل) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
@@ -1137,9 +1121,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
   }
 
-  // ==========================================
-  // 7. استعلام وجلب البيانات المعلقة
-  // ==========================================
   if (!orderNumber && (rawText.includes("شنو") || rawText.includes("طلبات جديدة") || rawText.includes("طلبات معلقة"))) {
     const pendingOrders = await prisma.order.findMany({
       where: { status: "pending" },
@@ -1169,6 +1150,22 @@ export async function processAdminAiMessage(
   botToken?: string,
   historyArray?: any[]
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
+
+  // 1. أولوية قصوى فورية (0 ميلي ثانية): تنفيذ الأكشنات التفاعلية المباشرة للأزرار دون المرور بـ AI API
+  const isDirectActionButton =
+    userText.startsWith("apply_debt_existing_") ||
+    userText.startsWith("confirm_create_partner_") ||
+    userText === "cancel_debt_action" ||
+    userText.startsWith("select_shop_") ||
+    userText.startsWith("select_region_") ||
+    userText.startsWith("set_region_") ||
+    userText.startsWith("assign_prep_") ||
+    userText.startsWith("📍");
+
+  if (isDirectActionButton) {
+    return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
+  }
+
   const allKeys = await getAllActiveGeminiKeys();
 
   let contextCombinedText = userText;
@@ -1206,7 +1203,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-لديك قدرة شاملة لتعديل كافة مكونات الطلب (رقم الزبون، الرقم البديل، أقرب نقطة دالة، دين قديم، سعر الشراء والتكلفة، لوكيشن الخريطة، المحل، السعر، المنطقة، المندوب، الوقت، والحالة)، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+نفذ الأكشنات بالنقر المباشر فوراً دون تخمين، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
