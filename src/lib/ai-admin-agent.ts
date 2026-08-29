@@ -437,20 +437,27 @@ function findBestMatch<T extends { name: string }>(
 ): { match: T | null; ambiguous: T[] } {
   if (!queryName || !queryName.trim()) return { match: null, ambiguous: [] };
   const cleanQuery = cleanArabicTextForMatch(queryName);
-  if (cleanQuery.length < 2) return { match: null, ambiguous: [] };
+  if (cleanQuery.length < 1) return { match: null, ambiguous: [] };
 
-  // 1. تطابق تام
+  // 1. تطابق تام مباشر
   const exact = items.find(i => cleanArabicTextForMatch(i.name) === cleanQuery);
   if (exact) return { match: exact, ambiguous: [] };
 
-  // 2. فحص إن كانت إحدى الكلمات المسجلة في العناصر موجودة كـ كلمة صريحة داخل النص
-  const wordsInQuery = cleanQuery.split(/\s+/).filter(w => w.length >= 2);
-  const wordMatches = items.filter(i => {
+  // 2. فحص صريح: هل احتوت الرسالة المنطوقة على اسم أي عنصر مسجل ككلمة مستقلة؟
+  const foundItems = items.filter(i => {
     const cleanItemName = cleanArabicTextForMatch(i.name);
-    return wordsInQuery.some(w => w === cleanItemName || cleanItemName === w);
+    if (!cleanItemName) return false;
+    return cleanQuery.includes(cleanItemName) || cleanItemName.includes(cleanQuery);
   });
-  if (wordMatches.length === 1) return { match: wordMatches[0], ambiguous: [] };
-  if (wordMatches.length > 1) return { match: null, ambiguous: wordMatches };
+
+  if (foundItems.length === 1) return { match: foundItems[0], ambiguous: [] };
+  if (foundItems.length > 1) {
+    const sorted = [...foundItems].sort((a, b) => b.name.length - a.name.length);
+    if (cleanArabicTextForMatch(sorted[0].name).length > cleanArabicTextForMatch(sorted[1].name).length) {
+      return { match: sorted[0], ambiguous: [] };
+    }
+    return { match: null, ambiguous: foundItems };
+  }
 
   // 3. تطابق جزئي احترافي
   const partial = items.filter(i => {
