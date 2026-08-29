@@ -48,6 +48,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var buttonsContainer: LinearLayout
     private lateinit var btnToggleTts: Button
     private lateinit var transparentClickDismiss: View
+    private lateinit var responseContainer: LinearLayout
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
@@ -81,6 +82,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         buttonsContainer = findViewById(R.id.buttonsContainer)
         btnToggleTts = findViewById(R.id.btnToggleTts)
         transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
+        responseContainer = findViewById(R.id.responseContainer)
 
         // جلب تفضيل كتم الصوت المحفوظ دائماً
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -285,7 +287,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onRmsChanged(rmsdB: Float) {
-                val scale = 1.0f + (rmsdB.coerceIn(0f, 10f) / 20.0f)
+                val scale = 1.0f + (rmsdB.coerceIn(0f, 10f) / 18.0f)
                 btnGeminiPill.animate()
                     .scaleX(scale)
                     .scaleY(scale)
@@ -345,6 +347,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         tvStatus.text = "🚀 جاري التنفيذ بالتطبيق..."
         progressBar.visibility = View.VISIBLE
         buttonsContainer.removeAllViews()
+        responseContainer.visibility = View.VISIBLE
 
         val client = OkHttpClient()
         val json = JSONObject()
@@ -379,7 +382,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
                             tvResponse.text = reply
 
-                            // حفظ المحادثة في مصفوفة السجل المؤقتة للجلسة الحالية
                             val uObj = JSONObject()
                             uObj.put("role", "user")
                             uObj.put("content", text)
