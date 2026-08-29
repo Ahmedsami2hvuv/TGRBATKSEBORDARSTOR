@@ -14,7 +14,7 @@ import {
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
 import { PickupMoneyForm, DeliveryMoneyForm } from "./mandoub-order-money-flow";
 import { submitMandoubDeliveryMoney, submitMandoubPickupMoney } from "./cash-actions";
-import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
+import { dinarDecimalToAlfInputString, formatDinarAsAlf } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -165,6 +165,103 @@ function buildOrderDetailHref(
 
 const initialBulk: MandoubBulkStatusState = {};
 const initialCash: MandoubCashState = {};
+
+function MandoubCardMoneyBadges({ o }: { o: any }) {
+  const pickup = o.pickupSumDinar ?? null; // صادر المندوب
+  const preparerPickup = o.preparerPickupSumDinar ?? null; // صادر المجهز
+  const adminPickup = o.adminPickupSumDinar ?? null; // صادر الإدارة
+  const delivery = o.deliverySumDinar ?? null; // وارد المندوب
+  const preparerDelivery = o.preparerDeliverySumDinar ?? null; // وارد المجهز
+
+  const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
+  const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
+  const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
+  const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
+  const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
+
+  const hasAnyBadge =
+    showPickup ||
+    showPreparerPickup ||
+    showAdminPickup ||
+    showDelivery ||
+    showPreparerDelivery ||
+    o.wardMismatchType ||
+    o.saderMismatchType ||
+    (o.noWardRecorded && o.orderStatus === "delivered") ||
+    (o.noSaderRecorded && (o.orderStatus === "delivering" || o.orderStatus === "delivered"));
+
+  if (!hasAnyBadge) return null;
+
+  const pillBase =
+    "inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-black leading-none tabular-nums shadow-xs border shrink-0";
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap shrink-0" onClick={(e) => e.stopPropagation()}>
+      {/* صادر المندوب - أخضر */}
+      {showPickup && (
+        <span className={`${pillBase} bg-emerald-600 text-white border-emerald-700`} title="صادر المندوب">
+          {formatDinarAsAlf(pickup)}
+        </span>
+      )}
+      {/* صادر المجهز - أصفر */}
+      {showPreparerPickup && (
+        <span className={`${pillBase} bg-amber-500 text-white border-amber-600`} title="صادر المجهز">
+          {formatDinarAsAlf(preparerPickup)}
+        </span>
+      )}
+      {/* صادر الإدارة - أزرق */}
+      {showAdminPickup && (
+        <span className={`${pillBase} bg-blue-600 text-white border-blue-700`} title="صادر الإدارة">
+          {formatDinarAsAlf(adminPickup)}
+        </span>
+      )}
+      {/* وارد المندوب - أحمر */}
+      {showDelivery && (
+        <span className={`${pillBase} bg-rose-600 text-white border-rose-700`} title="وارد المندوب">
+          {formatDinarAsAlf(delivery)}
+        </span>
+      )}
+      {/* وارد المجهز - بنفسجي */}
+      {showPreparerDelivery && (
+        <span className={`${pillBase} bg-purple-600 text-white border-purple-700`} title="وارد المجهز">
+          {formatDinarAsAlf(preparerDelivery)}
+        </span>
+      )}
+
+      {/* شارات النقص والوارد */}
+      {o.wardMismatchType === "deficit" && (
+        <span className={`${pillBase} bg-red-700 text-white border-red-800`} title="نقص بالوارد">
+          نقص بالوارد
+        </span>
+      )}
+      {o.saderMismatchType === "deficit" && (
+        <span className={`${pillBase} bg-amber-700 text-white border-amber-800`} title="نقص بالصادر">
+          نقص بالصادر
+        </span>
+      )}
+      {o.wardMismatchType === "excess" && (
+        <span className={`${pillBase} bg-emerald-800 text-white border-emerald-900`} title="زيادة بالوارد">
+          زيادة بالوارد
+        </span>
+      )}
+      {o.saderMismatchType === "excess" && (
+        <span className={`${pillBase} bg-emerald-800 text-white border-emerald-900`} title="زيادة بالصادر">
+          زيادة بالصادر
+        </span>
+      )}
+      {o.noWardRecorded && o.orderStatus === "delivered" && (
+        <span className={`${pillBase} bg-slate-700 text-white border-slate-800`} title="بدون وارد">
+          بدون وارد
+        </span>
+      )}
+      {o.noSaderRecorded && (o.orderStatus === "delivering" || o.orderStatus === "delivered") && (
+        <span className={`${pillBase} bg-slate-700 text-white border-slate-800`} title="بدون صادر">
+          بدون صادر
+        </span>
+      )}
+    </div>
+  );
+}
 
 function MandoubFullBlockCardGrid({
   rows,
@@ -369,7 +466,8 @@ function MandoubFullBlockCardGrid({
                         </span>
                       </div>
 
-                      {o.customerName && <span className="text-xs text-slate-600 dark:text-slate-400 font-bold truncate shrink-0">👤 {o.customerName}</span>}
+                      {/* البلوكات الملونة البارزة باليسار من برا بنفس سطر نوع الطلب والوقت */}
+                      <MandoubCardMoneyBadges o={o} />
                     </div>
 
                     {o.phoneLine && (
