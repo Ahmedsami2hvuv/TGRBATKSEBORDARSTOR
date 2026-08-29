@@ -96,11 +96,9 @@ function extractPrepItemsFromText(text: string): string {
 function extractCustomerPhoneFlexible(text: string): string {
   if (!text) return "غير محدد";
 
-  // 1. فحص أرقام الهواتف الصريحة المتصلة
   const directMatch = text.match(/(?:\+964|0)?7[3-9]\d{7,8}/);
   if (directMatch) return directMatch[0];
 
-  // 2. فحص الأرقام المكتوبة بعد عبارة (رقم الزبون / هاتف الزبون / رقم)
   const afterKeywordMatch = text.match(/(?:رقم|هاتف|موبايل|زبون)\s*(?:الزبون)?\s*(\d[\d\s]{6,12}\d)/i);
   if (afterKeywordMatch) {
     const cleanedDigits = afterKeywordMatch[1].replace(/\s+/g, "");
@@ -113,24 +111,23 @@ function extractCustomerPhoneFlexible(text: string): string {
 }
 
 /**
- * استخراج تنظيف نوع البضاعة والطلب دون أسر تعليمات الأمر
+ * تنظيف واستخراج اسم المادة والمنتج الحقيقي فقط ومنع حشو جمل وأوامر التعديل صراحة
  */
 function extractCleanOrderType(text: string): string {
   if (!text) return "طلب جديد";
 
-  if (text.includes("روبيان")) return "روبيان";
-  if (text.includes("أكل") || text.includes("طعام")) return "طعام";
-  if (text.includes("اكسسوار") || text.includes("إكسسوار")) return "اكسسوارات";
-
+  // إزالة جميع عبارات وأوامر التعديل وأرقام الطلبات صراحة
   let cleaned = text
-    .replace(/.*نوع الطلب|.*نوع الطلبيه|.*نوع البضاعة|.*نوع/gi, "")
-    .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*|سوي لي طلب.*|سوي طلب.*/gi, "")
+    .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
+    .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
+    .replace(/عدل عليه|عدل عليه سويه|سويه|عدل|غير|سوي لي|سوي/gi, "")
+    .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*/gi, "")
     .trim();
 
-  // إزالة أي أرقام هواتف أو تعليمات متبقية
-  cleaned = cleaned.replace(/07\d+|\+964\d+|\d+/g, "").trim();
+  // إزالة أي أرقام هواتف أو رموز متبقية
+  cleaned = cleaned.replace(/(?:\+964|0)?7[3-9]\d{7,8}|\d+/g, "").trim();
 
-  if (cleaned.length >= 2 && cleaned.length <= 40) {
+  if (cleaned.length >= 1 && cleaned.length <= 40) {
     return cleaned;
   }
 
@@ -340,7 +337,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     rawText.includes("طلب جديد") ||
     rawText.includes("انشئ طلب")
   ) {
-    // أ) جلب المحل المطابق
     const matchingShop = await findMatchingShopByQuery(rawText);
     const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
 
@@ -348,7 +344,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       return { reply: "❌ لم يتم العثور على أي محل في النظام لرفع الطلب باسمه." };
     }
 
-    // ب) جلب المنطقة وسعر التوصيل الثابت
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     let matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
     
@@ -358,22 +353,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
     const region = matchingRegion || allRegions[0];
 
-    // ج) استخراج رقم هاتف الزبون بمرونة ودقة عالية
     const phone = extractCustomerPhoneFlexible(rawText);
 
-    // د) استخراج السعر وتثبيت سعر التوصيل الخاص بالمنطقة حصراً
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
-    // سعر التوصيل الثابت المعتمد من المنطقة المسجلة بـ داتابيز الموقع
     const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5;
     const totalAmountNum = priceNum + deliveryPriceNum;
 
-    // هـ) تنظيف واستخراج نوع البضاعة والطلب دون أسر التعليمات
     const orderType = extractCleanOrderType(rawText);
 
-    // و) إنشاء الطلب في قاعدة البيانات
     const order = await prisma.order.create({
       data: {
         shopId: firstShop.id,
@@ -580,10 +570,11 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
+    // تنظيف واستخراج نوع البضاعة والطلب المحدث حصراً دون حشو التعليمات
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
-      const newType = extractPrepItemsFromText(rawText);
+      const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
-      changes.push(`📦 **قائمة المنتجات والنوع الجديدة:**\n${newType}`);
+      changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
     if (rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
