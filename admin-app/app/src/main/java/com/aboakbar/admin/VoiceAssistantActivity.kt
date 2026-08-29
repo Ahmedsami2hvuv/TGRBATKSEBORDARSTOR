@@ -34,7 +34,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var tvResponse: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: Button
-    private lateinit var btnRetryMic: Button
+    private lateinit var btnMicToggle: Button
+    private lateinit var btnGeminiPill: Button
+    private lateinit var btnKeyboardToggle: Button
+    private lateinit var textInputContainer: LinearLayout
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
     private lateinit var buttonsContainer: LinearLayout
@@ -43,6 +46,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
     private var isTtsMuted = false
+    private var isListening = false
+    private var isMicPaused = false
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val SERVER_URL = "https://aboakbr.com/api/ai/admin-voice"
 
@@ -55,7 +60,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         tvResponse = findViewById(R.id.tvResponse)
         progressBar = findViewById(R.id.progressBar)
         btnClose = findViewById(R.id.btnClose)
-        btnRetryMic = findViewById(R.id.btnRetryMic)
+        btnMicToggle = findViewById(R.id.btnMicToggle)
+        btnGeminiPill = findViewById(R.id.btnGeminiPill)
+        btnKeyboardToggle = findViewById(R.id.btnKeyboardToggle)
+        textInputContainer = findViewById(R.id.textInputContainer)
         etCommandInput = findViewById(R.id.etCommandInput)
         btnSendText = findViewById(R.id.btnSendText)
         buttonsContainer = findViewById(R.id.buttonsContainer)
@@ -64,7 +72,36 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         textToSpeech = TextToSpeech(this, this)
 
         btnClose.setOnClickListener { finish() }
-        btnRetryMic.setOnClickListener { checkPermissionAndStartListening() }
+
+        btnMicToggle.setOnClickListener {
+            if (isListening) {
+                stopListening()
+                isMicPaused = true
+                tvStatus.text = "🛑 الميكروفون متوقف - يمكنك الكتابة فقط"
+                btnMicToggle.text = "🔇"
+                btnMicToggle.setBackgroundColor(Color.parseColor("#E2E8F0"))
+                Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
+            } else {
+                isMicPaused = false
+                btnMicToggle.text = "🎙️"
+                btnMicToggle.setBackgroundColor(Color.WHITE)
+                checkPermissionAndStartListening()
+            }
+        }
+
+        btnGeminiPill.setOnClickListener {
+            if (!isListening && !isMicPaused) {
+                checkPermissionAndStartListening()
+            }
+        }
+
+        btnKeyboardToggle.setOnClickListener {
+            if (textInputContainer.visibility == View.VISIBLE) {
+                textInputContainer.visibility = View.GONE
+            } else {
+                textInputContainer.visibility = View.VISIBLE
+            }
+        }
 
         btnToggleTts.setOnClickListener {
             isTtsMuted = !isTtsMuted
@@ -94,6 +131,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         checkPermissionAndStartListening()
     }
 
+    private fun stopListening() {
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel()
+        } catch (e: Exception) {}
+        isListening = false
+        progressBar.visibility = View.GONE
+    }
+
     private fun checkPermissionAndStartListening() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_REQUEST_CODE)
@@ -108,7 +154,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startListening()
             } else {
-                tvStatus.text = "⚠️ يتطلب المساعد التلقائي الإذن باستخدام الميكروفون"
+                tvStatus.text = "⚠️ يتطلب المساعد الإذن باستخدام الميكروفون"
                 Toast.makeText(this, "يرجى منح إذن الميكروفون لاستخدام المساعد الصوتي", Toast.LENGTH_LONG).show()
             }
         }
@@ -134,27 +180,32 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
+                isListening = true
                 tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
                 progressBar.visibility = View.VISIBLE
             }
 
             override fun onBeginningOfSpeech() {
+                isListening = true
                 tvStatus.text = "🎧 أستمع لصوتك الآن..."
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {
-                tvStatus.text = "⏳ جاري تحليل وإرسال الأمر للسيرفر..."
+                isListening = false
+                tvStatus.text = "⚡ جاري تحليل وإرسال الأمر للسيرفر..."
                 progressBar.visibility = View.VISIBLE
             }
 
             override fun onError(error: Int) {
-                tvStatus.text = "⚠️ يمكنك النقر على زر إعادة تحدث أو كتابة الأمر بالنص أدناه"
+                isListening = false
+                tvStatus.text = "⚠️ يمكنك النقر على الميكروفون للتحدث أو الكتابة بالنص"
                 progressBar.visibility = View.GONE
             }
 
             override fun onResults(results: Bundle?) {
+                isListening = false
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val text = matches[0]
@@ -243,7 +294,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 text = btnText
                 textSize = 15f
                 setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#0D9488"))
+                setBackgroundColor(Color.parseColor("#0284C7"))
                 setPadding(16, 12, 16, 12)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -274,6 +325,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     override fun onDestroy() {
+        stopListening()
         speechRecognizer?.destroy()
         textToSpeech?.stop()
         textToSpeech?.shutdown()
