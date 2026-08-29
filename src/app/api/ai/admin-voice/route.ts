@@ -37,7 +37,9 @@ export async function POST(req: Request) {
     }
 
     const userId = body.userId || "voice_admin";
-    const res = await processAdminAiMessage(text, userId);
+    const history = body.history || [];
+
+    const res = await processAdminAiMessage(text, userId, undefined, undefined, history);
 
     return NextResponse.json({
       ok: true,

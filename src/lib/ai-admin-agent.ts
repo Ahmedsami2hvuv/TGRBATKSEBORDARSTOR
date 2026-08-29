@@ -897,20 +897,45 @@ export async function processAdminAiMessage(
   userText: string,
   telegramUserId: string = "default",
   chatId?: string,
-  botToken?: string
+  botToken?: string,
+  historyArray?: any[]
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
   const allKeys = await getAllActiveGeminiKeys();
 
+  let contextCombinedText = userText;
+  const contentsPayload: any[] = [];
+
+  if (historyArray && Array.isArray(historyArray) && historyArray.length > 0) {
+    historyArray.forEach((item: any) => {
+      const roleName = item.role === "assistant" || item.role === "model" ? "model" : "user";
+      const textVal = item.content || item.text || item.prompt || "";
+      if (textVal) {
+        contentsPayload.push({
+          role: roleName,
+          parts: [{ text: textVal }]
+        });
+      }
+    });
+
+    const previousPrompts = historyArray
+      .filter((item: any) => item.role === "user")
+      .map((item: any) => item.content || item.text || item.prompt)
+      .filter(Boolean)
+      .join(" ");
+
+    if (previousPrompts && (userText.includes("قصدي") || userText.includes("لا") || userText.includes("عدل") || userText.includes("غير") || userText.includes("سويه"))) {
+      contextCombinedText = `${previousPrompts} ${userText}`;
+    }
+  }
+
+  contentsPayload.push({
+    role: "user",
+    parts: [{ text: userText }]
+  });
+
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-إذا طلب المدير أي أمر أو تعديل، استخدم أداة super_system_agent فوراً لتنفيذ التحديث التلقائي الشامل واكتب له دائماً بكل احترام (يا أبو الأكبر)!`;
-
-  const contentsPayload = [
-    {
-      role: "user",
-      parts: [{ text: userText }]
-    }
-  ];
+إذا قال لك المدير (لا قصدي كذا...) أو يوضح لك التعديل على الطلب أو المطلب السابق، فارجع للسياق والرسائل السابقة وافهم ماذا يقصد ونفذ التعديل التلقائي الشامل فوراً واكتب له دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
@@ -939,7 +964,7 @@ export async function processAdminAiMessage(
                 const fn = part.functionCall;
                 let result: any = null;
                 if (fn.name === "super_system_agent") {
-                  result = await executeSuperSystemAgent(fn.args, userText);
+                  result = await executeSuperSystemAgent(fn.args, contextCombinedText);
                 }
 
                 if (result) {
@@ -962,6 +987,6 @@ export async function processAdminAiMessage(
     }
   }
 
-  const res = await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
+  const res = await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, contextCombinedText);
   return res;
 }

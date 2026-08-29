@@ -59,6 +59,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private val PREFS_NAME = "AdminVoiceAssistantPrefs"
     private val KEY_TTS_MUTED = "is_tts_muted"
 
+    // سجل الدردشة التراكمية في الجلسة المفتوحة المباشرة
+    private val sessionHistory = JSONArray()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_assistant)
@@ -86,8 +89,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         textToSpeech = TextToSpeech(this, this)
 
-        btnClose.setOnClickListener { finish() }
-        transparentClickDismiss.setOnClickListener { finish() }
+        btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
+        transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
 
         btnMicToggle.setOnClickListener {
             if (isListening) {
@@ -161,6 +164,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         checkOverlayPermissionAndStartFloatingService()
         checkPermissionAndStartListening()
+    }
+
+    private fun clearSessionHistoryAndFinish() {
+        try {
+            while (sessionHistory.length() > 0) {
+                sessionHistory.remove(0)
+            }
+        } catch (e: Exception) {}
+        finish()
     }
 
     private fun checkOverlayPermissionAndStartFloatingService() {
@@ -273,7 +285,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onRmsChanged(rmsdB: Float) {
-                // الحركة التفاعلية الرائعة بالألوان والحجم مع درجة نبرة صوت الميكروفون
                 val scale = 1.0f + (rmsdB.coerceIn(0f, 10f) / 20.0f)
                 btnGeminiPill.animate()
                     .scaleX(scale)
@@ -339,6 +350,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         val json = JSONObject()
         json.put("text", text)
         json.put("userId", "android_power_button_admin")
+        json.put("history", sessionHistory)
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
@@ -366,6 +378,17 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             val reply = obj.optString("reply", "")
                             tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
                             tvResponse.text = reply
+
+                            // حفظ المحادثة في مصفوفة السجل المؤقتة للجلسة الحالية
+                            val uObj = JSONObject()
+                            uObj.put("role", "user")
+                            uObj.put("content", text)
+                            sessionHistory.put(uObj)
+
+                            val mObj = JSONObject()
+                            mObj.put("role", "model")
+                            mObj.put("content", reply)
+                            sessionHistory.put(mObj)
 
                             if (!isTtsMuted) {
                                 speakOut(reply)
