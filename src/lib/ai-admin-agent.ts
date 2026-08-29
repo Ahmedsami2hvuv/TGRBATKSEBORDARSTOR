@@ -74,11 +74,17 @@ async function findMatchingShopByQuery(queryText: string) {
 }
 
 /**
- * البحث والدعم الفائق للمناطق المطابقة الحقيقية (جيكور، جيكور حزبه 1، حمدان، إلخ)
+ * البحث والدعم الفائق للمناطق المطابقة الحقيقية مع إعطاء الأولوية للاسم المطابق تماماً
  */
 function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]): any[] {
-  const cleanQ = cleanArabicTextForMatch(queryText);
+  const cleanQ = cleanArabicTextForMatch(queryText.replace(/📍|\(توصيل:.*?\)/g, "").trim());
   if (!cleanQ) return [];
+
+  // أولوية للمطابقة التامة أولاً
+  const exactNameMatches = allRegions.filter(r => cleanArabicTextForMatch(r.name) === cleanQ);
+  if (exactNameMatches.length > 0) {
+    return exactNameMatches;
+  }
 
   const words = cleanQ.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "منطقة", "منطقه", "مستلم", "سويه", "عدل", "غير", "محل"].includes(w));
   const mainKeyword = words.length > 0 ? words[words.length - 1] : cleanQ;
@@ -296,6 +302,41 @@ const SUPER_AI_TOOLS = [
 export async function executeSuperSystemAgent(args: any, userText: string) {
   const { domain, operation, targetIdOrName, payloadJson } = args;
   const rawText = userText || "";
+
+  // ==========================================
+  // 0. معالجة نقرة زر اختيار المنطقة التفاعلي المباشر (DIRECT REGION BUTTON CLICK RECOGNITION)
+  // ==========================================
+  if (rawText.startsWith("📍") || rawText.includes("توصيل:")) {
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+    const selectedRegion = matchedRegions[0];
+
+    if (selectedRegion) {
+      const latestOrder = await prisma.order.findFirst({
+        orderBy: { createdAt: "desc" },
+        include: { shop: true }
+      });
+
+      if (latestOrder) {
+        const regionPrice = selectedRegion.deliveryPrice ? Number(selectedRegion.deliveryPrice) : 5;
+        const subtotal = latestOrder.orderSubtotal ? Number(latestOrder.orderSubtotal) : 0;
+        const newTotal = subtotal + regionPrice;
+
+        const updated = await prisma.order.update({
+          where: { id: latestOrder.id },
+          data: {
+            customerRegionId: selectedRegion.id,
+            deliveryPrice: new Decimal(regionPrice),
+            totalAmount: new Decimal(newTotal)
+          }
+        });
+
+        return {
+          reply: `✅ **تم تعيين وتثبيت المنطقة وسعر التوصيل بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${updated.orderNumber}\n- **المحل:** ${latestOrder.shop.name}\n- **المنطقة المحددة:** 📍 ${selectedRegion.name}\n- **سعر التوصيل:** ${regionPrice}\n- **المبلغ الإجمالي النهائي:** ${newTotal}`
+        };
+      }
+    }
+  }
 
   // ==========================================
   // 1. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
@@ -671,7 +712,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
 
     // ب) تعديل اسم المنطقة
-    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
+    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم") || rawText.includes("جيكور") || rawText.includes("حمدان")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
       let targetRegion = matchedRegions[0] || allRegions[0];
