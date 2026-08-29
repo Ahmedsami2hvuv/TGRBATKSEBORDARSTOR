@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
-import android.widget.Toast
 
 class FloatingWidgetService : Service() {
 
@@ -62,7 +61,7 @@ class FloatingWidgetService : Service() {
             140, // height
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLATION_MODES_DEFAULT
+            PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 40
