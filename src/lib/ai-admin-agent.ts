@@ -101,7 +101,6 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
 function extractPrepItemsFromText(text: string): string {
   if (!text) return "مواد تجهيز ومشتريات";
 
-  // الفحص إذا كانت الرسالة تحتوي على كلمة "المنتجات" أو "المواد"
   const productsMatch = text.match(/(?:المنتجات|المواد|المشتريات|اللي يريدهم الزبون|المطلوبة)\s*(?:اللي يريدهم الزبون)?\s*(.+)/i);
   if (productsMatch && productsMatch[1].trim().length > 1) {
     return productsMatch[1].trim();
@@ -624,7 +623,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    if (rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
+    // تعديل وتغيير حالة الطلب صراحة ليشمل كلمة (جديد / جديدة / معلق) بجميع صيغها
+    if (
+      rawText.includes("جديد") ||
+      rawText.includes("جديده") ||
+      rawText.includes("جديدة") ||
+      rawText.includes("معلق") ||
+      rawText.includes("معلقة") ||
+      rawText.includes("مكتمل") ||
+      rawText.includes("مرفوض") ||
+      rawText.includes("استلام")
+    ) {
       if (rawText.includes("مرفوض")) {
         updateData.status = "rejected";
         changes.push(`📌 **الحالة الجديدة:** مرفوض`);
@@ -634,10 +643,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       } else if (rawText.includes("استلام")) {
         updateData.status = "delivered";
         changes.push(`📌 **الحالة الجديدة:** تم الاستلام`);
-      } else if (rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق")) {
+      } else if (
+        rawText.includes("جديد") ||
+        rawText.includes("جديده") ||
+        rawText.includes("جديدة") ||
+        rawText.includes("معلق") ||
+        rawText.includes("معلقة")
+      ) {
         updateData.status = "pending";
         updateData.assignedCourierId = null;
         changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
+        changes.push(`👨‍✈️ **المندوب:** تم إلغاء الإسناد`);
       }
     }
 
