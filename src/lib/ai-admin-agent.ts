@@ -547,6 +547,85 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const rawText = userText || "";
 
   // ==========================================
+  // 0.3 معالجة اختيار المحل المباشر بالنقر أو النطق بعد المقترح (SELECT SHOP ACTION)
+  // ==========================================
+  if (rawText.startsWith("select_shop_") || rawText.includes("🏪")) {
+    let shopId = rawText.replace("select_shop_", "").trim();
+    let shop = await prisma.shop.findUnique({ where: { id: shopId } });
+
+    if (!shop) {
+      const cleanShopName = rawText.replace("🏪", "").trim();
+      shop = await prisma.shop.findFirst({
+        where: { name: { contains: cleanShopName, mode: "insensitive" } }
+      });
+    }
+
+    if (shop) {
+      const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+      const order = await prisma.order.create({
+        data: {
+          shopId: shop.id,
+          status: "pending",
+          orderType: "مواد متنوعة",
+          orderNoteTime: "عادي",
+          customerPhone: "07700000000",
+          orderSubtotal: new Decimal(5),
+          deliveryPrice: new Decimal(0),
+          totalAmount: new Decimal(5),
+          submissionSource: "admin_ai_assistant",
+        }
+      });
+
+      notifyTelegramNewOrder(order.id).catch(() => {});
+      pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+      const regionButtons = allRegions.slice(0, 5).map(r => ({
+        text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
+        action: `select_region_${r.id}`
+      }));
+
+      return {
+        reply: `تم يا أبو الأكبر! أنشأت طلب جديد #${order.orderNumber} لـ (${shop.name})`,
+        buttons: regionButtons
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.4 معالجة اختيار المنطقة بالنقر المباشر (SELECT REGION ACTION)
+  // ==========================================
+  if (rawText.startsWith("select_region_")) {
+    const regionId = rawText.replace("select_region_", "").trim();
+    const region = await prisma.region.findUnique({ where: { id: regionId } });
+
+    if (region) {
+      const latestOrder = await prisma.order.findFirst({
+        orderBy: { createdAt: "desc" },
+        include: { shop: true }
+      });
+
+      if (latestOrder) {
+        const regionPrice = region.deliveryPrice ? Number(region.deliveryPrice) : 5;
+        const subtotal = latestOrder.orderSubtotal ? Number(latestOrder.orderSubtotal) : 0;
+        const newTotal = subtotal + regionPrice;
+
+        const updated = await prisma.order.update({
+          where: { id: latestOrder.id },
+          data: {
+            customerRegionId: region.id,
+            deliveryPrice: new Decimal(regionPrice),
+            totalAmount: new Decimal(newTotal)
+          }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! حددت منطقة طلب #${updated.orderNumber} لـ (${region.name}) والتوصيل ${regionPrice} والإجمالي (${newTotal})`
+        };
+      }
+    }
+  }
+
+  // ==========================================
   // 0. معالجة اختيار شريك موجود من قائمة المقترحات
   // ==========================================
   if (rawText.startsWith("apply_debt_existing_")) {
@@ -867,14 +946,15 @@ export async function processAdminAiMessage(
 
   // 1. أولوية قصوى فورية: تنفيذ الأكشنات التفاعلية المباشرة للأزرار
   const isDirectActionButton =
-    userText.startsWith("apply_debt_existing_") ||
-    userText.startsWith("confirm_create_partner_") ||
-    userText === "cancel_debt_action" ||
     userText.startsWith("select_shop_") ||
     userText.startsWith("select_region_") ||
     userText.startsWith("set_region_") ||
+    userText.startsWith("apply_debt_existing_") ||
+    userText.startsWith("confirm_create_partner_") ||
+    userText === "cancel_debt_action" ||
     userText.startsWith("assign_prep_") ||
-    userText.startsWith("📍");
+    userText.startsWith("📍") ||
+    userText.includes("🏪");
 
   if (isDirectActionButton) {
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
