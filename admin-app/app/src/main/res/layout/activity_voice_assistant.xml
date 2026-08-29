@@ -3,10 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
-    android:fitsSystemWindows="true"
-    android:layoutDirection="rtl">
+    android:fitsSystemWindows="true">
 
-    <!-- مساحة شفافة فارغة من الأعلى تمكن المدير من رؤية الشاشة وقراءة تفاصيل الطلب بسهولة -->
+    <!-- مساحة شفافة فارغة من الأعلى تمكن المدير من رؤية التطبيق والشاشة كلياً -->
     <View
         android:id="@+id/transparentClickDismiss"
         android:layout_width="match_parent"
@@ -16,16 +15,17 @@
         android:clickable="true"
         android:focusable="true" />
 
-    <!-- Container المساعد الصوتي الشفاف المباشر فقط في أسفل الشاشة -->
+    <!-- Container المساعد الصوتي الشفاف والمنسق بدون خلفية سوداء معتمة -->
     <LinearLayout
         android:id="@+id/bottomGeminiContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="vertical"
-        android:background="#E60F172A"
-        android:padding="12dp"
-        android:elevation="16dp">
+        android:background="@android:color/transparent"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="24dp">
 
         <!-- حالة الاستماع والمؤشر الصغير الشفاف -->
         <LinearLayout
@@ -37,8 +37,8 @@
 
             <ProgressBar
                 android:id="@+id/progressBar"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:indeterminateTint="#38BDF8"
                 android:visibility="gone"
                 android:layout_marginEnd="6dp" />
@@ -47,10 +47,12 @@
                 android:id="@+id/tvStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🎙️ الميكروفون شغال... تحدث بحرية"
+                android:text="🎙️ أستمع لك... تفضل بالتحدث يا أبو الأكبر"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#38BDF8" />
+                android:textColor="#0284C7"
+                android:shadowColor="#FFFFFF"
+                android:shadowRadius="4" />
 
             <Button
                 android:id="@+id/btnToggleTts"
@@ -72,18 +74,18 @@
             android:layout_height="wrap_content"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="#E2E8F0"
+            android:textColor="#0F172A"
             android:gravity="center"
             android:layout_marginTop="2dp"
             android:layout_marginBottom="4dp" />
 
-        <!-- بلوك شفاف أنيق وصغير لعرض رد واستجابة المساعد -->
+        <!-- بلوك شفاف لعرض رد المساعد وتجربة الاستجابة -->
         <ScrollView
             android:id="@+id/responseScrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:maxHeight="160dp"
-            android:background="#B31E293B"
+            android:background="#F0F8FAFC"
             android:padding="10dp"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp">
@@ -98,7 +100,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textSize="13sp"
-                    android:textColor="#F8FAFC"
+                    android:textColor="#0F172A"
                     android:lineSpacingExtra="3dp" />
 
                 <!-- حاوية الأزرار التفاعلية بالنقر المباشر -->
@@ -112,7 +114,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Text Keyboard Input Area (عند اختيار الكتابة بالنص) -->
+        <!-- Text Keyboard Input Area -->
         <LinearLayout
             android:id="@+id/textInputContainer"
             android:layout_width="match_parent"
@@ -129,8 +131,8 @@
                 android:hint="اكتب أمرك النصي هنا..."
                 android:textSize="13sp"
                 android:padding="10dp"
-                android:background="#334155"
-                android:textColor="#FFFFFF"
+                android:background="#F1F5F9"
+                android:textColor="#0F172A"
                 android:textColorHint="#94A3B8"
                 android:layout_marginEnd="6dp"
                 android:maxLines="2" />
@@ -144,27 +146,29 @@
                 android:textColor="#FFFFFF" />
         </LinearLayout>
 
-        <!-- Gemini Live Floating Bar أزرار عائمة سفيلية فقط (مطابقة للصور) -->
+        <!-- Gemini Live Floating Bar (الترتيب الدقيق من اليسار لليمين مطابق 100% للصورة) -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="64dp"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:layoutDirection="ltr">
 
-            <!-- 1. زر إغلاق X عائم أبيض -->
+            <!-- 1. زر إغلاق X على اليسار (أول زر من اليسار) -->
             <Button
                 android:id="@+id/btnClose"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:text="✕"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#0F172A"
-                android:backgroundTint="#FFFFFF"
+                android:background="@drawable/white_circle_btn"
+                android:backgroundTint="@null"
                 android:padding="0dp"
                 android:layout_marginEnd="8dp" />
 
-            <!-- 2. زر إيقاف/تفعيل الميكروفون عائم أبيض -->
+            <!-- 2. زر الميكروفون المباشر -->
             <Button
                 android:id="@+id/btnMicToggle"
                 android:layout_width="48dp"
@@ -172,24 +176,39 @@
                 android:text="🎙️"
                 android:textSize="16sp"
                 android:textColor="#0F172A"
-                android:backgroundTint="#FFFFFF"
+                android:background="@drawable/white_circle_btn"
+                android:backgroundTint="@null"
                 android:padding="0dp"
                 android:layout_marginEnd="8dp" />
 
-            <!-- 3. الشريط البيضاوي المتوهج المضيء لـ Gemini Live في المنتصف -->
+            <!-- 3. الكبسولة البيضاوية المتوهجة الملونة بالمنتصف المتفاعلة مع الصوت دمج الألوان -->
             <Button
                 android:id="@+id/btnGeminiPill"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="52dp"
                 android:layout_weight="1"
-                android:text="✨ Gemini"
-                android:textSize="14sp"
+                android:text="✨"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
-                android:backgroundTint="#0284C7"
+                android:background="@drawable/gemini_gradient_pill"
+                android:backgroundTint="@null"
                 android:layout_marginEnd="8dp" />
 
-            <!-- 4. زر فتح الكتابة النصية عائم أبيض -->
+            <!-- 4. زر السهم المباشر (إرسال النص) -->
+            <Button
+                android:id="@+id/btnSendTextAction"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="⬆️"
+                android:textSize="16sp"
+                android:textColor="#0F172A"
+                android:background="@drawable/white_circle_btn"
+                android:backgroundTint="@null"
+                android:padding="0dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- 5. زر الكيبورد على اليمين (أخر زر من اليمين) -->
             <Button
                 android:id="@+id/btnKeyboardToggle"
                 android:layout_width="48dp"
@@ -197,7 +216,8 @@
                 android:text="⌨️"
                 android:textSize="16sp"
                 android:textColor="#0F172A"
-                android:backgroundTint="#FFFFFF"
+                android:background="@drawable/white_circle_btn"
+                android:backgroundTint="@null"
                 android:padding="0dp" />
 
         </LinearLayout>

@@ -40,6 +40,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var btnClose: Button
     private lateinit var btnMicToggle: Button
     private lateinit var btnGeminiPill: Button
+    private lateinit var btnSendTextAction: Button
     private lateinit var btnKeyboardToggle: Button
     private lateinit var textInputContainer: LinearLayout
     private lateinit var etCommandInput: EditText
@@ -69,6 +70,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnClose = findViewById(R.id.btnClose)
         btnMicToggle = findViewById(R.id.btnMicToggle)
         btnGeminiPill = findViewById(R.id.btnGeminiPill)
+        btnSendTextAction = findViewById(R.id.btnSendTextAction)
         btnKeyboardToggle = findViewById(R.id.btnKeyboardToggle)
         textInputContainer = findViewById(R.id.textInputContainer)
         etCommandInput = findViewById(R.id.etCommandInput)
@@ -93,12 +95,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 isMicPaused = true
                 tvStatus.text = "🛑 الميكروفون متوقف - اكتب بالنص"
                 btnMicToggle.text = "🔇"
-                btnMicToggle.setBackgroundColor(Color.parseColor("#E2E8F0"))
                 Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
             } else {
                 isMicPaused = false
                 btnMicToggle.text = "🎙️"
-                btnMicToggle.setBackgroundColor(Color.WHITE)
                 checkPermissionAndStartListening()
             }
         }
@@ -107,8 +107,22 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             if (!isListening) {
                 isMicPaused = false
                 btnMicToggle.text = "🎙️"
-                btnMicToggle.setBackgroundColor(Color.WHITE)
                 checkPermissionAndStartListening()
+            }
+        }
+
+        btnSendTextAction.setOnClickListener {
+            val typedText = etCommandInput.text.toString().trim()
+            if (typedText.isNotEmpty()) {
+                tvTranscript.text = "💬 \"$typedText\""
+                etCommandInput.setText("")
+                sendToAdminVoiceApi(typedText)
+            } else {
+                if (textInputContainer.visibility != View.VISIBLE) {
+                    textInputContainer.visibility = View.VISIBLE
+                } else {
+                    Toast.makeText(this, "يرجى كتابة الأمر النصي أولاً", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -193,8 +207,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         stopListening()
         isMicPaused = false
         btnMicToggle.text = "🎙️"
-        btnMicToggle.setBackgroundColor(Color.WHITE)
-        tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
+        tvStatus.text = "🎙️ أستمع لك... تحدث براحتك بالأمر يا أبو الأكبر"
         checkPermissionAndStartListening()
     }
 
@@ -205,6 +218,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         } catch (e: Exception) {}
         isListening = false
         progressBar.visibility = View.GONE
+        btnGeminiPill.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
     }
 
     private fun checkPermissionAndStartListening() {
@@ -255,22 +269,32 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             override fun onBeginningOfSpeech() {
                 isListening = true
-                tvStatus.text = "🎧 أستمع لصوتك الآن..."
+                tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
             }
 
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) {
+                // الحركة التفاعلية الرائعة بالألوان والحجم مع درجة نبرة صوت الميكروفون
+                val scale = 1.0f + (rmsdB.coerceIn(0f, 10f) / 20.0f)
+                btnGeminiPill.animate()
+                    .scaleX(scale)
+                    .scaleY(scale)
+                    .setDuration(70)
+                    .start()
+            }
+
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {
                 isListening = false
                 tvStatus.text = "⚡ جاري معالجة وإرسال الأمر..."
                 progressBar.visibility = View.VISIBLE
+                btnGeminiPill.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
             }
 
             override fun onError(error: Int) {
                 isListening = false
                 progressBar.visibility = View.GONE
+                btnGeminiPill.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
 
-                // إذا حدث صمت مبكر أو انقطاع وقت التحدث، يُعزى استكمال الاستماع تلقائياً دون إغلاق المايك
                 if (!isMicPaused) {
                     tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
                     tvStatus.postDelayed({
@@ -285,6 +309,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             override fun onResults(results: Bundle?) {
                 isListening = false
+                btnGeminiPill.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val text = matches[0]

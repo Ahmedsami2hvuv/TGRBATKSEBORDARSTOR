@@ -6,12 +6,15 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import android.widget.Toast
 
 class FloatingWidgetService : Service() {
 
@@ -24,6 +27,10 @@ class FloatingWidgetService : Service() {
     private var initialTouchX: Float = 0f
     private var initialTouchY: Float = 0f
     private var isClick: Boolean = false
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var longClickRunnable: Runnable? = null
+    private var isLongClickHandled = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -79,6 +86,18 @@ class FloatingWidgetService : Service() {
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
                         isClick = true
+                        isLongClickHandled = false
+
+                        // جدولة النقر المطول للإخفاء بعد 700 ملي ثانية
+                        longClickRunnable = Runnable {
+                            if (isClick && !isLongClickHandled) {
+                                isLongClickHandled = true
+                                Toast.makeText(applicationContext, "تم إخفاء الزر العائم", Toast.LENGTH_SHORT).show()
+                                stopSelf()
+                            }
+                        }
+                        handler.postDelayed(longClickRunnable!!, 700)
+
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -87,6 +106,7 @@ class FloatingWidgetService : Service() {
 
                         if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
                             isClick = false
+                            longClickRunnable?.let { handler.removeCallbacks(it) }
                         }
 
                         layoutParams!!.x = initialX + diffX
@@ -95,10 +115,14 @@ class FloatingWidgetService : Service() {
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        if (isClick) {
+                        longClickRunnable?.let { handler.removeCallbacks(it) }
+                        if (isClick && !isLongClickHandled) {
                             openVoiceAssistant()
                         }
                         return true
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        longClickRunnable?.let { handler.removeCallbacks(it) }
                     }
                 }
                 return false
@@ -121,6 +145,7 @@ class FloatingWidgetService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        longClickRunnable?.let { handler.removeCallbacks(it) }
         if (floatingView != null && windowManager != null) {
             try {
                 windowManager?.removeView(floatingView)
