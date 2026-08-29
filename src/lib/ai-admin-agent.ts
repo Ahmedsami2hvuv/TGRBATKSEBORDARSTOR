@@ -154,6 +154,26 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
+  // 0.35 عرض تفاصيل طلب محدد صريح بالرقم (مثل: تفاصيل طلب 2066 / شوفلي طلب 2066 / طلب 2066)
+  if (
+    cleanQ.includes("تفاصيل طلب") ||
+    cleanQ.includes("شوفلي طلب") ||
+    cleanQ.includes("شوف طلب") ||
+    cleanQ.includes("عرض طلب") ||
+    cleanQ.startsWith("طلب ") ||
+    cleanQ.includes("تفاصيل الطلب")
+  ) {
+    const orderNumMatch = text.match(/\b\d{3,5}\b/);
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
+
+    if (orderNum) {
+      return {
+        category: "order_details",
+        order_number: orderNum
+      };
+    }
+  }
+
   // 0.4 تعديل تفاصيل الطلب النشط المفتوح حالياً
   const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل") || cleanQ.includes("تعديل");
   if (
@@ -865,9 +885,51 @@ export async function executeSuperSystemAgent(
         return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)` };
       }
 
+      case "order_details": {
+        const { order_number } = parsed;
+        const targetOrder = await prisma.order.findUnique({
+          where: { orderNumber: order_number },
+          include: { shop: true, customerRegion: true, assignedCourier: true }
+        });
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر، ما لقيت أي طلب برقم #${order_number} في قواعد البيانات.` };
+        }
+
+        ctx.lastOrderNumber = targetOrder.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const statusArMap: Record<string, string> = {
+          pending: "جديد",
+          assigned: "مسند",
+          delivered: "مستلم",
+          completed: "مسلم",
+          rejected: "مرفوض",
+          archived: "مؤرشف"
+        };
+        const statusAr = statusArMap[targetOrder.status] || targetOrder.status;
+
+        const shopName = targetOrder.shop ? targetOrder.shop.name : "غير محدد";
+        const regionName = targetOrder.customerRegion ? targetOrder.customerRegion.name : "غير محدد";
+        const phone = targetOrder.customerPhone || "لا يوجد";
+        const price = targetOrder.totalAmount ? Number(targetOrder.totalAmount) : 0;
+        const courierName = targetOrder.assignedCourier ? targetOrder.assignedCourier.name : "غير مسند بعد";
+
+        const allCouriers = await prisma.courier.findMany({ take: 5 });
+        const buttons = allCouriers.map(c => ({
+          text: `🛵 إسناد لـ كابتن: ${c.name}`,
+          action: `assign_order_${targetOrder.id}_courier_${c.id}`
+        }));
+
+        return {
+          reply: `📌 **تفاصيل الطلب رقم #${targetOrder.orderNumber} يا أبو الأكبر:**\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${price} ألف\n🚦 **الحالة الحالية:** (${statusAr}) | 🛵 **المندوب:** (${courierName})\n\n👇 **اختر الكابتن للإسناد المباشر بالنقر أدناه:**`,
+          buttons: buttons
+        };
+      }
+
       case "who_are_you": {
         return {
-          reply: "أنا المساعد الذكي الخاص بنظامك يا أبو الأكبر! أتحكم بالطلبات، المندوبين، المجهزين، والديون فورياً بـ 0 ميلي ثانية! 🚀"
+          reply: "أنا المساعد الذكي الخاص بنظامك يا أبو الأكبر! أتحكم بالطلبات، المندوبين، المجهزين، والديون فورياً! 🚀"
         };
       }
 
@@ -1244,7 +1306,7 @@ export async function executeSuperSystemAgent(
         if (rawText.includes("فرنسا")) {
           return { reply: "فرنسا تقع في غرب قارة أوروبا وعاصمتها باريس يا أبو الأكبر! وأنا معك وجاهز لتنفيذ أي أمر منك فوراً! 🚀" };
         }
-        return { reply: `أنا معك يا أبو الأكبر! استمعت لأمرك (${rawText}) وجاهز لتنفيذه فوراً بـ 0 ميلي ثانية! 🚀` };
+        return { reply: `أنا معك يا أبو الأكبر! استمعت لأمرك (${rawText}) وجاهز لتنفيذه فوراً! 🚀` };
       }
     }
   } catch (err: any) {
