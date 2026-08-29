@@ -9,6 +9,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 let activeChatContext: {
   lastOrderNumber?: number | null;
   lastOrderType?: string | null;
+  activeFocusedOrderId?: string | null;
   updatedAt?: number;
 } = {};
 
@@ -17,6 +18,18 @@ let activeChatContext: {
  */
 export function resetChatSessionContext() {
   activeChatContext = {};
+}
+
+/**
+ * تعيين وتحديث الطلب النشط المفتوح حالياً بـ الشاشة
+ */
+export function setActiveFocusedOrder(orderIdOrNumber: string | number) {
+  if (typeof orderIdOrNumber === "number") {
+    activeChatContext.lastOrderNumber = orderIdOrNumber;
+  } else {
+    activeChatContext.activeFocusedOrderId = orderIdOrNumber;
+  }
+  activeChatContext.updatedAt = Date.now();
 }
 
 /**
@@ -37,7 +50,41 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 أولوية قصوى: فئة استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
+  // 0.0 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  if (
+    cleanQ.includes("عدل الرقم") ||
+    cleanQ.includes("عدل السعر") ||
+    cleanQ.includes("عدل سعر") ||
+    cleanQ.includes("عدل سعر التوصيل") ||
+    cleanQ.includes("عدل المنطقة") ||
+    cleanQ.includes("عدل المنطقه") ||
+    cleanQ.includes("بدل") ||
+    cleanQ.includes("غير السعر") ||
+    cleanQ.includes("غير الرقم") ||
+    cleanQ.includes("غير المنطقة")
+  ) {
+    const orderNumMatch = text.match(/\b\d{3,5}\b/);
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
+
+    let fieldToEdit = "subtotal";
+    if (cleanQ.includes("رقم") || cleanQ.includes("هاتف")) fieldToEdit = "phone";
+    else if (cleanQ.includes("سعر التوصيل") || cleanQ.includes("توصيل")) fieldToEdit = "delivery_price";
+    else if (cleanQ.includes("منطقه") || cleanQ.includes("منطقة")) fieldToEdit = "region";
+    else if (cleanQ.includes("سعر")) fieldToEdit = "subtotal";
+
+    const nums = (text.match(/\d+/g) || []).map(Number).filter(n => !n.toString().startsWith("77"));
+    const newVal = nums.length > 0 ? nums[nums.length - 1] : null;
+
+    return {
+      category: "focused_order_edit",
+      order_number: orderNum,
+      field: fieldToEdit,
+      raw_text: text,
+      number_val: newVal
+    };
+  }
+
+  // 0.1 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
     cleanQ.includes("اخر طلب ملغي") ||
@@ -53,7 +100,7 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "last_rejected_order" };
   }
 
-  // 0.1 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.2 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
   if (
     cleanQ.includes("إلغاء") ||
     cleanQ.includes("الغاء") ||
@@ -277,7 +324,70 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
+  // 0.0 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // ==========================================
+  if (parsed?.category === "focused_order_edit") {
+    const { order_number, field, raw_text, number_val } = parsed;
+
+    let targetOrder = null;
+    if (order_number) {
+      targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true, customerRegion: true } });
+    } else if (activeChatContext.activeFocusedOrderId) {
+      targetOrder = await prisma.order.findUnique({ where: { id: activeChatContext.activeFocusedOrderId }, include: { shop: true, customerRegion: true } });
+    }
+
+    if (!targetOrder) {
+      targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true, customerRegion: true } });
+    }
+
+    if (targetOrder) {
+      let updateData: any = {};
+
+      if (field === "phone") {
+        const phoneMatch = raw_text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+        const newPhone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07733921468";
+        updateData.customerPhone = newPhone;
+      } else if (field === "delivery_price") {
+        const newDelivery = number_val !== null ? number_val : 4;
+        updateData.deliveryPrice = new Decimal(newDelivery);
+        const currentSubtotal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 5;
+        updateData.totalAmount = new Decimal(currentSubtotal + newDelivery);
+      } else if (field === "subtotal") {
+        const newSubtotal = number_val !== null ? number_val : 15;
+        updateData.orderSubtotal = new Decimal(newSubtotal);
+        const currentDelivery = targetOrder.deliveryPrice ? Number(targetOrder.deliveryPrice) : 5;
+        updateData.totalAmount = new Decimal(newSubtotal + currentDelivery);
+      } else if (field === "region") {
+        const allRegions = await prisma.region.findMany();
+        const matchedRegion = allRegions.find(r => raw_text.includes(r.name) || cleanArabicTextForMatch(raw_text).includes(cleanArabicTextForMatch(r.name))) || allRegions[0];
+        if (matchedRegion) {
+          updateData.customerRegionId = matchedRegion.id;
+        }
+      }
+
+      const updated = await prisma.order.update({
+        where: { id: targetOrder.id },
+        data: updateData,
+        include: { shop: true, customerRegion: true, assignedCourier: true }
+      });
+
+      activeChatContext.lastOrderNumber = updated.orderNumber;
+      activeChatContext.updatedAt = Date.now();
+
+      const shopName = updated.shop ? updated.shop.name : "المحل";
+      const regionName = updated.customerRegion ? updated.customerRegion.name : "المنطقة";
+      const courierName = updated.assignedCourier ? updated.assignedCourier.name : "غير مسند";
+      const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 5;
+      const deliveryVal = updated.deliveryPrice ? Number(updated.deliveryPrice) : 5;
+
+      return {
+        reply: `يابا الطلبية رقم #${updated.orderNumber} من محل (${shopName}) إلى منطقة (${regionName}) تم تعديلها وصارت (سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName})`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.1 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
     let rejectedOrder = await prisma.order.findFirst({
@@ -325,7 +435,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.1 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.2 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
   // ==========================================
   if (parsed?.category === "order_cancel_or_reject") {
     const { order_number, shop_name } = parsed;
@@ -373,7 +483,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.2 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
+  // 0.3 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
   // ==========================================
   if (rawText.startsWith("assign_order_")) {
     const parts = rawText.split("_");
@@ -401,7 +511,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.3 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // 0.4 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
   // ==========================================
   if (rawText.startsWith("assign_prep_")) {
     const parts = rawText.split("_");
@@ -424,7 +534,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.4 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
+  // 0.5 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
