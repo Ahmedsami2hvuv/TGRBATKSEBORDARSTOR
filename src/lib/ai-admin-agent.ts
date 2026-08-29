@@ -21,11 +21,11 @@ function parseArabicWordsToNumber(text: string): number | null {
   if (t.includes("الفين")) return 2;
   if (t.includes("الف")) return 1;
 
-  if (t.includes("خمسة") || t.includes("خمسه")) return 5;
-  if (t.includes("عشرة") || t.includes("عشره")) return 10;
-  if (t.includes("ثلاثة") || t.includes("ثلاثه")) return 3;
-  if (t.includes("اربعة") || t.includes("اربعه")) return 4;
-  if (t.includes("واحد") || t.includes("وحدة")) return 1;
+  if (t.includes("خمسة") || t.includes("خمسه") || t.includes("خمس")) return 5;
+  if (t.includes("عشرة") || t.includes("عشره") || t.includes("عشر")) return 10;
+  if (t.includes("ثلاثة") || t.includes("ثلاثه") || t.includes("ثلاث")) return 3;
+  if (t.includes("اربعة") || t.includes("اربعه") || t.includes("اربع")) return 4;
+  if (t.includes("واحد") || t.includes("وحدة") || t.includes("وحده")) return 1;
   if (t.includes("اثنان") || t.includes("ثنين")) return 2;
 
   return null;
@@ -57,7 +57,6 @@ function cleanArabicTextForMatch(text: string): string {
 function extractTargetShopName(text: string): string {
   if (!text) return "";
 
-  // 1. البحث بعد عبارات (طلب من / طلب جديد من / من محل / من / محل)
   const matchFrom = text.match(/(?:سوي لي طلب جديد من|سوي طلب جديد من|طلب جديد من|سوي لي طلب من|سوي طلب من|من محل|من)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان)|$)/i);
   if (matchFrom && matchFrom[1].trim().length >= 2) {
     const candidate = matchFrom[1].replace(/طلب|جديد|سوي لي|سوي/gi, "").trim();
@@ -88,7 +87,6 @@ async function findMatchingShopByQuery(queryText: string) {
   const cleanTarget = cleanArabicTextForMatch(targetName);
   const cleanQuery = cleanArabicTextForMatch(queryText);
 
-  // 1. مطابقة تامة بعد توحيد الحروف والنص
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
     if (cleanShopName.length > 2 && (cleanShopName === cleanTarget || cleanShopName === cleanQuery)) {
@@ -96,7 +94,6 @@ async function findMatchingShopByQuery(queryText: string) {
     }
   }
 
-  // 2. مطابقة جزئية محكمة تشمل المكونات الرئيسية لاسم المحل (مثل: اكسسوارات و الخصيب / ابو الخصيب / ابن خصيب)
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
     if (cleanShopName.length > 2) {
@@ -106,7 +103,6 @@ async function findMatchingShopByQuery(queryText: string) {
     }
   }
 
-  // 3. مطابقة الكلمات المفتاحية الرئيسية المحكمة (مثل الخصيب أو اكسسوارات)
   const targetWords = cleanTarget.split(/\s+/).filter(w => w.length > 2 && !["طلب", "جديد", "محل"].includes(w));
   if (targetWords.length >= 2) {
     for (const shop of allShops) {
@@ -360,7 +356,6 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
   const cleanTarget = cleanArabicTextForMatch(targetName);
 
-  // البحث الفعلي المباشر في دفتر الديون الحالي (prisma.creditBookPartner)
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -382,7 +377,6 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
 
   const candidatesMap = new Map<string, { id: string; name: string; typeTitle: string }>();
 
-  // فحص المجهزين والموردين أولاً بأعلى أولوية (prisma.companyPreparer)
   const allPreps = await prisma.companyPreparer.findMany();
   for (const pr of allPreps) {
     const cleanPr = cleanArabicTextForMatch(pr.name);
@@ -391,7 +385,6 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
     }
   }
 
-  // فحص المندوبين
   const allCouriers = await prisma.courier.findMany();
   for (const c of allCouriers) {
     const cleanC = cleanArabicTextForMatch(c.name);
@@ -400,7 +393,6 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
     }
   }
 
-  // فحص المحلات
   const allShops = await prisma.shop.findMany();
   for (const s of allShops) {
     const cleanS = cleanArabicTextForMatch(s.name);
@@ -409,7 +401,6 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
     }
   }
 
-  // فحص الشركاء بـ دفتر الديون
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -467,7 +458,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   if (rawText.startsWith("apply_debt_existing_")) {
     const parts = rawText.split("_");
     const partnerId = parts[3];
-    const kind = parts[4]; // took or gave
+    const kind = parts[4];
     const amountVal = Number(parts[5]) || 5;
 
     let partner = await prisma.creditBookPartner.findUnique({ where: { id: partnerId } });
@@ -534,7 +525,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // ==========================================
   if (rawText.startsWith("confirm_create_partner_")) {
     const parts = rawText.split("_");
-    const kind = parts[3]; // took or gave
+    const kind = parts[3];
     const partnerName = parts[4];
     const amountVal = Number(parts[5]) || 5;
 
@@ -658,7 +649,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const partner = await findExistingCreditBookPartnerStrict(rawText);
 
-    // إذا لم يجد الشخص بالضبط في دفتر الديون، يقدم المقترحات وطلب الموافقة الصريحة
     if (!partner) {
       const targetName = extractTargetPartnerName(rawText);
       const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(rawText);
@@ -694,7 +684,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       };
     }
 
-    // إضافة المعاملة الوحيدة النظيفة بـ الداتابيز
     await prisma.creditBookTransaction.create({
       data: {
         partnerId: partner.id,
@@ -704,7 +693,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     });
 
-    // استعلام صريح ونظيف 100% للمجموع الحقيقي الحالي الفعلي من جدول المعاملات بدفتر الديون
     const allTx = await prisma.creditBookTransaction.findMany({
       where: { partnerId: partner.id }
     });
@@ -914,7 +902,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 6. قسم تضييق نطاق البحث والتعديل المحكم بـ الذكاء الاصطناعي (SMART SEARCH SCOPE & ACTION EXECUTION)
+  // 6. الشمول المباشر المطلق لتعديل الطلبات بواسطة رقم الطلب والأسعار (UNIVERSAL ORDER MODIFICATION)
   // ==========================================
   const allNumbers = (rawText.match(/\d+/g) || [])
     .map(Number)
@@ -923,27 +911,31 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   let orderNumber: number | null = null;
   let targetNewPrice: number | null = null;
 
-  const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d{1,5})/i);
-  if (orderNumMatch) {
-    orderNumber = Number(orderNumMatch[1]);
+  // 1. التقاط رقم الطلب الصريح المكون من 3-5 أرقام (مثل 2033 أو 1042 أو #2033) حتى لو كان أول كلمة بالرسالة
+  const explicitNumMatch = rawText.match(/(?:طلب|طلبية|#)?\s*(\d{3,5})/i);
+  if (explicitNumMatch) {
+    orderNumber = Number(explicitNumMatch[1]);
   } else if (allNumbers.length > 0) {
     const candidateNum = allNumbers.find(n => n >= 100 && n <= 99999);
     if (candidateNum) orderNumber = candidateNum;
   }
 
+  // 2. التقاط السعر المستهدف سواء منطوقاً ككلمة (خمسة/خمسه/5) أو أرقام مجاورة لـ السعر
   const wordPrice = parseArabicWordsToNumber(rawText);
-  if (wordPrice != null) {
+  if (wordPrice != null && (rawText.includes("سعر") || rawText.includes("مال الطلب") || rawText.includes("بضاعة") || rawText.includes("ترا"))) {
     targetNewPrice = wordPrice;
-  } else if (allNumbers.length > 0 && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
+  } else if (allNumbers.length > 0) {
     const priceCandidates = allNumbers.filter(n => n !== orderNumber);
     if (priceCandidates.length > 0) {
       targetNewPrice = priceCandidates[priceCandidates.length - 1];
+    } else if (wordPrice != null) {
+      targetNewPrice = wordPrice;
     }
   }
 
   let existingOrder: any = null;
 
-  // 1. البحث الصريح بواسطة رقم الطلب إن وجد
+  // 1. البحث الصريح والتأكيد بواسطة رقم الطلب المباشر
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -951,7 +943,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 2. تضييق نطاق البحث الذكي المحكم بحسب المحل
+  // 2. تضييق نطاق البحث بحسب المحل إن لم يذكر رقم الطلب الصريح
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
@@ -1044,20 +1036,22 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل الأسعار
-    if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
+    // ج) تعديل الأسعار والمبالغ صراحة وبثبات 100%
+    if (targetNewPrice != null || rawText.includes("سعر") || rawText.includes("السعر")) {
+      const finalPriceToSet = targetNewPrice != null ? targetNewPrice : 5;
+
       if (rawText.includes("سعر التوصيل")) {
-        updateData.deliveryPrice = new Decimal(targetNewPrice);
-        changes.push(`🚚 **سعر التوصيل الجديد:** ${targetNewPrice}`);
+        updateData.deliveryPrice = new Decimal(finalPriceToSet);
+        changes.push(`🚚 **سعر التوصيل الجديد:** ${finalPriceToSet}`);
       } else {
-        updateData.orderSubtotal = new Decimal(targetNewPrice);
-        changes.push(`💰 **سعر الطلب/البضاعة الجديد:** ${targetNewPrice}`);
+        updateData.orderSubtotal = new Decimal(finalPriceToSet);
+        changes.push(`💰 **سعر الطلب/البضاعة الجديد:** ${finalPriceToSet}`);
       }
 
       const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
       const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
       updateData.totalAmount = new Decimal(sub + del);
-      changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
+      changes.push(`💵 **المبلغ الإجمالي الجديد النهائي:** ${sub + del}`);
     }
 
     // د) تعديل نوع البضاعة والمنتج النظيف صراحةً
@@ -1147,7 +1141,6 @@ export async function processAdminAiMessage(
   let contextCombinedText = userText;
   const contentsPayload: any[] = [];
 
-  // إذا كانت الرسالة تتعلق بالديون فـ نلغي تجميع النصوص القديمة المتراكمة تماماً لضمان عدم مضاعفة الديون!
   const isDebtAction = userText.includes("اخذت") || userText.includes("أخذت") || userText.includes("انطيت") || userText.includes("أعطيت") || userText.includes("اعطيت") || userText.includes("تنزيل");
 
   if (!isDebtAction && historyArray && Array.isArray(historyArray) && historyArray.length > 0) {
@@ -1180,7 +1173,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-استخرج دائماً اسم المحل المنطوق صراحة بعد (طلب جديد من / من)، وطابق الأسماء المتقاربة (مثل: ابن خصيب / اب الخصيب / ابو الخصيب)، واعرض الأزرار المتقاربة فقط دون أي عشوائية، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+استخرج دائماً رقم الطلب الصريح المكون من 3-5 أرقام (مثل: 2033)، وعدل السعر المطلوب صراحةً حتى لو كان بالحروف، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
