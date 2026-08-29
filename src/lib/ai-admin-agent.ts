@@ -96,10 +96,16 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
 }
 
 /**
- * استخراج المنتجات والمواد من نص رسالة التجهيز
+ * استخراج المنتجات والمواد النظيفة صراحة من نص رسالة التجهيز والمشتريات
  */
 function extractPrepItemsFromText(text: string): string {
   if (!text) return "مواد تجهيز ومشتريات";
+
+  // الفحص إذا كانت الرسالة تحتوي على كلمة "المنتجات" أو "المواد"
+  const productsMatch = text.match(/(?:المنتجات|المواد|المشتريات|اللي يريدهم الزبون|المطلوبة)\s*(?:اللي يريدهم الزبون)?\s*(.+)/i);
+  if (productsMatch && productsMatch[1].trim().length > 1) {
+    return productsMatch[1].trim();
+  }
 
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const itemsLines = lines.filter(l => !l.startsWith("طلب") && !l.includes("077") && !l.includes("078") && !l.includes("075") && !l.match(/^7\d{9}/));
@@ -108,7 +114,7 @@ function extractPrepItemsFromText(text: string): string {
     return itemsLines.join("\n");
   }
 
-  const cleanText = text.replace(/.*تجهيز|.*منطقة|.*هاتف|07\d{9}|7\d{9}/gi, "").trim();
+  const cleanText = text.replace(/.*تجهيز|.*عنوان الزبون|.*منطقة|.*هاتف|07\d{9}|7\d{9}/gi, "").trim();
   return cleanText || text;
 }
 
@@ -353,15 +359,62 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
+  // 3. أولوية قصوى: قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (
-    rawText.includes("سوي لي طلب") ||
-    rawText.includes("سوي طلب") ||
-    rawText.includes("سويلي طلب") ||
-    rawText.includes("ضيف طلب") ||
-    rawText.includes("طلب جديد") ||
-    rawText.includes("انشئ طلب")
+    domain === "prep_drafts" ||
+    rawText.includes("تجهيز") ||
+    rawText.includes("مسودة تجهيز") ||
+    rawText.includes("مشتريات") ||
+    rawText.includes("طماطه") ||
+    rawText.includes("بتيته") ||
+    rawText.includes("خيار")
+  ) {
+    const extractedItems = extractPrepItemsFromText(rawText);
+    const phone = extractCustomerPhoneFlexible(rawText);
+
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+    const matchingRegion = matchedRegions[0] || allRegions[0];
+
+    const allPreparers = await prisma.companyPreparer.findMany();
+    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
+
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        preparerId: assignedPreparer ? assignedPreparer.id : null,
+        rawListText: extractedItems,
+        customerPhone: phone,
+        customerRegionId: matchingRegion?.id,
+        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
+        status: "draft"
+      }
+    });
+
+    const preparerButtons = allPreparers.map(p => ({
+      text: `👨‍🍳 ${p.name}`,
+      action: `assign_prep_${p.id}`
+    }));
+
+    const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
+
+    return {
+      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
+      buttons: preparerButtons
+    };
+  }
+
+  // ==========================================
+  // 4. إنشاء طلب مبيعات جديد عالي الدقة (CREATE NEW SALES ORDER)
+  // ==========================================
+  if (
+    !rawText.includes("تجهيز") &&
+    (rawText.includes("سوي لي طلب") ||
+      rawText.includes("سوي طلب") ||
+      rawText.includes("سويلي طلب") ||
+      rawText.includes("ضيف طلب") ||
+      rawText.includes("طلب جديد") ||
+      rawText.includes("انشئ طلب"))
   ) {
     const matchingShop = await findMatchingShopByQuery(rawText);
     const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
@@ -405,43 +458,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     return {
       reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
-    };
-  }
-
-  // ==========================================
-  // 4. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
-  // ==========================================
-  if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
-    const extractedItems = extractPrepItemsFromText(rawText);
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase())) || allRegions[0];
-
-    const allPreparers = await prisma.companyPreparer.findMany();
-    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
-
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId: assignedPreparer ? assignedPreparer.id : null,
-        rawListText: extractedItems,
-        customerPhone: phone,
-        customerRegionId: matchingRegion?.id,
-        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
-        status: "draft"
-      }
-    });
-
-    const preparerButtons = allPreparers.map(p => ({
-      text: `👨‍🍳 ${p.name}`,
-      action: `assign_prep_${p.id}`
-    }));
-
-    const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
-
-    return {
-      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة:** ${matchingRegion?.name || "عامة"}\n- **الهاتف:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
-      buttons: preparerButtons
     };
   }
 
@@ -541,7 +557,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const changes: string[] = [];
     let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
 
-    // أ) إلغاء الإسناد أو تعديل المندوب
     if (rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب")) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -559,7 +574,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل اسم المنطقة وجلب الخيارات المطابقة الصريحة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -589,7 +603,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل أسعار الطلب والتوصيل الصريحة
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -605,14 +618,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // د) تعديل نوع البضاعة والمنتج
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    // هـ) تعديل حالة الطلب صراحة (رجعه جديد، معلق، مكتمل، مرفوض)
     if (rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
       if (rawText.includes("مرفوض")) {
         updateData.status = "rejected";
@@ -646,7 +657,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 7. استعلام وجلب البيانات المعلقة (فقط عند عدم وجود رقم طلب صريح في الرسالة)
+  // 7. استعلام وجلب البيانات المعلقة
   // ==========================================
   if (!orderNumber && (rawText.includes("شنو") || rawText.includes("طلبات جديدة") || rawText.includes("طلبات معلقة"))) {
     const pendingOrders = await prisma.order.findMany({
