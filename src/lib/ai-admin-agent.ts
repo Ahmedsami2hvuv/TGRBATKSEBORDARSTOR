@@ -522,7 +522,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 6. قسم البحث التلقائي المرن والدقيق عن الطلبات والتعديل الإداري (ORDER UPDATING)
+  // 6. قسم تضييق نطاق البحث والتعديل المحكم بـ الذكاء الاصطناعي (SMART SEARCH SCOPE & ACTION EXECUTION)
   // ==========================================
   const allNumbers = (rawText.match(/\d+/g) || [])
     .map(Number)
@@ -551,6 +551,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   let existingOrder: any = null;
 
+  // 1. البحث الصريح بواسطة رقم الطلب إن وجد
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -558,12 +559,23 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
+  // 2. تضييق نطاق البحث الذكي (اسم المحل + حالة الطلب المحددة في الجملة)
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
-    const statusRequested = (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) ? "pending" : undefined;
+    let targetStatusFilter: string | undefined = undefined;
+    if (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) {
+      targetStatusFilter = "pending";
+    } else if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
+      targetStatusFilter = "rejected";
+    } else if (rawText.includes("مسند") || rawText.includes("مسندة")) {
+      targetStatusFilter = "assigned";
+    }
+
     const whereClause: any = { shopId: matchingShop.id };
-    if (statusRequested) whereClause.status = statusRequested;
+    if (targetStatusFilter) {
+      whereClause.status = targetStatusFilter;
+    }
 
     existingOrder = await prisma.order.findFirst({
       where: whereClause,
@@ -572,30 +584,34 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
+  // 3. تنفيذ الإجراء المباشر الدقيق المطلق على الطلب المحدد
   if (existingOrder) {
     const updateData: any = {};
     const changes: string[] = [];
     let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
 
     const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
+    const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
 
+    // أ) الإسناد الصريح للمندوب
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
       changes.push(`👨‍✈️ **المندوب:** تم إلغاء إسناد المندوب بنجاح`);
       changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
-    } else if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("مندوب")) {
+    } else if (isAssignAction) {
       const allCouriers = await prisma.courier.findMany();
       for (const c of allCouriers) {
         if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
           updateData.assignedCourierId = c.id;
           updateData.status = "assigned";
-          changes.push(`👨‍✈️ **المندوب المسند جديداً:** ${c.name}`);
+          changes.push(`👨‍✈️ **المندوب المسند:** ${c.name}`);
           break;
         }
       }
     }
 
+    // ب) تعديل اسم المنطقة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -625,6 +641,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
+    // ج) تعديل الأسعار
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -640,26 +657,16 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
+    // د) تعديل نوع البضاعة والمنتج
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    // تعديل الحالة بشرط أن لا يكون هناك إسناد صريح للمندوب تمت معالجته للتو!
-    if (
-      !updateData.assignedCourierId &&
-      !isExplicitUnassign &&
-      (rawText.includes("جديد") ||
-        rawText.includes("جديده") ||
-        rawText.includes("جديدة") ||
-        rawText.includes("معلق") ||
-        rawText.includes("معلقة") ||
-        rawText.includes("مكتمل") ||
-        rawText.includes("مرفوض") ||
-        rawText.includes("استلام"))
-    ) {
-      if (rawText.includes("مرفوض")) {
+    // هـ) تعديل الحالة الصريح (فقط عند عدم وجود أمر إسناد للمندوب)
+    if (!isAssignAction && !isExplicitUnassign) {
+      if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
         updateData.status = "rejected";
         changes.push(`📌 **الحالة الجديدة:** مرفوض`);
       } else if (rawText.includes("مكتمل") || rawText.includes("واصل")) {
@@ -668,17 +675,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       } else if (rawText.includes("استلام")) {
         updateData.status = "delivered";
         changes.push(`📌 **الحالة الجديدة:** تم الاستلام`);
-      } else if (
-        rawText.includes("جديد") ||
-        rawText.includes("جديده") ||
-        rawText.includes("جديدة") ||
-        rawText.includes("معلق") ||
-        rawText.includes("معلقة")
-      ) {
-        updateData.status = "pending";
-        updateData.assignedCourierId = null;
-        changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
-        changes.push(`👨‍✈️ **المندوب:** تم إلغاء الإسناد`);
       }
     }
 
