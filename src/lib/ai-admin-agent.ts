@@ -124,7 +124,80 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const rawText = userText || "";
 
   // ==========================================
-  // 1. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS & ORDERS)
+  // 1. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
+  // ==========================================
+  if (
+    rawText.includes("سوي لي طلب") ||
+    rawText.includes("سوي طلب") ||
+    rawText.includes("سويلي طلب") ||
+    rawText.includes("ضيف طلب") ||
+    rawText.includes("طلب جديد") ||
+    rawText.includes("انشئ طلب")
+  ) {
+    // أ) جلب أو مطابقة المحل
+    const matchingShop = await findMatchingShopByQuery(rawText);
+    const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
+
+    if (!firstShop) {
+      return { reply: "❌ لم يتم العثور على أي محل في النظام لرفع الطلب باسمه." };
+    }
+
+    // ب) جلب أو مطابقة المنطقة
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    let matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
+    
+    if (!matchingRegion) {
+      const ranked = rankRegionsByQuery(rawText, allRegions, 1);
+      if (ranked.length > 0) matchingRegion = ranked[0];
+    }
+    const region = matchingRegion || allRegions[0];
+
+    // ج) استخراج رقم هاتف الزبون
+    const phoneMatch = rawText.match(/(?:\+964|0)?7[3-9]\d{8}/);
+    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+
+    // د) استخراج السعر الحقيقي
+    const wordPrice = parseArabicWordsToNumber(rawText);
+    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
+    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 10000);
+
+    const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5000;
+    const totalAmountNum = priceNum + deliveryPriceNum;
+
+    // هـ) استخراج نوع/وصف الطلب والمنتج (مثل: روبيان)
+    let orderType = "طلب جديد";
+    if (rawText.includes("روبيان")) orderType = "روبيان";
+    else {
+      const cleanType = rawText.replace(/.*نوع الطلب|.*نوع|.*سوي لي طلب|.*سوي طلب|.*محل|07\d{9}|\+964\d+|سعر الطلب|\d+/gi, "").trim();
+      if (cleanType.length > 1) orderType = cleanType;
+    }
+
+    // و) إنشاء الطلب حقيقياً في قاعدة البيانات
+    const order = await prisma.order.create({
+      data: {
+        shopId: firstShop.id,
+        status: "pending",
+        orderType: orderType,
+        customerRegionId: region?.id,
+        customerPhone: phone,
+        orderSubtotal: new Decimal(priceNum),
+        deliveryPrice: new Decimal(deliveryPriceNum),
+        totalAmount: new Decimal(totalAmountNum),
+        submissionSource: "admin_ai_assistant",
+        orderNoteTime: rawText.includes("الان") ? "فوري" : "عادي",
+      }
+    });
+
+    notifyTelegramNewOrder(order.id).catch(() => {});
+    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+    return {
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **الهاتف:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
+    };
+  }
+
+  // ==========================================
+  // 2. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
     const extractedItems = extractPrepItemsFromText(rawText);
@@ -162,17 +235,64 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات (SMART MULTI-FILTER ORDER FINDER)
+  // 3. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
   // ==========================================
-  // استبعاد أرقام الهواتف كلياً (أي رقم يزيد عن 6 أرقام أو يبدأ بـ 07 / 77 / 78 / 75)
+  if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
+    if (operation === "create" || rawText.includes("ضِف مندوب") || rawText.includes("إضافة مندوب")) {
+      const name = targetIdOrName || rawText.replace(/.*مندوب|.*كابتن|إضافة|جديد/gi, "").trim() || "مندوب جديد";
+      const phoneMatch = rawText.match(/\d{10,11}/);
+      const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+
+      const courier = await prisma.courier.create({
+        data: { name, phone, active: true }
+      });
+      return { reply: `✅ **تم إضافة وتأكيد المندوب الجديد (${courier.name}) بالنظام!**\n- الهاتف: ${courier.phone}` };
+    }
+
+    if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
+      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
+      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
+
+      const courier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+
+      if (courier) {
+        await prisma.courier.update({
+          where: { id: courier.id },
+          data: { active: activeState }
+        });
+        const statusMsg = activeState ? "تفعيل وإظهار" : "تعطيل وإخفاء";
+        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح!**` };
+      }
+    }
+
+    if (operation === "zero" || rawText.includes("صفر حساب المندوب")) {
+      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|صفر|تصفير|حساب|مستحقات/gi, "").trim();
+      const courier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+
+      if (courier) {
+        await prisma.courier.update({
+          where: { id: courier.id },
+          data: { lastSalaryWithdrawalAt: new Date() }
+        });
+        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل!**` };
+      }
+    }
+  }
+
+  // ==========================================
+  // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات والتعديل الإداري (ORDER UPDATING)
+  // ==========================================
   const allNumbers = (rawText.match(/\d+/g) || [])
     .map(Number)
-    .filter(n => n > 0 && n < 100000); // إبقاء الأرقام الخاصة بالطلبات والأسعار الحقيقية فقط
+    .filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
   
   let orderNumber: number | null = null;
   let targetNewPrice: number | null = null;
 
-  // أ) استخراج رقم الطلب إذا ذكر صراحة
   const orderNumMatch = rawText.match(/(?:طلب|طلبية|#)\s*(\d{1,5})/i);
   if (orderNumMatch) {
     orderNumber = Number(orderNumMatch[1]);
@@ -181,7 +301,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     if (candidateNum) orderNumber = candidateNum;
   }
 
-  // ب) استخراج السعر سواء أكان أرقاماً أم حروفاً عربية (مثل "خمسة" -> 5)
   const wordPrice = parseArabicWordsToNumber(rawText);
   if (wordPrice != null) {
     targetNewPrice = wordPrice;
@@ -194,7 +313,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   let existingOrder: any = null;
 
-  // 1. البحث الصريح برقم الطلب
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -202,10 +320,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
-  // 2. المطابقة الذكية الدقيقة باسم المحل
   const matchingShop = await findMatchingShopByQuery(rawText);
 
-  if (!existingOrder && matchingShop) {
+  if (!existingOrder && matchingShop && (rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
     const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
 
@@ -214,15 +331,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     existingOrder = await prisma.order.findFirst({
       where: whereClause,
-      orderBy: { createdAt: "desc" },
-      include: { shop: true, customerRegion: true, courier: true }
-    });
-  }
-
-  // 3. التراجع لأحدث طلب فقط في حالة عدم ذكر أي اسم محل في النص المكتوب
-  if (!existingOrder && !matchingShop && (rawText.includes("طلب") || rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
-    existingOrder = await prisma.order.findFirst({
-      where: { status: { in: ["pending", "assigned"] } },
       orderBy: { createdAt: "desc" },
       include: { shop: true, customerRegion: true, courier: true }
     });
