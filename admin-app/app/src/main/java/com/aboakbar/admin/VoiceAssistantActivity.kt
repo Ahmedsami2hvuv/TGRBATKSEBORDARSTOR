@@ -281,7 +281,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onRmsChanged(rmsdB: Float) {
-                // إرسال نبرة الصوت لـ GeminiLivePillView لتتفاعل بقع الطمس الضوئية الناعمة بالمنتصف
                 btnGeminiPill.setAudioRms(rmsdB)
             }
 
@@ -423,7 +422,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 setOnClickListener {
                     tvTranscript.text = "💬 \"$btnText\""
-                    sendToAdminVoiceApi(btnText)
+                    // إرسال btnAction القيمة المحفورة للعملية بدلاً من النص إذا كانت موجودة
+                    val payloadToSend = if (btnAction.isNotEmpty()) btnAction else btnText
+                    sendToAdminVoiceApi(payloadToSend)
                 }
             }
             buttonsContainer.addView(actionBtn)
