@@ -653,7 +653,11 @@ export async function executeSuperSystemAgent(
         }
 
         if (!targetOrder) {
-          return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق بحالة (${target_status}) لإسناده.` };
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق لإسناده.` };
+        }
+
+        if (targetOrder.status === "completed") {
+          return { reply: `يا أبو الأكبر، طلب #${targetOrder.orderNumber} مكتمل ومسلم بالفعل، فما تقدر تغير إسناده!` };
         }
 
         const updated = await prisma.order.update({
@@ -1157,6 +1161,10 @@ export async function executeSuperSystemAgent(
 
         if (!targetOrder) {
           return { reply: `يا أبو الأكبر، ما أعرف أي طلب تقصد. اذكرلي رقم الطلب صراحة.` };
+        }
+
+        if (targetOrder.status === "completed") {
+          return { reply: `يا أبو الأكبر، طلب #${targetOrder.orderNumber} مكتمل ومسلم بالفعل، فما تقدر تغير إسناده!` };
         }
 
         const allCouriers = await prisma.courier.findMany();
