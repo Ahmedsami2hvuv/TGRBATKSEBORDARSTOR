@@ -97,13 +97,13 @@ function cleanArabicTextForMatch(text: string): string {
 function extractTargetShopName(text: string): string {
   if (!text) return "";
 
-  const matchFrom = text.match(/(?:سوي لي طلب جديد من|سوي طلب جديد من|طلب جديد من|سوي لي طلب من|سوي طلب من|من محل|من)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان)|$)/i);
+  const matchFrom = text.match(/(?:سوي لي طلب جديد من|سوي طلب جديد من|طلب جديد من|سوي لي طلب من|سوي طلب من|من محل|من)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان|إلى|الي)|$)/i);
   if (matchFrom && matchFrom[1].trim().length >= 2) {
     const candidate = matchFrom[1].replace(/طلب|جديد|سوي لي|سوي/gi, "").trim();
     if (candidate.length >= 2) return candidate;
   }
 
-  const matchShop = text.match(/(?:محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان)|$)/i);
+  const matchShop = text.match(/(?:محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان|إلى|الي)|$)/i);
   if (matchShop && matchShop[1].trim().length >= 2) {
     return matchShop[1].trim();
   }
@@ -189,7 +189,7 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
   const cleanQ = cleanArabicTextForMatch(queryText.replace(/📍|\(توصيل:.*?\)/g, "").trim());
   if (!cleanQ) return [];
 
-  const regionMatch = queryText.match(/(?:منطقة|منطقه|عنوان)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:رقم|نوع|وقت|07|\d)|$)/i);
+  const regionMatch = queryText.match(/(?:منطقة|منطقه|عنوان|إلى|الي)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:رقم|نوع|وقت|07|\d)|$)/i);
   let targetRegionWord = regionMatch ? cleanArabicTextForMatch(regionMatch[1].trim()) : cleanQ;
 
   if (targetRegionWord) {
@@ -655,7 +655,100 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 1. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
+  // 1. الأولوية المطلقة: قسم إنشاء طلب مبيعات جديد عالي الدقة (CREATE NEW SALES ORDER)
+  // ==========================================
+  if (
+    !rawText.includes("تجهيز") &&
+    (rawText.includes("سوي لي طلب") ||
+      rawText.includes("سوي طلب") ||
+      rawText.includes("سويلي طلب") ||
+      rawText.includes("ضيف طلب") ||
+      rawText.includes("طلب جديد") ||
+      rawText.includes("انشئ طلب"))
+  ) {
+    const matchingShop = await findMatchingShopByQuery(rawText);
+
+    if (!matchingShop) {
+      const extractedName = extractTargetShopName(rawText);
+      const fuzzyShops = await findFuzzyMatchingShops(rawText);
+
+      const shopButtons = fuzzyShops.map(s => ({
+        text: `🏪 ${s.name}`,
+        action: `select_shop_${s.id}`
+      }));
+
+      const suggestionNote = fuzzyShops.length > 0
+        ? "\n\n👇 **يرجى النقر على اسم المحل المطلوب من المقترحات المطابقة أدناه:**"
+        : "";
+
+      return {
+        reply: `⚠️ **يا أبو الأكبر:** لم أتمكن من الجزم باسم المحل المطابق بالضبط لـ (**${extractedName}**) بقواعد البيانات!${suggestionNote}`,
+        buttons: shopButtons
+      };
+    }
+
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const hasRegionMention = rawText.includes("منطقة") || rawText.includes("منطقه") || rawText.includes("عنوان") || rawText.includes("جيكور") || rawText.includes("حمدان") || rawText.includes("ابي الخصيب") || rawText.includes("إلى") || rawText.includes("الي");
+    
+    let selectedRegion: any = null;
+    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
+
+    if (hasRegionMention) {
+      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+      selectedRegion = matchedRegions[0] || null;
+      if (matchedRegions.length > 1) {
+        regionButtons = matchedRegions.map(r => ({
+          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
+          action: `select_region_${r.id}`
+        }));
+      }
+    } else {
+      regionButtons = allRegions.slice(0, 5).map(r => ({
+        text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
+        action: `select_region_${r.id}`
+      }));
+    }
+
+    const phone = extractCustomerPhoneFlexible(rawText);
+
+    const wordPrice = parseArabicWordsToNumber(rawText);
+    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
+    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
+
+    const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : (hasRegionMention ? 5 : 0);
+    const totalAmountNum = priceNum + deliveryPriceNum;
+
+    const orderType = extractCleanOrderType(rawText, matchingShop.name);
+    const orderNoteTime = extractCleanOrderNoteTime(rawText);
+
+    const order = await prisma.order.create({
+      data: {
+        shopId: matchingShop.id,
+        status: "pending",
+        orderType: orderType,
+        orderNoteTime: orderNoteTime,
+        customerRegionId: selectedRegion?.id || null,
+        customerPhone: phone,
+        orderSubtotal: new Decimal(priceNum),
+        deliveryPrice: new Decimal(deliveryPriceNum),
+        totalAmount: new Decimal(totalAmountNum),
+        submissionSource: "admin_ai_assistant",
+      }
+    });
+
+    notifyTelegramNewOrder(order.id).catch(() => {});
+    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+    const regionName = selectedRegion ? selectedRegion.name : "غير محددة";
+
+    return {
+      reply: `تم يا أبو الأكبر! أنشأت طلب جديد #${order.orderNumber} لـ (${matchingShop.name}) إلى (${regionName}) | نوع: ${orderType} | هاتف: ${phone}`,
+      buttons: regionButtons
+    };
+  }
+
+  // ==========================================
+  // 2. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
   // ==========================================
   if (
     domain === "couriers" && operation === "create" ||
@@ -684,25 +777,30 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
+  // 3. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
   // ==========================================
   if (
-    domain === "debts" ||
-    rawText.includes("نطيت") ||
-    rawText.includes("انطيت") ||
-    rawText.includes("أنطيت") ||
-    rawText.includes("إنطيت") ||
-    rawText.includes("عطيت") ||
-    rawText.includes("أعطيت") ||
-    rawText.includes("اعطيت") ||
-    rawText.includes("اخذت") ||
-    rawText.includes("أخذت") ||
-    rawText.includes("تنزيل") ||
-    rawText.includes("سدد") ||
-    rawText.includes("استلمت") ||
-    rawText.includes("قبضت") ||
-    rawText.includes("دفعت") ||
-    rawText.includes("حولت")
+    !rawText.includes("سوي لي طلب") &&
+    !rawText.includes("سوي طلب") &&
+    !rawText.includes("طلب جديد") &&
+    !rawText.includes("منطقة") &&
+    !rawText.includes("منطقه") &&
+    (domain === "debts" ||
+      rawText.includes("نطيت") ||
+      rawText.includes("انطيت") ||
+      rawText.includes("أنطيت") ||
+      rawText.includes("إنطيت") ||
+      rawText.includes("عطيت") ||
+      rawText.includes("أعطيت") ||
+      rawText.includes("اعطيت") ||
+      rawText.includes("اخذت") ||
+      rawText.includes("أخذت") ||
+      rawText.includes("تنزيل") ||
+      rawText.includes("سدد") ||
+      rawText.includes("استلمت") ||
+      rawText.includes("قبضت") ||
+      rawText.includes("دفعت") ||
+      rawText.includes("حولت"))
   ) {
     const isTook = rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل") || rawText.includes("سدد") || rawText.includes("استلمت") || rawText.includes("قبضت");
     const kind = isTook ? "took" : "gave";
@@ -788,7 +886,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. أولوية قصوى: قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
+  // 4. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (
     domain === "prep_drafts" ||
@@ -825,102 +923,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       action: `assign_prep_${p.id}`
     }));
 
-    const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
-
     return {
       reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
       buttons: preparerButtons
-    };
-  }
-
-  // ==========================================
-  // 4. إنشاء طلب مبيعات جديد عالي الدقة (CREATE NEW SALES ORDER)
-  // ==========================================
-  if (
-    !rawText.includes("تجهيز") &&
-    (rawText.includes("سوي لي طلب") ||
-      rawText.includes("سوي طلب") ||
-      rawText.includes("سويلي طلب") ||
-      rawText.includes("ضيف طلب") ||
-      rawText.includes("طلب جديد") ||
-      rawText.includes("انشئ طلب"))
-  ) {
-    const matchingShop = await findMatchingShopByQuery(rawText);
-
-    if (!matchingShop) {
-      const extractedName = extractTargetShopName(rawText);
-      const fuzzyShops = await findFuzzyMatchingShops(rawText);
-
-      const shopButtons = fuzzyShops.map(s => ({
-        text: `🏪 ${s.name}`,
-        action: `select_shop_${s.id}`
-      }));
-
-      const suggestionNote = fuzzyShops.length > 0
-        ? "\n\n👇 **يرجى النقر على اسم المحل المطلوب من المقترحات المطابقة أدناه:**"
-        : "";
-
-      return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أتمكن من الجزم باسم المحل المطابق بالضبط لـ (**${extractedName}**) بقواعد البيانات!${suggestionNote}`,
-        buttons: shopButtons
-      };
-    }
-
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const hasRegionMention = rawText.includes("منطقة") || rawText.includes("منطقه") || rawText.includes("عنوان") || rawText.includes("جيكور") || rawText.includes("حمدان") || rawText.includes("ابي الخصيب");
-    
-    let selectedRegion: any = null;
-    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
-
-    if (hasRegionMention) {
-      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-      selectedRegion = matchedRegions[0] || null;
-      if (matchedRegions.length > 1) {
-        regionButtons = matchedRegions.map(r => ({
-          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
-          action: `select_region_${r.id}`
-        }));
-      }
-    } else {
-      regionButtons = allRegions.slice(0, 5).map(r => ({
-        text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
-        action: `select_region_${r.id}`
-      }));
-    }
-
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    const wordPrice = parseArabicWordsToNumber(rawText);
-    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
-    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
-
-    const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : (hasRegionMention ? 5 : 0);
-    const totalAmountNum = priceNum + deliveryPriceNum;
-
-    const orderType = extractCleanOrderType(rawText, matchingShop.name);
-    const orderNoteTime = extractCleanOrderNoteTime(rawText);
-
-    const order = await prisma.order.create({
-      data: {
-        shopId: matchingShop.id,
-        status: "pending",
-        orderType: orderType,
-        orderNoteTime: orderNoteTime,
-        customerRegionId: selectedRegion?.id || null,
-        customerPhone: phone,
-        orderSubtotal: new Decimal(priceNum),
-        deliveryPrice: new Decimal(deliveryPriceNum),
-        totalAmount: new Decimal(totalAmountNum),
-        submissionSource: "admin_ai_assistant",
-      }
-    });
-
-    notifyTelegramNewOrder(order.id).catch(() => {});
-    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-    return {
-      reply: `تم يا أبو الأكبر! ضفت طلب جديد #${order.orderNumber} لـ (${matchingShop.name}) | بضاعة: ${priceNum} | توصيل: ${deliveryPriceNum} | الإجمالي: ${totalAmountNum}`,
-      buttons: regionButtons
     };
   }
 
