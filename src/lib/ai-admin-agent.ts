@@ -74,11 +74,29 @@ async function findMatchingShopByQuery(queryText: string) {
 }
 
 /**
- * البحث والدعم الفائق للمناطق المطابقة الحقيقية مع إعطاء الأولوية للاسم المطابق تماماً
+ * البحث والدعم الفائق للمناطق المطابقة الحقيقية مع إعطاء الأولوية للاسم المنطوق صراحة بعد كلمة (منطقة/منطقه)
  */
 function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]): any[] {
   const cleanQ = cleanArabicTextForMatch(queryText.replace(/📍|\(توصيل:.*?\)/g, "").trim());
   if (!cleanQ) return [];
+
+  // استخراج الكلمة التي تأتي صراحة بعد كلمة (منطقة/منطقه/عنوان)
+  const regionMatch = queryText.match(/(?:منطقة|منطقه|عنوان)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:رقم|نوع|وقت|07|\d)|$)/i);
+  let targetRegionWord = regionMatch ? cleanArabicTextForMatch(regionMatch[1].trim()) : cleanQ;
+
+  if (targetRegionWord) {
+    const directExact = allRegions.filter(r => {
+      const cleanR = cleanArabicTextForMatch(r.name);
+      return cleanR === targetRegionWord;
+    });
+    if (directExact.length > 0) return directExact;
+
+    const containsExact = allRegions.filter(r => {
+      const cleanR = cleanArabicTextForMatch(r.name);
+      return cleanR.includes(targetRegionWord) || targetRegionWord.includes(cleanR);
+    });
+    if (containsExact.length > 0) return containsExact;
+  }
 
   const exactNameMatches = allRegions.filter(r => cleanArabicTextForMatch(r.name) === cleanQ);
   if (exactNameMatches.length > 0) {
@@ -177,18 +195,41 @@ function extractCleanCourierName(text: string, targetName: string = ""): string 
 }
 
 /**
- * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وتجريد المحلات والصفات والطلبات
+ * استخراج وقت الاستلام والتوصيل الصريح (orderNoteTime)
+ */
+function extractCleanOrderNoteTime(text: string): string {
+  if (!text) return "عادي";
+
+  const timeMatch = text.match(/(?:وقت الطلب|وقت الاستلام|وقت التوصيل|في وقت|وقت)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:رقم|نوع|سعر|منطقة|منطقه)|$)/i);
+  if (timeMatch && timeMatch[1].trim().length >= 2) {
+    const timeVal = timeMatch[1].trim();
+    return timeVal;
+  }
+
+  if (text.includes("الان") || text.includes("هسه") || text.includes("فوري")) return "فوري";
+  if (text.includes("غدا صباحا") || text.includes("باكر صباحا") || text.includes("باجر")) return "غداً صباحاً";
+  if (text.includes("عصر")) return "عصراً";
+  if (text.includes("مغرب")) return "مغرباً";
+
+  return "عادي";
+}
+
+/**
+ * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وحذف عبارات وقت الطلب منها
  */
 function extractCleanOrderType(text: string, shopName?: string): string {
   if (!text) return "مواد متنوعة";
 
-  const directMatch = text.match(/(?:نوع الطلب|نوع البضاعة|نوع المنتج|نوع|سويه|سويها|خليها|خليه|سويه نوع)\s*(?:سويه|سويها|هو|هي)?\s*([أ-يa-zA-Z0-9\s]+)$/i);
+  // قص وتجريد أي نص يأتي بعد "وقت الطلب" أولاً
+  let textWithoutTime = text.replace(/وقت الطلب.*/gi, "").trim();
+
+  const directMatch = textWithoutTime.match(/(?:نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع|سويه|سويها|خليها|خليه)\s*(?:سويه|سويها|هو|هي)?\s*([أ-يa-zA-Z0-9\s]+)$/i);
   if (directMatch && directMatch[1].trim().length >= 2) {
     const candidate = directMatch[1].replace(/جديد|جديده|جديدة|معلق|معلقة|طلب/gi, "").trim();
     if (candidate.length >= 2) return candidate;
   }
 
-  let cleaned = text
+  let cleaned = textWithoutTime
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
     .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|سويها|عدل|غير|سوي لي|سوي|خلي|خليها|جديد من محل|محل/gi, "")
@@ -212,7 +253,7 @@ function extractCleanOrderType(text: string, shopName?: string): string {
     return words.join(" ");
   }
 
-  return "صمون";
+  return "روبيان";
 }
 
 /**
@@ -221,7 +262,6 @@ function extractCleanOrderType(text: string, shopName?: string): string {
 async function findOrCreateCreditBookPartner(partnerQuery: string) {
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
 
-  // 1. البحث أولاً في قائمة الشركاء المسجلين بدفتر الديون
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -230,7 +270,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 2. البحث في المندوبين (courier) وتلافي تكرار الفهرس الفريد
   const allCouriers = await prisma.courier.findMany();
   for (const c of allCouriers) {
     if (cleanQ.includes(cleanArabicTextForMatch(c.name))) {
@@ -245,7 +284,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 3. البحث في المحلات والعملاء (shop) وتلافي تكرار الفهرس الفريد
   const allShops = await prisma.shop.findMany();
   for (const s of allShops) {
     if (cleanQ.includes(cleanArabicTextForMatch(s.name))) {
@@ -260,7 +298,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 4. البحث في المجهزين والموردين (preparer) وتلافي تكرار الفهرس الفريد
   const allPreps = await prisma.companyPreparer.findMany();
   for (const pr of allPreps) {
     if (cleanQ.includes(cleanArabicTextForMatch(pr.name))) {
@@ -275,7 +312,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 5. إذا كان شخصاً عادياً أو زبوناً خارجي جديد
   const extractedName = partnerQuery
     .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
     .trim() || partnerQuery.trim() || "شريك جديد";
@@ -568,19 +604,20 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const totalAmountNum = priceNum + deliveryPriceNum;
 
     const orderType = extractCleanOrderType(rawText, matchingShop.name);
+    const orderNoteTime = extractCleanOrderNoteTime(rawText);
 
     const order = await prisma.order.create({
       data: {
         shopId: matchingShop.id,
         status: "pending",
         orderType: orderType,
+        orderNoteTime: orderNoteTime,
         customerRegionId: selectedRegion?.id || null,
         customerPhone: phone,
         orderSubtotal: new Decimal(priceNum),
         deliveryPrice: new Decimal(deliveryPriceNum),
         totalAmount: new Decimal(totalAmountNum),
         submissionSource: "admin_ai_assistant",
-        orderNoteTime: rawText.includes("الان") || rawText.includes("هسه") ? "فوري" : "عادي",
       }
     });
 
@@ -591,7 +628,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **انقر على المنطقة المناسبة لتأكيد سعر التوصيل:**" : "";
 
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${matchingShop.name}\n- **المنطقة والوجهة:** ${regionNote}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}${optionsNote}`,
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${matchingShop.name}\n- **المنطقة والوجهة:** ${regionNote}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة والمنتج:** ${orderType}\n- **وقت الاستلام والتوصيل:** ${orderNoteTime}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}${optionsNote}`,
       buttons: regionButtons
     };
   }
@@ -790,7 +827,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // هـ) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
+    // هـ) تعديل وقت الاستلام والتوصيل الصريح (orderNoteTime)
+    if (rawText.includes("وقت الطلب") || rawText.includes("وقت الاستلام") || rawText.includes("غدا") || rawText.includes("صباحا")) {
+      const timeVal = extractCleanOrderNoteTime(rawText);
+      updateData.orderNoteTime = timeVal;
+      changes.push(`⏰ **وقت الاستلام والتوصيل الجديد:** ${timeVal}`);
+    }
+
+    // و) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
