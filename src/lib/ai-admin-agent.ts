@@ -32,7 +32,7 @@ function parseArabicWordsToNumber(text: string): number | null {
 }
 
 /**
- * تنظيف النصوص العربية لإزالة (ال التعريف، الهمزات، التاء المربوطة) للمطابقة المباشرة
+ * تنظيف وتوحيد النصوص العربية لإزالة وتوحيد (ال التعريف، الهمزات، التاء المربوطة، الياء والواو كـ ابي/ابو) للمطابقة المباشرة
  */
 function cleanArabicTextForMatch(text: string): string {
   if (!text) return "";
@@ -40,7 +40,11 @@ function cleanArabicTextForMatch(text: string): string {
     .toLowerCase()
     .replace(/أ|إ|آ/g, "ا")
     .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\bابي\b/g, "ابو")
+    .replace(/\bابا\b/g, "ابو")
     .replace(/\bال/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -270,18 +274,18 @@ function extractTargetPartnerName(text: string): string {
 }
 
 /**
- * البحث المحكم الفائق بالمطابقة التامة الصريحة ودون تخمين عشوائي للمحلات المقاربة، وعدم إنشاء أي حساب بكيفه إطلاقاً
+ * البحث المحكم الفائق بالمطابقة التامة المرنة الصريحة (تأخذ بعين الاعتبار توحيد أ/إ/آ و ة/هـ و ابي/ابو)
  */
 async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
   const targetName = extractTargetPartnerName(partnerQuery);
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
   const cleanTarget = cleanArabicTextForMatch(targetName);
 
-  // 1. البحث في المندوبين بـ المطابقة التامة الصريحة (prisma.courier)
+  // 1. البحث في المندوبين بـ المطابقة المرنة (prisma.courier)
   const allCouriers = await prisma.courier.findMany();
   for (const c of allCouriers) {
     const cleanC = cleanArabicTextForMatch(c.name);
-    if (cleanC === cleanTarget || cleanC === cleanQ || (cleanTarget.length > 2 && cleanC.startsWith(cleanTarget))) {
+    if (cleanC === cleanTarget || cleanC === cleanQ) {
       const existingPartner = await prisma.creditBookPartner.findFirst({
         where: { OR: [{ externalId: c.id, type: "courier" }, { name: { contains: c.name, mode: "insensitive" } }] }
       });
@@ -299,7 +303,7 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
-  // 2. البحث في المحلات والعملاء بـ المطابقة التامة الصريحة (prisma.shop)
+  // 2. البحث في المحلات والعملاء بـ المطابقة المرنة (prisma.shop)
   const allShops = await prisma.shop.findMany();
   for (const s of allShops) {
     const cleanS = cleanArabicTextForMatch(s.name);
@@ -321,7 +325,7 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
-  // 3. البحث في المجهزين بـ المطابقة التامة الصريحة (prisma.companyPreparer)
+  // 3. البحث في المجهزين والموردين بـ المطابقة المرنة الصريحة (prisma.companyPreparer)
   const allPreps = await prisma.companyPreparer.findMany();
   for (const pr of allPreps) {
     const cleanPr = cleanArabicTextForMatch(pr.name);
@@ -343,7 +347,7 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
-  // 4. البحث في دفتر الديون بـ المطابقة التامة الصريحة (prisma.creditBookPartner)
+  // 4. البحث في دفتر الديون بـ المطابقة المرنة الصريحة (prisma.creditBookPartner)
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -352,8 +356,56 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
-  // في حال لم ينطبق أي اسم تماً، يُمنع إنشاء حساب جديد بكيفه ويُرجع null
   return null;
+}
+
+/**
+ * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام عند خطأ في حرف أو نطق
+ */
+async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
+  const targetName = extractTargetPartnerName(partnerQuery);
+  const cleanTarget = cleanArabicTextForMatch(targetName);
+  if (!cleanTarget || cleanTarget.length < 2) return [];
+
+  const candidates: Array<{ id: string; name: string; type: string }> = [];
+
+  // فحص الشركاء بـ دفتر الديون
+  const allPartners = await prisma.creditBookPartner.findMany();
+  for (const p of allPartners) {
+    const cleanP = cleanArabicTextForMatch(p.name);
+    if (cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
+      candidates.push({ id: p.id, name: p.name, type: p.type });
+    }
+  }
+
+  // فحص المحلات
+  const allShops = await prisma.shop.findMany();
+  for (const s of allShops) {
+    const cleanS = cleanArabicTextForMatch(s.name);
+    if (cleanS.includes(cleanTarget) || cleanTarget.includes(cleanS)) {
+      candidates.push({ id: s.id, name: s.name, type: "shop" });
+    }
+  }
+
+  // فحص المندوبين
+  const allCouriers = await prisma.courier.findMany();
+  for (const c of allCouriers) {
+    const cleanC = cleanArabicTextForMatch(c.name);
+    if (cleanC.includes(cleanTarget) || cleanTarget.includes(cleanC)) {
+      candidates.push({ id: c.id, name: c.name, type: "courier" });
+    }
+  }
+
+  // فحص المجهزين
+  const allPreps = await prisma.companyPreparer.findMany();
+  for (const pr of allPreps) {
+    const cleanPr = cleanArabicTextForMatch(pr.name);
+    if (cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
+      candidates.push({ id: pr.id, name: pr.name, type: "preparer" });
+    }
+  }
+
+  return candidates.slice(0, 3);
 }
 
 /**
@@ -394,7 +446,74 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const rawText = userText || "";
 
   // ==========================================
-  // 0. معالجة أزرار التأكيد المباشرة المخصصة لـ إنشاء الحسابات الجديدة في دفتر الديون بطلب صريح
+  // 0. معالجة اختيار شريك موجود من قائمة المقترحات
+  // ==========================================
+  if (rawText.startsWith("apply_debt_existing_")) {
+    const parts = rawText.split("_");
+    const partnerId = parts[3];
+    const kind = parts[4]; // took or gave
+    const amountVal = Number(parts[5]) || 5;
+
+    let partner = await prisma.creditBookPartner.findUnique({ where: { id: partnerId } });
+
+    if (!partner) {
+      const shop = await prisma.shop.findUnique({ where: { id: partnerId } });
+      if (shop) {
+        partner = await prisma.creditBookPartner.create({
+          data: { name: shop.name, type: "shop", externalId: shop.id, phone: shop.phone }
+        });
+      }
+    }
+
+    if (!partner) {
+      const courier = await prisma.courier.findUnique({ where: { id: partnerId } });
+      if (courier) {
+        partner = await prisma.creditBookPartner.create({
+          data: { name: courier.name, type: "courier", externalId: courier.id, phone: courier.phone }
+        });
+      }
+    }
+
+    if (!partner) {
+      const prep = await prisma.companyPreparer.findUnique({ where: { id: partnerId } });
+      if (prep) {
+        partner = await prisma.creditBookPartner.create({
+          data: { name: prep.name, type: "preparer", externalId: prep.id, phone: prep.phone }
+        });
+      }
+    }
+
+    if (partner) {
+      await prisma.creditBookTransaction.create({
+        data: {
+          partnerId: partner.id,
+          amount: new Decimal(amountVal),
+          kind: kind as any,
+          note: `رصد تلقائي بناءً على موافقة أبو الأكبر بالنقر على المقترح`
+        }
+      });
+
+      const allTx = await prisma.creditBookTransaction.findMany({ where: { partnerId: partner.id } });
+      let totalGave = 0;
+      let totalTook = 0;
+      allTx.forEach(t => {
+        const val = t.amount.toNumber();
+        if (t.kind === "gave") totalGave += val;
+        else if (t.kind === "took") totalTook += val;
+      });
+
+      const netBalance = totalGave - totalTook;
+      const balanceStatus = netBalance > 0 ? `نطلبه: ${netBalance}` : (netBalance < 0 ? `يطلبنا: ${Math.abs(netBalance)}` : "متصفر (0)");
+      const actionTitle = kind === "took" ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
+
+      return {
+        reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${amountVal}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.1 معالجة أزرار التأكيد المباشرة المخصصة لـ إنشاء الحسابات الجديدة في دفتر الديون بطلب صريح
   // ==========================================
   if (rawText.startsWith("confirm_create_partner_")) {
     const parts = rawText.split("_");
@@ -428,7 +547,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 0.1 معالجة نقرة زر اختيار المنطقة التفاعلي المباشر (DIRECT REGION BUTTON CLICK RECOGNITION)
+  // 0.2 معالجة نقرة زر اختيار المنطقة التفاعلي المباشر (DIRECT REGION BUTTON CLICK RECOGNITION)
   // ==========================================
   if (rawText.startsWith("📍") || rawText.includes("توصيل:")) {
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
@@ -522,22 +641,39 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const partner = await findExistingCreditBookPartnerStrict(rawText);
 
-    // إذا لم يجد الشخص مطابقة تامة، يُمنع إنشاء حساب جديد بكيفه ويطلب الموافقة
+    // إذا لم يجد الشخص بالضبط، يفيض السيرفر بـ الأسماء المقاربة والمتشابهة وسؤال أبو الأكبر
     if (!partner) {
       const targetName = extractTargetPartnerName(rawText);
+      const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(rawText);
+
+      const dynamicButtons: Array<{ text: string; action: string }> = [];
+
+      if (fuzzyMatches.length > 0) {
+        fuzzyMatches.forEach(m => {
+          dynamicButtons.push({
+            text: `✅ هل تقصد: (${m.name})؟`,
+            action: `apply_debt_existing_${m.id}_${kind}_${finalAmount}`
+          });
+        });
+      }
+
+      dynamicButtons.push({
+        text: `➕ أنشئ حساب جديد لـ (${targetName}) وارصد ${finalAmount}`,
+        action: `confirm_create_partner_${kind}_${targetName}_${finalAmount}`
+      });
+
+      dynamicButtons.push({
+        text: `❌ إلغاء الإجراء`,
+        action: `cancel_debt_action`
+      });
+
+      const suggestionMsg = fuzzyMatches.length > 0
+        ? `\n\n💡 **هل تقصد أحداً من الشركاء المسجلين لدينا أدناه؟ انقر على الاسم المطلوب للتأكيد:**`
+        : "";
 
       return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!\n\n👇 **هل تريد أن أنشئ له حساباً جديداً بدفتر الديون ورصد مبلغ (${finalAmount}) عليه؟**`,
-        buttons: [
-          {
-            text: `✅ نعم، أنشئ حساب جديد لـ (${targetName}) وارصد ${finalAmount}`,
-            action: `confirm_create_partner_${kind}_${targetName}_${finalAmount}`
-          },
-          {
-            text: `❌ لا، إلغاء الإجراء`,
-            action: `cancel_debt_action`
-          }
-        ]
+        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
+        buttons: dynamicButtons
       };
     }
 
@@ -573,7 +709,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       balanceStatus = `الحساب متصفر بالكامل (0)`;
     }
 
-    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مجهز" : "شريك"));
+    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مجهز/مورد" : "شريك"));
 
     return {
       reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
@@ -1019,8 +1155,8 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-ممنوع منعاً باتاً مطابقة اسم مفرد مثل (ميثاق) على محل مركب مثل (ميثاق السماك)!
-وإذا لم تجد الشخص بالضبط صراحةً بقواعد البيانات، فممنوع إنشاء حساب جديد إطلاقاً من تلقاء نفسك، بل اطلب الموافقة الصريحة لإنشائه! واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+إذا قال لك المدير (أخذت كذا من فلان) وكان الاسم قريباً جداً (مثل: اكسسوارات ابي الخصيب واكسسوارات ابو الخصيب)، فاقترح عليه فوراً الاسم المسجل لدينا بالأزرار التفاعلية!
+واحفظ دائماً الموردين بصفة (مورد/مجهز) واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
