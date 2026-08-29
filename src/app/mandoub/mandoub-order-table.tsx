@@ -439,10 +439,21 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* أقصى اليسار: رقم الطلب بخط كبير بارز */}
-                    <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
-                      #{o.shortId}
-                    </span>
+                    {/* أقصى اليسار: رقم الطلب بخط كبير بارز مع شارة تنبيه عدم وجود لوكيشن للزبون */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!o.hasCustomerLocation && (
+                        <span
+                          className="inline-flex size-6 items-center justify-center rounded-full bg-rose-600 text-white font-black text-xs shadow-sm animate-pulse"
+                          title="بدون لوكيشن للزبون"
+                          aria-label="بدون لوكيشن"
+                        >
+                          !
+                        </span>
+                      )}
+                      <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                        #{o.shortId}
+                      </span>
+                    </div>
                   </div>
 
                   {/* سطر التفاصيل المالية والنوع والوقت بخطوط ضخمة وبارزة جداً */}
