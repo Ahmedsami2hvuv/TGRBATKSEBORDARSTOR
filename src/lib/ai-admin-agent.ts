@@ -8,18 +8,18 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
- * تحويل المبالغ والأرقام المنطوقة بالحروف العربية إلى أرقام رقمية صريحة
+ * تحويل المبالغ والأرقام المنطوقة بالحروف العربية إلى أرقام رقمية صريحة (بدون أصفار زائدة)
  */
 function parseArabicWordsToNumber(text: string): number | null {
   if (!text) return null;
   const t = text.toLowerCase().trim();
 
-  if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف") || t.includes("5000")) return 5000;
-  if (t.includes("عشرة الاف") || t.includes("عشر الاف") || t.includes("10 الاف") || t.includes("10000")) return 10000;
-  if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف") || t.includes("3000")) return 3000;
-  if (t.includes("اربعة الاف") || t.includes("اربع الاف") || t.includes("4 الاف") || t.includes("4000")) return 4000;
-  if (t.includes("الفين") || t.includes("2000")) return 2000;
-  if (t.includes("الف") || t.includes("1000")) return 1000;
+  if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف")) return 5;
+  if (t.includes("عشرة الاف") || t.includes("عشر الاف") || t.includes("10 الاف")) return 10;
+  if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف")) return 3;
+  if (t.includes("اربعة الاف") || t.includes("اربع الاف") || t.includes("4 الاف")) return 4;
+  if (t.includes("الفين")) return 2;
+  if (t.includes("الف")) return 1;
 
   if (t.includes("خمسة") || t.includes("خمسه")) return 5;
   if (t.includes("عشرة") || t.includes("عشره")) return 10;
@@ -219,7 +219,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (CREDIT BOOK TRANSACTIONS)
+  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة بدون 3 أصفار نهائياً (EXACT AMOUNTS ONLY)
   // ==========================================
   if (
     domain === "debts" ||
@@ -244,8 +244,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     
-    let rawAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
-    let finalAmount = rawAmount < 100 ? rawAmount * 1000 : rawAmount;
+    // عدم ضرب المبالغ بـ 1000 نهائياً - الرقم ينزل كما هو تماماً (مثلاً 5 ينزل 5)
+    let finalAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
     await prisma.creditBookTransaction.create({
       data: {
@@ -272,15 +272,15 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     let balanceStatus = "";
 
     if (netBalance > 0) {
-      balanceStatus = `نطلبه (يطلبك): ${netBalance.toLocaleString()} دينار`;
+      balanceStatus = `نطلبه (يطلبك): ${netBalance}`;
     } else if (netBalance < 0) {
-      balanceStatus = `يطلبنا (تطلبه): ${Math.abs(netBalance).toLocaleString()} دينار`;
+      balanceStatus = `يطلبنا (تطلبه): ${Math.abs(netBalance)}`;
     } else {
-      balanceStatus = `الحساب متصفر بالكامل (0 دينار)`;
+      balanceStatus = `الحساب متصفر بالكامل (0)`;
     }
 
     return {
-      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount.toLocaleString()} دينار\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
     };
   }
 
@@ -316,9 +316,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
-    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 10000);
+    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
-    const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5000;
+    const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5;
     const totalAmountNum = priceNum + deliveryPriceNum;
 
     let orderType = "طلب جديد";
@@ -347,7 +347,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **الهاتف:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **الهاتف:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
     };
   }
 
@@ -508,7 +508,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
       if (targetRegion) {
         updateData.customerRegionId = targetRegion.id;
-        const newDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5000;
+        const newDeliveryPrice = targetRegion.deliveryPrice ? targetRegion.deliveryPrice.toNumber() : 5;
         updateData.deliveryPrice = new Decimal(newDeliveryPrice);
 
         const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
