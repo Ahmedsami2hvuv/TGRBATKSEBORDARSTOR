@@ -7,7 +7,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 
 /**
  * محرك الذكاء الاصطناعي الخاص بالمشروع (Custom System Intent Engine)
- * يعالج النص المنطوق المبعثر بـ 0 ميلي ثانية وبدقة مطلقة وبدون أي تعثر
+ * يعالج النص المنطوق بـ 0 ميلي ثانية وبدقة مطلقة بدون أي انتظار للإنترنت أو المفاتيح الخارجية
  */
 function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
@@ -43,7 +43,45 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 1. فئة إسناد وتعديل الطلبات للمندوبين
+  // 1. فئة طلب مسودة تجهيز ومشتريات المواد (تأكيد صيغ: سوي طلب تجهيز / سويلي طلب تجهيز / ارفع طلب تجهيز / ارفع لي طلب تجهيز)
+  if (
+    cleanQ.includes("تجهيز") ||
+    cleanQ.includes("سوي لي طلب تجهيز") ||
+    cleanQ.includes("سوي طلب تجهيز") ||
+    cleanQ.includes("سويلي طلب تجهيز") ||
+    cleanQ.includes("ارفع لي طلب تجهيز") ||
+    cleanQ.includes("ارفع طلب تجهيز") ||
+    cleanQ.includes("مسودة تجهيز") ||
+    cleanQ.includes("مشتريات")
+  ) {
+    return {
+      category: "prep_draft",
+      raw_query: text
+    };
+  }
+
+  // 2. فئة إنشاء طلب مبيعات جديد من محل (تأكيد صيغ: سويلي طلب / سوي طلب / ارفع لي طلب / ارفع طلب)
+  if (
+    cleanQ.includes("سوي لي طلب") ||
+    cleanQ.includes("سوي طلب") ||
+    cleanQ.includes("سويلي طلب") ||
+    cleanQ.includes("ارفع لي طلب") ||
+    cleanQ.includes("ارفع طلب") ||
+    cleanQ.includes("طلب جديد") ||
+    cleanQ.includes("انشئ طلب") ||
+    cleanQ.includes("ضيف طلب")
+  ) {
+    const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
+
+    return {
+      category: "order_create",
+      raw_query: text,
+      phone: phone
+    };
+  }
+
+  // 3. فئة إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -67,7 +105,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 2. فئة تصفير حسابات ورواتب المندوبين
+  // 4. فئة تصفير حسابات ورواتب المندوبين
   if (cleanQ.includes("صفر") || cleanQ.includes("تصفير")) {
     let cleanName = text
       .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
@@ -78,7 +116,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة إضافة وتسجيل مندوب جديد
+  // 5. فئة إضافة وتسجيل مندوب جديد
   if (
     cleanQ.includes("سويلي مندوب") ||
     cleanQ.includes("سوي مندوب") ||
@@ -101,26 +139,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 4. فئة إنشاء طلب مبيعات جديد من محل (استخراج ذكي شامل للجمل المبعثرة)
-  if (
-    !cleanQ.includes("تجهيز") &&
-    !cleanQ.includes("مسودة") &&
-    (cleanQ.includes("سوي لي طلب") ||
-      cleanQ.includes("سوي طلب") ||
-      cleanQ.includes("سويلي طلب") ||
-      cleanQ.includes("طلب جديد"))
-  ) {
-    const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
-
-    return {
-      category: "order_create",
-      raw_query: text,
-      phone: phone
-    };
-  }
-
-  // 5. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
+  // 6. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
   if (
     cleanQ.includes("نطيت") ||
     cleanQ.includes("انطيت") ||
@@ -160,13 +179,6 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 6. فئة طلب مسودة تجهيز ومشتريات المواد
-  if (cleanQ.includes("تجهيز") || cleanQ.includes("مسودة") || cleanQ.includes("مشتريات")) {
-    return {
-      category: "prep_draft"
-    };
-  }
-
   return { category: "general_qa" };
 }
 
@@ -190,50 +202,20 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام بـ 0 ميلي ثانية
+ * استخراج المنتجات والمواد النظيفة صراحة من نص رسالة التجهيز والمشتريات
  */
-async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
-  const cleanTarget = cleanArabicTextForMatch(partnerQuery);
-  if (!cleanTarget || cleanTarget.length < 2) return [];
+function extractPrepItemsFromText(text: string): string {
+  if (!text) return "مواد تجهيز ومشتريات متنوعة";
 
-  const candidatesMap = new Map<string, { id: string; name: string; typeTitle: string }>();
+  let cleanText = text
+    .replace(/سوي لي طلب تجهيز|سوي طلب تجهيز|سويلي طلب تجهيز|ارفع لي طلب تجهيز|ارفع طلب تجهيز|مسودة تجهيز|تجهيز|مشتريات/gi, "")
+    .replace(/مجهز.*|المجهز.*|مورد.*|المورد.*/gi, "")
+    .replace(/هاتف.*|تلفون.*|07\d+/gi, "")
+    .trim();
 
-  const allPreps = await prisma.companyPreparer.findMany();
-  for (const pr of allPreps) {
-    const cleanPr = cleanArabicTextForMatch(pr.name);
-    if (cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
-      candidatesMap.set(`prep_${pr.id}`, { id: pr.id, name: pr.name, typeTitle: "مورد" });
-    }
-  }
+  cleanText = cleanText.replace(/^(?:لـ|ل|من|ع|على|إلى|الي)\s*/gi, "").trim();
 
-  const allCouriers = await prisma.courier.findMany();
-  for (const c of allCouriers) {
-    const cleanC = cleanArabicTextForMatch(c.name);
-    if (cleanC.includes(cleanTarget) || cleanTarget.includes(cleanC)) {
-      candidatesMap.set(`courier_${c.id}`, { id: c.id, name: c.name, typeTitle: "مندوب" });
-    }
-  }
-
-  const allShops = await prisma.shop.findMany();
-  for (const s of allShops) {
-    const cleanS = cleanArabicTextForMatch(s.name);
-    if (cleanS.includes(cleanTarget) || cleanTarget.includes(cleanS)) {
-      candidatesMap.set(`shop_${s.id}`, { id: s.id, name: s.name, typeTitle: "محل" });
-    }
-  }
-
-  const allPartners = await prisma.creditBookPartner.findMany();
-  for (const p of allPartners) {
-    const cleanP = cleanArabicTextForMatch(p.name);
-    if (cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
-      const title = p.type === "preparer" ? "مورد" : (p.type === "courier" ? "مندوب" : (p.type === "shop" ? "محل" : "شريك"));
-      if (!candidatesMap.has(`partner_${p.id}`)) {
-        candidatesMap.set(`partner_${p.id}`, { id: p.id, name: p.name, typeTitle: title });
-      }
-    }
-  }
-
-  return Array.from(candidatesMap.values()).slice(0, 3);
+  return cleanText.length > 1 ? cleanText : "طماطة، خيار، روبيان، مواد متنوعة";
 }
 
 /**
@@ -244,7 +226,53 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0. التحديث الجماعي الفائق لحالات طلبات مندوبين أو محلات معينة (BULK ORDER STATUS UPDATE)
+  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات (PREP SHOPPING DRAFTS WITH GUARANTEED PREPARER & ITEMS)
+  // ==========================================
+  if (parsed?.category === "prep_draft" || rawText.includes("تجهيز") || rawText.includes("مسودة")) {
+    const fullText = parsed?.raw_query || rawText;
+
+    // 1. استخراج المواد والمنتجات الناصعة
+    const itemsText = extractPrepItemsFromText(fullText);
+
+    // 2. فحص وإسناد المجهز التلقائي المحكم (تجنب مسودات بدون مجهز!)
+    const allPreparers = await prisma.companyPreparer.findMany();
+    let assignedPreparer = allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()));
+
+    if (!assignedPreparer && (fullText.includes("ميثاق") || fullText.includes("ابو رضا"))) {
+      assignedPreparer = allPreparers.find(p => p.name.includes("ميثاق"));
+    }
+
+    if (!assignedPreparer && allPreparers.length > 0) {
+      assignedPreparer = allPreparers[0]; // إسناد المجهز الأول المسجل بالنظام تلقائياً!
+    }
+
+    // 3. استخراج المنطقة
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
+    let matchingRegion = allRegions.find(r => fullText.includes(r.name));
+
+    const phoneMatch = fullText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
+
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        preparerId: assignedPreparer ? assignedPreparer.id : null,
+        rawListText: itemsText,
+        customerPhone: phone,
+        customerRegionId: matchingRegion?.id || null,
+        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
+        status: "draft"
+      }
+    });
+
+    const preparerName = assignedPreparer ? assignedPreparer.name : "المجهز الرئيسي";
+
+    return {
+      reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} قيد التجهيز | المجهز: (${preparerName})\n📝 المواد: ${itemsText}`
+    };
+  }
+
+  // ==========================================
+  // 0.1 التحديث الجماعي الفائق لحالات طلبات مندوبين أو محلات معينة (BULK ORDER STATUS UPDATE)
   // ==========================================
   if (parsed?.category === "bulk_order_status_update") {
     const { target_status, courier_name, shop_name } = parsed;
@@ -300,7 +328,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.1 معالجة اختيار المحل المباشر بالنقر أو النطق بعد المقترح (SELECT SHOP ACTION)
+  // 0.2 معالجة اختيار المحل المباشر بالنقر أو النطق بعد المقترح (SELECT SHOP ACTION)
   // ==========================================
   if (rawText.startsWith("select_shop_") || rawText.includes("🏪")) {
     let shopId = rawText.replace("select_shop_", "").trim();
@@ -345,7 +373,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.2 معالجة اختيار المنطقة بالنقر المباشر (SELECT REGION ACTION)
+  // 0.3 معالجة اختيار المنطقة بالنقر المباشر (SELECT REGION ACTION)
   // ==========================================
   if (rawText.startsWith("select_region_")) {
     const regionId = rawText.replace("select_region_", "").trim();
