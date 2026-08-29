@@ -5,36 +5,55 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 
-// ذاكرة سياق محادثة الدردشة الحالية (Session Memory Context)
-let activeChatContext: {
+type ChatSessionContext = {
   lastOrderNumber?: number | null;
   lastOrderType?: string | null;
   activeFocusedOrderId?: string | null;
   updatedAt?: number;
-} = {};
+};
 
-/**
- * تصفير وإعادة ضبط ذاكرة سياق المحادثة عند إغلاق/فتح دردشة جديدة
- */
-export function resetChatSessionContext() {
-  activeChatContext = {};
-}
+// ذاكرة سياق منفصلة لكل محادثة/أدمن بدالة Map حازمة بدلاً من متغير عام واحد
+const chatSessionContexts: Map<string, ChatSessionContext> = new Map();
 
-/**
- * تعيين وتحديث الطلب النشط المفتوح حالياً بـ الشاشة
- */
-export function setActiveFocusedOrder(orderIdOrNumber: string | number) {
-  if (typeof orderIdOrNumber === "number") {
-    activeChatContext.lastOrderNumber = orderIdOrNumber;
-  } else {
-    activeChatContext.activeFocusedOrderId = orderIdOrNumber;
+function getSessionContext(sessionKey: string): ChatSessionContext {
+  if (!chatSessionContexts.has(sessionKey)) {
+    chatSessionContexts.set(sessionKey, {});
   }
-  activeChatContext.updatedAt = Date.now();
+  return chatSessionContexts.get(sessionKey)!;
 }
 
 /**
- * محرك الذكاء الاصطناعي الخاص بالمشروع (Custom System Intent Engine)
- * يعالج النص المنطوق والمكتوب المباشر بـ 0 ميلي ثانية وبدقة مطلقة بدون أي انتظار
+ * تصفير وإعادة ضبط ذاكرة سياق محادثة معينة بـ sessionKey
+ */
+export function resetChatSessionContext(sessionKey: string = "default") {
+  chatSessionContexts.delete(sessionKey);
+}
+
+/**
+ * تعيين وتحديث الطلب النشط المفتوح حالياً بمحادثة معينة
+ */
+export function setActiveFocusedOrder(sessionKeyOrOrderId: string | number, possibleOrderId?: string | number) {
+  let sessionKey = "default";
+  let orderIdOrNumber: string | number;
+
+  if (possibleOrderId !== undefined) {
+    sessionKey = String(sessionKeyOrOrderId);
+    orderIdOrNumber = possibleOrderId;
+  } else {
+    orderIdOrNumber = sessionKeyOrOrderId;
+  }
+
+  const ctx = getSessionContext(sessionKey);
+  if (typeof orderIdOrNumber === "number") {
+    ctx.lastOrderNumber = orderIdOrNumber;
+  } else {
+    ctx.activeFocusedOrderId = String(orderIdOrNumber);
+  }
+  ctx.updatedAt = Date.now();
+}
+
+/**
+ * محرك تحليل النية (Intent Parser) دقيق ومنفصل بـ 0 ميلي ثانية
  */
 function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
@@ -50,7 +69,7 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 أولوية قصوى: فئة الملخص والتقرير اليومي للأرباح والطلبات (DAILY SUMMARY & PROFIT REPORT ENGINE 100%)
+  // 0.0 فئة الملخص والتقرير اليومي للأرباح والطلبات
   if (
     cleanQ.includes("انطيني ملخص اليوم") ||
     cleanQ.includes("ملخص اليوم") ||
@@ -66,7 +85,7 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "daily_summary_report" };
   }
 
-  // 0.1 فئة الإسناد الديناميكي المبعثر المتقدم للطلبات (DYNAMIC MULTI-CRITERIA ORDER ASSIGN ENGINE 100%)
+  // 0.1 فئة الإسناد الديناميكي المبعثر المتقدم للطلبات
   if (
     cleanQ.includes("اسناد") ||
     cleanQ.includes("إسناد") ||
@@ -79,7 +98,7 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("الى المندوب")
   ) {
     let courierMatch = text.match(/(?:للمندوب|للمنجوب|إلى المندوب|الي المندوب|المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z\s]+?)$/i);
-    let courierName = courierMatch ? courierMatch[1].trim() : "فارس";
+    let courierName = courierMatch ? courierMatch[1].trim() : null;
 
     let status = "pending";
     if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("جديده") || cleanQ.includes("الجديد")) status = "pending";
@@ -87,7 +106,6 @@ function parseCustomSystemIntent(userText: string): any {
 
     let searchQuery = text
       .replace(/طلب|بحالة|بحاله|جديدة|جديده|الجديد|جديد|معلق|سوي|له|اسناد|إسناد|اسند|للمندوب|للمنجوب|إلى|الي|المندوب|كابتن|لكابتن/gi, "")
-      .replace(/فارس|فيصل|ميثاق|علي|حسن|محمد/gi, "")
       .trim();
 
     return {
@@ -99,7 +117,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.2 أولوية إخفاء المندوب (HIDE COURIER ENGINE 100%)
+  // 0.2 إخفاء المندوب
   if (
     cleanQ.includes("اخفي لي المندوب") ||
     cleanQ.includes("اخفي المندوب") ||
@@ -113,11 +131,11 @@ function parseCustomSystemIntent(userText: string): any {
 
     return {
       category: "courier_hide",
-      clean_name: cleanName || "فارس"
+      clean_name: cleanName || null
     };
   }
 
-  // 0.3 أولوية إظهار المندوب (UNHIDE COURIER ENGINE 100%)
+  // 0.3 إظهار المندوب
   if (
     cleanQ.includes("اظهر لي المندوب") ||
     cleanQ.includes("اظهر المندوب") ||
@@ -131,11 +149,12 @@ function parseCustomSystemIntent(userText: string): any {
 
     return {
       category: "courier_unhide",
-      clean_name: cleanName || "فارس"
+      clean_name: cleanName || null
     };
   }
 
-  // 0.4 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // 0.4 تعديل تفاصيل الطلب النشط المفتوح حالياً
+  const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل");
   if (
     cleanQ.includes("عدل الرقم") ||
     cleanQ.includes("عدل السعر") ||
@@ -143,33 +162,34 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("عدل سعر التوصيل") ||
     cleanQ.includes("عدل المنطقة") ||
     cleanQ.includes("عدل المنطقه") ||
-    cleanQ.includes("بدل") ||
+    (cleanQ.includes("بدل") && hasEditFieldWord) ||
     cleanQ.includes("غير السعر") ||
     cleanQ.includes("غير الرقم") ||
     cleanQ.includes("غير المنطقة")
   ) {
-    const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
+    const explicitOrderMatch = text.match(/(?:رقم|#)\s*#?\s*(\d{2,6})/);
+    const explicitOrderNum = explicitOrderMatch ? Number(explicitOrderMatch[1]) : null;
 
     let fieldToEdit = "subtotal";
-    if (cleanQ.includes("رقم") || cleanQ.includes("هاتف")) fieldToEdit = "phone";
+    if (cleanQ.includes("رقم") && !cleanQ.includes("سعر")) fieldToEdit = "phone";
     else if (cleanQ.includes("سعر التوصيل") || cleanQ.includes("توصيل")) fieldToEdit = "delivery_price";
     else if (cleanQ.includes("منطقه") || cleanQ.includes("منطقة")) fieldToEdit = "region";
     else if (cleanQ.includes("سعر")) fieldToEdit = "subtotal";
 
-    const nums = (text.match(/\d+/g) || []).map(Number).filter(n => !n.toString().startsWith("77"));
-    const newVal = nums.length > 0 ? nums[nums.length - 1] : null;
+    const allNums = (text.match(/\d+/g) || []).map(Number).filter(n => !n.toString().startsWith("77"));
+    const valueCandidates = explicitOrderNum !== null ? allNums.filter(n => n !== explicitOrderNum) : allNums;
+    const newVal = valueCandidates.length > 0 ? valueCandidates[valueCandidates.length - 1] : null;
 
     return {
       category: "focused_order_edit",
-      order_number: orderNum,
+      explicit_order_number: explicitOrderNum,
       field: fieldToEdit,
       raw_text: text,
       number_val: newVal
     };
   }
 
-  // 0.5 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
+  // 0.5 استعلام آخر طلب مرفوض أو ملغي
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
     cleanQ.includes("اخر طلب ملغي") ||
@@ -185,7 +205,7 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "last_rejected_order" };
   }
 
-  // 0.6 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.6 إلغاء أو رفض طلب معين
   if (
     cleanQ.includes("إلغاء") ||
     cleanQ.includes("الغاء") ||
@@ -195,10 +215,10 @@ function parseCustomSystemIntent(userText: string): any {
     (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض") && !cleanQ.includes("ملغي"))
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
 
     let shopNameMatch = text.match(/(?:طلب|طلب محل|محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:اللي|الي|بحالة|بحاله|جديدة|جديده|سوي|سويلها|إلغاء|رفض)|$)/i);
-    let shopName = shopNameMatch ? shopNameMatch[1].trim() : text.replace(/طلب|بحالة|جديدة|جديده|سوي|لها|إلغاء|أو|رفض/gi, "").trim();
+    let shopName = shopNameMatch ? shopNameMatch[1].trim() : null;
 
     return {
       category: "order_cancel_or_reject",
@@ -207,12 +227,11 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 1. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
+  // 1. التحديث الجماعي لحالات طلبات محلات أو مندوبين معينين
   if (
     cleanQ.includes("سويهن") ||
     cleanQ.includes("سوي كل") ||
     cleanQ.includes("غير كل") ||
-    cleanQ.includes("طلبات فلان") ||
     (cleanQ.includes("طلبات") && (cleanQ.includes("تم الاستلام") || cleanQ.includes("مكتمل") || cleanQ.includes("واصل") || cleanQ.includes("مرفوض") || cleanQ.includes("مسند")))
   ) {
     let targetStatus = "delivered";
@@ -236,7 +255,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 2. قاعدة حاسمة 100%: إذا بدأت الرسالة باسم منطقة (مثل جيكور) أو احتوت كلمات تجهيز وبدون اسم محل ⬅️ طلب تجهيز ومشتريات صريح!
+  // 2. طلب تجهيز ومشتريات صريح
   const knownRegions = ["جيكور", "شيخ ابراهيم", "الخصيب", "حمدان", "السراجي", "مهيجران", "ابو الخصيب", "الفاو", "القرنة", "الهارثة", "الزبير"];
   const isStartsWithRegion = knownRegions.some(r => firstLine.includes(r) || cleanQ.startsWith(r));
   const hasExplicitShop = cleanQ.includes("محل") || cleanQ.includes("لوازم") || cleanQ.includes("الكوثر");
@@ -248,7 +267,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة إسناد وتعديل الطلبات للمندوبين (دعم كلمة كابتن وسياق ذاكرة الدردشة)
+  // 3. إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -259,8 +278,8 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("لكابتن") ||
     cleanQ.includes("كابتن")
   ) {
-    const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
+    const orderNumMatch = text.match(/(?:رقم|#)\s*#?\s*(\d{2,6})/) || text.match(/\b\d{3,5}\b/);
+    const orderNum = orderNumMatch ? Number(orderNumMatch[1] ?? orderNumMatch[0]) : null;
 
     let courierName = text
       .replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*اسند إلى|.*حول إلى|.*حوله على|.*غير المندوب لـ|.*لكابتن|.*كابتن|.*إلى|.*الي/gi, "")
@@ -270,11 +289,11 @@ function parseCustomSystemIntent(userText: string): any {
     return {
       category: "order_update",
       order_number: orderNum,
-      clean_name: courierName || "فارس"
+      clean_name: courierName || null
     };
   }
 
-  // 4. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
+  // 4. رصد وتنزيل الديون للشركاء والموردين والمندوبين
   if (
     cleanQ.includes("نطيت") ||
     cleanQ.includes("انطيت") ||
@@ -288,23 +307,16 @@ function parseCustomSystemIntent(userText: string): any {
     const isTook = cleanQ.includes("اخذت") || cleanQ.includes("أخذت") || cleanQ.includes("تنزيل") || cleanQ.includes("سدد");
     const kind = isTook ? "took" : "gave";
 
-    let partnerName = "ميثاق";
-    if (cleanQ.includes("الوالد") || cleanQ.includes("للوالد")) {
-      partnerName = "الوالد";
-    } else if (cleanQ.includes("ميثاق")) {
-      partnerName = "ميثاق";
-    } else {
-      let cleaned = text
-        .replace(/(?:مية الف|خمسين الف|ثلاثين الف|عشرين الف|خمسة الاف|الفين|الف|مية|تسعين|خمسين|عشرين|عشرة|خمسة|خمسه|خمس|\d+)/gi, "")
-        .replace(/أخذت|اخذت|أعطيت|اعطيت|أنطيت|انطيت|نطيت|تنزيل|سدد|رصد|حساب/gi, "")
-        .replace(/محل|مندوب|مجهز|مورد|زبون|شريك|حساب/gi, "")
-        .trim();
-      cleaned = cleaned.replace(/^(?:للـ|لـ|من|ع|على|إلى|الي)\s*/gi, "").trim();
-      partnerName = cleaned || "ميثاق";
-    }
+    let cleaned = text
+      .replace(/(?:مية الف|خمسين الف|ثلاثين الف|عشرين الف|خمسة الاف|الفين|الف|مية|تسعين|خمسين|عشرين|عشرة|خمسة|خمسه|خمس|\d+)/gi, "")
+      .replace(/أخذت|اخذت|أعطيت|اعطيت|أنطيت|انطيت|نطيت|تنزيل|سدد|رصد|حساب/gi, "")
+      .replace(/محل|مندوب|مجهز|مورد|زبون|شريك|حساب/gi, "")
+      .trim();
+    cleaned = cleaned.replace(/^(?:للـ|لـ|من|ع|على|إلى|الي)\s*/gi, "").trim();
+    const partnerName = cleaned || null;
 
     const nums = (text.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77"));
-    const amount = nums.length > 0 ? nums[nums.length - 1] : 5;
+    const amount = nums.length > 0 ? nums[nums.length - 1] : null;
 
     return {
       category: "debt_record",
@@ -314,7 +326,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 5. فئة إنشاء طلب مبيعات جديد من محل
+  // 5. إنشاء طلب مبيعات جديد من محل
   const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
   const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
 
@@ -322,22 +334,25 @@ function parseCustomSystemIntent(userText: string): any {
     return {
       category: "order_create",
       raw_query: text,
-      phone: phone || "07700000000"
+      phone: phone
     };
   }
 
-  // 6. فئة تصفير حسابات ورواتب المندوبين
-  if (cleanQ.includes("صفر") || cleanQ.includes("تصفير")) {
+  // 6. تصفير حسابات ورواتب المندوبين
+  if (
+    (cleanQ.includes("صفر") || cleanQ.includes("تصفير")) &&
+    (cleanQ.includes("مندوب") || cleanQ.includes("كابتن") || cleanQ.includes("حساب") || cleanQ.includes("مستحقات"))
+  ) {
     let cleanName = text
       .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
       .trim();
     return {
       category: "courier_zero",
-      clean_name: cleanName || "boos"
+      clean_name: cleanName || null
     };
   }
 
-  // 7. فئة إضافة وتسجيل مندوب جديد بـ الاسم والرقم الصريحين
+  // 7. إضافة وتسجيل مندوب جديد بالاسم والرقم الصريحين
   if (
     cleanQ.includes("سويلي مندوب") ||
     cleanQ.includes("سوي لي مندوب") ||
@@ -350,13 +365,12 @@ function parseCustomSystemIntent(userText: string): any {
   ) {
     let nameMatch = text.match(/(?:اسمه|اسم المندوب|اسم|مندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:ورقم|ورقمه|و رقم|رقم|تلفونه|هاتف|07|\d)|$)/i);
     let courierName = nameMatch ? nameMatch[1].trim() : text.replace(/سوي لي|سوي|ضيف لي|ضيف|مندوب|جديد|حساب|اسمه/gi, "").trim();
-
     courierName = courierName.replace(/ورقم.*|ورقمه.*|و رقم.*|رقم.*|07\d+.*/gi, "").replace(/\s+و$/i, "").trim();
 
     return {
       category: "courier_create",
-      clean_name: courierName || "فيصل",
-      phone: phone || "07700000000"
+      clean_name: courierName || null,
+      phone: phone || null
     };
   }
 
@@ -364,7 +378,7 @@ function parseCustomSystemIntent(userText: string): any {
 }
 
 /**
- * تنظيف وتوحيد النصوص العربية لإزالة وتوحيد (ال التعريف، الهمزات، التاء المربوطة، الياء والواو)
+ * تنظيف وتوحيد النصوص العربية للمقارنة
  */
 function cleanArabicTextForMatch(text: string): string {
   if (!text) return "";
@@ -383,10 +397,38 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * استخراج المنتجات والمواد النظيفة صراحة من نص رسالة التجهيز والمشتريات
+ * بحث آمن عن أفضل تطابق بقائمة أسماء ومنع التخمين العشوائي
+ */
+function findBestMatch<T extends { name: string }>(
+  items: T[],
+  queryName: string | null | undefined
+): { match: T | null; ambiguous: T[] } {
+  if (!queryName || !queryName.trim()) return { match: null, ambiguous: [] };
+  const cleanQuery = cleanArabicTextForMatch(queryName);
+  if (cleanQuery.length < 2) return { match: null, ambiguous: [] };
+
+  const exact = items.find(i => cleanArabicTextForMatch(i.name) === cleanQuery);
+  if (exact) return { match: exact, ambiguous: [] };
+
+  const partial = items.filter(i => {
+    const cleanName = cleanArabicTextForMatch(i.name);
+    return cleanName.length >= 2 && (cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName));
+  });
+
+  if (partial.length === 1) return { match: partial[0], ambiguous: [] };
+  if (partial.length > 1) return { match: null, ambiguous: partial };
+  return { match: null, ambiguous: [] };
+}
+
+function namesListForReply(items: { name: string }[], max: number = 6): string {
+  return items.slice(0, max).map(i => i.name).join("، ");
+}
+
+/**
+ * استخراج المنتجات والمواد من نص رسالة التجهيز والمشتريات
  */
 function extractPrepItemsFromText(text: string): string {
-  if (!text) return "خيار، بصل، مواد متنوعة";
+  if (!text) return "";
 
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const itemLines = lines.filter(l => !l.startsWith("07") && !l.includes("جيكور") && !l.includes("تجهيز") && !l.includes("طلب"));
@@ -401,353 +443,72 @@ function extractPrepItemsFromText(text: string): string {
     .replace(/هاتف.*|تلفون.*|07\d+/gi, "")
     .trim();
 
-  return cleanText.length > 1 ? cleanText : "خيار، بصل";
+  return cleanText;
 }
 
 /**
- * المحرك المباشر الفائق للتحكم الشامل بكل مفاصل النظام بـ 0 ميلي ثانية
+ * استخراج مبلغ الطلب الفعلي من النص
  */
-export async function executeSuperSystemAgent(args: any, userText: string, aiParsed?: any) {
+function extractOrderAmountFromText(text: string, phone: string | null): number | null {
+  const withoutPhone = phone ? text.replace(phone, "") : text;
+  const nums = (withoutPhone.match(/\d+/g) || [])
+    .map(Number)
+    .filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77"));
+  if (nums.length === 0) return null;
+  return nums[nums.length - 1];
+}
+
+/**
+ * المحرك المباشر للتحكم الشامل بمفاصل النظام
+ */
+export async function executeSuperSystemAgent(
+  args: any,
+  userText: string,
+  sessionKey: string = "default",
+  aiParsed?: any
+) {
   const rawText = userText || "";
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
+  const ctx = getSessionContext(sessionKey);
 
-  // ==========================================
-  // 0.0 معالجة فئة الملخص والتقرير اليومي للأرباح والطلبات (DAILY SUMMARY & PROFIT REPORT ENGINE 100%)
-  // ==========================================
-  if (parsed?.category === "daily_summary_report") {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+  try {
+    if (rawText.startsWith("assign_order_")) {
+      const parts = rawText.split("_");
+      const orderId = parts[2];
+      const courierId = parts[3];
 
-    const todayOrders = await prisma.order.findMany({
-      where: { createdAt: { gte: startOfToday } },
-      include: { shop: true, customerRegion: true }
-    });
+      const order = await prisma.order.findUnique({ where: { id: orderId }, include: { shop: true } });
+      const courier = await prisma.courier.findUnique({ where: { id: courierId } });
 
-    const totalCount = todayOrders.length;
-    const deliveredCount = todayOrders.filter(o => o.status === "delivered" || o.status === "completed").length;
-    const pendingCount = todayOrders.filter(o => o.status === "pending" || o.status === "assigned").length;
-    const rejectedCount = todayOrders.filter(o => o.status === "rejected" || o.status === "cancelled").length;
-
-    let totalSales = 0;
-    let totalProfit = 0;
-
-    todayOrders.forEach(o => {
-      if (o.status !== "rejected" && o.status !== "cancelled") {
-        totalSales += o.totalAmount ? Number(o.totalAmount) : 0;
-        totalProfit += o.deliveryPrice ? Number(o.deliveryPrice) : 0;
-      }
-    });
-
-    return {
-      reply: `📊 **ملخص وتفاصيل اليوم يا أبو الأكبر:**\n📦 **إجمالي الطلبات اليوم:** ${totalCount} طلب (${deliveredCount} واصل | ${pendingCount} قيد التجهيز | ${rejectedCount} مرفوض)\n💰 **إجمالي المبيعات:** ${totalSales} ألف دينار\n💵 **صافي أرباح التوصيل اليوم:** ${totalProfit} ألف دينار 🚀`
-    };
-  }
-
-  // ==========================================
-  // 0.1 معالجة فئة الإسناد الديناميكي المبعثر المتقدم (DYNAMIC ASSIGN ORDER 100%)
-  // ==========================================
-  if (parsed?.category === "dynamic_assign_order") {
-    const { courier_name, target_status, search_query } = parsed;
-
-    const allCouriers = await prisma.courier.findMany();
-    let matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courier_name)) || cleanArabicTextForMatch(courier_name).includes(cleanArabicTextForMatch(c.name)));
-
-    if (!matchedCourier && (courier_name.includes("فارس") || rawText.includes("فارس"))) {
-      matchedCourier = allCouriers.find(c => c.name.includes("فارس"));
-    }
-    if (!matchedCourier) matchedCourier = allCouriers[0];
-
-    const allOrders = await prisma.order.findMany({
-      where: { status: target_status },
-      orderBy: { createdAt: "desc" },
-      include: { shop: true, customerRegion: true }
-    });
-
-    let targetOrder = null;
-
-    if (search_query && search_query.length > 1) {
-      const cleanSearch = cleanArabicTextForMatch(search_query);
-      targetOrder = allOrders.find(o => {
-        const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
-        const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
-        const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
-        return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
-      });
-    }
-
-    if (!targetOrder) {
-      targetOrder = allOrders[0] || await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true, customerRegion: true } });
-    }
-
-    if (targetOrder && matchedCourier) {
-      const updated = await prisma.order.update({
-        where: { id: targetOrder.id },
-        data: {
-          assignedCourierId: matchedCourier.id,
-          status: "assigned"
-        },
-        include: { shop: true, customerRegion: true }
-      });
-
-      activeChatContext.lastOrderNumber = updated.orderNumber;
-      activeChatContext.updatedAt = Date.now();
-
-      const shopName = updated.shop ? updated.shop.name : (targetOrder.orderType || "الطلب");
-      const regionName = updated.customerRegion ? updated.customerRegion.name : "المنطقة";
-
-      return {
-        reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${shopName}) إلى المندوب (${matchedCourier.name})`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.2 معالجة فئة إخفاء المندوب (HIDE COURIER ENGINE 100%)
-  // ==========================================
-  if (parsed?.category === "courier_hide") {
-    const courierName = parsed?.clean_name || "فارس";
-
-    const allCouriers = await prisma.courier.findMany();
-    const matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courierName)) || cleanArabicTextForMatch(courierName).includes(cleanArabicTextForMatch(c.name))) || allCouriers[0];
-
-    if (matchedCourier) {
-      const updated = await prisma.courier.update({
-        where: { id: matchedCourier.id },
-        data: {
-          hiddenFromReports: true,
-          availableForAssignment: false
-        }
-      });
-
-      return {
-        reply: `تم يا أبو الأكبر! خفيت المندوب (${updated.name}) ونقلته لقائمة المخفيين`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.3 معالجة فئة إظهار المندوب (UNHIDE COURIER ENGINE 100%)
-  // ==========================================
-  if (parsed?.category === "courier_unhide") {
-    const courierName = parsed?.clean_name || "فارس";
-
-    const allCouriers = await prisma.courier.findMany();
-    const matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courierName)) || cleanArabicTextForMatch(courierName).includes(cleanArabicTextForMatch(c.name))) || allCouriers[0];
-
-    if (matchedCourier) {
-      const updated = await prisma.courier.update({
-        where: { id: matchedCourier.id },
-        data: {
-          hiddenFromReports: false,
-          availableForAssignment: true
-        }
-      });
-
-      return {
-        reply: `تم يا أبو الأكبر! أظهرت المندوب (${updated.name}) ورجعته لقائمة المندوبين النشطين`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.4 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
-  // ==========================================
-  if (parsed?.category === "focused_order_edit") {
-    const { order_number, field, raw_text, number_val } = parsed;
-
-    let targetOrder = null;
-    if (order_number) {
-      targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true, customerRegion: true } });
-    } else if (activeChatContext.activeFocusedOrderId) {
-      targetOrder = await prisma.order.findUnique({ where: { id: activeChatContext.activeFocusedOrderId }, include: { shop: true, customerRegion: true } });
-    }
-
-    if (!targetOrder) {
-      targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true, customerRegion: true } });
-    }
-
-    if (targetOrder) {
-      let updateData: any = {};
-
-      if (field === "phone") {
-        const phoneMatch = raw_text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-        const newPhone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07733921468";
-        updateData.customerPhone = newPhone;
-      } else if (field === "delivery_price") {
-        const newDelivery = number_val !== null ? number_val : 4;
-        updateData.deliveryPrice = new Decimal(newDelivery);
-        const currentSubtotal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 5;
-        updateData.totalAmount = new Decimal(currentSubtotal + newDelivery);
-      } else if (field === "subtotal") {
-        const newSubtotal = number_val !== null ? number_val : 15;
-        updateData.orderSubtotal = new Decimal(newSubtotal);
-        const currentDelivery = targetOrder.deliveryPrice ? Number(targetOrder.deliveryPrice) : 5;
-        updateData.totalAmount = new Decimal(newSubtotal + currentDelivery);
-      } else if (field === "region") {
-        const allRegions = await prisma.region.findMany();
-        const matchedRegion = allRegions.find(r => raw_text.includes(r.name) || cleanArabicTextForMatch(raw_text).includes(cleanArabicTextForMatch(r.name))) || allRegions[0];
-        if (matchedRegion) {
-          updateData.customerRegionId = matchedRegion.id;
-        }
+      if (!order || !courier) {
+        return { reply: `يا أبو الأكبر، ما گدرت ألكى الطلب أو الكابتن المحدد بهذا الزر. جرب مرة ثانية.` };
       }
 
-      const updated = await prisma.order.update({
-        where: { id: targetOrder.id },
-        data: updateData,
-        include: { shop: true, customerRegion: true, assignedCourier: true }
-      });
-
-      activeChatContext.lastOrderNumber = updated.orderNumber;
-      activeChatContext.updatedAt = Date.now();
-
-      const shopName = updated.shop ? updated.shop.name : "المحل";
-      const regionName = updated.customerRegion ? updated.customerRegion.name : "المنطقة";
-      const courierName = updated.assignedCourier ? updated.assignedCourier.name : "غير مسند";
-      const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 5;
-      const deliveryVal = updated.deliveryPrice ? Number(updated.deliveryPrice) : 5;
-
-      return {
-        reply: `يابا الطلبية رقم #${updated.orderNumber} من محل (${shopName}) إلى منطقة (${regionName}) تم تعديلها وصارت (سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName})`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.5 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
-  // ==========================================
-  if (parsed?.category === "last_rejected_order") {
-    let rejectedOrder = await prisma.order.findFirst({
-      where: {
-        OR: [
-          { status: "rejected" },
-          { status: "cancelled" }
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-      include: { shop: true, customerRegion: true }
-    });
-
-    if (!rejectedOrder) {
-      rejectedOrder = await prisma.order.findFirst({
-        orderBy: { createdAt: "desc" },
-        include: { shop: true, customerRegion: true }
-      });
-    }
-
-    if (!rejectedOrder) {
-      return {
-        reply: `يا أبو الأكبر! لا يوجد أي طلب في قواعد البيانات حالياً! 🎉`
-      };
-    }
-
-    activeChatContext.lastOrderNumber = rejectedOrder.orderNumber;
-    activeChatContext.updatedAt = Date.now();
-
-    const allCouriers = await prisma.courier.findMany();
-    const courierButtons = allCouriers.slice(0, 5).map(c => ({
-      text: `🛵 إسناد لـ كابتن: ${c.name}`,
-      action: `assign_order_${rejectedOrder.id}_${c.id}`
-    }));
-
-    const regionName = rejectedOrder.customerRegion ? rejectedOrder.customerRegion.name : "غير محددة";
-    const shopName = rejectedOrder.shop ? rejectedOrder.shop.name : "المحل";
-    const phone = rejectedOrder.customerPhone || "لا يوجد";
-    const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 5;
-
-    return {
-      reply: `📌 **تفاصيل آخر طلب مرفوض / ملغى يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
-      buttons: courierButtons
-    };
-  }
-
-  // ==========================================
-  // 0.6 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
-  // ==========================================
-  if (parsed?.category === "order_cancel_or_reject") {
-    const { order_number, shop_name } = parsed;
-    let targetOrder = null;
-
-    if (order_number) {
-      targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
-    }
-
-    if (!targetOrder && shop_name) {
-      const allShops = await prisma.shop.findMany();
-      const matchedShop = allShops.find(s => cleanArabicTextForMatch(s.name).includes(cleanArabicTextForMatch(shop_name)) || cleanArabicTextForMatch(shop_name).includes(cleanArabicTextForMatch(s.name)));
-
-      if (matchedShop) {
-        targetOrder = await prisma.order.findFirst({
-          where: { shopId: matchedShop.id, status: { in: ["pending", "assigned"] } },
-          orderBy: { createdAt: "desc" },
-          include: { shop: true }
-        });
-      }
-    }
-
-    if (!targetOrder) {
-      targetOrder = await prisma.order.findFirst({
-        where: { status: { in: ["pending", "assigned"] } },
-        orderBy: { createdAt: "desc" },
-        include: { shop: true }
-      });
-    }
-
-    if (targetOrder) {
-      const updated = await prisma.order.update({
-        where: { id: targetOrder.id },
-        data: { status: "rejected" }
-      });
-
-      return {
-        reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)`
-      };
-    } else {
-      return {
-        reply: `يا أبو الأكبر! لم أجد أي طلب معلق أو محدد لإلغائه أو رفضه حالياً!`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.7 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
-  // ==========================================
-  if (rawText.startsWith("assign_order_")) {
-    const parts = rawText.split("_");
-    const orderId = parts[2];
-    const courierId = parts[3];
-
-    const order = await prisma.order.findUnique({ where: { id: orderId }, include: { shop: true } });
-    const courier = await prisma.courier.findUnique({ where: { id: courierId } });
-
-    if (order && courier) {
       const updated = await prisma.order.update({
         where: { id: order.id },
-        data: {
-          assignedCourierId: courier.id,
-          status: "assigned"
-        }
+        data: { assignedCourierId: courier.id, status: "assigned" }
       });
 
-      activeChatContext.lastOrderNumber = updated.orderNumber;
+      ctx.lastOrderNumber = updated.orderNumber;
+      ctx.updatedAt = Date.now();
 
       return {
         reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${order.shop.name}) إلى الكابتن (${courier.name})`
       };
     }
-  }
 
-  // ==========================================
-  // 0.8 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
-  // ==========================================
-  if (rawText.startsWith("assign_prep_")) {
-    const parts = rawText.split("_");
-    const draftId = parts[2];
-    const preparerId = parts[3];
+    if (rawText.startsWith("assign_prep_")) {
+      const parts = rawText.split("_");
+      const draftId = parts[2];
+      const preparerId = parts[3];
 
-    const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
-    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
+      const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
+      const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
 
-    if (draft && preparer) {
+      if (!draft || !preparer) {
+        return { reply: `يا أبو الأكبر، ما گدرت ألكى طلب التجهيز أو المجهز المحدد بهذا الزر. جرب مرة ثانية.` };
+      }
+
       const updated = await prisma.companyPreparerShoppingDraft.update({
         where: { id: draft.id },
         data: { preparerId: preparer.id }
@@ -757,353 +518,602 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
         reply: `تم يا أبو الأكبر! أسندت طلب التجهيز #${updated.draftNumber} إلى المجهز (${preparer.name})`
       };
     }
-  }
 
-  // ==========================================
-  // 0.9 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
-  // ==========================================
-  if (parsed?.category === "prep_draft") {
-    const fullText = parsed?.raw_query || rawText;
-    const itemsText = extractPrepItemsFromText(fullText);
+    switch (parsed?.category) {
+      case "daily_summary_report": {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
 
-    const allPreparers = await prisma.companyPreparer.findMany();
-    let assignedPreparer = allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()));
+        const todayOrders = await prisma.order.findMany({
+          where: { createdAt: { gte: startOfToday } },
+          include: { shop: true, customerRegion: true }
+        });
 
-    if (!assignedPreparer && (fullText.includes("ميثاق") || fullText.includes("ابو رضا"))) {
-      assignedPreparer = allPreparers.find(p => p.name.includes("ميثاق"));
-    }
+        const totalCount = todayOrders.length;
+        const deliveredCount = todayOrders.filter(o => o.status === "delivered" || o.status === "completed").length;
+        const pendingCount = todayOrders.filter(o => o.status === "pending" || o.status === "assigned").length;
+        const rejectedCount = todayOrders.filter(o => o.status === "rejected" || o.status === "cancelled").length;
 
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
-    let matchingRegion = allRegions.find(r => fullText.includes(r.name));
-    if (!matchingRegion && fullText.includes("جيكور")) {
-      matchingRegion = allRegions.find(r => r.name.includes("جيكور"));
-    }
-
-    const phoneMatch = fullText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07733921468";
-
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId: assignedPreparer ? assignedPreparer.id : null,
-        rawListText: itemsText,
-        customerPhone: phone,
-        customerRegionId: matchingRegion?.id || null,
-        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
-        status: "draft"
-      }
-    });
-
-    const regionTitle = matchingRegion ? matchingRegion.name : "جيكور";
-
-    if (assignedPreparer) {
-      return {
-        reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${assignedPreparer.name})\n📝 المواد: ${itemsText}`
-      };
-    } else {
-      const preparerButtons = allPreparers.slice(0, 5).map(p => ({
-        text: `👨‍🍳 إسناد لـ: ${p.name}`,
-        action: `assign_prep_${draft.id}_${p.id}`
-      }));
-
-      return {
-        reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle})\n📝 المواد: ${itemsText}\n\n👇 **اختر المجهز المطلوب بالنقر المباشر أدناه:**`,
-        buttons: preparerButtons
-      };
-    }
-  }
-
-  // ==========================================
-  // 1. قسم إنشاء طلب مبيعات جديد (SALES ORDER WITH DIRECT NUMBER DISPLAY FOR EASY ASSIGNMENT)
-  // ==========================================
-  if (parsed?.category === "order_create") {
-    const fullText = parsed?.raw_query || rawText;
-
-    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-    let matchedShop = null;
-
-    for (const shop of allShops) {
-      const cleanS = cleanArabicTextForMatch(shop.name);
-      const cleanT = cleanArabicTextForMatch(fullText);
-      if (cleanS.length >= 3 && cleanT.includes(cleanS)) {
-        matchedShop = shop;
-        break;
-      }
-    }
-
-    if (!matchedShop) {
-      if (fullText.includes("شرين يغدير") || fullText.includes("شيرين يغدير") || fullText.includes("يغدير")) {
-        matchedShop = allShops.find(s => s.name.includes("شرين") || s.name.includes("شيرين") || s.name.includes("يغدير"));
-      } else if (fullText.includes("لوازم الكوثر") || fullText.includes("الكوثر")) {
-        matchedShop = allShops.find(s => s.name.includes("الكوثر"));
-      } else {
-        matchedShop = allShops.find(s => s.name.includes("ابو الاكبر") || s.name.includes("أبو الأكبر")) || allShops[0];
-      }
-    }
-
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    let matchedRegion = null;
-
-    for (const reg of allRegions) {
-      const cleanR = cleanArabicTextForMatch(reg.name);
-      const cleanT = cleanArabicTextForMatch(fullText);
-      if (cleanR.length >= 3 && cleanT.includes(cleanR)) {
-        matchedRegion = reg;
-        break;
-      }
-    }
-
-    if (!matchedRegion) {
-      if (fullText.includes("شيخ ابراهيم") || fullText.includes("الشيخ ابراهيم")) {
-        matchedRegion = allRegions.find(r => r.name.includes("ابراهيم") || r.name.includes("شيخ"));
-      } else if (fullText.includes("جيكور")) {
-        matchedRegion = allRegions.find(r => r.name.includes("جيكور"));
-      }
-    }
-
-    let orderType = "اقمشه";
-    if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
-    else if (fullText.includes("روبيان")) orderType = "روبيان";
-    else if (fullText.includes("مواد")) orderType = "مواد متنوعة";
-
-    let noteTime = "ب4 العصر";
-    if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
-    else if (fullText.includes("مغرب")) noteTime = "مغرباً";
-    else if (fullText.includes("فوري")) noteTime = "فوري";
-
-    const phone = parsed?.phone || "07733921468";
-    const deliveryPriceNum = matchedRegion?.deliveryPrice ? Number(matchedRegion.deliveryPrice) : 5;
-    const subtotalNum = 5;
-    const totalNum = subtotalNum + deliveryPriceNum;
-
-    const order = await prisma.order.create({
-      data: {
-        shopId: matchedShop ? matchedShop.id : allShops[0].id,
-        status: "pending",
-        orderType: orderType,
-        orderNoteTime: noteTime,
-        customerRegionId: matchedRegion?.id || null,
-        customerPhone: phone,
-        orderSubtotal: new Decimal(subtotalNum),
-        deliveryPrice: new Decimal(deliveryPriceNum),
-        totalAmount: new Decimal(totalNum),
-        submissionSource: "admin_ai_assistant",
-      }
-    });
-
-    notifyTelegramNewOrder(order.id).catch(() => {});
-    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-    activeChatContext.lastOrderNumber = order.orderNumber;
-    activeChatContext.updatedAt = Date.now();
-
-    const shopTitle = matchedShop ? matchedShop.name : "لوازم الكوثر";
-    const regionName = matchedRegion ? matchedRegion.name : "شيخ ابراهيم";
-
-    return {
-      reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${shopTitle}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime} | هاتف: ${phone}`
-    };
-  }
-
-  // ==========================================
-  // 2. قسم رصد وتنزيـل الديون لـ الشركاء والموردين (STRICT MATCH WITH CREDIT BOOK PARTNERS ONLY 100%)
-  // ==========================================
-  if (
-    parsed?.category === "debt_record" ||
-    rawText.includes("نطيت") ||
-    rawText.includes("انطيت") ||
-    rawText.includes("أخذت") ||
-    rawText.includes("اخذت") ||
-    rawText.includes("تنزيل")
-  ) {
-    const isTook = parsed?.debt_kind === "took" || rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل");
-    const kind = isTook ? "took" : "gave";
-
-    const finalAmount = parsed?.amount || 5;
-    let targetName = parsed?.clean_name || "ميثاق";
-
-    const allPartners = await prisma.creditBookPartner.findMany();
-    let partner = allPartners.find(p => p.name === targetName || cleanArabicTextForMatch(p.name) === cleanArabicTextForMatch(targetName));
-
-    if (!partner && (rawText.includes("ميثاق") || targetName.includes("ميثاق"))) {
-      partner = allPartners.find(p => p.name.includes("ميثاق"));
-    }
-
-    if (!partner && (rawText.includes("الوالد") || targetName.includes("الوالد"))) {
-      partner = allPartners.find(p => p.name.includes("الوالد") || p.name.includes("والد"));
-    }
-
-    if (!partner) {
-      partner = await prisma.creditBookPartner.create({
-        data: { name: targetName, type: "external" }
-      });
-    }
-
-    if (partner && rawText.includes("ميثاق") && partner.name.includes("السماك")) {
-      partner = await prisma.creditBookPartner.update({
-        where: { id: partner.id },
-        data: { name: "ميثاق" }
-      });
-    }
-
-    await prisma.creditBookTransaction.create({
-      data: {
-        partnerId: partner.id,
-        amount: new Decimal(finalAmount),
-        kind: kind,
-        note: `معاملة صريحة بواسطة محرك النظام الذكي`
-      }
-    });
-
-    const allTx = await prisma.creditBookTransaction.findMany({ where: { partnerId: partner.id } });
-    let totalGave = 0;
-    let totalTook = 0;
-    allTx.forEach(t => {
-      const val = t.amount.toNumber();
-      if (t.kind === "gave") totalGave += val;
-      else if (t.kind === "took") totalTook += val;
-    });
-
-    const netBalance = totalGave - totalTook;
-    let balanceText = "";
-    if (netBalance > 0) balanceText = `وصار نطلبه (${netBalance})`;
-    else if (netBalance < 0) balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
-    else balanceText = `وصار الحساب متصفر (0)`;
-
-    const actionWord = isTook ? "نزلت" : "ضفت";
-
-    return {
-      reply: `تم يا أبو الأكبر! ${actionWord} ${finalAmount} بحساب (${partner.name}) ${balanceText}`
-    };
-  }
-
-  // ==========================================
-  // 3. قسم تعديل وإسناد الطلبات للمندوبين (ORDER UPDATE & COURIER ASSIGNMENT WITH CHAT MEMORY CONTEXT)
-  // ==========================================
-  if (
-    parsed?.category === "order_update" ||
-    rawText.includes("إسناد") ||
-    rawText.includes("اسناد") ||
-    rawText.includes("اسند") ||
-    rawText.includes("حول الطلب") ||
-    rawText.includes("حوله على") ||
-    rawText.includes("كابتن") ||
-    rawText.includes("الكابتن")
-  ) {
-    const orderNum = parsed?.order_number || activeChatContext.lastOrderNumber || (rawText.match(/\b\d{3,5}\b/) ? Number(rawText.match(/\b\d{3,5}\b/)[0]) : null);
-    let courierName = parsed?.clean_name || "فارس";
-
-    let targetOrder = null;
-    if (orderNum) {
-      targetOrder = await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true } });
-    }
-
-    if (!targetOrder) {
-      targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true } });
-    }
-
-    if (targetOrder) {
-      const allCouriers = await prisma.courier.findMany();
-      let matchedCourier = allCouriers.find(c => courierName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(courierName.toLowerCase()));
-
-      if (!matchedCourier && (courierName.includes("فارس") || rawText.includes("فارس"))) {
-        matchedCourier = allCouriers.find(c => c.name.includes("فارس"));
-      }
-
-      if (!matchedCourier) {
-        matchedCourier = allCouriers[0];
-      }
-
-      if (matchedCourier) {
-        const updated = await prisma.order.update({
-          where: { id: targetOrder.id },
-          data: {
-            assignedCourierId: matchedCourier.id,
-            status: "assigned"
+        let totalSales = 0;
+        let totalProfit = 0;
+        todayOrders.forEach(o => {
+          if (o.status !== "rejected" && o.status !== "cancelled") {
+            totalSales += o.totalAmount ? Number(o.totalAmount) : 0;
+            totalProfit += o.deliveryPrice ? Number(o.deliveryPrice) : 0;
           }
         });
 
-        activeChatContext.lastOrderNumber = updated.orderNumber;
-        activeChatContext.updatedAt = Date.now();
-
         return {
-          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى الكابتن (${matchedCourier.name})`
+          reply: `📊 **ملخص وتفاصيل اليوم يا أبو الأكبر:**\n📦 **إجمالي الطلبات اليوم:** ${totalCount} طلب (${deliveredCount} واصل | ${pendingCount} قيد التجهيز | ${rejectedCount} مرفوض)\n💰 **إجمالي المبيعات:** ${totalSales} ألف دينار\n💵 **صافي أرباح التوصيل اليوم:** ${totalProfit} ألف دينار 🚀`
         };
       }
-    }
-  }
 
-  // ==========================================
-  // 4. قسم إنشاء وإضافة المندوبين الجدد بـ الاسم والرقم الصريحين
-  // ==========================================
-  if (
-    parsed?.category === "courier_create" ||
-    rawText.includes("مندوب") ||
-    rawText.includes("كابتن")
-  ) {
-    const courierName = parsed?.clean_name || "فيصل";
-    const phone = parsed?.phone || "07700000000";
+      case "dynamic_assign_order": {
+        const { courier_name, target_status, search_query } = parsed;
 
-    try {
-      const existingCourier = await prisma.courier.findFirst({
-        where: { name: { contains: courierName, mode: "insensitive" } }
-      });
+        const allCouriers = await prisma.courier.findMany();
+        if (allCouriers.length === 0) {
+          return { reply: `يا أبو الأكبر، ما عندك أي مندوب مسجل بالنظام بعد.` };
+        }
 
-      if (existingCourier) {
-        const updated = await prisma.courier.update({
-          where: { id: existingCourier.id },
-          data: { name: courierName, phone: phone, hiddenFromReports: false, availableForAssignment: true }
+        const { match: matchedCourier, ambiguous } = findBestMatch(allCouriers, courier_name);
+        if (!matchedCourier) {
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، لكيت أكثر من مندوب يشبه الاسم اللي كتبته: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+          }
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        const allOrders = await prisma.order.findMany({
+          where: { status: target_status },
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true }
         });
-        return { reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${updated.name}) برقم ${phone}` };
+
+        let targetOrder = null;
+        if (search_query && search_query.length > 1) {
+          const cleanSearch = cleanArabicTextForMatch(search_query);
+          targetOrder = allOrders.find(o => {
+            const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
+            const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
+            const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
+            return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
+          }) || null;
+        }
+
+        if (!targetOrder) targetOrder = allOrders[0] || null;
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق بحالة (${target_status}) لإسناده.` };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+          include: { shop: true, customerRegion: true }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const shopName = updated.shop ? updated.shop.name : (targetOrder.orderType || "الطلب");
+        return { reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${shopName}) إلى المندوب (${matchedCourier.name})` };
       }
 
-      const newCourier = await prisma.courier.create({
-        data: {
-          name: courierName,
-          phone: phone,
-          hiddenFromReports: false,
-          availableForAssignment: true
+      case "courier_hide": {
+        const allCouriers = await prisma.courier.findMany();
+        const { match, ambiguous } = findBestMatch(allCouriers, parsed?.clean_name);
+        if (!match) {
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+          }
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
         }
-      });
 
-      return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
-      };
-    } catch (err: any) {
-      return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
-      };
+        const updated = await prisma.courier.update({
+          where: { id: match.id },
+          data: { hiddenFromReports: true, availableForAssignment: false }
+        });
+
+        return { reply: `تم يا أبو الأكبر! خفيت المندوب (${updated.name}) ونقلته لقائمة المخفيين` };
+      }
+
+      case "courier_unhide": {
+        const allCouriers = await prisma.courier.findMany();
+        const { match, ambiguous } = findBestMatch(allCouriers, parsed?.clean_name);
+        if (!match) {
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+          }
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        const updated = await prisma.courier.update({
+          where: { id: match.id },
+          data: { hiddenFromReports: false, availableForAssignment: true }
+        });
+
+        return { reply: `تم يا أبو الأكبر! أظهرت المندوب (${updated.name}) ورجعته لقائمة المندوبين النشطين` };
+      }
+
+      case "focused_order_edit": {
+        const { explicit_order_number, field, raw_text, number_val } = parsed;
+
+        let targetOrder = null;
+        if (explicit_order_number) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: explicit_order_number }, include: { shop: true, customerRegion: true } });
+        } else if (ctx.activeFocusedOrderId) {
+          targetOrder = await prisma.order.findUnique({ where: { id: ctx.activeFocusedOrderId }, include: { shop: true, customerRegion: true } });
+        } else if (ctx.lastOrderNumber) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: ctx.lastOrderNumber }, include: { shop: true, customerRegion: true } });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر، ما أعرف أي طلب تقصد. اذكرلي رقم الطلب صراحة (مثلاً: "رقم 231").` };
+        }
+
+        if (number_val === null && field !== "region" && field !== "phone") {
+          return { reply: `يا أبو الأكبر، ما لكيت رقم واضح بالرسالة أعدل بيه. اكتب القيمة الجديدة بوضوح.` };
+        }
+
+        let updateData: any = {};
+
+        if (field === "phone") {
+          const phoneMatch = raw_text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+          if (!phoneMatch) {
+            return { reply: `يا أبو الأكبر، ما لكيت رقم هاتف واضح بالرسالة.` };
+          }
+          updateData.customerPhone = phoneMatch[0].replace(/\s+/g, "");
+        } else if (field === "delivery_price") {
+          updateData.deliveryPrice = new Decimal(number_val);
+          const currentSubtotal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 0;
+          updateData.totalAmount = new Decimal(currentSubtotal + number_val);
+        } else if (field === "subtotal") {
+          updateData.orderSubtotal = new Decimal(number_val);
+          const currentDelivery = targetOrder.deliveryPrice ? Number(targetOrder.deliveryPrice) : 0;
+          updateData.totalAmount = new Decimal(number_val + currentDelivery);
+        } else if (field === "region") {
+          const allRegions = await prisma.region.findMany();
+          const { match, ambiguous } = findBestMatch(allRegions, raw_text);
+          if (!match) {
+            if (ambiguous.length > 0) {
+              return { reply: `يا أبو الأكبر، فيه أكثر من منطقة تشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد المنطقة بالضبط.` };
+            }
+            return { reply: `يا أبو الأكبر، ما گدرت ألكى منطقة مطابقة بالرسالة.` };
+          }
+          updateData.customerRegionId = match.id;
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: updateData,
+          include: { shop: true, customerRegion: true, assignedCourier: true }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const shopName = updated.shop ? updated.shop.name : "المحل";
+        const regionName = updated.customerRegion ? updated.customerRegion.name : "غير محددة";
+        const courierName = updated.assignedCourier ? updated.assignedCourier.name : "غير مسند";
+        const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+        const deliveryVal = updated.deliveryPrice ? Number(updated.deliveryPrice) : 0;
+
+        return {
+          reply: `يابا الطلبية رقم #${updated.orderNumber} من محل (${shopName}) إلى منطقة (${regionName}) تم تعديلها وصارت (سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName})`
+        };
+      }
+
+      case "last_rejected_order": {
+        let rejectedOrder = await prisma.order.findFirst({
+          where: { OR: [{ status: "rejected" }, { status: "cancelled" }] },
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true }
+        });
+
+        if (!rejectedOrder) {
+          return { reply: `يا أبو الأكبر! لا يوجد أي طلب مرفوض أو ملغي بقاعدة البيانات حالياً! 🎉` };
+        }
+
+        ctx.lastOrderNumber = rejectedOrder.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const allCouriers = await prisma.courier.findMany();
+        const courierButtons = allCouriers.slice(0, 5).map(c => ({
+          text: `🛵 إسناد لـ كابتن: ${c.name}`,
+          action: `assign_order_${rejectedOrder!.id}_${c.id}`
+        }));
+
+        const regionName = rejectedOrder.customerRegion ? rejectedOrder.customerRegion.name : "غير محددة";
+        const shopName = rejectedOrder.shop ? rejectedOrder.shop.name : "المحل";
+        const phone = rejectedOrder.customerPhone || "لا يوجد";
+        const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 0;
+
+        return {
+          reply: `📌 **تفاصيل آخر طلب مرفوض / ملغى يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
+          buttons: courierButtons
+        };
+      }
+
+      case "order_cancel_or_reject": {
+        const { order_number, shop_name } = parsed;
+        let targetOrder = null;
+
+        if (order_number) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
+        }
+
+        if (!targetOrder && shop_name) {
+          const allShops = await prisma.shop.findMany();
+          const { match, ambiguous } = findBestMatch(allShops, shop_name);
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من محل يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد المحل بالضبط.` };
+          }
+          if (match) {
+            targetOrder = await prisma.order.findFirst({
+              where: { shopId: match.id, status: { in: ["pending", "assigned"] } },
+              orderBy: { createdAt: "desc" },
+              include: { shop: true }
+            });
+          }
+        }
+
+        if (!targetOrder && !order_number && !shop_name) {
+          targetOrder = await prisma.order.findFirst({
+            where: { status: { in: ["pending", "assigned"] } },
+            orderBy: { createdAt: "desc" },
+            include: { shop: true }
+          });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر! لم أجد أي طلب معلق أو محدد لإلغائه أو رفضه حالياً!` };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { status: "rejected" }
+        });
+
+        return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)` };
+      }
+
+      case "bulk_order_status_update": {
+        const { target_status, courier_name, shop_name } = parsed;
+
+        if (!courier_name && !shop_name) {
+          return { reply: `يا أبو الأكبر، لازم تحدد اسم المندوب أو المحل اللي تريد تحدث طلباته جميعاً.` };
+        }
+
+        let matchedCourierId: string | null = null;
+        let matchedShopId: string | null = null;
+        let label = "";
+
+        if (courier_name) {
+          const allCouriers = await prisma.courier.findMany();
+          const { match, ambiguous } = findBestMatch(allCouriers, courier_name);
+          if (!match) {
+            if (ambiguous.length > 0) {
+              return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+            }
+            return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+          }
+          matchedCourierId = match.id;
+          label = `مندوب (${match.name})`;
+        }
+
+        if (shop_name) {
+          const allShops = await prisma.shop.findMany();
+          const { match, ambiguous } = findBestMatch(allShops, shop_name);
+          if (!match) {
+            if (ambiguous.length > 0) {
+              return { reply: `يا أبو الأكبر، فيه أكثر من محل يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد المحل بالضبط.` };
+            }
+            return { reply: `يا أبو الأكبر، ما گدرت ألكى محل بهذا الاسم.` };
+          }
+          matchedShopId = match.id;
+          label = label ? `${label} ومحل (${match.name})` : `محل (${match.name})`;
+        }
+
+        const where: any = { status: { not: target_status } };
+        if (matchedCourierId) where.assignedCourierId = matchedCourierId;
+        if (matchedShopId) where.shopId = matchedShopId;
+
+        const affectedOrders = await prisma.order.findMany({ where });
+        if (affectedOrders.length === 0) {
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات مطابقة لتحديثها بحالة (${target_status}).` };
+        }
+
+        await prisma.order.updateMany({ where, data: { status: target_status } });
+
+        return { reply: `تم يا أبو الأكبر! حدثت حالة ${affectedOrders.length} طلب الخاصين بـ ${label} إلى (${target_status})` };
+      }
+
+      case "prep_draft": {
+        const fullText = parsed?.raw_query || rawText;
+        const itemsText = extractPrepItemsFromText(fullText);
+        if (!itemsText) {
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى قائمة مواد واضحة بالرسالة. اكتب المواد المطلوبة صراحة.` };
+        }
+
+        const allPreparers = await prisma.companyPreparer.findMany();
+        const { match: assignedPreparer, ambiguous: preparerAmbiguous } = findBestMatch(
+          allPreparers,
+          allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()))?.name || null
+        );
+        if (preparerAmbiguous.length > 0) {
+          return { reply: `يا أبو الأكبر، فيه أكثر من مجهز يشبه الاسم المذكور: ${namesListForReply(preparerAmbiguous)}. حدد المجهز بالضبط.` };
+        }
+
+        const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
+        const matchingRegion = allRegions.find(r => fullText.includes(r.name)) || null;
+
+        const phoneMatch = fullText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+        const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
+
+        const draft = await prisma.companyPreparerShoppingDraft.create({
+          data: {
+            preparerId: assignedPreparer ? assignedPreparer.id : null,
+            rawListText: itemsText,
+            customerPhone: phone,
+            customerRegionId: matchingRegion?.id || null,
+            titleLine: `تجهيز ${matchingRegion?.name || "بدون منطقة محددة"}`,
+            status: "draft"
+          }
+        });
+
+        const regionTitle = matchingRegion ? matchingRegion.name : "غير محددة";
+        const phoneNote = phone ? "" : "\n⚠️ ما لكيت رقم هاتف بالرسالة، رجاءً ضيفه يدوياً.";
+
+        if (assignedPreparer) {
+          return {
+            reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${assignedPreparer.name})\n📝 المواد: ${itemsText}${phoneNote}`
+          };
+        }
+
+        const preparerButtons = allPreparers.slice(0, 5).map(p => ({
+          text: `👨‍🍳 إسناد لـ: ${p.name}`,
+          action: `assign_prep_${draft.id}_${p.id}`
+        }));
+
+        return {
+          reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle})\n📝 المواد: ${itemsText}${phoneNote}\n\n👇 **اختر المجهز المطلوب بالنقر المباشر أدناه:**`,
+          buttons: preparerButtons
+        };
+      }
+
+      case "order_create": {
+        const fullText = parsed?.raw_query || rawText;
+        const phone = parsed?.phone || null;
+
+        const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+        if (allShops.length === 0) {
+          return { reply: `يا أبو الأكبر، ما عندك أي محل مسجل بالنظام بعد.` };
+        }
+
+        let matchedShop: { id: string; name: string } | null = null;
+        for (const shop of allShops) {
+          const cleanS = cleanArabicTextForMatch(shop.name);
+          const cleanT = cleanArabicTextForMatch(fullText);
+          if (cleanS.length >= 3 && cleanT.includes(cleanS)) {
+            matchedShop = shop;
+            break;
+          }
+        }
+
+        if (!matchedShop) {
+          const { match, ambiguous } = findBestMatch(allShops, fullText);
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من محل يشبه المذكور بالرسالة: ${namesListForReply(ambiguous)}. حدد اسم المحل بوضوح.` };
+          }
+          matchedShop = match;
+        }
+
+        if (!matchedShop) {
+          return { reply: `يا أبو الأكبر، ما گدرت أحدد أي محل قصدك من الرسالة. المحلات عندك: ${namesListForReply(allShops)}. اذكر اسم المحل بوضوح.` };
+        }
+
+        const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+        let matchedRegion: { id: string; name: string; deliveryPrice: any } | null = null;
+        for (const reg of allRegions) {
+          const cleanR = cleanArabicTextForMatch(reg.name);
+          const cleanT = cleanArabicTextForMatch(fullText);
+          if (cleanR.length >= 3 && cleanT.includes(cleanR)) {
+            matchedRegion = reg;
+            break;
+          }
+        }
+
+        let orderType = "اقمشه";
+        if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
+        else if (fullText.includes("روبيان")) orderType = "روبيان";
+        else if (fullText.includes("مواد")) orderType = "مواد متنوعة";
+
+        let noteTime = "غير محدد";
+        if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
+        else if (fullText.includes("مغرب")) noteTime = "مغرباً";
+        else if (fullText.includes("فوري")) noteTime = "فوري";
+
+        const deliveryPriceNum = matchedRegion?.deliveryPrice ? Number(matchedRegion.deliveryPrice) : 0;
+        const detectedAmount = extractOrderAmountFromText(fullText, phone);
+        const subtotalNum = detectedAmount ?? 0;
+        const totalNum = subtotalNum + deliveryPriceNum;
+
+        const order = await prisma.order.create({
+          data: {
+            shopId: matchedShop.id,
+            status: "pending",
+            orderType: orderType,
+            orderNoteTime: noteTime,
+            customerRegionId: matchedRegion?.id || null,
+            customerPhone: phone,
+            orderSubtotal: new Decimal(subtotalNum),
+            deliveryPrice: new Decimal(deliveryPriceNum),
+            totalAmount: new Decimal(totalNum),
+            submissionSource: "admin_ai_assistant",
+          }
+        });
+
+        notifyTelegramNewOrder(order.id).catch(() => {});
+        pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        ctx.lastOrderNumber = order.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const regionName = matchedRegion ? matchedRegion.name : "غير محددة";
+        const warnings: string[] = [];
+        if (!matchedRegion) warnings.push("⚠️ ما حددت منطقة، سعر التوصيل انحط 0 — عدله يدوياً.");
+        if (!phone) warnings.push("⚠️ ما لكيت رقم هاتف بالرسالة، ضيفه يدوياً.");
+        if (detectedAmount === null) warnings.push("⚠️ ما لكيت سعر واضح بالرسالة، سعر الطلب انحط 0 — عدله يدوياً.");
+
+        return {
+          reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${matchedShop.name}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime}${warnings.length ? "\n" + warnings.join("\n") : ""}`
+        };
+      }
+
+      case "debt_record": {
+        const isTook = parsed?.debt_kind === "took";
+        const kind = isTook ? "took" : "gave";
+
+        if (!parsed?.amount) {
+          return { reply: `يا أبو الأكبر، ما لكيت مبلغ واضح بالرسالة. اذكر المبلغ صراحة.` };
+        }
+        if (!parsed?.clean_name) {
+          return { reply: `يا أبو الأكبر، ما لكيت اسم واضح للشريك/المحل بالرسالة. حدد الاسم.` };
+        }
+
+        const finalAmount = parsed.amount;
+        const targetName = parsed.clean_name;
+
+        const allPartners = await prisma.creditBookPartner.findMany();
+        const { match: existingPartner, ambiguous } = findBestMatch(allPartners, targetName);
+        if (ambiguous.length > 0) {
+          return { reply: `يا أبو الأكبر، فيه أكثر من شريك يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+        }
+
+        const partner = existingPartner || await prisma.creditBookPartner.create({
+          data: { name: targetName, type: "external" }
+        });
+
+        await prisma.creditBookTransaction.create({
+          data: {
+            partnerId: partner.id,
+            amount: new Decimal(finalAmount),
+            kind: kind,
+            note: `معاملة صريحة بواسطة محرك النظام الذكي`
+          }
+        });
+
+        const allTx = await prisma.creditBookTransaction.findMany({ where: { partnerId: partner.id } });
+        let totalGave = 0;
+        let totalTook = 0;
+        allTx.forEach(t => {
+          const val = t.amount.toNumber();
+          if (t.kind === "gave") totalGave += val;
+          else if (t.kind === "took") totalTook += val;
+        });
+
+        const netBalance = totalGave - totalTook;
+        let balanceText = "";
+        if (netBalance > 0) balanceText = `وصار نطلبه (${netBalance})`;
+        else if (netBalance < 0) balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
+        else balanceText = `وصار الحساب متصفر (0)`;
+
+        const actionWord = isTook ? "نزلت" : "ضفت";
+
+        return { reply: `تم يا أبو الأكبر! ${actionWord} ${finalAmount} بحساب (${partner.name}) ${balanceText}` };
+      }
+
+      case "order_update": {
+        const orderNum = parsed?.order_number || ctx.lastOrderNumber || null;
+        const courierName = parsed?.clean_name;
+
+        let targetOrder = null;
+        if (orderNum) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true } });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر، ما أعرف أي طلب تقصد. اذكرلي رقم الطلب صراحة.` };
+        }
+
+        const allCouriers = await prisma.courier.findMany();
+        const { match: matchedCourier, ambiguous } = findBestMatch(allCouriers, courierName);
+        if (!matchedCourier) {
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+          }
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { assignedCourierId: matchedCourier.id, status: "assigned" }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        return { reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى الكابتن (${matchedCourier.name})` };
+      }
+
+      case "courier_create": {
+        const courierName = parsed?.clean_name;
+        const phone = parsed?.phone;
+
+        if (!courierName) {
+          return { reply: `يا أبو الأكبر، ما لكيت اسم واضح للمندوب الجديد بالرسالة.` };
+        }
+        if (!phone) {
+          return { reply: `يا أبو الأكبر، ما لكيت رقم هاتف واضح للمندوب الجديد بالرسالة.` };
+        }
+
+        const existingCourier = await prisma.courier.findFirst({
+          where: { name: { contains: courierName, mode: "insensitive" } }
+        });
+
+        if (existingCourier) {
+          const updated = await prisma.courier.update({
+            where: { id: existingCourier.id },
+            data: { name: courierName, phone: phone, hiddenFromReports: false, availableForAssignment: true }
+          });
+          return { reply: `تم يا أبو الأكبر! حدثت بيانات المندوب (${updated.name}) برقم ${phone}` };
+        }
+
+        const newCourier = await prisma.courier.create({
+          data: { name: courierName, phone: phone, hiddenFromReports: false, availableForAssignment: true }
+        });
+
+        return { reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}` };
+      }
+
+      case "courier_zero": {
+        const allCouriers = await prisma.courier.findMany();
+        const { match, ambiguous } = findBestMatch(allCouriers, parsed?.clean_name);
+        if (!match) {
+          if (ambiguous.length > 0) {
+            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+          }
+          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        await prisma.courier.update({
+          where: { id: match.id },
+          data: { mandoubTotalsResetAt: new Date() }
+        });
+
+        return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${match.name})` };
+      }
+
+      default: {
+        return { reply: `أنا معك يا أبو الأكبر! ما فهمت طلبك بالضبط، تكدر تعيد صياغته بشكل أوضح؟` };
+      }
     }
+  } catch (err: any) {
+    return {
+      reply: `صار خطأ يا أبو الأكبر وأنا أنفذ طلبك، ما تم تنفيذ أي تغيير. جرب مرة ثانية أو تحقق من التفاصيل.`
+    };
   }
-
-  // ==========================================
-  // 5. قسم تصفير رواتب ومستحقات المندوبين
-  // ==========================================
-  if (parsed?.category === "courier_zero" || rawText.includes("صفر") || rawText.includes("تصفير")) {
-    const cleanName = parsed?.clean_name || "boos";
-    const allCouriers = await prisma.courier.findMany();
-    const matchedCourier = allCouriers.find(c => cleanName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanName.toLowerCase())) || allCouriers[0];
-
-    if (matchedCourier) {
-      await prisma.courier.update({
-        where: { id: matchedCourier.id },
-        data: { mandoubTotalsResetAt: new Date() }
-      });
-      return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${matchedCourier.name})` };
-    }
-  }
-
-  // ==========================================
-  // 6. قسم الأسئلة العامة والاستفسارات
-  // ==========================================
-  if (rawText.includes("طقس") || rawText.includes("الطقس") || rawText.includes("جو")) {
-    return { reply: "الطقس حار صيفي ومستقر في البصرة يا أبو الأكبر! ☀️🌴" };
-  }
-
-  if (rawText.includes("لينوفو") || rawText.includes("لابتوب")) {
-    return { reply: "لابتوبات لينوفو ممتازة جداً وعملية يا أبو الأكبر خاصة فئات ThinkPad و Legion! 👌💻" };
-  }
-
-  return { reply: "أنا معك يا أبو الأكبر! المحرك الذكي الخاص بنظامك يعمل بـ 0 ميلي ثانية وجاهز لتنفيذ أي أمر فوراً! 🚀" };
 }
 
 export async function processAdminAiMessage(
@@ -1113,7 +1123,6 @@ export async function processAdminAiMessage(
   botToken?: string,
   historyArray?: any[]
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
-
-  // التنفيذ المباشر التلقائي بـ 0 ميلي ثانية بـ محرك النظام الخاص 100%
-  return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
+  const sessionKey = chatId || telegramUserId || "default";
+  return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText, sessionKey);
 }
