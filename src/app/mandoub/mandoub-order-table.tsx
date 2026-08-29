@@ -403,7 +403,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="px-3.5 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="px-4 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                           >
                             استلام
                           </button>
@@ -412,18 +412,18 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="px-3.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="px-4 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                           >
                             تسليم
                           </button>
                         )}
                         {!isSortingMode && isDelivered && (
-                          <span className="rounded-xl bg-emerald-600 px-3 py-1 text-xs sm:text-sm font-black text-white shrink-0">
+                          <span className="rounded-full bg-emerald-600 px-3.5 py-1 text-xs sm:text-sm font-black text-white shrink-0">
                             تم التسليم
                           </span>
                         )}
                         {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
-                          <span className={`rounded-xl px-3 py-1 text-xs sm:text-sm font-black shrink-0 ${statusBadgeBg}`}>
+                          <span className={`rounded-full px-3.5 py-1 text-xs sm:text-sm font-black shrink-0 ${statusBadgeBg}`}>
                             {STATUS_AR[o.orderStatus] ?? o.orderStatus}
                           </span>
                         )}
