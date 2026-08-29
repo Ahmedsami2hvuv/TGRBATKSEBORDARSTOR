@@ -123,7 +123,6 @@ function extractPrepItemsFromText(text: string): string {
 function extractCustomerPhoneFlexible(text: string): string {
   if (!text) return "غير محدد";
 
-  // 1. فحص أي تسلسل أرقام يبدأ بـ 07 أو 7 أو +964 حتى لو بينها مسافات
   const spacedMatch = text.match(/(?:\+964|0)?7[\d\s]{6,14}\d/);
   if (spacedMatch) {
     const digitsOnly = spacedMatch[0].replace(/\s+/g, "");
@@ -561,12 +560,11 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   const matchingShop = await findMatchingShopByQuery(rawText);
 
-  if (!existingOrder && matchingShop && (rawText.includes("عدل") || rawText.includes("سعر") || rawText.includes("اسند") || rawText.includes("حول"))) {
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
-    const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
-
+  // إذا لم يتم ذكر رقم الطلب صراحة، ولكن تم ذكر اسم المحل (مثل: معجنات الفرفوري) أو وصف الطلب
+  if (!existingOrder && matchingShop) {
+    const statusRequested = (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) ? "pending" : undefined;
     const whereClause: any = { shopId: matchingShop.id };
-    if (matchingRegion) whereClause.customerRegionId = matchingRegion.id;
+    if (statusRequested) whereClause.status = statusRequested;
 
     existingOrder = await prisma.order.findFirst({
       where: whereClause,
@@ -585,13 +583,13 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       updateData.status = "pending";
       changes.push(`👨‍✈️ **المندوب:** تم إلغاء إسناد المندوب بنجاح`);
       changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
-    } else if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
+    } else if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("مندوب")) {
       const allCouriers = await prisma.courier.findMany();
       for (const c of allCouriers) {
         if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
           updateData.assignedCourierId = c.id;
           updateData.status = "assigned";
-          changes.push(`👨‍✈️ **المندوب:** ${c.name}`);
+          changes.push(`👨‍✈️ **المندوب المسند جديداً:** ${c.name}`);
           break;
         }
       }
@@ -717,7 +715,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     return { reply: lines.join("\n") };
   }
 
-  return { reply: `تم يا مديرنا الغالي! 🚀 تم تنفيذ وتأكيد الإجراء المطلوب في النظام وقاعدة البيانات بنجاح!` };
+  // منع الرد الكاذب السطحي التراكمي وإعلام المدير بالتفاصيل الدقيقة المباشرة
+  return { reply: `⚠️ **يا مديرنا الغالي:** لم يطرأ أي تعديل أو إلغاء في قاعدة البيانات، بسبب عدم العثور على طلب مطابق للمواصفات المذكورة بالرسالة بالنظام حالياً! يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
 }
 
 export async function processAdminAiMessage(
