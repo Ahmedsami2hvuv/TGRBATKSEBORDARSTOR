@@ -620,24 +620,37 @@ export async function executeSuperSystemAgent(
           matchedCourier = allCouriers.find(c => c.name.includes("فارس")) || allCouriers[0];
         }
 
-        const allOrders = await prisma.order.findMany({
-          where: { status: target_status },
-          orderBy: { createdAt: "desc" },
-          include: { shop: true, customerRegion: true }
-        });
+        const orderNumMatch = rawText.match(/\b\d{3,5}\b/);
+        const explicitOrderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
 
         let targetOrder = null;
-        if (search_query && search_query.length > 1) {
-          const cleanSearch = cleanArabicTextForMatch(search_query);
-          targetOrder = allOrders.find(o => {
-            const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
-            const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
-            const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
-            return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
-          }) || null;
+        if (explicitOrderNum) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: explicitOrderNum },
+            include: { shop: true, customerRegion: true }
+          });
         }
 
-        if (!targetOrder) targetOrder = allOrders[0] || null;
+        if (!targetOrder) {
+          const allOrders = await prisma.order.findMany({
+            orderBy: { createdAt: "desc" },
+            include: { shop: true, customerRegion: true }
+          });
+
+          if (search_query && search_query.length > 1) {
+            const cleanSearch = cleanArabicTextForMatch(search_query);
+            targetOrder = allOrders.find(o => {
+              const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
+              const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
+              const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
+              return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
+            }) || null;
+          }
+
+          if (!targetOrder) {
+            targetOrder = allOrders.find(o => o.status !== "delivered" && o.status !== "completed") || allOrders[0] || null;
+          }
+        }
 
         if (!targetOrder) {
           return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق بحالة (${target_status}) لإسناده.` };
