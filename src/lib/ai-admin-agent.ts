@@ -311,7 +311,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
 
     return {
-      reply: `تم يا مديرنا الغالي! 🚀 تم إنشاء وتأكيد المندوب الجديد (**${newCourier.name}**) بنجاح في قاعدة البيانات، وأصبح جاهزاً لإسناد الطلبات فوراً!\n\n- **اسم المندوب:** ${newCourier.name}\n- **رقم الهاتف:** ${phone}`
+      reply: `تم يا أبو الأكبر! 🚀 تم إنشاء وتأكيد المندوب الجديد (**${newCourier.name}**) بنجاح في قاعدة البيانات، وأصبح جاهزاً لإسناد الطلبات فوراً!\n\n- **اسم المندوب:** ${newCourier.name}\n- **رقم الهاتف:** ${phone}`
     };
   }
 
@@ -376,7 +376,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
 
     return {
-      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
     };
   }
 
@@ -421,7 +421,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
 
     return {
-      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
+      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام يا أبو الأكبر!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
       buttons: preparerButtons
     };
   }
@@ -479,7 +479,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
     };
   }
 
@@ -501,7 +501,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
           data: { active: activeState }
         });
         const statusMsg = activeState ? "تفعيل وإظهار" : "تعطيل وإخفاء";
-        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح!**` };
+        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح يا أبو الأكبر!**` };
       }
     }
 
@@ -516,7 +516,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
           where: { id: courier.id },
           data: { lastSalaryWithdrawalAt: new Date() }
         });
-        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل!**` };
+        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل يا أبو الأكبر!**` };
       }
     }
   }
@@ -560,7 +560,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   const matchingShop = await findMatchingShopByQuery(rawText);
 
-  // إذا لم يتم ذكر رقم الطلب صراحة، ولكن تم ذكر اسم المحل (مثل: معجنات الفرفوري) أو وصف الطلب
   if (!existingOrder && matchingShop) {
     const statusRequested = (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) ? "pending" : undefined;
     const whereClause: any = { shopId: matchingShop.id };
@@ -687,7 +686,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **المناطق المطابقة المتوفرة (انقر على الخيار المناسب):**" : "";
 
       return {
-        reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح!**\n\n${changes.join("\n")}${optionsNote}`,
+        reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح يا أبو الأكبر!**\n\n${changes.join("\n")}${optionsNote}`,
         buttons: regionButtons
       };
     }
@@ -705,18 +704,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
 
     if (pendingOrders.length === 0) {
-      return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً.** كافة الطلبات مسندة ومكتملة!" };
+      return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً يا أبو الأكبر.** كافة الطلبات مسندة ومكتملة!" };
     }
 
-    let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (${pendingOrders.length} طلبات):**\n`];
+    let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (${pendingOrders.length} طلبات) يا أبو الأكبر:**\n`];
     pendingOrders.forEach((o, i) => {
       lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
     });
     return { reply: lines.join("\n") };
   }
 
-  // منع الرد الكاذب السطحي التراكمي وإعلام المدير بالتفاصيل الدقيقة المباشرة
-  return { reply: `⚠️ **يا مديرنا الغالي:** لم يطرأ أي تعديل أو إلغاء في قاعدة البيانات، بسبب عدم العثور على طلب مطابق للمواصفات المذكورة بالرسالة بالنظام حالياً! يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
+  return { reply: `⚠️ **يا أبو الأكبر:** لم يطرأ أي تعديل أو إلغاء في قاعدة البيانات، بسبب عدم العثور على طلب مطابق للمواصفات المذكورة بالرسالة بالنظام حالياً! يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
 }
 
 export async function processAdminAiMessage(
@@ -729,7 +727,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-إذا طلب المدير أي أمر أو تعديل، استخدم أداة super_system_agent فوراً لتنفيذ التحديث التلقائي الشامل!`;
+إذا طلب المدير أي أمر أو تعديل، استخدم أداة super_system_agent فوراً لتنفيذ التحديث التلقائي الشامل واكتب له دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const contentsPayload = [
     {
