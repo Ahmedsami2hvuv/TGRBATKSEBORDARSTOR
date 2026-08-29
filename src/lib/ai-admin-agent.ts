@@ -32,7 +32,7 @@ function parseArabicWordsToNumber(text: string): number | null {
 }
 
 /**
- * تنظيف وتوحيد النصوص العربية لإزالة وتوحيد (ال التعريف، الهمزات، التاء المربوطة، الياء والواو كـ ابي/ابو) للمطابقة المباشرة
+ * تنظيف وتوحيد النصوص العربية لإزالة وتوحيد (ال التعريف، الهمزات، التاء المربوطة، الياء والواو كـ ابي/ابو/ابن) للمطابقة المباشرة
  */
 function cleanArabicTextForMatch(text: string): string {
   if (!text) return "";
@@ -43,6 +43,8 @@ function cleanArabicTextForMatch(text: string): string {
     .replace(/ى/g, "ي")
     .replace(/\bابي\b/g, "ابو")
     .replace(/\bابا\b/g, "ابو")
+    .replace(/\bابن\b/g, "ابو")
+    .replace(/\bاب\b/g, "ابو")
     .replace(/\bال/g, "")
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "")
     .replace(/\s+/g, " ")
@@ -50,29 +52,98 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * مطابقة ذكية مرنة لأسماء المحلات المباشرة
+ * استخراج اسم المحل المنطوق الصريح من كافة الصيغ المنطوقة
+ */
+function extractTargetShopName(text: string): string {
+  if (!text) return "";
+
+  // 1. البحث بعد عبارات (طلب من / طلب جديد من / من محل / من / محل)
+  const matchFrom = text.match(/(?:سوي لي طلب جديد من|سوي طلب جديد من|طلب جديد من|سوي لي طلب من|سوي طلب من|من محل|من)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان)|$)/i);
+  if (matchFrom && matchFrom[1].trim().length >= 2) {
+    const candidate = matchFrom[1].replace(/طلب|جديد|سوي لي|سوي/gi, "").trim();
+    if (candidate.length >= 2) return candidate;
+  }
+
+  const matchShop = text.match(/(?:محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|سعر|رقم|منطقة|منطقه|عنوان)|$)/i);
+  if (matchShop && matchShop[1].trim().length >= 2) {
+    return matchShop[1].trim();
+  }
+
+  let cleaned = text
+    .replace(/.*سوي لي طلب جديد من|.*سوي طلب جديد من|.*طلب جديد من|.*سوي لي طلب من|.*سوي طلب من|.*من محل|.*من|.*محل/gi, "")
+    .replace(/نوع الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقة الزبون.*|منطقه الزبون.*/gi, "")
+    .trim();
+
+  return cleaned || text.trim();
+}
+
+/**
+ * مطابقة ذكية مرنة لأسماء المحلات المباشرة (تراعي توحيد ابن / ابو / اب الخصيب واكسسوارات)
  */
 async function findMatchingShopByQuery(queryText: string) {
   const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
   if (allShops.length === 0) return null;
 
+  const targetName = extractTargetShopName(queryText);
+  const cleanTarget = cleanArabicTextForMatch(targetName);
   const cleanQuery = cleanArabicTextForMatch(queryText);
 
+  // 1. مطابقة تامة بعد توحيد الحروف والنص
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
-    if (cleanShopName.length > 2 && cleanQuery === cleanShopName) {
+    if (cleanShopName.length > 2 && (cleanShopName === cleanTarget || cleanShopName === cleanQuery)) {
       return shop;
     }
   }
 
+  // 2. مطابقة جزئية محكمة تشمل المكونات الرئيسية لاسم المحل (مثل: اكسسوارات و الخصيب / ابو الخصيب / ابن خصيب)
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
-    if (cleanShopName.length > 2 && (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanQuery))) {
-      return shop;
+    if (cleanShopName.length > 2) {
+      if (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanTarget) || cleanTarget.includes(cleanShopName)) {
+        return shop;
+      }
+    }
+  }
+
+  // 3. مطابقة الكلمات المفتاحية الرئيسية المحكمة (مثل الخصيب أو اكسسوارات)
+  const targetWords = cleanTarget.split(/\s+/).filter(w => w.length > 2 && !["طلب", "جديد", "محل"].includes(w));
+  if (targetWords.length >= 2) {
+    for (const shop of allShops) {
+      const cleanShopName = cleanArabicTextForMatch(shop.name);
+      const matchedAllWords = targetWords.every(w => cleanShopName.includes(w));
+      if (matchedAllWords) {
+        return shop;
+      }
     }
   }
 
   return null;
+}
+
+/**
+ * البحث واقتراح المحلات المتقاربة جداً حصرياً من اسم المحل المنطوق ومنع المحلات العشوائية 100%
+ */
+async function findFuzzyMatchingShops(queryText: string) {
+  const targetName = extractTargetShopName(queryText);
+  const cleanTarget = cleanArabicTextForMatch(targetName);
+  if (!cleanTarget || cleanTarget.length < 2) return [];
+
+  const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+  const candidates: Array<{ id: string; name: string }> = [];
+
+  const targetWords = cleanTarget.split(/\s+/).filter(w => w.length > 2 && !["طلب", "جديد", "محل"].includes(w));
+
+  for (const shop of allShops) {
+    const cleanShopName = cleanArabicTextForMatch(shop.name);
+    const wordMatchedCount = targetWords.filter(w => cleanShopName.includes(w)).length;
+
+    if (wordMatchedCount > 0 || cleanShopName.includes(cleanTarget) || cleanTarget.includes(cleanShopName)) {
+      candidates.push(shop);
+    }
+  }
+
+  return candidates.slice(0, 5);
 }
 
 /**
@@ -298,7 +369,6 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
-  // إذا تم مسح الحساب أو لم ينشأ بـ CreditBookPartner، يُحظر الإنشاء التلقائي إطلاقاً ويُرجع null
   return null;
 }
 
@@ -726,17 +796,20 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const matchingShop = await findMatchingShopByQuery(rawText);
 
     if (!matchingShop) {
-      const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-      const shopButtons = allShops.slice(0, 6).map(s => ({
+      const extractedName = extractTargetShopName(rawText);
+      const fuzzyShops = await findFuzzyMatchingShops(rawText);
+
+      const shopButtons = fuzzyShops.map(s => ({
         text: `🏪 ${s.name}`,
         action: `select_shop_${s.id}`
       }));
 
-      const shopNameExtracted = rawText.match(/(?:محل|من محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:نوع|وقت|رقم|سعر)|$)/i);
-      const triedShopName = shopNameExtracted ? shopNameExtracted[1].trim() : "غير محدد";
+      const suggestionNote = fuzzyShops.length > 0
+        ? "\n\n👇 **يرجى النقر على اسم المحل المطلوب من المقترحات المطابقة أدناه:**"
+        : "";
 
       return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أتمكن من الجزم باسم المحل المطابق (${triedShopName}) بقواعد البيانات!\n\n👇 **يرجى النقر على اسم المحل المطلوب أدناه لرفع الطلب باسمه مباشرة:**`,
+        reply: `⚠️ **يا أبو الأكبر:** لم أتمكن من الجزم باسم المحل المطابق بالضبط لـ (**${extractedName}**) بقواعد البيانات!${suggestionNote}`,
         buttons: shopButtons
       };
     }
@@ -1107,7 +1180,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-اذكر دائماً صفة الشريك المقترح (مثل: ميثاق - مورد/مجهز)، ولا تنشئ أي حساب تلقائياً إذا مسح من جدول الديون، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+استخرج دائماً اسم المحل المنطوق صراحة بعد (طلب جديد من / من)، وطابق الأسماء المتقاربة (مثل: ابن خصيب / اب الخصيب / ابو الخصيب)، واعرض الأزرار المتقاربة فقط دون أي عشوائية، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
