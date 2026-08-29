@@ -50,7 +50,40 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 أولوية إخفاء المندوب (HIDE COURIER ENGINE 100%)
+  // 0.0 فئة الإسناد الديناميكي المبعثر المتقدم للطلبات (DYNAMIC MULTI-CRITERIA ORDER ASSIGN ENGINE 100%)
+  if (
+    cleanQ.includes("اسناد") ||
+    cleanQ.includes("إسناد") ||
+    cleanQ.includes("اسند") ||
+    cleanQ.includes("سوي له اسناد") ||
+    cleanQ.includes("سوي اسناد") ||
+    cleanQ.includes("للمندوب") ||
+    cleanQ.includes("للمنجوب") ||
+    cleanQ.includes("الي المندوب") ||
+    cleanQ.includes("الى المندوب")
+  ) {
+    let courierMatch = text.match(/(?:للمندوب|للمنجوب|إلى المندوب|الي المندوب|المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z\s]+?)$/i);
+    let courierName = courierMatch ? courierMatch[1].trim() : "فارس";
+
+    let status = "pending";
+    if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("جديده") || cleanQ.includes("الجديد")) status = "pending";
+    else if (cleanQ.includes("معلق")) status = "pending";
+
+    let searchQuery = text
+      .replace(/طلب|بحالة|بحاله|جديدة|جديده|الجديد|جديد|معلق|سوي|له|اسناد|إسناد|اسند|للمندوب|للمنجوب|إلى|الي|المندوب|كابتن|لكابتن/gi, "")
+      .replace(/فارس|فيصل|ميثاق|علي|حسن|محمد/gi, "")
+      .trim();
+
+    return {
+      category: "dynamic_assign_order",
+      courier_name: courierName,
+      target_status: status,
+      search_query: searchQuery,
+      raw_text: text
+    };
+  }
+
+  // 0.1 أولوية إخفاء المندوب (HIDE COURIER ENGINE 100%)
   if (
     cleanQ.includes("اخفي لي المندوب") ||
     cleanQ.includes("اخفي المندوب") ||
@@ -68,7 +101,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.1 أولوية إظهار المندوب (UNHIDE COURIER ENGINE 100%)
+  // 0.2 أولوية إظهار المندوب (UNHIDE COURIER ENGINE 100%)
   if (
     cleanQ.includes("اظهر لي المندوب") ||
     cleanQ.includes("اظهر المندوب") ||
@@ -86,7 +119,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.2 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // 0.3 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
   if (
     cleanQ.includes("عدل الرقم") ||
     cleanQ.includes("عدل السعر") ||
@@ -120,7 +153,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.3 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
+  // 0.4 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
     cleanQ.includes("اخر طلب ملغي") ||
@@ -136,7 +169,7 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "last_rejected_order" };
   }
 
-  // 0.4 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.5 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
   if (
     cleanQ.includes("إلغاء") ||
     cleanQ.includes("الغاء") ||
@@ -363,7 +396,65 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 معالجة فئة إخفاء المندوب (HIDE COURIER ENGINE 100%)
+  // 0.0 معالجة فئة الإسناد الديناميكي المبعثر المتقدم (DYNAMIC ASSIGN ORDER 100%)
+  // ==========================================
+  if (parsed?.category === "dynamic_assign_order") {
+    const { courier_name, target_status, search_query } = parsed;
+
+    const allCouriers = await prisma.courier.findMany();
+    let matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courier_name)) || cleanArabicTextForMatch(courier_name).includes(cleanArabicTextForMatch(c.name)));
+
+    if (!matchedCourier && (courier_name.includes("فارس") || rawText.includes("فارس"))) {
+      matchedCourier = allCouriers.find(c => c.name.includes("فارس"));
+    }
+    if (!matchedCourier) matchedCourier = allCouriers[0];
+
+    const allOrders = await prisma.order.findMany({
+      where: { status: target_status },
+      orderBy: { createdAt: "desc" },
+      include: { shop: true, customerRegion: true }
+    });
+
+    let targetOrder = null;
+
+    if (search_query && search_query.length > 1) {
+      const cleanSearch = cleanArabicTextForMatch(search_query);
+      targetOrder = allOrders.find(o => {
+        const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
+        const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
+        const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
+        return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
+      });
+    }
+
+    if (!targetOrder) {
+      targetOrder = allOrders[0] || await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true, customerRegion: true } });
+    }
+
+    if (targetOrder && matchedCourier) {
+      const updated = await prisma.order.update({
+        where: { id: targetOrder.id },
+        data: {
+          assignedCourierId: matchedCourier.id,
+          status: "assigned"
+        },
+        include: { shop: true, customerRegion: true }
+      });
+
+      activeChatContext.lastOrderNumber = updated.orderNumber;
+      activeChatContext.updatedAt = Date.now();
+
+      const shopName = updated.shop ? updated.shop.name : (targetOrder.orderType || "الطلب");
+      const regionName = updated.customerRegion ? updated.customerRegion.name : "المنطقة";
+
+      return {
+        reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${shopName}) إلى المندوب (${matchedCourier.name})`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.1 معالجة فئة إخفاء المندوب (HIDE COURIER ENGINE 100%)
   // ==========================================
   if (parsed?.category === "courier_hide") {
     const courierName = parsed?.clean_name || "فارس";
@@ -387,7 +478,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.1 معالجة فئة إظهار المندوب (UNHIDE COURIER ENGINE 100%)
+  // 0.2 معالجة فئة إظهار المندوب (UNHIDE COURIER ENGINE 100%)
   // ==========================================
   if (parsed?.category === "courier_unhide") {
     const courierName = parsed?.clean_name || "فارس";
@@ -411,7 +502,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.2 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // 0.3 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
   // ==========================================
   if (parsed?.category === "focused_order_edit") {
     const { order_number, field, raw_text, number_val } = parsed;
@@ -474,7 +565,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.3 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
+  // 0.4 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
     let rejectedOrder = await prisma.order.findFirst({
@@ -522,7 +613,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.4 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.5 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
   // ==========================================
   if (parsed?.category === "order_cancel_or_reject") {
     const { order_number, shop_name } = parsed;
@@ -570,7 +661,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.5 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
+  // 0.6 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
   // ==========================================
   if (rawText.startsWith("assign_order_")) {
     const parts = rawText.split("_");
@@ -598,7 +689,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.6 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // 0.7 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
   // ==========================================
   if (rawText.startsWith("assign_prep_")) {
     const parts = rawText.split("_");
@@ -621,7 +712,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.7 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
+  // 0.8 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
