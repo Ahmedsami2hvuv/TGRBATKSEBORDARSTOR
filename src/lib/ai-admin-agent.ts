@@ -91,6 +91,53 @@ function extractPrepItemsFromText(text: string): string {
 }
 
 /**
+ * استخراج رقم هاتف الزبون الصريح حتى لو تخلله مسافات أو عبارات
+ */
+function extractCustomerPhoneFlexible(text: string): string {
+  if (!text) return "غير محدد";
+
+  // 1. فحص أرقام الهواتف الصريحة المتصلة
+  const directMatch = text.match(/(?:\+964|0)?7[3-9]\d{7,8}/);
+  if (directMatch) return directMatch[0];
+
+  // 2. فحص الأرقام المكتوبة بعد عبارة (رقم الزبون / هاتف الزبون / رقم)
+  const afterKeywordMatch = text.match(/(?:رقم|هاتف|موبايل|زبون)\s*(?:الزبون)?\s*(\d[\d\s]{6,12}\d)/i);
+  if (afterKeywordMatch) {
+    const cleanedDigits = afterKeywordMatch[1].replace(/\s+/g, "");
+    if (cleanedDigits.length >= 8 && cleanedDigits.length <= 11) {
+      return cleanedDigits;
+    }
+  }
+
+  return "غير محدد";
+}
+
+/**
+ * استخراج تنظيف نوع البضاعة والطلب دون أسر تعليمات الأمر
+ */
+function extractCleanOrderType(text: string): string {
+  if (!text) return "طلب جديد";
+
+  if (text.includes("روبيان")) return "روبيان";
+  if (text.includes("أكل") || text.includes("طعام")) return "طعام";
+  if (text.includes("اكسسوار") || text.includes("إكسسوار")) return "اكسسوارات";
+
+  let cleaned = text
+    .replace(/.*نوع الطلب|.*نوع الطلبيه|.*نوع البضاعة|.*نوع/gi, "")
+    .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*|سوي لي طلب.*|سوي طلب.*/gi, "")
+    .trim();
+
+  // إزالة أي أرقام هواتف أو تعليمات متبقية
+  cleaned = cleaned.replace(/07\d+|\+964\d+|\d+/g, "").trim();
+
+  if (cleaned.length >= 2 && cleaned.length <= 40) {
+    return cleaned;
+  }
+
+  return "طلب جديد";
+}
+
+/**
  * البحث أو إنشاء الشريك التلقائي في دفتر الديون والشراكة (CreditBookPartner)
  */
 async function findOrCreateCreditBookPartner(partnerQuery: string) {
@@ -202,8 +249,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       extractedName = "مندوب جديد";
     }
 
-    const phoneMatch = rawText.match(/(?:\+964|0)?7[3-9]\d{8}/);
-    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+    const phone = extractCustomerPhoneFlexible(rawText);
 
     const newCourier = await prisma.courier.create({
       data: {
@@ -219,7 +265,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة بدون 3 أصفار نهائياً (EXACT AMOUNTS ONLY)
+  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT AMOUNTS ONLY)
   // ==========================================
   if (
     domain === "debts" ||
@@ -244,7 +290,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     
-    // عدم ضرب المبالغ بـ 1000 نهائياً - الرقم ينزل كما هو تماماً (مثلاً 5 ينزل 5)
     let finalAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
     await prisma.creditBookTransaction.create({
@@ -295,6 +340,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     rawText.includes("طلب جديد") ||
     rawText.includes("انشئ طلب")
   ) {
+    // أ) جلب المحل المطابق
     const matchingShop = await findMatchingShopByQuery(rawText);
     const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
 
@@ -302,6 +348,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       return { reply: "❌ لم يتم العثور على أي محل في النظام لرفع الطلب باسمه." };
     }
 
+    // ب) جلب المنطقة وسعر التوصيل الثابت
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     let matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
     
@@ -311,23 +358,22 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
     const region = matchingRegion || allRegions[0];
 
-    const phoneMatch = rawText.match(/(?:\+964|0)?7[3-9]\d{8}/);
-    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+    // ج) استخراج رقم هاتف الزبون بمرونة ودقة عالية
+    const phone = extractCustomerPhoneFlexible(rawText);
 
+    // د) استخراج السعر وتثبيت سعر التوصيل الخاص بالمنطقة حصراً
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
 
+    // سعر التوصيل الثابت المعتمد من المنطقة المسجلة بـ داتابيز الموقع
     const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5;
     const totalAmountNum = priceNum + deliveryPriceNum;
 
-    let orderType = "طلب جديد";
-    if (rawText.includes("روبيان")) orderType = "روبيان";
-    else {
-      const cleanType = rawText.replace(/.*نوع الطلب|.*نوع|.*سوي لي طلب|.*سوي طلب|.*محل|07\d{9}|\+964\d+|سعر الطلب|\d+/gi, "").trim();
-      if (cleanType.length > 1) orderType = cleanType;
-    }
+    // هـ) تنظيف واستخراج نوع البضاعة والطلب دون أسر التعليمات
+    const orderType = extractCleanOrderType(rawText);
 
+    // و) إنشاء الطلب في قاعدة البيانات
     const order = await prisma.order.create({
       data: {
         shopId: firstShop.id,
@@ -347,7 +393,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **الهاتف:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
+      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${firstShop.name}\n- **المنطقة والوجهة:** ${region?.name || "عامة"}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة:** ${orderType}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل الثابت للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}`
     };
   }
 
@@ -356,8 +402,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   // ==========================================
   if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
     const extractedItems = extractPrepItemsFromText(rawText);
-    const phoneMatch = rawText.match(/07\d{9}|7\d{9}/);
-    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+    const phone = extractCustomerPhoneFlexible(rawText);
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     const matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase())) || allRegions[0];
