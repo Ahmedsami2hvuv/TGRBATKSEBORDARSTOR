@@ -902,36 +902,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 6. الشمول المباشر المطلق لتعديل الطلبات بواسطة رقم الطلب والأسعار (UNIVERSAL ORDER MODIFICATION)
+  // 6. الشمول المباشر المطلق لتعديل الطلبات بواسطة رقم الطلب (UNIVERSAL ORDER MODIFICATION)
   // ==========================================
-  const allNumbers = (rawText.match(/\d+/g) || [])
-    .map(Number)
-    .filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
-  
   let orderNumber: number | null = null;
-  let targetNewPrice: number | null = null;
 
-  // 1. التقاط رقم الطلب الصريح المكون من 3-5 أرقام (مثل 2033 أو 1042 أو #2033) حتى لو كان أول كلمة بالرسالة
-  const explicitNumMatch = rawText.match(/(?:طلب|طلبية|#)?\s*(\d{3,5})/i);
+  // 1. التقاط رقم الطلب الصريح المكون من 3-5 أرقام (مثل 2047 أو 2033) حتى لو كان أول كلمة بالرسالة
+  const explicitNumMatch = rawText.match(/(?:طلب|طلبية|#|رقمه|رقم)?\s*(\d{3,5})/i);
   if (explicitNumMatch) {
     orderNumber = Number(explicitNumMatch[1]);
-  } else if (allNumbers.length > 0) {
-    const candidateNum = allNumbers.find(n => n >= 100 && n <= 99999);
-    if (candidateNum) orderNumber = candidateNum;
   }
 
-  // 2. التقاط السعر المستهدف سواء منطوقاً ككلمة (خمسة/خمسه/5) أو أرقام مجاورة لـ السعر
   const wordPrice = parseArabicWordsToNumber(rawText);
-  if (wordPrice != null && (rawText.includes("سعر") || rawText.includes("مال الطلب") || rawText.includes("بضاعة") || rawText.includes("ترا"))) {
-    targetNewPrice = wordPrice;
-  } else if (allNumbers.length > 0) {
-    const priceCandidates = allNumbers.filter(n => n !== orderNumber);
-    if (priceCandidates.length > 0) {
-      targetNewPrice = priceCandidates[priceCandidates.length - 1];
-    } else if (wordPrice != null) {
-      targetNewPrice = wordPrice;
-    }
-  }
 
   let existingOrder: any = null;
 
@@ -988,7 +969,16 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
     const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة");
 
-    // أ) الإسناد الصريح للمندوب أو إلغاء الإسناد
+    // أ) تعديل وتثبيت رقم هاتف الزبون الصريح 100%
+    if (rawText.includes("رقم الزبون") || rawText.includes("رقم الهاتف") || rawText.includes("هاتف") || rawText.includes("موبايل") || rawText.includes("غير الرقم") || rawText.includes("خلي الرقم")) {
+      const newPhone = extractCustomerPhoneFlexible(rawText);
+      if (newPhone && newPhone !== "غير محدد") {
+        updateData.customerPhone = newPhone;
+        changes.push(`📱 **رقم هاتف الزبون الجديد:** ${newPhone}`);
+      }
+    }
+
+    // ب) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -1006,7 +996,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل اسم المنطقة
+    // ج) تعديل اسم المنطقة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم") || rawText.includes("جيكور") || rawText.includes("حمدان")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -1036,9 +1026,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل الأسعار والمبالغ صراحة وبثبات 100%
-    if (targetNewPrice != null || rawText.includes("سعر") || rawText.includes("السعر")) {
-      const finalPriceToSet = targetNewPrice != null ? targetNewPrice : 5;
+    // د) تعديل الأسعار والمبالغ صراحة وبثبات 100%
+    if (wordPrice != null || rawText.includes("سعر") || rawText.includes("السعر")) {
+      const finalPriceToSet = wordPrice != null ? wordPrice : 5;
 
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(finalPriceToSet);
@@ -1054,7 +1044,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد النهائي:** ${sub + del}`);
     }
 
-    // د) تعديل نوع البضاعة والمنتج النظيف صراحةً
+    // هـ) تعديل نوع البضاعة والمنتج النظيف صراحةً
     if (rawText.includes("نوع الطلب") || rawText.includes("نوع البضاعة") || rawText.includes("نوع المنتج") || rawText.includes("تغيير نوع") || rawText.includes("نوع") || rawText.includes("صمان") || rawText.includes("صمون")) {
       const cleanType = extractCleanOrderType(rawText, existingOrder.shop?.name);
       if (cleanType && cleanType.length >= 2) {
@@ -1063,14 +1053,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // هـ) تعديل وقت الاستلام والتوصيل الصريح (orderNoteTime)
+    // و) تعديل وقت الاستلام والتوصيل الصريح (orderNoteTime)
     if (rawText.includes("وقت الطلب") || rawText.includes("وقت الاستلام") || rawText.includes("غدا") || rawText.includes("صباحا")) {
       const timeVal = extractCleanOrderNoteTime(rawText);
       updateData.orderNoteTime = timeVal;
       changes.push(`⏰ **وقت الاستلام والتوصيل الجديد:** ${timeVal}`);
     }
 
-    // و) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
+    // ز) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
@@ -1173,7 +1163,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-استخرج دائماً رقم الطلب الصريح المكون من 3-5 أرقام (مثل: 2033)، وعدل السعر المطلوب صراحةً حتى لو كان بالحروف، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+استخرج رقم الطلب الصريح (مثل 2047) ورقم هاتف الزبون (مثل 07733921468) وعدل الطلب مباشرةً، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
