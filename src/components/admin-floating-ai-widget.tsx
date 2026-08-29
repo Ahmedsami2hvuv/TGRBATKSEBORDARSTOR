@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Bot, Keyboard, MessageSquare } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Keyboard, Trash2 } from "lucide-react";
+
+type ChatLogMessage = {
+  id: string;
+  sender: "user" | "ai";
+  text: string;
+  buttons?: Array<{ text: string; action: string }>;
+  timestamp: string;
+};
 
 export function AdminFloatingAiWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,18 +20,33 @@ export function AdminFloatingAiWidget() {
   const [hasMoved, setHasMoved] = useState(false);
 
   const [inputMessage, setInputMessage] = useState("");
-  const [transcript, setTranscript] = useState("");
-  const [responseText, setResponseText] = useState("");
   const [statusText, setStatusText] = useState("المساعد الصوتي الذكي جاهز");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isMicPaused, setIsMicPaused] = useState(false); // زر إيقاف الميكروفون
+  const [isMicPaused, setIsMicPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [dynamicButtons, setDynamicButtons] = useState<Array<{ text: string; action: string }>>([]);
+
+  // سجل المحادثة الكامل المتسلسل (Full Scrollable Chat Stream)
+  const [messages, setMessages] = useState<ChatLogMessage[]>([
+    {
+      id: "init_msg",
+      sender: "ai",
+      text: "أهلاً بك يا أبو الأكبر! المساعد الصوتي الذكي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة! 🚀",
+      timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+    }
+  ]);
 
   const recognitionRef = useRef<any>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة (حاسوب وهاتف)
+  // التمرير التلقائي لأسفل المحادثة عند وصول أي رسالة جديدة
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة
   const handleStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -94,13 +117,11 @@ export function AdminFloatingAiWidget() {
   // الميكروفون والتعرف الصوتي
   const toggleVoiceListening = () => {
     if (isListening) {
-      // إيقاف الميكروفون
       if (recognitionRef.current) recognitionRef.current.stop();
       setIsListening(false);
       setIsMicPaused(true);
       setStatusText("🛑 الميكروفون متوقف - يمكنك الكتابة بالنص فقط");
     } else {
-      // تشغيل الميكروفون
       setIsMicPaused(false);
       startVoiceListening();
     }
@@ -133,7 +154,6 @@ export function AdminFloatingAiWidget() {
 
       rec.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
-        setTranscript(text);
         setIsListening(false);
         sendApiCommand(text);
       };
@@ -157,9 +177,23 @@ export function AdminFloatingAiWidget() {
 
   const sendApiCommand = async (textToSend: string) => {
     if (!textToSend.trim()) return;
+
+    const userMsgId = Date.now().toString();
+    const timeStr = new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
+
+    // إضافة رسالة المستخدم فوراً إلى سجل المحادثة
+    setMessages(prev => [
+      ...prev,
+      {
+        id: userMsgId,
+        sender: "user",
+        text: textToSend,
+        timestamp: timeStr
+      }
+    ]);
+
     setIsLoading(true);
     setStatusText("⚡ جاري المعالجة والتنفيذ بالنظام...");
-    setDynamicButtons([]);
 
     try {
       const res = await fetch("/api/ai/admin-voice", {
@@ -171,22 +205,58 @@ export function AdminFloatingAiWidget() {
       const data = await res.json();
       setIsLoading(false);
 
+      const aiMsgId = (Date.now() + 1).toString();
+      const aiTimeStr = new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
+
       if (data.ok) {
         setStatusText("✅ تم تنفيذ الأمر بنجاح!");
-        setResponseText(data.reply || "");
-        if (data.buttons && Array.isArray(data.buttons)) {
-          setDynamicButtons(data.buttons);
-        }
+        setMessages(prev => [
+          ...prev,
+          {
+            id: aiMsgId,
+            sender: "ai",
+            text: data.reply || "",
+            buttons: Array.isArray(data.buttons) ? data.buttons : [],
+            timestamp: aiTimeStr
+          }
+        ]);
         speakResponse(data.reply || "");
       } else {
         setStatusText("⚠️ خطأ في المعالجة.");
-        setResponseText(data.error || data.message || "حدث خطأ غير متوقع.");
+        setMessages(prev => [
+          ...prev,
+          {
+            id: aiMsgId,
+            sender: "ai",
+            text: data.error || data.message || "حدث خطأ غير متوقع.",
+            timestamp: aiTimeStr
+          }
+        ]);
       }
     } catch (err: any) {
       setIsLoading(false);
       setStatusText("❌ تعذر الاتصال بالسيرفر.");
-      setResponseText(err.message || "خطأ بالاتصال");
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 2).toString(),
+          sender: "ai",
+          text: err.message || "خطأ بالاتصال بالسيرفر",
+          timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+        }
+      ]);
     }
+  };
+
+  const clearChatHistory = () => {
+    setMessages([
+      {
+        id: Date.now().toString(),
+        sender: "ai",
+        text: "تم تصفير السجل والبدء بدردشة جديدة ناصعة يا أبو الأكبر! 🚀",
+        timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+      }
+    ]);
   };
 
   return (
@@ -215,7 +285,6 @@ export function AdminFloatingAiWidget() {
           className="group relative flex items-center justify-center w-16 h-16 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing border-2 border-white/80 overflow-hidden transition-transform duration-150 hover:scale-105 active:scale-95 bg-gradient-to-tr from-blue-600 via-indigo-500 to-sky-200"
           title="مساعد أبو الأكبر الذكي - اسحب لتحريك المكان"
         >
-          {/* التأثير البلوري السائل المضيء كـ Gemini Live */}
           <div className="absolute inset-0 bg-gradient-to-tr from-sky-400 via-indigo-600 to-blue-300 opacity-90 animate-pulse"></div>
           <div className="absolute inset-1 rounded-full bg-gradient-to-b from-white/40 to-transparent blur-[2px]"></div>
 
@@ -224,22 +293,22 @@ export function AdminFloatingAiWidget() {
         </div>
       </div>
 
-      {/* 2. شريط المساعد الصوتي العائم والمستنسخ بالضبط من Gemini Live (Gemini Floating Bar & Window) */}
+      {/* 2. شريط المساعد الصوتي العائم الناطق مع سجل المحادثة المتسلسل الكامل (Full Chat Stream) */}
       {isOpen && (
         <div
           style={{
             position: "fixed",
-            left: `${Math.min(position.x, typeof window !== "undefined" ? window.innerWidth - 380 : 300)}px`,
-            top: `${Math.min(position.y + 75, typeof window !== "undefined" ? window.innerHeight - 520 : 400)}px`,
+            left: `${Math.min(position.x, typeof window !== "undefined" ? window.innerWidth - 390 : 300)}px`,
+            top: `${Math.min(position.y + 75, typeof window !== "undefined" ? window.innerHeight - 560 : 400)}px`,
             zIndex: 1000000
           }}
-          className="w-[92vw] max-w-[370px] bg-slate-950/95 backdrop-blur-xl text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-slate-800 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 dir-rtl"
+          className="w-[94vw] max-w-[385px] bg-slate-950/95 backdrop-blur-xl text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-slate-800 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 dir-rtl"
         >
-          {/* Gemini Bar Header & Drag Control */}
+          {/* Header */}
           <div
             onMouseDown={handleStartDrag}
             onTouchStart={handleStartDrag}
-            className="p-3.5 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+            className="p-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
           >
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-sky-300 p-0.5 flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -257,6 +326,13 @@ export function AdminFloatingAiWidget() {
             </div>
 
             <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={clearChatHistory}
+                className="p-2 bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded-full transition-colors"
+                title="مسح سجل المحادثة"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-2 rounded-full text-xs font-semibold flex items-center justify-center transition-all ${
@@ -276,64 +352,60 @@ export function AdminFloatingAiWidget() {
             </div>
           </div>
 
-          {/* Gemini Live Visualizer Orb & Chat Content Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 min-h-[220px] max-h-[300px] bg-slate-950/50">
-            {/* الشكل البلوري المتوهج المتحرك أثناء الاستماع والمعالجة */}
-            <div className="flex flex-col items-center justify-center py-3">
-              <div className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-                isListening
-                  ? "scale-110 shadow-[0_0_40px_rgba(59,130,246,0.8)] bg-gradient-to-tr from-blue-500 via-indigo-500 to-sky-300 animate-pulse"
-                  : isLoading
-                  ? "scale-105 shadow-[0_0_30px_rgba(168,85,247,0.8)] bg-gradient-to-tr from-purple-600 to-pink-500 animate-spin-slow"
-                  : "shadow-[0_0_20px_rgba(59,130,246,0.4)] bg-gradient-to-tr from-slate-800 to-blue-900"
-              }`}>
-                <div className="w-16 h-16 rounded-full bg-slate-950/80 backdrop-blur-md flex items-center justify-center">
-                  {isLoading ? (
-                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-                  ) : isListening ? (
-                    <Mic className="w-8 h-8 text-sky-400 animate-bounce" />
-                  ) : (
-                    <Sparkles className="w-8 h-8 text-blue-400" />
+          {/* Chat Stream History Area (سجل الدردشة الكامل القابل للتمرير) */}
+          <div
+            ref={chatScrollRef}
+            className="flex-1 p-3.5 overflow-y-auto space-y-3 min-h-[260px] max-h-[340px] bg-slate-950/70 scrollbar-thin scrollbar-thumb-slate-800"
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${msg.sender === "user" ? "items-start" : "items-end"} space-y-1`}
+              >
+                <div
+                  className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${
+                    msg.sender === "user"
+                      ? "bg-blue-600 text-white rounded-tr-none border border-blue-500/50"
+                      : "bg-slate-900/90 text-slate-200 rounded-tl-none border border-slate-800"
+                  }`}
+                >
+                  {msg.sender === "user" && <span className="font-bold text-[10px] text-blue-200 block mb-1">🎙️ أنـت:</span>}
+                  {msg.sender === "ai" && <span className="font-bold text-[10px] text-sky-400 block mb-1">✨ المساعد الذكي:</span>}
+
+                  {msg.text}
+
+                  {/* الأزرار التفاعلية المباشرة المرفقة بالرسالة */}
+                  {msg.buttons && msg.buttons.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {msg.buttons.map((btn, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => sendApiCommand(btn.text)}
+                            className="p-2 bg-blue-950/80 hover:bg-blue-900 text-blue-300 font-bold text-[11px] rounded-xl border border-blue-800/80 transition-colors text-center shadow-sm"
+                          >
+                            {btn.text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
+
+                <span className="text-[9px] text-slate-500 px-1">{msg.timestamp}</span>
               </div>
-            </div>
+            ))}
 
-            {transcript && (
-              <div className="bg-slate-900/90 text-slate-100 p-3 rounded-2xl text-xs font-medium border border-slate-800 shadow-inner">
-                🎙️ &quot;{transcript}&quot;
-              </div>
-            )}
-
-            {responseText && (
-              <div className="bg-slate-900/90 text-slate-200 p-3.5 rounded-2xl border border-slate-800 text-xs leading-relaxed space-y-2 whitespace-pre-wrap">
-                {responseText}
-
-                {/* الأزرار التفاعلية المباشرة */}
-                {dynamicButtons.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
-                    <p className="text-[11px] text-slate-400 font-bold">خيارات التجهيز والمجهزين المفصلة:</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {dynamicButtons.map((btn, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setTranscript(btn.text);
-                            sendApiCommand(btn.text);
-                          }}
-                          className="p-2 bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 font-bold text-[11px] rounded-xl border border-blue-800/60 transition-colors text-center"
-                        >
-                          {btn.text}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {/* حالة التحميل والتفكير الحية */}
+            {isLoading && (
+              <div className="flex items-center gap-2 p-2.5 bg-slate-900/80 rounded-2xl border border-slate-800 text-slate-400 text-xs w-fit">
+                <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
+                <span>جاري معالجة أمرك بالنظام...</span>
               </div>
             )}
           </div>
 
-          {/* Gemini Live Control Bar بنفس التصميم والزرار الموضحة بالصور */}
+          {/* Footer Controls */}
           <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5">
             {/* شريط الإدخال النصي عند رغبة المدير بالكتابة فقط */}
             {showTextInput && (
@@ -341,7 +413,6 @@ export function AdminFloatingAiWidget() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (inputMessage.trim()) {
-                    setTranscript(inputMessage);
                     sendApiCommand(inputMessage);
                     setInputMessage("");
                   }
@@ -366,9 +437,8 @@ export function AdminFloatingAiWidget() {
               </form>
             )}
 
-            {/* الأزرار البيضاء العائمة المطابقة لـ Gemini Live Screen بالضبط */}
+            {/* الأزرار السفلى التفاعلية */}
             <div className="flex items-center justify-between gap-2 px-1 py-1">
-              {/* 1. زر إغلاق X */}
               <button
                 onClick={() => setIsOpen(false)}
                 className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-lg active:scale-95"
@@ -377,7 +447,6 @@ export function AdminFloatingAiWidget() {
                 <X className="w-5 h-5" />
               </button>
 
-              {/* 2. زر تشغيل / إيقاف الميكروفون المباشر */}
               <button
                 onClick={toggleVoiceListening}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 ${
@@ -392,7 +461,6 @@ export function AdminFloatingAiWidget() {
                 {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
               </button>
 
-              {/* 3. الشعار المتوهج البيضاوي المستنسخ لـ Gemini Live في المنتصف مع خاصية السحب */}
               <div
                 onMouseDown={handleStartDrag}
                 onTouchStart={handleStartDrag}
@@ -400,13 +468,12 @@ export function AdminFloatingAiWidget() {
                   if (!isListening && !isMicPaused) startVoiceListening();
                 }}
                 className="flex-1 h-12 rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing flex items-center justify-center gap-1.5 text-white font-bold text-xs hover:opacity-95 transition-opacity px-3"
-                title="Gemini Live Bar - اسحب لتحريك الشاشة أو انقر لبدء التحدث"
+                title="Gemini Live Bar - انقر للتحدث أو اسحب لتحريك النافذة"
               >
                 <Sparkles className="w-4 h-4 animate-spin-slow" />
                 <span className="text-[11px] font-semibold">{isListening ? "جاري التحدث..." : "Gemini Live"}</span>
               </div>
 
-              {/* 4. زر فتح الكتابة النصية والمكالمات (Keyboard / Text Toggle) */}
               <button
                 onClick={() => setShowTextInput(!showTextInput)}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${

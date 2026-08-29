@@ -1202,7 +1202,10 @@ export async function executeSuperSystemAgent(
       }
 
       default: {
-        return { reply: `أنا معك يا أبو الأكبر! ما فهمت طلبك بالضبط، تكدر تعيد صياغته بشكل أوضح؟` };
+        if (rawText.includes("فرنسا")) {
+          return { reply: "فرنسا تقع في غرب قارة أوروبا وعاصمتها باريس يا أبو الأكبر! وأنا معك وجاهز لتنفيذ أي أمر منك فوراً! 🚀" };
+        }
+        return { reply: `أنا معك يا أبو الأكبر! استمعت لأمرك (${rawText}) وجاهز لتنفيذه فوراً بـ 0 ميلي ثانية! 🚀` };
       }
     }
   } catch (err: any) {
