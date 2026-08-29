@@ -5,7 +5,7 @@
     android:background="@android:color/transparent"
     android:fitsSystemWindows="true">
 
-    <!-- مساحة شفافة فارغة تمكن من مشاهدة الشاشة والتطبيق خلف المساعد -->
+    <!-- مساحة الشفافية المطلقة لإغلاق الواجهة عند النقر في الأعلى -->
     <View
         android:id="@+id/transparentClickDismiss"
         android:layout_width="match_parent"
@@ -15,7 +15,7 @@
         android:clickable="true"
         android:focusable="true" />
 
-    <!-- Container رد واستجابة المساعد الشفاف التلقائي عند التحدث -->
+    <!-- بوكس الاستجابة الشفاف جداً يظهر فقط عند وجود رد صريح -->
     <LinearLayout
         android:id="@+id/responseContainer"
         android:layout_width="match_parent"
@@ -29,7 +29,7 @@
             android:id="@+id/responseScrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:maxHeight="180dp"
+            android:maxHeight="160dp"
             android:background="#F8FAFC"
             android:padding="12dp"
             android:elevation="8dp">
@@ -79,12 +79,12 @@
 
     <ProgressBar
         android:id="@+id/progressBar"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
         android:visibility="gone"
         android:layout_above="@id/bottomGeminiBarLayout"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnToggleTts"
@@ -93,7 +93,6 @@
         android:visibility="gone"
         android:text="🔊" />
 
-    <!-- Text Keyboard Input Area (عند اختيار الكتابة بالنص) -->
     <LinearLayout
         android:id="@+id/textInputContainer"
         android:layout_width="match_parent"
@@ -127,82 +126,75 @@
             android:textColor="#FFFFFF" />
     </LinearLayout>
 
-    <!-- Gemini Live Floating Bar (الترتيب والتصميم الدقيق المطابق للصورة 100%) -->
+    <!-- Gemini Live Floating Bar (الشكل والترتيب المطابق 100% للصورة المرفقة) -->
     <LinearLayout
         android:id="@+id/bottomGeminiBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="80dp"
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:gravity="center"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="16dp"
+        android:paddingBottom="24dp"
         android:background="@android:color/transparent"
         android:layoutDirection="ltr">
 
-        <!-- 1. زر إغلاق X على اليسار (أول زر من اليسار) -->
-        <Button
+        <!-- 1. زر إغلاق X أقصى اليسار (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <ImageButton
             android:id="@+id/btnClose"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
-            android:text="✕"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#000000"
-            android:background="@drawable/white_circle_btn"
-            android:backgroundTint="@null"
-            android:padding="0dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:tint="#000000"
+            android:background="@drawable/white_circle_black_stroke"
+            android:scaleType="centerInside"
+            android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 2. زر الميكروفون المباشر -->
-        <Button
+        <!-- 2. زر الميكروفون (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <ImageButton
             android:id="@+id/btnMicToggle"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
-            android:text="🎙️"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:background="@drawable/white_circle_btn"
-            android:backgroundTint="@null"
-            android:padding="0dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:tint="#000000"
+            android:background="@drawable/white_circle_black_stroke"
+            android:scaleType="centerInside"
+            android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 3. الكبسولة المتوهجة الملونة الساحرة لـ Gemini Live بالمنتصف -->
-        <Button
+        <!-- 3. الكبسولة المتوهجة الملونة لـ Gemini Live بالمنتصف (بدون أي كتابة داخلها 100%) -->
+        <View
             android:id="@+id/btnGeminiPill"
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
-            android:text=""
-            android:background="@drawable/gemini_gradient_pill"
-            android:backgroundTint="@null"
+            android:background="@drawable/gemini_gradient_pill_glow"
             android:layout_marginEnd="10dp" />
 
-        <!-- 4. زر السهم / الإرسال المباشر -->
-        <Button
+        <!-- 4. زر سهم الإرسال (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <ImageButton
             android:id="@+id/btnSendTextAction"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
-            android:text="⬆️"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:background="@drawable/white_circle_btn"
-            android:backgroundTint="@null"
-            android:padding="0dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@android:drawable/ic_menu_upload"
+            android:tint="#000000"
+            android:background="@drawable/white_circle_black_stroke"
+            android:scaleType="centerInside"
+            android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 5. زر الكيبورد / الكاميرا على اليمين (أخر زر من اليمين) -->
-        <Button
+        <!-- 5. زر الكاميرا/الكيبورد أقصى اليمين (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <ImageButton
             android:id="@+id/btnKeyboardToggle"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
-            android:text="📷"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:background="@drawable/white_circle_btn"
-            android:backgroundTint="@null"
-            android:padding="0dp" />
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@android:drawable/ic_menu_camera"
+            android:tint="#000000"
+            android:background="@drawable/white_circle_black_stroke"
+            android:scaleType="centerInside"
+            android:padding="12dp" />
 
     </LinearLayout>
 

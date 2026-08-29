@@ -16,6 +16,7 @@ import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -37,11 +38,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var tvTranscript: TextView
     private lateinit var tvResponse: TextView
     private lateinit var progressBar: ProgressBar
-    private lateinit var btnClose: Button
-    private lateinit var btnMicToggle: Button
-    private lateinit var btnGeminiPill: Button
-    private lateinit var btnSendTextAction: Button
-    private lateinit var btnKeyboardToggle: Button
+    private lateinit var btnClose: ImageButton
+    private lateinit var btnMicToggle: ImageButton
+    private lateinit var btnGeminiPill: View
+    private lateinit var btnSendTextAction: ImageButton
+    private lateinit var btnKeyboardToggle: ImageButton
     private lateinit var textInputContainer: LinearLayout
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
@@ -99,11 +100,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 stopListening()
                 isMicPaused = true
                 tvStatus.text = "🛑 الميكروفون متوقف - اكتب بالنص"
-                btnMicToggle.text = "🔇"
                 Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
             } else {
                 isMicPaused = false
-                btnMicToggle.text = "🎙️"
                 checkPermissionAndStartListening()
             }
         }
@@ -111,7 +110,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnGeminiPill.setOnClickListener {
             if (!isListening) {
                 isMicPaused = false
-                btnMicToggle.text = "🎙️"
                 checkPermissionAndStartListening()
             }
         }
@@ -139,7 +137,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
         }
 
-        // قفل وتشغيل القراءة الصوتية وحفظها بشكل دائم في SharedPreferences
         btnToggleTts.setOnClickListener {
             isTtsMuted = !isTtsMuted
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_TTS_MUTED, isTtsMuted).apply()
@@ -220,7 +217,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         textToSpeech?.stop()
         stopListening()
         isMicPaused = false
-        btnMicToggle.text = "🎙️"
         tvStatus.text = "🎙️ أستمع لك... تحدث براحتك بالأمر يا أبو الأكبر"
         checkPermissionAndStartListening()
     }
