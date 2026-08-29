@@ -172,25 +172,37 @@ function extractCleanCourierName(text: string, targetName: string = ""): string 
 }
 
 /**
- * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وحظر كلمة طلب أو أسماء المحلات
+ * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100% وتجريد المحلات والصفات والطلبات
  */
-function extractCleanOrderType(text: string): string {
+function extractCleanOrderType(text: string, shopName?: string): string {
   if (!text) return "مواد متنوعة";
+
+  // 1. إذا وجد تركيب صريح مثل "نوع الطلب سويه صمان" أو "نوع البضاعة صمون"
+  const directMatch = text.match(/(?:نوع الطلب|نوع البضاعة|نوع المنتج|نوع|سويه|سويها|خليها|خليه|سويه نوع)\s*(?:سويه|سويها|هو|هي)?\s*([أ-يa-zA-Z0-9\s]+)$/i);
+  if (directMatch && directMatch[1].trim().length >= 2) {
+    const candidate = directMatch[1].replace(/جديد|جديده|جديدة|معلق|معلقة|طلب/gi, "").trim();
+    if (candidate.length >= 2) return candidate;
+  }
 
   let cleaned = text
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
-    .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|عدل|غير|سوي لي|سوي|خلي|جديد من محل|محل/gi, "")
+    .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|سويها|عدل|غير|سوي لي|سوي|خلي|خليها|جديد من محل|محل/gi, "")
+    .replace(/اللي بحاله جديده|اللي بحالة جديدة|اللي معلق|اللي مسند|اللي بانتظار المندوب|بحاله جديده|بحالة جديدة|جديد|جديده|جديدة|معلق|معلقة/gi, "")
     .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*/gi, "")
     .replace(/طلب|طلبية|طلبيه|طلبيا/gi, "")
     .replace(/\b(?:على|ع|إلى|الي|من|باسم)\b/gi, "")
     .trim();
 
+  if (shopName) {
+    cleaned = cleaned.replace(new RegExp(shopName, "gi"), "").trim();
+  }
+
   cleaned = cleaned.replace(/(?:\+964|0)?7[3-9]\d{7,8}|\d+/g, "").trim();
 
   const words = cleaned
     .split(/\s+/)
-    .filter(w => w.length >= 2 && !w.includes("طلب") && !w.includes("عدل") && !w.includes("سويه") && !w.includes("محل"));
+    .filter(w => w.length >= 2 && !w.includes("طلب") && !w.includes("عدل") && !w.includes("سويه") && !w.includes("محل") && !w.includes("جديد") && !w.includes("حاله"));
 
   if (words.length > 0) {
     return words.join(" ");
@@ -487,7 +499,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : (hasRegionMention ? 5 : 0);
     const totalAmountNum = priceNum + deliveryPriceNum;
 
-    const orderType = extractCleanOrderType(rawText);
+    const orderType = extractCleanOrderType(rawText, matchingShop.name);
 
     const order = await prisma.order.create({
       data: {
@@ -599,7 +611,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة") || rawText.includes("الغي اسنادها");
 
     if (isResetStatusToPending) {
-      // عند طلب إرجاع الطلب إلى جديد معلق، نجلب أحدث طلب لهذا المحل بغض النظر عن حالته الحالية (سواء كان مسند assigned أو غيره)
       existingOrder = await prisma.order.findFirst({
         where: { shopId: matchingShop.id },
         orderBy: { createdAt: "desc" },
@@ -636,7 +647,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
-    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("جديد") || rawText.includes("معلق") || rawText.includes("معلقة");
+    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة");
 
     // أ) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
@@ -702,11 +713,13 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // د) تعديل نوع البضاعة والمنتج
-    if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
-      const newType = extractCleanOrderType(rawText);
-      updateData.orderType = newType;
-      changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
+    // د) تعديل نوع البضاعة والمنتج النظيف صراحةً
+    if (rawText.includes("نوع الطلب") || rawText.includes("نوع البضاعة") || rawText.includes("نوع المنتج") || rawText.includes("تغيير نوع") || rawText.includes("نوع") || rawText.includes("صمان") || rawText.includes("صمون")) {
+      const cleanType = extractCleanOrderType(rawText, existingOrder.shop?.name);
+      if (cleanType && cleanType.length >= 2) {
+        updateData.orderType = cleanType;
+        changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${cleanType}`);
+      }
     }
 
     // هـ) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
