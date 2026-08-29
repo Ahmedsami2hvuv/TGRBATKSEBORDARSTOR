@@ -50,7 +50,43 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // 0.0 أولوية إخفاء المندوب (HIDE COURIER ENGINE 100%)
+  if (
+    cleanQ.includes("اخفي لي المندوب") ||
+    cleanQ.includes("اخفي المندوب") ||
+    cleanQ.includes("اخفي لي كابتن") ||
+    cleanQ.includes("اخفي كابتن") ||
+    (cleanQ.includes("اخفي") && (cleanQ.includes("مندوب") || cleanQ.includes("كابتن")))
+  ) {
+    let cleanName = text
+      .replace(/اخفي لي المندوب|اخفي المندوب|اخفي لي كابتن|اخفي كابتن|اخفي لي|اخفي|مندوب|كابتن|المندوب|الكابتن/gi, "")
+      .trim();
+
+    return {
+      category: "courier_hide",
+      clean_name: cleanName || "فارس"
+    };
+  }
+
+  // 0.1 أولوية إظهار المندوب (UNHIDE COURIER ENGINE 100%)
+  if (
+    cleanQ.includes("اظهر لي المندوب") ||
+    cleanQ.includes("اظهر المندوب") ||
+    cleanQ.includes("اظهر لي كابتن") ||
+    cleanQ.includes("اظهر كابتن") ||
+    (cleanQ.includes("اظهر") && (cleanQ.includes("مندوب") || cleanQ.includes("كابتن")))
+  ) {
+    let cleanName = text
+      .replace(/اظهر لي المندوب|اظهر المندوب|اظهر لي كابتن|اظهر كابتن|اظهر لي|اظهر|مندوب|كابتن|المندوب|الكابتن/gi, "")
+      .trim();
+
+    return {
+      category: "courier_unhide",
+      clean_name: cleanName || "فارس"
+    };
+  }
+
+  // 0.2 أولوية قصوى: فئة تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
   if (
     cleanQ.includes("عدل الرقم") ||
     cleanQ.includes("عدل السعر") ||
@@ -84,7 +120,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.1 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
+  // 0.3 أولوية استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
     cleanQ.includes("اخر طلب ملغي") ||
@@ -100,7 +136,7 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "last_rejected_order" };
   }
 
-  // 0.2 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.4 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
   if (
     cleanQ.includes("إلغاء") ||
     cleanQ.includes("الغاء") ||
@@ -252,16 +288,19 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 7. فئة إضافة وتسجيل مندوب جديد
+  // 7. فئة إضافة وتسجيل مندوب جديد بـ الاسم والرقم الصريحين
   if (
     cleanQ.includes("سويلي مندوب") ||
+    cleanQ.includes("سوي لي مندوب") ||
     cleanQ.includes("سوي مندوب") ||
+    cleanQ.includes("ضيفلي مندوب") ||
+    cleanQ.includes("ضيف لي مندوب") ||
     cleanQ.includes("ضيف مندوب") ||
     cleanQ.includes("مندوب جديد") ||
     cleanQ.includes("حساب مندوب")
   ) {
     let nameMatch = text.match(/(?:اسمه|اسم المندوب|اسم|مندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:ورقم|ورقمه|و رقم|رقم|تلفونه|هاتف|07|\d)|$)/i);
-    let courierName = nameMatch ? nameMatch[1].trim() : text.replace(/سوي لي|سوي|مندوب|جديد|حساب|اسمه/gi, "").trim();
+    let courierName = nameMatch ? nameMatch[1].trim() : text.replace(/سوي لي|سوي|ضيف لي|ضيف|مندوب|جديد|حساب|اسمه/gi, "").trim();
 
     courierName = courierName.replace(/ورقم.*|ورقمه.*|و رقم.*|رقم.*|07\d+.*/gi, "").replace(/\s+و$/i, "").trim();
 
@@ -324,7 +363,55 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
+  // 0.0 معالجة فئة إخفاء المندوب (HIDE COURIER ENGINE 100%)
+  // ==========================================
+  if (parsed?.category === "courier_hide") {
+    const courierName = parsed?.clean_name || "فارس";
+
+    const allCouriers = await prisma.courier.findMany();
+    const matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courierName)) || cleanArabicTextForMatch(courierName).includes(cleanArabicTextForMatch(c.name))) || allCouriers[0];
+
+    if (matchedCourier) {
+      const updated = await prisma.courier.update({
+        where: { id: matchedCourier.id },
+        data: {
+          hiddenFromReports: true,
+          availableForAssignment: false
+        }
+      });
+
+      return {
+        reply: `تم يا أبو الأكبر! خفيت المندوب (${updated.name}) ونقلته لقائمة المخفيين`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.1 معالجة فئة إظهار المندوب (UNHIDE COURIER ENGINE 100%)
+  // ==========================================
+  if (parsed?.category === "courier_unhide") {
+    const courierName = parsed?.clean_name || "فارس";
+
+    const allCouriers = await prisma.courier.findMany();
+    const matchedCourier = allCouriers.find(c => cleanArabicTextForMatch(c.name).includes(cleanArabicTextForMatch(courierName)) || cleanArabicTextForMatch(courierName).includes(cleanArabicTextForMatch(c.name))) || allCouriers[0];
+
+    if (matchedCourier) {
+      const updated = await prisma.courier.update({
+        where: { id: matchedCourier.id },
+        data: {
+          hiddenFromReports: false,
+          availableForAssignment: true
+        }
+      });
+
+      return {
+        reply: `تم يا أبو الأكبر! أظهرت المندوب (${updated.name}) ورجعته لقائمة المندوبين النشطين`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.2 قسم تعديل تفاصيل الطلب النشط المفتوح حالياً (ACTIVE FOCUSED ORDER EDIT ENGINE 100%)
   // ==========================================
   if (parsed?.category === "focused_order_edit") {
     const { order_number, field, raw_text, number_val } = parsed;
@@ -387,7 +474,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.1 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
+  // 0.3 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
     let rejectedOrder = await prisma.order.findFirst({
@@ -435,7 +522,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.2 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.4 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
   // ==========================================
   if (parsed?.category === "order_cancel_or_reject") {
     const { order_number, shop_name } = parsed;
@@ -483,7 +570,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.3 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
+  // 0.5 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
   // ==========================================
   if (rawText.startsWith("assign_order_")) {
     const parts = rawText.split("_");
@@ -511,7 +598,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.4 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // 0.6 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
   // ==========================================
   if (rawText.startsWith("assign_prep_")) {
     const parts = rawText.split("_");
@@ -534,7 +621,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.5 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
+  // 0.7 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
@@ -807,7 +894,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 4. قسم إنشاء وإضافة المندوبين الجدد بـ 0 ميلي ثانية
+  // 4. قسم إنشاء وإضافة المندوبين الجدد بـ الاسم والرقم الصريحين
   // ==========================================
   if (
     parsed?.category === "courier_create" ||
@@ -825,24 +912,26 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       if (existingCourier) {
         const updated = await prisma.courier.update({
           where: { id: existingCourier.id },
-          data: { name: courierName, phone: phone }
+          data: { name: courierName, phone: phone, hiddenFromReports: false, availableForAssignment: true }
         });
-        return { reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${updated.name}) برقم ${phone}` };
+        return { reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${updated.name}) برقم ${phone}` };
       }
 
       const newCourier = await prisma.courier.create({
         data: {
           name: courierName,
-          phone: phone
+          phone: phone,
+          hiddenFromReports: false,
+          availableForAssignment: true
         }
       });
 
       return {
-        reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${newCourier.name}) برقم ${phone}`
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
       };
     } catch (err: any) {
       return {
-        reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${courierName}) برقم ${phone}`
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
       };
     }
   }
