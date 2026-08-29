@@ -37,13 +37,18 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 أولوية قصوى: فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL PRIORITY 100%)
+  // 0.0 أولوية قصوى: فئة استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) 100%
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
+    cleanQ.includes("اخر طلب ملغي") ||
     cleanQ.includes("طلب مرفوض") ||
+    cleanQ.includes("طلب ملغي") ||
     cleanQ.includes("تفاصيل اخر طلب مرفوض") ||
+    cleanQ.includes("تفاصيل اخر طلب ملغي") ||
     cleanQ.includes("انطيني تفاصيل اخر طلب مرفوض") ||
-    cleanQ.includes("الطلب المرفوض")
+    cleanQ.includes("انطيني تفاصيل اخر طلب ملغي") ||
+    cleanQ.includes("الطلب المرفوض") ||
+    cleanQ.includes("الطلب الملغي")
   ) {
     return { category: "last_rejected_order" };
   }
@@ -55,7 +60,7 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("سوي لها إلغاء") ||
     cleanQ.includes("سويله إلغاء") ||
     cleanQ.includes("سويله رفض") ||
-    (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض"))
+    (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض") && !cleanQ.includes("ملغي"))
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
     const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
@@ -272,7 +277,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
+  // 0.0 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
     const rejectedOrder = await prisma.order.findFirst({
@@ -283,7 +288,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
 
     if (!rejectedOrder) {
       return {
-        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض) في النظام حالياً! 🎉`
+        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض / ملغى) في النظام حالياً! 🎉`
       };
     }
 
@@ -302,7 +307,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 5;
 
     return {
-      reply: `📌 **تفاصيل آخر طلب مرفوض يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
+      reply: `📌 **تفاصيل آخر طلب مرفوض / ملغى يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
       buttons: courierButtons
     };
   }
