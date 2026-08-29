@@ -611,7 +611,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT AMOUNTS & DIALECTS)
+  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
   // ==========================================
   if (
     domain === "debts" ||
@@ -677,15 +677,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       };
     }
 
+    // إضافة المعاملة الوحيدة النظيفة بـ الداتابيز
     await prisma.creditBookTransaction.create({
       data: {
         partnerId: partner.id,
         amount: new Decimal(finalAmount),
         kind: kind,
-        note: `معاملة تلقائية بواسطة المساعد الصوتي: ${rawText}`
+        note: `معاملة صريحة بواسطة المساعد الصوتي`
       }
     });
 
+    // استعلام صريح ونظيف 100% للمجموع الحقيقي الحالي الفعلي من جدول المعاملات بدفتر الديون
     const allTx = await prisma.creditBookTransaction.findMany({
       where: { partnerId: partner.id }
     });
@@ -709,10 +711,10 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       balanceStatus = `الحساب متصفر بالكامل (0)`;
     }
 
-    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مجهز/مورد" : "شريك"));
+    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مورد/مجهز" : "شريك"));
 
     return {
-      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل المعاملة:** ${finalAmount}\n- **الرصيد الحقيقي الفعلي لـ (${partner.name}):** ${balanceStatus}`
     };
   }
 
@@ -1125,7 +1127,10 @@ export async function processAdminAiMessage(
   let contextCombinedText = userText;
   const contentsPayload: any[] = [];
 
-  if (historyArray && Array.isArray(historyArray) && historyArray.length > 0) {
+  // إذا كانت الرسالة تتعلق بالديون فـ نلغي تجميع النصوص القديمة المتراكمة تماماً لضمان عدم مضاعفة الديون!
+  const isDebtAction = userText.includes("اخذت") || userText.includes("أخذت") || userText.includes("انطيت") || userText.includes("أعطيت") || userText.includes("اعطيت") || userText.includes("تنزيل");
+
+  if (!isDebtAction && historyArray && Array.isArray(historyArray) && historyArray.length > 0) {
     historyArray.forEach((item: any) => {
       const roleName = item.role === "assistant" || item.role === "model" ? "model" : "user";
       const textVal = item.content || item.text || item.prompt || "";
@@ -1155,8 +1160,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-إذا قال لك المدير (أخذت كذا من فلان) وكان الاسم قريباً جداً (مثل: اكسسوارات ابي الخصيب واكسسوارات ابو الخصيب)، فاقترح عليه فوراً الاسم المسجل لدينا بالأزرار التفاعلية!
-واحفظ دائماً الموردين بصفة (مورد/مجهز) واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+احسب مبالغ الديون دائماً بشكل منفصل دون تجميع النصوص القديمة إطلاقاً! واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
