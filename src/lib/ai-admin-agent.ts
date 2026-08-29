@@ -1185,7 +1185,7 @@ export async function processAdminAiMessage(
   historyArray?: any[]
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
 
-  // 1. أولوية قصوى فورية (0 ميلي ثانية): تنفيذ الأكشنات التفاعلية المباشرة للأزرار دون المرور بـ AI API
+  // 1. أولوية قصوى فورية (0 ميلي ثانية): تنفيذ الأكشنات التفاعلية المباشرة والنصوص المنطوقة للأزرار دون المرور بـ AI API
   const isDirectActionButton =
     userText.startsWith("apply_debt_existing_") ||
     userText.startsWith("confirm_create_partner_") ||
@@ -1194,9 +1194,18 @@ export async function processAdminAiMessage(
     userText.startsWith("select_region_") ||
     userText.startsWith("set_region_") ||
     userText.startsWith("assign_prep_") ||
-    userText.startsWith("📍");
+    userText.startsWith("📍") ||
+    userText.includes("هل تقصد:") ||
+    userText.includes("أنشئ حساب جديد لـ") ||
+    userText.includes("انشئ حساب جديد لـ");
 
   if (isDirectActionButton) {
+    if (userText.includes("هل تقصد:") || userText.includes("أنشئ حساب جديد") || userText.includes("انشئ حساب جديد")) {
+      const matchName = userText.match(/\(([^)]+)\)/)?.[1] || userText.replace(/.*هل تقصد:|.*أنشئ حساب جديد لـ|.*انشئ حساب جديد لـ|✅|\?/g, "").trim();
+      const cleanName = matchName.split("-")[0].trim();
+      return await executeSuperSystemAgent({ domain: "debts", operation: "create" }, `نطيت 5 لـ ${cleanName}`);
+    }
+
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   }
 
