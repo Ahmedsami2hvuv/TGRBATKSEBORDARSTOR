@@ -30,7 +30,29 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0. فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL)
+  // 0.0 فئة إلغاء أو رفض الطلبات صراحةً (ORDER REJECTION & CANCELLATION ENGINE)
+  if (
+    cleanQ.includes("إلغاء") ||
+    cleanQ.includes("الغاء") ||
+    cleanQ.includes("رفض") ||
+    cleanQ.includes("سوي لها إلغاء") ||
+    cleanQ.includes("سويله إلغاء") ||
+    cleanQ.includes("سويله رفض")
+  ) {
+    const orderNumMatch = text.match(/\b\d{3,5}\b/);
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
+
+    let shopNameMatch = text.match(/(?:طلب|طلب محل|محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:اللي|الي|بحالة|بحاله|جديدة|جديده|سوي|سويلها|إلغاء|رفض)|$)/i);
+    let shopName = shopNameMatch ? shopNameMatch[1].trim() : text.replace(/طلب|بحالة|جديدة|جديده|سوي|لها|إلغاء|أو|رفض/gi, "").trim();
+
+    return {
+      category: "order_cancel_or_reject",
+      order_number: orderNum,
+      shop_name: shopName
+    };
+  }
+
+  // 0.1 فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL)
   if (
     cleanQ.includes("اخر طلب مرفوض") ||
     cleanQ.includes("أخر طلب مرفوض") ||
@@ -82,7 +104,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة إسناد وتعديل الطلبات للمندوبين (دعم كلمة كابتن وسياق ذاكرة الدردشة)
+  // 3. فئة إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -243,7 +265,55 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
+  // 0.0 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
+  // ==========================================
+  if (parsed?.category === "order_cancel_or_reject") {
+    const { order_number, shop_name } = parsed;
+    let targetOrder = null;
+
+    if (order_number) {
+      targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
+    }
+
+    if (!targetOrder && shop_name) {
+      const allShops = await prisma.shop.findMany();
+      const matchedShop = allShops.find(s => cleanArabicTextForMatch(s.name).includes(cleanArabicTextForMatch(shop_name)) || cleanArabicTextForMatch(shop_name).includes(cleanArabicTextForMatch(s.name)));
+
+      if (matchedShop) {
+        targetOrder = await prisma.order.findFirst({
+          where: { shopId: matchedShop.id, status: { in: ["pending", "assigned"] } },
+          orderBy: { createdAt: "desc" },
+          include: { shop: true }
+        });
+      }
+    }
+
+    if (!targetOrder) {
+      targetOrder = await prisma.order.findFirst({
+        where: { status: { in: ["pending", "assigned"] } },
+        orderBy: { createdAt: "desc" },
+        include: { shop: true }
+      });
+    }
+
+    if (targetOrder) {
+      const updated = await prisma.order.update({
+        where: { id: targetOrder.id },
+        data: { status: "rejected" }
+      });
+
+      return {
+        reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)`
+      };
+    } else {
+      return {
+        reply: `يا أبو الأكبر! لم أجد أي طلب معلق أو محدد لإلغائه أو رفضه حالياً!`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.1 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
     const rejectedOrder = await prisma.order.findFirst({
@@ -258,7 +328,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       };
     }
 
-    // حفظ رقم الطلب المرفوض في ذاكرة سياق المحادثة الحالية لربط أي أمر إسناد بعده مباشرة!
     activeChatContext.lastOrderNumber = rejectedOrder.orderNumber;
     activeChatContext.updatedAt = Date.now();
 
@@ -280,7 +349,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.1 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
+  // 0.2 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
   // ==========================================
   if (rawText.startsWith("assign_order_")) {
     const parts = rawText.split("_");
@@ -308,7 +377,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.2 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // 0.3 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
   // ==========================================
   if (rawText.startsWith("assign_prep_")) {
     const parts = rawText.split("_");
@@ -331,7 +400,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0.3 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
+  // 0.4 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
@@ -402,7 +471,9 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     }
 
     if (!matchedShop) {
-      if (fullText.includes("لوازم الكوثر") || fullText.includes("الكوثر")) {
+      if (fullText.includes("شرين يغدير") || fullText.includes("شيرين يغدير") || fullText.includes("يغدير")) {
+        matchedShop = allShops.find(s => s.name.includes("شرين") || s.name.includes("شيرين") || s.name.includes("يغدير"));
+      } else if (fullText.includes("لوازم الكوثر") || fullText.includes("الكوثر")) {
         matchedShop = allShops.find(s => s.name.includes("الكوثر"));
       } else {
         matchedShop = allShops.find(s => s.name.includes("ابو الاكبر") || s.name.includes("أبو الأكبر")) || allShops[0];
@@ -462,7 +533,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     notifyTelegramNewOrder(order.id).catch(() => {});
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-    // حفظ رقم الطلب الجديد بذاكرة المحادثة لربطه بالإسناد بعده مباشرة!
     activeChatContext.lastOrderNumber = order.orderNumber;
     activeChatContext.updatedAt = Date.now();
 
@@ -592,7 +662,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
           }
         });
 
-        // تحديث الذاكرة لـ هذا الطلب المسند
         activeChatContext.lastOrderNumber = updated.orderNumber;
         activeChatContext.updatedAt = Date.now();
 
