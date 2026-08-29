@@ -118,15 +118,24 @@ function extractPrepItemsFromText(text: string): string {
 }
 
 /**
- * استخراج رقم هاتف الزبون الصريح حتى لو تخلله مسافات أو عبارات
+ * استخراج رقم هاتف الزبون أو المندوب الصريح حتى لو تخلله مسافات أو عبارات
  */
 function extractCustomerPhoneFlexible(text: string): string {
   if (!text) return "غير محدد";
 
+  // 1. فحص أي تسلسل أرقام يبدأ بـ 07 أو 7 أو +964 حتى لو بينها مسافات
+  const spacedMatch = text.match(/(?:\+964|0)?7[\d\s]{6,14}\d/);
+  if (spacedMatch) {
+    const digitsOnly = spacedMatch[0].replace(/\s+/g, "");
+    if (digitsOnly.length >= 8 && digitsOnly.length <= 13) {
+      return digitsOnly;
+    }
+  }
+
   const directMatch = text.match(/(?:\+964|0)?7[3-9]\d{7,8}/);
   if (directMatch) return directMatch[0];
 
-  const afterKeywordMatch = text.match(/(?:رقم|هاتف|موبايل|زبون)\s*(?:الزبون)?\s*(\d[\d\s]{6,12}\d)/i);
+  const afterKeywordMatch = text.match(/(?:رقم|ورقمه|هاتف|موبايل|زبون)\s*(?:الزبون|المندوب)?\s*(\d[\d\s]{6,12}\d)/i);
   if (afterKeywordMatch) {
     const cleanedDigits = afterKeywordMatch[1].replace(/\s+/g, "");
     if (cleanedDigits.length >= 8 && cleanedDigits.length <= 11) {
@@ -135,6 +144,32 @@ function extractCustomerPhoneFlexible(text: string): string {
   }
 
   return "غير محدد";
+}
+
+/**
+ * تنظيف واستخراج اسم المباشر الصريح للمندوب وتجريد أرقام الهواتف والعبارات
+ */
+function extractCleanCourierName(text: string, targetName: string = ""): string {
+  if (targetName && targetName.length >= 2 && !targetName.includes("07") && !targetName.includes("ورقمه")) {
+    return targetName.trim();
+  }
+
+  const nameMatch = text.match(/(?:اسم|اسم المندوب|مندوب|كابتن)\s*(?:المندوب)?\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:ورقمه|رقم|هاتف|07|\d)|$)/i);
+  if (nameMatch && nameMatch[1].trim().length >= 2) {
+    const nameOnly = nameMatch[1].replace(/سوي لي|سويلي|سوي|ضيف|إضافة|جديد/gi, "").trim();
+    if (nameOnly.length >= 2) return nameOnly;
+  }
+
+  let cleaned = text
+    .replace(/.*سوي لي مندوب|.*سوي مندوب|.*ضيف مندوب|.*إضافة مندوب|.*اضافة مندوب|.*مندوب جديد|.*جديد/gi, "")
+    .replace(/ورقمه.*|رقم الهاتف.*|رقم.*|07\d+.*/gi, "")
+    .replace(/اسم المندوب|اسم|كابتن|مندوب/gi, "")
+    .trim();
+
+  cleaned = cleaned.replace(/(?:\+964|0)?7[\d\s]{6,14}\d|\d+/g, "").trim();
+  if (cleaned.length >= 2) return cleaned;
+
+  return "مندوب جديد";
 }
 
 /**
@@ -265,23 +300,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     rawText.includes("مندوب جديد") ||
     rawText.includes("اضف مندوب")
   ) {
-    let extractedName = targetIdOrName || "";
-
-    if (!extractedName || extractedName.length < 2) {
-      extractedName = rawText
-        .replace(/.*سويلي مندوب|.*سوي مندوب|.*ضيف مندوب|.*إضافة مندوب|.*اضافة مندوب|.*مندوب جديد|.*جديد|اسم|كابتن|مندوب/gi, "")
-        .trim();
-    }
-
-    if (!extractedName || extractedName.length < 2) {
-      extractedName = "مندوب جديد";
-    }
-
+    const courierName = extractCleanCourierName(rawText, targetIdOrName);
     const phone = extractCustomerPhoneFlexible(rawText);
 
     const newCourier = await prisma.courier.create({
       data: {
-        name: extractedName,
+        name: courierName,
         phone: phone,
         active: true
       }
@@ -623,7 +647,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    // تعديل وتغيير حالة الطلب صراحة ليشمل كلمة (جديد / جديدة / معلق) بجميع صيغها
     if (
       rawText.includes("جديد") ||
       rawText.includes("جديده") ||
