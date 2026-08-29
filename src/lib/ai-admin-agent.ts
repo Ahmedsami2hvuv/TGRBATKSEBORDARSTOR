@@ -673,7 +673,8 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     rawText.includes("غير المندوب")
   ) {
     const orderNum = aiParsed?.order_number || (rawText.match(/\b\d{3,5}\b/) ? Number(rawText.match(/\b\d{3,5}\b/)[0]) : null);
-    const courierName = aiParsed?.clean_name || rawText.replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*حول إلى|.*حوله على|.*مندوب/gi, "").trim();
+    let courierName = aiParsed?.clean_name || rawText.replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*حول إلى|.*حوله على|.*مندوب/gi, "").trim();
+    courierName = courierName.replace(/.*إلى|.*الي|.*لـ|.*ل/gi, "").trim();
 
     let targetOrder = null;
     if (orderNum) {
@@ -682,9 +683,17 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true } });
     }
 
-    if (targetOrder && courierName) {
+    if (targetOrder) {
       const allCouriers = await prisma.courier.findMany();
-      const matchedCourier = allCouriers.find(c => courierName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(courierName.toLowerCase()));
+      let matchedCourier = allCouriers.find(c => courierName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(courierName.toLowerCase()));
+
+      if (!matchedCourier && (courierName.includes("فارس") || rawText.includes("فارس"))) {
+        matchedCourier = allCouriers.find(c => c.name.includes("فارس"));
+      }
+
+      if (!matchedCourier) {
+        matchedCourier = allCouriers[0];
+      }
 
       if (matchedCourier) {
         const updated = await prisma.order.update({
@@ -928,14 +937,26 @@ export async function processAdminAiMessage(
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   }
 
-  // 2. تحليل وتفكيك الرسالة بالذكاء الاصطناعي Gemini AI المباشر أولاً!
+  // 2. فحص سريع للمطابقة الفورية لأوامر الإسناد والطلبات المباشرة
+  const isDirectAssignOrOrder =
+    userText.includes("إسناد") ||
+    userText.includes("اسناد") ||
+    userText.includes("اسند") ||
+    userText.includes("حول") ||
+    userText.includes("طلب");
+
+  if (isDirectAssignOrOrder) {
+    return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
+  }
+
+  // 3. تحليل وتفكيك الرسالة بالذكاء الاصطناعي Gemini AI المباشر أولاً!
   const aiParsed = await parseIntentWithGeminiAi(userText);
 
   if (aiParsed && aiParsed.category !== "general_qa") {
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText, aiParsed);
   }
 
-  // 3. إذا كان سؤالاً عاماً (كالطقس ولينوفو): نسأل Gemini API مباشرة لنص الإجابة!
+  // 4. إذا كان سؤالاً عاماً (كالطقس ولينوفو): نسأل Gemini API مباشرة لنص الإجابة!
   const allKeys = await getAllActiveGeminiKeys();
   const systemPrompt = `أنت الذكاء الاصطناعي الفائق لمنظومة أبو الأكبر (Super Gemini AI Agent).
 أجب أبو الأكبر دائماً بكل ود وفصاحة وإصابة بالمعنى وبسطرين مبسطين! خاطبه دائماً بـ (يا أبو الأكبر)!`;
