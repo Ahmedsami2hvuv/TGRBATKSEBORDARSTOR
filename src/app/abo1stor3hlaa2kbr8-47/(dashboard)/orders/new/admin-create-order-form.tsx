@@ -548,7 +548,7 @@ export function AdminCreateOrderForm({
 
  return (
  <>
- <form action={formAction} className="space-y-4" encType="multipart/form-data">
+ <form action={formAction} className="space-y-4 pb-28" encType="multipart/form-data">
  <input type="hidden" name="adminSubmissionMode" value={submissionMode} />
  <input type="hidden" name="routeMode" value={routeMode} />
  <input type="hidden" name="linkedCustomerId" value={selectedEmployeeId} />
@@ -1708,17 +1708,44 @@ export function AdminCreateOrderForm({
 
  {state.error ? <p className={ad.error}>{state.error}</p> : null}
 
- <button type="submit" className={`${ad.btnPrimary} flex items-center justify-center gap-2`} disabled={!canSubmit || pending}>
- {pending ? "جارٍ التنفيذ..." : (
- <>
- {submissionMode === "prep_draft" ? (
- <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} /> إرسال طلب التجهيز</>
- ) : (
- <><DynamicIcon icon={icons?.ui_plus} fallback="+" width={18} height={18} /> إنشاء الطلب</>
- )}
- </>
- )}
- </button>
+   {/* الزر القياسي في نهاية الاستمارة */}
+  <button type="submit" className={`${ad.btnPrimary} flex items-center justify-center gap-2 mb-4`} disabled={!canSubmit || pending}>
+  {pending ? "جارٍ التنفيذ..." : (
+  <>
+  {submissionMode === "prep_draft" ? (
+  <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} /> إرسال طلب التجهيز</>
+  ) : (
+  <><DynamicIcon icon={icons?.ui_plus} fallback="+" width={18} height={18} /> إنشاء الطلب</>
+  )}
+  </>
+  )}
+  </button>
+
+  {/* الشريط السفلي العائم الثابت مثل زر رفع الطلب للزبائن */}
+  <div className="fixed bottom-0 inset-x-0 z-[120] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-[0_-10px_35px_rgba(0,0,0,0.15)] flex justify-center animate-in slide-in-from-bottom duration-300">
+    <div className="w-full max-w-3xl px-2 flex items-center gap-3">
+      <button 
+        type="submit" 
+        className={`${ad.btnPrimary} w-full flex items-center justify-center gap-2 py-3.5 text-base font-black rounded-2xl shadow-xl shadow-sky-500/25 active:scale-[0.98] transition-all`} 
+        disabled={!canSubmit || pending}
+      >
+        {pending ? (
+          <span className="flex items-center gap-2">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            جارٍ التنفيذ...
+          </span>
+        ) : (
+          <>
+            {submissionMode === "prep_draft" ? (
+              <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={22} height={22} /> إرسال طلب التجهيز</>
+            ) : (
+              <><DynamicIcon icon={icons?.ui_plus} fallback="+" width={22} height={22} /> إنشاء الطلب</>
+            )}
+          </>
+        )}
+      </button>
+    </div>
+  </div>
  </form>
 
  {blockedPhone && (
