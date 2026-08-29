@@ -80,11 +80,9 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
   const cleanQ = cleanArabicTextForMatch(queryText);
   if (!cleanQ) return allRegions.slice(0, 4);
 
-  // 1. تصفية الأثر بالكلمات المستخرجة فقط (مثلاً: جيكور أو حمدان)
   const words = cleanQ.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "منطقة", "منطقه", "مستلم", "سويه", "عدل", "غير"].includes(w));
   const mainKeyword = words.length > 0 ? words[words.length - 1] : cleanQ;
 
-  // 2. تصفية المناطق التي تحتوي اسم الكلمة صراحةً في الداتابيز
   const exactContains = allRegions.filter(r => {
     const cleanR = cleanArabicTextForMatch(r.name);
     return cleanR.includes(mainKeyword) || mainKeyword.includes(cleanR);
@@ -94,7 +92,6 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
     return exactContains;
   }
 
-  // 3. التراجع للبحث الذكي في حال عدم وجود مطابقة اسم صريحة
   return rankRegionsByQuery(mainKeyword, allRegions, 4);
 }
 
@@ -136,22 +133,26 @@ function extractCustomerPhoneFlexible(text: string): string {
 }
 
 /**
- * تنظيف واستخراج اسم المادة والمنتج الحقيقي فقط ومنع حشو جمل وأوامر التعديل صراحة
+ * تنظيف واستخراج اسم المادة والمنتج الحقيقي الفعلي بالنظافة المطلقة 100%
  */
 function extractCleanOrderType(text: string): string {
   if (!text) return "طلب جديد";
 
+  // الفلترة الذكية الفائقة لجميع كلمات الأوامر وأدوات الجر ومقدمات الرسالة
   let cleaned = text
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
-    .replace(/عدل عليه|عدل عليه سويه|سويه|عدل|غير|سوي لي|سوي/gi, "")
+    .replace(/عدل على|عدل عليه سويه|عدل عليه|سويه|عدل|غير|سوي لي|سوي|خلي/gi, "")
     .replace(/وقت الطلب.*|سعر الطلب.*|رقم الزبون.*|منطقه.*|منطقة.*/gi, "")
+    .replace(/\b(?:على|ع|إلى|الي|من|طلب|طلبية|باسم)\b/gi, "")
     .trim();
 
   cleaned = cleaned.replace(/(?:\+964|0)?7[3-9]\d{7,8}|\d+/g, "").trim();
 
-  if (cleaned.length >= 1 && cleaned.length <= 40) {
-    return cleaned;
+  // تصفية أجزاء النص لأخذ اسم المنتج الحقيقي (الكلمات المتبقية الأخيرة)
+  const words = cleaned.split(/\s+/).filter(w => w.length >= 2);
+  if (words.length > 0) {
+    return words.join(" ");
   }
 
   return "طلب جديد";
@@ -550,7 +551,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // تعديل اسم المنطقة وجلب الخيارات المطابقة الصريحة (جيكور، جيكور حزبه 1، إلخ) مع إصلاح رقم سعر التوصيل صراحة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -580,7 +580,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // تعديل أسعار الطلب والتوصيل الصريحة فقط عند ذكر "سعر التوصيل" أو "سعر البضاعة"
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
