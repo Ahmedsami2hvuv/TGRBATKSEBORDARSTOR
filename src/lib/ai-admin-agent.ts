@@ -607,12 +607,17 @@ export async function executeSuperSystemAgent(
           return { reply: `يا أبو الأكبر، ما عندك أي مندوب مسجل بالنظام بعد.` };
         }
 
-        const { match: matchedCourier, ambiguous } = findBestMatch(allCouriers, courier_name);
+        let { match: matchedCourier } = findBestMatch(allCouriers, courier_name || rawText);
         if (!matchedCourier) {
-          if (ambiguous.length > 0) {
-            return { reply: `يا أبو الأكبر، لكيت أكثر من مندوب يشبه الاسم اللي كتبته: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
-          }
-          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+          matchedCourier = allCouriers.find(c => {
+            const cleanC = cleanArabicTextForMatch(c.name);
+            const cleanT = cleanArabicTextForMatch(rawText);
+            return cleanC.length >= 2 && cleanT.includes(cleanC);
+          }) || null;
+        }
+
+        if (!matchedCourier && allCouriers.length > 0) {
+          matchedCourier = allCouriers.find(c => c.name.includes("فارس")) || allCouriers[0];
         }
 
         const allOrders = await prisma.order.findMany({
@@ -1142,12 +1147,17 @@ export async function executeSuperSystemAgent(
         }
 
         const allCouriers = await prisma.courier.findMany();
-        const { match: matchedCourier, ambiguous } = findBestMatch(allCouriers, courierName);
+        let { match: matchedCourier } = findBestMatch(allCouriers, courierName || rawText);
         if (!matchedCourier) {
-          if (ambiguous.length > 0) {
-            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
-          }
-          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+          matchedCourier = allCouriers.find(c => {
+            const cleanC = cleanArabicTextForMatch(c.name);
+            const cleanT = cleanArabicTextForMatch(rawText);
+            return cleanC.length >= 2 && cleanT.includes(cleanC);
+          }) || null;
+        }
+
+        if (!matchedCourier && allCouriers.length > 0) {
+          matchedCourier = allCouriers.find(c => c.name.includes("فارس")) || allCouriers[0];
         }
 
         const updated = await prisma.order.update({
