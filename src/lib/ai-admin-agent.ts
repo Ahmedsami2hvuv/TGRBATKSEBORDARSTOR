@@ -365,19 +365,25 @@ function extractCleanOrderType(text: string, shopName?: string): string {
  * استخراج الاسم الصريح المطلق للشريك وتجريد كافة الكلمات الأرقام والأفعال كلياً 100%
  */
 function extractTargetPartnerName(text: string): string {
-  if (!text) return "";
+  if (!text) return "الوالد";
+
+  if (text.includes("الوالد") || text.includes("للوالد") || text.includes("والد")) {
+    return "الوالد";
+  }
 
   let cleaned = text
     .replace(/(?:مية الف|مئة الف|خمسين الف|اربعين الف|ثلاثين الف|عشرين الف|خمسة عشر الف|خمسطعش الف|عشرة الاف|عشر الاف|تسعة الاف|تسع الاف|ثمانية الاف|ثمان الاف|سبعة الاف|سبع الاف|ستة الاف|ست الاف|خمسة الاف|خمس الاف|اربعة الاف|اربع الاف|ثلاثة الاف|ثلاث الاف|الفين|الف|مية|مئة|ميه|تسعين|ثمانين|سبعين|ستين|خمسين|اربعين|ثلاثين|عشرين|خمسطعش|اربعطعش|ثلاثطعش|اثناعش|دعش|عشرة|عشره|عشر|تسعة|تسعه|تسع|ثمانية|ثمانيه|ثمان|سبعة|سبعه|سبع|ستة|سته|ست|خمسة|خمسه|خمس|اربعة|اربعه|اربع|ثلاثة|ثلاثه|ثلاث|اثنان|ثنين|واحد|وحدة|وحده|\d+)/gi, "")
     .replace(/أخذت|اخذت|أعطيت|اعطيت|أنطيت|انطيت|نطيت|عطيت|تنزيل|تسديد|رصد|إضافة|اضافة|حساب/gi, "")
     .replace(/محل|مندوب|مجهز|مورد|كابتن|زبون|شريك|شخص|حساب|مستحقات/gi, "")
-    .replace(/\b(?:من|لـ|على|إلى|الي|مبلغ|بمقدار)\b/gi, "")
-    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "")
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, " ")
     .trim();
 
-  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  cleaned = cleaned.replace(/^(?:للوالد|الوالد)/i, "الوالد");
+  cleaned = cleaned.replace(/^(?:للـ|لـ|من|ع|على|إلى|الي)\s*/gi, "").trim();
 
-  return cleaned || "شريك";
+  const words = cleaned.split(/\s+/).filter(w => w.length >= 2 && !["خمسة", "خمسه", "خمس", "عشرة", "عشره", "عشر"].includes(w));
+
+  return words.join(" ").trim() || "الوالد";
 }
 
 /**
@@ -395,6 +401,12 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     if (cleanP === cleanTarget || cleanP === cleanQ || cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
       return p;
     }
+  }
+
+  // فحص شريك الوالد بشكل خاص
+  if (partnerQuery.includes("الوالد") || partnerQuery.includes("للوالد")) {
+    const wald = allPartners.find(p => p.name.includes("الوالد") || p.name.includes("والد"));
+    if (wald) return wald;
   }
 
   // فحص جدول الموردين المجهزين CompanyPreparer أيضاً لربطه ومزامنة الاسم فورياً
@@ -849,9 +861,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     (domain === "debts" ||
       rawText.includes("نطيت") ||
       rawText.includes("انطيت") ||
-      rawText.includes("أنطيت") ||
-      rawText.includes("إنطيت") ||
-      rawText.includes("عطيت") ||
       rawText.includes("أعطيت") ||
       rawText.includes("اعطيت") ||
       rawText.includes("اخذت") ||
