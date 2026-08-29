@@ -45,7 +45,7 @@ function cleanArabicTextForMatch(text: string): string {
 }
 
 /**
- * مطابقة ذكية مرنة لأسماء المحلات المباشرة (مثل أبو الأكبر، أبو سند، مطبخ البركات)
+ * مطابقة ذكية مرنة لأسماء المحلات المباشرة
  */
 async function findMatchingShopByQuery(queryText: string) {
   const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
@@ -53,7 +53,6 @@ async function findMatchingShopByQuery(queryText: string) {
 
   const cleanQuery = cleanArabicTextForMatch(queryText);
 
-  // 1. مطابقة صريحة لاسم المحل بالكامل
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
     if (cleanShopName.length > 2 && (cleanQuery.includes(cleanShopName) || cleanShopName.includes(cleanQuery))) {
@@ -61,7 +60,6 @@ async function findMatchingShopByQuery(queryText: string) {
     }
   }
 
-  // 2. مطابقة أجزاء اسم المحل بدون الكلمات العامة
   const words = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !["طلب", "طلبية", "سوي", "عدل", "غير", "سويه"].includes(w));
   for (const shop of allShops) {
     const cleanShopName = cleanArabicTextForMatch(shop.name);
@@ -90,6 +88,59 @@ function extractPrepItemsFromText(text: string): string {
 
   const cleanText = text.replace(/.*تجهيز|.*منطقة|.*هاتف|07\d{9}|7\d{9}/gi, "").trim();
   return cleanText || text;
+}
+
+/**
+ * البحث أو إنشاء الشريك التلقائي في دفتر الديون والشراكة (CreditBookPartner)
+ */
+async function findOrCreateCreditBookPartner(partnerQuery: string) {
+  const allPartners = await prisma.creditBookPartner.findMany();
+  const cleanQ = cleanArabicTextForMatch(partnerQuery);
+
+  // 1. مطابقة صريحة من دفتر الديون الحالي
+  for (const p of allPartners) {
+    const cleanP = cleanArabicTextForMatch(p.name);
+    if (cleanP.length > 1 && (cleanQ.includes(cleanP) || cleanP.includes(cleanQ))) {
+      return p;
+    }
+  }
+
+  // 2. البحث في جداول النظام (مندوبين، مجهزين، محلات)
+  const allCouriers = await prisma.courier.findMany();
+  for (const c of allCouriers) {
+    if (cleanQ.includes(cleanArabicTextForMatch(c.name))) {
+      return await prisma.creditBookPartner.create({
+        data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
+      });
+    }
+  }
+
+  const allShops = await prisma.shop.findMany();
+  for (const s of allShops) {
+    if (cleanQ.includes(cleanArabicTextForMatch(s.name))) {
+      return await prisma.creditBookPartner.create({
+        data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
+      });
+    }
+  }
+
+  const allPreps = await prisma.companyPreparer.findMany();
+  for (const pr of allPreps) {
+    if (cleanQ.includes(cleanArabicTextForMatch(pr.name))) {
+      return await prisma.creditBookPartner.create({
+        data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
+      });
+    }
+  }
+
+  // 3. إنشاء شريك جديد بالاسم المكتوب إذا لم يكن موجوداً
+  const extractedName = partnerQuery
+    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
+    .trim() || partnerQuery.trim() || "شريك جديد";
+
+  return await prisma.creditBookPartner.create({
+    data: { name: extractedName, type: "external" }
+  });
 }
 
 /**
@@ -130,7 +181,78 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const rawText = userText || "";
 
   // ==========================================
-  // 1. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
+  // 1. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (CREDIT BOOK TRANSACTIONS)
+  // ==========================================
+  if (
+    domain === "debts" ||
+    rawText.includes("اخذت") ||
+    rawText.includes("أخذت") ||
+    rawText.includes("اعطيت") ||
+    rawText.includes("أعطيت") ||
+    rawText.includes("انطيت") ||
+    rawText.includes("أنطيت") ||
+    rawText.includes("تنزيل") ||
+    rawText.includes("سدد") ||
+    rawText.includes("استلمت") ||
+    rawText.includes("قبضت") ||
+    rawText.includes("دفعت")
+  ) {
+    const isTook = rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل") || rawText.includes("سدد") || rawText.includes("استلمت") || rawText.includes("قبضت");
+    const kind = isTook ? "took" : "gave";
+    const actionTitle = isTook ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
+
+    // أ) استخراج الشريك أو الشخص
+    const partner = await findOrCreateCreditBookPartner(rawText);
+
+    // ب) استخراج المبلغ الرقمي أو بالحروف
+    const wordPrice = parseArabicWordsToNumber(rawText);
+    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
+    
+    let rawAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
+    // إذا كان المبلغ صغيراً (مثل 5 أو 10)، يتم اعتباره 5000 أو 10000 دينار ما لم يُحدد غير ذلك
+    let finalAmount = rawAmount < 100 ? rawAmount * 1000 : rawAmount;
+
+    // ج) تسجيل المعاملة بـ CreditBookTransaction
+    await prisma.creditBookTransaction.create({
+      data: {
+        partnerId: partner.id,
+        amount: new Decimal(finalAmount),
+        kind: kind,
+        note: `معاملة تلقائية بواسطة المساعد الصوتي: ${rawText}`
+      }
+    });
+
+    // د) حساب الرصيد الصافي الإجمالي الحالي للشخص
+    const allTx = await prisma.creditBookTransaction.findMany({
+      where: { partnerId: partner.id }
+    });
+
+    let totalGave = 0;
+    let totalTook = 0;
+    allTx.forEach(t => {
+      const val = t.amount.toNumber();
+      if (t.kind === "gave") totalGave += val;
+      else if (t.kind === "took") totalTook += val;
+    });
+
+    const netBalance = totalGave - totalTook;
+    let balanceStatus = "";
+
+    if (netBalance > 0) {
+      balanceStatus = `نطلبه (يطلبك): ${netBalance.toLocaleString()} دينار`;
+    } else if (netBalance < 0) {
+      balanceStatus = `يطلبنا (تطلبه): ${Math.abs(netBalance).toLocaleString()} دينار`;
+    } else {
+      balanceStatus = `الحساب متصفر بالكامل (0 دينار)`;
+    }
+
+    return {
+      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount.toLocaleString()} دينار\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+    };
+  }
+
+  // ==========================================
+  // 2. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
   // ==========================================
   if (
     rawText.includes("سوي لي طلب") ||
@@ -140,7 +262,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     rawText.includes("طلب جديد") ||
     rawText.includes("انشئ طلب")
   ) {
-    // أ) جلب أو مطابقة المحل الصريح المذكور بالحرف
     const matchingShop = await findMatchingShopByQuery(rawText);
     const firstShop = matchingShop || (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
 
@@ -148,7 +269,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       return { reply: "❌ لم يتم العثور على أي محل في النظام لرفع الطلب باسمه." };
     }
 
-    // ب) جلب أو مطابقة المنطقة
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
     let matchingRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
     
@@ -158,11 +278,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
     const region = matchingRegion || allRegions[0];
 
-    // ج) استخراج رقم هاتف الزبون
     const phoneMatch = rawText.match(/(?:\+964|0)?7[3-9]\d{8}/);
     const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
 
-    // د) استخراج السعر الحقيقي
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 10000);
@@ -170,7 +288,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const deliveryPriceNum = region?.deliveryPrice ? region.deliveryPrice.toNumber() : 5000;
     const totalAmountNum = priceNum + deliveryPriceNum;
 
-    // هـ) استخراج نوع/وصف الطلب والمنتج (مثل: روبيان)
     let orderType = "طلب جديد";
     if (rawText.includes("روبيان")) orderType = "روبيان";
     else {
@@ -178,7 +295,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (cleanType.length > 1) orderType = cleanType;
     }
 
-    // و) إنشاء الطلب حقيقياً في قاعدة البيانات
     const order = await prisma.order.create({
       data: {
         shopId: firstShop.id,
@@ -203,7 +319,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
+  // 3. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
     const extractedItems = extractPrepItemsFromText(rawText);
@@ -241,7 +357,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
+  // 4. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
   // ==========================================
   if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
     if (operation === "create" || rawText.includes("ضِف مندوب") || rawText.includes("إضافة مندوب")) {
