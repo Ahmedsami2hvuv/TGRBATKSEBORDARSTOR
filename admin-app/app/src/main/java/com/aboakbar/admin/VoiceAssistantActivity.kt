@@ -5,7 +5,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -142,7 +145,24 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
         }
 
+        checkOverlayPermissionAndStartFloatingService()
         checkPermissionAndStartListening()
+    }
+
+    private fun checkOverlayPermissionAndStartFloatingService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            } else {
+                startService(Intent(this, FloatingWidgetService::class.java))
+            }
+        } else {
+            startService(Intent(this, FloatingWidgetService::class.java))
+        }
     }
 
     private fun updateTtsButtonUi() {
@@ -213,7 +233,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             return
         }
 
-        speechRecognizer?.destroy()
+        stopListening()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -221,8 +241,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 15000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 15000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
@@ -247,8 +268,19 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             override fun onError(error: Int) {
                 isListening = false
-                tvStatus.text = "⚠️ انقر على الميكروفون للتحدث أو اضغط الباور مجدداً"
                 progressBar.visibility = View.GONE
+
+                // إذا حدث صمت مبكر أو انقطاع وقت التحدث، يُعزى استكمال الاستماع تلقائياً دون إغلاق المايك
+                if (!isMicPaused) {
+                    tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
+                    tvStatus.postDelayed({
+                        if (!isMicPaused && !isListening) {
+                            startListening()
+                        }
+                    }, 500)
+                } else {
+                    tvStatus.text = "🛑 الميكروفون متوقف - انقر للتحدث"
+                }
             }
 
             override fun onResults(results: Bundle?) {
@@ -259,8 +291,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     tvTranscript.text = "💬 \"$text\""
                     sendToAdminVoiceApi(text)
                 } else {
-                    tvStatus.text = "⚠️ لم يتم التعرف على الكلمات"
-                    progressBar.visibility = View.GONE
+                    if (!isMicPaused) {
+                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
+                        startListening()
+                    }
                 }
             }
 

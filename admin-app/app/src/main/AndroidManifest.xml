@@ -109,6 +109,11 @@
             android:enabled="true"
             android:exported="false" />
 
+        <service
+            android:name="com.aboakbar.admin.FloatingWidgetService"
+            android:enabled="true"
+            android:exported="false" />
+
         <meta-data
             android:name="com.onesignal.NotificationServiceExtension"
             android:value="com.aboakbar.admin.MyNotificationServiceExtension" />
@@ -129,20 +134,23 @@
             android:launchMode="singleInstance"
             android:taskAffinity=""
             android:excludeFromRecents="true"
-            android:noHistory="true"
+            android:showOnLockScreen="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.ASSIST" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.VOICE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
         <service
             android:name="com.aboakbar.admin.AdminVoiceInteractionService"
+            android:label="مدير النظام - مساعد الذكاء الاصطناعي الصوتي"
             android:permission="android.permission.BIND_VOICE_INTERACTION"
-            android:exported="true"
-            android:label="تطبيق المدير - المساعد الرقمي">
+            android:exported="true">
             <meta-data
                 android:name="android.voice_interaction"
                 android:resource="@xml/voice_interaction_service" />
@@ -155,16 +163,6 @@
             android:name="com.aboakbar.admin.AdminVoiceInteractionSessionService"
             android:permission="android.permission.BIND_VOICE_INTERACTION"
             android:exported="true" />
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
 
     </application>
 
