@@ -665,16 +665,20 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 1. الأولوية المطلقة: قسم إنشاء طلب مبيعات جديد عالي الدقة (CREATE NEW SALES ORDER)
+  // 1. القالب الأمني الفولاذي الأول: إنشاء طلب مبيعات جديد من محل (CREATE NEW SALES ORDER)
   // ==========================================
   if (
     !rawText.includes("تجهيز") &&
-    (rawText.includes("سوي لي طلب") ||
+    !rawText.includes("مسودة") &&
+    (rawText.includes("سوي لي طلب من محل") ||
+      rawText.includes("سوي طلب من محل") ||
+      rawText.includes("سويلي طلب من محل") ||
+      rawText.includes("سوي لي طلب") ||
       rawText.includes("سوي طلب") ||
       rawText.includes("سويلي طلب") ||
       rawText.includes("ضيف طلب") ||
-      rawText.includes("طلب جديد") ||
-      rawText.includes("انشئ طلب"))
+      rawText.includes("طلب جديد من محل") ||
+      rawText.includes("طلب جديد"))
   ) {
     const matchingShop = await findMatchingShopByQuery(rawText);
 
@@ -758,7 +762,50 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. إدارة وتصفير وإظهار المندوبين بـ أولوية فائقة (COURIER ZERO & SALARY MANAGEMENT)
+  // 2. القالب الأمني الفولاذي الثاني: إنشاء طلب مسودة تجهيز ومشتريات مواد (PREP SHOPPING DRAFTS)
+  // ==========================================
+  if (
+    domain === "prep_drafts" ||
+    rawText.includes("سوي طلب تجهيز") ||
+    rawText.includes("سوي لي طلب تجهيز") ||
+    rawText.includes("تجهيز") ||
+    rawText.includes("مسودة تجهيز") ||
+    rawText.includes("مشتريات")
+  ) {
+    const extractedItems = extractPrepItemsFromText(rawText);
+    const phone = extractCustomerPhoneFlexible(rawText);
+
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
+    const matchingRegion = matchedRegions[0] || null;
+
+    const allPreparers = await prisma.companyPreparer.findMany();
+    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
+
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        preparerId: assignedPreparer ? assignedPreparer.id : null,
+        rawListText: extractedItems,
+        customerPhone: phone,
+        customerRegionId: matchingRegion?.id || null,
+        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
+        status: "draft"
+      }
+    });
+
+    const preparerButtons = allPreparers.map(p => ({
+      text: `👨‍🍳 ${p.name}`,
+      action: `assign_prep_${p.id}`
+    }));
+
+    return {
+      reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
+      buttons: preparerButtons
+    };
+  }
+
+  // ==========================================
+  // 3. إدارة وتصفير وإظهار المندوبين بـ أولوية فائقة (COURIER ZERO & SALARY MANAGEMENT)
   // ==========================================
   if (
     domain === "couriers" ||
@@ -814,7 +861,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
+  // 4. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
   // ==========================================
   if (
     domain === "couriers" && operation === "create" ||
@@ -848,7 +895,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 4. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
+  // 5. القالب الأمني الفولاذي الثالث: إدارة ورصد وتنزيل الديون (DEBTS & TRANSACTIONS)
   // ==========================================
   if (
     !rawText.includes("سوي لي طلب") &&
@@ -952,50 +999,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     return {
       reply: `تم يا أبو الأكبر! ${actionWord} ${finalAmount} بحساب (${partner.name}) ${balanceText}`
-    };
-  }
-
-  // ==========================================
-  // 5. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
-  // ==========================================
-  if (
-    domain === "prep_drafts" ||
-    rawText.includes("تجهيز") ||
-    rawText.includes("مسودة تجهيز") ||
-    rawText.includes("مشتريات") ||
-    rawText.includes("طماطه") ||
-    rawText.includes("بتيته") ||
-    rawText.includes("خيار")
-  ) {
-    const extractedItems = extractPrepItemsFromText(rawText);
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-    const matchingRegion = matchedRegions[0] || null;
-
-    const allPreparers = await prisma.companyPreparer.findMany();
-    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
-
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId: assignedPreparer ? assignedPreparer.id : null,
-        rawListText: extractedItems,
-        customerPhone: phone,
-        customerRegionId: matchingRegion?.id || null,
-        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
-        status: "draft"
-      }
-    });
-
-    const preparerButtons = allPreparers.map(p => ({
-      text: `👨‍🍳 ${p.name}`,
-      action: `assign_prep_${p.id}`
-    }));
-
-    return {
-      reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
-      buttons: preparerButtons
     };
   }
 
