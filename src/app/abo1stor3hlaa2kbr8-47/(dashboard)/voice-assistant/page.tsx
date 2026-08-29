@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mic, MicOff, Send, Sparkles, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Volume2, VolumeX } from "lucide-react";
 
 export default function VoiceAssistantPage() {
   const [inputText, setInputText] = useState("");
@@ -10,9 +10,15 @@ export default function VoiceAssistantPage() {
   const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recognition, setRecognition] = useState<any>(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const savedMute = localStorage.getItem("voice_assistant_muted");
+      if (savedMute === "true") {
+        setIsMuted(true);
+      }
+
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         const rec = new SpeechRecognition();
@@ -40,6 +46,28 @@ export default function VoiceAssistantPage() {
       }
     }
   }, []);
+
+  const toggleMute = () => {
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("voice_assistant_muted", String(newMuteState));
+      if (newMuteState && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#\-]|https?:\/\/\S+/g, "");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "ar-SA";
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
 
   const toggleListening = () => {
     if (!recognition) {
@@ -75,8 +103,10 @@ export default function VoiceAssistantPage() {
       const data = await res.json();
       if (data.ok) {
         setResponse(data.reply);
+        speakText(data.reply);
       } else {
-        setError(data.message || data.error || "حدث خطأ أثناء معالجة الأمر");
+        const errText = data.message || data.error || "حدث خطأ أثناء معالجة الأمر";
+        setError(errText);
       }
     } catch (err: any) {
       setError(err.message || "تعذر الاتصال بالسيرفر");
@@ -99,6 +129,29 @@ export default function VoiceAssistantPage() {
               أمر المبيعات والتوصيل والتجهيز والديون بصوتك المباشر أو بالنص بنقرة زر واحدة من هاتفك!
             </p>
           </div>
+
+          {/* Toggle Mute Button */}
+          <button
+            onClick={toggleMute}
+            className={`p-3 rounded-2xl flex items-center gap-2 transition-all shadow-md font-bold text-sm ${
+              isMuted
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-900 border border-slate-700"
+                : "bg-white text-emerald-700 hover:bg-emerald-50 shadow-emerald-900/20"
+            }`}
+            title={isMuted ? "الصوت مكتوم دائماً - انقر للتشغيل" : "الصوت مفعل - انقر للكتم"}
+          >
+            {isMuted ? (
+              <>
+                <VolumeX className="w-5 h-5 text-red-400" />
+                <span>مكتوم دائماً</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-5 h-5 text-emerald-600 animate-bounce" />
+                <span>الصوت مفعل</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 

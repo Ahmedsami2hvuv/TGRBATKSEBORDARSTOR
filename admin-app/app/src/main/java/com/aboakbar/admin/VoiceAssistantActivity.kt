@@ -2,6 +2,7 @@ package com.aboakbar.admin
 
 import android.Manifest
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
@@ -51,6 +52,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private var isMicPaused = false
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val SERVER_URL = "https://aboakbr.com/api/ai/admin-voice"
+    private val PREFS_NAME = "AdminVoiceAssistantPrefs"
+    private val KEY_TTS_MUTED = "is_tts_muted"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +73,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         buttonsContainer = findViewById(R.id.buttonsContainer)
         btnToggleTts = findViewById(R.id.btnToggleTts)
         transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
+
+        // جلب تفضيل كتم الصوت المحفوظ دائماً
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
+        updateTtsButtonUi()
 
         textToSpeech = TextToSpeech(this, this)
 
@@ -109,17 +117,17 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
         }
 
+        // قفل وتشغيل القراءة الصوتية وحفظها بشكل دائم في SharedPreferences
         btnToggleTts.setOnClickListener {
             isTtsMuted = !isTtsMuted
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_TTS_MUTED, isTtsMuted).apply()
+            updateTtsButtonUi()
+
             if (isTtsMuted) {
                 textToSpeech?.stop()
-                btnToggleTts.text = "🔇 مكتوم"
-                btnToggleTts.setBackgroundColor(Color.parseColor("#64748B"))
-                Toast.makeText(this, "تم إيقاف القراءة الصوتية", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "تم قفل وكتم القراءة الصوتية دائماً", Toast.LENGTH_SHORT).show()
             } else {
-                btnToggleTts.text = "🔊 مفعل"
-                btnToggleTts.setBackgroundColor(Color.parseColor("#0284C7"))
-                Toast.makeText(this, "تم تفعيل القراءة الصوتية", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "تم تشغيل وتفعيل القراءة الصوتية", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -137,10 +145,16 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         checkPermissionAndStartListening()
     }
 
-    /**
-     * عند ضغط المدير على زر الباور مطولاً والمساعد الصوتي مفتوح أصلًا في الشاشة،
-     * يتم إرسال Intent جديد ويتم استدعاء onNewIntent للبدء التلقائي في الاستماع للأمر الجديد فوراً!
-     */
+    private fun updateTtsButtonUi() {
+        if (isTtsMuted) {
+            btnToggleTts.text = "🔇 مكتوم"
+            btnToggleTts.setBackgroundColor(Color.parseColor("#64748B"))
+        } else {
+            btnToggleTts.text = "🔊 مفعل"
+            btnToggleTts.setBackgroundColor(Color.parseColor("#0284C7"))
+        }
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
