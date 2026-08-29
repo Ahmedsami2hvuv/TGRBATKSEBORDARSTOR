@@ -121,11 +121,15 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification_small" />
 
+        <!-- المساعد الصوتي المستقل كلياً الشفاف الذي يظهر فوق أي تطبيق بدون فتح تطبيق الأدمن -->
         <activity
             android:name="com.aboakbar.admin.VoiceAssistantActivity"
             android:theme="@style/Theme.TransparentVoiceAssistant"
             android:label="تطبيق المدير - المساعد الرقمي"
-            android:launchMode="singleTask"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.ASSIST" />
