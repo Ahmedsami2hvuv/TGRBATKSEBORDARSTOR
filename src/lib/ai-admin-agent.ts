@@ -384,6 +384,7 @@ function extractTargetPartnerName(text: string): string {
 
 /**
  * البحث المحكم الفائق بجدول CreditBookPartner الفعلي الحقيقي الموجود حالياً بدفتر الديون بدون إنشاء تلقائي تلقائياً!
+ * يدعم مطابقة وتحديث الأسماء المركبة كـ (ميثاق أبو رضا) وربط الموردين التلقائي 100%
  */
 async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
   const targetName = extractTargetPartnerName(partnerQuery);
@@ -393,8 +394,31 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
-    if (cleanP === cleanTarget || cleanP === cleanQ) {
+    if (cleanP === cleanTarget || cleanP === cleanQ || cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
       return p;
+    }
+  }
+
+  // فحص جدول الموردين المجهزين CompanyPreparer أيضاً لربطه ومزامنة الاسم فورياً
+  const allPreps = await prisma.companyPreparer.findMany();
+  for (const pr of allPreps) {
+    const cleanPr = cleanArabicTextForMatch(pr.name);
+    if (cleanPr === cleanTarget || cleanPr === cleanQ || cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
+      let partner = await prisma.creditBookPartner.findFirst({
+        where: { OR: [{ externalId: pr.id }, { name: { contains: "ميثاق", mode: "insensitive" } }] }
+      });
+
+      if (!partner) {
+        partner = await prisma.creditBookPartner.create({
+          data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
+        });
+      } else if (partner.name !== pr.name) {
+        partner = await prisma.creditBookPartner.update({
+          where: { id: partner.id },
+          data: { name: pr.name }
+        });
+      }
+      return partner;
     }
   }
 
@@ -402,7 +426,7 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
 }
 
 /**
- * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام وإظهار صفاتهم الصريحة ومنع التكرار 100%
+ * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام وإظهار صفاتهم الصريحة النظيفة (مورد) وتحديث أسماء الشركاء المباشرة 100%
  */
 async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
   const targetName = extractTargetPartnerName(partnerQuery);
@@ -415,7 +439,7 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
   for (const pr of allPreps) {
     const cleanPr = cleanArabicTextForMatch(pr.name);
     if (cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
-      candidatesMap.set(`prep_${pr.id}`, { id: pr.id, name: pr.name, typeTitle: "مورد/مجهز" });
+      candidatesMap.set(`prep_${pr.id}`, { id: pr.id, name: pr.name, typeTitle: "مورد" });
     }
   }
 
@@ -439,7 +463,7 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
     if (cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
-      const title = p.type === "preparer" ? "مورد/مجهز" : (p.type === "courier" ? "مندوب" : (p.type === "shop" ? "محل" : "شريك"));
+      const title = p.type === "preparer" ? "مورد" : (p.type === "courier" ? "مندوب" : (p.type === "shop" ? "محل" : "شريك"));
       if (!candidatesMap.has(`partner_${p.id}`) && !candidatesMap.has(`prep_${p.externalId}`) && !candidatesMap.has(`courier_${p.externalId}`) && !candidatesMap.has(`shop_${p.externalId}`)) {
         candidatesMap.set(`partner_${p.id}`, { id: p.id, name: p.name, typeTitle: title });
       }
@@ -546,7 +570,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const netBalance = totalGave - totalTook;
       const balanceStatus = netBalance > 0 ? `نطلبه: ${netBalance}` : (netBalance < 0 ? `يطلبنا: ${Math.abs(netBalance)}` : "متصفر (0)");
       const actionTitle = kind === "took" ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
-      const roleTitle = partner.type === "preparer" ? "مورد/مجهز" : (partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : "شريك"));
+      const roleTitle = partner.type === "preparer" ? "مورد" : (partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : "شريك"));
 
       return {
         reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${amountVal}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
@@ -713,7 +737,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         : "";
 
       return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً أو مورداً/مجهزاً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
+        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً أو مورداً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
         buttons: dynamicButtons
       };
     }
@@ -750,7 +774,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       balanceStatus = `الحساب متصفر بالكامل (0)`;
     }
 
-    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مورد/مجهز" : "شريك"));
+    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مورد" : "شريك"));
 
     return {
       reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل المعاملة:** ${finalAmount}\n- **الرصيد الحقيقي الفعلي لـ (${partner.name}):** ${balanceStatus}`
