@@ -14,6 +14,35 @@ function parseCustomSystemIntent(userText: string): any {
   const text = userText.trim();
   const cleanQ = text.toLowerCase();
 
+  // 0. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
+  if (
+    cleanQ.includes("سويهن") ||
+    cleanQ.includes("سوي كل") ||
+    cleanQ.includes("غير كل") ||
+    cleanQ.includes("طلبات فلان") ||
+    (cleanQ.includes("طلبات") && (cleanQ.includes("تم الاستلام") || cleanQ.includes("مكتمل") || cleanQ.includes("واصل") || cleanQ.includes("مرفوض") || cleanQ.includes("مسند")))
+  ) {
+    let targetStatus = "delivered";
+    if (cleanQ.includes("تم الاستلام") || cleanQ.includes("واصل")) targetStatus = "delivered";
+    else if (cleanQ.includes("مكتمل") || cleanQ.includes("مكتملة")) targetStatus = "completed";
+    else if (cleanQ.includes("مرفوض") || cleanQ.includes("مرفوضة")) targetStatus = "rejected";
+    else if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("معلق")) targetStatus = "pending";
+    else if (cleanQ.includes("مسند") || cleanQ.includes("بانتظار")) targetStatus = "assigned";
+
+    let courierMatch = text.match(/(?:مندوب|المندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:اللي|الي|سويهن|سويها|كلها|كلهن)|$)/i);
+    let courierName = courierMatch ? courierMatch[1].trim() : null;
+
+    let shopMatch = text.match(/(?:محل|المحل|طلبات محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:اللي|الي|سويهن|سويها|كلها|كلهن)|$)/i);
+    let shopName = shopMatch ? shopMatch[1].trim() : null;
+
+    return {
+      category: "bulk_order_status_update",
+      target_status: targetStatus,
+      courier_name: courierName,
+      shop_name: shopName
+    };
+  }
+
   // 1. فئة إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
@@ -224,6 +253,62 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
 export async function executeSuperSystemAgent(args: any, userText: string, aiParsed?: any) {
   const rawText = userText || "";
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
+
+  // ==========================================
+  // 0. التحديث الجماعي الفائق لحالات طلبات مندوبين أو محلات معينة (BULK ORDER STATUS UPDATE)
+  // ==========================================
+  if (parsed?.category === "bulk_order_status_update") {
+    const { target_status, courier_name, shop_name } = parsed;
+    let countUpdated = 0;
+    let targetTitle = "الطلبات";
+
+    if (courier_name) {
+      const allCouriers = await prisma.courier.findMany();
+      const matchedCourier = allCouriers.find(c => courier_name.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(courier_name.toLowerCase()));
+
+      if (matchedCourier) {
+        const result = await prisma.order.updateMany({
+          where: { assignedCourierId: matchedCourier.id },
+          data: { status: target_status }
+        });
+        countUpdated = result.count;
+        targetTitle = `طلبات المندوب (${matchedCourier.name})`;
+      }
+    } else if (shop_name) {
+      const allShops = await prisma.shop.findMany();
+      const matchedShop = allShops.find(s => shop_name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(shop_name.toLowerCase()));
+
+      if (matchedShop) {
+        const result = await prisma.order.updateMany({
+          where: { shopId: matchedShop.id },
+          data: { status: target_status }
+        });
+        countUpdated = result.count;
+        targetTitle = `طلبات محل (${matchedShop.name})`;
+      }
+    } else {
+      const result = await prisma.order.updateMany({
+        where: { status: { in: ["pending", "assigned"] } },
+        data: { status: target_status }
+      });
+      countUpdated = result.count;
+      targetTitle = "جميع الطلبات المعلقة والمسندة";
+    }
+
+    const statusTitleMap: Record<string, string> = {
+      delivered: "تم الاستلام",
+      completed: "مكتملة",
+      rejected: "مرفوضة",
+      pending: "جديدة معلقة",
+      assigned: "بانتظار التوصيل"
+    };
+
+    const statusName = statusTitleMap[target_status] || target_status;
+
+    return {
+      reply: `تم يا أبو الأكبر! غيرت حالة (${countUpdated}) من ${targetTitle} إلى (${statusName})`
+    };
+  }
 
   // ==========================================
   // 0.1 معالجة اختيار المحل المباشر بالنقر أو النطق بعد المقترح (SELECT SHOP ACTION)
