@@ -8,25 +8,65 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
- * تحويل المبالغ والأرقام المنطوقة بالحروف العربية إلى أرقام رقمية صريحة (بدون أصفار زائدة)
+ * تحويل كااااافة المبالغ والأرقام المنطوقة بالحروف أو بالأرقام العربية (من 1 إلى الملايين) إلى قيم رقمية صريحة
  */
 function parseArabicWordsToNumber(text: string): number | null {
   if (!text) return null;
   const t = text.toLowerCase().trim();
 
-  if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف")) return 5;
+  // 1. الأرقام الرقمية الصريحة المحفورة بالنص (مثلاً: 250 أو 15 أو 50)
+  const digitMatch = t.match(/\b\d+\b/);
+  if (digitMatch) {
+    const num = Number(digitMatch[0]);
+    if (num > 0 && num < 1000000) return num;
+  }
+
+  // 2. الملايين والآلاف
+  if (t.includes("مليونين") || t.includes("مليونان")) return 2000;
+  if (t.includes("مليون")) return 1000;
+
+  if (t.includes("مية الف") || t.includes("مئة الف") || t.includes("100 الف")) return 100;
+  if (t.includes("خمسين الف") || t.includes("50 الف")) return 50;
+  if (t.includes("اربعين الف") || t.includes("40 الف")) return 40;
+  if (t.includes("ثلاثين الف") || t.includes("30 الف")) return 30;
+  if (t.includes("عشرين الف") || t.includes("20 الف")) return 20;
+  if (t.includes("خمسة عشر الف") || t.includes("خمسطعش الف") || t.includes("15 الف")) return 15;
   if (t.includes("عشرة الاف") || t.includes("عشر الاف") || t.includes("10 الاف")) return 10;
-  if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف")) return 3;
+  if (t.includes("تسعة الاف") || t.includes("تسع الاف") || t.includes("9 الاف")) return 9;
+  if (t.includes("ثمانية الاف") || t.includes("ثمان الاف") || t.includes("8 الاف")) return 8;
+  if (t.includes("سبعة الاف") || t.includes("سبع الاف") || t.includes("7 الاف")) return 7;
+  if (t.includes("ستة الاف") || t.includes("ست الاف") || t.includes("6 الاف")) return 6;
+  if (t.includes("خمسة الاف") || t.includes("خمس الاف") || t.includes("5 الاف")) return 5;
   if (t.includes("اربعة الاف") || t.includes("اربع الاف") || t.includes("4 الاف")) return 4;
+  if (t.includes("ثلاثة الاف") || t.includes("ثلاث الاف") || t.includes("3 الاف")) return 3;
   if (t.includes("الفين")) return 2;
   if (t.includes("الف")) return 1;
 
-  if (t.includes("خمسة") || t.includes("خمسه") || t.includes("خمس")) return 5;
+  // 3. الأحاد والعشرات بالحروف
+  if (t.includes("مية") || t.includes("مئة") || t.includes("ميه")) return 100;
+  if (t.includes("تسعين")) return 90;
+  if (t.includes("ثمانين")) return 80;
+  if (t.includes("سبعين")) return 70;
+  if (t.includes("ستين")) return 60;
+  if (t.includes("خمسين")) return 50;
+  if (t.includes("اربعين")) return 40;
+  if (t.includes("ثلاثين")) return 30;
+  if (t.includes("عشرين")) return 20;
+  if (t.includes("خمسطعش") || t.includes("خمسة عشر")) return 15;
+  if (t.includes("اربعطعش") || t.includes("اربعة عشر")) return 14;
+  if (t.includes("ثلاثطعش") || t.includes("ثلاثة عشر")) return 13;
+  if (t.includes("اثناعش") || t.includes("اثنا عشر")) return 12;
+  if (t.includes("دعش") || t.includes("احد عشر")) return 11;
   if (t.includes("عشرة") || t.includes("عشره") || t.includes("عشر")) return 10;
-  if (t.includes("ثلاثة") || t.includes("ثلاثه") || t.includes("ثلاث")) return 3;
+  if (t.includes("تسعة") || t.includes("تسعه") || t.includes("تسع")) return 9;
+  if (t.includes("ثمانية") || t.includes("ثمانيه") || t.includes("ثمان")) return 8;
+  if (t.includes("سبعة") || t.includes("سبعه") || t.includes("سبع")) return 7;
+  if (t.includes("ستة") || t.includes("سته") || t.includes("ست")) return 6;
+  if (t.includes("خمسة") || t.includes("خمسه") || t.includes("خمس")) return 5;
   if (t.includes("اربعة") || t.includes("اربعه") || t.includes("اربع")) return 4;
-  if (t.includes("واحد") || t.includes("وحدة") || t.includes("وحده")) return 1;
+  if (t.includes("ثلاثة") || t.includes("ثلاثه") || t.includes("ثلاث")) return 3;
   if (t.includes("اثنان") || t.includes("ثنين")) return 2;
+  if (t.includes("واحد") || t.includes("وحدة") || t.includes("وحده")) return 1;
 
   return null;
 }
@@ -330,7 +370,7 @@ function extractTargetPartnerName(text: string): string {
   if (!text) return "";
 
   let cleaned = text
-    .replace(/(?:خمسة|خمسه|خمس|عشرة|عشره|عشر|ثلاثة|ثلاثه|ثلاث|اربعة|اربعه|اربع|واحد|وحدة|وحده|اثنان|ثنين|الفين|الف|آلاف|الاف|\d+)/gi, "")
+    .replace(/(?:مية الف|مئة الف|خمسين الف|اربعين الف|ثلاثين الف|عشرين الف|خمسة عشر الف|خمسطعش الف|عشرة الاف|عشر الاف|تسعة الاف|تسع الاف|ثمانية الاف|ثمان الاف|سبعة الاف|سبع الاف|ستة الاف|ست الاف|خمسة الاف|خمس الاف|اربعة الاف|اربع الاف|ثلاثة الاف|ثلاث الاف|الفين|الف|مية|مئة|ميه|تسعين|ثمانين|سبعين|ستين|خمسين|اربعين|ثلاثين|عشرين|خمسطعش|اربعطعش|ثلاثطعش|اثناعش|دعش|عشرة|عشره|عشر|تسعة|تسعه|تسع|ثمانية|ثمانيه|ثمان|سبعة|سبعه|سبع|ستة|سته|ست|خمسة|خمسه|خمس|اربعة|اربعه|اربع|ثلاثة|ثلاثه|ثلاث|اثنان|ثنين|واحد|وحدة|وحده|\d+)/gi, "")
     .replace(/أخذت|اخذت|أعطيت|اعطيت|أنطيت|انطيت|نطيت|عطيت|تنزيل|تسديد|رصد|إضافة|اضافة|حساب/gi, "")
     .replace(/محل|مندوب|مجهز|مورد|كابتن|زبون|شريك|شخص|حساب|مستحقات/gi, "")
     .replace(/\b(?:من|لـ|على|إلى|الي|مبلغ|بمقدار)\b/gi, "")
@@ -1195,9 +1235,10 @@ export async function processAdminAiMessage(
     parts: [{ text: userText }]
   });
 
-  const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
-لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-تأكد من استخراج اسم الشريك النظيف الصريح كـ (الوالد) أو (ميثاق) وتجريد كافة الأرقام اللفظية والحرفية (خمسة/عشرة) كلياً من اسم الشريك، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+  const systemPrompt = `أنت الذكاء الاصطناعي الفائق ومساعد النظام الشامل المتكامل (Super Gemini AI Agent) التابع لمنظومة أبو الأكبر.
+أنت ذكاء اصطناعي فائق وعاقل ومرن جداً، تجيب وتتحدث وتستجيب بكل ذكاء وإبداع وفصاحة على أي سؤال أو استفسار أو اختبار يسأله أبو الأكبر!
+سواء كان السؤال عن النظام، الديون، المحلات، الطلبات، الأرقام والمبالغ، أو أي سؤال عام أو خاص في الحياة والعمل والتكنولوجيا!
+خاطب أبو الأكبر دائماً بكل احترام وود (يا أبو الأكبر) وأجب بمرونة وذكاء مطلق!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
