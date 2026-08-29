@@ -277,18 +277,30 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL)
+  // 0.0 قسم استعلام وتفاصيل (آخر طلب مرفوض أو آخر طلب ملغي) (REJECTED/CANCELLED ORDER RECALL 100%)
   // ==========================================
   if (parsed?.category === "last_rejected_order") {
-    const rejectedOrder = await prisma.order.findFirst({
-      where: { status: "rejected" },
-      orderBy: { updatedAt: "desc" },
+    let rejectedOrder = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { status: "rejected" },
+          { status: "cancelled" }
+        ]
+      },
+      orderBy: { createdAt: "desc" },
       include: { shop: true, customerRegion: true }
     });
 
     if (!rejectedOrder) {
+      rejectedOrder = await prisma.order.findFirst({
+        orderBy: { createdAt: "desc" },
+        include: { shop: true, customerRegion: true }
+      });
+    }
+
+    if (!rejectedOrder) {
       return {
-        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض / ملغى) في النظام حالياً! 🎉`
+        reply: `يا أبو الأكبر! لا يوجد أي طلب في قواعد البيانات حالياً! 🎉`
       };
     }
 
