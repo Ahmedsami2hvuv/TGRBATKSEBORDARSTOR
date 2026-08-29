@@ -217,6 +217,9 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("سوي لها إلغاء") ||
     cleanQ.includes("سويله إلغاء") ||
     cleanQ.includes("سويله رفض") ||
+    cleanQ.includes("حوله إلى مرفوض") ||
+    cleanQ.includes("حوله الى مرفوض") ||
+    cleanQ.includes("حوله مرفوض") ||
     (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض") && !cleanQ.includes("ملغي"))
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
@@ -230,6 +233,33 @@ function parseCustomSystemIntent(userText: string): any {
       order_number: orderNum,
       shop_name: shopName
     };
+  }
+
+  // 0.61 تغيير حالة طلب برقم محدد صريح بالمنطوق (مثل: طلب رقم 2042 حوله إلى مرفوض)
+  if (
+    cleanQ.includes("حوله الى") ||
+    cleanQ.includes("حوله إلى") ||
+    cleanQ.includes("حوله لـ") ||
+    cleanQ.includes("حوله") ||
+    cleanQ.includes("غير حالة") ||
+    cleanQ.includes("سوي طلب")
+  ) {
+    const orderNumMatch = text.match(/\b\d{3,5}\b/);
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
+
+    let targetStatus = "rejected";
+    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض")) targetStatus = "rejected";
+    else if (cleanQ.includes("واصل") || cleanQ.includes("تم الاستلام") || cleanQ.includes("مكتمل")) targetStatus = "delivered";
+    else if (cleanQ.includes("جديد") || cleanQ.includes("معلق")) targetStatus = "pending";
+    else if (cleanQ.includes("مسند")) targetStatus = "assigned";
+
+    if (orderNum) {
+      return {
+        category: "order_single_status_change",
+        order_number: orderNum,
+        target_status: targetStatus
+      };
+    }
   }
 
   // 1. التحديث الجماعي لحالات طلبات محلات أو مندوبين معينين
@@ -808,6 +838,29 @@ export async function executeSuperSystemAgent(
         });
 
         return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)` };
+      }
+
+      case "order_single_status_change": {
+        const { order_number, target_status } = parsed;
+        let targetOrder = null;
+        if (order_number) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
+        } else if (ctx.lastOrderNumber) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: ctx.lastOrderNumber }, include: { shop: true } });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر! لم أجد الطلب رقم #${order_number} في قواعد البيانات لتعديله!` };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { status: target_status }
+        });
+
+        const statusAr = target_status === "rejected" ? "مرفوض" : target_status === "delivered" ? "واصل" : target_status === "assigned" ? "مسند" : "معلق";
+
+        return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} إلى (${statusAr})` };
       }
 
       case "bulk_order_status_update": {
