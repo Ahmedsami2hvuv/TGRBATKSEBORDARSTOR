@@ -568,12 +568,19 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       });
 
       const netBalance = totalGave - totalTook;
-      const balanceStatus = netBalance > 0 ? `نطلبه: ${netBalance}` : (netBalance < 0 ? `يطلبنا: ${Math.abs(netBalance)}` : "متصفر (0)");
-      const actionTitle = kind === "took" ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
-      const roleTitle = partner.type === "preparer" ? "مورد" : (partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : "شريك"));
+      let balanceText = "";
+      if (netBalance > 0) {
+        balanceText = `وصار نطلبه (${netBalance})`;
+      } else if (netBalance < 0) {
+        balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
+      } else {
+        balanceText = `وصار الحساب متصفر (0)`;
+      }
+
+      const actionWord = kind === "took" ? "نزلت" : "ضفت";
 
       return {
-        reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${amountVal}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+        reply: `تم يا أبو الأكبر! ${actionWord} ${amountVal} بحساب (${partner.name}) ${balanceText}`
       };
     }
   }
@@ -600,9 +607,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     });
 
-    const actionTitle = kind === "took" ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
+    const actionWord = kind === "took" ? "نزلت" : "ضفت";
     return {
-      reply: `✅ **تم إنشاء الحساب الجديد ورصد المبلغ بنجاح يا أبو الأكبر بناءً على موافقتك الصريحة!**\n\n- **الشخص/الشريك الجديد:** ${newPartner.name}\n- **الإجراء:** ${actionTitle}\n- **المبلغ المسجل:** ${amountVal}`
+      reply: `تم يا أبو الأكبر! أنشأت حساب جديد و${actionWord} ${amountVal} بحساب (${newPartner.name}) وصار يطلبنا (${amountVal})`
     };
   }
 
@@ -641,7 +648,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         });
 
         return {
-          reply: `✅ **تم تعيين وتثبيت المنطقة وسعر التوصيل بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${updated.orderNumber}\n- **المحل:** ${latestOrder.shop.name}\n- **المنطقة المحددة:** 📍 ${selectedRegion.name}\n- **سعر التوصيل:** ${regionPrice}\n- **المبلغ الإجمالي النهائي:** ${newTotal}`
+          reply: `تم يا أبو الأكبر! غيرت منطقة طلب #${updated.orderNumber} لـ (${selectedRegion.name}) والتوصيل ${regionPrice} والإجمالي (${newTotal})`
         };
       }
     }
@@ -672,7 +679,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
 
     return {
-      reply: `تم يا أبو الأكبر! 🚀 تم إنشاء وتأكيد المندوب الجديد (**${newCourier.name}**) بنجاح في قاعدة البيانات، وأصبح جاهزاً لإسناد الطلبات فوراً!\n\n- **اسم المندوب:** ${newCourier.name}\n- **رقم الهاتف:** ${phone}`
+      reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone} ورصدته بالنظام!`
     };
   }
 
@@ -699,7 +706,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   ) {
     const isTook = rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل") || rawText.includes("سدد") || rawText.includes("استلمت") || rawText.includes("قبضت");
     const kind = isTook ? "took" : "gave";
-    const actionTitle = isTook ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
 
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
@@ -764,20 +770,20 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
 
     const netBalance = totalGave - totalTook;
-    let balanceStatus = "";
+    let balanceText = "";
 
     if (netBalance > 0) {
-      balanceStatus = `نطلبه (يطلبك): ${netBalance}`;
+      balanceText = `وصار نطلبه (${netBalance})`;
     } else if (netBalance < 0) {
-      balanceStatus = `يطلبنا (تطلبه): ${Math.abs(netBalance)}`;
+      balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
     } else {
-      balanceStatus = `الحساب متصفر بالكامل (0)`;
+      balanceText = `وصار الحساب متصفر (0)`;
     }
 
-    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مورد" : "شريك"));
+    const actionWord = isTook ? "نزلت" : "ضفت";
 
     return {
-      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل المعاملة:** ${finalAmount}\n- **الرصيد الحقيقي الفعلي لـ (${partner.name}):** ${balanceStatus}`
+      reply: `تم يا أبو الأكبر! ${actionWord} ${finalAmount} بحساب (${partner.name}) ${balanceText}`
     };
   }
 
@@ -822,7 +828,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const preparerMsg = assignedPreparer ? `👨‍🍳 المجهز: ${assignedPreparer.name}` : "⚠️ يرجى اختيار المجهز لإسناد المواد له";
 
     return {
-      reply: `✅ **تم إنشاء مسودة التجهيز ورصد المنتجات بالكامل بالنظام يا أبو الأكبر!**\n\n- **رقم المسودة:** #${draft.draftNumber}\n- **المنطقة والوجهة:** ${matchingRegion?.name || "غير محددة"}\n- **رقم هاتف الزبون:** ${phone}\n- ${preparerMsg}\n\n📝 **قائمة المنتجات والمواد المطلوبة:**\n${extractedItems}`,
+      reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
       buttons: preparerButtons
     };
   }
@@ -912,11 +918,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     notifyTelegramNewOrder(order.id).catch(() => {});
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
-    const regionNote = selectedRegion ? selectedRegion.name : "⚠️ غير محددة (يرجى اختيار المنطقة أدناه)";
-    const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **انقر على المنطقة المناسبة لتأكيد سعر التوصيل:**" : "";
-
     return {
-      reply: `✅ **تم إضافة ورصد الطلب الجديد بالنظام بنجاح يا أبو الأكبر!**\n\n- **رقم الطلب:** #${order.orderNumber}\n- **المحل:** ${matchingShop.name}\n- **المنطقة والوجهة:** ${regionNote}\n- **رقم هاتف الزبون:** ${phone}\n- **نوع البضاعة والمنتج:** ${orderType}\n- **وقت الاستلام والتوصيل:** ${orderNoteTime}\n- **سعر البضاعة:** ${priceNum}\n- **سعر التوصيل للمنطقة:** ${deliveryPriceNum}\n- **المبلغ الإجمالي:** ${totalAmountNum}${optionsNote}`,
+      reply: `تم يا أبو الأكبر! ضفت طلب جديد #${order.orderNumber} لـ (${matchingShop.name}) | بضاعة: ${priceNum} | توصيل: ${deliveryPriceNum} | الإجمالي: ${totalAmountNum}`,
       buttons: regionButtons
     };
   }
@@ -938,8 +941,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
           where: { id: courier.id },
           data: { active: activeState }
         });
-        const statusMsg = activeState ? "تفعيل وإظهار" : "تعطيل وإخفاء";
-        return { reply: `✅ **تم ${statusMsg} المندوب (${courier.name}) بنجاح يا أبو الأكبر!**` };
+        const statusMsg = activeState ? "تفعيل" : "تعطيل";
+        return { reply: `تم يا أبو الأكبر! سويت ${statusMsg} للمندوب (${courier.name})` };
       }
     }
 
@@ -954,7 +957,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
           where: { id: courier.id },
           data: { lastSalaryWithdrawalAt: new Date() }
         });
-        return { reply: `✅ **تم تصفير حساب ومستحقات المندوب (${courier.name}) بالكامل يا أبو الأكبر!**` };
+        return { reply: `تم يا أبو الأكبر! صفرت حساب المندوب (${courier.name})` };
       }
     }
   }
@@ -1027,7 +1030,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const newPhone = extractCustomerPhoneFlexible(rawText);
       if (newPhone && newPhone !== "غير محدد") {
         updateData.customerPhone = newPhone;
-        changes.push(`📱 **رقم هاتف الزبون الجديد:** ${newPhone}`);
+        changes.push(`رقم الزبون: ${newPhone}`);
       }
     }
 
@@ -1036,7 +1039,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (altPhone && altPhone !== "غير محدد") {
         updateData.alternatePhone = altPhone;
         updateData.secondCustomerPhone = altPhone;
-        changes.push(`📞 **رقم الهاتف البديل/الثاني الجديد:** ${altPhone}`);
+        changes.push(`رقم بديل: ${altPhone}`);
       }
     }
 
@@ -1045,42 +1048,41 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const landmarkText = landmarkMatch ? landmarkMatch[1].trim() : rawText.trim();
       if (landmarkText) {
         updateData.customerLandmark = landmarkText;
-        changes.push(`📌 **أقرب نقطة دالة:** ${landmarkText}`);
+        changes.push(`نقطة دالة: ${landmarkText}`);
       }
     }
 
     if (rawText.includes("دين قديم") || rawText.includes("دين الزبون القديم") || rawText.includes("طلب قديم")) {
       const debtAmount = wordPrice != null ? wordPrice : 0;
       updateData.customerOldDebt = new Decimal(debtAmount);
-      changes.push(`💳 **دين الزبون القديم المسجل:** ${debtAmount}`);
+      changes.push(`دين قديم: ${debtAmount}`);
     }
 
     if (rawText.includes("سعر الشراء") || rawText.includes("التكلفة") || rawText.includes("تكلفة البضاعة")) {
       const pPrice = wordPrice != null ? wordPrice : 0;
       updateData.purchasePrice = new Decimal(pPrice);
-      changes.push(`🏷️ **سعر الشراء/التكلفة الجديد:** ${pPrice}`);
+      changes.push(`سعر شراء: ${pPrice}`);
     }
 
     if (rawText.includes("موقع الزبون") || rawText.includes("لوكيشن") || rawText.includes("خريطة")) {
       const urlMatch = rawText.match(/(https?:\/\/\S+|maps\S+)/i);
       if (urlMatch) {
         updateData.customerLocationUrl = urlMatch[0];
-        changes.push(`📍 **رابط موقع الزبون الجديد:** ${urlMatch[0]}`);
+        changes.push(`لوكيشن: ${urlMatch[0]}`);
       }
     }
 
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
-      changes.push(`👨‍✈️ **المندوب:** تم إلغاء إسناد المندوب بنجاح`);
-      changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
+      changes.push(`إلغاء إسناد المندوب`);
     } else if (isAssignAction) {
       const allCouriers = await prisma.courier.findMany();
       for (const c of allCouriers) {
         if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
           updateData.assignedCourierId = c.id;
           updateData.status = "assigned";
-          changes.push(`👨‍✈️ **المندوب المسند:** ${c.name}`);
+          changes.push(`إسناد للمندوب: ${c.name}`);
           break;
         }
       }
@@ -1109,9 +1111,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
         updateData.totalAmount = new Decimal(currentSubtotal + regionDeliveryPrice);
 
-        changes.push(`📍 **المنطقة والوجهة الجديدة:** ${targetRegion.name}`);
-        changes.push(`🚚 **سعر التوصيل المسجل للمنطقة:** ${regionDeliveryPrice}`);
-        changes.push(`💵 **المبلغ الإجمالي الجديد:** ${currentSubtotal + regionDeliveryPrice}`);
+        changes.push(`المنطقة: ${targetRegion.name} | الإجمالي: ${currentSubtotal + regionDeliveryPrice}`);
       }
     }
 
@@ -1120,47 +1120,46 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(finalPriceToSet);
-        changes.push(`🚚 **سعر التوصيل الجديد:** ${finalPriceToSet}`);
+        changes.push(`سعر التوصيل: ${finalPriceToSet}`);
       } else {
         updateData.orderSubtotal = new Decimal(finalPriceToSet);
-        changes.push(`💰 **سعر الطلب/البضاعة الجديد:** ${finalPriceToSet}`);
+        changes.push(`سعر البضاعة: ${finalPriceToSet}`);
       }
 
       const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
       const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
       updateData.totalAmount = new Decimal(sub + del);
-      changes.push(`💵 **المبلغ الإجمالي الجديد النهائي:** ${sub + del}`);
+      changes.push(`الإجمالي النهائي: ${sub + del}`);
     }
 
     if (rawText.includes("نوع الطلب") || rawText.includes("نوع البضاعة") || rawText.includes("نوع المنتج") || rawText.includes("تغيير نوع") || rawText.includes("نوع") || rawText.includes("صمان") || rawText.includes("صمون")) {
       const cleanType = extractCleanOrderType(rawText, existingOrder.shop?.name);
       if (cleanType && cleanType.length >= 2) {
         updateData.orderType = cleanType;
-        changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${cleanType}`);
+        changes.push(`نوع البضاعة: ${cleanType}`);
       }
     }
 
     if (rawText.includes("وقت الطلب") || rawText.includes("وقت الاستلام") || rawText.includes("غدا") || rawText.includes("صباحا")) {
       const timeVal = extractCleanOrderNoteTime(rawText);
       updateData.orderNoteTime = timeVal;
-      changes.push(`⏰ **وقت الاستلام والتوصيل الجديد:** ${timeVal}`);
+      changes.push(`الوقت: ${timeVal}`);
     }
 
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
         updateData.assignedCourierId = null;
-        changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
-        changes.push(`👨‍✈️ **المندوب:** تم إلغاء الإسناد وإعادة الطلب جديداً`);
+        changes.push(`إعادة الطلب جديد معلق`);
       } else if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
         updateData.status = "rejected";
-        changes.push(`📌 **الحالة الجديدة:** مرفوض`);
+        changes.push(`حالة: مرفوض`);
       } else if (rawText.includes("مكتمل") || rawText.includes("واصل")) {
         updateData.status = "completed";
-        changes.push(`📌 **الحالة الجديدة:** مكتمل`);
+        changes.push(`حالة: مكتمل`);
       } else if (rawText.includes("استلام")) {
         updateData.status = "delivered";
-        changes.push(`📌 **الحالة الجديدة:** تم الاستلام`);
+        changes.push(`حالة: تم الاستلام`);
       }
     }
 
@@ -1170,10 +1169,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         data: updateData
       });
 
-      const optionsNote = regionButtons && regionButtons.length > 0 ? "\n\n👇 **المناطق المطابقة المتوفرة (انقر على الخيار المناسب):**" : "";
-
       return {
-        reply: `✅ **تم التعرف وتعديل طلب محل (${existingOrder.shop.name}) - #${updated.orderNumber} بنجاح يا أبو الأكبر!**\n\n${changes.join("\n")}${optionsNote}`,
+        reply: `تم يا أبو الأكبر! عدلت طلب #${updated.orderNumber} لـ (${existingOrder.shop.name}) | ${changes.join(" - ")}`,
         buttons: regionButtons
       };
     }
@@ -1188,17 +1185,17 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
 
     if (pendingOrders.length === 0) {
-      return { reply: "📋 **لا توجد أي طلبات جديدة معلقة بالنظام حالياً يا أبو الأكبر.** كافة الطلبات مسندة ومكتملة!" };
+      return { reply: "📋 لا توجد طلبات معلقة حالياً يا أبو الأكبر!" };
     }
 
-    let lines = [`📋 **الطلبات الجديدة المعلقة بالنظام حالياً (${pendingOrders.length} طلبات) يا أبو الأكبر:**\n`];
+    let lines = [`📋 الطلبات المعلقة (${pendingOrders.length}):`];
     pendingOrders.forEach((o, i) => {
-      lines.push(`${i + 1}. **طلب #${o.orderNumber}** | المحل: ${o.shop.name} | المنطقة: ${o.customerRegion?.name || "غير محددة"} | المبلغ الإجمالي: ${o.totalAmount}`);
+      lines.push(`${i + 1}. #${o.orderNumber} | ${o.shop.name} | ${o.customerRegion?.name || "غير محددة"} | ${o.totalAmount}`);
     });
     return { reply: lines.join("\n") };
   }
 
-  return { reply: `⚠️ **يا أبو الأكبر:** لم يطرأ أي تعديل أو إلغاء في قاعدة البيانات، بسبب عدم العثور على طلب مطابق للمواصفات المذكورة بالرسالة بالنظام حالياً! يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
+  return { reply: `⚠️ **يا أبو الأكبر:** لم أجد طلب مطابق بالمواصفات بالنظام، يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
 }
 
 export async function processAdminAiMessage(
@@ -1269,9 +1266,7 @@ export async function processAdminAiMessage(
   });
 
   const systemPrompt = `أنت الذكاء الاصطناعي الفائق ومساعد النظام الشامل المتكامل (Super Gemini AI Agent) التابع لمنظومة أبو الأكبر.
-أنت ذكاء اصطناعي فائق وعاقل ومرن جداً، تجيب وتتحدث وتستجيب بكل ذكاء وإبداع وفصاحة على أي سؤال أو استفسار أو اختبار يسأله أبو الأكبر!
-سواء كان السؤال عن النظام، الديون، المحلات، الطلبات، الأرقام والمبالغ، أو أي سؤال عام أو خاص في الحياة والعمل والتكنولوجيا!
-خاطب أبو الأكبر دائماً بكل احترام وود (يا أبو الأكبر) وأجب بمرونة وذكاء مطلق!`;
+اجعل ردودك دائماً مقتضبة، سريعة ومباشرة جداً ومبسطة كـ سطر واحد! مثال: (تم يا أبو الأكبر! نزلت 5 بحساب فلان وصار يطلبنا/نطلبه كذا)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
