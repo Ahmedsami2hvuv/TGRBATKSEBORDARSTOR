@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { processAdminAiMessage } from "@/lib/ai-admin-agent";
+import { processAdminAiMessage, resetChatSessionContext } from "@/lib/ai-admin-agent";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const text = (searchParams.get("text") || searchParams.get("prompt") || searchParams.get("message") || "").trim();
+    const action = searchParams.get("action");
+
+    if (action === "reset" || text === "reset") {
+      resetChatSessionContext();
+      return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
+    }
 
     if (!text) {
       return NextResponse.json({
@@ -31,6 +37,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const text = (body.text || body.prompt || body.message || "").trim();
+    const action = body.action;
+
+    if (action === "reset" || text === "reset") {
+      resetChatSessionContext();
+      return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
+    }
 
     if (!text) {
       return NextResponse.json({ ok: false, message: "يرجى تزويد النص أو الأمر الصوتي المطلوب تنفيذه." }, { status: 400 });

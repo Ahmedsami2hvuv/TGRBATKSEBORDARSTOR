@@ -5,6 +5,20 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 
+// ذاكرة سياق محادثة الدردشة الحالية (Session Memory Context)
+let activeChatContext: {
+  lastOrderNumber?: number | null;
+  lastOrderType?: string | null;
+  updatedAt?: number;
+} = {};
+
+/**
+ * تصفير وإعادة ضبط ذاكرة سياق المحادثة عند إغلاق/فتح دردشة جديدة
+ */
+export function resetChatSessionContext() {
+  activeChatContext = {};
+}
+
 /**
  * محرك الذكاء الاصطناعي الخاص بالمشروع (Custom System Intent Engine)
  * يعالج النص المنطوق والمكتوب المباشر بـ 0 ميلي ثانية وبدقة مطلقة بدون أي انتظار
@@ -16,7 +30,18 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
+  // 0. فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL)
+  if (
+    cleanQ.includes("اخر طلب مرفوض") ||
+    cleanQ.includes("أخر طلب مرفوض") ||
+    cleanQ.includes("تفاصيل اخر طلب مرفوض") ||
+    cleanQ.includes("انطيني تفاصيل اخر طلب مرفوض") ||
+    cleanQ.includes("الطلب المرفوض")
+  ) {
+    return { category: "last_rejected_order" };
+  }
+
+  // 1. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
   if (
     cleanQ.includes("سويهن") ||
     cleanQ.includes("سوي كل") ||
@@ -31,7 +56,7 @@ function parseCustomSystemIntent(userText: string): any {
     else if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("معلق")) targetStatus = "pending";
     else if (cleanQ.includes("مسند") || cleanQ.includes("بانتظار")) targetStatus = "assigned";
 
-    let courierMatch = text.match(/(?:مندوب|المندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:اللي|الي|سويهن|سويها|كلها|كلهن)|$)/i);
+    let courierMatch = text.match(/(?:مندوب|المندوب|كابتن|الكابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:اللي|الي|سويهن|سويها|كلها|كلهن)|$)/i);
     let courierName = courierMatch ? courierMatch[1].trim() : null;
 
     let shopMatch = text.match(/(?:محل|المحل|طلبات محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:اللي|الي|سويهن|سويها|كلها|كلهن)|$)/i);
@@ -45,7 +70,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 1. قاعدة حاسمة 100%: إذا بدأت الرسالة باسم منطقة (مثل جيكور) أو احتوت كلمات تجهيز وبدون اسم محل ⬅️ طلب تجهيز ومشتريات صريح!
+  // 2. قاعدة حاسمة 100%: إذا بدأت الرسالة باسم منطقة (مثل جيكور) أو احتوت كلمات تجهيز وبدون اسم محل ⬅️ طلب تجهيز ومشتريات صريح!
   const knownRegions = ["جيكور", "شيخ ابراهيم", "الخصيب", "حمدان", "السراجي", "مهيجران", "ابو الخصيب", "الفاو", "القرنة", "الهارثة", "الزبير"];
   const isStartsWithRegion = knownRegions.some(r => firstLine.includes(r) || cleanQ.startsWith(r));
   const hasExplicitShop = cleanQ.includes("محل") || cleanQ.includes("لوازم") || cleanQ.includes("الكوثر");
@@ -57,20 +82,22 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 2. فئة إسناد وتعديل الطلبات للمندوبين
+  // 3. فئة إسناد وتعديل الطلبات للمندوبين (دعم كلمة كابتن وسياق ذاكرة الدردشة)
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
     cleanQ.includes("اسند") ||
     cleanQ.includes("حول الطلب") ||
     cleanQ.includes("حوله على") ||
-    cleanQ.includes("غير المندوب")
+    cleanQ.includes("غير المندوب") ||
+    cleanQ.includes("لكابتن") ||
+    cleanQ.includes("كابتن")
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
-    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
+    const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
 
     let courierName = text
-      .replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*اسند إلى|.*حول إلى|.*حوله على|.*غير المندوب لـ|.*إلى|.*الي/gi, "")
+      .replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*اسند إلى|.*حول إلى|.*حوله على|.*غير المندوب لـ|.*لكابتن|.*كابتن|.*إلى|.*الي/gi, "")
       .replace(/طلب|رقم|رقمه|#|\d+/gi, "")
       .trim();
 
@@ -81,7 +108,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
+  // 4. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
   if (
     cleanQ.includes("نطيت") ||
     cleanQ.includes("انطيت") ||
@@ -121,7 +148,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 4. فئة إنشاء طلب مبيعات جديد من محل
+  // 5. فئة إنشاء طلب مبيعات جديد من محل
   const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
   const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
 
@@ -133,7 +160,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 5. فئة تصفير حسابات ورواتب المندوبين
+  // 6. فئة تصفير حسابات ورواتب المندوبين
   if (cleanQ.includes("صفر") || cleanQ.includes("تصفير")) {
     let cleanName = text
       .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
@@ -144,7 +171,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 6. فئة إضافة وتسجيل مندوب جديد
+  // 7. فئة إضافة وتسجيل مندوب جديد
   if (
     cleanQ.includes("سويلي مندوب") ||
     cleanQ.includes("سوي مندوب") ||
@@ -216,7 +243,72 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
+  // 0.0 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
+  // ==========================================
+  if (parsed?.category === "last_rejected_order") {
+    const rejectedOrder = await prisma.order.findFirst({
+      where: { status: "rejected" },
+      orderBy: { updatedAt: "desc" },
+      include: { shop: true, customerRegion: true }
+    });
+
+    if (!rejectedOrder) {
+      return {
+        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض) في النظام حالياً! 🎉`
+      };
+    }
+
+    // حفظ رقم الطلب المرفوض في ذاكرة سياق المحادثة الحالية لربط أي أمر إسناد بعده مباشرة!
+    activeChatContext.lastOrderNumber = rejectedOrder.orderNumber;
+    activeChatContext.updatedAt = Date.now();
+
+    const allCouriers = await prisma.courier.findMany();
+    const courierButtons = allCouriers.slice(0, 5).map(c => ({
+      text: `🛵 إسناد لـ كابتن: ${c.name}`,
+      action: `assign_order_${rejectedOrder.id}_${c.id}`
+    }));
+
+    const regionName = rejectedOrder.customerRegion ? rejectedOrder.customerRegion.name : "غير محددة";
+    const shopName = rejectedOrder.shop ? rejectedOrder.shop.name : "المحل";
+    const phone = rejectedOrder.customerPhone || "لا يوجد";
+    const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 5;
+
+    return {
+      reply: `📌 **تفاصيل آخر طلب مرفوض يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
+      buttons: courierButtons
+    };
+  }
+
+  // ==========================================
+  // 0.1 معالجة اختيار وإسناد المندوب المباشر بالنقر على الأزرار (ASSIGN ORDER DIRECT ACTION)
+  // ==========================================
+  if (rawText.startsWith("assign_order_")) {
+    const parts = rawText.split("_");
+    const orderId = parts[2];
+    const courierId = parts[3];
+
+    const order = await prisma.order.findUnique({ where: { id: orderId }, include: { shop: true } });
+    const courier = await prisma.courier.findUnique({ where: { id: courierId } });
+
+    if (order && courier) {
+      const updated = await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          assignedCourierId: courier.id,
+          status: "assigned"
+        }
+      });
+
+      activeChatContext.lastOrderNumber = updated.orderNumber;
+
+      return {
+        reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${order.shop.name}) إلى الكابتن (${courier.name})`
+      };
+    }
+  }
+
+  // ==========================================
+  // 0.2 معالجة اختيار المجهز المباشر بالنقر على الزر التفاعلي (ASSIGN PREPARER ACTION)
   // ==========================================
   if (rawText.startsWith("assign_prep_")) {
     const parts = rawText.split("_");
@@ -239,13 +331,12 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
+  // 0.3 قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH INTERACTIVE PREPARER BUTTONS)
   // ==========================================
   if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
     const itemsText = extractPrepItemsFromText(fullText);
 
-    // فحص إن كان تم ذكر مجهز صريح بالنص
     const allPreparers = await prisma.companyPreparer.findMany();
     let assignedPreparer = allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()));
 
@@ -280,7 +371,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
         reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${assignedPreparer.name})\n📝 المواد: ${itemsText}`
       };
     } else {
-      // إرسال أزرار تفاعلية أنيقة بأقسام وأسماء كافة المجهزين والموردين بالداتابيز بالنقر المباشر 100%!
       const preparerButtons = allPreparers.slice(0, 5).map(p => ({
         text: `👨‍🍳 إسناد لـ: ${p.name}`,
         action: `assign_prep_${draft.id}_${p.id}`
@@ -372,6 +462,10 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     notifyTelegramNewOrder(order.id).catch(() => {});
     pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
+    // حفظ رقم الطلب الجديد بذاكرة المحادثة لربطه بالإسناد بعده مباشرة!
+    activeChatContext.lastOrderNumber = order.orderNumber;
+    activeChatContext.updatedAt = Date.now();
+
     const shopTitle = matchedShop ? matchedShop.name : "لوازم الكوثر";
     const regionName = matchedRegion ? matchedRegion.name : "شيخ ابراهيم";
 
@@ -453,7 +547,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 3. قسم تعديل وإسناد الطلبات للمندوبين (ORDER UPDATE & COURIER ASSIGNMENT)
+  // 3. قسم تعديل وإسناد الطلبات للمندوبين (ORDER UPDATE & COURIER ASSIGNMENT WITH CHAT MEMORY CONTEXT)
   // ==========================================
   if (
     parsed?.category === "order_update" ||
@@ -461,15 +555,19 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     rawText.includes("اسناد") ||
     rawText.includes("اسند") ||
     rawText.includes("حول الطلب") ||
-    rawText.includes("حوله على")
+    rawText.includes("حوله على") ||
+    rawText.includes("كابتن") ||
+    rawText.includes("الكابتن")
   ) {
-    const orderNum = parsed?.order_number || (rawText.match(/\b\d{3,5}\b/) ? Number(rawText.match(/\b\d{3,5}\b/)[0]) : null);
+    const orderNum = parsed?.order_number || activeChatContext.lastOrderNumber || (rawText.match(/\b\d{3,5}\b/) ? Number(rawText.match(/\b\d{3,5}\b/)[0]) : null);
     let courierName = parsed?.clean_name || "فارس";
 
     let targetOrder = null;
     if (orderNum) {
       targetOrder = await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true } });
-    } else {
+    }
+
+    if (!targetOrder) {
       targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true } });
     }
 
@@ -494,8 +592,12 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
           }
         });
 
+        // تحديث الذاكرة لـ هذا الطلب المسند
+        activeChatContext.lastOrderNumber = updated.orderNumber;
+        activeChatContext.updatedAt = Date.now();
+
         return {
-          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى المندوب (${matchedCourier.name})`
+          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى الكابتن (${matchedCourier.name})`
         };
       }
     }
@@ -506,7 +608,8 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   // ==========================================
   if (
     parsed?.category === "courier_create" ||
-    rawText.includes("مندوب")
+    rawText.includes("مندوب") ||
+    rawText.includes("كابتن")
   ) {
     const courierName = parsed?.clean_name || "فيصل";
     const phone = parsed?.phone || "07700000000";
@@ -521,7 +624,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
           where: { id: existingCourier.id },
           data: { name: courierName, phone: phone }
         });
-        return { reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${updated.name}) برقم ${phone}` };
+        return { reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${updated.name}) برقم ${phone}` };
       }
 
       const newCourier = await prisma.courier.create({
@@ -532,11 +635,11 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       });
 
       return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
+        reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${newCourier.name}) برقم ${phone}`
       };
     } catch (err: any) {
       return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
+        reply: `تم يا أبو الأكبر! ضفت الكابتن المندوب الجديد (${courierName}) برقم ${phone}`
       };
     }
   }
@@ -554,7 +657,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
         where: { id: matchedCourier.id },
         data: { mandoubTotalsResetAt: new Date() }
       });
-      return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات المندوب (${matchedCourier.name})` };
+      return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${matchedCourier.name})` };
     }
   }
 
