@@ -177,7 +177,6 @@ function extractCleanCourierName(text: string, targetName: string = ""): string 
 function extractCleanOrderType(text: string, shopName?: string): string {
   if (!text) return "مواد متنوعة";
 
-  // 1. إذا وجد تركيب صريح مثل "نوع الطلب سويه صمان" أو "نوع البضاعة صمون"
   const directMatch = text.match(/(?:نوع الطلب|نوع البضاعة|نوع المنتج|نوع|سويه|سويها|خليها|خليه|سويه نوع)\s*(?:سويه|سويها|هو|هي)?\s*([أ-يa-zA-Z0-9\s]+)$/i);
   if (directMatch && directMatch[1].trim().length >= 2) {
     const candidate = directMatch[1].replace(/جديد|جديده|جديدة|معلق|معلقة|طلب/gi, "").trim();
@@ -253,7 +252,7 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
   }
 
   const extractedName = partnerQuery
-    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
+    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
     .trim() || partnerQuery.trim() || "شريك جديد";
 
   return await prisma.creditBookPartner.create({
@@ -328,21 +327,25 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT AMOUNTS ONLY)
+  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT AMOUNTS & DIALECTS)
   // ==========================================
   if (
     domain === "debts" ||
-    rawText.includes("اخذت") ||
-    rawText.includes("أخذت") ||
-    rawText.includes("اعطيت") ||
-    rawText.includes("أعطيت") ||
+    rawText.includes("نطيت") ||
     rawText.includes("انطيت") ||
     rawText.includes("أنطيت") ||
+    rawText.includes("إنطيت") ||
+    rawText.includes("عطيت") ||
+    rawText.includes("أعطيت") ||
+    rawText.includes("اعطيت") ||
+    rawText.includes("اخذت") ||
+    rawText.includes("أخذت") ||
     rawText.includes("تنزيل") ||
     rawText.includes("سدد") ||
     rawText.includes("استلمت") ||
     rawText.includes("قبضت") ||
-    rawText.includes("دفعت")
+    rawText.includes("دفعت") ||
+    rawText.includes("حولت")
   ) {
     const isTook = rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل") || rawText.includes("سدد") || rawText.includes("استلمت") || rawText.includes("قبضت");
     const kind = isTook ? "took" : "gave";
