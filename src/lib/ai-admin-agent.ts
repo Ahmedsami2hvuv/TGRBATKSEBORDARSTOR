@@ -80,7 +80,6 @@ function findMatchingRegionsExactOrContains(queryText: string, allRegions: any[]
   const cleanQ = cleanArabicTextForMatch(queryText.replace(/📍|\(توصيل:.*?\)/g, "").trim());
   if (!cleanQ) return [];
 
-  // استخراج الكلمة التي تأتي صراحة بعد كلمة (منطقة/منطقه/عنوان)
   const regionMatch = queryText.match(/(?:منطقة|منطقه|عنوان)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:رقم|نوع|وقت|07|\d)|$)/i);
   let targetRegionWord = regionMatch ? cleanArabicTextForMatch(regionMatch[1].trim()) : cleanQ;
 
@@ -220,7 +219,6 @@ function extractCleanOrderNoteTime(text: string): string {
 function extractCleanOrderType(text: string, shopName?: string): string {
   if (!text) return "مواد متنوعة";
 
-  // قص وتجريد أي نص يأتي بعد "وقت الطلب" أولاً
   let textWithoutTime = text.replace(/وقت الطلب.*/gi, "").trim();
 
   const directMatch = textWithoutTime.match(/(?:نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع|سويه|سويها|خليها|خليه)\s*(?:سويه|سويها|هو|هي)?\s*([أ-يa-zA-Z0-9\s]+)$/i);
@@ -257,11 +255,87 @@ function extractCleanOrderType(text: string, shopName?: string): string {
 }
 
 /**
- * البحث أو إنشاء الشريك التلقائي في دفتر الديون والشراكة (CreditBookPartner) بدون تكرار الفهرس الفريد 100%
+ * البحث أولاً في قائمة المندوبين والمحلات والمجهزين المرجعية بالداتابيز قبل إنشاء سجلات مكررة 100%
  */
 async function findOrCreateCreditBookPartner(partnerQuery: string) {
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
 
+  // 1. الأولوية القصوى: البحث في قائمة المندوبين الأصلية (prisma.courier)
+  const allCouriers = await prisma.courier.findMany();
+  for (const c of allCouriers) {
+    const cleanC = cleanArabicTextForMatch(c.name);
+    if (cleanQ.includes(cleanC) || cleanC.includes(cleanQ)) {
+      const existingPartner = await prisma.creditBookPartner.findFirst({
+        where: { OR: [{ externalId: c.id, type: "courier" }, { name: c.name }] }
+      });
+
+      if (existingPartner) {
+        if (existingPartner.type !== "courier" || existingPartner.externalId !== c.id) {
+          return await prisma.creditBookPartner.update({
+            where: { id: existingPartner.id },
+            data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
+          });
+        }
+        return existingPartner;
+      }
+
+      return await prisma.creditBookPartner.create({
+        data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
+      });
+    }
+  }
+
+  // 2. البحث في قائمة المحلات والعملاء الأصلية (prisma.shop)
+  const allShops = await prisma.shop.findMany();
+  for (const s of allShops) {
+    const cleanS = cleanArabicTextForMatch(s.name);
+    if (cleanQ.includes(cleanS) || cleanS.includes(cleanQ)) {
+      const existingPartner = await prisma.creditBookPartner.findFirst({
+        where: { OR: [{ externalId: s.id, type: "shop" }, { name: s.name }] }
+      });
+
+      if (existingPartner) {
+        if (existingPartner.type !== "shop" || existingPartner.externalId !== s.id) {
+          return await prisma.creditBookPartner.update({
+            where: { id: existingPartner.id },
+            data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
+          });
+        }
+        return existingPartner;
+      }
+
+      return await prisma.creditBookPartner.create({
+        data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
+      });
+    }
+  }
+
+  // 3. البحث في قائمة المجهزين الأصلية (prisma.companyPreparer)
+  const allPreps = await prisma.companyPreparer.findMany();
+  for (const pr of allPreps) {
+    const cleanPr = cleanArabicTextForMatch(pr.name);
+    if (cleanQ.includes(cleanPr) || cleanPr.includes(cleanQ)) {
+      const existingPartner = await prisma.creditBookPartner.findFirst({
+        where: { OR: [{ externalId: pr.id, type: "preparer" }, { name: pr.name }] }
+      });
+
+      if (existingPartner) {
+        if (existingPartner.type !== "preparer" || existingPartner.externalId !== pr.id) {
+          return await prisma.creditBookPartner.update({
+            where: { id: existingPartner.id },
+            data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
+          });
+        }
+        return existingPartner;
+      }
+
+      return await prisma.creditBookPartner.create({
+        data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
+      });
+    }
+  }
+
+  // 4. البحث في باقي الشركاء المباشرين المسجلين سابقاً
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -270,48 +344,7 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  const allCouriers = await prisma.courier.findMany();
-  for (const c of allCouriers) {
-    if (cleanQ.includes(cleanArabicTextForMatch(c.name))) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { type: "courier", externalId: c.id }
-      });
-      if (existingPartner) return existingPartner;
-
-      return await prisma.creditBookPartner.create({
-        data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
-      });
-    }
-  }
-
-  const allShops = await prisma.shop.findMany();
-  for (const s of allShops) {
-    if (cleanQ.includes(cleanArabicTextForMatch(s.name))) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { type: "shop", externalId: s.id }
-      });
-      if (existingPartner) return existingPartner;
-
-      return await prisma.creditBookPartner.create({
-        data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
-      });
-    }
-  }
-
-  const allPreps = await prisma.companyPreparer.findMany();
-  for (const pr of allPreps) {
-    if (cleanQ.includes(cleanArabicTextForMatch(pr.name))) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { type: "preparer", externalId: pr.id }
-      });
-      if (existingPartner) return existingPartner;
-
-      return await prisma.creditBookPartner.create({
-        data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
-      });
-    }
-  }
-
+  // 5. إذا كان شخصاً عادياً جديداً
   const extractedName = partnerQuery
     .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
     .trim() || partnerQuery.trim() || "شريك جديد";
@@ -491,8 +524,10 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       balanceStatus = `الحساب متصفر بالكامل (0)`;
     }
 
+    const roleTitle = partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : (partner.type === "preparer" ? "مجهز" : "شريك"));
+
     return {
-      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+      reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${finalAmount}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
     };
   }
 
