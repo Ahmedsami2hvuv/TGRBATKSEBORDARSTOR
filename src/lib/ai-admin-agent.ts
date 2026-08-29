@@ -44,6 +44,7 @@ function cleanArabicTextForMatch(text: string): string {
     .replace(/\bابي\b/g, "ابو")
     .replace(/\bابا\b/g, "ابو")
     .replace(/\bال/g, "")
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -256,21 +257,28 @@ function extractCleanOrderType(text: string, shopName?: string): string {
 }
 
 /**
- * استخراج الكلمة أو الاسم المباشر النظيف المستهدف للشريك من نص الجملة
+ * استخراج الكلمة أو الاسم المباشر النظيف المستهدف للشريك وتجريد كلمات الأرقام والرموز كلياً 100%
  */
 function extractTargetPartnerName(text: string): string {
   if (!text) return "";
 
+  let rawTarget = "";
   const afterFromTo = text.match(/(?:من|لـ|على|إلى|الي)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:مبلغ|بمقدار|حساب|\d)|$)/i);
   if (afterFromTo && afterFromTo[1].trim().length >= 2) {
-    return afterFromTo[1].replace(/محل|مندوب|مجهز|كابتن|زبون|شريك|شخص/gi, "").trim();
+    rawTarget = afterFromTo[1];
+  } else {
+    rawTarget = text
+      .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
+      .trim();
   }
 
-  let cleaned = text
-    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
-    .replace(/محل|مندوب|مجهز|كابتن|زبون|شريك|حساب|مستحقات/gi, "")
+  let cleaned = rawTarget
+    .replace(/\b(?:خمسة|خمسه|خمس|عشرة|عشره|عشر|ثلاثة|ثلاثه|ثلاث|اربعة|اربعه|اربع|واحد|وحدة|وحده|اثنان|ثنين|الفين|الف|آلاف|الاف)\b/gi, "")
+    .replace(/محل|مندوب|مجهز|مورد|كابتن|زبون|شريك|شخص|حساب|مستحقات/gi, "")
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "")
     .trim();
-  return cleaned || text.trim();
+
+  return cleaned || rawTarget.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "").trim() || "شريك";
 }
 
 /**
@@ -360,30 +368,21 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
 }
 
 /**
- * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام عند خطأ في حرف أو نطق
+ * البحث واقتراح الشركاء والمحلات المتقاربة جداً بالنظام وإظهار صفاتهم الصريحة ومنع التكرار 100%
  */
 async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
   const targetName = extractTargetPartnerName(partnerQuery);
   const cleanTarget = cleanArabicTextForMatch(targetName);
   if (!cleanTarget || cleanTarget.length < 2) return [];
 
-  const candidates: Array<{ id: string; name: string; type: string }> = [];
+  const candidatesMap = new Map<string, { id: string; name: string; typeTitle: string }>();
 
-  // فحص الشركاء بـ دفتر الديون
-  const allPartners = await prisma.creditBookPartner.findMany();
-  for (const p of allPartners) {
-    const cleanP = cleanArabicTextForMatch(p.name);
-    if (cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
-      candidates.push({ id: p.id, name: p.name, type: p.type });
-    }
-  }
-
-  // فحص المحلات
-  const allShops = await prisma.shop.findMany();
-  for (const s of allShops) {
-    const cleanS = cleanArabicTextForMatch(s.name);
-    if (cleanS.includes(cleanTarget) || cleanTarget.includes(cleanS)) {
-      candidates.push({ id: s.id, name: s.name, type: "shop" });
+  // فحص المجهزين والموردين أولاً بأعلى أولوية (prisma.companyPreparer)
+  const allPreps = await prisma.companyPreparer.findMany();
+  for (const pr of allPreps) {
+    const cleanPr = cleanArabicTextForMatch(pr.name);
+    if (cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
+      candidatesMap.set(`prep_${pr.id}`, { id: pr.id, name: pr.name, typeTitle: "مورد/مجهز" });
     }
   }
 
@@ -392,20 +391,32 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
   for (const c of allCouriers) {
     const cleanC = cleanArabicTextForMatch(c.name);
     if (cleanC.includes(cleanTarget) || cleanTarget.includes(cleanC)) {
-      candidates.push({ id: c.id, name: c.name, type: "courier" });
+      candidatesMap.set(`courier_${c.id}`, { id: c.id, name: c.name, typeTitle: "مندوب" });
     }
   }
 
-  // فحص المجهزين
-  const allPreps = await prisma.companyPreparer.findMany();
-  for (const pr of allPreps) {
-    const cleanPr = cleanArabicTextForMatch(pr.name);
-    if (cleanPr.includes(cleanTarget) || cleanTarget.includes(cleanPr)) {
-      candidates.push({ id: pr.id, name: pr.name, type: "preparer" });
+  // فحص المحلات
+  const allShops = await prisma.shop.findMany();
+  for (const s of allShops) {
+    const cleanS = cleanArabicTextForMatch(s.name);
+    if (cleanS.includes(cleanTarget) || cleanTarget.includes(cleanS)) {
+      candidatesMap.set(`shop_${s.id}`, { id: s.id, name: s.name, typeTitle: "محل" });
     }
   }
 
-  return candidates.slice(0, 3);
+  // فحص الشركاء بـ دفتر الديون
+  const allPartners = await prisma.creditBookPartner.findMany();
+  for (const p of allPartners) {
+    const cleanP = cleanArabicTextForMatch(p.name);
+    if (cleanP.includes(cleanTarget) || cleanTarget.includes(cleanP)) {
+      const title = p.type === "preparer" ? "مورد/مجهز" : (p.type === "courier" ? "مندوب" : (p.type === "shop" ? "محل" : "شريك"));
+      if (!candidatesMap.has(`partner_${p.id}`) && !candidatesMap.has(`prep_${p.externalId}`) && !candidatesMap.has(`courier_${p.externalId}`) && !candidatesMap.has(`shop_${p.externalId}`)) {
+        candidatesMap.set(`partner_${p.id}`, { id: p.id, name: p.name, typeTitle: title });
+      }
+    }
+  }
+
+  return Array.from(candidatesMap.values()).slice(0, 3);
 }
 
 /**
@@ -505,9 +516,10 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       const netBalance = totalGave - totalTook;
       const balanceStatus = netBalance > 0 ? `نطلبه: ${netBalance}` : (netBalance < 0 ? `يطلبنا: ${Math.abs(netBalance)}` : "متصفر (0)");
       const actionTitle = kind === "took" ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
+      const roleTitle = partner.type === "preparer" ? "مورد/مجهز" : (partner.type === "courier" ? "مندوب" : (partner.type === "shop" ? "محل" : "شريك"));
 
       return {
-        reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name}\n- **المبلغ المسجل:** ${amountVal}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
+        reply: `✅ **تم تنزيل ورصد المبلغ بقاعدة البيانات بنجاح يا أبو الأكبر!**\n\n- **الإجراء:** ${actionTitle}\n- **الشخص/الشريك:** ${partner.name} (${roleTitle})\n- **المبلغ المسجل:** ${amountVal}\n- **الرصيد الحالي لـ (${partner.name}):** ${balanceStatus}`
       };
     }
   }
@@ -641,7 +653,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const partner = await findExistingCreditBookPartnerStrict(rawText);
 
-    // إذا لم يجد الشخص بالضبط، يفيض السيرفر بـ الأسماء المقاربة والمتشابهة وسؤال أبو الأكبر
+    // إذا لم يجد الشخص بالضبط، يفيض السيرفر بـ الأسماء المقاربة والمتشابهة مع إظهار صفاتهم الصريحة
     if (!partner) {
       const targetName = extractTargetPartnerName(rawText);
       const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(rawText);
@@ -651,7 +663,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       if (fuzzyMatches.length > 0) {
         fuzzyMatches.forEach(m => {
           dynamicButtons.push({
-            text: `✅ هل تقصد: (${m.name})؟`,
+            text: `✅ هل تقصد: (${m.name} - ${m.typeTitle})؟`,
             action: `apply_debt_existing_${m.id}_${kind}_${finalAmount}`
           });
         });
@@ -672,7 +684,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         : "";
 
       return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
+        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً أو مورداً/مجهزاً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
         buttons: dynamicButtons
       };
     }
@@ -1160,7 +1172,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-احسب مبالغ الديون دائماً بشكل منفصل دون تجميع النصوص القديمة إطلاقاً! واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+اذكر دائماً صفة الشريك المقترح (مثل: ميثاق - مورد/مجهز)، وجرد الأرقام من الاسم الصريح، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
