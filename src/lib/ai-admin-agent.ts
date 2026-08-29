@@ -138,7 +138,6 @@ function extractCustomerPhoneFlexible(text: string): string {
 function extractCleanOrderType(text: string): string {
   if (!text) return "مواد متنوعة";
 
-  // 1. تنظيف الأرقام والكلمات التوجيهية وأرقام الطلبات
   let cleaned = text
     .replace(/(?:طلب|طلبيه|طلبية|رقم|#)?\s*\d{1,5}/gi, "")
     .replace(/نوع الطلب|نوع الطلبيه|نوع البضاعة|نوع المنتج|نوع/gi, "")
@@ -150,7 +149,6 @@ function extractCleanOrderType(text: string): string {
 
   cleaned = cleaned.replace(/(?:\+964|0)?7[3-9]\d{7,8}|\d+/g, "").trim();
 
-  // 2. تصفية أجزاء النص وحذف أي كلمة تحتوي على كلمة طلب كلياً
   const words = cleaned
     .split(/\s+/)
     .filter(w => w.length >= 2 && !w.includes("طلب") && !w.includes("عدل") && !w.includes("سويه"));
@@ -543,7 +541,13 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const changes: string[] = [];
     let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
 
-    if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
+    // أ) إلغاء الإسناد أو تعديل المندوب
+    if (rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب")) {
+      updateData.assignedCourierId = null;
+      updateData.status = "pending";
+      changes.push(`👨‍✈️ **المندوب:** تم إلغاء إسناد المندوب بنجاح`);
+      changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
+    } else if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
       const allCouriers = await prisma.courier.findMany();
       for (const c of allCouriers) {
         if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
@@ -555,6 +559,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
+    // ب) تعديل اسم المنطقة وجلب الخيارات المطابقة الصريحة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -584,6 +589,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
+    // ج) تعديل أسعار الطلب والتوصيل الصريحة
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -599,17 +605,29 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
+    // د) تعديل نوع البضاعة والمنتج
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
-    if (rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
-      if (rawText.includes("مرفوض")) updateData.status = "rejected";
-      else if (rawText.includes("مكتمل") || rawText.includes("واصل")) updateData.status = "completed";
-      else if (rawText.includes("استلام")) updateData.status = "delivered";
-      changes.push(`📌 **الحالة الجديدة:** ${updateData.status}`);
+    // هـ) تعديل حالة الطلب صراحة (رجعه جديد، معلق، مكتمل، مرفوض)
+    if (rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
+      if (rawText.includes("مرفوض")) {
+        updateData.status = "rejected";
+        changes.push(`📌 **الحالة الجديدة:** مرفوض`);
+      } else if (rawText.includes("مكتمل") || rawText.includes("واصل")) {
+        updateData.status = "completed";
+        changes.push(`📌 **الحالة الجديدة:** مكتمل`);
+      } else if (rawText.includes("استلام")) {
+        updateData.status = "delivered";
+        changes.push(`📌 **الحالة الجديدة:** تم الاستلام`);
+      } else if (rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق")) {
+        updateData.status = "pending";
+        updateData.assignedCourierId = null;
+        changes.push(`📌 **الحالة الجديدة:** طلب جديد معلق`);
+      }
     }
 
     if (Object.keys(updateData).length > 0) {
@@ -628,9 +646,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 7. استعلام وجلب البيانات المعلقة
+  // 7. استعلام وجلب البيانات المعلقة (فقط عند عدم وجود رقم طلب صريح في الرسالة)
   // ==========================================
-  if (rawText.includes("شنو") || rawText.includes("طلبات") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلقة")) {
+  if (!orderNumber && (rawText.includes("شنو") || rawText.includes("طلبات جديدة") || rawText.includes("طلبات معلقة"))) {
     const pendingOrders = await prisma.order.findMany({
       where: { status: "pending" },
       include: { shop: true, customerRegion: true },
