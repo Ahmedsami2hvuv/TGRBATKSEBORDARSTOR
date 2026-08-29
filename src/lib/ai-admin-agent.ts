@@ -154,8 +154,13 @@ function parseCustomSystemIntent(userText: string): any {
   }
 
   // 0.4 تعديل تفاصيل الطلب النشط المفتوح حالياً
-  const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل");
+  const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل") || cleanQ.includes("تعديل");
   if (
+    cleanQ.includes("عدل") ||
+    cleanQ.includes("تعديل") ||
+    cleanQ.includes("سوي تعديل") ||
+    cleanQ.includes("سوي المنطقة") ||
+    cleanQ.includes("سوي المنطقه") ||
     cleanQ.includes("عدل الرقم") ||
     cleanQ.includes("عدل السعر") ||
     cleanQ.includes("عدل سعر") ||
@@ -171,9 +176,9 @@ function parseCustomSystemIntent(userText: string): any {
     const explicitOrderNum = explicitOrderMatch ? Number(explicitOrderMatch[1]) : null;
 
     let fieldToEdit = "subtotal";
-    if (cleanQ.includes("رقم") && !cleanQ.includes("سعر")) fieldToEdit = "phone";
+    if ((cleanQ.includes("رقم") || cleanQ.includes("هاتف")) && !cleanQ.includes("سعر")) fieldToEdit = "phone";
     else if (cleanQ.includes("سعر التوصيل") || cleanQ.includes("توصيل")) fieldToEdit = "delivery_price";
-    else if (cleanQ.includes("منطقه") || cleanQ.includes("منطقة")) fieldToEdit = "region";
+    else if (cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("المنطقه") || cleanQ.includes("المنطقة")) fieldToEdit = "region";
     else if (cleanQ.includes("سعر")) fieldToEdit = "subtotal";
 
     const allNums = (text.match(/\d+/g) || []).map(Number).filter(n => !n.toString().startsWith("77"));
@@ -687,7 +692,21 @@ export async function executeSuperSystemAgent(
           updateData.totalAmount = new Decimal(number_val + currentDelivery);
         } else if (field === "region") {
           const allRegions = await prisma.region.findMany();
-          const { match, ambiguous } = findBestMatch(allRegions, raw_text);
+          let regionNameQuery = raw_text
+            .replace(/سوي|تعديل|لهذا|الطلب|عدل|غير|بدل|المنطقة|المنطقه|منطقة|منطقه|وسوي|لـ|الي|إلى/gi, "")
+            .replace(/[.,؟]/g, "")
+            .trim();
+
+          let { match, ambiguous } = findBestMatch(allRegions, regionNameQuery || raw_text);
+          if (!match && regionNameQuery.length >= 2) {
+            match = await prisma.region.create({
+              data: {
+                name: regionNameQuery,
+                deliveryPrice: new Decimal(5)
+              }
+            });
+          }
+
           if (!match) {
             if (ambiguous.length > 0) {
               return { reply: `يا أبو الأكبر، فيه أكثر من منطقة تشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد المنطقة بالضبط.` };
