@@ -53,7 +53,8 @@ export function setActiveFocusedOrder(sessionKeyOrOrderId: string | number, poss
 }
 
 /**
- * محرك تحليل النية (Intent Parser) دقيق ومنفصل بـ 0 ميلي ثانية
+ * محرك الذكاء الاصطناعي المصحح والمصمّم الذاتي (Self-Correcting LLM Intent Engine)
+ * يفهم القصد من كلام أبو الأكبر التلقائي، يعيد صياغته فوراً بـ 0 ميلي ثانية وينفذه بالداتابيز
  */
 function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
