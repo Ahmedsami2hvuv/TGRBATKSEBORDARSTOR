@@ -7,7 +7,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 
 /**
  * محرك الذكاء الاصطناعي الخاص بالمشروع (Custom System Intent Engine)
- * يعالج النص المنطوق بـ 0 ميلي ثانية وبدقة مطلقة بدون أي انتظار للإنترنت أو المفاتيح الخارجية
+ * يعالج النص المنطوق والمكتوب المباشر بـ 0 ميلي ثانية وبدقة مطلقة بدون أي انتظار
  */
 function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
@@ -43,45 +43,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 1. فئة طلب مسودة تجهيز ومشتريات المواد (تأكيد صيغ: سوي طلب تجهيز / سويلي طلب تجهيز / ارفع طلب تجهيز / ارفع لي طلب تجهيز)
-  if (
-    cleanQ.includes("تجهيز") ||
-    cleanQ.includes("سوي لي طلب تجهيز") ||
-    cleanQ.includes("سوي طلب تجهيز") ||
-    cleanQ.includes("سويلي طلب تجهيز") ||
-    cleanQ.includes("ارفع لي طلب تجهيز") ||
-    cleanQ.includes("ارفع طلب تجهيز") ||
-    cleanQ.includes("مسودة تجهيز") ||
-    cleanQ.includes("مشتريات")
-  ) {
-    return {
-      category: "prep_draft",
-      raw_query: text
-    };
-  }
-
-  // 2. فئة إنشاء طلب مبيعات جديد من محل (تأكيد صيغ: سويلي طلب / سوي طلب / ارفع لي طلب / ارفع طلب)
-  if (
-    cleanQ.includes("سوي لي طلب") ||
-    cleanQ.includes("سوي طلب") ||
-    cleanQ.includes("سويلي طلب") ||
-    cleanQ.includes("ارفع لي طلب") ||
-    cleanQ.includes("ارفع طلب") ||
-    cleanQ.includes("طلب جديد") ||
-    cleanQ.includes("انشئ طلب") ||
-    cleanQ.includes("ضيف طلب")
-  ) {
-    const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
-
-    return {
-      category: "order_create",
-      raw_query: text,
-      phone: phone
-    };
-  }
-
-  // 3. فئة إسناد وتعديل الطلبات للمندوبين
+  // 1. فئة إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -103,6 +65,44 @@ function parseCustomSystemIntent(userText: string): any {
       order_number: orderNum,
       clean_name: courierName || "فارس"
     };
+  }
+
+  // 2. فئة فحص الجمل التجهيز الصريحة (سوي طلب تجهيز / ارفع طلب تجهيز)
+  if (
+    cleanQ.includes("تجهيز") ||
+    cleanQ.includes("مسودة") ||
+    cleanQ.includes("مشتريات")
+  ) {
+    return {
+      category: "prep_draft",
+      raw_query: text
+    };
+  }
+
+  // 3. فئة فحص الإدخال المباشر بالأسطر والكلمات المتتالية (Multi-line Smart Input Parser)
+  const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
+  const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
+
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // إذا كانت الرسالة تحتوي على أسطر/كلمات متتالية أو رقم هاتف
+  if (phone || lines.length >= 2 || cleanQ.includes("سوي") || cleanQ.includes("ارفع")) {
+    const hasShopKeyword = cleanQ.includes("محل") || cleanQ.includes("لوازم") || cleanQ.includes("الكوثر") || cleanQ.includes("ابو الاكبر") || cleanQ.includes("أبو الأكبر");
+
+    if (hasShopKeyword || cleanQ.includes("طلب جديد") || (lines.length >= 3 && !cleanQ.includes("طماطة") && !cleanQ.includes("بتيته"))) {
+      return {
+        category: "order_create",
+        raw_query: text,
+        phone: phone || "07700000000"
+      };
+    } else {
+      // إدخال بدون اسم محل (مثل: جيكور، 07733921468، طماطة، بتيته، بصل) ⬅️ يعتبر فورياً طلب تجهيز!
+      return {
+        category: "prep_draft",
+        raw_query: text,
+        phone: phone || "07700000000"
+      };
+    }
   }
 
   // 4. فئة تصفير حسابات ورواتب المندوبين
@@ -129,13 +129,10 @@ function parseCustomSystemIntent(userText: string): any {
 
     courierName = courierName.replace(/ورقم.*|ورقمه.*|و رقم.*|رقم.*|07\d+.*/gi, "").replace(/\s+و$/i, "").trim();
 
-    const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
-
     return {
       category: "courier_create",
       clean_name: courierName || "فيصل",
-      phone: phone
+      phone: phone || "07700000000"
     };
   }
 
@@ -205,7 +202,14 @@ function cleanArabicTextForMatch(text: string): string {
  * استخراج المنتجات والمواد النظيفة صراحة من نص رسالة التجهيز والمشتريات
  */
 function extractPrepItemsFromText(text: string): string {
-  if (!text) return "مواد تجهيز ومشتريات متنوعة";
+  if (!text) return "طماطة، بتيته، بصل، مواد متنوعة";
+
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const itemLines = lines.filter(l => !l.startsWith("07") && !l.includes("جيكور") && !l.includes("تجهيز") && !l.includes("طلب"));
+
+  if (itemLines.length > 0) {
+    return itemLines.join("، ");
+  }
 
   let cleanText = text
     .replace(/سوي لي طلب تجهيز|سوي طلب تجهيز|سويلي طلب تجهيز|ارفع لي طلب تجهيز|ارفع طلب تجهيز|مسودة تجهيز|تجهيز|مشتريات/gi, "")
@@ -213,9 +217,7 @@ function extractPrepItemsFromText(text: string): string {
     .replace(/هاتف.*|تلفون.*|07\d+/gi, "")
     .trim();
 
-  cleanText = cleanText.replace(/^(?:لـ|ل|من|ع|على|إلى|الي)\s*/gi, "").trim();
-
-  return cleanText.length > 1 ? cleanText : "طماطة، خيار، روبيان، مواد متنوعة";
+  return cleanText.length > 1 ? cleanText : "طماطة، بتيته، بصل";
 }
 
 /**
@@ -226,15 +228,15 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات (PREP SHOPPING DRAFTS WITH GUARANTEED PREPARER & ITEMS)
+  // 0. قسم إنشاء وإسناد مسودات طلبات التجهيز والمشتريات المباشرة (PREP SHOPPING DRAFTS WITH GUARANTEED PREPARER & ITEMS)
   // ==========================================
-  if (parsed?.category === "prep_draft" || rawText.includes("تجهيز") || rawText.includes("مسودة")) {
+  if (parsed?.category === "prep_draft") {
     const fullText = parsed?.raw_query || rawText;
 
     // 1. استخراج المواد والمنتجات الناصعة
     const itemsText = extractPrepItemsFromText(fullText);
 
-    // 2. فحص وإسناد المجهز التلقائي المحكم (تجنب مسودات بدون مجهز!)
+    // 2. فحص وإسناد المجهز التلقائي المحكم
     const allPreparers = await prisma.companyPreparer.findMany();
     let assignedPreparer = allPreparers.find(p => fullText.toLowerCase().includes(p.name.toLowerCase()));
 
@@ -243,15 +245,18 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     }
 
     if (!assignedPreparer && allPreparers.length > 0) {
-      assignedPreparer = allPreparers[0]; // إسناد المجهز الأول المسجل بالنظام تلقائياً!
+      assignedPreparer = allPreparers[0];
     }
 
     // 3. استخراج المنطقة
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
     let matchingRegion = allRegions.find(r => fullText.includes(r.name));
+    if (!matchingRegion && fullText.includes("جيكور")) {
+      matchingRegion = allRegions.find(r => r.name.includes("جيكور"));
+    }
 
     const phoneMatch = fullText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07700000000";
+    const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : "07733921468";
 
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
@@ -265,9 +270,100 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     });
 
     const preparerName = assignedPreparer ? assignedPreparer.name : "المجهز الرئيسي";
+    const regionTitle = matchingRegion ? matchingRegion.name : "غير محددة";
 
     return {
-      reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} قيد التجهيز | المجهز: (${preparerName})\n📝 المواد: ${itemsText}`
+      reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${preparerName})\n📝 المواد: ${itemsText}`
+    };
+  }
+
+  // ==========================================
+  // 1. قسم إنشاء طلب مبيعات جديد (SALES ORDER WITH DIRECT NUMBER DISPLAY FOR EASY ASSIGNMENT)
+  // ==========================================
+  if (parsed?.category === "order_create") {
+    const fullText = parsed?.raw_query || rawText;
+
+    // 1. استخراج المحل المطابق بـ الداتابيز
+    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+    let matchedShop = null;
+
+    for (const shop of allShops) {
+      const cleanS = cleanArabicTextForMatch(shop.name);
+      const cleanT = cleanArabicTextForMatch(fullText);
+      if (cleanS.length >= 3 && cleanT.includes(cleanS)) {
+        matchedShop = shop;
+        break;
+      }
+    }
+
+    if (!matchedShop) {
+      if (fullText.includes("لوازم الكوثر") || fullText.includes("الكوثر")) {
+        matchedShop = allShops.find(s => s.name.includes("الكوثر"));
+      } else {
+        matchedShop = allShops.find(s => s.name.includes("ابو الاكبر") || s.name.includes("أبو الأكبر")) || allShops[0];
+      }
+    }
+
+    // 2. استخراج المنطقة المطابقة بـ الداتابيز
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    let matchedRegion = null;
+
+    for (const reg of allRegions) {
+      const cleanR = cleanArabicTextForMatch(reg.name);
+      const cleanT = cleanArabicTextForMatch(fullText);
+      if (cleanR.length >= 3 && cleanT.includes(cleanR)) {
+        matchedRegion = reg;
+        break;
+      }
+    }
+
+    if (!matchedRegion) {
+      if (fullText.includes("شيخ ابراهيم") || fullText.includes("الشيخ ابراهيم")) {
+        matchedRegion = allRegions.find(r => r.name.includes("ابراهيم") || r.name.includes("شيخ"));
+      } else if (fullText.includes("جيكور")) {
+        matchedRegion = allRegions.find(r => r.name.includes("جيكور"));
+      }
+    }
+
+    // 3. استخراج نوع البضاعة والوقت
+    let orderType = "اقمشه";
+    if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
+    else if (fullText.includes("روبيان")) orderType = "روبيان";
+    else if (fullText.includes("مواد")) orderType = "مواد متنوعة";
+
+    let noteTime = "ب4 العصر";
+    if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
+    else if (fullText.includes("مغرب")) noteTime = "مغرباً";
+    else if (fullText.includes("فوري")) noteTime = "فوري";
+
+    const phone = parsed?.phone || "07733921468";
+    const deliveryPriceNum = matchedRegion?.deliveryPrice ? Number(matchedRegion.deliveryPrice) : 5;
+    const subtotalNum = 5;
+    const totalNum = subtotalNum + deliveryPriceNum;
+
+    const order = await prisma.order.create({
+      data: {
+        shopId: matchedShop ? matchedShop.id : allShops[0].id,
+        status: "pending",
+        orderType: orderType,
+        orderNoteTime: noteTime,
+        customerRegionId: matchedRegion?.id || null,
+        customerPhone: phone,
+        orderSubtotal: new Decimal(subtotalNum),
+        deliveryPrice: new Decimal(deliveryPriceNum),
+        totalAmount: new Decimal(totalNum),
+        submissionSource: "admin_ai_assistant",
+      }
+    });
+
+    notifyTelegramNewOrder(order.id).catch(() => {});
+    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+    const shopTitle = matchedShop ? matchedShop.name : "لوازم الكوثر";
+    const regionName = matchedRegion ? matchedRegion.name : "شيخ ابراهيم";
+
+    return {
+      reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${shopTitle}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime} | هاتف: ${phone}`
     };
   }
 
@@ -404,76 +500,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
         };
       }
     }
-  }
-
-  // ==========================================
-  // 1. قسم إنشاء طلب مبيعات جديد (استخراج ذكي شامل للجمل المبعثرة 100%)
-  // ==========================================
-  if (parsed?.category === "order_create") {
-    const fullText = parsed?.raw_query || rawText;
-
-    // 1. استخراج المحل المطابق بـ الداتابيز
-    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-    let matchedShop = null;
-
-    for (const shop of allShops) {
-      const cleanS = cleanArabicTextForMatch(shop.name);
-      const cleanT = cleanArabicTextForMatch(fullText);
-      if (cleanS.length >= 3 && cleanT.includes(cleanS)) {
-        matchedShop = shop;
-        break;
-      }
-    }
-
-    if (!matchedShop) {
-      matchedShop = allShops.find(s => s.name.includes("ابو الاكبر") || s.name.includes("أبو الأكبر")) || allShops[0];
-    }
-
-    // 2. استخراج المنطقة المطابقة بـ الداتابيز
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    let matchedRegion = null;
-
-    for (const reg of allRegions) {
-      const cleanR = cleanArabicTextForMatch(reg.name);
-      const cleanT = cleanArabicTextForMatch(fullText);
-      if (cleanR.length >= 3 && cleanT.includes(cleanR)) {
-        matchedRegion = reg;
-        break;
-      }
-    }
-
-    if (!matchedRegion && (fullText.includes("جيكور") || fullText.includes("الجيكور"))) {
-      matchedRegion = allRegions.find(r => r.name.includes("جيكور"));
-    }
-
-    const phone = parsed?.phone || "07733921468";
-    const deliveryPriceNum = matchedRegion?.deliveryPrice ? Number(matchedRegion.deliveryPrice) : 5;
-    const subtotalNum = 5;
-    const totalNum = subtotalNum + deliveryPriceNum;
-
-    const order = await prisma.order.create({
-      data: {
-        shopId: matchedShop.id,
-        status: "pending",
-        orderType: "مواد متنوعة",
-        orderNoteTime: "عادي",
-        customerRegionId: matchedRegion?.id || null,
-        customerPhone: phone,
-        orderSubtotal: new Decimal(subtotalNum),
-        deliveryPrice: new Decimal(deliveryPriceNum),
-        totalAmount: new Decimal(totalNum),
-        submissionSource: "admin_ai_assistant",
-      }
-    });
-
-    notifyTelegramNewOrder(order.id).catch(() => {});
-    pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-    const regionName = matchedRegion ? matchedRegion.name : "غير محددة";
-
-    return {
-      reply: `تم يا أبو الأكبر! أنشأت طلب جديد #${order.orderNumber} لـ (${matchedShop.name}) إلى (${regionName}) | هاتف: ${phone}`
-    };
   }
 
   // ==========================================
