@@ -362,10 +362,10 @@ function MandoubFullBlockCardGrid({
                       onOpenRow(o.id);
                     }
                   }}
-                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3.5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2.5`}
+                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2`}
                 >
-                  {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة ورقم الطلب محمي من الانكسار */}
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 overflow-hidden whitespace-nowrap">
+                  {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة ورقم الطلب بخطوط كبيرة وبارزة */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 overflow-hidden whitespace-nowrap">
                     <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
                       {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
                       <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -403,7 +403,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="px-3.5 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                           >
                             استلام
                           </button>
@@ -412,50 +412,50 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="px-3.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
                           >
                             تسليم
                           </button>
                         )}
                         {!isSortingMode && isDelivered && (
-                          <span className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-black text-white shrink-0">
+                          <span className="rounded-xl bg-emerald-600 px-3 py-1 text-xs sm:text-sm font-black text-white shrink-0">
                             تم التسليم
                           </span>
                         )}
                         {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
-                          <span className={`rounded-lg px-2.5 py-1 text-xs font-black shrink-0 ${statusBadgeBg}`}>
+                          <span className={`rounded-xl px-3 py-1 text-xs sm:text-sm font-black shrink-0 ${statusBadgeBg}`}>
                             {STATUS_AR[o.orderStatus] ?? o.orderStatus}
                           </span>
                         )}
                       </div>
 
-                      {/* بجانبه مباشرة: اسم المحل ← المنطقة بخط متكيف يتقلص ولا ينكسر لسطر ثانٍ إطلاقاً */}
-                      <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
+                      {/* بجانبه مباشرة: اسم المحل ← المنطقة بخط كبييير وبارز جداً */}
+                      <div className="flex items-center gap-1.5 text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
                         <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
                         <span className="text-slate-400 font-bold shrink-0">←</span>
                         <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
                       </div>
                     </div>
 
-                    {/* أقصى اليسار: رقم الطلب بخط حاد ثابت */}
-                    <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
+                    {/* أقصى اليسار: رقم الطلب بخط كبير بارز */}
+                    <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight shrink-0">
                       #{o.shortId}
                     </span>
                   </div>
 
-                  {/* سطر التفاصيل المالية والنوع والوقت محمي في سطر أفقي واحد حصين */}
+                  {/* سطر التفاصيل المالية والنوع والوقت بخطوط ضخمة وبارزة جداً */}
                   <div className="space-y-1 overflow-hidden whitespace-nowrap">
-                    <div className="flex items-center justify-between gap-1.5 text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 whitespace-nowrap min-w-0">
+                    <div className="flex items-center justify-between gap-1.5 text-sm font-black text-slate-800 dark:text-slate-100 whitespace-nowrap min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0 truncate whitespace-nowrap">
-                        <span className="text-indigo-800 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 truncate shrink-1">
+                        <span className="text-indigo-800 dark:text-indigo-300 font-black bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 truncate shrink-1 text-xs sm:text-sm">
                           {displayGoodsType}
                         </span>
                         <span className="text-slate-400 font-bold shrink-0">←</span>
-                        <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40 shrink-0">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-black tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-3 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40 shrink-0 text-sm sm:text-base">
                           {displayTotal}
                         </span>
                         <span className="text-slate-400 font-bold shrink-0">←</span>
-                        <span className="text-rose-600 dark:text-rose-400 font-bold text-xs shrink-0">
+                        <span className="text-rose-600 dark:text-rose-400 font-black text-xs sm:text-sm shrink-0">
                           {o.orderNoteTime || o.timeLine || "فوري"}
                         </span>
                       </div>
