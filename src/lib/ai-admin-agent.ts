@@ -249,9 +249,11 @@ function parseCustomSystemIntent(userText: string): any {
 
     let targetStatus = "rejected";
     if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي") || cleanQ.includes("إلغاء") || cleanQ.includes("الغاء") || cleanQ.includes("رفض")) targetStatus = "rejected";
-    else if (cleanQ.includes("واصل") || cleanQ.includes("تم الاستلام") || cleanQ.includes("مكتمل")) targetStatus = "delivered";
+    else if (cleanQ.includes("مسلم") || cleanQ.includes("تم التسليم") || cleanQ.includes("مكتمل")) targetStatus = "completed";
+    else if (cleanQ.includes("مستلم") || cleanQ.includes("تم الاستلام") || cleanQ.includes("واصل")) targetStatus = "delivered";
+    else if (cleanQ.includes("مؤرشف") || cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف")) targetStatus = "archived";
+    else if (cleanQ.includes("مسند") || cleanQ.includes("إسناد")) targetStatus = "assigned";
     else if (cleanQ.includes("جديد") || cleanQ.includes("معلق")) targetStatus = "pending";
-    else if (cleanQ.includes("مسند")) targetStatus = "assigned";
 
     if (orderNum) {
       return {
@@ -858,7 +860,15 @@ export async function executeSuperSystemAgent(
           data: { status: target_status }
         });
 
-        const statusAr = target_status === "rejected" ? "مرفوض" : target_status === "delivered" ? "واصل" : target_status === "assigned" ? "مسند" : "معلق";
+        const statusArMap: Record<string, string> = {
+          rejected: "مرفوض",
+          completed: "مسلم",
+          delivered: "مستلم",
+          assigned: "مسند",
+          pending: "جديد",
+          archived: "مؤرشف"
+        };
+        const statusAr = statusArMap[target_status] || "مرفوض";
 
         return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} إلى (${statusAr})` };
       }
