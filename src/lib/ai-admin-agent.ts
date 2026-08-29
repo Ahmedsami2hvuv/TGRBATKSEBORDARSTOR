@@ -8,6 +8,60 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { sendTelegramMessageWithKeyboardToChat } from "./telegram";
 
 /**
+ * تحليل واستخراج القصد والأسماء والبيانات باستخدام الذكاء الاصطناعي Gemini API مباشرةً 100%
+ */
+async function parseIntentWithGeminiAi(userText: string): Promise<any> {
+  const allKeys = await getAllActiveGeminiKeys();
+  if (allKeys.length === 0) return null;
+
+  const prompt = `أنت محرك تحليل الذكاء الاصطناعي لمنظومة إدارة الطلبات والديون والمندوبين.
+المطلوب تحليل النص المنطوق باللغة العربية والعراقية بدقة فائقة واستخراج القصد والبيانات بصيغة JSON فقط:
+
+النص المنطوق: "${userText}"
+
+قم بإعادة JSON بالهيكل التالي حصراً (بدون أي أسطر إضافية أو ملاحق):
+{
+  "category": "courier_create" | "order_create" | "debt_record" | "courier_zero" | "prep_draft" | "general_qa",
+  "clean_name": "الاسم الصريح الناصع للنوايا (مثال: فيصل، الوالد، ميثاق أبو رضا) تجريد واو العطف وحروف الجر كلياً",
+  "phone": "رقم الهاتف إن وجد أو null",
+  "amount": الرقم أو null,
+  "shop_name": "اسم المحل إن وجد أو null",
+  "region_name": "اسم المنطقة إن وجد أو null",
+  "order_type": "نوع البضاعة إن وجد أو null",
+  "debt_kind": "gave" (أنطيت/أعطيت) أو "took" (أخذت/استلمت) أو null
+}`;
+
+  for (const keyRecord of allKeys) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawJson) {
+          await markGeminiKeySuccess(keyRecord.id);
+          return JSON.parse(rawJson);
+        }
+      }
+    } catch (err: any) {
+      await markGeminiKeyError(keyRecord.id, err.message);
+    }
+  }
+
+  return null;
+}
+
+/**
  * تحويل كااااافة المبالغ والأرقام المنطوقة بالحروف أو بالأرقام العربية (من 1 إلى الملايين) إلى قيم رقمية صريحة
  */
 function parseArabicWordsToNumber(text: string): number | null {
@@ -486,39 +540,9 @@ async function findFuzzyMatchingCreditBookPartners(partnerQuery: string) {
 }
 
 /**
- * أدوات التحكم الفائقة بالشركات والمندوبين والمحلات والإعدادات وكافة مفاصل النظام
- */
-const SUPER_AI_TOOLS = [
-  {
-    functionDeclarations: [
-      {
-        name: "super_system_agent",
-        description: "مساعد الذكاء الاصطناعي الفائق للتحكم الشامل بجميع مفاصل التطبيق: الطلبات، المندوبين، المحلات، المناطق، الإعدادات، الديون، والمجموعات الإدارية.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            domain: {
-              type: "STRING",
-              description: "مجال التحكم: 'orders' | 'couriers' | 'preparers' | 'shops' | 'regions' | 'settings' | 'debts' | 'prep_drafts'"
-            },
-            operation: {
-              type: "STRING",
-              description: "نوع الإجراء: 'create' | 'update' | 'delete' | 'toggle' | 'zero' | 'query' | 'assign'"
-            },
-            targetIdOrName: { type: "STRING", description: "اسم أو معرف الكائن المستهدف (مثلاً: اسم المندوب، المحل، المنطقة، رقم الطلب)" },
-            payloadJson: { type: "STRING", description: "تفاصيل التعديل أو البيانات الإضافية كنص أو JSON" }
-          },
-          required: ["domain", "operation"]
-        }
-      }
-    ]
-  }
-];
-
-/**
  * المحرك الفائق للتحكم الشامل بكل مفاصل النظام وقواعد البيانات والإعدادات
  */
-export async function executeSuperSystemAgent(args: any, userText: string) {
+export async function executeSuperSystemAgent(args: any, userText: string, aiParsed?: any) {
   const { domain, operation, targetIdOrName, payloadJson } = args;
   const rawText = userText || "";
 
@@ -632,60 +656,60 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 0.2 معالجة نقرة زر اختيار المنطقة التفاعلي المباشر (DIRECT REGION BUTTON CLICK RECOGNITION)
+  // 1. إنشاء وإضافة المندوبين الجدد بذكاء Gemini AI المباشر 100%
   // ==========================================
-  if (rawText.startsWith("📍") || rawText.includes("توصيل:")) {
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-    const selectedRegion = matchedRegions[0];
+  if (
+    aiParsed?.category === "courier_create" ||
+    domain === "couriers" && operation === "create" ||
+    rawText.includes("سويلي مندوب") ||
+    rawText.includes("سوي مندوب") ||
+    rawText.includes("ضيف مندوب") ||
+    rawText.includes("مندوب جديد")
+  ) {
+    const courierName = aiParsed?.clean_name || extractCleanCourierName(rawText, targetIdOrName);
+    const phone = aiParsed?.phone || extractCustomerPhoneFlexible(rawText);
 
-    if (selectedRegion) {
-      const latestOrder = await prisma.order.findFirst({
-        orderBy: { createdAt: "desc" },
-        include: { shop: true }
+    try {
+      const existingCourier = await prisma.courier.findFirst({
+        where: { name: { contains: courierName, mode: "insensitive" } }
       });
 
-      if (latestOrder) {
-        const regionPrice = selectedRegion.deliveryPrice ? Number(selectedRegion.deliveryPrice) : 5;
-        const subtotal = latestOrder.orderSubtotal ? Number(latestOrder.orderSubtotal) : 0;
-        const newTotal = subtotal + regionPrice;
-
-        const updated = await prisma.order.update({
-          where: { id: latestOrder.id },
-          data: {
-            customerRegionId: selectedRegion.id,
-            deliveryPrice: new Decimal(regionPrice),
-            totalAmount: new Decimal(newTotal)
-          }
+      if (existingCourier) {
+        const updated = await prisma.courier.update({
+          where: { id: existingCourier.id },
+          data: { name: courierName, phone: phone }
         });
-
-        return {
-          reply: `تم يا أبو الأكبر! غيرت منطقة طلب #${updated.orderNumber} لـ (${selectedRegion.name}) والتوصيل ${regionPrice} والإجمالي (${newTotal})`
-        };
+        return { reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${updated.name}) برقم ${phone}` };
       }
+
+      const newCourier = await prisma.courier.create({
+        data: {
+          name: courierName,
+          phone: phone
+        }
+      });
+
+      return {
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
+      };
+    } catch (err: any) {
+      return {
+        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
+      };
     }
   }
 
   // ==========================================
-  // 1. القالب الأمني الفولاذي الأول: إنشاء طلب مبيعات جديد من محل (CREATE NEW SALES ORDER)
+  // 2. إنشاء طلب مبيعات جديد من محل
   // ==========================================
   if (
-    !rawText.includes("تجهيز") &&
-    !rawText.includes("مسودة") &&
-    (rawText.includes("سوي لي طلب من محل") ||
-      rawText.includes("سوي طلب من محل") ||
-      rawText.includes("سويلي طلب من محل") ||
-      rawText.includes("سوي لي طلب") ||
-      rawText.includes("سوي طلب") ||
-      rawText.includes("سويلي طلب") ||
-      rawText.includes("ضيف طلب") ||
-      rawText.includes("طلب جديد من محل") ||
-      rawText.includes("طلب جديد"))
+    aiParsed?.category === "order_create" ||
+    (!rawText.includes("تجهيز") && (rawText.includes("سوي لي طلب") || rawText.includes("سوي طلب") || rawText.includes("طلب جديد")))
   ) {
-    const matchingShop = await findMatchingShopByQuery(rawText);
+    const matchingShop = await findMatchingShopByQuery(aiParsed?.shop_name || rawText);
 
     if (!matchingShop) {
-      const extractedName = extractTargetShopName(rawText);
+      const extractedName = aiParsed?.shop_name || extractTargetShopName(rawText);
       const fuzzyShops = await findFuzzyMatchingShops(rawText);
 
       const shopButtons = fuzzyShops.map(s => ({
@@ -704,37 +728,16 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const hasRegionMention = rawText.includes("منطقة") || rawText.includes("منطقه") || rawText.includes("عنوان") || rawText.includes("جيكور") || rawText.includes("حمدان") || rawText.includes("ابي الخصيب") || rawText.includes("إلى") || rawText.includes("الي");
-    
-    let selectedRegion: any = null;
-    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
+    const matchedRegions = findMatchingRegionsExactOrContains(aiParsed?.region_name || rawText, allRegions);
+    const selectedRegion = matchedRegions[0] || null;
 
-    if (hasRegionMention) {
-      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-      selectedRegion = matchedRegions[0] || null;
-      if (matchedRegions.length > 1) {
-        regionButtons = matchedRegions.map(r => ({
-          text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
-          action: `select_region_${r.id}`
-        }));
-      }
-    } else {
-      regionButtons = allRegions.slice(0, 5).map(r => ({
-        text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
-        action: `select_region_${r.id}`
-      }));
-    }
+    const phone = aiParsed?.phone || extractCustomerPhoneFlexible(rawText);
+    const priceNum = aiParsed?.amount || parseArabicWordsToNumber(rawText) || 5;
 
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    const wordPrice = parseArabicWordsToNumber(rawText);
-    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 100000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
-    const priceNum = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
-
-    const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : (hasRegionMention ? 5 : 0);
+    const deliveryPriceNum = selectedRegion?.deliveryPrice ? selectedRegion.deliveryPrice.toNumber() : 5;
     const totalAmountNum = priceNum + deliveryPriceNum;
 
-    const orderType = extractCleanOrderType(rawText, matchingShop.name);
+    const orderType = aiParsed?.order_type || extractCleanOrderType(rawText, matchingShop.name);
     const orderNoteTime = extractCleanOrderNoteTime(rawText);
 
     const order = await prisma.order.create({
@@ -758,196 +761,29 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const regionName = selectedRegion ? selectedRegion.name : "غير محددة";
 
     return {
-      reply: `تم يا أبو الأكبر! أنشأت طلب جديد #${order.orderNumber} لـ (${matchingShop.name}) إلى (${regionName}) | نوع: ${orderType} | هاتف: ${phone}`,
-      buttons: regionButtons
+      reply: `تم يا أبو الأكبر! أنشأت طلب جديد #${order.orderNumber} لـ (${matchingShop.name}) إلى (${regionName}) | نوع: ${orderType} | هاتف: ${phone}`
     };
   }
 
   // ==========================================
-  // 2. القالب الأمني الفولاذي الثاني: إنشاء طلب مسودة تجهيز ومشتريات مواد (PREP SHOPPING DRAFTS)
+  // 3. إدارة ورصد وتنزيل الديون (DEBTS & TRANSACTIONS)
   // ==========================================
   if (
-    domain === "prep_drafts" ||
-    rawText.includes("سوي طلب تجهيز") ||
-    rawText.includes("سوي لي طلب تجهيز") ||
-    rawText.includes("تجهيز") ||
-    rawText.includes("مسودة تجهيز") ||
-    rawText.includes("مشتريات")
+    aiParsed?.category === "debt_record" ||
+    (!rawText.includes("سوي لي طلب") && !rawText.includes("سوي طلب") && (rawText.includes("نطيت") || rawText.includes("انطيت") || rawText.includes("أخذت") || rawText.includes("اخذت") || rawText.includes("تنزيل")))
   ) {
-    const extractedItems = extractPrepItemsFromText(rawText);
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-    const matchingRegion = matchedRegions[0] || null;
-
-    const allPreparers = await prisma.companyPreparer.findMany();
-    const assignedPreparer = allPreparers.find(p => rawText.toLowerCase().includes(p.name.toLowerCase()));
-
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId: assignedPreparer ? assignedPreparer.id : null,
-        rawListText: extractedItems,
-        customerPhone: phone,
-        customerRegionId: matchingRegion?.id || null,
-        titleLine: `تجهيز ${matchingRegion?.name || "الطلب"}`,
-        status: "draft"
-      }
-    });
-
-    const preparerButtons = allPreparers.map(p => ({
-      text: `👨‍🍳 ${p.name}`,
-      action: `assign_prep_${p.id}`
-    }));
-
-    return {
-      reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
-      buttons: preparerButtons
-    };
-  }
-
-  // ==========================================
-  // 3. إدارة وتصفير وإظهار المندوبين بـ أولوية فائقة (COURIER ZERO & SALARY MANAGEMENT)
-  // ==========================================
-  if (
-    domain === "couriers" ||
-    rawText.includes("صفر") ||
-    rawText.includes("تصفير") ||
-    rawText.includes("رواتب") ||
-    rawText.includes("سلفة")
-  ) {
-    const isZeroAction = rawText.includes("صفر") || rawText.includes("تصفير") || operation === "zero";
-
-    if (isZeroAction) {
-      let cleanName = (targetIdOrName || rawText)
-        .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
-        .trim();
-
-      const allCouriers = await prisma.courier.findMany();
-      let matchedCourier = allCouriers.find(c => cleanName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanName.toLowerCase()));
-
-      if (!matchedCourier && (cleanName.includes("boos") || rawText.toLowerCase().includes("boos"))) {
-        matchedCourier = allCouriers.find(c => c.name.toLowerCase().includes("boos") || c.name.includes("بوس") || c.name.includes("بووس"));
-      }
-
-      if (!matchedCourier) {
-        matchedCourier = allCouriers[0];
-      }
-
-      if (matchedCourier) {
-        await prisma.courier.update({
-          where: { id: matchedCourier.id },
-          data: { mandoubTotalsResetAt: new Date() }
-        });
-        return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات المندوب (${matchedCourier.name})` };
-      }
-    }
-
-    if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
-      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
-      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
-
-      const courier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
-      });
-
-      if (courier) {
-        await prisma.courier.update({
-          where: { id: courier.id },
-          data: { availableForAssignment: activeState }
-        });
-        const statusMsg = activeState ? "تفعيل" : "تعطيل";
-        return { reply: `تم يا أبو الأكبر! سويت ${statusMsg} للمندوب (${courier.name})` };
-      }
-    }
-  }
-
-  // ==========================================
-  // 4. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
-  // ==========================================
-  if (
-    domain === "couriers" && operation === "create" ||
-    rawText.includes("سويلي مندوب") ||
-    rawText.includes("سوي مندوب") ||
-    rawText.includes("ضيف مندوب") ||
-    rawText.includes("اضافة مندوب") ||
-    rawText.includes("إضافة مندوب") ||
-    rawText.includes("مندوب جديد") ||
-    rawText.includes("اضف مندوب")
-  ) {
-    const courierName = extractCleanCourierName(rawText, targetIdOrName);
-    const phone = extractCustomerPhoneFlexible(rawText);
-
-    try {
-      const existingFaisal = await prisma.courier.findFirst({
-        where: { name: { contains: "فيصل", mode: "insensitive" } }
-      });
-
-      if (existingFaisal) {
-        const updated = await prisma.courier.update({
-          where: { id: existingFaisal.id },
-          data: { name: "فيصل", phone: phone }
-        });
-        return { reply: `تم يا أبو الأكبر! ضفت وتأكدت من المندوب الجديد (${updated.name}) برقم ${phone}` };
-      }
-
-      const newCourier = await prisma.courier.create({
-        data: {
-          name: courierName,
-          phone: phone
-        }
-      });
-
-      return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${newCourier.name}) برقم ${phone}`
-      };
-    } catch (err: any) {
-      return {
-        reply: `تم يا أبو الأكبر! ضفت المندوب الجديد (${courierName}) برقم ${phone}`
-      };
-    }
-  }
-
-  // ==========================================
-  // 5. القالب الأمني الفولاذي الثالث: إدارة ورصد وتنزيل الديون (DEBTS & TRANSACTIONS)
-  // ==========================================
-  if (
-    !rawText.includes("سوي لي طلب") &&
-    !rawText.includes("سوي طلب") &&
-    !rawText.includes("طلب جديد") &&
-    !rawText.includes("منطقة") &&
-    !rawText.includes("منطقه") &&
-    !rawText.includes("صفر") &&
-    !rawText.includes("تصفير") &&
-    (domain === "debts" ||
-      rawText.includes("نطيت") ||
-      rawText.includes("انطيت") ||
-      rawText.includes("أعطيت") ||
-      rawText.includes("اعطيت") ||
-      rawText.includes("اخذت") ||
-      rawText.includes("أخذت") ||
-      rawText.includes("تنزيل") ||
-      rawText.includes("سدد") ||
-      rawText.includes("استلمت") ||
-      rawText.includes("قبضت") ||
-      rawText.includes("دفعت") ||
-      rawText.includes("حولت"))
-  ) {
-    const isTook = rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل") || rawText.includes("سدد") || rawText.includes("استلمت") || rawText.includes("قبضت");
+    const isTook = aiParsed?.debt_kind === "took" || rawText.includes("اخذت") || rawText.includes("أخذت") || rawText.includes("تنزيل");
     const kind = isTook ? "took" : "gave";
 
-    const wordPrice = parseArabicWordsToNumber(rawText);
-    const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
-    const finalAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
+    const finalAmount = aiParsed?.amount || parseArabicWordsToNumber(rawText) || 5;
+    const partnerName = aiParsed?.clean_name || extractTargetPartnerName(rawText);
 
-    const partner = await findExistingCreditBookPartnerStrict(rawText);
+    const partner = await findExistingCreditBookPartnerStrict(partnerName);
 
     if (!partner) {
-      const targetName = extractTargetPartnerName(rawText);
-      const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(rawText);
+      const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(partnerName);
 
       const dynamicButtons: Array<{ text: string; action: string }> = [];
-
       if (fuzzyMatches.length > 0) {
         fuzzyMatches.forEach(m => {
           dynamicButtons.push({
@@ -958,21 +794,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
 
       dynamicButtons.push({
-        text: `➕ أنشئ حساب جديد لـ (${targetName}) وارصد ${finalAmount}`,
-        action: `confirm_create_partner_${kind}_${targetName}_${finalAmount}`
+        text: `➕ أنشئ حساب جديد لـ (${partnerName}) وارصد ${finalAmount}`,
+        action: `confirm_create_partner_${kind}_${partnerName}_${finalAmount}`
       });
 
-      dynamicButtons.push({
-        text: `❌ إلغاء الإجراء`,
-        action: `cancel_debt_action`
-      });
-
-      const suggestionMsg = fuzzyMatches.length > 0
-        ? `\n\n💡 **هل تقصد أحداً من الشركاء المسجلين لدينا أدناه؟ انقر على الاسم المطلوب للتأكيد:**`
-        : "";
+      dynamicButtons.push({ text: `❌ إلغاء الإجراء`, action: `cancel_debt_action` });
 
       return {
-        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً أو مندوباً أو محلاً أو مورداً مسجلاً بالضبط باسم (**${targetName}**) بقواعد البيانات بدفتر الديون!${suggestionMsg}`,
+        reply: `⚠️ **يا أبو الأكبر:** لم أجد شخصاً مسجلاً بالضبط باسم (**${partnerName}**) بقواعد البيانات بدفتر الديون!`,
         buttons: dynamicButtons
       };
     }
@@ -982,14 +811,11 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         partnerId: partner.id,
         amount: new Decimal(finalAmount),
         kind: kind,
-        note: `معاملة صريحة بواسطة المساعد الصوتي`
+        note: `معاملة صريحة بواسطة الذكاء الاصطناعي`
       }
     });
 
-    const allTx = await prisma.creditBookTransaction.findMany({
-      where: { partnerId: partner.id }
-    });
-
+    const allTx = await prisma.creditBookTransaction.findMany({ where: { partnerId: partner.id } });
     let totalGave = 0;
     let totalTook = 0;
     allTx.forEach(t => {
@@ -1000,14 +826,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const netBalance = totalGave - totalTook;
     let balanceText = "";
-
-    if (netBalance > 0) {
-      balanceText = `وصار نطلبه (${netBalance})`;
-    } else if (netBalance < 0) {
-      balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
-    } else {
-      balanceText = `وصار الحساب متصفر (0)`;
-    }
+    if (netBalance > 0) balanceText = `وصار نطلبه (${netBalance})`;
+    else if (netBalance < 0) balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
+    else balanceText = `وصار الحساب متصفر (0)`;
 
     const actionWord = isTook ? "نزلت" : "ضفت";
 
@@ -1017,248 +838,23 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 6. الشمول المباشر المطلق لتعديل كاااافة حقول ومكونات الطلب (UNIVERSAL FULL ORDER FIELD MODIFICATION)
+  // 4. تصفير حسابات المندوبين
   // ==========================================
-  let orderNumber: number | null = null;
+  if (aiParsed?.category === "courier_zero" || rawText.includes("صفر") || rawText.includes("تصفير")) {
+    const cleanName = aiParsed?.clean_name || targetIdOrName || rawText;
+    const allCouriers = await prisma.courier.findMany();
+    const matchedCourier = allCouriers.find(c => cleanName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanName.toLowerCase())) || allCouriers[0];
 
-  const explicitNumMatch = rawText.match(/(?:طلب|طلبية|#|رقمه|رقم)?\s*(\d{3,5})/i);
-  if (explicitNumMatch) {
-    orderNumber = Number(explicitNumMatch[1]);
-  }
-
-  const wordPrice = parseArabicWordsToNumber(rawText);
-
-  let existingOrder: any = null;
-
-  if (orderNumber && orderNumber < 100000) {
-    existingOrder = await prisma.order.findUnique({
-      where: { orderNumber: orderNumber },
-      include: { shop: true, customerRegion: true, courier: true }
-    });
-  }
-
-  const matchingShop = await findMatchingShopByQuery(rawText);
-
-  if (!existingOrder && matchingShop) {
-    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة") || rawText.includes("الغي اسنادها");
-
-    if (isResetStatusToPending) {
-      existingOrder = await prisma.order.findFirst({
-        where: { shopId: matchingShop.id },
-        orderBy: { createdAt: "desc" },
-        include: { shop: true, customerRegion: true, courier: true }
+    if (matchedCourier) {
+      await prisma.courier.update({
+        where: { id: matchedCourier.id },
+        data: { mandoubTotalsResetAt: new Date() }
       });
-    } else {
-      let targetStatusFilter: string | undefined = undefined;
-      if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
-        targetStatusFilter = "rejected";
-      } else if (rawText.includes("مسند") || rawText.includes("مسندة") || rawText.includes("بانتظار")) {
-        targetStatusFilter = "assigned";
-      } else if (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) {
-        targetStatusFilter = "pending";
-      }
-
-      const whereClause: any = { shopId: matchingShop.id };
-      if (targetStatusFilter) {
-        whereClause.status = targetStatusFilter;
-      }
-
-      existingOrder = await prisma.order.findFirst({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-        include: { shop: true, customerRegion: true, courier: true }
-      });
+      return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات المندوب (${matchedCourier.name})` };
     }
   }
 
-  if (existingOrder) {
-    const updateData: any = {};
-    const changes: string[] = [];
-    let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
-
-    const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
-    const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
-    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة");
-
-    if (rawText.includes("رقم الزبون") || rawText.includes("رقم الهاتف") || rawText.includes("هاتف") || rawText.includes("موبايل") || rawText.includes("غير الرقم") || rawText.includes("خلي الرقم")) {
-      const newPhone = extractCustomerPhoneFlexible(rawText);
-      if (newPhone && newPhone !== "غير محدد") {
-        updateData.customerPhone = newPhone;
-        changes.push(`رقم الزبون: ${newPhone}`);
-      }
-    }
-
-    if (rawText.includes("الرقم الثاني") || rawText.includes("الرقم البديل") || rawText.includes("رقم بديل") || rawText.includes("هاتف ثاني")) {
-      const altPhone = extractCustomerPhoneFlexible(rawText);
-      if (altPhone && altPhone !== "غير محدد") {
-        updateData.alternatePhone = altPhone;
-        updateData.secondCustomerPhone = altPhone;
-        changes.push(`رقم بديل: ${altPhone}`);
-      }
-    }
-
-    if (rawText.includes("نقطة دالة") || rawText.includes("نقطه داله") || rawText.includes("علامة بارزة") || rawText.includes("قريب على") || rawText.includes("مقابل")) {
-      const landmarkMatch = rawText.match(/(?:نقطة دالة|نقطه داله|علامة بارزة|قريب على|مقابل)\s*(.+)$/i);
-      const landmarkText = landmarkMatch ? landmarkMatch[1].trim() : rawText.trim();
-      if (landmarkText) {
-        updateData.customerLandmark = landmarkText;
-        changes.push(`نقطة دالة: ${landmarkText}`);
-      }
-    }
-
-    if (rawText.includes("دين قديم") || rawText.includes("دين الزبون القديم") || rawText.includes("طلب قديم")) {
-      const debtAmount = wordPrice != null ? wordPrice : 0;
-      updateData.customerOldDebt = new Decimal(debtAmount);
-      changes.push(`دين قديم: ${debtAmount}`);
-    }
-
-    if (rawText.includes("سعر الشراء") || rawText.includes("التكلفة") || rawText.includes("تكلفة البضاعة")) {
-      const pPrice = wordPrice != null ? wordPrice : 0;
-      updateData.purchasePrice = new Decimal(pPrice);
-      changes.push(`سعر شراء: ${pPrice}`);
-    }
-
-    if (rawText.includes("موقع الزبون") || rawText.includes("لوكيشن") || rawText.includes("خريطة")) {
-      const urlMatch = rawText.match(/(https?:\/\/\S+|maps\S+)/i);
-      if (urlMatch) {
-        updateData.customerLocationUrl = urlMatch[0];
-        changes.push(`لوكيشن: ${urlMatch[0]}`);
-      }
-    }
-
-    if (isExplicitUnassign) {
-      updateData.assignedCourierId = null;
-      updateData.status = "pending";
-      changes.push(`إلغاء إسناد المندوب`);
-    } else if (isAssignAction) {
-      const allCouriers = await prisma.courier.findMany();
-      for (const c of allCouriers) {
-        if (rawText.toLowerCase().includes(c.name.toLowerCase())) {
-          updateData.assignedCourierId = c.id;
-          updateData.status = "assigned";
-          changes.push(`إسناد للمندوب: ${c.name}`);
-          break;
-        }
-      }
-    }
-
-    if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم") || rawText.includes("جيكور") || rawText.includes("حمدان")) {
-      const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
-      let targetRegion = matchedRegions[0] || allRegions[0];
-
-      if (matchedRegions.length > 1) {
-        regionButtons = matchedRegions.map(r => {
-          const priceNum = r.deliveryPrice ? Number(r.deliveryPrice) : 5;
-          return {
-            text: `📍 ${r.name} (توصيل: ${priceNum})`,
-            action: `set_region_${existingOrder.id}_${r.id}`
-          };
-        });
-      }
-
-      if (targetRegion) {
-        updateData.customerRegionId = targetRegion.id;
-        const regionDeliveryPrice = targetRegion.deliveryPrice ? Number(targetRegion.deliveryPrice) : 5;
-        updateData.deliveryPrice = new Decimal(regionDeliveryPrice);
-
-        const currentSubtotal = existingOrder.orderSubtotal ? existingOrder.orderSubtotal.toNumber() : 0;
-        updateData.totalAmount = new Decimal(currentSubtotal + regionDeliveryPrice);
-
-        changes.push(`المنطقة: ${targetRegion.name} | الإجمالي: ${currentSubtotal + regionDeliveryPrice}`);
-      }
-    }
-
-    if (!rawText.includes("سعر الشراء") && (wordPrice != null || rawText.includes("سعر") || rawText.includes("السعر"))) {
-      const finalPriceToSet = wordPrice != null ? wordPrice : 5;
-
-      if (rawText.includes("سعر التوصيل")) {
-        updateData.deliveryPrice = new Decimal(finalPriceToSet);
-        changes.push(`سعر التوصيل: ${finalPriceToSet}`);
-      } else {
-        updateData.orderSubtotal = new Decimal(finalPriceToSet);
-        changes.push(`سعر البضاعة: ${finalPriceToSet}`);
-      }
-
-      const sub = updateData.orderSubtotal ? Number(updateData.orderSubtotal) : existingOrder.orderSubtotal.toNumber();
-      const del = updateData.deliveryPrice ? Number(updateData.deliveryPrice) : existingOrder.deliveryPrice.toNumber();
-      updateData.totalAmount = new Decimal(sub + del);
-      changes.push(`الإجمالي النهائي: ${sub + del}`);
-    }
-
-    if (rawText.includes("نوع الطلب") || rawText.includes("نوع البضاعة") || rawText.includes("نوع المنتج") || rawText.includes("تغيير نوع") || rawText.includes("نوع") || rawText.includes("صمان") || rawText.includes("صمون")) {
-      const cleanType = extractCleanOrderType(rawText, existingOrder.shop?.name);
-      if (cleanType && cleanType.length >= 2) {
-        updateData.orderType = cleanType;
-        changes.push(`نوع البضاعة: ${cleanType}`);
-      }
-    }
-
-    if (rawText.includes("وقت الطلب") || rawText.includes("وقت الاستلام") || rawText.includes("غدا") || rawText.includes("صباحا")) {
-      const timeVal = extractCleanOrderNoteTime(rawText);
-      updateData.orderNoteTime = timeVal;
-      changes.push(`الوقت: ${timeVal}`);
-    }
-
-    if (!isAssignAction && !isExplicitUnassign) {
-      if (isResetStatusToPending) {
-        updateData.status = "pending";
-        updateData.assignedCourierId = null;
-        changes.push(`إعادة الطلب جديد معلق`);
-      } else if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
-        updateData.status = "rejected";
-        changes.push(`حالة: مرفوض`);
-      } else if (rawText.includes("مكتمل") || rawText.includes("واصل")) {
-        updateData.status = "completed";
-        changes.push(`حالة: مكتمل`);
-      } else if (rawText.includes("استلام")) {
-        updateData.status = "delivered";
-        changes.push(`حالة: تم الاستلام`);
-      }
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      const updated = await prisma.order.update({
-        where: { id: existingOrder.id },
-        data: updateData
-      });
-
-      return {
-        reply: `تم يا أبو الأكبر! عدلت طلب #${updated.orderNumber} لـ (${existingOrder.shop.name}) | ${changes.join(" - ")}`,
-        buttons: regionButtons
-      };
-    }
-  }
-
-  if (!orderNumber && (rawText.includes("شنو") || rawText.includes("طلبات جديدة") || rawText.includes("طلبات معلقة"))) {
-    const pendingOrders = await prisma.order.findMany({
-      where: { status: "pending" },
-      include: { shop: true, customerRegion: true },
-      orderBy: { createdAt: "desc" },
-      take: 10
-    });
-
-    if (pendingOrders.length === 0) {
-      return { reply: "📋 لا توجد طلبات معلقة حالياً يا أبو الأكبر!" };
-    }
-
-    let lines = [`📋 الطلبات المعلقة (${pendingOrders.length}):`];
-    pendingOrders.forEach((o, i) => {
-      lines.push(`${i + 1}. #${o.orderNumber} | ${o.shop.name} | ${o.customerRegion?.name || "غير محددة"} | ${o.totalAmount}`);
-    });
-    return { reply: lines.join("\n") };
-  }
-
-  // إذا لم يكن أمر نظام صريح، نجيب إجابة عامة لبقة يا أبو الأكبر!
-  if (rawText.includes("طقس") || rawText.includes("الطقس") || rawText.includes("جو")) {
-    return { reply: "الطقس حار صيفي ومستقر في البصرة يا أبو الأكبر! ☀️🌴" };
-  }
-
-  if (rawText.includes("لينوفو") || rawText.includes("لابتوب")) {
-    return { reply: "لابتوبات لينوفو ممتازة جداً وعملية يا أبو الأكبر خاصة فئات ThinkPad و Legion! 👌💻" };
-  }
-
-  return { reply: "أنا معك يا أبو الأكبر! تقدر تسألني أي سؤال أو تأمرني بأي تعديل بالنظام وسأنفذه لك فوراً! 🚀" };
+  return { reply: "أنا معك يا أبو الأكبر! تقدر تأمرني بأي طلب أو تعديل وسأنفذه لك فوراً بـ الذكاء الاصطناعي! 🚀" };
 }
 
 export async function processAdminAiMessage(
@@ -1269,7 +865,7 @@ export async function processAdminAiMessage(
   historyArray?: any[]
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
 
-  // 1. أولوية قصوى فورية (0 ميلي ثانية): تنفيذ الأكشنات التفاعلية المباشرة والنصوص المنطوقة للأزرار دون المرور بـ AI API
+  // 1. أولوية قصوى فورية: تنفيذ الأكشنات التفاعلية المباشرة للأزرار
   const isDirectActionButton =
     userText.startsWith("apply_debt_existing_") ||
     userText.startsWith("confirm_create_partner_") ||
@@ -1278,85 +874,50 @@ export async function processAdminAiMessage(
     userText.startsWith("select_region_") ||
     userText.startsWith("set_region_") ||
     userText.startsWith("assign_prep_") ||
-    userText.startsWith("📍") ||
-    userText.includes("هل تقصد:") ||
-    userText.includes("أنشئ حساب جديد لـ") ||
-    userText.includes("انشئ حساب جديد لـ");
+    userText.startsWith("📍");
 
   if (isDirectActionButton) {
-    if (userText.includes("هل تقصد:") || userText.includes("أنشئ حساب جديد") || userText.includes("انشئ حساب جديد")) {
-      const matchName = userText.match(/\(([^)]+)\)/)?.[1] || userText.replace(/.*هل تقصد:|.*أنشئ حساب جديد لـ|.*انشئ حساب جديد لـ|✅|\?/g, "").trim();
-      const cleanName = matchName.split("-")[0].trim();
-      return await executeSuperSystemAgent({ domain: "debts", operation: "create" }, `نطيت 5 لـ ${cleanName}`);
-    }
-
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   }
 
-  // 2. فحص هل الجملة هي أمر نظام صريح (طلب، ديون، مندوب، تصفير، تجهيز) أم سؤال عام
-  const isSystemCommand =
-    userText.includes("طلب") ||
-    userText.includes("سوي") ||
-    userText.includes("ضيف") ||
-    userText.includes("عدل") ||
-    userText.includes("غير") ||
-    userText.includes("مندوب") ||
-    userText.includes("صفر") ||
-    userText.includes("تصفير") ||
-    userText.includes("نطيت") ||
-    userText.includes("انطيت") ||
-    userText.includes("أعطيت") ||
-    userText.includes("اخذت") ||
-    userText.includes("أخذت") ||
-    userText.includes("تنزيل") ||
-    userText.includes("سدد") ||
-    userText.includes("تجهيز") ||
-    userText.includes("منطقة") ||
-    userText.includes("محل") ||
-    userText.includes("مورد") ||
-    userText.includes("مجهّز") ||
-    userText.includes("مجهز");
+  // 2. تحليل وتفكيك الرسالة بالذكاء الاصطناعي Gemini AI المباشر أولاً!
+  const aiParsed = await parseIntentWithGeminiAi(userText);
 
-  if (isSystemCommand) {
-    return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
+  if (aiParsed && aiParsed.category !== "general_qa") {
+    return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText, aiParsed);
   }
 
-  // 3. إذا كان سؤالاً عاماً (مثل الطقس، لينوفو، استفسارات عامة): نسأل Gemini API مباشرةً لنص الإجابة!
+  // 3. إذا كان سؤالاً عاماً (كالطقس ولينوفو): نسأل Gemini API مباشرة لنص الإجابة!
   const allKeys = await getAllActiveGeminiKeys();
-
   const systemPrompt = `أنت الذكاء الاصطناعي الفائق لمنظومة أبو الأكبر (Super Gemini AI Agent).
 أجب أبو الأكبر دائماً بكل ود وفصاحة وإصابة بالمعنى وبسطرين مبسطين! خاطبه دائماً بـ (يا أبو الأكبر)!`;
 
   if (allKeys.length > 0) {
     for (const keyRecord of allKeys) {
-      const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro"];
-      for (const model of modelsToTry) {
-        try {
-          const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: "user", parts: [{ text: userText }] }],
-              }),
-            }
-          );
-
-          if (res.ok) {
-            const data = await res.json();
-            const textOutput = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
-            if (textOutput?.trim()) {
-              await markGeminiKeySuccess(keyRecord.id);
-              return { reply: textOutput.trim() };
-            }
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyRecord.key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: [{ role: "user", parts: [{ text: userText }] }],
+            }),
           }
-        } catch (err: any) {}
-      }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const textOutput = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
+          if (textOutput?.trim()) {
+            await markGeminiKeySuccess(keyRecord.id);
+            return { reply: textOutput.trim() };
+          }
+        }
+      } catch (err: any) {}
     }
   }
 
-  // Fallback ذكي ولابق للأسئلة العامة
   return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
 }
