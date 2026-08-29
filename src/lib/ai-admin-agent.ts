@@ -271,6 +271,8 @@ function parseCustomSystemIntent(userText: string): any {
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
+    cleanQ.includes("الاسناد") ||
+    cleanQ.includes("الإسناد") ||
     cleanQ.includes("اسند") ||
     cleanQ.includes("حول الطلب") ||
     cleanQ.includes("حوله على") ||
@@ -282,14 +284,14 @@ function parseCustomSystemIntent(userText: string): any {
     const orderNum = orderNumMatch ? Number(orderNumMatch[1] ?? orderNumMatch[0]) : null;
 
     let courierName = text
-      .replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*اسند إلى|.*حول إلى|.*حوله على|.*غير المندوب لـ|.*لكابتن|.*كابتن|.*إلى|.*الي/gi, "")
-      .replace(/طلب|رقم|رقمه|#|\d+/gi, "")
+      .replace(/.*إسناد إلى|.*إسناد الي|.*الاسناد إلى|.*الاسناد الي|.*الإسناد إلى|.*الإسناد الي|.*اسناد إلى|.*اسناد الي|.*اسند لـ|.*اسند إلى|.*حول إلى|.*حوله على|.*غير المندوب لـ|.*لكابتن|.*كابتن|.*إلى|.*الي/gi, "")
+      .replace(/هذا|الطلب|سوي|الإسناد|الاسناد|إسناد|اسناد|طلب|رقم|رقمه|#|\d+|[.,؟]/gi, "")
       .trim();
 
     return {
       category: "order_update",
       order_number: orderNum,
-      clean_name: courierName || null
+      clean_name: courierName || text
     };
   }
 
@@ -407,9 +409,20 @@ function findBestMatch<T extends { name: string }>(
   const cleanQuery = cleanArabicTextForMatch(queryName);
   if (cleanQuery.length < 2) return { match: null, ambiguous: [] };
 
+  // 1. تطابق تام
   const exact = items.find(i => cleanArabicTextForMatch(i.name) === cleanQuery);
   if (exact) return { match: exact, ambiguous: [] };
 
+  // 2. فحص إن كانت إحدى الكلمات المسجلة في العناصر موجودة كـ كلمة صريحة داخل النص
+  const wordsInQuery = cleanQuery.split(/\s+/).filter(w => w.length >= 2);
+  const wordMatches = items.filter(i => {
+    const cleanItemName = cleanArabicTextForMatch(i.name);
+    return wordsInQuery.some(w => w === cleanItemName || cleanItemName === w);
+  });
+  if (wordMatches.length === 1) return { match: wordMatches[0], ambiguous: [] };
+  if (wordMatches.length > 1) return { match: null, ambiguous: wordMatches };
+
+  // 3. تطابق جزئي احترافي
   const partial = items.filter(i => {
     const cleanName = cleanArabicTextForMatch(i.name);
     return cleanName.length >= 2 && (cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName));
