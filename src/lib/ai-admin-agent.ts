@@ -13,6 +13,8 @@ function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
   const text = userText.trim();
   const cleanQ = text.toLowerCase();
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
   // 0. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
   if (
@@ -43,7 +45,19 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 1. فئة إسناد وتعديل الطلبات للمندوبين
+  // 1. قاعدة حاسمة 100%: إذا بدأت الرسالة باسم منطقة (مثل جيكور) أو احتوت كلمات تجهيز وبدون اسم محل ⬅️ طلب تجهيز ومشتريات صريح!
+  const knownRegions = ["جيكور", "شيخ ابراهيم", "الخصيب", "حمدان", "السراجي", "مهيجران", "ابو الخصيب", "الفاو", "القرنة", "الهارثة", "الزبير"];
+  const isStartsWithRegion = knownRegions.some(r => firstLine.includes(r) || cleanQ.startsWith(r));
+  const hasExplicitShop = cleanQ.includes("محل") || cleanQ.includes("لوازم") || cleanQ.includes("الكوثر");
+
+  if ((isStartsWithRegion && !hasExplicitShop) || cleanQ.includes("تجهيز") || cleanQ.includes("مسودة") || cleanQ.includes("مشتريات")) {
+    return {
+      category: "prep_draft",
+      raw_query: text
+    };
+  }
+
+  // 2. فئة إسناد وتعديل الطلبات للمندوبين
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -67,7 +81,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 2. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين (حازم ومباشر لـ دفتر الديون)
+  // 3. فئة رصد وتنزيـل الديون لـ الشركاء والموردين والمندوبين
   if (
     cleanQ.includes("نطيت") ||
     cleanQ.includes("انطيت") ||
@@ -107,40 +121,16 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة فحص الجمل التجهيز الصريحة (سوي طلب تجهيز / ارفع طلب تجهيز)
-  if (
-    cleanQ.includes("تجهيز") ||
-    cleanQ.includes("مسودة") ||
-    cleanQ.includes("مشتريات")
-  ) {
-    return {
-      category: "prep_draft",
-      raw_query: text
-    };
-  }
-
-  // 4. فئة فحص الإدخال المباشر بالأسطر والكلمات المتتالية (Multi-line Smart Input Parser)
+  // 4. فئة إنشاء طلب مبيعات جديد من محل
   const phoneMatch = text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
   const phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
 
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-
-  if (phone || lines.length >= 2 || cleanQ.includes("سوي") || cleanQ.includes("ارفع")) {
-    const hasShopKeyword = cleanQ.includes("محل") || cleanQ.includes("لوازم") || cleanQ.includes("الكوثر") || cleanQ.includes("ابو الاكبر") || cleanQ.includes("أبو الأكبر");
-
-    if (hasShopKeyword || cleanQ.includes("طلب جديد") || (lines.length >= 3 && !cleanQ.includes("طماطة") && !cleanQ.includes("بتيته"))) {
-      return {
-        category: "order_create",
-        raw_query: text,
-        phone: phone || "07700000000"
-      };
-    } else {
-      return {
-        category: "prep_draft",
-        raw_query: text,
-        phone: phone || "07700000000"
-      };
-    }
+  if (hasExplicitShop || cleanQ.includes("سوي لي طلب") || cleanQ.includes("سوي طلب") || cleanQ.includes("ارفع طلب")) {
+    return {
+      category: "order_create",
+      raw_query: text,
+      phone: phone || "07700000000"
+    };
   }
 
   // 5. فئة تصفير حسابات ورواتب المندوبين
@@ -200,7 +190,7 @@ function cleanArabicTextForMatch(text: string): string {
  * استخراج المنتجات والمواد النظيفة صراحة من نص رسالة التجهيز والمشتريات
  */
 function extractPrepItemsFromText(text: string): string {
-  if (!text) return "طماطة، بتيته، بصل، مواد متنوعة";
+  if (!text) return "خيار، بصل، مواد متنوعة";
 
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const itemLines = lines.filter(l => !l.startsWith("07") && !l.includes("جيكور") && !l.includes("تجهيز") && !l.includes("طلب"));
@@ -215,7 +205,7 @@ function extractPrepItemsFromText(text: string): string {
     .replace(/هاتف.*|تلفون.*|07\d+/gi, "")
     .trim();
 
-  return cleanText.length > 1 ? cleanText : "طماطة، بتيته، بصل";
+  return cleanText.length > 1 ? cleanText : "خيار، بصل";
 }
 
 /**
@@ -265,7 +255,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     });
 
     const preparerName = assignedPreparer ? assignedPreparer.name : "المجهز الرئيسي";
-    const regionTitle = matchingRegion ? matchingRegion.name : "غير محددة";
+    const regionTitle = matchingRegion ? matchingRegion.name : "جيكور";
 
     return {
       reply: `تم يا أبو الأكبر! أنشأت طلب تجهيز جديد #${draft.draftNumber} لـ (${regionTitle}) | المجهز: (${preparerName})\n📝 المواد: ${itemsText}`
@@ -376,7 +366,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
     const finalAmount = parsed?.amount || 5;
     let targetName = parsed?.clean_name || "ميثاق";
 
-    // أولوية ومطابقة صريحة لـ جدول CreditBookPartner بدفتر الديون 100%
     const allPartners = await prisma.creditBookPartner.findMany();
     let partner = allPartners.find(p => p.name === targetName || cleanArabicTextForMatch(p.name) === cleanArabicTextForMatch(targetName));
 
@@ -394,7 +383,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
       });
     }
 
-    // إذا كان اسم الشريك في الداتابيز يحتوي على ملحق زائد وطلب أبو الأكبر تنظيفه لـ (ميثاق)
     if (partner && rawText.includes("ميثاق") && partner.name.includes("السماك")) {
       partner = await prisma.creditBookPartner.update({
         where: { id: partner.id },
