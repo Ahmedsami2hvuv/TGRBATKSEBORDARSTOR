@@ -282,80 +282,14 @@ function extractTargetPartnerName(text: string): string {
 }
 
 /**
- * البحث المحكم الفائق بالمطابقة التامة المرنة الصريحة (تأخذ بعين الاعتبار توحيد أ/إ/آ و ة/هـ و ابي/ابو)
+ * البحث المحكم الفائق بجدول CreditBookPartner الفعلي الحقيقي الموجود حالياً بدفتر الديون بدون إنشاء تلقائي تلقائياً!
  */
 async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
   const targetName = extractTargetPartnerName(partnerQuery);
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
   const cleanTarget = cleanArabicTextForMatch(targetName);
 
-  // 1. البحث في المندوبين بـ المطابقة المرنة (prisma.courier)
-  const allCouriers = await prisma.courier.findMany();
-  for (const c of allCouriers) {
-    const cleanC = cleanArabicTextForMatch(c.name);
-    if (cleanC === cleanTarget || cleanC === cleanQ) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: c.id, type: "courier" }, { name: { contains: c.name, mode: "insensitive" } }] }
-      });
-
-      if (existingPartner) {
-        return await prisma.creditBookPartner.update({
-          where: { id: existingPartner.id },
-          data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
-        });
-      }
-
-      return await prisma.creditBookPartner.create({
-        data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
-      });
-    }
-  }
-
-  // 2. البحث في المحلات والعملاء بـ المطابقة المرنة (prisma.shop)
-  const allShops = await prisma.shop.findMany();
-  for (const s of allShops) {
-    const cleanS = cleanArabicTextForMatch(s.name);
-    if (cleanS === cleanTarget || cleanS === cleanQ) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: s.id, type: "shop" }, { name: { contains: s.name, mode: "insensitive" } }] }
-      });
-
-      if (existingPartner) {
-        return await prisma.creditBookPartner.update({
-          where: { id: existingPartner.id },
-          data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
-        });
-      }
-
-      return await prisma.creditBookPartner.create({
-        data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
-      });
-    }
-  }
-
-  // 3. البحث في المجهزين والموردين بـ المطابقة المرنة الصريحة (prisma.companyPreparer)
-  const allPreps = await prisma.companyPreparer.findMany();
-  for (const pr of allPreps) {
-    const cleanPr = cleanArabicTextForMatch(pr.name);
-    if (cleanPr === cleanTarget || cleanPr === cleanQ) {
-      const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: pr.id, type: "preparer" }, { name: { contains: pr.name, mode: "insensitive" } }] }
-      });
-
-      if (existingPartner) {
-        return await prisma.creditBookPartner.update({
-          where: { id: existingPartner.id },
-          data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
-        });
-      }
-
-      return await prisma.creditBookPartner.create({
-        data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
-      });
-    }
-  }
-
-  // 4. البحث في دفتر الديون بـ المطابقة المرنة الصريحة (prisma.creditBookPartner)
+  // البحث الفعلي المباشر في دفتر الديون الحالي (prisma.creditBookPartner)
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
@@ -364,6 +298,7 @@ async function findExistingCreditBookPartnerStrict(partnerQuery: string) {
     }
   }
 
+  // إذا تم مسح الحساب أو لم ينشأ بـ CreditBookPartner، يُحظر الإنشاء التلقائي إطلاقاً ويُرجع null
   return null;
 }
 
@@ -468,10 +403,10 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     let partner = await prisma.creditBookPartner.findUnique({ where: { id: partnerId } });
 
     if (!partner) {
-      const shop = await prisma.shop.findUnique({ where: { id: partnerId } });
-      if (shop) {
+      const prep = await prisma.companyPreparer.findUnique({ where: { id: partnerId } });
+      if (prep) {
         partner = await prisma.creditBookPartner.create({
-          data: { name: shop.name, type: "shop", externalId: shop.id, phone: shop.phone }
+          data: { name: prep.name, type: "preparer", externalId: prep.id, phone: prep.phone }
         });
       }
     }
@@ -486,10 +421,10 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     }
 
     if (!partner) {
-      const prep = await prisma.companyPreparer.findUnique({ where: { id: partnerId } });
-      if (prep) {
+      const shop = await prisma.shop.findUnique({ where: { id: partnerId } });
+      if (shop) {
         partner = await prisma.creditBookPartner.create({
-          data: { name: prep.name, type: "preparer", externalId: prep.id, phone: prep.phone }
+          data: { name: shop.name, type: "shop", externalId: shop.id, phone: shop.phone }
         });
       }
     }
@@ -653,7 +588,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const partner = await findExistingCreditBookPartnerStrict(rawText);
 
-    // إذا لم يجد الشخص بالضبط، يفيض السيرفر بـ الأسماء المقاربة والمتشابهة مع إظهار صفاتهم الصريحة
+    // إذا لم يجد الشخص بالضبط في دفتر الديون، يقدم المقترحات وطلب الموافقة الصريحة
     if (!partner) {
       const targetName = extractTargetPartnerName(rawText);
       const fuzzyMatches = await findFuzzyMatchingCreditBookPartners(rawText);
@@ -1172,7 +1107,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-اذكر دائماً صفة الشريك المقترح (مثل: ميثاق - مورد/مجهز)، وجرد الأرقام من الاسم الصريح، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
+اذكر دائماً صفة الشريك المقترح (مثل: ميثاق - مورد/مجهز)، ولا تنشئ أي حساب تلقائياً إذا مسح من جدول الديون، واكتب للمدير دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
