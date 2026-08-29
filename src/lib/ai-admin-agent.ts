@@ -26,18 +26,36 @@ export function resetChatSessionContext() {
 function parseCustomSystemIntent(userText: string): any {
   if (!userText) return { category: "general_qa" };
   const text = userText.trim();
-  const cleanQ = text.toLowerCase();
+  const normalizedText = text
+    .replace(/أ|إ|آ/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟]/g, "")
+    .trim();
+
+  const cleanQ = normalizedText.toLowerCase();
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.0 فئة إلغاء أو رفض الطلبات صراحةً (ORDER REJECTION & CANCELLATION ENGINE)
+  // 0.0 أولوية قصوى: فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL PRIORITY 100%)
+  if (
+    cleanQ.includes("اخر طلب مرفوض") ||
+    cleanQ.includes("طلب مرفوض") ||
+    cleanQ.includes("تفاصيل اخر طلب مرفوض") ||
+    cleanQ.includes("انطيني تفاصيل اخر طلب مرفوض") ||
+    cleanQ.includes("الطلب المرفوض")
+  ) {
+    return { category: "last_rejected_order" };
+  }
+
+  // 0.1 فئة إلغاء أو رفض الطلبات الصريحة لمحل معين (ORDER CANCELLATION & REJECTION ENGINE)
   if (
     cleanQ.includes("إلغاء") ||
     cleanQ.includes("الغاء") ||
-    cleanQ.includes("رفض") ||
     cleanQ.includes("سوي لها إلغاء") ||
     cleanQ.includes("سويله إلغاء") ||
-    cleanQ.includes("سويله رفض")
+    cleanQ.includes("سويله رفض") ||
+    (cleanQ.includes("رفض") && !cleanQ.includes("مرفوض"))
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
     const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : activeChatContext.lastOrderNumber || null;
@@ -50,17 +68,6 @@ function parseCustomSystemIntent(userText: string): any {
       order_number: orderNum,
       shop_name: shopName
     };
-  }
-
-  // 0.1 فئة استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL)
-  if (
-    cleanQ.includes("اخر طلب مرفوض") ||
-    cleanQ.includes("أخر طلب مرفوض") ||
-    cleanQ.includes("تفاصيل اخر طلب مرفوض") ||
-    cleanQ.includes("انطيني تفاصيل اخر طلب مرفوض") ||
-    cleanQ.includes("الطلب المرفوض")
-  ) {
-    return { category: "last_rejected_order" };
   }
 
   // 1. فئة التحديث الجماعي الفائق لحالات طلبات محلات أو مندوبين معينين (BULK STATUS UPDATE)
@@ -104,7 +111,7 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 3. فئة إسناد وتعديل الطلبات للمندوبين
+  // 3. فئة إسناد وتعديل الطلبات للمندوبين (دعم كلمة كابتن وسياق ذاكرة الدردشة)
   if (
     cleanQ.includes("إسناد") ||
     cleanQ.includes("اسناد") ||
@@ -265,7 +272,43 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   const parsed = aiParsed || parseCustomSystemIntent(rawText);
 
   // ==========================================
-  // 0.0 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
+  // 0.0 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
+  // ==========================================
+  if (parsed?.category === "last_rejected_order") {
+    const rejectedOrder = await prisma.order.findFirst({
+      where: { status: "rejected" },
+      orderBy: { updatedAt: "desc" },
+      include: { shop: true, customerRegion: true }
+    });
+
+    if (!rejectedOrder) {
+      return {
+        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض) في النظام حالياً! 🎉`
+      };
+    }
+
+    activeChatContext.lastOrderNumber = rejectedOrder.orderNumber;
+    activeChatContext.updatedAt = Date.now();
+
+    const allCouriers = await prisma.courier.findMany();
+    const courierButtons = allCouriers.slice(0, 5).map(c => ({
+      text: `🛵 إسناد لـ كابتن: ${c.name}`,
+      action: `assign_order_${rejectedOrder.id}_${c.id}`
+    }));
+
+    const regionName = rejectedOrder.customerRegion ? rejectedOrder.customerRegion.name : "غير محددة";
+    const shopName = rejectedOrder.shop ? rejectedOrder.shop.name : "المحل";
+    const phone = rejectedOrder.customerPhone || "لا يوجد";
+    const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 5;
+
+    return {
+      reply: `📌 **تفاصيل آخر طلب مرفوض يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
+      buttons: courierButtons
+    };
+  }
+
+  // ==========================================
+  // 0.1 معالجة فئة إلغاء أو رفض الطلبات (ORDER CANCELLATION & REJECTION ENGINE)
   // ==========================================
   if (parsed?.category === "order_cancel_or_reject") {
     const { order_number, shop_name } = parsed;
@@ -310,42 +353,6 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
         reply: `يا أبو الأكبر! لم أجد أي طلب معلق أو محدد لإلغائه أو رفضه حالياً!`
       };
     }
-  }
-
-  // ==========================================
-  // 0.1 قسم استعلام وتفاصيل آخر طلب مرفوض (REJECTED ORDER RECALL & DIRECT ASSIGNMENT BUTTONS)
-  // ==========================================
-  if (parsed?.category === "last_rejected_order") {
-    const rejectedOrder = await prisma.order.findFirst({
-      where: { status: "rejected" },
-      orderBy: { updatedAt: "desc" },
-      include: { shop: true, customerRegion: true }
-    });
-
-    if (!rejectedOrder) {
-      return {
-        reply: `يا أبو الأكبر! لا يوجد أي طلب بحالة (مرفوض) في النظام حالياً! 🎉`
-      };
-    }
-
-    activeChatContext.lastOrderNumber = rejectedOrder.orderNumber;
-    activeChatContext.updatedAt = Date.now();
-
-    const allCouriers = await prisma.courier.findMany();
-    const courierButtons = allCouriers.slice(0, 5).map(c => ({
-      text: `🛵 إسناد لـ كابتن: ${c.name}`,
-      action: `assign_order_${rejectedOrder.id}_${c.id}`
-    }));
-
-    const regionName = rejectedOrder.customerRegion ? rejectedOrder.customerRegion.name : "غير محددة";
-    const shopName = rejectedOrder.shop ? rejectedOrder.shop.name : "المحل";
-    const phone = rejectedOrder.customerPhone || "لا يوجد";
-    const total = rejectedOrder.totalAmount ? Number(rejectedOrder.totalAmount) : 5;
-
-    return {
-      reply: `📌 **تفاصيل آخر طلب مرفوض يا أبو الأكبر:**\n🔹 **طلب رقم:** #${rejectedOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${total} ألف\n\n👇 **اختر الكابتن (المندوب) للإسناد المباشر بالنقر أدناه:**`,
-      buttons: courierButtons
-    };
   }
 
   // ==========================================
