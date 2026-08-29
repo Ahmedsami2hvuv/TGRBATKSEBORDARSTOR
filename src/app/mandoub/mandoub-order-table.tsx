@@ -325,14 +325,14 @@ function MandoubFullBlockCardGrid({
 
               const selected = isSelected ? isSelected(o.id) : false;
 
-              // تحديد اللون حسب الحالة (الأحمر بانتظار المندوب، الأصفر مستلم، الأخضر مسلم)
+              // تحديد اللون والخلفية الخفيفة الناعمة لكل كرت بحسب لون إطاره
               const statusBorderColor = selected
-                ? "border-indigo-600 ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30"
+                ? "border-indigo-600 ring-2 ring-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40"
                 : isAssigned
-                ? "border-red-500 bg-red-50/20 dark:bg-red-950/10"
+                ? "border-red-500 bg-red-50/60 dark:bg-red-950/30"
                 : isDelivering
-                ? "border-amber-400 bg-amber-50/20 dark:bg-amber-950/10"
-                : "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10";
+                ? "border-amber-400 bg-amber-50/60 dark:bg-amber-950/30"
+                : "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30";
 
               const statusBadgeBg = isAssigned
                 ? "bg-red-600 text-white"
@@ -362,7 +362,7 @@ function MandoubFullBlockCardGrid({
                       onOpenRow(o.id);
                     }
                   }}
-                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} bg-white dark:bg-slate-900 p-3.5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2.5`}
+                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3.5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2.5`}
                 >
                   {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة ورقم الطلب محمي من الانكسار */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 overflow-hidden whitespace-nowrap">
