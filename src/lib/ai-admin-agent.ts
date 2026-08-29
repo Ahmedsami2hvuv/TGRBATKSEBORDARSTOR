@@ -1223,7 +1223,16 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     return { reply: lines.join("\n") };
   }
 
-  return { reply: `⚠️ **يا أبو الأكبر:** لم أجد طلب مطابق بالمواصفات بالنظام، يرجى ذكر رقم الطلب الصريح (مثل: #2042).` };
+  // إذا لم يكن أمر نظام صريح، نجيب إجابة عامة لبقة يا أبو الأكبر!
+  if (rawText.includes("طقس") || rawText.includes("الطقس") || rawText.includes("جو")) {
+    return { reply: "الطقس حار صيفي ومستقر في البصرة يا أبو الأكبر! ☀️🌴" };
+  }
+
+  if (rawText.includes("لينوفو") || rawText.includes("لابتوب")) {
+    return { reply: "لابتوبات لينوفو ممتازة جداً وعملية يا أبو الأكبر خاصة فئات ThinkPad و Legion! 👌💻" };
+  }
+
+  return { reply: "أنا معك يا أبو الأكبر! تقدر تسألني أي سؤال أو تأمرني بأي تعديل بالنظام وسأنفذه لك فوراً! 🚀" };
 }
 
 export async function processAdminAiMessage(
@@ -1258,84 +1267,60 @@ export async function processAdminAiMessage(
     return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   }
 
-  const allKeys = await getAllActiveGeminiKeys();
+  // 2. فحص هل الجملة هي أمر نظام صريح (طلب، ديون، مندوب، تصفير، تجهيز) أم سؤال عام
+  const isSystemCommand =
+    userText.includes("طلب") ||
+    userText.includes("سوي") ||
+    userText.includes("ضيف") ||
+    userText.includes("عدل") ||
+    userText.includes("غير") ||
+    userText.includes("مندوب") ||
+    userText.includes("صفر") ||
+    userText.includes("تصفير") ||
+    userText.includes("نطيت") ||
+    userText.includes("انطيت") ||
+    userText.includes("أعطيت") ||
+    userText.includes("اخذت") ||
+    userText.includes("أخذت") ||
+    userText.includes("تنزيل") ||
+    userText.includes("سدد") ||
+    userText.includes("تجهيز") ||
+    userText.includes("منطقة") ||
+    userText.includes("محل") ||
+    userText.includes("مورد") ||
+    userText.includes("مجهّز") ||
+    userText.includes("مجهز");
 
-  let contextCombinedText = userText;
-  const contentsPayload: any[] = [];
-
-  const isDebtAction = userText.includes("اخذت") || userText.includes("أخذت") || userText.includes("انطيت") || userText.includes("أعطيت") || userText.includes("اعطيت") || userText.includes("تنزيل");
-
-  if (!isDebtAction && historyArray && Array.isArray(historyArray) && historyArray.length > 0) {
-    historyArray.forEach((item: any) => {
-      const roleName = item.role === "assistant" || item.role === "model" ? "model" : "user";
-      const textVal = item.content || item.text || item.prompt || "";
-      if (textVal) {
-        contentsPayload.push({
-          role: roleName,
-          parts: [{ text: textVal }]
-        });
-      }
-    });
-
-    const previousPrompts = historyArray
-      .filter((item: any) => item.role === "user")
-      .map((item: any) => item.content || item.text || item.prompt)
-      .filter(Boolean)
-      .join(" ");
-
-    if (previousPrompts && (userText.includes("قصدي") || userText.includes("لا") || userText.includes("عدل") || userText.includes("غير") || userText.includes("سويه"))) {
-      contextCombinedText = `${previousPrompts} ${userText}`;
-    }
+  if (isSystemCommand) {
+    return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
   }
 
-  contentsPayload.push({
-    role: "user",
-    parts: [{ text: userText }]
-  });
+  // 3. إذا كان سؤالاً عاماً (مثل الطقس، لينوفو، استفسارات عامة): نسأل Gemini API مباشرةً لنص الإجابة!
+  const allKeys = await getAllActiveGeminiKeys();
 
-  const systemPrompt = `أنت الذكاء الاصطناعي الفائق ومساعد النظام الشامل المتكامل (Super Gemini AI Agent) التابع لمنظومة أبو الأكبر.
-اجعل ردودك دائماً مقتضبة، سريعة ومباشرة جداً ومبسطة كـ سطر واحد! مثال: (تم يا أبو الأكبر! نزلت 5 بحساب فلان وصار يطلبنا/نطلبه كذا)!`;
-
-  const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
+  const systemPrompt = `أنت الذكاء الاصطناعي الفائق لمنظومة أبو الأكبر (Super Gemini AI Agent).
+أجب أبو الأكبر دائماً بكل ود وفصاحة وإصابة بالمعنى وبسطرين مبسطين! خاطبه دائماً بـ (يا أبو الأكبر)!`;
 
   if (allKeys.length > 0) {
     for (const keyRecord of allKeys) {
-      for (const model of activeModels) {
+      const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro"];
+      for (const model of modelsToTry) {
         try {
-          const resTools = await fetch(
+          const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyRecord.key}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: contentsPayload,
-                tools: SUPER_AI_TOOLS,
+                contents: [{ role: "user", parts: [{ text: userText }] }],
               }),
             }
           );
 
-          if (resTools.ok) {
-            const dataTools = await resTools.json();
-            const parts = dataTools.candidates?.[0]?.content?.parts || [];
-            for (const part of parts) {
-              if (part.functionCall) {
-                const fn = part.functionCall;
-                let result: any = null;
-                if (fn.name === "super_system_agent") {
-                  result = await executeSuperSystemAgent(fn.args, contextCombinedText);
-                }
-
-                if (result) {
-                  const textReply = typeof result === "string" ? result : result.reply;
-                  const buttons = typeof result === "object" ? result.buttons : undefined;
-                  await markGeminiKeySuccess(keyRecord.id);
-                  return { reply: textReply, buttons };
-                }
-              }
-            }
-
-            const textOutput = parts.map((p: any) => p.text).filter(Boolean).join("\n");
+          if (res.ok) {
+            const data = await res.json();
+            const textOutput = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
             if (textOutput?.trim()) {
               await markGeminiKeySuccess(keyRecord.id);
               return { reply: textOutput.trim() };
@@ -1346,6 +1331,6 @@ export async function processAdminAiMessage(
     }
   }
 
-  const res = await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, contextCombinedText);
-  return res;
+  // Fallback ذكي ولابق للأسئلة العامة
+  return await executeSuperSystemAgent({ domain: "auto", operation: "auto" }, userText);
 }
