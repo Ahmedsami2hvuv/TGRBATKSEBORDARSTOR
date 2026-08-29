@@ -542,7 +542,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const wordPrice = parseArabicWordsToNumber(rawText);
   if (wordPrice != null) {
     targetNewPrice = wordPrice;
-  } else if (allNumbers.length > 0 && (rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب") || rawText.includes("سعر التوصيل"))) {
+  } else if (allNumbers.length > 0 && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
     const priceCandidates = allNumbers.filter(n => n !== orderNumber);
     if (priceCandidates.length > 0) {
       targetNewPrice = priceCandidates[priceCandidates.length - 1];
@@ -577,7 +577,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const changes: string[] = [];
     let regionButtons: Array<{ text: string; action: string }> | undefined = undefined;
 
-    if (rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب")) {
+    const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
+
+    if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
       changes.push(`👨‍✈️ **المندوب:** تم إلغاء إسناد المندوب بنجاح`);
@@ -644,15 +646,18 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
+    // تعديل الحالة بشرط أن لا يكون هناك إسناد صريح للمندوب تمت معالجته للتو!
     if (
-      rawText.includes("جديد") ||
-      rawText.includes("جديده") ||
-      rawText.includes("جديدة") ||
-      rawText.includes("معلق") ||
-      rawText.includes("معلقة") ||
-      rawText.includes("مكتمل") ||
-      rawText.includes("مرفوض") ||
-      rawText.includes("استلام")
+      !updateData.assignedCourierId &&
+      !isExplicitUnassign &&
+      (rawText.includes("جديد") ||
+        rawText.includes("جديده") ||
+        rawText.includes("جديدة") ||
+        rawText.includes("معلق") ||
+        rawText.includes("معلقة") ||
+        rawText.includes("مكتمل") ||
+        rawText.includes("مرفوض") ||
+        rawText.includes("استلام"))
     ) {
       if (rawText.includes("مرفوض")) {
         updateData.status = "rejected";
