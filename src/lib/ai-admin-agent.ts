@@ -746,7 +746,63 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
+  // 2. إدارة وتصفير وإظهار المندوبين بـ أولوية فائقة (COURIER ZERO & SALARY MANAGEMENT)
+  // ==========================================
+  if (
+    domain === "couriers" ||
+    rawText.includes("صفر") ||
+    rawText.includes("تصفير") ||
+    rawText.includes("رواتب") ||
+    rawText.includes("سلفة")
+  ) {
+    const isZeroAction = rawText.includes("صفر") || rawText.includes("تصفير") || operation === "zero";
+
+    if (isZeroAction) {
+      let cleanName = (targetIdOrName || rawText)
+        .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
+        .trim();
+
+      const allCouriers = await prisma.courier.findMany();
+      let matchedCourier = allCouriers.find(c => cleanName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanName.toLowerCase()));
+
+      if (!matchedCourier && (cleanName.includes("boos") || rawText.toLowerCase().includes("boos"))) {
+        matchedCourier = allCouriers.find(c => c.name.toLowerCase().includes("boos") || c.name.includes("بوس") || c.name.includes("بووس"));
+      }
+
+      if (!matchedCourier) {
+        matchedCourier = allCouriers[0];
+      }
+
+      if (matchedCourier) {
+        await prisma.courier.update({
+          where: { id: matchedCourier.id },
+          data: { mandoubTotalsResetAt: new Date() }
+        });
+        return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات المندوب (${matchedCourier.name})` };
+      }
+    }
+
+    if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
+      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
+      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
+
+      const courier = await prisma.courier.findFirst({
+        where: { name: { contains: cleanName, mode: "insensitive" } }
+      });
+
+      if (courier) {
+        await prisma.courier.update({
+          where: { id: courier.id },
+          data: { availableForAssignment: activeState }
+        });
+        const statusMsg = activeState ? "تفعيل" : "تعطيل";
+        return { reply: `تم يا أبو الأكبر! سويت ${statusMsg} للمندوب (${courier.name})` };
+      }
+    }
+  }
+
+  // ==========================================
+  // 3. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
   // ==========================================
   if (
     domain === "couriers" && operation === "create" ||
@@ -780,7 +836,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
+  // 4. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (EXACT DB TRANSACTION SUMMATION ONLY)
   // ==========================================
   if (
     !rawText.includes("سوي لي طلب") &&
@@ -788,6 +844,8 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     !rawText.includes("طلب جديد") &&
     !rawText.includes("منطقة") &&
     !rawText.includes("منطقه") &&
+    !rawText.includes("صفر") &&
+    !rawText.includes("تصفير") &&
     (domain === "debts" ||
       rawText.includes("نطيت") ||
       rawText.includes("انطيت") ||
@@ -889,7 +947,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 4. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
+  // 5. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (
     domain === "prep_drafts" ||
@@ -930,44 +988,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       reply: `تم يا أبو الأكبر! أنشأت مسودة تجهيز #${draft.draftNumber} لـ ${matchingRegion?.name || "المنطقة"}\n📝 المواد:\n${extractedItems}`,
       buttons: preparerButtons
     };
-  }
-
-  // ==========================================
-  // 5. قسم إدارة المندوبين الحاليين (تفعيل، إخفاء، تصفير)
-  // ==========================================
-  if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
-    if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
-      const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
-      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
-
-      const courier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
-      });
-
-      if (courier) {
-        await prisma.courier.update({
-          where: { id: courier.id },
-          data: { availableForAssignment: activeState }
-        });
-        const statusMsg = activeState ? "تفعيل" : "تعطيل";
-        return { reply: `تم يا أبو الأكبر! سويت ${statusMsg} للمندوب (${courier.name})` };
-      }
-    }
-
-    if (operation === "zero" || rawText.includes("صفر حساب المندوب")) {
-      const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|صفر|تصفير|حساب|مستحقات/gi, "").trim();
-      const courier = await prisma.courier.findFirst({
-        where: { name: { contains: cleanName, mode: "insensitive" } }
-      });
-
-      if (courier) {
-        await prisma.courier.update({
-          where: { id: courier.id },
-          data: { mandoubTotalsResetAt: new Date() }
-        });
-        return { reply: `تم يا أبو الأكبر! صفرت حساب المندوب (${courier.name})` };
-      }
-    }
   }
 
   // ==========================================
