@@ -97,7 +97,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
   const allPartners = await prisma.creditBookPartner.findMany();
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
 
-  // 1. مطابقة صريحة من دفتر الديون الحالي
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
     if (cleanP.length > 1 && (cleanQ.includes(cleanP) || cleanP.includes(cleanQ))) {
@@ -105,7 +104,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 2. البحث في جداول النظام (مندوبين، مجهزين، محلات)
   const allCouriers = await prisma.courier.findMany();
   for (const c of allCouriers) {
     if (cleanQ.includes(cleanArabicTextForMatch(c.name))) {
@@ -133,7 +131,6 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 3. إنشاء شريك جديد بالاسم المكتوب إذا لم يكن موجوداً
   const extractedName = partnerQuery
     .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
     .trim() || partnerQuery.trim() || "شريك جديد";
@@ -181,7 +178,48 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   const rawText = userText || "";
 
   // ==========================================
-  // 1. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (CREDIT BOOK TRANSACTIONS)
+  // 1. إنشاء وإضافة المندوبين الجدد بالذكاء الاصطناعي (CREATE NEW COURIER)
+  // ==========================================
+  if (
+    domain === "couriers" && operation === "create" ||
+    rawText.includes("سويلي مندوب") ||
+    rawText.includes("سوي مندوب") ||
+    rawText.includes("ضيف مندوب") ||
+    rawText.includes("اضافة مندوب") ||
+    rawText.includes("إضافة مندوب") ||
+    rawText.includes("مندوب جديد") ||
+    rawText.includes("اضف مندوب")
+  ) {
+    let extractedName = targetIdOrName || "";
+
+    if (!extractedName || extractedName.length < 2) {
+      extractedName = rawText
+        .replace(/.*سويلي مندوب|.*سوي مندوب|.*ضيف مندوب|.*إضافة مندوب|.*اضافة مندوب|.*مندوب جديد|.*جديد|اسم|كابتن|مندوب/gi, "")
+        .trim();
+    }
+
+    if (!extractedName || extractedName.length < 2) {
+      extractedName = "مندوب جديد";
+    }
+
+    const phoneMatch = rawText.match(/(?:\+964|0)?7[3-9]\d{8}/);
+    const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
+
+    const newCourier = await prisma.courier.create({
+      data: {
+        name: extractedName,
+        phone: phone,
+        active: true
+      }
+    });
+
+    return {
+      reply: `تم يا مديرنا الغالي! 🚀 تم إنشاء وتأكيد المندوب الجديد (**${newCourier.name}**) بنجاح في قاعدة البيانات، وأصبح جاهزاً لإسناد الطلبات فوراً!\n\n- **اسم المندوب:** ${newCourier.name}\n- **رقم الهاتف:** ${phone}`
+    };
+  }
+
+  // ==========================================
+  // 2. قسم إدارة وتنزيـل وتسجيل معاملات الديون والشراكة (CREDIT BOOK TRANSACTIONS)
   // ==========================================
   if (
     domain === "debts" ||
@@ -201,18 +239,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const kind = isTook ? "took" : "gave";
     const actionTitle = isTook ? "أخذت (تنزيل من الحساب)" : "أعطيت (إضافة على الحساب)";
 
-    // أ) استخراج الشريك أو الشخص
     const partner = await findOrCreateCreditBookPartner(rawText);
 
-    // ب) استخراج المبلغ الرقمي أو بالحروف
     const wordPrice = parseArabicWordsToNumber(rawText);
     const allNums = (rawText.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77") && !n.toString().startsWith("78") && !n.toString().startsWith("75"));
     
     let rawAmount = wordPrice != null ? wordPrice : (allNums.length > 0 ? allNums[allNums.length - 1] : 5);
-    // إذا كان المبلغ صغيراً (مثل 5 أو 10)، يتم اعتباره 5000 أو 10000 دينار ما لم يُحدد غير ذلك
     let finalAmount = rawAmount < 100 ? rawAmount * 1000 : rawAmount;
 
-    // ج) تسجيل المعاملة بـ CreditBookTransaction
     await prisma.creditBookTransaction.create({
       data: {
         partnerId: partner.id,
@@ -222,7 +256,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     });
 
-    // د) حساب الرصيد الصافي الإجمالي الحالي للشخص
     const allTx = await prisma.creditBookTransaction.findMany({
       where: { partnerId: partner.id }
     });
@@ -252,7 +285,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 2. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
+  // 3. أولوية قصوى: إنشاء طلب مبيعات جديد (CREATE NEW SALES ORDER)
   // ==========================================
   if (
     rawText.includes("سوي لي طلب") ||
@@ -319,7 +352,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 3. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
+  // 4. قسم إنشاء وإسناد طلبات ومسودات التجهيز والمشتريات (PREP SHOPPING DRAFTS)
   // ==========================================
   if (domain === "prep_drafts" || rawText.includes("تجهيز") || rawText.includes("مسودة تجهيز") || rawText.includes("مشتريات") || rawText.includes("طماطه") || rawText.includes("بتيته") || rawText.includes("خيار")) {
     const extractedItems = extractPrepItemsFromText(rawText);
@@ -357,20 +390,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 4. قسم إدارة المندوبين والمجهزين (COURIERS & PREPARERS)
+  // 5. قسم إدارة المندوبين الحاليين (تفعيل، إخفاء، تصفير)
   // ==========================================
   if (domain === "couriers" || rawText.includes("رواتب") || rawText.includes("سلفة")) {
-    if (operation === "create" || rawText.includes("ضِف مندوب") || rawText.includes("إضافة مندوب")) {
-      const name = targetIdOrName || rawText.replace(/.*مندوب|.*كابتن|إضافة|جديد/gi, "").trim() || "مندوب جديد";
-      const phoneMatch = rawText.match(/\d{10,11}/);
-      const phone = phoneMatch ? phoneMatch[0] : "غير محدد";
-
-      const courier = await prisma.courier.create({
-        data: { name, phone, active: true }
-      });
-      return { reply: `✅ **تم إضافة وتأكيد المندوب الجديد (${courier.name}) بالنظام!**\n- الهاتف: ${courier.phone}` };
-    }
-
     if (operation === "toggle" || rawText.includes("عطل مندوب") || rawText.includes("اخفي مندوب")) {
       const activeState = !(rawText.includes("عطل") || rawText.includes("اخفي") || rawText.includes("إخفاء") || rawText.includes("حظر"));
       const cleanName = (targetIdOrName || rawText).replace(/مندوب|كابتن|عطل|فعل|اخفي|إخفاء/gi, "").trim();
@@ -406,7 +428,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 5. قسم البحث التلقائي المرن والدقيق عن الطلبات والتعديل الإداري (ORDER UPDATING)
+  // 6. قسم البحث التلقائي المرن والدقيق عن الطلبات والتعديل الإداري (ORDER UPDATING)
   // ==========================================
   const allNumbers = (rawText.match(/\d+/g) || [])
     .map(Number)
@@ -462,7 +484,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     const updateData: any = {};
     const changes: string[] = [];
 
-    // أ) تعديل وإسناد المندوب
     if (rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("مندوب")) {
       const allCouriers = await prisma.courier.findMany();
       for (const c of allCouriers) {
@@ -475,7 +496,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ب) تعديل منطقة الطلب والزبون الحقيقية
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       let targetRegion = allRegions.find(r => rawText.toLowerCase().includes(r.name.toLowerCase()));
@@ -500,7 +520,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
-    // ج) تعديل أسعار الطلب والتوصيل الصريحة
     if (targetNewPrice != null && (rawText.includes("سعر") || rawText.includes("سعره") || rawText.includes("سويه") || rawText.includes("سوي"))) {
       if (rawText.includes("توصيل") || rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -516,14 +535,12 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
-    // د) تعديل نوع/تفاصيل المنتجات
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractPrepItemsFromText(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **قائمة المنتجات والنوع الجديدة:**\n${newType}`);
     }
 
-    // هـ) تعديل حالة الطلب
     if (rawText.includes("مكتمل") || rawText.includes("مرفوض") || rawText.includes("استلام")) {
       if (rawText.includes("مرفوض")) updateData.status = "rejected";
       else if (rawText.includes("مكتمل") || rawText.includes("واصل")) updateData.status = "completed";
@@ -541,7 +558,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   }
 
   // ==========================================
-  // 6. استعلام وجلب البيانات المعلقة
+  // 7. استعلام وجلب البيانات المعلقة
   // ==========================================
   if (rawText.includes("شنو") || rawText.includes("طلبات") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلقة")) {
     const pendingOrders = await prisma.order.findMany({
@@ -562,7 +579,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     return { reply: lines.join("\n") };
   }
 
-  return { reply: `✅ **تم تنفيذ وتحديث الإجراء المطلق في النظام وقاعدة البيانات بنجاح!**` };
+  return { reply: `تم يا مديرنا الغالي! 🚀 تم تنفيذ وتأكيد الإجراء المطلوب في النظام وقاعدة البيانات بنجاح!` };
 }
 
 export async function processAdminAiMessage(
