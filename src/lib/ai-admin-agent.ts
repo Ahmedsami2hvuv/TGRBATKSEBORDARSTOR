@@ -255,28 +255,39 @@ function extractCleanOrderType(text: string, shopName?: string): string {
 }
 
 /**
- * البحث أولاً في قائمة المندوبين والمحلات والمجهزين المرجعية بالداتابيز قبل إنشاء سجلات مكررة 100%
+ * استخراج الكلمة أو الاسم المباشر النظيف المستهدف للشريك من نص الجملة
+ */
+function extractTargetPartnerName(text: string): string {
+  if (!text) return "";
+  let cleaned = text
+    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
+    .replace(/محل|مندوب|مجهز|كابتن|زبون|شريك|حساب|مستحقات/gi, "")
+    .trim();
+  return cleaned || text.trim();
+}
+
+/**
+ * البحث المحكم الفائق في الجداول المرجعية وتأكيد عدم إنشاء حسابات مكررة 100%
  */
 async function findOrCreateCreditBookPartner(partnerQuery: string) {
+  const targetName = extractTargetPartnerName(partnerQuery);
   const cleanQ = cleanArabicTextForMatch(partnerQuery);
+  const cleanTarget = cleanArabicTextForMatch(targetName);
 
-  // 1. الأولوية القصوى: البحث في قائمة المندوبين الأصلية (prisma.courier)
+  // 1. الأولوية القصوى: البحث في قائمة المندوبين الرسمية (prisma.courier)
   const allCouriers = await prisma.courier.findMany();
   for (const c of allCouriers) {
     const cleanC = cleanArabicTextForMatch(c.name);
-    if (cleanQ.includes(cleanC) || cleanC.includes(cleanQ)) {
+    if (cleanC.length > 1 && (cleanQ.includes(cleanC) || cleanC.includes(cleanQ) || cleanTarget.includes(cleanC) || cleanC.includes(cleanTarget))) {
       const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: c.id, type: "courier" }, { name: c.name }] }
+        where: { OR: [{ externalId: c.id, type: "courier" }, { name: { contains: c.name, mode: "insensitive" } }] }
       });
 
       if (existingPartner) {
-        if (existingPartner.type !== "courier" || existingPartner.externalId !== c.id) {
-          return await prisma.creditBookPartner.update({
-            where: { id: existingPartner.id },
-            data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
-          });
-        }
-        return existingPartner;
+        return await prisma.creditBookPartner.update({
+          where: { id: existingPartner.id },
+          data: { name: c.name, type: "courier", externalId: c.id, phone: c.phone }
+        });
       }
 
       return await prisma.creditBookPartner.create({
@@ -285,23 +296,20 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 2. البحث في قائمة المحلات والعملاء الأصلية (prisma.shop)
+  // 2. الأولوية الثانية: البحث في قائمة المحلات والعملاء الرسمية (prisma.shop)
   const allShops = await prisma.shop.findMany();
   for (const s of allShops) {
     const cleanS = cleanArabicTextForMatch(s.name);
-    if (cleanQ.includes(cleanS) || cleanS.includes(cleanQ)) {
+    if (cleanS.length > 1 && (cleanQ.includes(cleanS) || cleanS.includes(cleanQ) || cleanTarget.includes(cleanS) || cleanS.includes(cleanTarget))) {
       const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: s.id, type: "shop" }, { name: s.name }] }
+        where: { OR: [{ externalId: s.id, type: "shop" }, { name: { contains: s.name, mode: "insensitive" } }] }
       });
 
       if (existingPartner) {
-        if (existingPartner.type !== "shop" || existingPartner.externalId !== s.id) {
-          return await prisma.creditBookPartner.update({
-            where: { id: existingPartner.id },
-            data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
-          });
-        }
-        return existingPartner;
+        return await prisma.creditBookPartner.update({
+          where: { id: existingPartner.id },
+          data: { name: s.name, type: "shop", externalId: s.id, phone: s.phone }
+        });
       }
 
       return await prisma.creditBookPartner.create({
@@ -310,23 +318,20 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 3. البحث في قائمة المجهزين الأصلية (prisma.companyPreparer)
+  // 3. الأولوية الثالثة: البحث في قائمة المجهزين الرسمية (prisma.companyPreparer)
   const allPreps = await prisma.companyPreparer.findMany();
   for (const pr of allPreps) {
     const cleanPr = cleanArabicTextForMatch(pr.name);
-    if (cleanQ.includes(cleanPr) || cleanPr.includes(cleanQ)) {
+    if (cleanPr.length > 1 && (cleanQ.includes(cleanPr) || cleanPr.includes(cleanQ) || cleanTarget.includes(cleanPr) || cleanPr.includes(cleanTarget))) {
       const existingPartner = await prisma.creditBookPartner.findFirst({
-        where: { OR: [{ externalId: pr.id, type: "preparer" }, { name: pr.name }] }
+        where: { OR: [{ externalId: pr.id, type: "preparer" }, { name: { contains: pr.name, mode: "insensitive" } }] }
       });
 
       if (existingPartner) {
-        if (existingPartner.type !== "preparer" || existingPartner.externalId !== pr.id) {
-          return await prisma.creditBookPartner.update({
-            where: { id: existingPartner.id },
-            data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
-          });
-        }
-        return existingPartner;
+        return await prisma.creditBookPartner.update({
+          where: { id: existingPartner.id },
+          data: { name: pr.name, type: "preparer", externalId: pr.id, phone: pr.phone }
+        });
       }
 
       return await prisma.creditBookPartner.create({
@@ -335,27 +340,23 @@ async function findOrCreateCreditBookPartner(partnerQuery: string) {
     }
   }
 
-  // 4. البحث في باقي الشركاء المباشرين المسجلين سابقاً
+  // 4. البحث في باقي الشركاء المباشرين المسجلين سابقاً بـ CreditBookPartner
   const allPartners = await prisma.creditBookPartner.findMany();
   for (const p of allPartners) {
     const cleanP = cleanArabicTextForMatch(p.name);
-    if (cleanP.length > 1 && (cleanQ.includes(cleanP) || cleanP.includes(cleanQ))) {
+    if (cleanP.length > 1 && (cleanQ.includes(cleanP) || cleanP.includes(cleanQ) || cleanTarget.includes(cleanP) || cleanP.includes(cleanTarget))) {
       return p;
     }
   }
 
-  // 5. إذا كان شخصاً عادياً جديداً
-  const extractedName = partnerQuery
-    .replace(/.*أخذت|.*اخذت|.*أعطيت|.*اعطيت|.*أنطيت|.*انطيت|.*نطيت|.*عطيت|.*تنزيل|.*تسديد|من|لـ|على|مبلغ|\d+/gi, "")
-    .trim() || partnerQuery.trim() || "شريك جديد";
-
+  // 5. في حال كان الشخص عادياً كلياً ولم يطابق أي اسم موجود سابقاً
   const existingExternal = await prisma.creditBookPartner.findFirst({
-    where: { name: extractedName }
+    where: { name: { contains: targetName, mode: "insensitive" } }
   });
   if (existingExternal) return existingExternal;
 
   return await prisma.creditBookPartner.create({
-    data: { name: extractedName, type: "external" }
+    data: { name: targetName || partnerQuery.trim() || "شريك جديد", type: "external" }
   });
 }
 
@@ -970,7 +971,7 @@ export async function processAdminAiMessage(
 
   const systemPrompt = `أنت الوكيل الذكي الفائق ومساعد النظام المطلق (Super AI Agent) لإدارة كامل مفاصل التطبيق بالنظام والموقع (الطلبات، المندوبين، المحلات، المناطق ورسوم التوصيل، الديون، والإعدادات).
 لديك الصلاحية والحرية المطلقة لتعديل أو إضافة أو تعطيل أو استعلام أي عنصر أو خيار في النظام تلقائياً!
-إذا قال لك المدير (لا قصدي كذا...) أو يوضح لك التعديل على الطلب أو المطلب السابق، فارجع للسياق والرسائل السابقة وافهم ماذا يقصد ونفذ التعديل التلقائي الشامل فوراً واكتب له دائماً بكل احترام (يا أبو الأكبر)!`;
+إذا قال لك المدير (أخذت 5 من فلان أو أعطيت كذا...)، فابحث حتماً وأولاً في قائمة المندوبين والمحلات والمجهزين الأصلين المسجلين مسبقاً، وممنوع منعاً باتاً إنشاء حساب جديد إطلاقاً إذا كان الشخص موجوداً بصفة مندوب أو محل أو مجهز! واكتب له دائماً بكل احترام (يا أبو الأكبر)!`;
 
   const activeModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
