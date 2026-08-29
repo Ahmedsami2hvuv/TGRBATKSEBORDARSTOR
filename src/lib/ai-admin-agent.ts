@@ -21,8 +21,9 @@ async function parseIntentWithGeminiAi(userText: string): Promise<any> {
 
 قم بإعادة JSON بالهيكل التالي حصراً (بدون أي أسطر إضافية أو ملاحق):
 {
-  "category": "courier_create" | "order_create" | "debt_record" | "courier_zero" | "prep_draft" | "general_qa",
-  "clean_name": "الاسم الصريح الناصع للنوايا (مثال: فيصل، الوالد، ميثاق أبو رضا) تجريد واو العطف وحروف الجر كلياً",
+  "category": "order_update" | "courier_create" | "order_create" | "debt_record" | "courier_zero" | "prep_draft" | "general_qa",
+  "order_number": الرقم الصريح للطلب إن وجد (مثال: 2047) أو null,
+  "clean_name": "الاسم الصريح الناصع للنوايا (مثال: فيصل، الوالد، فارس، ميثاق أبو رضا) تجريد واو العطف وحروف الجر كلياً",
   "phone": "رقم الهاتف إن وجد أو null",
   "amount": الرقم أو null,
   "shop_name": "اسم المحل إن وجد أو null",
@@ -626,82 +627,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 0. معالجة اختيار شريك موجود من قائمة المقترحات
-  // ==========================================
-  if (rawText.startsWith("apply_debt_existing_")) {
-    const parts = rawText.split("_");
-    const partnerId = parts[3];
-    const kind = parts[4];
-    const amountVal = Number(parts[5]) || 5;
-
-    let partner = await prisma.creditBookPartner.findUnique({ where: { id: partnerId } });
-
-    if (!partner) {
-      const prep = await prisma.companyPreparer.findUnique({ where: { id: partnerId } });
-      if (prep) {
-        partner = await prisma.creditBookPartner.create({
-          data: { name: prep.name, type: "preparer", externalId: prep.id, phone: prep.phone }
-        });
-      }
-    }
-
-    if (!partner) {
-      const courier = await prisma.courier.findUnique({ where: { id: partnerId } });
-      if (courier) {
-        partner = await prisma.creditBookPartner.create({
-          data: { name: courier.name, type: "courier", externalId: courier.id, phone: courier.phone }
-        });
-      }
-    }
-
-    if (!partner) {
-      const shop = await prisma.shop.findUnique({ where: { id: partnerId } });
-      if (shop) {
-        partner = await prisma.creditBookPartner.create({
-          data: { name: shop.name, type: "shop", externalId: shop.id, phone: shop.phone }
-        });
-      }
-    }
-
-    if (partner) {
-      await prisma.creditBookTransaction.create({
-        data: {
-          partnerId: partner.id,
-          amount: new Decimal(amountVal),
-          kind: kind as any,
-          note: `رصد تلقائي بناءً على موافقة أبو الأكبر بالنقر على المقترح`
-        }
-      });
-
-      const allTx = await prisma.creditBookTransaction.findMany({ where: { partnerId: partner.id } });
-      let totalGave = 0;
-      let totalTook = 0;
-      allTx.forEach(t => {
-        const val = t.amount.toNumber();
-        if (t.kind === "gave") totalGave += val;
-        else if (t.kind === "took") totalTook += val;
-      });
-
-      const netBalance = totalGave - totalTook;
-      let balanceText = "";
-      if (netBalance > 0) {
-        balanceText = `وصار نطلبه (${netBalance})`;
-      } else if (netBalance < 0) {
-        balanceText = `وصار يطلبنا (${Math.abs(netBalance)})`;
-      } else {
-        balanceText = `وصار الحساب متصفر (0)`;
-      }
-
-      const actionWord = kind === "took" ? "نزلت" : "ضفت";
-
-      return {
-        reply: `تم يا أبو الأكبر! ${actionWord} ${amountVal} بحساب (${partner.name}) ${balanceText}`
-      };
-    }
-  }
-
-  // ==========================================
-  // 0.1 معالجة أزرار التأكيد المباشرة المخصصة لـ إنشاء الحسابات الجديدة في دفتر الديون بطلب صريح
+  // 0.5 معالجة أزرار التأكيد المباشرة المخصصة لـ إنشاء الحسابات الجديدة بطلب صريح
   // ==========================================
   if (rawText.startsWith("confirm_create_partner_")) {
     const parts = rawText.split("_");
@@ -735,7 +661,49 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 1. إنشاء وإضافة المندوبين الجدد بذكاء Gemini AI المباشر 100%
+  // 1. قسم تعديل وإسناد الطلبات للمندوبين (ORDER UPDATE & COURIER ASSIGNMENT)
+  // ==========================================
+  if (
+    aiParsed?.category === "order_update" ||
+    rawText.includes("إسناد") ||
+    rawText.includes("اسناد") ||
+    rawText.includes("اسند") ||
+    rawText.includes("حول الطلب") ||
+    rawText.includes("حوله على") ||
+    rawText.includes("غير المندوب")
+  ) {
+    const orderNum = aiParsed?.order_number || (rawText.match(/\b\d{3,5}\b/) ? Number(rawText.match(/\b\d{3,5}\b/)[0]) : null);
+    const courierName = aiParsed?.clean_name || rawText.replace(/.*إسناد إلى|.*اسناد إلى|.*اسند لـ|.*حول إلى|.*حوله على|.*مندوب/gi, "").trim();
+
+    let targetOrder = null;
+    if (orderNum) {
+      targetOrder = await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true } });
+    } else {
+      targetOrder = await prisma.order.findFirst({ orderBy: { createdAt: "desc" }, include: { shop: true } });
+    }
+
+    if (targetOrder && courierName) {
+      const allCouriers = await prisma.courier.findMany();
+      const matchedCourier = allCouriers.find(c => courierName.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(courierName.toLowerCase()));
+
+      if (matchedCourier) {
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: {
+            assignedCourierId: matchedCourier.id,
+            status: "assigned"
+          }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى المندوب (${matchedCourier.name})`
+        };
+      }
+    }
+  }
+
+  // ==========================================
+  // 2. إنشاء وإضافة المندوبين الجدد بذكاء Gemini AI المباشر 100%
   // ==========================================
   if (
     aiParsed?.category === "courier_create" ||
@@ -779,7 +747,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 2. إنشاء طلب مبيعات جديد من محل
+  // 3. إنشاء طلب مبيعات جديد من محل
   // ==========================================
   if (
     aiParsed?.category === "order_create" ||
@@ -845,7 +813,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 3. إدارة ورصد وتنزيل الديون (DEBTS & TRANSACTIONS)
+  // 4. إدارة ورصد وتنزيل الديون (DEBTS & TRANSACTIONS)
   // ==========================================
   if (
     aiParsed?.category === "debt_record" ||
@@ -917,7 +885,7 @@ export async function executeSuperSystemAgent(args: any, userText: string, aiPar
   }
 
   // ==========================================
-  // 4. تصفير حسابات المندوبين
+  // 5. تصفير حسابات المندوبين
   // ==========================================
   if (aiParsed?.category === "courier_zero" || rawText.includes("صفر") || rawText.includes("تصفير")) {
     const cleanName = aiParsed?.clean_name || targetIdOrName || rawText;
