@@ -187,8 +187,7 @@ function MandoubCardMoneyBadges({ o }: { o: any }) {
     showPreparerDelivery ||
     o.wardMismatchType ||
     o.saderMismatchType ||
-    (o.noWardRecorded && o.orderStatus === "delivered") ||
-    (o.noSaderRecorded && (o.orderStatus === "delivering" || o.orderStatus === "delivered"));
+    (o.noWardRecorded && o.orderStatus === "delivered");
 
   if (!hasAnyBadge) return null;
 
@@ -252,11 +251,6 @@ function MandoubCardMoneyBadges({ o }: { o: any }) {
       {o.noWardRecorded && o.orderStatus === "delivered" && (
         <span className={`${pillBase} bg-slate-700 text-white border-slate-800`} title="بدون وارد">
           بدون وارد
-        </span>
-      )}
-      {o.noSaderRecorded && (o.orderStatus === "delivering" || o.orderStatus === "delivered") && (
-        <span className={`${pillBase} bg-slate-700 text-white border-slate-800`} title="بدون صادر">
-          بدون صادر
         </span>
       )}
     </div>
