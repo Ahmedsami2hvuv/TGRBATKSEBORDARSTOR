@@ -403,7 +403,8 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="px-4 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="size-11 sm:size-12 rounded-full bg-gradient-to-br from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 border-2 border-red-400 text-white font-black text-xs sm:text-sm shadow-md transition active:scale-90 flex items-center justify-center shrink-0"
+                            title="استلام الشحنة"
                           >
                             استلام
                           </button>
@@ -412,18 +413,19 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="px-4 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0"
+                            className="size-11 sm:size-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 border-2 border-amber-300 text-white font-black text-xs sm:text-sm shadow-md transition active:scale-90 flex items-center justify-center shrink-0"
+                            title="تسليم الشحنة"
                           >
                             تسليم
                           </button>
                         )}
                         {!isSortingMode && isDelivered && (
-                          <span className="rounded-full bg-emerald-600 px-3.5 py-1 text-xs sm:text-sm font-black text-white shrink-0">
+                          <span className="size-11 sm:size-12 rounded-full bg-emerald-600 border-2 border-emerald-400 text-white font-black text-[10px] sm:text-xs shadow-sm flex items-center justify-center text-center shrink-0 leading-tight p-0.5" title="تم تسليم الطلب">
                             تم التسليم
                           </span>
                         )}
                         {!isSortingMode && !isAssigned && !isDelivering && !isDelivered && (
-                          <span className={`rounded-full px-3.5 py-1 text-xs sm:text-sm font-black shrink-0 ${statusBadgeBg}`}>
+                          <span className={`size-11 sm:size-12 rounded-full border-2 border-white/50 font-black text-[10px] sm:text-xs shadow-sm flex items-center justify-center text-center shrink-0 leading-tight p-0.5 ${statusBadgeBg}`}>
                             {STATUS_AR[o.orderStatus] ?? o.orderStatus}
                           </span>
                         )}
