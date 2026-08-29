@@ -440,7 +440,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
   ) {
     const matchingShop = await findMatchingShopByQuery(rawText);
 
-    // إذا لم يجد اسم المحل الصريح المطابق، يطلب من أبو الأكبر الاختيار ويخرج أزرار المحلات
     if (!matchingShop) {
       const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
       const shopButtons = allShops.slice(0, 6).map(s => ({
@@ -473,7 +472,6 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
         }));
       }
     } else {
-      // إذا لم يذكر اسم المنطقة إطلاقاً، يخرج خيارات المناطق لأبو الأكبر بالنقر المباشر
       regionButtons = allRegions.slice(0, 5).map(r => ({
         text: `📍 ${r.name} (توصيل: ${r.deliveryPrice ? Number(r.deliveryPrice) : 5})`,
         action: `select_region_${r.id}`
@@ -586,6 +584,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
   let existingOrder: any = null;
 
+  // 1. البحث الصريح بواسطة رقم الطلب إن وجد
   if (orderNumber && orderNumber < 100000) {
     existingOrder = await prisma.order.findUnique({
       where: { orderNumber: orderNumber },
@@ -593,30 +592,43 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
     });
   }
 
+  // 2. تضييق نطاق البحث الذكي المحكم بحسب المحل
   const matchingShop = await findMatchingShopByQuery(rawText);
 
   if (!existingOrder && matchingShop) {
-    let targetStatusFilter: string | undefined = undefined;
-    if (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) {
-      targetStatusFilter = "pending";
-    } else if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
-      targetStatusFilter = "rejected";
-    } else if (rawText.includes("مسند") || rawText.includes("مسندة")) {
-      targetStatusFilter = "assigned";
-    }
+    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة") || rawText.includes("الغي اسنادها");
 
-    const whereClause: any = { shopId: matchingShop.id };
-    if (targetStatusFilter) {
-      whereClause.status = targetStatusFilter;
-    }
+    if (isResetStatusToPending) {
+      // عند طلب إرجاع الطلب إلى جديد معلق، نجلب أحدث طلب لهذا المحل بغض النظر عن حالته الحالية (سواء كان مسند assigned أو غيره)
+      existingOrder = await prisma.order.findFirst({
+        where: { shopId: matchingShop.id },
+        orderBy: { createdAt: "desc" },
+        include: { shop: true, customerRegion: true, courier: true }
+      });
+    } else {
+      let targetStatusFilter: string | undefined = undefined;
+      if (rawText.includes("مرفوض") || rawText.includes("مرفوضة")) {
+        targetStatusFilter = "rejected";
+      } else if (rawText.includes("مسند") || rawText.includes("مسندة") || rawText.includes("بانتظار")) {
+        targetStatusFilter = "assigned";
+      } else if (rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة")) {
+        targetStatusFilter = "pending";
+      }
 
-    existingOrder = await prisma.order.findFirst({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
-      include: { shop: true, customerRegion: true, courier: true }
-    });
+      const whereClause: any = { shopId: matchingShop.id };
+      if (targetStatusFilter) {
+        whereClause.status = targetStatusFilter;
+      }
+
+      existingOrder = await prisma.order.findFirst({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        include: { shop: true, customerRegion: true, courier: true }
+      });
+    }
   }
 
+  // 3. تنفيذ الإجراء المباشر الدقيق المطلق على الطلب المحدد
   if (existingOrder) {
     const updateData: any = {};
     const changes: string[] = [];
@@ -624,8 +636,9 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
 
     const isExplicitUnassign = rawText.includes("الغي الاسناد") || rawText.includes("الغي اسناد") || rawText.includes("إلغاء الإسناد") || rawText.includes("الغاء الاسناد") || rawText.includes("الغي المندوب");
     const isAssignAction = rawText.includes("فارس") || rawText.includes("احمد") || rawText.includes("نجم") || rawText.includes("boos") || rawText.includes("كابتن") || rawText.includes("اسناد") || rawText.includes("إسناد") || rawText.includes("حول") || rawText.includes("حوله");
-    const isResetStatusToPending = rawText.includes("جديد") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("معلق") || rawText.includes("معلقة") || rawText.includes("رجعه") || rawText.includes("رجعها");
+    const isResetStatusToPending = rawText.includes("رجعه") || rawText.includes("رجعها") || rawText.includes("رجعلها") || rawText.includes("سويها جديدة") || rawText.includes("جديده") || rawText.includes("جديدة") || rawText.includes("جديد") || rawText.includes("معلق") || rawText.includes("معلقة");
 
+    // أ) الإسناد الصريح للمندوب أو إلغاء الإسناد
     if (isExplicitUnassign) {
       updateData.assignedCourierId = null;
       updateData.status = "pending";
@@ -643,6 +656,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
+    // ب) تعديل اسم المنطقة
     if (rawText.includes("منطقة") || rawText.includes("المنطقة") || rawText.includes("رايح") || rawText.includes("منطقه") || rawText.includes("الوجهة") || rawText.includes("غير اسم")) {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
       const matchedRegions = findMatchingRegionsExactOrContains(rawText, allRegions);
@@ -672,6 +686,7 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       }
     }
 
+    // ج) تعديل الأسعار
     if (targetNewPrice != null && (rawText.includes("سعر التوصيل") || rawText.includes("سعر البضاعة") || rawText.includes("سعر الطلب"))) {
       if (rawText.includes("سعر التوصيل")) {
         updateData.deliveryPrice = new Decimal(targetNewPrice);
@@ -687,12 +702,14 @@ export async function executeSuperSystemAgent(args: any, userText: string) {
       changes.push(`💵 **المبلغ الإجمالي الجديد:** ${sub + del}`);
     }
 
+    // د) تعديل نوع البضاعة والمنتج
     if (updateData.customerRegionId == null && updateData.orderSubtotal == null && updateData.deliveryPrice == null && (rawText.includes("نوع الطلب") || rawText.includes("تغيير نوع") || rawText.includes("منتجات"))) {
       const newType = extractCleanOrderType(rawText);
       updateData.orderType = newType;
       changes.push(`📦 **نوع البضاعة والمنتج الجديد:** ${newType}`);
     }
 
+    // هـ) تعديل الحالة الصريح (إعادة لـ جديد معلق، أو مكتمل، أو مرفوض)
     if (!isAssignAction && !isExplicitUnassign) {
       if (isResetStatusToPending) {
         updateData.status = "pending";
