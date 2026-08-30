@@ -6,11 +6,13 @@ import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
 import { executeAutonomousGeminiAgent } from "./ai-autonomous-agent";
+import { handleOrderCreationWizard, OrderDraftState } from "./ai-order-wizard";
 
 type ChatSessionContext = {
   lastOrderNumber?: number | null;
   lastOrderType?: string | null;
   activeFocusedOrderId?: string | null;
+  orderDraft?: OrderDraftState | null;
   updatedAt?: number;
 };
 
@@ -806,6 +808,35 @@ export async function executeSuperSystemAgent(
 ) {
   const rawText = userText || "";
   const ctx = getSessionContext(sessionKey);
+
+  // 0.1 فحص إذا كانت هناك جلسة تفاعلية نشطة لإنشاء طلب خطوة بخطوة
+  if (ctx.orderDraft && ctx.orderDraft.step) {
+    const wizardRes = await handleOrderCreationWizard(rawText, ctx.orderDraft, ctx);
+    if (wizardRes.handled) {
+      ctx.orderDraft = wizardRes.nextDraft || null;
+      ctx.updatedAt = Date.now();
+      return { reply: wizardRes.reply! };
+    }
+  }
+
+  // 0.2 بدء محادثة تفاعلية إذا قال المستخدم طلب جديد فقط بدون تفاصيل
+  const cleanInit = rawText.trim().toLowerCase();
+  if (
+    cleanInit === "سويلي طلب" ||
+    cleanInit === "سوي طلب" ||
+    cleanInit === "سوي طلب جديد" ||
+    cleanInit === "سويلي طلبيه" ||
+    cleanInit === "سوي طلبية" ||
+    cleanInit === "سويلي طلبية جديدة" ||
+    cleanInit === "ضيف طلب" ||
+    cleanInit === "اريد اسوي طلب" ||
+    cleanInit === "انشاء طلب" ||
+    cleanInit === "طلب جديد"
+  ) {
+    ctx.orderDraft = { step: "waiting_shop" };
+    ctx.updatedAt = Date.now();
+    return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
+  }
 
   // 1. فحص الأزرار السريعة المباشرة (النقر على زر إسناد أو تحديد منطقة)
   if (rawText.startsWith("assign_order_") || rawText.startsWith("set_region_order_")) {
