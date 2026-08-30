@@ -92,12 +92,14 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
         windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
           if (!active) return;
           try {
-            console.log(`OneSignal: Attempting login for ${cleanId} via Deferred queue...`);
-            await withTimeout(OneSignal.login(cleanId), 4000);
-            console.log("✅ OneSignal: Identity set successfully via Deferred to:", cleanId);
-            lastLoggedIdRef.current = cleanId;
+            if (OneSignal && typeof OneSignal.login === "function") {
+              console.log(`OneSignal: Attempting login for ${cleanId} via Deferred queue...`);
+              await withTimeout(OneSignal.login(cleanId), 4000);
+              console.log("✅ OneSignal: Identity set successfully via Deferred to:", cleanId);
+              lastLoggedIdRef.current = cleanId;
+            }
           } catch (e) {
-            console.error("OneSignal Login Error via Deferred:", e);
+            console.warn("OneSignal Login Silent Handling:", e);
           }
         });
       }
