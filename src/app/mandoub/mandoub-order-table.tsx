@@ -431,6 +431,9 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
+                      {/* شارات الصادر والوارد الملونة فوق/بجانب اسم المحل مباشرة باليمين */}
+                      <MandoubCardMoneyBadges o={o} />
+
                       {/* بجانبه مباشرة: اسم المحل ← المنطقة بخط عريض وضخم جداً */}
                       <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
                         <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
@@ -473,8 +476,7 @@ function MandoubFullBlockCardGrid({
                         </span>
                       </div>
 
-                      {/* البلوكات الملونة البارزة باليسار من برا بنفس سطر نوع الطلب والوقت */}
-                      <MandoubCardMoneyBadges o={o} />
+                      {o.customerName && <span className="text-xs text-slate-600 dark:text-slate-400 font-bold truncate shrink-0">👤 {o.customerName}</span>}
                     </div>
 
                     {o.phoneLine && (
