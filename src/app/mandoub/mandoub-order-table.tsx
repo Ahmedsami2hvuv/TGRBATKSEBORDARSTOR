@@ -316,8 +316,8 @@ function MandoubFullBlockCardGrid({
             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
           </div>
 
-          {/* شبكة الكروت التابعة لهذا اليوم */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+          {/* قائمة الكروت التابعة لهذا اليوم (طلبية تحت الأخرى بعرض كامل ومريح) */}
+          <div className="flex flex-col gap-3">
             {group.items.map((o) => {
               const isAssigned = o.orderStatus === "assigned";
               const isDelivering = o.orderStatus === "delivering";
