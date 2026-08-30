@@ -290,87 +290,17 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* 1. بطاقة الرصيد الكلي المدمجة والقصيرة والأنيقة */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        {/* صافي رصيد الدفتر */}
-        <div className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 border transition-all shadow-sm flex flex-col justify-between ${
-          netBalance >= 0 
-            ? "bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white border-emerald-200/80" 
-            : "bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-white border-rose-200/80"
-        }`}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-black text-slate-600 flex items-center gap-1.5">
-              <span>{netBalance >= 0 ? "🟢" : "🔴"}</span>
-              صافي رصيد الدفتر العام
-            </span>
-            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
-              netBalance >= 0 
-                ? "bg-emerald-100/80 text-emerald-800 border-emerald-200" 
-                : "bg-rose-100/80 text-rose-800 border-rose-200"
-            }`}>
-              {netBalance >= 0 ? "فائض لصالحك" : "عجز مطلوب منك"}
-            </span>
-          </div>
-
-          <div className="my-2 text-right">
-            <h2 className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tight ${
-              netBalance >= 0 ? "text-emerald-700" : "text-rose-700"
-            }`}>
-              {netBalance >= 0 ? "+" : ""}{formatDinarAsAlfWithUnit(netBalance)}
-            </h2>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-1 border-t border-slate-100/80">
-            <span>إجمالي الحسابات: {countStats.total}</span>
-            <span>المصفّرة: {countStats.zeroCount}</span>
-          </div>
-        </div>
-
-        {/* مطلوبات لنا (نطلبهم) */}
-        <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-emerald-100 bg-white shadow-sm flex flex-col justify-between hover:border-emerald-200 transition-all">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-black text-emerald-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              مطلوبات لنا (نطلبهم)
-            </span>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-              {countStats.oweUsCount} حساب
-            </span>
-          </div>
-
-          <div className="my-2 text-right">
-            <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 tabular-nums tracking-tight">
-              +{formatDinarAsAlfWithUnit(totalWeOwed)}
-            </h3>
-          </div>
-
-          <div className="text-[11px] font-bold text-slate-400 pt-1 border-t border-slate-50">
-            ديون ومستحقات لصالحك بذمة الآخرين
-          </div>
-        </div>
-
-        {/* مطلوب منا (يطلبوننا) */}
-        <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-rose-100 bg-white shadow-sm flex flex-col justify-between hover:border-rose-200 transition-all">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-black text-rose-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-              مطلوب منا (يطلبوننا)
-            </span>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-100">
-              {countStats.weOweCount} حساب
-            </span>
-          </div>
-
-          <div className="my-2 text-right">
-            <h3 className="text-2xl sm:text-3xl font-black text-rose-600 tabular-nums tracking-tight">
-              -{formatDinarAsAlfWithUnit(totalWeOwe)}
-            </h3>
-          </div>
-
-          <div className="text-[11px] font-bold text-slate-400 pt-1 border-t border-slate-50">
-            مبالغ والتزامات مستحقة للآخرين بذمتك
-          </div>
-        </div>
+      {/* 1. بطاقة الرصيد الكلي الصافي فقط (رقم كبير جداً بدون أي عناوين أو رتوش) */}
+      <div className={`p-4 sm:p-6 rounded-2xl border text-center transition-all shadow-sm flex items-center justify-center ${
+        netBalance > 0 
+          ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-700" 
+          : netBalance < 0 
+            ? "bg-rose-50/70 border-rose-200/80 text-rose-700" 
+            : "bg-white border-slate-200 text-slate-700"
+      }`}>
+        <span className="text-4xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight">
+          {netBalance > 0 ? "+" : ""}{netBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(netBalance))}
+        </span>
       </div>
 
       {/* 2. شريط الخيارات والبحث والأزرار المنظم */}

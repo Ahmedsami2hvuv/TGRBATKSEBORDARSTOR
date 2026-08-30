@@ -430,44 +430,25 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     override fun onResume() {
         super.onResume()
         if (!isListening && !isMicPaused) {
-            safelyRestartSpeechRecognizer()
+            checkPermissionAndStartListening()
         }
     }
 
     private fun restartListeningOnPowerButton() {
         handler.removeCallbacks(commitSpeechRunnable)
+        pendingSpeechText = null
         textToSpeech?.stop()
-        stopListening()
         isMicPaused = false
-        tvStatus.text = "⏳ جاري تجهيز المايك..."
-        safelyRestartSpeechRecognizer()
+        checkPermissionAndStartListening()
     }
 
     private fun stopListening() {
+        isListening = false
         try {
             speechRecognizer?.stopListening()
             speechRecognizer?.cancel()
-            speechRecognizer?.destroy()
-            speechRecognizer = null
         } catch (e: Exception) {}
-        isListening = false
         progressBar.visibility = View.GONE
-    }
-
-    private fun safelyRestartSpeechRecognizer() {
-        runOnUiThread {
-            if (isMicPaused || isFinishing) return@runOnUiThread
-            try {
-                stopListening()
-            } catch (e: Exception) {}
-
-            tvStatus.text = "⏳ جاري تجهيز المايك..."
-            handler.postDelayed({
-                if (!isMicPaused && !isFinishing) {
-                    checkPermissionAndStartListening()
-                }
-            }, 200L)
-        }
     }
 
     private fun checkPermissionAndStartListening() {
@@ -484,7 +465,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                safelyRestartSpeechRecognizer()
+                startListening()
             } else {
                 tvStatus.text = "⚠️ يتطلب المساعد إذن الميكروفون"
                 Toast.makeText(this, "يرجى منح إذن الميكروفون لاستخدام المساعد الصوتي", Toast.LENGTH_LONG).show()
@@ -492,45 +473,42 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
     }
 
-    private fun startListening() {
-        try {
-            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-                tvStatus.text = "⚠️ التعرف الصوتي غير متوفر بالهاتف"
-                return
-            }
+    private fun getSpeechIntent(): Intent {
+        return Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
+        }
+    }
 
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+    private fun initSpeechRecognizerIfNeeded() {
+        if (speechRecognizer != null) return
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            tvStatus.text = "⚠️ التعرف الصوتي غير متوفر بالهاتف"
+            return
+        }
 
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
-                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
-            }
-
-            speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    tvStatus.text = "🎙️ أستمع لك الآن... تفضل يا أبو الأكبر"
                     progressBar.visibility = View.VISIBLE
-                    
-                    try {
-                        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
-                        }
-                    } catch (e: Exception) {}
+                    if (pendingSpeechText.isNullOrBlank()) {
+                        tvStatus.text = "🎙️ أستمع لك... تفضل يا أبو الأكبر"
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {
                     isListening = true
                     handler.removeCallbacks(commitSpeechRunnable)
-                    tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
-
+                    if (pendingSpeechText.isNullOrBlank()) {
+                        tvStatus.text = "🎧 أستمع لك..."
+                    }
                     try {
                         if (textToSpeech?.isSpeaking == true) {
                             textToSpeech?.stop()
@@ -550,25 +528,29 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
 
                 override fun onBufferReceived(buffer: ByteArray?) {}
-                
+
                 override fun onEndOfSpeech() {
-                    tvStatus.text = "⚡ أستمع لك... تفضل"
+                    isListening = false
                 }
 
                 override fun onError(error: Int) {
                     progressBar.visibility = View.GONE
                     isListening = false
 
-                    if (!isMicPaused && pendingSpeechText.isNullOrBlank()) {
-                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث يا أبو الأكبر"
-                        handler.postDelayed({
-                            if (!isMicPaused && !isListening) {
-                                safelyRestartSpeechRecognizer()
-                            }
-                        }, 500L)
-                    } else if (!pendingSpeechText.isNullOrBlank()) {
+                    // إذا كان هناك نص التقطه المساعد بالفعل قبل الخطأ، نرسله فوراً للتنفيذ
+                    if (!pendingSpeechText.isNullOrBlank()) {
                         handler.removeCallbacks(commitSpeechRunnable)
                         handler.post(commitSpeechRunnable)
+                        return
+                    }
+
+                    // إذا كان خطأ صمت عادي ولم يكن المايك موقوفاً يدوياً، نعيد الاستماع بهدوء
+                    if (!isMicPaused && !isFinishing) {
+                        handler.postDelayed({
+                            if (!isMicPaused && !isListening && !isFinishing && pendingSpeechText.isNullOrBlank()) {
+                                startListening()
+                            }
+                        }, 300L)
                     }
                 }
 
@@ -601,17 +583,31 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             tvStatus.text = "🗣️ $finalText"
                             handler.removeCallbacks(commitSpeechRunnable)
                             handler.postDelayed(commitSpeechRunnable, 1200L)
+                            return
                         }
-                    } else if (!isMicPaused) {
-                        safelyRestartSpeechRecognizer()
+                    }
+
+                    if (!isMicPaused && !isFinishing && pendingSpeechText.isNullOrBlank()) {
+                        handler.postDelayed({
+                            if (!isMicPaused && !isListening && !isFinishing && pendingSpeechText.isNullOrBlank()) {
+                                startListening()
+                            }
+                        }, 300L)
                     }
                 }
 
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
+        }
+    }
 
+    private fun startListening() {
+        if (isMicPaused || isFinishing) return
+        try {
+            initSpeechRecognizerIfNeeded()
+            val intent = getSpeechIntent()
+            speechRecognizer?.cancel()
             speechRecognizer?.startListening(intent)
-
         } catch (e: Exception) {}
     }
 
