@@ -1838,26 +1838,65 @@ export async function executeSuperSystemAgent(
           return { reply: `يا أبو الأكبر، ما عندك أي محل مسجل بالنظام بعد.` };
         }
 
+        // 1. استخراج ومطابقة المحل بنسبة التشابه الذكي
         let matchedShop: { id: string; name: string } | null = null;
-        for (const shop of allShops) {
-          const cleanS = cleanArabicTextForMatch(shop.name);
-          const cleanT = cleanArabicTextForMatch(fullText);
-          if (cleanS.length >= 3 && cleanT.includes(cleanS)) {
-            matchedShop = shop;
-            break;
+        
+        const cleanQuery = cleanArabicTextForMatch(fullText)
+          .replace(/^سويلي\s*طلب\s*من\s*/g, "")
+          .replace(/^سوي\s*طلب\s*من\s*/g, "")
+          .replace(/^طلب\s*من\s*/g, "")
+          .replace(/^محل\s*/g, "")
+          .trim();
+
+        const scoredShops = allShops.map(s => {
+          const cleanS = cleanArabicTextForMatch(s.name);
+          let score = 0;
+          if (cleanS === cleanQuery || cleanQuery.includes(cleanS) || cleanS.includes(cleanQuery)) {
+            score = 0.95;
+          } else {
+            let matches = 0;
+            for (let ch of cleanQuery) {
+              if (cleanS.includes(ch)) matches++;
+            }
+            score = matches / Math.max(cleanS.length, cleanQuery.length);
           }
+          return { shop: s, score };
+        }).sort((a, b) => b.score - a.score);
+
+        if (scoredShops[0] && scoredShops[0].score >= 0.45) {
+          matchedShop = scoredShops[0].shop;
         }
 
+        // إذا لم يتطابق المحل بدقة، نقترح أقرب المحلات بأزرار تفاعلية فوراً!
         if (!matchedShop) {
-          const { match, ambiguous } = findBestMatch(allShops, fullText);
-          if (ambiguous.length > 0) {
-            return { reply: `يا أبو الأكبر، فيه أكثر من محل يشبه المذكور بالرسالة: ${namesListForReply(ambiguous)}. حدد اسم المحل بوضوح.` };
-          }
-          matchedShop = match;
-        }
+          const topShops = scoredShops.slice(0, 4).map(s => s.shop);
+          const buttons = topShops.map(s => ({
+            text: `🏪 ${s.name}`,
+            action: s.name
+          }));
 
-        if (!matchedShop) {
-          return { reply: `يا أبو الأكبر، ما گدرت أحدد أي محل قصدك من الرسالة. المحلات عندك: ${namesListForReply(allShops)}. اذكر اسم المحل بوضوح.` };
+          // استخراج ما يمكن استخراجه من المنطقة والسعر لحفظها
+          const allRegionsTemp = await prisma.region.findMany({ select: { id: true, name: true } });
+          const rankedReg = rankRegionsByQuery(fullText, allRegionsTemp as any);
+          const tempReg = rankedReg.length > 0 ? rankedReg[0] : null;
+
+          const subtotalNum = parsed?.price ? Number(parsed.price) : 0;
+
+          ctx.orderDraft = {
+            step: "waiting_shop",
+            regionId: tempReg?.id || null,
+            regionName: tempReg ? tempReg.name : null,
+            phone: phone,
+            orderType: "مسواق",
+            price: subtotalNum,
+            noteTime: "الان"
+          };
+          ctx.updatedAt = Date.now();
+
+          return {
+            reply: `يا أبو الأكبر، ما لكيت هذا الاسم بالضبط. قصدك أي محل من هذولي؟ 👇`,
+            buttons: buttons
+          };
         }
 
         const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
