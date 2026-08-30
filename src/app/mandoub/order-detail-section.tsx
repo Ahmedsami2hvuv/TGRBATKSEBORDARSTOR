@@ -225,6 +225,9 @@ export function OrderDetailSection({
     phoneProfile?.photoUrl
   );
   const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
+  const [isSenderExpanded, setIsSenderExpanded] = useState(false);
+  const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
+  const shouldCollapseSender = isDoubleRoute && isSenderPickedUp && !isSenderExpanded;
 
   const mergedCustomerLocationUrl = getCleanValue(
     order.customerLocationUrl,
@@ -732,7 +735,41 @@ export function OrderDetailSection({
 
         return (
           <div key="customer_parent" className="space-y-4">
-            <div key="customer" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
+            {shouldCollapseSender && (
+              <div
+                onClick={() => setIsSenderExpanded(true)}
+                className="bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 rounded-[1.5rem] p-3.5 shadow-md flex items-center justify-between cursor-pointer hover:bg-emerald-100/90 transition-all mb-3 active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm">✓</span>
+                  <div>
+                    <h4 className="text-sm font-black text-emerald-950 dark:text-emerald-200">
+                      المرسل (الوجهة الأولى) - تم الاستلام بنجاح ✅
+                    </h4>
+                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      📍 {order.customerRegion?.name || "منطقة المرسل"} {order.customerPhone ? `| 📞 ${contactLine(order.customerPhone)}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <button type="button" className="px-3.5 py-1.5 bg-white dark:bg-slate-800 rounded-xl text-xs font-black text-emerald-800 dark:text-emerald-300 shadow-sm border border-emerald-200 dark:border-emerald-700">
+                  عرض التفاصيل 🔽
+                </button>
+              </div>
+            )}
+
+            {!shouldCollapseSender && (
+              <div key="customer" className={`bg-gradient-to-br from-emerald-50/70 via-white to-slate-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 ${courierSettings?.guidedDeliverySteps ? "border-emerald-500 ring-4 ring-emerald-400/30" : "border-emerald-500/80 dark:border-emerald-500/70 border-r-[8px] border-r-emerald-500"} shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl`} style={blockStyle}>
+                {isSenderPickedUp && (
+                  <div className="flex justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsSenderExpanded(false)}
+                      className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 rounded-xl text-xs font-black shadow-xs border border-emerald-200"
+                    >
+                      طوي بطاقة المرسل 🔼
+                    </button>
+                  </div>
+                )}
               {courierSettings?.guidedDeliverySteps && (
                 <div className="-mx-4 -mt-4 mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-center text-xs font-black text-white shadow-sm flex items-center justify-center gap-1.5">
                   <span>🏠 الخطوة 2: التوصيل للزبون (المستلم النهائي)</span>
@@ -933,6 +970,7 @@ export function OrderDetailSection({
                 </div>
               </div>
             </div>
+          )}
 
             {order.routeMode === "double" && (
               <div key="receiver" className="bg-gradient-to-br from-violet-50/70 via-white to-slate-50/80 dark:from-violet-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 border-violet-500/80 dark:border-violet-500/70 border-r-[8px] border-r-violet-500 shadow-xl shadow-violet-500/10 ring-1 ring-violet-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl mt-3" style={blockStyle}>
