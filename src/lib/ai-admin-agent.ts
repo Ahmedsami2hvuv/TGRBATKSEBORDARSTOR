@@ -373,30 +373,54 @@ function parseCustomSystemIntent(userText: string): any {
     }
   }
 
+  // 0.38 تعديل وتصحيح اسم المندوب أو الكابتن
+  if (
+    (cleanQ.includes("مندوب") || cleanQ.includes("كابتن") || cleanQ.includes("المندوب") || cleanQ.includes("الكابتن") || cleanQ.includes("اسمه") || cleanQ.includes("إسمه")) &&
+    (cleanQ.includes("عدل") || cleanQ.includes("تعديل") || cleanQ.includes("غير") || cleanQ.includes("بدل") || cleanQ.includes("صحح") || cleanQ.includes("سويه") || cleanQ.includes("اكتبه") || cleanQ.includes("خطأ") || cleanQ.includes("خطا"))
+  ) {
+    let oldName = null;
+    let newName = null;
+
+    const oldMatch = text.match(/(?:المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z]+)/i);
+    if (oldMatch) oldName = oldMatch[1].trim();
+
+    const newMatch = text.match(/(?:وسويه|سويه|سوي|اكتبه|غيره إلى|غيره الي|الى|الي)\s*([أ-يa-zA-Z]+)/i);
+    if (newMatch) newName = newMatch[1].trim();
+
+    return {
+      category: "courier_update_name",
+      old_name: oldName,
+      new_name: newName,
+      raw_text: text
+    };
+  }
+
   // 0.4 تعديل تفاصيل الطلب النشط المفتوح حالياً
   const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل") || cleanQ.includes("تعديل") || cleanQ.includes("نوع") || cleanQ.includes("النوع");
   if (
-    cleanQ.includes("عدل") ||
-    cleanQ.includes("تعديل") ||
-    cleanQ.includes("سوي تعديل") ||
-    cleanQ.includes("نوع الطلب") ||
-    cleanQ.includes("عدل نوع") ||
-    cleanQ.includes("غير نوع") ||
-    cleanQ.includes("بدل نوع") ||
-    cleanQ.includes("سوي النوع") ||
-    cleanQ.includes("سوي نوع") ||
-    cleanQ.includes("سوي المنطقة") ||
-    cleanQ.includes("سوي المنطقه") ||
-    cleanQ.includes("عدل الرقم") ||
-    cleanQ.includes("عدل السعر") ||
-    cleanQ.includes("عدل سعر") ||
-    cleanQ.includes("عدل سعر التوصيل") ||
-    cleanQ.includes("عدل المنطقة") ||
-    cleanQ.includes("عدل المنطقه") ||
-    (cleanQ.includes("بدل") && hasEditFieldWord) ||
-    cleanQ.includes("غير السعر") ||
-    cleanQ.includes("غير الرقم") ||
-    cleanQ.includes("غير المنطقة")
+    !cleanQ.includes("مندوب") &&
+    !cleanQ.includes("كابتن") &&
+    (cleanQ.includes("عدل") ||
+      cleanQ.includes("تعديل") ||
+      cleanQ.includes("سوي تعديل") ||
+      cleanQ.includes("نوع الطلب") ||
+      cleanQ.includes("عدل نوع") ||
+      cleanQ.includes("غير نوع") ||
+      cleanQ.includes("بدل نوع") ||
+      cleanQ.includes("سوي النوع") ||
+      cleanQ.includes("سوي نوع") ||
+      cleanQ.includes("سوي المنطقة") ||
+      cleanQ.includes("سوي المنطقه") ||
+      cleanQ.includes("عدل الرقم") ||
+      cleanQ.includes("عدل السعر") ||
+      cleanQ.includes("عدل سعر") ||
+      cleanQ.includes("عدل سعر التوصيل") ||
+      cleanQ.includes("عدل المنطقة") ||
+      cleanQ.includes("عدل المنطقه") ||
+      (cleanQ.includes("بدل") && hasEditFieldWord) ||
+      cleanQ.includes("غير السعر") ||
+      cleanQ.includes("غير الرقم") ||
+      cleanQ.includes("غير المنطقة"))
   ) {
     const explicitOrderMatch = text.match(/(?:رقم|#)\s*#?\s*(\d{2,6})/);
     const explicitOrderNum = explicitOrderMatch ? Number(explicitOrderMatch[1]) : null;
@@ -1019,30 +1043,51 @@ export async function executeSuperSystemAgent(
       }
 
       case "courier_update_name": {
-        const oldName = parsed?.old_name || parsed?.courier_name;
-        const newName = parsed?.new_name;
-
-        if (!oldName || !newName) {
-          return { reply: `يا أبو الأكبر، اذكرلي الاسم الحالي والاسم الجديد بوضوح لأعدله.` };
-        }
+        let oldName = parsed?.old_name || parsed?.courier_name;
+        let newName = parsed?.new_name;
 
         const allCouriers = await prisma.courier.findMany();
+        if (allCouriers.length === 0) {
+          return { reply: `يا أبو الأكبر، ما عندك أي مندوب مسجل بالنظام بعد.` };
+        }
+
         let targetCourier = null;
-        const cleanOld = cleanArabicTextForMatch(oldName);
+
+        // البحث في كل المندوبين عن أي اسم مذكور بالرسالة
         for (const c of allCouriers) {
           const cleanC = cleanArabicTextForMatch(c.name);
-          if (cleanC.includes(cleanOld) || cleanOld.includes(cleanC)) {
+          const cleanRaw = cleanArabicTextForMatch(rawText);
+          if (cleanC.length >= 2 && cleanRaw.includes(cleanC)) {
             targetCourier = c;
+            oldName = c.name;
             break;
           }
         }
-        if (!targetCourier) {
+
+        if (!newName && rawText) {
+          const m = rawText.match(/(?:وسويه|سويه|سوي|اكتبه|غيره إلى|غيره الي|الى|الي)\s*([أ-يa-zA-Z]+)/i);
+          if (m) newName = m[1].trim();
+        }
+
+        if (!targetCourier && oldName) {
           const { match } = findBestMatch(allCouriers, oldName);
           targetCourier = match;
         }
 
         if (!targetCourier) {
-          return { reply: `يا أبو الأكبر، ما لكيت أي مندوب باسم (${oldName}) مسجل بالنظام. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+          return { reply: `يا أبو الأكبر، ما لكيت أي مندوب يطابق الاسم المذكور بالرسالة. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        if (!newName || newName === targetCourier.name) {
+          const words = rawText.split(/\s+/);
+          const lastWord = words[words.length - 1]?.replace(/[.,؟!]/g, "");
+          if (lastWord && lastWord !== targetCourier.name && lastWord.length >= 2) {
+            newName = lastWord;
+          }
+        }
+
+        if (!newName) {
+          return { reply: `يا أبو الأكبر، اذكرلي الاسم الجديد بوضوح لأعدل بيه المندوب (${targetCourier.name}).` };
         }
 
         const updated = await prisma.courier.update({
@@ -1051,7 +1096,7 @@ export async function executeSuperSystemAgent(
         });
 
         return {
-          reply: `تم يا أبو الأكبر! الذكاء الاصطناعي عدل اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
+          reply: `تم يا أبو الأكبر! عدلت اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
         };
       }
 
