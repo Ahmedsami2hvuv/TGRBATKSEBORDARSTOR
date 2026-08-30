@@ -504,32 +504,39 @@ export function AdminFloatingAiWidget() {
           <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5">
             {/* شريط الإدخال النصي عند رغبة المدير بالكتابة */}
             {showTextInput && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (inputMessage.trim()) {
-                    sendApiCommand(inputMessage);
-                    setInputMessage("");
-                  }
-                }}
-                className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150"
-              >
-                <input
-                  type="text"
+              <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                <textarea
+                  rows={Math.min(4, Math.max(1, inputMessage.split("\n").length))}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="اكتب الأمر النصي هنا..."
-                  className="flex-1 px-3.5 py-2.5 text-xs bg-slate-950 text-white rounded-2xl border border-slate-700 focus:outline-none focus:border-blue-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (inputMessage.trim() && !isLoading) {
+                        sendApiCommand(inputMessage);
+                        setInputMessage("");
+                      }
+                    }
+                  }}
+                  placeholder="اكتب الأمر هنا... (Shift+Enter لسطر جديد)"
+                  className="flex-1 px-3.5 py-2 text-xs bg-slate-950 text-white rounded-2xl border border-slate-700 focus:outline-none focus:border-blue-500 resize-none max-h-28 overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-800"
                   autoFocus
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => {
+                    if (inputMessage.trim() && !isLoading) {
+                      sendApiCommand(inputMessage);
+                      setInputMessage("");
+                    }
+                  }}
                   disabled={!inputMessage.trim() || isLoading}
-                  className="p-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/30"
+                  className="p-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/30 shrink-0"
+                  title="إرسال الأمر"
                 >
                   <Send className="w-4 h-4" />
                 </button>
-              </form>
+              </div>
             )}
 
             {/* الأزرار السفلى التفاعلية */}

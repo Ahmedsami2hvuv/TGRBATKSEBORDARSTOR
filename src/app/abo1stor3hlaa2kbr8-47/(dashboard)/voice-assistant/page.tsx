@@ -175,19 +175,26 @@ export default function VoiceAssistantPage() {
         </p>
 
         {/* Input Area */}
-        <div className="flex gap-2">
-          <input
-            type="text"
+        <div className="flex items-end gap-2">
+          <textarea
+            rows={Math.min(4, Math.max(1, inputText.split("\n").length))}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="أو اكتب الأمر هنا (مثال: سويلي طلب من الورد للكرادة سعر 10...)"
-            className="flex-1 px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="اكتب الأمر هنا... (Shift + Enter لسطر جديد)"
+            className="flex-1 px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 resize-none max-h-32 overflow-y-auto leading-relaxed"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (inputText.trim() && !isLoading) {
+                  handleSend();
+                }
+              }
+            }}
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !inputText.trim()}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg transition-all"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg transition-all shrink-0"
           >
             {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             <span>تنفيذ</span>
