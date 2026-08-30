@@ -1,4 +1,4 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
@@ -173,7 +173,7 @@ export async function handleOrderCreationWizard(
 
     case "waiting_region": {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      const cleanUser = clean
+      let cleanUser = clean
         .replace(/^الى\s+منطقة\s+/g, "")
         .replace(/^الي\s+منطقة\s+/g, "")
         .replace(/^الى\s+/g, "")
@@ -182,23 +182,30 @@ export async function handleOrderCreationWizard(
         .replace(/^منطقه\s+/g, "")
         .replace(/^لـ\s*/g, "")
         .replace(/^لاي\s*/g, "")
+        .replace(/جيحور/gi, "جيكور")
+        .replace(/جاي\s*كور/gi, "جيكور")
+        .replace(/نار\s*خوز/gi, "نهر خوز")
         .trim();
 
-      const ranked = rankRegionsByQuery(userText, allRegions as any);
-      let matchedRegion = ranked.length > 0 ? ranked[0] : null;
-
-      if (!matchedRegion) {
-        const scored = allRegions.map(r => ({
-          region: r,
-          score: calculateSimilarity(normalizeArabic(r.name), cleanUser)
-        })).sort((a, b) => b.score - a.score);
-
-        if (scored[0] && scored[0].score >= 0.5) {
-          matchedRegion = scored[0].region;
+      // حساب نسبة التشابه الحقيقية لجميع المناطق
+      const scoredRegions = allRegions.map(r => {
+        const cleanR = normalizeArabic(r.name);
+        let score = 0;
+        if (cleanR === cleanUser) {
+          score = 1.0;
+        } else if (cleanR.includes(cleanUser) || cleanUser.includes(cleanR)) {
+          score = 0.85;
+        } else {
+          score = calculateSimilarity(cleanR, cleanUser);
         }
-      }
+        return { region: r, score };
+      }).sort((a, b) => b.score - a.score);
 
-      if (matchedRegion) {
+      const best = scoredRegions[0];
+
+      // إذا كان التشابه قوي جداً (0.65 فأعلى أو تطابق كامل):
+      if (best && best.score >= 0.65) {
+        const matchedRegion = best.region;
         const updatedDraft: OrderDraftState = {
           ...draft,
           regionId: matchedRegion.id,
@@ -219,7 +226,9 @@ export async function handleOrderCreationWizard(
         };
       }
 
-      const topRegions = allRegions.slice(0, 4);
+      // إذا كان الكلام غير متطابق أو خطأ بالاسم أو تشابه متوسط:
+      // نعرض فوراً أفضل وأقرب 4 مناطق مشابهة كأزرار تفاعلية!
+      const topRegions = scoredRegions.slice(0, 4).map(item => item.region);
       const buttons = topRegions.map(r => ({
         text: `📍 ${r.name}`,
         action: r.name
@@ -227,7 +236,7 @@ export async function handleOrderCreationWizard(
 
       return {
         handled: true,
-        reply: `يا أبو الأكبر، ما لكيت هذه المنطقة بالضبط، قصدك أي منطقة؟ 👇`,
+        reply: `يا أبو الأكبر، قصدك أي منطقة من هذولي؟ 👇`,
         buttons: buttons,
         nextDraft: draft
       };
