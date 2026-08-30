@@ -164,38 +164,63 @@ export function AdminFloatingAiWidget() {
 
       const rec = new SpeechRecognition();
       rec.lang = "ar-IQ";
-      rec.continuous = false;
-      rec.interimResults = false;
+      rec.continuous = true;
+      rec.interimResults = true;
+
+      let finalTranscript = "";
+      let silenceTimer: any = null;
 
       rec.onstart = () => {
         setIsListening(true);
         setIsMicPaused(false);
-        setStatusText("🎙️ الميكروفون شغال... تحدث براحتك بالأمر");
+        setStatusText("🎙️ الميكروفون شغال... تفضل بالتحدث براحتك");
       };
 
       rec.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
-        setIsListening(false);
-        sendApiCommand(text);
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += (finalTranscript ? " " : "") + event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        const fullSpokenText = (finalTranscript + (interimTranscript ? " " + interimTranscript : "")).trim();
+        if (fullSpokenText) {
+          setStatusText(`🎙️ أستمع لك: "${fullSpokenText}"`);
+
+          // تصفير مؤقت الصمت عند استمرار الكلام
+          if (silenceTimer) clearTimeout(silenceTimer);
+
+          // انتظار 2.2 ثانية من الصمت التام للتأكد أن المستخدم أنهى طلبه بالكامل
+          silenceTimer = setTimeout(() => {
+            if (fullSpokenText.trim()) {
+              if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch (e) {}
+              }
+              setIsListening(false);
+              sendApiCommand(fullSpokenText);
+            }
+          }, 2200);
+        }
       };
 
       rec.onerror = (err: any) => {
-        setIsListening(false);
         if (err.error === "no-speech") {
+          // فقط إذا لم ينطق شيئاً ننتظر صوته دون مقاطعة
           setStatusText("🎙️ بانتظار صوتك... تحدث الآن");
-          // إعادة فتح المايك تلقائياً إذا لم يسمع شيئاً وكان المساعد مفتوحاً
-          setTimeout(() => {
-            if (isOpenRef.current && !isMicPausedRef.current) {
-              startVoiceListening();
-            }
-          }, 800);
         } else {
+          setIsListening(false);
           setStatusText("⚠️ انقر على المايك للتحدث.");
         }
       };
 
       rec.onend = () => {
-        setIsListening(false);
+        // إذا كان الاستماع متوقفاً ولم ينته بعد
+        if (isOpenRef.current && !isMicPausedRef.current && !isListening) {
+          // يبقى في حالة استعداد
+        }
       };
 
       recognitionRef.current = rec;
