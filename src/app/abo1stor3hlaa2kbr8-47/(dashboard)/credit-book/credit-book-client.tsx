@@ -590,8 +590,8 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
           <p className="text-slate-400 text-xs font-bold mt-1">جرب تغيير شروط البحث أو الفرز أعلاه</p>
         </div>
       ) : viewMode === "blocks" ? (
-        /* ========== نظام البلوكات (Cards Grid) - مريح ومستقل بدون سحب أفقي ========== */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        /* ========== نظام البلوكات الرشيق (اسم المحل والمبلغ فقط) ========== */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {filteredPartners.map((partner) => {
             const isSelected = selectedPartnerIds.includes(partner.id);
             const isNew = new Date(partner.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
@@ -601,7 +601,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
               <div
                 key={partner.id}
                 onClick={() => router.push(`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`)}
-                className={`group relative bg-white rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between hover:shadow-md ${
+                className={`group relative bg-white rounded-2xl p-3 sm:p-3.5 border transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 hover:shadow-sm ${
                   isSelected 
                     ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/10" 
                     : partner.balance > 0
@@ -611,149 +611,67 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                         : "border-slate-200/80 hover:border-slate-300"
                 }`}
               >
-                {/* رأس البلوك: تحديد الحساب + الاسم + النوع */}
-                <div className="p-4 pb-3 border-b border-slate-100 flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <div 
-                      className="pt-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => handleSelectPartner(partner.id, e.target.checked)}
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors text-base truncate">
-                          {partner.name}
-                        </span>
-                        {isNew && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-indigo-100 text-indigo-700 border border-indigo-200">
-                            جديد ✨
-                          </span>
-                        )}
-                      </div>
+                {/* الجانب الأيمن: التحديد + اسم المحل/الحساب + النوع والهاتف */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div 
+                    className="shrink-0 flex items-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => handleSelectPartner(partner.id, e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
+                    />
+                  </div>
 
-                      {/* رقم الهاتف إن وجد */}
-                      {partner.phone ? (
-                        <div 
-                          className="flex items-center gap-2 mt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <a
-                            href={`tel:${partner.phone}`}
-                            className="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1"
-                            dir="ltr"
-                          >
-                            <span>📞</span>
-                            <span>{partner.phone}</span>
-                          </a>
-                          <button
-                            type="button"
-                            onClick={(e) => handleCopyPhone(e, partner.id, partner.phone!)}
-                            className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 transition"
-                            title="نسخ رقم الهاتف"
-                          >
-                            {copiedPhoneId === partner.id ? "تم النسخ ✓" : "نسخ"}
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] font-bold text-slate-400 block mt-1">بدون هاتف</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors text-sm sm:text-base truncate">
+                        {partner.name}
+                      </span>
+                      {isNew && (
+                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-indigo-100 text-indigo-700">
+                          جديد
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] font-bold text-slate-400">
+                      <span className="flex items-center gap-0.5">
+                        <span>{typeInfo.icon}</span>
+                        <span>{typeInfo.label}</span>
+                      </span>
+                      {partner.phone && (
+                        <>
+                          <span>•</span>
+                          <span dir="ltr" className="text-slate-500">{partner.phone}</span>
+                        </>
                       )}
                     </div>
                   </div>
-
-                  {/* شارة نوع الطرف */}
-                  <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1 shrink-0 ${typeBadgeStyles[partner.type] || "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                    <span>{typeInfo.icon}</span>
-                    <span>{typeInfo.label}</span>
-                  </span>
                 </div>
 
-                {/* جسم البلوك: الرصيد الإجمالي البارز والتفاصيل */}
-                <div className="p-4 space-y-3 bg-slate-50/40">
-                  {/* شريط الرصيد النهائي البارز */}
-                  <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                {/* الجانب الأيسر: شكد المبلغ فقط مع السهم */}
+                <div className="shrink-0 flex items-center gap-2 text-left" dir="ltr">
+                  <div className={`px-3 py-1.5 rounded-xl font-black text-sm sm:text-base tabular-nums flex flex-col items-end ${
                     partner.balance > 0
-                      ? "bg-emerald-50/80 border-emerald-200/80 text-emerald-800"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                       : partner.balance < 0
-                        ? "bg-rose-50/80 border-rose-200/80 text-rose-800"
-                        : "bg-slate-100/80 border-slate-200 text-slate-600"
+                        ? "bg-rose-50 text-rose-700 border border-rose-200/60"
+                        : "bg-slate-100 text-slate-500 border border-slate-200/60"
                   }`}>
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
-                        {partner.balance > 0 ? "نطلبه (بذمته)" : partner.balance < 0 ? "يطلبنا (مستحق له)" : "حالة الحساب"}
-                      </span>
-                      <div className="text-lg font-black tabular-nums mt-0.5">
-                        {partner.balance > 0 ? (
-                          <span>+{formatDinarAsAlfWithUnit(partner.balance)}</span>
-                        ) : partner.balance < 0 ? (
-                          <span>-{formatDinarAsAlfWithUnit(Math.abs(partner.balance))}</span>
-                        ) : (
-                          <span>0 د.ع (مصفّر)</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="text-xl">
-                      {partner.balance > 0 ? "🟢" : partner.balance < 0 ? "🔴" : "⚪"}
-                    </div>
+                    <span>
+                      {partner.balance > 0 ? "+" : ""}{partner.balance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
+                    </span>
+                    <span className="text-[9px] font-black opacity-80" dir="rtl">
+                      {partner.balance > 0 ? "نطلبه" : partner.balance < 0 ? "يطلبنا" : "مصفّر"}
+                    </span>
                   </div>
 
-                  {/* تفاصيل الرصيد اليدوي والتلقائي المدمجة */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {/* الرصيد اليدوي */}
-                    <div className="p-2 bg-white rounded-xl border border-slate-100 text-right">
-                      <span className="text-[10px] font-bold text-slate-400 block">رصيد الدفتر اليدوي</span>
-                      <span className={`font-black tabular-nums mt-0.5 block ${
-                        partner.manualBalance > 0 
-                          ? "text-emerald-600" 
-                          : partner.manualBalance < 0 
-                            ? "text-rose-600" 
-                            : "text-slate-500"
-                      }`}>
-                        {partner.manualBalance > 0 ? "+" : ""}{formatDinarAsAlfWithUnit(partner.manualBalance)}
-                      </span>
-                    </div>
-
-                    {/* التلقائي / المحفظة */}
-                    <div className="p-2 bg-white rounded-xl border border-slate-100 text-right">
-                      <span className="text-[10px] font-bold text-slate-400 block">
-                        {partner.type === "shop" ? "طلبات المحل" : "المحفظة / النظام"}
-                      </span>
-                      {partner.type === "courier" || partner.type === "preparer" ? (
-                        <div className="flex flex-col">
-                          <span className={`font-black tabular-nums mt-0.5 ${
-                            partner.autoBalance > 0 ? "text-emerald-600" : partner.autoBalance < 0 ? "text-rose-600" : "text-slate-500"
-                          }`}>
-                            {partner.autoBalance > 0 ? "+" : ""}{formatDinarAsAlfWithUnit(partner.autoBalance)}
-                          </span>
-                          <span className="text-[9px] text-slate-400 font-bold truncate">
-                            متبقي: {formatDinarAsAlfWithUnit(partner.walletRemain || 0)}
-                          </span>
-                        </div>
-                      ) : partner.type === "shop" ? (
-                        <span className={`font-black tabular-nums mt-0.5 block ${
-                          partner.autoBalance < 0 ? "text-rose-600" : "text-slate-500"
-                        }`}>
-                          {partner.autoBalance < 0 ? formatDinarAsAlfWithUnit(Math.abs(partner.autoBalance)) : "مسدد بالكامل"}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-bold mt-0.5 block">—</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* أسفل البلوك: زر فتح الحساب المباشر */}
-                <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between text-xs font-black text-indigo-600 group-hover:text-indigo-700 transition">
-                  <span className="flex items-center gap-1">
-                    <span>فتح كشف الحساب والعمليات</span>
+                  <span className="text-slate-300 group-hover:text-indigo-600 group-hover:-translate-x-0.5 transition-all text-xs font-bold">
+                    ◀
                   </span>
-                  <span className="group-hover:-translate-x-1 transition-transform">⬅️</span>
                 </div>
               </div>
             );
