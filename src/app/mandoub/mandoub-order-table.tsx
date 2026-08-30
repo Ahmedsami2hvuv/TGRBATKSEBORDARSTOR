@@ -352,6 +352,23 @@ function MandoubFullBlockCardGrid({
                 ? o.summary
                 : o.orderType || "—";
 
+              const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
+
+              const headerTextStr = isDoubleRouteOrder
+                ? `${o.regionLine || "المرسل"} ← ${o.secondCustomerRegionName || "المستلم"}`
+                : `${o.shopName || ""} ← ${o.regionLine || ""}`;
+
+              const textLen = headerTextStr.length;
+
+              // حساب مقاس الخط الديناميكي التكيفي التلقائي لاسم المحل والمنطقة
+              const dynamicHeaderFont = textLen > 35
+                ? "text-[11px] sm:text-xs tracking-tight"
+                : textLen > 24
+                ? "text-xs sm:text-sm tracking-tight"
+                : textLen > 18
+                ? "text-sm sm:text-base"
+                : "text-base sm:text-lg";
+
               return (
                 <div
                   key={o.id}
@@ -364,11 +381,11 @@ function MandoubFullBlockCardGrid({
                   }}
                   className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2`}
                 >
-                  {/* السطر العلوي: زر الإجراء المباشر + اسم المحل ← المنطقة ورقم الطلب بخطوط كبيرة وبارزة */}
+                  {/* السطر العلوي: زر الإجراء الدائري + البلوكات المالية الملونة فوق اسم المحل + رقم الطلب والتنبيه */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 overflow-hidden whitespace-nowrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                    <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                       {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
-                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -431,23 +448,8 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* شارات الصادر والوارد الملونة فوق/بجانب اسم المحل مباشرة باليمين */}
+                      {/* شارات الصادر والوارد الملونة فوق اسم المحل تماماً في السطر العلوي دون مزاحمة */}
                       <MandoubCardMoneyBadges o={o} />
-
-                      {/* بجانبه مباشرة: اسم المحل ← المنطقة (أو منطقة المرسل ← منطقة المستلم للطلبات ذات الوجهتين) */}
-                      {((o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName)) ? (
-                        <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap" title="طلب وجهتين: منطقة المرسل ← منطقة المستلم">
-                          <span className="text-amber-800 dark:text-amber-400 font-black truncate">{o.regionLine || "المرسل"}</span>
-                          <span className="text-slate-400 font-black shrink-0">←</span>
-                          <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
-                          <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
-                          <span className="text-slate-400 font-black shrink-0">←</span>
-                          <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* أقصى اليسار: رقم الطلب بخط كبير بارز مع شارة تنبيه عدم وجود لوكيشن للزبون */}
@@ -465,6 +467,23 @@ function MandoubFullBlockCardGrid({
                         #{o.shortId}
                       </span>
                     </div>
+                  </div>
+
+                  {/* السطر الأوسط: اسم المحل ← المنطقة (يتكيف خطه تلقائياً دون اقتطاع بالنقاط) */}
+                  <div className="py-0.5 min-w-0 overflow-hidden">
+                    {isDoubleRouteOrder ? (
+                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`} title="طلب وجهتين: منطقة المرسل ← منطقة المستلم">
+                        <span className="text-amber-800 dark:text-amber-400 font-black shrink-0">{o.regionLine || "المرسل"}</span>
+                        <span className="text-slate-400 font-black shrink-0">←</span>
+                        <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
+                      </div>
+                    ) : (
+                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`}>
+                        <span className="text-emerald-800 dark:text-emerald-400 font-black shrink-0">{o.shopName}</span>
+                        <span className="text-slate-400 font-black shrink-0">←</span>
+                        <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* سطر التفاصيل المالية والنوع والوقت بخطوط ضخمة وبارزة جداً */}
