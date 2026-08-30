@@ -236,20 +236,24 @@ function parseCustomSystemIntent(userText: string): any {
     cleanQ.includes("اسند") ||
     cleanQ.includes("سوي له اسناد") ||
     cleanQ.includes("سوي اسناد") ||
+    cleanQ.includes("سوي لي اسناد") ||
     cleanQ.includes("للمندوب") ||
     cleanQ.includes("للمنجوب") ||
     cleanQ.includes("الي المندوب") ||
-    cleanQ.includes("الى المندوب")
+    cleanQ.includes("الى المندوب") ||
+    cleanQ.includes("الى فارس") ||
+    cleanQ.includes("الي فارس")
   ) {
-    let courierMatch = text.match(/(?:للمندوب|للمنجوب|إلى المندوب|الي المندوب|المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z\s]+?)$/i);
+    let courierMatch = text.match(/(?:للمندوب|للمنجوب|إلى المندوب|الي المندوب|المندوب|كابتن|لكابتن|إلى|الي|لـ|ل)\s*([أ-يa-zA-Z\s]+?)$/i);
     let courierName = courierMatch ? courierMatch[1].trim() : null;
 
     let status = "pending";
-    if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("جديده") || cleanQ.includes("الجديد")) status = "pending";
+    if (cleanQ.includes("مرفوض") || cleanQ.includes("ملغي")) status = "rejected";
+    else if (cleanQ.includes("جديد") || cleanQ.includes("جديدة") || cleanQ.includes("جديده") || cleanQ.includes("الجديد")) status = "pending";
     else if (cleanQ.includes("معلق")) status = "pending";
 
     let searchQuery = text
-      .replace(/طلب|بحالة|بحاله|جديدة|جديده|الجديد|جديد|معلق|سوي|له|اسناد|إسناد|اسند|للمندوب|للمنجوب|إلى|الي|المندوب|كابتن|لكابتن/gi, "")
+      .replace(/طلب|بحالة|بحاله|جديدة|جديده|الجديد|جديد|معلق|مرفوض|ملغي|سوي|لي|له|اسناد|إسناد|اسند|للمندوب|للمنجوب|إلى|الي|المندوب|كابتن|لكابتن/gi, "")
       .trim();
 
     return {
@@ -923,6 +927,14 @@ export async function executeSuperSystemAgent(
         if (explicitOrderNum) {
           targetOrder = await prisma.order.findUnique({
             where: { orderNumber: explicitOrderNum },
+            include: { shop: true, customerRegion: true }
+          });
+        }
+
+        if (!targetOrder && (target_status === "rejected" || rawText.includes("مرفوض") || rawText.includes("ملغي"))) {
+          targetOrder = await prisma.order.findFirst({
+            where: { status: { in: ["rejected", "cancelled"] } },
+            orderBy: { createdAt: "desc" },
             include: { shop: true, customerRegion: true }
           });
         }
