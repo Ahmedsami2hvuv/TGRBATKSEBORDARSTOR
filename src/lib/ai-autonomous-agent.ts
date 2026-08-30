@@ -1,70 +1,66 @@
-import { prisma } from "./prisma";
-import { getAllActiveGeminiKeys, markGeminiKeySuccess, markGeminiKeyError } from "./gemini-pool";
+﻿import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
-import { formatDinarAsAlf } from "./money-alf";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
+import { getActiveGeminiKeys, markGeminiKeyError, markGeminiKeySuccess } from "./gemini-key-manager";
 
-export async function executeAutonomousGeminiAgent(
+export async function executeAutonomousAiCommand(
   userText: string,
-  sessionKey: string = "default",
-  ctx: { lastOrderNumber?: number | null; activeFocusedOrderId?: string | null }
+  ctx: { lastOrderNumber?: number | null; orderDraft?: any | null }
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> } | null> {
   try {
-    const keys = await getAllActiveGeminiKeys();
-    if (keys.length === 0) {
-      return null;
-    }
+    const keys = await getActiveGeminiKeys();
+    if (!keys || keys.length === 0) return null;
 
-    // جلب البيانات الحية من سوبابيس لتزويد الذكاء الاصطناعي بها
-    const [allShops, allCouriers, allRegions] = await Promise.all([
-      prisma.shop.findMany({ select: { id: true, name: true } }),
+    // جلب البيانات الحية من سوبابيس لتزويد الذكاء بالسياق الحقيقي
+    const [allCouriers, allShops, allRegions] = await Promise.all([
       prisma.courier.findMany({ select: { id: true, name: true, phone: true } }),
+      prisma.shop.findMany({ select: { id: true, name: true } }),
       prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } })
     ]);
 
-    const systemPrompt = `أنت العقل المدبر ومساعد الذكاء الاصطناعي الخارق لإدارة موقع ومنظومة (أبو الأكبر) للتوصيل والمتاجر.
-الموقع مرفوع على GitHub ومستضاف على Vercel وقاعدة البيانات في Supabase.
+    const couriersList = allCouriers.map(c => `${c.name} (id: ${c.id})`).join(", ");
+    const shopsList = allShops.map(s => `${s.name} (id: ${s.id})`).join(", ");
+    const regionsList = allRegions.map(r => `${r.name} (سعر: ${r.deliveryPrice})`).join(", ");
 
-أنت تمتلك الصلاحية الكاملة والحرية المطلقة لفهم كلام أبو الأكبر مهما كانت اللهجة أو الكلمات غير الدقيقة أو العامية، وتنفيذ الإجراءات البرمجية فوراً في قاعدة البيانات سوبابيس.
+    const systemPrompt = `أنت العقل المدبر والذكاء الاصطناعي المستقل لنظام إدارة الطلبات والمبيعات (أبو الأكبر).
+مهمتك: فهم أمر أبو الأكبر بدقة متناهية وترجمته إلى خطة تنفيذ JSON مباشرة.
 
-البيانات الحية المسجلة حالياً في سوبابيس:
-- المحلات المتاحة: ${allShops.map(s => s.name).join("، ")}
-- المندوبين والكباتن: ${allCouriers.map(c => `${c.name} (${c.phone || "بدون رقم"})`).join("، ")}
-- المناطق وأسعار توصيلها: ${allRegions.map(r => `${r.name}: ${r.deliveryPrice} ألف`).join("، ")}
-- رقم آخر طلب مفتوح بالسياق: ${ctx.lastOrderNumber ? `#${ctx.lastOrderNumber}` : "لا يوجد"}
+قاعدة بيانات سوبابيس الحالية:
+- المندوبين: [${couriersList}]
+- المحلات: [${shopsList}]
+- المناطق: [${regionsList}]
 
-مهمتك: تحليل رسالة أبو الأكبر وتوليد خطة إجرائية دقيقة بصيغة JSON حصراً.
-
-العمليات المتاحة في (action):
-1. "CREATE_ORDER": إنشاء طلب جديد
-   - shop_name, region_name, phone, price, order_type (سجل الكلمة التي قالها بالضبط مثل: سمك، روبيان، مسواق، حلويات، ورد، اقمشة، طعام), note_time (مثلاً: الان، ب4 العصر)
-2. "ASSIGN_ORDER": إسناد طلب إلى كابتن/مندوب
-   - order_number (أو "last_rejected" أو "latest"), courier_name
-3. "CREATE_COURIER": إضافة أو إنشاء مندوب/كابتن جديد
-   - courier_name (الاسم الصافي للمندوب فقط بدون كلمات مثل: جديد اسمه، مثلاً: فيصل، علي، حسين), phone
+العمليات المتاحة (action):
+1. "CREATE_ORDER": إنشاء طلب مبيعات جديد
+    - shop_name, region_name, price, phone, order_type, note_time
+2. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل وحالة الطلب
+    - order_number, shop_name, status (pending, assigned, rejected, delivered)
+3. "ASSIGN_ORDER": إسناد طلب إلى مندوب
+    - order_number, courier_name
 4. "REJECT_ORDER": رفض أو إلغاء طلب
-   - order_number (إذا لم يذكر رقم طلب استخدم رقم آخر طلب بالسياق)
-4. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب أو كابتن
-   - old_name (الاسم الحالي المسجل بالنظام), new_name (الاسم الجديد الصحيح)
-5. "BULK_ARCHIVE": أرشفة طلبات جماعية
-   - courier_name, shop_name, status ("delivered" للطلبات المسلمة أو "rejected" للمرفوضة)
-6. "EDIT_ORDER": تعديل أي حقل بطلب معين
-   - order_number, field ("order_type", "price", "delivery_price", "phone", "region"), value
-7. "UNASSIGN_ORDER": إلغاء إسناد طلب وإرجاعه جديد
-   - order_number
-8. "GET_PENDING_ORDERS": عرض أو فحص الطلبات الجديدة والمعلقة (مثال: اكو طلبات جديده بالموقع، الطلبات الجديده)
-9. "GET_LAST_ORDER": عرض تفاصيل آخر طلب
-10. "GET_ORDER_DETAILS": تفاصيل طلب محدد برقم
     - order_number
-11. "GET_LEARNED_RULES": استعلام القواعد المبرمجة في سوبابيس
-12. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام كم طلبيات مندوب اليوم (مثال: كم طلبيات المندوب فارس اليوم)
+5. "RESET_TO_NEW": إعادة طلب إلى حالة جديد
+    - order_number
+6. "CHANGE_COURIER": تغيير مندوب الطلب
+    - order_number, courier_name
+7. "CREATE_COURIER": إضافة مندوب جديد
+    - courier_name, phone
+8. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل
+    - old_name, new_name
+9. "BULK_ARCHIVE": أرشفة طلبات منتهية أو ملغاة
+    - courier_name, status
+10. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
+    - order_number, field, value
+11. "GET_PENDING_ORDERS": استعلام الطلبات الجديدة المعلقة
+12. "GET_LAST_ORDER": جلب آخر طلب في النظام
+13. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام طلبيات مندوب اليوم
     - courier_name
-13. "FRIENDLY_CHAT": رد محادثة وسوالف عامة أو استفسار عام
-    - reply_text (رد عراقي محترم وذكي ومباشر)
+14. "FRIENDLY_CHAT": رد محادثة وسوالف عامة
+    - reply_text
 
-أجب بـ JSON فقط بهذا الشكل:
+أجب بـ JSON فقط:
 {
   "action": "اسم العملية",
   "shop_name": "...",
@@ -86,7 +82,9 @@ export async function executeAutonomousGeminiAgent(
     let lastCandidateText = null;
     let successfulKeyId = null;
 
-    // تجربة المفاتيح النشطة في الـ Pool واحداً تلو الآخر لتفادي أي ضغط
+    // تنظيف رقم الشباك من النص
+    const cleanInputText = userText.replace(/#/g, "");
+
     for (const k of keys) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${k.key}`;
@@ -99,7 +97,7 @@ export async function executeAutonomousGeminiAgent(
                 role: "user",
                 parts: [
                   { text: systemPrompt },
-                  { text: `رسالة وأمر أبو الأكبر هي: "${userText}"` }
+                  { text: `رسالة وأمر أبو الأكبر هي: "${cleanInputText}"` }
                 ]
               }
             ],
@@ -127,7 +125,7 @@ export async function executeAutonomousGeminiAgent(
     }
 
     if (!lastCandidateText) {
-      return null; // الانتقال الآمن للمنفذ الفوري المحلي بدون إظهار رسالة خطأ
+      return null;
     }
 
     if (successfulKeyId) {
@@ -136,31 +134,9 @@ export async function executeAutonomousGeminiAgent(
 
     const plan = JSON.parse(lastCandidateText);
 
-    // حفظ القاعدة برمجياً في سوبابيس
-    try {
-      await (prisma as any).aiLearnedRule.upsert({
-        where: { triggerPattern: userText.slice(0, 50).trim() },
-        create: {
-          triggerPattern: userText.slice(0, 50).trim(),
-          intentCategory: plan.action,
-          extractedAction: plan,
-          examples: [userText],
-          hitCount: 1,
-          isActive: true
-        },
-        update: {
-          hitCount: { increment: 1 },
-          updatedAt: new Date()
-        }
-      });
-    } catch (e) {}
-
-    // التنفيذ الفوري في قاعدة البيانات حسب خطة الذكاء الاصطناعي:
+    // التنفيذ الفوري في سوبابيس حسب الخطة:
     switch (plan.action) {
       case "CREATE_ORDER": {
-        const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-        const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-
         const cleanShopQuery = (plan.shop_name || "")
           .replace(/^من\s+محل\s+/g, "")
           .replace(/^من\s+/g, "")
@@ -168,13 +144,11 @@ export async function executeAutonomousGeminiAgent(
           .trim()
           .toLowerCase();
 
-        // 1. حساب أفضل مطابقة للمحل بنسبة التشابه
         const scoredShops = allShops.map(s => {
           const sName = s.name.toLowerCase();
           let score = 0;
           if (cleanShopQuery && (sName.includes(cleanShopQuery) || cleanShopQuery.includes(sName))) score = 0.9;
           else if (cleanShopQuery) {
-            // فحص تشابه الحروف
             let matches = 0;
             for (let ch of cleanShopQuery) {
               if (sName.includes(ch)) matches++;
@@ -186,7 +160,6 @@ export async function executeAutonomousGeminiAgent(
 
         let shop = scoredShops.length > 0 && scoredShops[0].score >= 0.55 ? scoredShops[0].shop : null;
 
-        // 2. مطابقة المنطقة
         let region = allRegions.find(r => plan.region_name && r.name.toLowerCase().includes(plan.region_name.toLowerCase())) || null;
         if (!region && plan.region_name) {
           const ranked = rankRegionsByQuery(plan.region_name, allRegions as any);
@@ -199,7 +172,6 @@ export async function executeAutonomousGeminiAgent(
         const oType = plan.order_type || "مسواق";
         const nTime = plan.note_time || "الان";
 
-        // إذا كان المحل غير معروف، نحفظ باقي البيانات ونسأله عن المحل فقط ونقترح أقرب المحلات!
         if (!shop) {
           ctx.orderDraft = {
             step: "waiting_shop",
@@ -226,7 +198,6 @@ export async function executeAutonomousGeminiAgent(
           };
         }
 
-        // إذا كان المحل معروف، ننشئ الطلب فوراً!
         const newOrder = await prisma.order.create({
           data: {
             shopId: shop.id,
@@ -253,17 +224,102 @@ export async function executeAutonomousGeminiAgent(
         };
       }
 
-      case "ASSIGN_ORDER": {
+      case "GET_ORDER_DETAILS": {
+        let orderNum = Number(plan.order_number);
+        if (!orderNum) {
+          const numMatch = userText.match(/\d+/);
+          if (numMatch) orderNum = Number(numMatch[0]);
+        }
+
         let targetOrder = null;
-        if (plan.order_number === "last_rejected" || userText.includes("مرفوض")) {
-          targetOrder = await prisma.order.findFirst({
-            where: { status: { in: ["rejected", "cancelled"] } },
-            orderBy: { createdAt: "desc" },
-            include: { shop: true, customerRegion: true }
-          });
-        } else if (plan.order_number && Number(plan.order_number) > 0) {
+
+        if (orderNum && orderNum > 0) {
           targetOrder = await prisma.order.findUnique({
-            where: { orderNumber: Number(plan.order_number) },
+            where: { orderNumber: orderNum },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+        } else if (plan.shop_name) {
+          // البحث باسم المحل والحالة المذكورة
+          let whereClause: any = {
+            shop: { name: { contains: plan.shop_name, mode: "insensitive" } }
+          };
+          if (plan.status) {
+            if (plan.status.includes("جديد") || plan.status === "pending") whereClause.status = "pending";
+            else if (plan.status.includes("مسند") || plan.status === "assigned") whereClause.status = "assigned";
+            else if (plan.status.includes("مرفوض") || plan.status === "rejected") whereClause.status = { in: ["rejected", "cancelled"] };
+          }
+          targetOrder = await prisma.order.findFirst({
+            where: whereClause,
+            orderBy: { createdAt: "desc" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+        } else if (ctx.lastOrderNumber) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: ctx.lastOrderNumber },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق للبحث (${plan.shop_name || orderNum || "المحدد"}).` };
+        }
+
+        ctx.lastOrderNumber = targetOrder.orderNumber;
+
+        const shopName = targetOrder.shop?.name || "المحل";
+        const regionName = targetOrder.customerRegion?.name || "غير محددة";
+        const phone = targetOrder.customerPhone || "بدون رقم";
+        const subtotal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 0;
+        const oType = targetOrder.orderType || "مسواق";
+        const nTime = targetOrder.orderNoteTime || "الان";
+        
+        let statusArabic = "جديد";
+        if (targetOrder.status === "assigned") statusArabic = `مسند (${targetOrder.courier?.name || "مندوب"})`;
+        else if (targetOrder.status === "rejected" || targetOrder.status === "cancelled") statusArabic = "مرفوض";
+        else if (targetOrder.status === "delivered" || targetOrder.status === "completed") statusArabic = "واصل ومسلم";
+        else if (targetOrder.status === "archived") statusArabic = "مؤرشف";
+
+        // تنسيق تفاصيل الطلب البسيط والمباشر حسب طلب أبو الأكبر حرفياً:
+        const replyText = `تفاصيل الطلب:\n${targetOrder.orderNumber}\n${shopName}\n${regionName}\n${phone}\n${subtotal}\n${oType}\n${nTime}\n${statusArabic}`;
+
+        // توليد الأزرار الذكية التفاعلية
+        const buttons: Array<{ text: string; action: string }> = [];
+
+        // أزرار الاتصال والواتساب
+        if (targetOrder.customerPhone && targetOrder.customerPhone.replace(/\D/g, "").length >= 7) {
+          const rawDigits = targetOrder.customerPhone.replace(/\D/g, "");
+          const cleanPhone = rawDigits.startsWith("0") ? "964" + rawDigits.slice(1) : (rawDigits.startsWith("964") ? rawDigits : "964" + rawDigits);
+          buttons.push({ text: `📞 اتصال بالزبون`, action: `tel:${targetOrder.customerPhone}` });
+          buttons.push({ text: `💬 مراسلة واتساب`, action: `https://wa.me/${cleanPhone}` });
+        }
+
+        // أزرار الحالة الذكية حسب وضع الطلب
+        if (targetOrder.status === "pending") {
+          buttons.push({ text: `🛵 إسناد لمندوب`, action: `إسناد طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `❌ إلغاء الطلب`, action: `إلغاء طلب ${targetOrder.orderNumber}` });
+        } else if (targetOrder.status === "rejected" || targetOrder.status === "cancelled") {
+          buttons.push({ text: `🛵 إعادة إسناد`, action: `إسناد طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `🔄 إرجاع إلى جديد`, action: `إرجاع طلب ${targetOrder.orderNumber} للجديد` });
+        } else if (targetOrder.status === "assigned") {
+          buttons.push({ text: `🛵 تغيير المندوب`, action: `تغيير مندوب طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `🔄 إرجاع إلى جديد`, action: `إرجاع طلب ${targetOrder.orderNumber} للجديد` });
+          buttons.push({ text: `❌ إلغاء الطلب`, action: `إلغاء طلب ${targetOrder.orderNumber}` });
+        }
+
+        return { reply: replyText, buttons };
+      }
+
+      case "ASSIGN_ORDER": {
+        let orderNum = Number(plan.order_number);
+        if (!orderNum) {
+          const m = userText.match(/\d+/);
+          if (m) orderNum = Number(m[0]);
+        }
+
+        let targetOrder = null;
+        if (orderNum && orderNum > 0) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: orderNum },
             include: { shop: true, customerRegion: true }
           });
         } else if (ctx.lastOrderNumber) {
@@ -283,30 +339,93 @@ export async function executeAutonomousGeminiAgent(
           return { reply: "يا أبو الأكبر، ما لكيت أي طلب مطابق لإسناده." };
         }
 
-        let courier = allCouriers.find(c => plan.courier_name && c.name.toLowerCase().includes(plan.courier_name.toLowerCase())) || allCouriers[0];
+        let courier = allCouriers.find(c => plan.courier_name && c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
+        if (!courier && allCouriers.length > 0) {
+          // إذا لم يحدد المندوب، نعرض قائمة المندوبين كأزرار سريعة
+          const buttons = allCouriers.slice(0, 5).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `اسند طلب ${targetOrder!.orderNumber} للمندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، اختر المندوب لإسناد طلب #${targetOrder.orderNumber} لـ (${targetOrder.shop?.name || "المحل"}): 👇`,
+            buttons
+          };
+        }
 
         const updated = await prisma.order.update({
           where: { id: targetOrder.id },
-          data: { assignedCourierId: courier.id, status: "assigned" },
+          data: { assignedCourierId: courier!.id, status: "assigned" },
           include: { shop: true, customerRegion: true }
         });
 
         ctx.lastOrderNumber = updated.orderNumber;
 
-        const shopName = updated.shop?.name || "المحل";
-        const regionName = updated.customerRegion?.name || "غير محددة";
-        const oType = updated.orderType || "غير محدد";
-        const nTime = updated.orderNoteTime || "الان";
-        const subtotal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
-        const total = updated.totalAmount ? Number(updated.totalAmount) : subtotal;
+        return {
+          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${courier!.name}) بنجاح 🛵`
+        };
+      }
+
+      case "RESET_TO_NEW": {
+        let orderNum = Number(plan.order_number) || ctx.lastOrderNumber;
+        if (!orderNum) {
+          const m = userText.match(/\d+/);
+          if (m) orderNum = Number(m[0]);
+        }
+
+        if (!orderNum) {
+          return { reply: "يا أبو الأكبر، حدد رقم الطلب اللي تريد ترجعه لجديد." };
+        }
+
+        const updated = await prisma.order.update({
+          where: { orderNumber: orderNum },
+          data: { status: "pending", assignedCourierId: null }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
 
         return {
-          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${courier.name}) 🛵\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📦 **نوع الطلب:** ${oType} | ⏰ **وقت الطلب:** ${nTime}\n💰 **سعر الطلب:** ${subtotal} ألف (المجموع: ${total} ألف)`
+          reply: `تم يا أبو الأكبر! رجعت طلب #${updated.orderNumber} إلى حالة (جديد معلق) بنجاح 🔄`
+        };
+      }
+
+      case "CHANGE_COURIER": {
+        let orderNum = Number(plan.order_number) || ctx.lastOrderNumber;
+        if (!orderNum) {
+          const m = userText.match(/\d+/);
+          if (m) orderNum = Number(m[0]);
+        }
+
+        let courier = allCouriers.find(c => plan.courier_name && c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
+        if (!courier && allCouriers.length > 0) {
+          const buttons = allCouriers.slice(0, 5).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `اسند طلب ${orderNum} للمندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، اختر المندوب الجديد لطلب #${orderNum}: 👇`,
+            buttons
+          };
+        }
+
+        const updated = await prisma.order.update({
+          where: { orderNumber: orderNum },
+          data: { assignedCourierId: courier!.id, status: "assigned" }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+
+        return {
+          reply: `تم يا أبو الأكبر! غيرت مندوب طلب #${updated.orderNumber} وصار للكابتن (${courier!.name}) بنجاح 🛵`
         };
       }
 
       case "REJECT_ORDER": {
         let orderNum = Number(plan.order_number) || ctx.lastOrderNumber;
+        if (!orderNum) {
+          const m = userText.match(/\d+/);
+          if (m) orderNum = Number(m[0]);
+        }
+
         let targetOrder = null;
         if (orderNum) {
           targetOrder = await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true } });
@@ -382,10 +501,6 @@ export async function executeAutonomousGeminiAgent(
           if (m) newName = m[1].trim();
         }
 
-        if (!newName && targetCourier) {
-          newName = "فيصل";
-        }
-
         if (!targetCourier) {
           return { reply: "يا أبو الأكبر، ما لكيت أي مندوب يحتوي اسمه على هذه الكلمة لتعديله." };
         }
@@ -418,32 +533,6 @@ export async function executeAutonomousGeminiAgent(
         };
       }
 
-      case "EDIT_ORDER": {
-        let orderNum = Number(plan.order_number) || ctx.lastOrderNumber;
-        let targetOrder = orderNum ? await prisma.order.findUnique({ where: { orderNumber: orderNum }, include: { shop: true, customerRegion: true } }) : null;
-        if (!targetOrder) {
-          return { reply: "يا أبو الأكبر، حدد رقم الطلب اللي تريد تعدله." };
-        }
-
-        let updateData: any = {};
-        if (plan.field === "order_type") updateData.orderType = String(plan.value);
-        else if (plan.field === "price") {
-          updateData.orderSubtotal = new Decimal(Number(plan.value));
-          const del = targetOrder.deliveryPrice ? Number(targetOrder.deliveryPrice) : 0;
-          updateData.totalAmount = new Decimal(Number(plan.value) + del);
-        }
-
-        const updated = await prisma.order.update({
-          where: { id: targetOrder.id },
-          data: updateData,
-          include: { shop: true, customerRegion: true }
-        });
-
-        return {
-          reply: `تم يا أبو الأكبر! عدلت طلب #${updated.orderNumber} وصار (${plan.field}: ${plan.value}) بنجاح 🚀`
-        };
-      }
-
       case "GET_PENDING_ORDERS": {
         const pendingOrders = await prisma.order.findMany({
           where: { status: "pending" },
@@ -464,7 +553,8 @@ export async function executeAutonomousGeminiAgent(
           const regionName = o.customerRegion?.name || "غير محددة";
           const subtotal = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
           replyText += `${idx + 1}. **طلب #${o.orderNumber}** | المحل: **${shopName}** | المنطقة: **${regionName}** | المبلغ: **${subtotal} ألف**\n`;
-          buttons.push({ text: `🔎 تفاصيل طلب #${o.orderNumber}`, action: `تفاصيل طلب #${o.orderNumber}` });
+          // إزالة علامة # من الأكشن لتجنب أي تعارض
+          buttons.push({ text: `🔎 تفاصيل طلب ${o.orderNumber}`, action: `تفاصيل طلب ${o.orderNumber}` });
         });
 
         return { reply: replyText, buttons };
@@ -490,7 +580,7 @@ export async function executeAutonomousGeminiAgent(
         const allCouriersTake = allCouriers.slice(0, 5);
         const buttons = allCouriersTake.map(c => ({
           text: `🛵 إسناد لـ كابتن: ${c.name}`,
-          action: `assign_order_${latestOrder.id}_courier_${c.id}`
+          action: `اسند طلب ${latestOrder.orderNumber} للمندوب ${c.name}`
         }));
 
         return {
@@ -499,90 +589,15 @@ export async function executeAutonomousGeminiAgent(
         };
       }
 
-      case "GET_ORDER_DETAILS": {
-        const targetOrder = await prisma.order.findUnique({
-          where: { orderNumber: Number(plan.order_number) },
-          include: { shop: true, customerRegion: true, courier: true }
-        });
-
-        if (!targetOrder) {
-          return { reply: `يا أبو الأكبر! لم أجد الطلب رقم #${plan.order_number} في قواعد البيانات!` };
-        }
-
-        ctx.lastOrderNumber = targetOrder.orderNumber;
-        const shopName = targetOrder.shop?.name || "المحل";
-        const regionName = targetOrder.customerRegion?.name || "غير محددة";
-        const phone = targetOrder.customerPhone || "لا يوجد";
-        const price = targetOrder.totalAmount ? Number(targetOrder.totalAmount) : 0;
-        const courierName = targetOrder.courier ? targetOrder.courier.name : "غير مسند بعد";
-
-        const buttons = allCouriers.slice(0, 5).map(c => ({
-          text: `🛵 إسناد لـ كابتن: ${c.name}`,
-          action: `assign_order_${targetOrder.id}_courier_${c.id}`
-        }));
-
-        return {
-          reply: `📌 **تفاصيل الطلب رقم #${targetOrder.orderNumber} يا أبو الأكبر:**\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${price} ألف\n🛵 **المندوب:** (${courierName})\n\n👇 **اختر الكابتن للإسناد المباشر بالنقر أدناه:**`,
-          buttons
-        };
-      }
-
-      case "GET_LEARNED_RULES": {
-        const rules = await (prisma as any).aiLearnedRule.findMany({
-          where: { isActive: true },
-          orderBy: { hitCount: "desc" },
-          take: 15
-        }).catch(() => []);
-
-        let replyText = `📊 **القواعد والأوامر البرمجية النشطة والمخزنة في سوبابيس (Supabase Memory):**\n\n`;
-        rules.forEach((r: any, idx: number) => {
-          replyText += `${idx + 1}. **النمط:** "${r.triggerPattern}" ➡️ **الفئة:** (${r.intentCategory}) | **الاستخدام:** ${r.hitCount} مرة\n`;
-        });
-
-        return { reply: replyText };
-      }
-
-      case "DAILY_SUMMARY": {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-
-        let whereCondition: any = { createdAt: { gte: startOfDay } };
-        let courierObj = null;
-
-        if (plan.courier_name) {
-          courierObj = allCouriers.find(c => c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
-          if (courierObj) {
-            whereCondition.assignedCourierId = courierObj.id;
-          }
-        }
-
-        const ordersToday = await prisma.order.findMany({
-          where: whereCondition
-        });
-
-        const totalOrders = ordersToday.length;
-        const deliveredOrders = ordersToday.filter(o => o.status === "delivered" || o.status === "completed").length;
-
-        if (courierObj) {
-          return {
-            reply: `📊 **طلبيات الكابتن (${courierObj.name}) اليوم يا أبو الأكبر:**\n🔹 **إجمالي الطلبات المسندة إليه:** ${totalOrders} طلب\n✅ **الطلبات المسلمة:** ${deliveredOrders} طلب`
-          };
-        }
-
-        return {
-          reply: `📊 **ملخص طلبات اليوم يا أبو الأكبر:**\n🔹 **إجمالي طلبات اليوم:** ${totalOrders} طلب\n✅ **الطلبات المسلمة:** ${deliveredOrders} طلب\n✨ النظام يعمل بكفاءة عالية ومباشرة مع سوبابيس!`
-        };
-      }
-
       case "FRIENDLY_CHAT":
       default: {
         return {
-          reply: plan.reply_text || `هلا وغلا بيك يا أبو الأكبر! نورتني، آمرني وتدلل جاهز لتنفيذ أي أمر في الموقع وسوبابيس فوراً! 🌸🚀`
+          reply: plan.reply_text || "تدلل يا أبو الأكبر، آمرني بأي أمر وأنا بالخدمة دائماً 🌸"
         };
       }
     }
-  } catch (err: any) {
-    console.error("executeAutonomousGeminiAgent Error:", err);
+  } catch (error: any) {
+    console.error("Error in autonomous AI agent:", error);
     return null;
   }
 }

@@ -70,7 +70,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     private val sessionHistory = JSONArray()
 
-    // مؤقت معالجة الصمت والتنفس لمنع القطع السريع
     private val handler = Handler(Looper.getMainLooper())
     private var pendingSpeechText: String? = null
     private val commitSpeechRunnable = Runnable {
@@ -86,7 +85,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // حماية عامة من أي انهيار غير متوقع
         Thread.setDefaultUncaughtExceptionHandler { _, _ -> }
 
         try {
@@ -146,14 +144,14 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
                 } else {
                     isMicPaused = false
-                    checkPermissionAndStartListening()
+                    safelyRestartSpeechRecognizer()
                 }
             }
 
             btnGeminiPill.setOnClickListener {
                 if (!isListening) {
                     isMicPaused = false
-                    checkPermissionAndStartListening()
+                    safelyRestartSpeechRecognizer()
                 }
             }
 
@@ -198,7 +196,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             checkOverlayPermissionAndStartFloatingService()
-            checkPermissionAndStartListening()
+            safelyRestartSpeechRecognizer()
 
         } catch (e: Exception) {}
     }
@@ -289,8 +287,26 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     }
                     setOnClickListener {
                         handler.removeCallbacks(commitSpeechRunnable)
-                        addMessageToChat(sender = "user", text = btnText)
-                        sendToAdminVoiceApi(btnAction)
+                        
+                        // فتح الاتصال أو الواتساب مباشرة إذا كان الزر اتصال أو واتساب
+                        if (btnAction.startsWith("tel:")) {
+                            try {
+                                val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse(btnAction))
+                                startActivity(dialIntent)
+                            } catch (e: Exception) {
+                                Toast.makeText(this@VoiceAssistantActivity, "تعذر فتح الاتصال", Toast.LENGTH_SHORT).show()
+                            }
+                        } else if (btnAction.startsWith("https://wa.me/") || btnAction.startsWith("https://")) {
+                            try {
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(btnAction))
+                                startActivity(webIntent)
+                            } catch (e: Exception) {
+                                Toast.makeText(this@VoiceAssistantActivity, "تعذر فتح الواتساب", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            addMessageToChat(sender = "user", text = btnText)
+                            sendToAdminVoiceApi(btnAction)
+                        }
                     }
                 }
                 buttonsLayout.addView(actionButton)
@@ -357,7 +373,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     override fun onResume() {
         super.onResume()
         if (!isListening && !isMicPaused) {
-            checkPermissionAndStartListening()
+            safelyRestartSpeechRecognizer()
         }
     }
 
@@ -367,16 +383,33 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         stopListening()
         isMicPaused = false
         tvStatus.text = "🎙️ أستمع لك... تحدث براحتك بالأمر يا أبو الأكبر"
-        checkPermissionAndStartListening()
+        safelyRestartSpeechRecognizer()
     }
 
     private fun stopListening() {
         try {
             speechRecognizer?.stopListening()
             speechRecognizer?.cancel()
+            speechRecognizer?.destroy()
+            speechRecognizer = null
         } catch (e: Exception) {}
         isListening = false
         progressBar.visibility = View.GONE
+    }
+
+    private fun safelyRestartSpeechRecognizer() {
+        runOnUiThread {
+            if (isMicPaused || isFinishing) return@runOnUiThread
+            try {
+                stopListening()
+            } catch (e: Exception) {}
+
+            handler.postDelayed({
+                if (!isMicPaused && !isFinishing) {
+                    checkPermissionAndStartListening()
+                }
+            }, 300L)
+        }
     }
 
     private fun checkPermissionAndStartListening() {
@@ -393,7 +426,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startListening()
+                safelyRestartSpeechRecognizer()
             } else {
                 tvStatus.text = "⚠️ يتطلب المساعد إذن الميكروفون"
                 Toast.makeText(this, "يرجى منح إذن الميكروفون لاستخدام المساعد الصوتي", Toast.LENGTH_LONG).show()
@@ -408,7 +441,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 return
             }
 
-            stopListening()
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -434,7 +466,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     handler.removeCallbacks(commitSpeechRunnable)
                     tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
 
-                    // 💥 مثل Gemini Live الحقيقي: إسكات صوت المساعد فوراً بمجرد أن يبدأ المستخدم بالكلام!
                     try {
                         if (textToSpeech?.isSpeaking == true) {
                             textToSpeech?.stop()
@@ -444,7 +475,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 override fun onRmsChanged(rmsdB: Float) {
                     btnGeminiPill.setAudioRms(rmsdB)
-                    // إذا كان صوت المستخدم مسموعاً أثناء قراءة المساعد، نسكت المساعد فوراً!
                     if (rmsdB > 3.0f) {
                         try {
                             if (textToSpeech?.isSpeaking == true) {
@@ -462,14 +492,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 override fun onError(error: Int) {
                     progressBar.visibility = View.GONE
+                    isListening = false
 
                     if (!isMicPaused && pendingSpeechText.isNullOrBlank()) {
-                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
-                        tvStatus.postDelayed({
+                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث يا أبو الأكبر"
+                        handler.postDelayed({
                             if (!isMicPaused && !isListening) {
-                                checkPermissionAndStartListening()
+                                safelyRestartSpeechRecognizer()
                             }
-                        }, 500)
+                        }, 500L)
                     } else if (!pendingSpeechText.isNullOrBlank()) {
                         handler.removeCallbacks(commitSpeechRunnable)
                         handler.post(commitSpeechRunnable)
@@ -477,7 +508,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
 
                 override fun onPartialResults(partialResults: Bundle?) {
-                    // إسكات المساعد فوراً عند وصول أول كلمة منطوقة من المستخدم
                     try {
                         if (textToSpeech?.isSpeaking == true) {
                             textToSpeech?.stop()
@@ -497,6 +527,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
 
                 override fun onResults(results: Bundle?) {
+                    isListening = false
                     val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     if (!matches.isNullOrEmpty()) {
                         val finalText = matches[0]
@@ -507,8 +538,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             handler.postDelayed(commitSpeechRunnable, 1200L)
                         }
                     } else if (!isMicPaused) {
-                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
-                        startListening()
+                        safelyRestartSpeechRecognizer()
                     }
                 }
 
@@ -544,11 +574,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     addMessageToChat(sender = "ai", text = "عذراً يا أبو الأكبر، تعذر الاتصال بالسيرفر: ${e.message}")
 
                     if (!isMicPaused) {
-                        tvStatus.postDelayed({
+                        handler.postDelayed({
                             if (!isMicPaused && !isListening) {
-                                checkPermissionAndStartListening()
+                                safelyRestartSpeechRecognizer()
                             }
-                        }, 2000)
+                        }, 2000L)
                     }
                 }
             }
@@ -581,11 +611,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                                 speakOut(reply)
                             } else {
                                 if (!isMicPaused) {
-                                    tvStatus.postDelayed({
+                                    handler.postDelayed({
                                         if (!isMicPaused && !isListening) {
-                                            checkPermissionAndStartListening()
+                                            safelyRestartSpeechRecognizer()
                                         }
-                                    }, 1500)
+                                    }, 1200L)
                                 }
                             }
                         } else {
@@ -594,11 +624,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             addMessageToChat(sender = "ai", text = errText)
 
                             if (!isMicPaused) {
-                                tvStatus.postDelayed({
+                                handler.postDelayed({
                                     if (!isMicPaused && !isListening) {
-                                        checkPermissionAndStartListening()
+                                        safelyRestartSpeechRecognizer()
                                     }
-                                }, 2000)
+                                }, 2000L)
                             }
                         }
                     } catch (e: Exception) {
@@ -606,11 +636,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         addMessageToChat(sender = "ai", text = resBody)
 
                         if (!isMicPaused) {
-                            tvStatus.postDelayed({
+                            handler.postDelayed({
                                 if (!isMicPaused && !isListening) {
-                                    checkPermissionAndStartListening()
+                                    safelyRestartSpeechRecognizer()
                                 }
-                            }, 2000)
+                            }, 2000L)
                         }
                     }
                 }
@@ -622,14 +652,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         if (status == TextToSpeech.SUCCESS) {
             textToSpeech?.language = Locale("ar")
             textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {
-                    // المايك يبقى مستمعاً ولا يتوقف
-                }
+                override fun onStart(utteranceId: String?) {}
 
                 override fun onDone(utteranceId: String?) {
+                    // بمجرد انتهاء نطق الرد، يتم تشغيل المايك فوراً بنسخة جديدة نظيفة!
                     runOnUiThread {
                         if (!isMicPaused) {
-                            checkPermissionAndStartListening()
+                            safelyRestartSpeechRecognizer()
                         }
                     }
                 }
@@ -637,7 +666,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 override fun onError(utteranceId: String?) {
                     runOnUiThread {
                         if (!isMicPaused) {
-                            checkPermissionAndStartListening()
+                            safelyRestartSpeechRecognizer()
                         }
                     }
                 }
@@ -669,7 +698,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         try {
             handler.removeCallbacks(commitSpeechRunnable)
             stopListening()
-            speechRecognizer?.destroy()
             textToSpeech?.stop()
             textToSpeech?.shutdown()
         } catch (e: Exception) {}
