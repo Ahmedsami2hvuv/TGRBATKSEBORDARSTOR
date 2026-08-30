@@ -1016,4 +1016,17 @@ model GeminiApiKey {
   updatedAt  DateTime  @updatedAt
 }
 
+model AiLearnedRule {
+  id              String   @id @default(cuid())
+  triggerPattern  String   @unique
+  intentCategory  String
+  extractedAction Json?
+  examples        Json?
+  hitCount        Int      @default(1)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@index([triggerPattern])
+  @@index([intentCategory])
+}

@@ -4,6 +4,7 @@ import { rankRegionsByQuery } from "./arabic-region-search";
 import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
+import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
 
 type ChatSessionContext = {
   lastOrderNumber?: number | null;
@@ -634,8 +635,41 @@ export async function executeSuperSystemAgent(
   aiParsed?: any
 ) {
   const rawText = userText || "";
-  const parsed = aiParsed || parseCustomSystemIntent(rawText);
   const ctx = getSessionContext(sessionKey);
+
+  // 1. فحص القواعد السريعة الثابتة
+  let parsed = aiParsed || parseCustomSystemIntent(rawText);
+
+  // 2. إذا كانت الفئة عامة أو غير معروفة، نفحص جدول القواعد المتعلمة المخزنة في سوبابيس (Supabase Memory)
+  if (!parsed || parsed.category === "general_qa" || !parsed.category) {
+    try {
+      const learnedMatch = await findMatchingLearnedRule(rawText);
+      if (learnedMatch && learnedMatch.category && learnedMatch.category !== "general_qa") {
+        parsed = learnedMatch;
+      }
+    } catch (e) {}
+  }
+
+  // 3. إذا ظلت الفئة غير معروفة، يستدعي الذكاء الخارجي للتحليل وصناعة قاعدة جديدة وتخزينها في سوبابيس!
+  if (!parsed || parsed.category === "general_qa" || !parsed.category) {
+    try {
+      const [allShops, allCouriers, allRegions] = await Promise.all([
+        prisma.shop.findMany({ select: { name: true } }),
+        prisma.courier.findMany({ select: { name: true } }),
+        prisma.region.findMany({ select: { name: true } })
+      ]);
+      const compiled = await compileAndSaveNewIntent(rawText, {
+        shops: allShops.map(s => s.name),
+        couriers: allCouriers.map(c => c.name),
+        regions: allRegions.map(r => r.name)
+      });
+      if (compiled && compiled.category && compiled.category !== "general_qa") {
+        parsed = compiled;
+      }
+    } catch (compileErr) {
+      console.warn("Dynamic intent compiler error:", compileErr);
+    }
+  }
 
   try {
     if (rawText.startsWith("assign_order_")) {
