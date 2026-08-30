@@ -1,8 +1,9 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
+import { getCachedShops, getCachedRegions } from "./ai-data-cache";
 
 export type OrderDraftState = {
   step?: "waiting_shop" | "waiting_region" | "waiting_phone" | "waiting_type" | "waiting_price" | "waiting_time" | null;
@@ -249,7 +250,7 @@ export async function handleOrderCreationWizard(
 
   // 2. إذا كنا في أي خطوة بعد اختيار المحل وتم إرسال تفاصيل متعددة (أسطر أو معلومات مجمعة)
   if (draft.step && draft.step !== "waiting_shop") {
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const allRegions = await getCachedRegions();
     const { updatedDraft, fieldsFoundCount } = await parseMultiFieldInput(userText, draft, allRegions);
 
     if (fieldsFoundCount >= 2 || (updatedDraft.regionId && updatedDraft.price !== undefined)) {
@@ -300,7 +301,7 @@ export async function handleOrderCreationWizard(
   // 3. معالجة الخطوات المفردة بالتسلسل
   switch (draft.step) {
     case "waiting_shop": {
-      const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+      const allShops = await getCachedShops();
       const cleanUser = clean
         .replace(/^من\s+محل\s+/g, "")
         .replace(/^من\s+/g, "")
@@ -353,7 +354,7 @@ export async function handleOrderCreationWizard(
     }
 
     case "waiting_region": {
-      const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+      const allRegions = await getCachedRegions();
       let cleanUser = clean
         .replace(/^الى\s+منطقة\s+/g, "")
         .replace(/^الي\s+منطقة\s+/g, "")

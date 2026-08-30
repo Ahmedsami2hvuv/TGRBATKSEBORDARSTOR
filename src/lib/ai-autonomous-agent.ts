@@ -1,9 +1,10 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { getAllActiveGeminiKeys, markGeminiKeyError, markGeminiKeySuccess } from "./gemini-pool";
+import { getCachedCouriers, getCachedShops, getCachedRegions } from "./ai-data-cache";
 
 export async function executeAutonomousAiCommand(
   userText: string,
@@ -13,11 +14,11 @@ export async function executeAutonomousAiCommand(
     const keys = await getAllActiveGeminiKeys();
     if (!keys || keys.length === 0) return null;
 
-    // جلب البيانات الحية من سوبابيس لتزويد الذكاء بالسياق الحقيقي
+    // جلب البيانات من الكاش السريع المحمي في الذاكرة لمنع تشنج قاعدة البيانات
     const [allCouriers, allShops, allRegions] = await Promise.all([
-      prisma.courier.findMany({ select: { id: true, name: true, phone: true } }),
-      prisma.shop.findMany({ select: { id: true, name: true } }),
-      prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } })
+      getCachedCouriers(),
+      getCachedShops(),
+      getCachedRegions()
     ]);
 
     const couriersList = allCouriers.map(c => `${c.name} (id: ${c.id})`).join(", ");
@@ -88,8 +89,12 @@ export async function executeAutonomousAiCommand(
     for (const k of keys) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${k.key}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
+
         const response = await fetch(url, {
           method: "POST",
+          signal: controller.signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [
@@ -107,6 +112,7 @@ export async function executeAutonomousAiCommand(
             }
           })
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const data = await response.json();

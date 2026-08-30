@@ -7,6 +7,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
 import { executeAutonomousGeminiAgent } from "./ai-autonomous-agent";
 import { handleOrderCreationWizard, OrderDraftState, calculateSimilarity } from "./ai-order-wizard";
+import { getCachedShops, getCachedRegions, getCachedCouriers } from "./ai-data-cache";
 
 type ChatSessionContext = {
   lastOrderNumber?: number | null;
@@ -829,8 +830,8 @@ export async function executeSuperSystemAgent(
   // 0.15 فحص إذا كانت الرسالة عبارة عن طلب كامل مباشر مقسم بأسطر (Direct Multi-Line Order Creation)
   const lines = rawText.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
   if (lines.length >= 3) {
-    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const allShops = await getCachedShops();
+    const allRegions = await getCachedRegions();
 
     let matchedShop: { id: string; name: string } | null = null;
     for (const line of lines) {
@@ -919,7 +920,7 @@ export async function executeSuperSystemAgent(
       .trim();
 
     if (extractedShopQuery.length >= 2) {
-      const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+      const allShops = await getCachedShops();
       const scored = allShops.map(s => {
         const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
         let score = 0;
