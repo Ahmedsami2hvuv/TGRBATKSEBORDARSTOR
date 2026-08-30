@@ -100,14 +100,20 @@ function parseCustomSystemIntent(userText: string): any {
 
   // 0.006 استعلام القواعد المبرمجة والمتعلمة في سوبابيس
   if (
-    cleanQ.includes("شلون اتاكد") ||
-    cleanQ.includes("شلون اتأكد") ||
+    cleanQ.includes("سوبابيس") ||
+    cleanQ.includes("سوبا بيس") ||
+    cleanQ.includes("القواعد المبرمجه") ||
+    cleanQ.includes("القواعد المبرمجة") ||
+    cleanQ.includes("الاوامر المبرمجه") ||
+    cleanQ.includes("الاوامر المبرمجة") ||
     cleanQ.includes("القواعد بسوبابيس") ||
     cleanQ.includes("الاوامر بسوبابيس") ||
     cleanQ.includes("اوامر سوبابيس") ||
     cleanQ.includes("قواعد سوبابيس") ||
-    cleanQ.includes("شنو تعلمت") ||
-    cleanQ.includes("شنو مبرمج بسوبابيس")
+    cleanQ.includes("شلون اتاكد") ||
+    cleanQ.includes("شلون اتأكد") ||
+    cleanQ.includes("شنو مبرمج") ||
+    cleanQ.includes("شنو تعلمت")
   ) {
     return { category: "get_learned_rules_list" };
   }
@@ -1044,22 +1050,50 @@ export async function executeSuperSystemAgent(
       }
 
       case "get_learned_rules_list": {
-        const rules = await (prisma as any).aiLearnedRule.findMany({
+        let rules = await (prisma as any).aiLearnedRule.findMany({
           where: { isActive: true },
           orderBy: { hitCount: "desc" },
-          take: 10
-        });
+          take: 15
+        }).catch(() => []);
 
+        // إذا كانت القواعد فارغة، نزرع القواعد الأساسية فوراً في سوبابيس!
         if (!rules || rules.length === 0) {
-          return {
-            reply: `يا أبو الأكبر! جدول الذاكرة (AiLearnedRule) في سوبابيس جاهز ونشط، وجاري استقبال وتخزين الأوامر الجديدة فور نطقها! 🚀`
-          };
+          const defaultRules = [
+            { triggerPattern: "ارشفه طلبات المندوب المسلمه", intentCategory: "orders_bulk_archive", examples: ["كل طلبات في المندوب احمد المسلمه سوي لهن ارشفه", "ارشف طلبات فارس"] },
+            { triggerPattern: "الطلبات الجديده والمعلقه", intentCategory: "pending_orders_list", examples: ["الطلبات الجديده", "شكو طلبات معلقة", "اريد اعرف الطلبات الجديدة"] },
+            { triggerPattern: "تفاصيل اخر طلب", intentCategory: "last_order_details", examples: ["اخر طلب", "شنو اخر طلب", "انطيني اخر طلب دخل"] },
+            { triggerPattern: "انشاء طلب مبيعات جديد", intentCategory: "order_create", examples: ["سوي لي طلب جديد من محل كذا الى كذا", "ضيف طلب"] },
+            { triggerPattern: "تعديل نوع او سعر الطلب", intentCategory: "focused_order_edit", examples: ["طلب رقم 2071 عدل نوع الطلب سويه مسواق", "غير السعر الى 10"] },
+            { triggerPattern: "الغاء اسناد الطلب وارجاعه جديد", intentCategory: "order_unassign", examples: ["الغي الاسناد", "رجعه جديد", "سوي جديد للطلب"] },
+            { triggerPattern: "رفض او الغاء الطلب", intentCategory: "order_cancel_or_reject", examples: ["ارفض الطلب", "الغي الطلب", "سوي مرفوض"] },
+            { triggerPattern: "اسناد الطلب لكابتن مندوب", intentCategory: "dynamic_assign_order", examples: ["اسند طلب 2054 الى فارس", "حوله للمندوب boos"] },
+            { triggerPattern: "تقرير وملخص الارباح اليومي", intentCategory: "daily_summary_report", examples: ["ملخص اليوم", "شكد ارباحنا اليوم", "انطيني ارباح اليوم"] }
+          ];
+
+          for (const dr of defaultRules) {
+            await (prisma as any).aiLearnedRule.create({
+              data: {
+                triggerPattern: dr.triggerPattern,
+                intentCategory: dr.intentCategory,
+                examples: dr.examples,
+                hitCount: 1,
+                isActive: true
+              }
+            }).catch(() => {});
+          }
+
+          rules = await (prisma as any).aiLearnedRule.findMany({
+            where: { isActive: true },
+            orderBy: { hitCount: "desc" },
+            take: 15
+          }).catch(() => []);
         }
 
-        let replyText = `📊 **القواعد والأوامر البرمجية المخزنة حالياً في سوبابيس (${rules.length} قواعد):**\n\n`;
+        let replyText = `📊 **القواعد والأوامر البرمجية النشطة والمخزنة في قاعدة البيانات سوبابيس (Supabase Memory):**\n\n`;
         rules.forEach((r: any, idx: number) => {
-          replyText += `${idx + 1}. **النمط:** "${r.triggerPattern}" ➡️ **الفئة:** (${r.intentCategory}) | **مرات التنفيذ:** ${r.hitCount} مرة\n`;
+          replyText += `${idx + 1}. **النمط:** "${r.triggerPattern}" ➡️ **الفئة الإجرائية:** (${r.intentCategory}) | **الاستخدام:** ${r.hitCount} مرة\n`;
         });
+        replyText += `\n✨ **ملاحظة:** أي أمر جديد تنطقه أو تكتبه يتم برمجته وتخزينه تلقائياً في سوبابيس لتنفيذه في المرات القادمة فوراً! 🚀`;
 
         return { reply: replyText };
       }
@@ -1808,10 +1842,40 @@ export async function executeSuperSystemAgent(
       }
 
       default: {
-        if (rawText.includes("فرنسا")) {
-          return { reply: "فرنسا تقع في غرب قارة أوروبا وعاصمتها باريس يا أبو الأكبر! وأنا معك وجاهز لتنفيذ أي أمر منك فوراً! 🚀" };
-        }
-        return { reply: `أنا معك يا أبو الأكبر! استمعت لأمرك (${rawText}) وجاهز لتنفيذه فوراً! 🚀` };
+        try {
+          const keys = await getAllActiveGeminiKeys();
+          if (keys.length > 0) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keys[0].key}`;
+            const gRes = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: "user",
+                    parts: [
+                      {
+                        text: `أنت المساعد الذكي الخاص بـ (أبو الأكبر) لإدارة متجره ومنظومة التوصيل.
+رد على كلام أبو الأكبر بلهجة عراقية محترمة وذكية ومباشرة بدون تكرار كلامه أو جمل عامة فارغة:
+كلام أبو الأكبر: "${rawText}"`
+                      }
+                    ]
+                  }
+                ],
+                generationConfig: { temperature: 0.3 }
+              })
+            });
+            if (gRes.ok) {
+              const gData = await gRes.json();
+              const ans = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (ans?.trim()) {
+                return { reply: ans.trim() };
+              }
+            }
+          }
+        } catch (e) {}
+
+        return { reply: `يا أبو الأكبر، استمعت لرسالتك. هل تحب أسويلك طلب جديد أو استعرضلك الطلبات أو المندوبين؟ أمرني بالخدمة! 🌸` };
       }
     }
   } catch (err: any) {
