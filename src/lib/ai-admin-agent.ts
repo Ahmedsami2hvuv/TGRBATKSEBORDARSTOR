@@ -820,19 +820,34 @@ export async function executeSuperSystemAgent(
   }
 
   // 0.2 بدء محادثة تفاعلية إذا قال المستخدم طلب جديد فقط بدون تفاصيل
-  const cleanInit = rawText.trim().toLowerCase();
-  if (
+  const cleanInit = rawText
+    .replace(/[.،,؟!؟]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/سوي\s*لي/g, "سويلي")
+    .replace(/سو\s*لي/g, "سويلي")
+    .replace(/اريد\s*اسوي/g, "سوي")
+    .replace(/اريد\s*سوي/g, "سوي");
+
+  const isPureNewOrderPrompt =
     cleanInit === "سويلي طلب" ||
     cleanInit === "سوي طلب" ||
+    cleanInit === "سويلي طلب جديد" ||
     cleanInit === "سوي طلب جديد" ||
     cleanInit === "سويلي طلبيه" ||
     cleanInit === "سوي طلبية" ||
+    cleanInit === "سويلي طلبيه جديده" ||
     cleanInit === "سويلي طلبية جديدة" ||
     cleanInit === "ضيف طلب" ||
-    cleanInit === "اريد اسوي طلب" ||
+    cleanInit === "ضيف طلب جديد" ||
+    cleanInit === "ضيف طلبية" ||
     cleanInit === "انشاء طلب" ||
-    cleanInit === "طلب جديد"
-  ) {
+    cleanInit === "طلب جديد" ||
+    cleanInit === "سويلي اوردر" ||
+    cleanInit === "سوي اوردر";
+
+  if (isPureNewOrderPrompt) {
     ctx.orderDraft = { step: "waiting_shop" };
     ctx.updatedAt = Date.now();
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
