@@ -1,4 +1,4 @@
-﻿package com.aboakbar.admin
+package com.aboakbar.admin
 
 import android.Manifest
 import android.content.Context
@@ -27,6 +27,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.RelativeLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -43,7 +44,9 @@ import java.util.Locale
 
 class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
+    private lateinit var rootVoiceAssistantLayout: RelativeLayout
     private lateinit var tvStatus: TextView
+    private lateinit var btnToggleSolidBackground: ImageButton
     private lateinit var btnToggleChatVisibility: ImageButton
     private lateinit var btnTrashClearChat: ImageButton
     private lateinit var progressBar: ProgressBar
@@ -66,6 +69,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private var isListening = false
     private var isMicPaused = false
     private var isChatVisible = true
+    private var isSolidBackground = false
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val SERVER_URL = "https://aboakbr.com/api/ai/admin-voice"
     private val PREFS_NAME = "AdminVoiceAssistantPrefs"
@@ -93,7 +97,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         try {
             setContentView(R.layout.activity_voice_assistant)
 
+            rootVoiceAssistantLayout = findViewById(R.id.rootVoiceAssistantLayout)
             tvStatus = findViewById(R.id.tvStatus)
+            btnToggleSolidBackground = findViewById(R.id.btnToggleSolidBackground)
             btnToggleChatVisibility = findViewById(R.id.btnToggleChatVisibility)
             btnTrashClearChat = findViewById(R.id.btnTrashClearChat)
             progressBar = findViewById(R.id.progressBar)
@@ -118,6 +124,20 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
             transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
+
+            // زر تبديل الخلفية المعتمة لإخفاء الشاشة والتطبيقات التي في الخلفية عند أخذ سكرين شوت
+            btnToggleSolidBackground.setOnClickListener {
+                isSolidBackground = !isSolidBackground
+                if (isSolidBackground) {
+                    rootVoiceAssistantLayout.setBackgroundColor(Color.parseColor("#0B1120"))
+                    btnToggleSolidBackground.setColorFilter(Color.parseColor("#38BDF8"))
+                    Toast.makeText(this, "تم تفعيل الخلفية المعتمة الكاملة ⬛", Toast.LENGTH_SHORT).show()
+                } else {
+                    rootVoiceAssistantLayout.setBackgroundColor(Color.TRANSPARENT)
+                    btnToggleSolidBackground.setColorFilter(Color.WHITE)
+                    Toast.makeText(this, "تم تفعيل وضع الشفافية 👁️", Toast.LENGTH_SHORT).show()
+                }
+            }
 
             btnToggleChatVisibility.setOnClickListener {
                 isChatVisible = !isChatVisible
