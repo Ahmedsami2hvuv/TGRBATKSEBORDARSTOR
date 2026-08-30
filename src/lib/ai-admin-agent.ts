@@ -800,7 +800,7 @@ export async function executeSuperSystemAgent(
       const orderId = parts[2];
       const courierId = parts[3];
 
-      const order = await prisma.order.findUnique({ where: { id: orderId }, include: { shop: true } });
+      const order = await prisma.order.findUnique({ where: { id: orderId }, include: { shop: true, customerRegion: true } });
       const courier = await prisma.courier.findUnique({ where: { id: courierId } });
 
       if (!order || !courier) {
@@ -809,14 +809,22 @@ export async function executeSuperSystemAgent(
 
       const updated = await prisma.order.update({
         where: { id: order.id },
-        data: { assignedCourierId: courier.id, status: "assigned" }
+        data: { assignedCourierId: courier.id, status: "assigned" },
+        include: { shop: true, customerRegion: true }
       });
 
       ctx.lastOrderNumber = updated.orderNumber;
       ctx.updatedAt = Date.now();
 
+      const shopName = updated.shop ? updated.shop.name : "المحل";
+      const regionName = updated.customerRegion ? updated.customerRegion.name : "غير محددة";
+      const orderType = updated.orderType || "غير محدد";
+      const noteTime = updated.orderNoteTime || "الان";
+      const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+      const totalVal = updated.totalAmount ? Number(updated.totalAmount) : subtotalVal;
+
       return {
-        reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${order.shop.name}) إلى الكابتن (${courier.name})`
+        reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${courier.name}) 🛵\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت الطلب:** ${noteTime}\n💰 **سعر الطلب:** ${subtotalVal} ألف (المجموع: ${totalVal} ألف)`
       };
     }
 
@@ -977,8 +985,16 @@ export async function executeSuperSystemAgent(
         ctx.lastOrderNumber = updated.orderNumber;
         ctx.updatedAt = Date.now();
 
-        const shopName = updated.shop ? updated.shop.name : (targetOrder.orderType || "الطلب");
-        return { reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${shopName}) إلى المندوب (${matchedCourier.name})` };
+        const shopName = updated.shop ? updated.shop.name : "المحل";
+        const regionName = updated.customerRegion ? updated.customerRegion.name : "غير محددة";
+        const orderType = updated.orderType || "غير محدد";
+        const noteTime = updated.orderNoteTime || "الان";
+        const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+        const totalVal = updated.totalAmount ? Number(updated.totalAmount) : subtotalVal;
+
+        return {
+          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${matchedCourier.name}) 🛵\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت الطلب:** ${noteTime}\n💰 **سعر الطلب:** ${subtotalVal} ألف (المجموع: ${totalVal} ألف)`
+        };
       }
 
       case "courier_hide": {
