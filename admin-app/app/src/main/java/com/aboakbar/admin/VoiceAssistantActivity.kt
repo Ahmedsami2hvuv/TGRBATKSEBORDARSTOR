@@ -128,6 +128,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             } else {
                 if (textInputContainer.visibility != View.VISIBLE) {
                     textInputContainer.visibility = View.VISIBLE
+                    chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
                 } else {
                     Toast.makeText(this, "يرجى كتابة الأمر النصي أولاً", Toast.LENGTH_SHORT).show()
                 }
@@ -139,6 +140,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 textInputContainer.visibility = View.GONE
             } else {
                 textInputContainer.visibility = View.VISIBLE
+                chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
             }
         }
 
