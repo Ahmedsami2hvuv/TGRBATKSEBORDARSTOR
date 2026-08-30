@@ -1,5 +1,5 @@
 ﻿import { prisma } from "./prisma";
-import { getAllActiveGeminiKeys, markGeminiKeySuccess } from "./gemini-pool";
+import { getAllActiveGeminiKeys, markGeminiKeySuccess, markGeminiKeyError } from "./gemini-pool";
 import { Decimal } from "@prisma/client/runtime/library";
 import { formatDinarAsAlf } from "./money-alf";
 import { rankRegionsByQuery } from "./arabic-region-search";
@@ -10,14 +10,12 @@ export async function executeAutonomousGeminiAgent(
   userText: string,
   sessionKey: string = "default",
   ctx: { lastOrderNumber?: number | null; activeFocusedOrderId?: string | null }
-): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> }> {
+): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> } | null> {
   try {
     const keys = await getAllActiveGeminiKeys();
     if (keys.length === 0) {
-      return { reply: "يا أبو الأكبر، ما لكيت مفتاح ذكاء اصطناعي نشط حالياً." };
+      return null;
     }
-
-    const selectedKey = keys[0];
 
     // جلب البيانات الحية من سوبابيس لتزويد الذكاء الاصطناعي بها
     const [allShops, allCouriers, allRegions] = await Promise.all([
@@ -41,7 +39,7 @@ export async function executeAutonomousGeminiAgent(
 
 العمليات المتاحة في (action):
 1. "CREATE_ORDER": إنشاء طلب جديد
-   - shop_name, region_name, phone, price, order_type (مثلاً: سمك، روبيان، مسواق، حلويات، ورد، اقمشة، طعام), note_time (مثلاً: الان، ب4 العصر)
+   - shop_name, region_name, phone, price, order_type (سجل الكلمة التي قالها بالضبط مثل: سمك، روبيان، مسواق، حلويات، ورد، اقمشة، طعام), note_time (مثلاً: الان، ب4 العصر)
 2. "ASSIGN_ORDER": إسناد طلب إلى كابتن/مندوب
    - order_number (أو "last_rejected" أو "latest"), courier_name
 3. "REJECT_ORDER": رفض أو إلغاء طلب
@@ -54,12 +52,13 @@ export async function executeAutonomousGeminiAgent(
    - order_number, field ("order_type", "price", "delivery_price", "phone", "region"), value
 7. "UNASSIGN_ORDER": إلغاء إسناد طلب وإرجاعه جديد
    - order_number
-8. "GET_PENDING_ORDERS": عرض الطلبات الجديدة والمعلقة
+8. "GET_PENDING_ORDERS": عرض أو فحص الطلبات الجديدة والمعلقة (مثال: اكو طلبات جديده بالموقع، الطلبات الجديده)
 9. "GET_LAST_ORDER": عرض تفاصيل آخر طلب
 10. "GET_ORDER_DETAILS": تفاصيل طلب محدد برقم
     - order_number
 11. "GET_LEARNED_RULES": استعلام القواعد المبرمجة في سوبابيس
-12. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم
+12. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام كم طلبيات مندوب اليوم (مثال: كم طلبيات المندوب فارس اليوم)
+    - courier_name
 13. "FRIENDLY_CHAT": رد محادثة وسوالف عامة أو استفسار عام
     - reply_text (رد عراقي محترم وذكي ومباشر)
 
@@ -82,40 +81,58 @@ export async function executeAutonomousGeminiAgent(
   "reply_text": "..."
 }`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${selectedKey.key}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: systemPrompt },
-              { text: `رسالة وأمر أبو الأكبر هي: "${userText}"` }
-            ]
+    let lastCandidateText = null;
+    let successfulKeyId = null;
+
+    // تجربة المفاتيح النشطة في الـ Pool واحداً تلو الآخر لتفادي أي ضغط
+    for (const k of keys) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${k.key}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: systemPrompt },
+                  { text: `رسالة وأمر أبو الأكبر هي: "${userText}"` }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            lastCandidateText = txt;
+            successfulKeyId = k.id;
+            break;
           }
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: "application/json"
+        } else {
+          await markGeminiKeyError(k.id);
         }
-      })
-    });
-
-    if (!response.ok) {
-      console.warn("Autonomous Gemini call failed:", response.status);
-      return { reply: "يا أبو الأكبر، صار ضغط بالاتصال بالذكاء، جرب مرة ثانية." };
+      } catch (err) {
+        await markGeminiKeyError(k.id);
+      }
     }
 
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!candidateText) {
-      return { reply: "يا أبو الأكبر، ما كدرت أحلل الأمر بوضوح، أعد صياغته رجاءً." };
+    if (!lastCandidateText) {
+      return null; // الانتقال الآمن للمنفذ الفوري المحلي بدون إظهار رسالة خطأ
     }
 
-    await markGeminiKeySuccess(selectedKey.id);
-    const plan = JSON.parse(candidateText);
+    if (successfulKeyId) {
+      await markGeminiKeySuccess(successfulKeyId);
+    }
+
+    const plan = JSON.parse(lastCandidateText);
 
     // حفظ القاعدة برمجياً في سوبابيس
     try {
@@ -427,15 +444,31 @@ export async function executeAutonomousGeminiAgent(
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
+        let whereCondition: any = { createdAt: { gte: startOfDay } };
+        let courierObj = null;
+
+        if (plan.courier_name) {
+          courierObj = allCouriers.find(c => c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
+          if (courierObj) {
+            whereCondition.assignedCourierId = courierObj.id;
+          }
+        }
+
         const ordersToday = await prisma.order.findMany({
-          where: { createdAt: { gte: startOfDay } }
+          where: whereCondition
         });
 
         const totalOrders = ordersToday.length;
         const deliveredOrders = ordersToday.filter(o => o.status === "delivered" || o.status === "completed").length;
 
+        if (courierObj) {
+          return {
+            reply: `📊 **طلبيات الكابتن (${courierObj.name}) اليوم يا أبو الأكبر:**\n🔹 **إجمالي الطلبات المسندة إليه:** ${totalOrders} طلب\n✅ **الطلبات المسلمة:** ${deliveredOrders} طلب`
+          };
+        }
+
         return {
-          reply: `📊 **ملخص اليوم يا أبو الأكبر:**\n🔹 **إجمالي طلبات اليوم:** ${totalOrders} طلب\n✅ **الطلبات المسلمة:** ${deliveredOrders} طلب\n✨ النظام يعمل بكفاءة عالية ومباشرة مع سوبابيس!`
+          reply: `📊 **ملخص طلبات اليوم يا أبو الأكبر:**\n🔹 **إجمالي طلبات اليوم:** ${totalOrders} طلب\n✅ **الطلبات المسلمة:** ${deliveredOrders} طلب\n✨ النظام يعمل بكفاءة عالية ومباشرة مع سوبابيس!`
         };
       }
 
@@ -448,6 +481,6 @@ export async function executeAutonomousGeminiAgent(
     }
   } catch (err: any) {
     console.error("executeAutonomousGeminiAgent Error:", err);
-    return { reply: "صار خطأ بسيط أثناء معالجة الأمر بالذكاء، جرب مرة ثانية يا أبو الأكبر." };
+    return null;
   }
 }
