@@ -71,6 +71,47 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
+  // 0.005 أرشفة جماعية لطلبات مندوب أو محل أو حالة معينة
+  if (
+    cleanQ.includes("سوي لهن ارشفه") ||
+    cleanQ.includes("سوي لهن أرشفة") ||
+    cleanQ.includes("سوي ارشفه") ||
+    cleanQ.includes("سوي أرشفة") ||
+    cleanQ.includes("ارشف طلبات") ||
+    cleanQ.includes("أرشف طلبات") ||
+    cleanQ.includes("ارشفة الطلبات") ||
+    cleanQ.includes("أرشفة الطلبات") ||
+    (cleanQ.includes("ارشفه") && cleanQ.includes("المندوب"))
+  ) {
+    let courierMatch = text.match(/(?:المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:المسلمه|المسلمة|سوي|ارشفه|أرشفة)|$)/i);
+    let courierName = courierMatch ? courierMatch[1].trim() : null;
+
+    let status = "completed";
+    if (cleanQ.includes("مرفوض")) status = "rejected";
+    else if (cleanQ.includes("مسلم") || cleanQ.includes("مسلمه") || cleanQ.includes("مسلمة")) status = "completed";
+
+    return {
+      category: "orders_bulk_archive",
+      courier_name: courierName,
+      status: status,
+      raw_text: text
+    };
+  }
+
+  // 0.006 استعلام القواعد المبرمجة والمتعلمة في سوبابيس
+  if (
+    cleanQ.includes("شلون اتاكد") ||
+    cleanQ.includes("شلون اتأكد") ||
+    cleanQ.includes("القواعد بسوبابيس") ||
+    cleanQ.includes("الاوامر بسوبابيس") ||
+    cleanQ.includes("اوامر سوبابيس") ||
+    cleanQ.includes("قواعد سوبابيس") ||
+    cleanQ.includes("شنو تعلمت") ||
+    cleanQ.includes("شنو مبرمج بسوبابيس")
+  ) {
+    return { category: "get_learned_rules_list" };
+  }
+
   // 0.01 التحايا والسوالف والترحيب
   if (
     cleanQ === "شلونك" ||
@@ -956,6 +997,71 @@ export async function executeSuperSystemAgent(
         });
 
         return { reply: `تم يا أبو الأكبر! أظهرت المندوب (${updated.name}) ورجعته لقائمة المندوبين النشطين` };
+      }
+
+      case "orders_bulk_archive": {
+        const courierName = parsed?.courier_name;
+        const shopName = parsed?.shop_name;
+        const fromStatus = parsed?.status || "completed";
+
+        let where: any = {
+          status: fromStatus
+        };
+
+        let label = `المسلمة`;
+
+        if (courierName) {
+          const allCouriers = await prisma.courier.findMany();
+          const { match } = findBestMatch(allCouriers, courierName);
+          if (match) {
+            where.assignedCourierId = match.id;
+            label += ` للمندوب (${match.name})`;
+          }
+        }
+
+        if (shopName) {
+          const allShops = await prisma.shop.findMany();
+          const { match } = findBestMatch(allShops, shopName);
+          if (match) {
+            where.shopId = match.id;
+            label += ` لمحل (${match.name})`;
+          }
+        }
+
+        const countToArchive = await prisma.order.count({ where });
+        if (countToArchive === 0) {
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات مطابقة بحالة (${fromStatus}) لأرشفتها حالياً.` };
+        }
+
+        await prisma.order.updateMany({
+          where,
+          data: { status: "archived" }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! أرشفت (${countToArchive}) طلبات ${label} بنجاح وخزنت الأمر بقاعدة البيانات 🚀`
+        };
+      }
+
+      case "get_learned_rules_list": {
+        const rules = await (prisma as any).aiLearnedRule.findMany({
+          where: { isActive: true },
+          orderBy: { hitCount: "desc" },
+          take: 10
+        });
+
+        if (!rules || rules.length === 0) {
+          return {
+            reply: `يا أبو الأكبر! جدول الذاكرة (AiLearnedRule) في سوبابيس جاهز ونشط، وجاري استقبال وتخزين الأوامر الجديدة فور نطقها! 🚀`
+          };
+        }
+
+        let replyText = `📊 **القواعد والأوامر البرمجية المخزنة حالياً في سوبابيس (${rules.length} قواعد):**\n\n`;
+        rules.forEach((r: any, idx: number) => {
+          replyText += `${idx + 1}. **النمط:** "${r.triggerPattern}" ➡️ **الفئة:** (${r.intentCategory}) | **مرات التنفيذ:** ${r.hitCount} مرة\n`;
+        });
+
+        return { reply: replyText };
       }
 
       case "focused_order_edit": {
