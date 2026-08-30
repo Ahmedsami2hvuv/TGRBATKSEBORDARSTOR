@@ -355,8 +355,8 @@ function MandoubFullBlockCardGrid({
               const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
 
               const headerTextStr = isDoubleRouteOrder
-                ? `${o.regionLine || "المرسل"} ← ${o.secondCustomerRegionName || "المستلم"}`
-                : `${o.shopName || ""} ← ${o.regionLine || ""}`;
+                ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
+                : `${o.shopName || ""} إلى ${o.regionLine || ""}`;
 
               const textLen = headerTextStr.length;
 
@@ -469,18 +469,18 @@ function MandoubFullBlockCardGrid({
                     </div>
                   </div>
 
-                  {/* السطر الأوسط: اسم المحل ← المنطقة (يتكيف خطه تلقائياً دون اقتطاع بالنقاط) */}
+                  {/* السطر الأوسط: اسم المحل إلى المنطقة (يتكيف خطه تلقائياً دون اقتطاع بالنقاط) */}
                   <div className="py-0.5 min-w-0 overflow-hidden">
                     {isDoubleRouteOrder ? (
-                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`} title="طلب وجهتين: منطقة المرسل ← منطقة المستلم">
+                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
                         <span className="text-amber-800 dark:text-amber-400 font-black shrink-0">{o.regionLine || "المرسل"}</span>
-                        <span className="text-slate-400 font-black shrink-0">←</span>
+                        <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-xs">إلى</span>
                         <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
                       </div>
                     ) : (
                       <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`}>
                         <span className="text-emerald-800 dark:text-emerald-400 font-black shrink-0">{o.shopName}</span>
-                        <span className="text-slate-400 font-black shrink-0">←</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-xs">إلى</span>
                         <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
                       </div>
                     )}
