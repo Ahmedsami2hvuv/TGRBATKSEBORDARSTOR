@@ -140,29 +140,35 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "friendly_greeting" };
   }
 
-  // 0.02 فئة رفض أو إلغاء الطلب الصريحة بالسياق أو برقم
+  // 0.02 فئة رفض أو إلغاء الطلب الصريحة (مثل: طلب رقم 2070 سوي له رفض / ارفض طلب 2070 / سوي رفض / ارفض الطلب)
   if (
-    cleanQ === "ارفض الطلب" ||
-    cleanQ === "ارفض" ||
-    cleanQ === "ارفضه" ||
-    cleanQ === "الغي الطلب" ||
-    cleanQ === "الغيه" ||
-    cleanQ === "سوي مرفوض" ||
-    cleanQ === "سوي الطلب مرفوض" ||
-    cleanQ.includes("ارفض الطلب") ||
-    cleanQ.includes("الغي الطلب") ||
-    cleanQ.includes("رفض الطلب") ||
-    cleanQ.includes("إلغاء الطلب") ||
-    cleanQ.includes("الغاء الطلب")
+    cleanQ.includes("سوي له رفض") ||
+    cleanQ.includes("سوي رفض") ||
+    cleanQ.includes("سوي له الغاء") ||
+    cleanQ.includes("سوي الغاء") ||
+    cleanQ.includes("سوي مرفوض") ||
+    cleanQ.includes("سوي الطلب مرفوض") ||
+    cleanQ.includes("ارفض") ||
+    cleanQ.includes("رفض") ||
+    cleanQ.includes("مرفوض") ||
+    cleanQ.includes("الغي") ||
+    cleanQ.includes("إلغاء") ||
+    cleanQ.includes("الغاء") ||
+    cleanQ.includes("طير الطلب") ||
+    cleanQ.includes("طيره")
   ) {
     const validOrderNums = (text.match(/\b\d{3,5}\b/g) || [])
       .map(Number)
       .filter(n => !n.toString().startsWith("07") && !n.toString().startsWith("77"));
     const orderNum = validOrderNums.length > 0 ? validOrderNums[0] : null;
 
+    let shopMatch = text.match(/(?:طلب|محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:سوي|ارفض|رفض|الغي|ملغي|طير)|$)/i);
+    let shopName = shopMatch ? shopMatch[1].trim() : null;
+
     return {
       category: "order_cancel_or_reject",
       order_number: orderNum,
+      shop_name: shopName,
       raw_text: text
     };
   }
@@ -331,14 +337,30 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.35 عرض تفاصيل طلب محدد صريح بالرقم (مثل: تفاصيل طلب 2066 / شوفلي طلب 2066 / طلب 2066)
+  // 0.35 عرض تفاصيل طلب محدد صريح بالرقم (فقط في حال الاستعلام الصريح)
+  const hasActionVerb =
+    cleanQ.includes("رفض") ||
+    cleanQ.includes("ارفض") ||
+    cleanQ.includes("مرفوض") ||
+    cleanQ.includes("الغي") ||
+    cleanQ.includes("الغاء") ||
+    cleanQ.includes("إلغاء") ||
+    cleanQ.includes("عدل") ||
+    cleanQ.includes("تعديل") ||
+    cleanQ.includes("اسند") ||
+    cleanQ.includes("اسناد") ||
+    cleanQ.includes("ارشف") ||
+    cleanQ.includes("سوي جديد") ||
+    cleanQ.includes("طير");
+
   if (
-    cleanQ.includes("تفاصيل طلب") ||
-    cleanQ.includes("شوفلي طلب") ||
-    cleanQ.includes("شوف طلب") ||
-    cleanQ.includes("عرض طلب") ||
-    cleanQ.startsWith("طلب ") ||
-    cleanQ.includes("تفاصيل الطلب")
+    !hasActionVerb &&
+    (cleanQ.includes("تفاصيل طلب") ||
+      cleanQ.includes("شوفلي طلب") ||
+      cleanQ.includes("شوف طلب") ||
+      cleanQ.includes("عرض طلب") ||
+      cleanQ.startsWith("طلب ") ||
+      cleanQ.includes("تفاصيل الطلب"))
   ) {
     const orderNumMatch = text.match(/\b\d{3,5}\b/);
     const orderNum = orderNumMatch ? Number(orderNumMatch[0]) : null;
