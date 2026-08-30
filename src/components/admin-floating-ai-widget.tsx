@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Keyboard, Trash2 } from "lucide-react";
@@ -24,7 +24,7 @@ export function AdminFloatingAiWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMicPaused, setIsMicPaused] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false); // مفعل الصوت افتراضياً دائماً
 
   // سجل المحادثة الكامل المتسلسل (Full Scrollable Chat Stream)
   const [messages, setMessages] = useState<ChatLogMessage[]>([
@@ -38,6 +38,21 @@ export function AdminFloatingAiWidget() {
 
   const recognitionRef = useRef<any>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isOpenRef = useRef(isOpen);
+  const isMicPausedRef = useRef(isMicPaused);
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    isMicPausedRef.current = isMicPaused;
+  }, [isMicPaused]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // التمرير التلقائي لأسفل المحادثة عند وصول أي رسالة جديدة
   useEffect(() => {
@@ -46,7 +61,7 @@ export function AdminFloatingAiWidget() {
     }
   }, [messages, isLoading]);
 
-  // السحب والإفلات السلس العائم في أي مكان بالمرونة الكاملة
+  // السحب والإفلات السلس العائم في أي مكان
   const handleStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -104,29 +119,35 @@ export function AdminFloatingAiWidget() {
     }
   }, [isDragging, dragStart, position]);
 
-  // ناطق الاستجابة الصوتي
-  const speakResponse = (text: string) => {
-    if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const cleanText = text.replace(/[*#\-]|https?:\/\/\S+/g, "");
+  // ناطق الاستجابة الصوتي مع إعادة فتح المايكروفون تلقائياً بعد انتهاء الكلام
+  const speakResponse = (text: string, onFinish?: () => void) => {
+    if (isMutedRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) {
+      if (onFinish) onFinish();
+      return;
+    }
+
+    const cleanText = text
+      .replace(/[*#\-]|https?:\/\/\S+/g, "")
+      .replace(/[^\u0600-\u06FF\s0-9.,!؟]/g, " ")
+      .trim();
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "ar";
+    utterance.lang = "ar-IQ";
+    utterance.rate = 1.05;
+
+    utterance.onend = () => {
+      if (onFinish) onFinish();
+    };
+
+    utterance.onerror = () => {
+      if (onFinish) onFinish();
+    };
+
     window.speechSynthesis.speak(utterance);
   };
 
-  // الميكروفون والتعرف الصوتي
-  const toggleVoiceListening = () => {
-    if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
-      setIsListening(false);
-      setIsMicPaused(true);
-      setStatusText("🛑 الميكروفون متوقف - يمكنك الكتابة بالنص فقط");
-    } else {
-      setIsMicPaused(false);
-      startVoiceListening();
-    }
-  };
-
+  // تشغيل الميكروفون والتعرف الصوتي
   const startVoiceListening = () => {
     if (typeof window === "undefined") return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -138,7 +159,7 @@ export function AdminFloatingAiWidget() {
 
     try {
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try { recognitionRef.current.abort(); } catch (e) {}
       }
 
       const rec = new SpeechRecognition();
@@ -149,7 +170,7 @@ export function AdminFloatingAiWidget() {
       rec.onstart = () => {
         setIsListening(true);
         setIsMicPaused(false);
-        setStatusText("🎙️ جاري الاستماع... اتحدث بأمرك الآن");
+        setStatusText("🎙️ الميكروفون شغال... تحدث براحتك بالأمر");
       };
 
       rec.onresult = (event: any) => {
@@ -158,9 +179,19 @@ export function AdminFloatingAiWidget() {
         sendApiCommand(text);
       };
 
-      rec.onerror = () => {
+      rec.onerror = (err: any) => {
         setIsListening(false);
-        setStatusText("⚠️ تعذر سماع الصوت، يمكنك النقر للمحاولة أو الكتابة.");
+        if (err.error === "no-speech") {
+          setStatusText("🎙️ بانتظار صوتك... تحدث الآن");
+          // إعادة فتح المايك تلقائياً إذا لم يسمع شيئاً وكان المساعد مفتوحاً
+          setTimeout(() => {
+            if (isOpenRef.current && !isMicPausedRef.current) {
+              startVoiceListening();
+            }
+          }, 800);
+        } else {
+          setStatusText("⚠️ انقر على المايك للتحدث.");
+        }
       };
 
       rec.onend = () => {
@@ -175,6 +206,22 @@ export function AdminFloatingAiWidget() {
     }
   };
 
+  // تبديل حالة المايكروفون يدوياً
+  const toggleVoiceListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      setIsListening(false);
+      setIsMicPaused(true);
+      setStatusText("🛑 الميكروفون متوقف - يمكنك الكتابة بالنص");
+    } else {
+      setIsMicPaused(false);
+      startVoiceListening();
+    }
+  };
+
+  // إرسال الأمر ومعالجته
   const sendApiCommand = async (textToSend: string) => {
     if (!textToSend.trim()) return;
 
@@ -220,7 +267,15 @@ export function AdminFloatingAiWidget() {
             timestamp: aiTimeStr
           }
         ]);
-        speakResponse(data.reply || "");
+
+        // نطق الاستجابة وإعادة فتح المايكروفون تلقائياً بعد اكتمال النطق
+        speakResponse(data.reply || "", () => {
+          setTimeout(() => {
+            if (isOpenRef.current && !isMicPausedRef.current) {
+              startVoiceListening();
+            }
+          }, 500);
+        });
       } else {
         setStatusText("⚠️ خطأ في المعالجة.");
         setMessages(prev => [
@@ -232,6 +287,12 @@ export function AdminFloatingAiWidget() {
             timestamp: aiTimeStr
           }
         ]);
+        // إعادة فتح المايك بعد الخطأ
+        setTimeout(() => {
+          if (isOpenRef.current && !isMicPausedRef.current) {
+            startVoiceListening();
+          }
+        }, 1200);
       }
     } catch (err: any) {
       setIsLoading(false);
@@ -245,6 +306,11 @@ export function AdminFloatingAiWidget() {
           timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
         }
       ]);
+      setTimeout(() => {
+        if (isOpenRef.current && !isMicPausedRef.current) {
+          startVoiceListening();
+        }
+      }, 1500);
     }
   };
 
@@ -279,11 +345,21 @@ export function AdminFloatingAiWidget() {
             if (!hasMoved) {
               const newOpen = !isOpen;
               setIsOpen(newOpen);
-              if (newOpen && !isMicPaused) startVoiceListening();
+              if (newOpen) {
+                setIsMicPaused(false);
+                setTimeout(() => startVoiceListening(), 250);
+              } else {
+                if (recognitionRef.current) {
+                  try { recognitionRef.current.abort(); } catch (e) {}
+                }
+                if (typeof window !== "undefined" && window.speechSynthesis) {
+                  window.speechSynthesis.cancel();
+                }
+              }
             }
           }}
           className="group relative flex items-center justify-center w-16 h-16 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing border-2 border-white/80 overflow-hidden transition-transform duration-150 hover:scale-105 active:scale-95 bg-gradient-to-tr from-blue-600 via-indigo-500 to-sky-200"
-          title="مساعد أبو الأكبر الذكي - اسحب لتحريك المكان"
+          title="مساعد أبو الأكبر الذكي - انقر للفتح واسحب للتحريك"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-sky-400 via-indigo-600 to-blue-300 opacity-90 animate-pulse"></div>
           <div className="absolute inset-1 rounded-full bg-gradient-to-b from-white/40 to-transparent blur-[2px]"></div>
@@ -336,14 +412,22 @@ export function AdminFloatingAiWidget() {
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-2 rounded-full text-xs font-semibold flex items-center justify-center transition-all ${
-                  isMuted ? "bg-slate-800 text-slate-400" : "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                  isMuted ? "bg-slate-800 text-slate-400" : "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 animate-pulse"
                 }`}
                 title={isMuted ? "تفعيل الناطق الصوتي" : "كتم الناطق الصوتي"}
               >
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  if (recognitionRef.current) {
+                    try { recognitionRef.current.abort(); } catch (e) {}
+                  }
+                  if (typeof window !== "undefined" && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
                 className="p-2 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-full transition-colors"
                 title="إغلاق المساعد"
               >
@@ -407,7 +491,7 @@ export function AdminFloatingAiWidget() {
 
           {/* Footer Controls */}
           <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5">
-            {/* شريط الإدخال النصي عند رغبة المدير بالكتابة فقط */}
+            {/* شريط الإدخال النصي عند رغبة المدير بالكتابة */}
             {showTextInput && (
               <form
                 onSubmit={(e) => {
@@ -439,21 +523,31 @@ export function AdminFloatingAiWidget() {
 
             {/* الأزرار السفلى التفاعلية */}
             <div className="flex items-center justify-between gap-2 px-1 py-1">
+              {/* 1. زر الإغلاق على اليسار */}
               <button
-                onClick={() => setIsOpen(false)}
-                className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-lg active:scale-95"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (recognitionRef.current) {
+                    try { recognitionRef.current.abort(); } catch (e) {}
+                  }
+                  if (typeof window !== "undefined" && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+                className="w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors shadow-md active:scale-95 border border-slate-700"
                 title="إغلاق المساعد"
               >
                 <X className="w-5 h-5" />
               </button>
 
+              {/* 2. زر الميكروفون المباشر */}
               <button
                 onClick={toggleVoiceListening}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 ${
                   isListening
-                    ? "bg-red-500 text-white animate-pulse"
+                    ? "bg-red-500 text-white animate-pulse ring-4 ring-red-500/30"
                     : isMicPaused
-                    ? "bg-slate-700 text-slate-300"
+                    ? "bg-slate-800 text-slate-400 border border-slate-700"
                     : "bg-white text-slate-900 hover:bg-slate-200"
                 }`}
                 title={isListening ? "إيقاف الاستماع الصوتي" : "تفعيل الميكروفون الصوتي"}
@@ -461,25 +555,42 @@ export function AdminFloatingAiWidget() {
                 {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
               </button>
 
+              {/* 3. شريط Gemini Live الأوسط المتوهج */}
               <div
                 onMouseDown={handleStartDrag}
                 onTouchStart={handleStartDrag}
                 onClick={() => {
                   if (!isListening && !isMicPaused) startVoiceListening();
                 }}
-                className="flex-1 h-12 rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing flex items-center justify-center gap-1.5 text-white font-bold text-xs hover:opacity-95 transition-opacity px-3"
-                title="Gemini Live Bar - انقر للتحدث أو اسحب لتحريك النافذة"
+                className="flex-1 h-12 rounded-full bg-gradient-to-r from-sky-400 via-indigo-500 to-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.6)] cursor-grab active:cursor-grabbing flex items-center justify-center gap-1.5 text-white font-bold text-xs hover:opacity-95 transition-opacity px-2"
+                title="Gemini Live Bar - انقر للتحدث أو اسحب للتحريك"
               >
                 <Sparkles className="w-4 h-4 animate-spin-slow" />
-                <span className="text-[11px] font-semibold">{isListening ? "جاري التحدث..." : "Gemini Live"}</span>
+                <span className="text-[11px] font-semibold">{isListening ? "جاري الاستماع..." : "تحدث بالأمر"}</span>
               </div>
 
+              {/* 4. زر تشغيل / كتم صوت المساعد الذكي على اليمين */}
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md active:scale-95 border ${
+                  !isMuted
+                    ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 animate-pulse"
+                    : "bg-slate-800 text-slate-400 border-slate-700"
+                }`}
+                title={!isMuted ? "صوت المساعد مفعل (انقر للكتم)" : "صوت المساعد مكتوم (انقر للتفعيل)"}
+              >
+                {!isMuted ? <Volume2 className="w-5 h-5 text-white" /> : <VolumeX className="w-5 h-5 text-slate-400" />}
+              </button>
+
+              {/* 5. زر إظهار / إخفاء الكيبورد على اليمين */}
               <button
                 onClick={() => setShowTextInput(!showTextInput)}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-                  showTextInput ? "bg-blue-600 text-white" : "bg-white text-slate-900 hover:bg-slate-200"
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors shadow-md active:scale-95 border ${
+                  showTextInput
+                    ? "bg-blue-600 text-white border-blue-500 shadow-blue-600/30"
+                    : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
                 }`}
-                title="فتح مربع الكتابة النصية"
+                title="فتح / إغلاق لوحة المفاتيح للكتابة النصية"
               >
                 <Keyboard className="w-5 h-5" />
               </button>
