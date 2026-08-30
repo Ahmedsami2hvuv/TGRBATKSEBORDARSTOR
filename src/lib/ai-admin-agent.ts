@@ -651,24 +651,40 @@ function extractPrepItemsFromText(text: string): string {
 function extractOrderAmountFromText(text: string, phone: string | null): number | null {
   if (!text) return null;
 
-  // 1. البحث الصريح والقاطع أولاً بعد الكلمات الدلالية للسعر (مثل سعر الطلب 10)
+  const normalized = text.toLowerCase();
+
+  // 1. فحص صريح لكلمة صفر أو بلاش أو 0 بعد كلمة السعر
+  if (
+    normalized.includes("سعر الطلب صفر") ||
+    normalized.includes("السعر صفر") ||
+    normalized.includes("سعر صفر") ||
+    normalized.includes("سعر الطلب 0") ||
+    normalized.includes("السعر 0") ||
+    normalized.includes("سعر 0") ||
+    normalized.includes("بلاش") ||
+    normalized.includes("مجاني")
+  ) {
+    return 0;
+  }
+
+  // 2. البحث الصريح والقاطع أولاً بعد الكلمات الدلالية للسعر (مثل سعر الطلب 10)
   const explicitMatch = text.match(/(?:سعر الطلب|السعر|سعر|بـ|ب)\s*(\d{1,4})/i);
   if (explicitMatch) {
     const val = Number(explicitMatch[1]);
-    if (val > 0 && val < 1000) return val;
+    if (val >= 0 && val < 1000) return val;
   }
 
-  // 2. تنظيف أرقام الهواتف من النص
+  // 3. تنظيف أرقام الهواتف من النص
   let cleanText = text;
   if (phone) {
     cleanText = cleanText.replace(phone, "");
   }
   cleanText = cleanText.replace(/07\d[\d\s]{7,12}/g, "");
 
-  // 3. البحث عن الأرقام المعقولة المتبقية
+  // 4. البحث عن الأرقام المعقولة المتبقية
   const nums = (cleanText.match(/\d+/g) || [])
     .map(Number)
-    .filter(n => n > 0 && n < 1000 && !n.toString().startsWith("07") && !n.toString().startsWith("77"));
+    .filter(n => n >= 0 && n < 1000 && !n.toString().startsWith("07") && !n.toString().startsWith("77"));
 
   if (nums.length === 0) return null;
   return nums[0];
@@ -1458,10 +1474,14 @@ export async function executeSuperSystemAgent(
         }
 
         let orderType = "اقمشه";
-        if (fullText.includes("ورد")) orderType = "ورد";
-        else if (fullText.includes("اقمشه") || fullText.includes("أقمشة") || fullText.includes("قماش")) orderType = "اقمشه";
-        else if (fullText.includes("روبيان")) orderType = "روبيان";
-        else if (fullText.includes("مواد")) orderType = "مواد متنوعة";
+        const cleanType = fullText.toLowerCase();
+        if (cleanType.includes("مسواق") || cleanType.includes("مسواك") || cleanType.includes("تسوق")) orderType = "مسواق";
+        else if (cleanType.includes("روبيان") || cleanType.includes("سمك") || cleanType.includes("اسماك")) orderType = "روبيان";
+        else if (cleanType.includes("ورد") || cleanType.includes("زهور")) orderType = "ورد";
+        else if (cleanType.includes("كيك") || cleanType.includes("حلويات") || cleanType.includes("معجنات")) orderType = "حلويات";
+        else if (cleanType.includes("طعام") || cleanType.includes("وجبة") || cleanType.includes("مطعم") || cleanType.includes("اكل")) orderType = "طعام";
+        else if (cleanType.includes("اقمشه") || cleanType.includes("أقمشة") || cleanType.includes("قماش") || cleanType.includes("ملابس") || cleanType.includes("ازياء") || cleanType.includes("فستان")) orderType = "اقمشه";
+        else if (cleanType.includes("مواد") || cleanType.includes("منزليه") || cleanType.includes("منزلية")) orderType = "مواد منزلية";
 
         let noteTime = "غير محدد";
         if (fullText.includes("الان") || fullText.includes("الآن")) noteTime = "الان";
