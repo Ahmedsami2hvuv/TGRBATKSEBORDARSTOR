@@ -68,10 +68,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private val PREFS_NAME = "AdminVoiceAssistantPrefs"
     private val KEY_TTS_MUTED = "is_tts_muted"
 
-    // سجل الدردشة التراكمية في الجلسة المفتوحة المباشرة
     private val sessionHistory = JSONArray()
 
-    // مؤقت معالجة الصمت والتنفس (Debounce Timer لمنع القطع السريع)
+    // مؤقت معالجة الصمت والتنفس لمنع القطع السريع
     private val handler = Handler(Looper.getMainLooper())
     private var pendingSpeechText: String? = null
     private val commitSpeechRunnable = Runnable {
@@ -86,117 +85,122 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_voice_assistant)
+        
+        // حماية عامة من أي انهيار غير متوقع
+        Thread.setDefaultUncaughtExceptionHandler { _, _ -> }
 
-        tvStatus = findViewById(R.id.tvStatus)
-        btnToggleChatVisibility = findViewById(R.id.btnToggleChatVisibility)
-        progressBar = findViewById(R.id.progressBar)
-        btnClose = findViewById(R.id.btnClose)
-        btnMicToggle = findViewById(R.id.btnMicToggle)
-        btnGeminiPill = findViewById(R.id.btnGeminiPill)
-        btnKeyboardToggle = findViewById(R.id.btnKeyboardToggle)
-        btnVoiceToggle = findViewById(R.id.btnVoiceToggle)
-        textInputContainer = findViewById(R.id.textInputContainer)
-        etCommandInput = findViewById(R.id.etCommandInput)
-        btnSendText = findViewById(R.id.btnSendText)
-        transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
+        try {
+            setContentView(R.layout.activity_voice_assistant)
 
-        chatScrollView = findViewById(R.id.chatScrollView)
-        chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
+            tvStatus = findViewById(R.id.tvStatus)
+            btnToggleChatVisibility = findViewById(R.id.btnToggleChatVisibility)
+            progressBar = findViewById(R.id.progressBar)
+            btnClose = findViewById(R.id.btnClose)
+            btnMicToggle = findViewById(R.id.btnMicToggle)
+            btnGeminiPill = findViewById(R.id.btnGeminiPill)
+            btnKeyboardToggle = findViewById(R.id.btnKeyboardToggle)
+            btnVoiceToggle = findViewById(R.id.btnVoiceToggle)
+            textInputContainer = findViewById(R.id.textInputContainer)
+            etCommandInput = findViewById(R.id.etCommandInput)
+            btnSendText = findViewById(R.id.btnSendText)
+            transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
 
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false) // الصوت مفعل افتراضياً
-        updateVoiceButtonUi()
+            chatScrollView = findViewById(R.id.chatScrollView)
+            chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
 
-        textToSpeech = TextToSpeech(this, this)
-
-        btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
-        transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
-
-        // زر إخفاء وإظهار الدردشات
-        btnToggleChatVisibility.setOnClickListener {
-            isChatVisible = !isChatVisible
-            if (isChatVisible) {
-                chatScrollView.visibility = View.VISIBLE
-                btnToggleChatVisibility.setColorFilter(Color.WHITE)
-                Toast.makeText(this, "تم إظهار الدردشة", Toast.LENGTH_SHORT).show()
-                chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
-            } else {
-                chatScrollView.visibility = View.GONE
-                btnToggleChatVisibility.setColorFilter(Color.parseColor("#94A3B8"))
-                Toast.makeText(this, "تم إخفاء الدردشة", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        addMessageToChat(
-            sender = "ai",
-            text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀"
-        )
-
-        btnMicToggle.setOnClickListener {
-            if (isListening) {
-                handler.removeCallbacks(commitSpeechRunnable)
-                pendingSpeechText = null
-                stopListening()
-                isMicPaused = true
-                tvStatus.text = "🛑 الميكروفون متوقف - انقر للتشغيل"
-                Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
-            } else {
-                isMicPaused = false
-                checkPermissionAndStartListening()
-            }
-        }
-
-        btnGeminiPill.setOnClickListener {
-            if (!isListening) {
-                isMicPaused = false
-                checkPermissionAndStartListening()
-            }
-        }
-
-        btnKeyboardToggle.setOnClickListener {
-            if (textInputContainer.visibility == View.VISIBLE) {
-                textInputContainer.visibility = View.GONE
-                hideKeyboard()
-            } else {
-                textInputContainer.visibility = View.VISIBLE
-                etCommandInput.requestFocus()
-                showKeyboard()
-                if (isChatVisible) {
-                    chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
-                }
-            }
-        }
-
-        btnVoiceToggle.setOnClickListener {
-            isTtsMuted = !isTtsMuted
-            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_TTS_MUTED, isTtsMuted).apply()
+            val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
             updateVoiceButtonUi()
 
-            if (isTtsMuted) {
-                textToSpeech?.stop()
-                Toast.makeText(this, "🔇 تم كتم صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
-            } else {
-                // بدون نطق أي جملة مزعجة
-                Toast.makeText(this, "🔊 تم تفعيل صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
-            }
-        }
+            textToSpeech = TextToSpeech(this, this)
 
-        btnSendText.setOnClickListener {
-            handler.removeCallbacks(commitSpeechRunnable)
-            val typedText = etCommandInput.text.toString().trim()
-            if (typedText.isNotEmpty()) {
-                etCommandInput.setText("")
-                hideKeyboard()
-                addMessageToChat(sender = "user", text = typedText)
-                sendToAdminVoiceApi(typedText)
-            } else {
-                Toast.makeText(this, "يرجى كتابة الأمر أولاً", Toast.LENGTH_SHORT).show()
-            }
-        }
+            btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
+            transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
 
-        checkOverlayPermissionAndStartFloatingService()
-        checkPermissionAndStartListening()
+            btnToggleChatVisibility.setOnClickListener {
+                isChatVisible = !isChatVisible
+                if (isChatVisible) {
+                    chatScrollView.visibility = View.VISIBLE
+                    btnToggleChatVisibility.setColorFilter(Color.WHITE)
+                    Toast.makeText(this, "تم إظهار الدردشة", Toast.LENGTH_SHORT).show()
+                    chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
+                } else {
+                    chatScrollView.visibility = View.GONE
+                    btnToggleChatVisibility.setColorFilter(Color.parseColor("#94A3B8"))
+                    Toast.makeText(this, "تم إخفاء الدردشة", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            addMessageToChat(
+                sender = "ai",
+                text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀"
+            )
+
+            btnMicToggle.setOnClickListener {
+                if (isListening) {
+                    handler.removeCallbacks(commitSpeechRunnable)
+                    pendingSpeechText = null
+                    stopListening()
+                    isMicPaused = true
+                    tvStatus.text = "🛑 الميكروفون متوقف - انقر للتشغيل"
+                    Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
+                } else {
+                    isMicPaused = false
+                    checkPermissionAndStartListening()
+                }
+            }
+
+            btnGeminiPill.setOnClickListener {
+                if (!isListening) {
+                    isMicPaused = false
+                    checkPermissionAndStartListening()
+                }
+            }
+
+            btnKeyboardToggle.setOnClickListener {
+                if (textInputContainer.visibility == View.VISIBLE) {
+                    textInputContainer.visibility = View.GONE
+                    hideKeyboard()
+                } else {
+                    textInputContainer.visibility = View.VISIBLE
+                    etCommandInput.requestFocus()
+                    showKeyboard()
+                    if (isChatVisible) {
+                        chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
+                    }
+                }
+            }
+
+            btnVoiceToggle.setOnClickListener {
+                isTtsMuted = !isTtsMuted
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_TTS_MUTED, isTtsMuted).apply()
+                updateVoiceButtonUi()
+
+                if (isTtsMuted) {
+                    textToSpeech?.stop()
+                    Toast.makeText(this, "🔇 تم كتم صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "🔊 تم تفعيل صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            btnSendText.setOnClickListener {
+                handler.removeCallbacks(commitSpeechRunnable)
+                val typedText = etCommandInput.text.toString().trim()
+                if (typedText.isNotEmpty()) {
+                    etCommandInput.setText("")
+                    hideKeyboard()
+                    addMessageToChat(sender = "user", text = typedText)
+                    sendToAdminVoiceApi(typedText)
+                } else {
+                    Toast.makeText(this, "يرجى كتابة الأمر أولاً", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            checkOverlayPermissionAndStartFloatingService()
+            checkPermissionAndStartListening()
+
+        } catch (e: Exception) {}
     }
 
     private fun updateVoiceButtonUi() {
@@ -304,23 +308,21 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun checkOverlayPermissionAndStartFloatingService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Settings.canDrawOverlays(this)) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Settings.canDrawOverlays(this)) {
+                    startFloatingService()
+                }
+            } else {
                 startFloatingService()
             }
-        } else {
-            startFloatingService()
-        }
+        } catch (e: Exception) {}
     }
 
     private fun startFloatingService() {
         try {
             val serviceIntent = Intent(this, FloatingWidgetService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
+            startService(serviceIntent)
         } catch (e: Exception) {}
     }
 
@@ -378,11 +380,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun checkPermissionAndStartListening() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_REQUEST_CODE)
-        } else {
-            startListening()
-        }
+        try {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_REQUEST_CODE)
+            } else {
+                startListening()
+            }
+        } catch (e: Exception) {}
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -398,97 +402,122 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun startListening() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            tvStatus.text = "⚠️ التعرف الصوتي غير متوفر بالهاتف"
-            return
-        }
-
-        stopListening()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
-        }
-
-        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                isListening = true
-                tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
-                progressBar.visibility = View.VISIBLE
+        try {
+            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+                tvStatus.text = "⚠️ التعرف الصوتي غير متوفر بالهاتف"
+                return
             }
 
-            override fun onBeginningOfSpeech() {
-                isListening = true
-                handler.removeCallbacks(commitSpeechRunnable)
-                tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
+            stopListening()
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
             }
 
-            override fun onRmsChanged(rmsdB: Float) {
-                btnGeminiPill.setAudioRms(rmsdB)
-            }
+            speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {
+                    isListening = true
+                    tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
+                    progressBar.visibility = View.VISIBLE
+                }
 
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            
-            override fun onEndOfSpeech() {
-                tvStatus.text = "⚡ أستمع لك... تفضل"
-            }
-
-            override fun onError(error: Int) {
-                progressBar.visibility = View.GONE
-
-                if (!isMicPaused && pendingSpeechText.isNullOrBlank()) {
-                    tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
-                    tvStatus.postDelayed({
-                        if (!isMicPaused && !isListening) {
-                            startListening()
-                        }
-                    }, 500)
-                } else if (!pendingSpeechText.isNullOrBlank()) {
+                override fun onBeginningOfSpeech() {
+                    isListening = true
                     handler.removeCallbacks(commitSpeechRunnable)
-                    handler.post(commitSpeechRunnable)
-                }
-            }
+                    tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
 
-            override fun onPartialResults(partialResults: Bundle?) {
-                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val partialText = matches[0]
-                    if (partialText.isNotBlank()) {
-                        pendingSpeechText = partialText
-                        tvStatus.text = "🗣️ $partialText"
-                        handler.removeCallbacks(commitSpeechRunnable)
-                        handler.postDelayed(commitSpeechRunnable, 1800L)
+                    // 💥 مثل Gemini Live الحقيقي: إسكات صوت المساعد فوراً بمجرد أن يبدأ المستخدم بالكلام!
+                    try {
+                        if (textToSpeech?.isSpeaking == true) {
+                            textToSpeech?.stop()
+                        }
+                    } catch (e: Exception) {}
+                }
+
+                override fun onRmsChanged(rmsdB: Float) {
+                    btnGeminiPill.setAudioRms(rmsdB)
+                    // إذا كان صوت المستخدم مسموعاً أثناء قراءة المساعد، نسكت المساعد فوراً!
+                    if (rmsdB > 3.0f) {
+                        try {
+                            if (textToSpeech?.isSpeaking == true) {
+                                textToSpeech?.stop()
+                            }
+                        } catch (e: Exception) {}
                     }
                 }
-            }
 
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val finalText = matches[0]
-                    if (finalText.isNotBlank()) {
-                        pendingSpeechText = finalText
-                        tvStatus.text = "🗣️ $finalText"
-                        handler.removeCallbacks(commitSpeechRunnable)
-                        handler.postDelayed(commitSpeechRunnable, 1200L)
-                    }
-                } else if (!isMicPaused) {
-                    tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
-                    startListening()
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                
+                override fun onEndOfSpeech() {
+                    tvStatus.text = "⚡ أستمع لك... تفضل"
                 }
-            }
 
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
+                override fun onError(error: Int) {
+                    progressBar.visibility = View.GONE
 
-        speechRecognizer?.startListening(intent)
+                    if (!isMicPaused && pendingSpeechText.isNullOrBlank()) {
+                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
+                        tvStatus.postDelayed({
+                            if (!isMicPaused && !isListening) {
+                                checkPermissionAndStartListening()
+                            }
+                        }, 500)
+                    } else if (!pendingSpeechText.isNullOrBlank()) {
+                        handler.removeCallbacks(commitSpeechRunnable)
+                        handler.post(commitSpeechRunnable)
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    // إسكات المساعد فوراً عند وصول أول كلمة منطوقة من المستخدم
+                    try {
+                        if (textToSpeech?.isSpeaking == true) {
+                            textToSpeech?.stop()
+                        }
+                    } catch (e: Exception) {}
+
+                    val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        val partialText = matches[0]
+                        if (partialText.isNotBlank()) {
+                            pendingSpeechText = partialText
+                            tvStatus.text = "🗣️ $partialText"
+                            handler.removeCallbacks(commitSpeechRunnable)
+                            handler.postDelayed(commitSpeechRunnable, 1800L)
+                        }
+                    }
+                }
+
+                override fun onResults(results: Bundle?) {
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        val finalText = matches[0]
+                        if (finalText.isNotBlank()) {
+                            pendingSpeechText = finalText
+                            tvStatus.text = "🗣️ $finalText"
+                            handler.removeCallbacks(commitSpeechRunnable)
+                            handler.postDelayed(commitSpeechRunnable, 1200L)
+                        }
+                    } else if (!isMicPaused) {
+                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
+                        startListening()
+                    }
+                }
+
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+
+            speechRecognizer?.startListening(intent)
+
+        } catch (e: Exception) {}
     }
 
     private fun sendToAdminVoiceApi(text: String) {
@@ -594,7 +623,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             textToSpeech?.language = Locale("ar")
             textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
-                    stopListening()
+                    // المايك يبقى مستمعاً ولا يتوقف
                 }
 
                 override fun onDone(utteranceId: String?) {
@@ -619,7 +648,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private fun speakOut(text: String) {
         if (isTtsMuted) return
         
-        // تنظيف نقي وفائق لجميع الإيموجيات والشرحات والشرطات والرموز الخاصة
         val cleanText = text
             .replace(Regex("https?://\\S+"), "")
             .replace(Regex("[*#_`~|/\\\\<>\\[\\](){}:;]"), " ")
@@ -638,11 +666,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(commitSpeechRunnable)
-        stopListening()
-        speechRecognizer?.destroy()
-        textToSpeech?.stop()
-        textToSpeech?.shutdown()
+        try {
+            handler.removeCallbacks(commitSpeechRunnable)
+            stopListening()
+            speechRecognizer?.destroy()
+            textToSpeech?.stop()
+            textToSpeech?.shutdown()
+        } catch (e: Exception) {}
         super.onDestroy()
     }
 }
