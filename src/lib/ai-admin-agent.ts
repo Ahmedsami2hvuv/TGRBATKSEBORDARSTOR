@@ -6,7 +6,7 @@ import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
 import { executeAutonomousGeminiAgent } from "./ai-autonomous-agent";
-import { handleOrderCreationWizard, OrderDraftState } from "./ai-order-wizard";
+import { handleOrderCreationWizard, OrderDraftState, calculateSimilarity } from "./ai-order-wizard";
 
 type ChatSessionContext = {
   lastOrderNumber?: number | null;
@@ -873,43 +873,46 @@ export async function executeSuperSystemAgent(
     if (extractedShopQuery.length >= 2) {
       const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
       const scored = allShops.map(s => {
-        const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase();
-        let matches = 0;
-        for (let ch of extractedShopQuery) {
-          if (cleanS.includes(ch)) matches++;
+        const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+        let score = 0;
+
+        if (cleanS === extractedShopQuery) {
+          score = 1.0;
+        } else if (cleanS.includes(extractedShopQuery) || extractedShopQuery.includes(cleanS)) {
+          score = 0.9;
+        } else {
+          score = calculateSimilarity(cleanS, extractedShopQuery);
         }
-        let score = matches / Math.max(cleanS.length, extractedShopQuery.length);
-        if (cleanS.includes(extractedShopQuery) || extractedShopQuery.includes(cleanS)) score = Math.max(score, 0.85);
         return { shop: s, score };
       }).sort((a, b) => b.score - a.score);
 
-      const best = scored[0];
-      if (best && best.score >= 0.7) {
+      // إذا كان هناك تطابق تام 100% باسم المحل بالكامل
+      if (scored[0] && scored[0].score === 1.0) {
         ctx.orderDraft = {
           step: "waiting_region",
-          shopId: best.shop.id,
-          shopName: best.shop.name
+          shopId: scored[0].shop.id,
+          shopName: scored[0].shop.name
         };
         ctx.updatedAt = Date.now();
         return {
-          reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`
-        };
-      } else {
-        // إذا كان الاسم غير محدد بدقة، نعرض له أزرار المحلات القريبة فوراً!
-        const topShops = scored.slice(0, 4).map(s => s.shop);
-        const buttons = topShops.map(s => ({
-          text: `🏪 ${s.name}`,
-          action: s.name
-        }));
-
-        ctx.orderDraft = { step: "waiting_shop" };
-        ctx.updatedAt = Date.now();
-
-        return {
-          reply: `يا أبو الأكبر، قصدك أي محل من هذولي؟ 👇`,
-          buttons: buttons
+          reply: `تمام يا غالي (${scored[0].shop.name})! لأي منطقة الطلب؟ 📍`
         };
       }
+
+      // إذا كانت كلمة عامة مثل إكسسوارات أو خطأ إملائي، نعرض دائماً أزرار الاقتراحات الذكية!
+      const topShops = scored.slice(0, 4).map(s => s.shop);
+      const buttons = topShops.map(s => ({
+        text: `🏪 ${s.name}`,
+        action: s.name
+      }));
+
+      ctx.orderDraft = { step: "waiting_shop" };
+      ctx.updatedAt = Date.now();
+
+      return {
+        reply: `يا أبو الأكبر، قصدك أي محل من هذولي؟ 👇`,
+        buttons: buttons
+      };
     }
   }
 
