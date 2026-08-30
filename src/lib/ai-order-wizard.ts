@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+﻿import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
@@ -16,7 +16,7 @@ export type OrderDraftState = {
   noteTime?: string | null;
 };
 
-function normalizeArabic(text: string): string {
+export function normalizeArabic(text: string): string {
   return text
     .replace(/أ|إ|آ/g, "ا")
     .replace(/ة/g, "ه")
@@ -25,6 +25,27 @@ function normalizeArabic(text: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+export function cleanAndNormalizePhone(raw: string): string | null {
+  if (!raw) return null;
+  let cleaned = raw
+    .replace(/[٠۰]/g, "0")
+    .replace(/[١۱]/g, "1")
+    .replace(/[٢۲]/g, "2")
+    .replace(/[٣۳]/g, "3")
+    .replace(/[٤۴]/g, "4")
+    .replace(/[٥۵]/g, "5")
+    .replace(/[٦۶]/g, "6")
+    .replace(/[٧۷]/g, "7")
+    .replace(/[٨۸]/g, "8")
+    .replace(/[٩۹]/g, "9")
+    .replace(/[\s\-_+]/g, "");
+
+  const match = cleaned.match(/(?:964|0)?7[3-9]\d{8}/);
+  if (match) return match[0];
+  const digits = cleaned.replace(/\D/g, "");
+  return digits.length >= 7 ? digits : null;
 }
 
 export function calculateSimilarity(s1: string, s2: string): number {
@@ -53,6 +74,117 @@ export function calculateSimilarity(s1: string, s2: string): number {
     if (i > 0) costs[shorter.length] = lastValue;
   }
   return (longer.length - costs[shorter.length]) / longer.length;
+}
+
+export async function parseMultiFieldInput(
+  rawText: string,
+  existingDraft: OrderDraftState,
+  allRegions: Array<{ id: string; name: string; deliveryPrice: any }>
+): Promise<{ updatedDraft: OrderDraftState; fieldsFoundCount: number }> {
+  const draft: OrderDraftState = { ...existingDraft };
+  let fieldsFoundCount = 0;
+
+  const lines = rawText.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
+
+  if (lines.length >= 2) {
+    for (const line of lines) {
+      const cleanLine = normalizeArabic(line);
+
+      // أ) فحص رقم الهاتف
+      const phone = cleanAndNormalizePhone(line);
+      if (phone && !draft.phone) {
+        draft.phone = phone;
+        fieldsFoundCount++;
+        continue;
+      }
+
+      // ب) فحص السعر (إذا كان رقماً مفرداً أو يحتوي على ألف/دينار/k)
+      const isPrice = /^(?:\d+|[٠-٩]+)\s*(?:الف|ألف|k|دينار)?$/i.test(cleanLine);
+      if (isPrice && (draft.price === undefined || draft.price === null)) {
+        const num = line.replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9").replace(/\D/g, "");
+        if (num) {
+          draft.price = Number(num);
+          fieldsFoundCount++;
+          continue;
+        }
+      }
+
+      // ج) فحص وقت الطلب
+      if (
+        (cleanLine.includes("العصر") || cleanLine.includes("الظهر") || cleanLine.includes("مغرب") || cleanLine.includes("صبح") || cleanLine.includes("الان") || cleanLine.includes("باجر") || cleanLine.includes("ساعه") || cleanLine.includes("ساعة") || /^ب?\d+\s*(?:العصر|الظهر|مغرب|الصبح|مساء|صباحا|ليلا)?$/i.test(cleanLine)) &&
+        !draft.noteTime
+      ) {
+        draft.noteTime = line;
+        fieldsFoundCount++;
+        continue;
+      }
+
+      // د) فحص المنطقة
+      if (!draft.regionId) {
+        let cleanRegSearch = cleanLine
+          .replace(/جيحور/gi, "جيكور")
+          .replace(/جاي\s*كور/gi, "جيكور")
+          .replace(/نار\s*خوز/gi, "نهر خوز")
+          .trim();
+
+        const scored = allRegions.map(r => {
+          const cleanR = normalizeArabic(r.name);
+          let score = 0;
+          if (cleanR === cleanRegSearch) score = 1.0;
+          else if (cleanR.includes(cleanRegSearch) || cleanRegSearch.includes(cleanR)) score = 0.85;
+          else score = calculateSimilarity(cleanR, cleanRegSearch);
+          return { region: r, score };
+        }).sort((a, b) => b.score - a.score);
+
+        if (scored[0] && scored[0].score >= 0.6) {
+          draft.regionId = scored[0].region.id;
+          draft.regionName = scored[0].region.name;
+          fieldsFoundCount++;
+          continue;
+        }
+      }
+
+      // هـ) نوع الطلب (إذا لم يكن هاتف ولا سعر ولا منطقة ولا وقت)
+      if (!draft.orderType && cleanLine.length >= 2 && !/^\d+$/.test(cleanLine)) {
+        draft.orderType = line;
+        fieldsFoundCount++;
+      }
+    }
+  } else {
+    // معالجة السطر الواحد إذا احتوى على هاتف وسعر ومنطقة
+    const phone = cleanAndNormalizePhone(rawText);
+    if (phone && !draft.phone) {
+      draft.phone = phone;
+      fieldsFoundCount++;
+    }
+
+    const priceMatch = rawText.match(/(?:سعر|سعره|بـ|مبلغ)?\s*(\d+|[٠-٩]+)\s*(?:الف|ألف|k|دينار)?(?:\s|$)/i);
+    if (priceMatch && (draft.price === undefined || draft.price === null)) {
+      const num = priceMatch[1].replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9");
+      draft.price = Number(num);
+      fieldsFoundCount++;
+    }
+
+    const timeMatch = rawText.match(/(?:ب?\d+\s*(?:العصر|الظهر|مغرب|الصبح|مساء|صباحا|ليلا)|العصر|المغرب|الظهر|الصبح|الان|باجر)/i);
+    if (timeMatch && !draft.noteTime) {
+      draft.noteTime = timeMatch[0].trim();
+      fieldsFoundCount++;
+    }
+
+    if (!draft.regionId) {
+      for (const reg of allRegions) {
+        const cleanR = normalizeArabic(reg.name);
+        if (cleanR.length >= 3 && normalizeArabic(rawText).includes(cleanR)) {
+          draft.regionId = reg.id;
+          draft.regionName = reg.name;
+          fieldsFoundCount++;
+          break;
+        }
+      }
+    }
+  }
+
+  return { updatedDraft: draft, fieldsFoundCount };
 }
 
 export async function finalizeAndCreateOrder(
@@ -115,7 +247,57 @@ export async function handleOrderCreationWizard(
     };
   }
 
-  // 2. معالجة الخطوات بالتسلسل
+  // 2. إذا كنا في أي خطوة بعد اختيار المحل وتم إرسال تفاصيل متعددة (أسطر أو معلومات مجمعة)
+  if (draft.step && draft.step !== "waiting_shop") {
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const { updatedDraft, fieldsFoundCount } = await parseMultiFieldInput(userText, draft, allRegions);
+
+    if (fieldsFoundCount >= 2 || (updatedDraft.regionId && updatedDraft.price !== undefined)) {
+      // إذا اكتملت الحقول الأساسية (محل + منطقة + سعر + نوع)
+      if (updatedDraft.shopId && updatedDraft.regionId && updatedDraft.price !== undefined && updatedDraft.orderType) {
+        return await finalizeAndCreateOrder(updatedDraft, ctx);
+      }
+
+      // إذا كانت هناك حقول ناقصة، نسأله فقط عن الحقل الناقص!
+      if (!updatedDraft.regionId) {
+        return {
+          handled: true,
+          reply: `حلو يا غالي! لأي منطقة الطلب؟ 📍`,
+          nextDraft: { ...updatedDraft, step: "waiting_region" }
+        };
+      }
+      if (!updatedDraft.phone) {
+        return {
+          handled: true,
+          reply: `حلو (${updatedDraft.regionName})! انطيني رقم هاتف الزبون 📞 (أو اكتب "بدون رقم")`,
+          nextDraft: { ...updatedDraft, step: "waiting_phone" }
+        };
+      }
+      if (!updatedDraft.orderType) {
+        return {
+          handled: true,
+          reply: `تمام! شنو نوع أو محتوى الطلبية؟ 📦`,
+          nextDraft: { ...updatedDraft, step: "waiting_type" }
+        };
+      }
+      if (updatedDraft.price === undefined || updatedDraft.price === null) {
+        return {
+          handled: true,
+          reply: `عاشت إيدك! شكد سعر الطلب؟ (مثلاً: 10 أو 15 أو 0) 💰`,
+          nextDraft: { ...updatedDraft, step: "waiting_price" }
+        };
+      }
+      if (!updatedDraft.noteTime) {
+        return {
+          handled: true,
+          reply: `ممتاز! شوكت وقت التوصيل المطلوب؟ ⏰`,
+          nextDraft: { ...updatedDraft, step: "waiting_time" }
+        };
+      }
+    }
+  }
+
+  // 3. معالجة الخطوات المفردة بالتسلسل
   switch (draft.step) {
     case "waiting_shop": {
       const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
@@ -142,8 +324,7 @@ export async function handleOrderCreationWizard(
           shopName: best.shop.name
         };
 
-        // إذا كانت باقي بيانات الطلب محددة مسبقاً، ننشئ الطلب فوراً!
-        if (updatedDraft.price !== undefined && updatedDraft.orderType) {
+        if (updatedDraft.price !== undefined && updatedDraft.orderType && updatedDraft.regionId) {
           return await finalizeAndCreateOrder(updatedDraft, ctx);
         }
 
@@ -157,7 +338,7 @@ export async function handleOrderCreationWizard(
         };
       }
 
-      const topSuggestions = scoredShops.slice(0, 3).map(s => s.shop);
+      const topSuggestions = scoredShops.slice(0, 4).map(s => s.shop);
       const buttons = topSuggestions.map(s => ({
         text: `🏪 ${s.name}`,
         action: s.name
@@ -187,7 +368,6 @@ export async function handleOrderCreationWizard(
         .replace(/نار\s*خوز/gi, "نهر خوز")
         .trim();
 
-      // حساب نسبة التشابه الحقيقية لجميع المناطق
       const scoredRegions = allRegions.map(r => {
         const cleanR = normalizeArabic(r.name);
         let score = 0;
@@ -203,7 +383,6 @@ export async function handleOrderCreationWizard(
 
       const best = scoredRegions[0];
 
-      // إذا كان التشابه قوي جداً (0.65 فأعلى أو تطابق كامل):
       if (best && best.score >= 0.65) {
         const matchedRegion = best.region;
         const updatedDraft: OrderDraftState = {
@@ -226,8 +405,6 @@ export async function handleOrderCreationWizard(
         };
       }
 
-      // إذا كان الكلام غير متطابق أو خطأ بالاسم أو تشابه متوسط:
-      // نعرض فوراً أفضل وأقرب 4 مناطق مشابهة كأزرار تفاعلية!
       const topRegions = scoredRegions.slice(0, 4).map(item => item.region);
       const buttons = topRegions.map(r => ({
         text: `📍 ${r.name}`,
@@ -245,9 +422,7 @@ export async function handleOrderCreationWizard(
     case "waiting_phone": {
       let phone: string | null = null;
       if (!clean.includes("بدون") && !clean.includes("ماكو") && !clean.includes("لا يوجد") && !clean.includes("ما عنده")) {
-        const phoneMatch = userText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
-        phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : userText.replace(/\D/g, "");
-        if (phone.length < 5) phone = null;
+        phone = cleanAndNormalizePhone(userText);
       }
 
       const updatedDraft: OrderDraftState = {
@@ -292,7 +467,7 @@ export async function handleOrderCreationWizard(
 
     case "waiting_price": {
       let price = 0;
-      const numMatch = userText.match(/\d+/);
+      const numMatch = userText.replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9").match(/\d+/);
       if (numMatch) {
         price = Number(numMatch[0]);
       } else if (clean.includes("صفر") || clean.includes("بلاش") || clean.includes("مجاني")) {
