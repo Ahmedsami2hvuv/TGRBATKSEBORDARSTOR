@@ -12,6 +12,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Vibrator
+import android.os.VibrationEffect
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -288,7 +290,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     setOnClickListener {
                         handler.removeCallbacks(commitSpeechRunnable)
                         
-                        // فتح الاتصال أو الواتساب مباشرة إذا كان الزر اتصال أو واتساب
                         if (btnAction.startsWith("tel:")) {
                             try {
                                 val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse(btnAction))
@@ -382,7 +383,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         textToSpeech?.stop()
         stopListening()
         isMicPaused = false
-        tvStatus.text = "🎙️ أستمع لك... تحدث براحتك بالأمر يا أبو الأكبر"
+        tvStatus.text = "⏳ جاري تجهيز المايك..."
         safelyRestartSpeechRecognizer()
     }
 
@@ -404,11 +405,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 stopListening()
             } catch (e: Exception) {}
 
+            tvStatus.text = "⏳ جاري تجهيز المايك..."
             handler.postDelayed({
                 if (!isMicPaused && !isFinishing) {
                     checkPermissionAndStartListening()
                 }
-            }, 300L)
+            }, 200L)
         }
     }
 
@@ -457,8 +459,16 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    tvStatus.text = "🎙️ الميكروفون شغال... تحدث براحتك بالأمر"
+                    // إشعار فوري بأن المايك مفتوح وجاهز لالتقاط أول حرف!
+                    tvStatus.text = "🎙️ أستمع لك الآن... تفضل يا أبو الأكبر"
                     progressBar.visibility = View.VISIBLE
+                    
+                    try {
+                        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+                        }
+                    } catch (e: Exception) {}
                 }
 
                 override fun onBeginningOfSpeech() {
@@ -655,7 +665,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 override fun onStart(utteranceId: String?) {}
 
                 override fun onDone(utteranceId: String?) {
-                    // بمجرد انتهاء نطق الرد، يتم تشغيل المايك فوراً بنسخة جديدة نظيفة!
                     runOnUiThread {
                         if (!isMicPaused) {
                             safelyRestartSpeechRecognizer()

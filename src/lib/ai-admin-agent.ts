@@ -853,6 +853,43 @@ export async function executeSuperSystemAgent(
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
   }
 
+  // 0.25 إذا ذكر اسم المحل مباشرة مع كلمة طلب (مثال: طلب من اكسسوارات ابي الخصيب أو طلب اكسسوارات)
+  if (cleanInit.startsWith("طلب من ") || cleanInit.startsWith("طلب لـ ") || cleanInit.startsWith("طلب ") || cleanInit.startsWith("سوي طلب من ")) {
+    const extractedShopQuery = cleanInit
+      .replace(/^سوي\s*طلب\s*من\s*/g, "")
+      .replace(/^طلب\s*من\s*/g, "")
+      .replace(/^طلب\s*لـ\s*/g, "")
+      .replace(/^طلب\s*/g, "")
+      .replace(/^محل\s*/g, "")
+      .trim();
+
+    if (extractedShopQuery.length >= 3) {
+      const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+      const scored = allShops.map(s => {
+        const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase();
+        let matches = 0;
+        for (let ch of extractedShopQuery) {
+          if (cleanS.includes(ch)) matches++;
+        }
+        const score = matches / Math.max(cleanS.length, extractedShopQuery.length);
+        return { shop: s, score };
+      }).sort((a, b) => b.score - a.score);
+
+      const best = scored[0];
+      if (best && best.score >= 0.45) {
+        ctx.orderDraft = {
+          step: "waiting_region",
+          shopId: best.shop.id,
+          shopName: best.shop.name
+        };
+        ctx.updatedAt = Date.now();
+        return {
+          reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`
+        };
+      }
+    }
+  }
+
   // 1. فحص الأزرار السريعة المباشرة (النقر على زر إسناد أو تحديد منطقة)
   if (rawText.startsWith("assign_order_") || rawText.startsWith("set_region_order_")) {
     // يتم معالجتها أدناه مباشرة
