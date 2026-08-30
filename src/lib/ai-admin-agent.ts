@@ -826,6 +826,47 @@ export async function executeSuperSystemAgent(
     }
   }
 
+  // 0.15 فحص إذا كانت الرسالة عبارة عن طلب كامل مباشر مقسم بأسطر (Direct Multi-Line Order Creation)
+  const lines = rawText.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
+  if (lines.length >= 3) {
+    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+
+    let matchedShop: { id: string; name: string } | null = null;
+    for (const line of lines) {
+      const cleanLine = line.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+      const scored = allShops.map(s => {
+        const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+        let score = 0;
+        if (cleanS === cleanLine || cleanLine.includes(cleanS) || cleanS.includes(cleanLine)) score = 0.9;
+        else score = calculateSimilarity(cleanS, cleanLine);
+        return { shop: s, score };
+      }).sort((a, b) => b.score - a.score);
+
+      if (scored[0] && scored[0].score >= 0.6) {
+        matchedShop = scored[0].shop;
+        break;
+      }
+    }
+
+    if (matchedShop) {
+      const initialDraft: OrderDraftState = {
+        step: "waiting_region",
+        shopId: matchedShop.id,
+        shopName: matchedShop.name
+      };
+
+      const { parseMultiFieldInput, finalizeAndCreateOrder } = await import("./ai-order-wizard");
+      const { updatedDraft, fieldsFoundCount } = await parseMultiFieldInput(rawText, initialDraft, allRegions);
+
+      if (updatedDraft.regionId && updatedDraft.price !== undefined) {
+        ctx.orderDraft = null;
+        ctx.updatedAt = Date.now();
+        return await finalizeAndCreateOrder(updatedDraft, ctx);
+      }
+    }
+  }
+
   // 0.2 بدء محادثة تفاعلية إذا قال المستخدم طلب جديد فقط بدون تفاصيل
   const cleanInit = rawText
     .replace(/[.،,؟!؟]/g, "")
