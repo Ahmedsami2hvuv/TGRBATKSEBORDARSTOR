@@ -16,15 +16,26 @@ export type OrderDraftState = {
   noteTime?: string | null;
 };
 
+function normalizeArabic(text: string): string {
+  return text
+    .replace(/أ|إ|آ/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟?]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 export async function handleOrderCreationWizard(
   userText: string,
   draft: OrderDraftState,
   ctx: { lastOrderNumber?: number | null }
 ): Promise<{ handled: boolean; reply?: string; nextDraft?: OrderDraftState | null }> {
-  const clean = userText.trim().toLowerCase();
+  const clean = normalizeArabic(userText);
 
   // 1. إلغاء إنشاء الطلب
-  if (clean === "الغاء" || clean === "إلغاء" || clean === "كنسل" || clean.includes("الغاء الطلب") || clean.includes("بطلت")) {
+  if (clean === "الغاء" || clean === "كنسل" || clean.includes("الغاء الطلب") || clean.includes("بطلت")) {
     return {
       handled: true,
       reply: "تم إلغاء إنشاء الطلب يا أبو الأكبر! تدلل وآمرني بأي شيء ثاني 🌸",
@@ -36,15 +47,27 @@ export async function handleOrderCreationWizard(
   switch (draft.step) {
     case "waiting_shop": {
       const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-      let matchedShop = allShops.find(s => clean.includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(clean));
-      if (!matchedShop && allShops.length > 0) {
-        matchedShop = allShops.find(s => userText.includes(s.name)) || allShops[0];
+      const cleanUser = clean
+        .replace(/^من\s+محل\s+/g, "")
+        .replace(/^من\s+/g, "")
+        .replace(/^محل\s+/g, "")
+        .trim();
+
+      let matchedShop = null;
+
+      // 1. تطابق كامل أو جزئي بعد تنظيف الهمزات والزوائد
+      for (const s of allShops) {
+        const cleanS = normalizeArabic(s.name);
+        if (cleanS === cleanUser || cleanUser.includes(cleanS) || cleanS.includes(cleanUser)) {
+          matchedShop = s;
+          break;
+        }
       }
 
       if (!matchedShop) {
         return {
           handled: true,
-          reply: `يا أبو الأكبر، ما لكيت محل بهذا الاسم. المحلات عندك: ${allShops.map(s => s.name).join("، ")}. من أي محل؟ 🏪`,
+          reply: `يا أبو الأكبر، ما لكيت محل باسم (${userText}). المحلات عندك: ${allShops.map(s => s.name).join("، ")}. من أي محل؟ 🏪`,
           nextDraft: draft
         };
       }
@@ -63,7 +86,26 @@ export async function handleOrderCreationWizard(
 
     case "waiting_region": {
       const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      let matchedRegion = allRegions.find(r => clean.includes(r.name.toLowerCase()) || r.name.toLowerCase().includes(clean));
+      const cleanUser = clean
+        .replace(/^الى\s+منطقة\s+/g, "")
+        .replace(/^الي\s+منطقة\s+/g, "")
+        .replace(/^الى\s+/g, "")
+        .replace(/^الي\s+/g, "")
+        .replace(/^منطقة\s+/g, "")
+        .replace(/^منطقه\s+/g, "")
+        .replace(/^لـ\s*/g, "")
+        .replace(/^لاي\s*/g, "")
+        .trim();
+
+      let matchedRegion = null;
+      for (const r of allRegions) {
+        const cleanR = normalizeArabic(r.name);
+        if (cleanR === cleanUser || cleanUser.includes(cleanR) || cleanR.includes(cleanUser)) {
+          matchedRegion = r;
+          break;
+        }
+      }
+
       if (!matchedRegion) {
         const ranked = rankRegionsByQuery(userText, allRegions as any);
         if (ranked.length > 0) matchedRegion = ranked[0];
@@ -85,7 +127,7 @@ export async function handleOrderCreationWizard(
 
     case "waiting_phone": {
       let phone: string | null = null;
-      if (!clean.includes("بدون") && !clean.includes("ماكو") && !clean.includes("لا يوجد")) {
+      if (!clean.includes("بدون") && !clean.includes("ماكو") && !clean.includes("لا يوجد") && !clean.includes("ما عنده")) {
         const phoneMatch = userText.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
         phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : userText.replace(/\D/g, "");
         if (phone.length < 5) phone = null;
@@ -103,7 +145,7 @@ export async function handleOrderCreationWizard(
     }
 
     case "waiting_type": {
-      const orderType = userText.trim() || "مسواق";
+      const orderType = userText.replace(/[.،,؟!؟]/g, "").trim() || "مسواق";
 
       return {
         handled: true,
@@ -137,7 +179,7 @@ export async function handleOrderCreationWizard(
     }
 
     case "waiting_time": {
-      const noteTime = userText.trim() || "الان";
+      const noteTime = userText.replace(/[.،,؟!؟]/g, "").trim() || "الان";
 
       // إنشاء الطلب فوراً في قاعدة بيانات سوبابيس!
       const shopId = draft.shopId!;
