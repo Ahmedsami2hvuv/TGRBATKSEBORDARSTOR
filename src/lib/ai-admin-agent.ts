@@ -139,6 +139,36 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
+  // 0.15 إلغاء إسناد طلب أو إرجاعه لحالة جديد صريحة
+  if (
+    cleanQ.includes("الغي الاسناد") ||
+    cleanQ.includes("الغي الإسناد") ||
+    cleanQ.includes("إلغاء الاسناد") ||
+    cleanQ.includes("إلغاء الإسناد") ||
+    cleanQ.includes("الغاء الاسناد") ||
+    cleanQ.includes("الغاء الإسناد") ||
+    cleanQ.includes("ارجاع للحاله") ||
+    cleanQ.includes("ارجاع للحالة") ||
+    cleanQ.includes("حتى يصير جديد") ||
+    cleanQ.includes("سوي جديد") ||
+    cleanQ.includes("رجعه جديد")
+  ) {
+    const validOrderNums = (text.match(/\b\d{3,5}\b/g) || [])
+      .map(Number)
+      .filter(n => !n.toString().startsWith("07") && !n.toString().startsWith("77"));
+    const orderNum = validOrderNums.length > 0 ? validOrderNums[0] : null;
+
+    let shopMatch = text.match(/(?:طلب|محل)\s*([أ-يa-zA-Z0-9\s]+?)(?=\s*(?:المسند|للمندوب|سوي|ارجاع|الغي|حتى)|$)/i);
+    let shopName = shopMatch ? shopMatch[1].trim() : null;
+
+    return {
+      category: "order_unassign",
+      order_number: orderNum,
+      shop_name: shopName,
+      raw_text: text
+    };
+  }
+
   // 0.2 إخفاء المندوب
   if (
     cleanQ.includes("اخفي لي المندوب") ||
@@ -953,11 +983,56 @@ export async function executeSuperSystemAgent(
         return { reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop.name}) إلى (مرفوض / ملغى)` };
       }
 
+      case "order_unassign": {
+        const { order_number, shop_name } = parsed;
+        let targetOrder = null;
+
+        if (order_number) {
+          targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
+        }
+
+        if (!targetOrder && shop_name) {
+          const allShops = await prisma.shop.findMany();
+          const { match } = findBestMatch(allShops, shop_name);
+          if (match) {
+            targetOrder = await prisma.order.findFirst({
+              where: { shopId: match.id, status: { in: ["assigned", "delivered", "pending"] } },
+              orderBy: { createdAt: "desc" },
+              include: { shop: true }
+            });
+          }
+        }
+
+        if (!targetOrder) {
+          targetOrder = await prisma.order.findFirst({
+            where: { status: "assigned" },
+            orderBy: { createdAt: "desc" },
+            include: { shop: true }
+          });
+        }
+
+        if (!targetOrder) {
+          return { reply: `يا أبو الأكبر! ما لقيت أي طلب مسند لإلغاء إسناده حالياً.` };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { assignedCourierId: null, status: "pending" },
+          include: { shop: true }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const sName = updated.shop ? updated.shop.name : "المحل";
+        return { reply: `تم يا أبو الأكبر! ألغيت إسناد طلب #${updated.orderNumber} لـ (${sName}) ورجعته لحالة (جديد) 🚀` };
+      }
+
       case "order_details": {
         const { order_number } = parsed;
         const targetOrder = await prisma.order.findUnique({
           where: { orderNumber: order_number },
-          include: { shop: true, customerRegion: true, assignedCourier: true }
+          include: { shop: true, customerRegion: true, courier: true }
         });
 
         if (!targetOrder) {
@@ -981,7 +1056,7 @@ export async function executeSuperSystemAgent(
         const regionName = targetOrder.customerRegion ? targetOrder.customerRegion.name : "غير محدد";
         const phone = targetOrder.customerPhone || "لا يوجد";
         const price = targetOrder.totalAmount ? Number(targetOrder.totalAmount) : 0;
-        const courierName = targetOrder.assignedCourier ? targetOrder.assignedCourier.name : "غير مسند بعد";
+        const courierName = targetOrder.courier ? targetOrder.courier.name : "غير مسند بعد";
 
         const allCouriers = await prisma.courier.findMany({ take: 5 });
         const buttons = allCouriers.map(c => ({
@@ -1179,6 +1254,13 @@ export async function executeSuperSystemAgent(
           if (cleanR.length >= 2 && (cleanT.includes(cleanR) || cleanR.includes(cleanT))) {
             matchedRegion = reg;
             break;
+          }
+        }
+
+        if (!matchedRegion) {
+          const ranked = rankRegionsByQuery(textForRegion, allRegions as any);
+          if (ranked.length > 0) {
+            matchedRegion = ranked[0];
           }
         }
 
