@@ -146,8 +146,8 @@ export default function ScrollytellingHero() {
         </motion.div>
 
         {/* Scroll Hint */}
-        <motion.div style={{ opacity: hintOpacity }} className="absolute bottom-[3%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[10px] z-10 pointer-events-none">
-          <motion.div animate={{ y: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }} className="w-[42px] h-[42px] flex flex-col items-center">
+        <motion.div style={{ opacity: hintOpacity }} className="absolute bottom-20 md:bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10 pointer-events-none">
+          <motion.div animate={{ y: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }} className="w-[42px] h-[42px] flex flex-col items-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-10 text-[#5FA8D3]">
               <path d="M12 5v14M12 5l-4 4M12 5l4 4"/>
               <path d="M15 16h-3c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2"/>
