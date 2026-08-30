@@ -379,13 +379,18 @@ function MandoubFullBlockCardGrid({
                       onOpenRow(o.id);
                     }
                   }}
-                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer overflow-hidden space-y-2`}
+                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer space-y-2`}
                 >
-                  {/* السطر العلوي: زر الإجراء الدائري + البلوكات المالية الملونة فوق اسم المحل + رقم الطلب والتنبيه */}
+                  {/* البلوكات المالية الملونة عائمة بشكل مستقل فوق الطرف العلوي للكرت دون أخذ أي مساحة أو مكان من العناصر */}
+                  <div className="absolute -top-3.5 right-16 z-20 pointer-events-none flex items-center gap-1 shrink-0">
+                    <MandoubCardMoneyBadges o={o} />
+                  </div>
+
+                  {/* السطر العلوي الموحد: زر الإجراء الدائري + اسم المحل إلى المنطقة + رقم الطلب والتنبيه */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 overflow-hidden whitespace-nowrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
                       {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -448,8 +453,20 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* شارات الصادر والوارد الملونة فوق اسم المحل تماماً في السطر العلوي دون مزاحمة */}
-                      <MandoubCardMoneyBadges o={o} />
+                      {/* بجانبه مباشرة بنفس السطر: اسم المحل إلى المنطقة (يتكيف خطه تلقائياً دون اقتطاع بالنقاط) */}
+                      {isDoubleRouteOrder ? (
+                        <div className={`flex items-center gap-1 flex-1 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                          <span className="text-amber-800 dark:text-amber-400 font-black shrink-0">{o.regionLine || "المرسل"}</span>
+                          <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-xs">إلى</span>
+                          <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
+                        </div>
+                      ) : (
+                        <div className={`flex items-center gap-1 flex-1 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`}>
+                          <span className="text-emerald-800 dark:text-emerald-400 font-black shrink-0">{o.shopName}</span>
+                          <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-xs">إلى</span>
+                          <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* أقصى اليسار: رقم الطلب بخط كبير بارز مع شارة تنبيه عدم وجود لوكيشن للزبون */}
@@ -467,23 +484,6 @@ function MandoubFullBlockCardGrid({
                         #{o.shortId}
                       </span>
                     </div>
-                  </div>
-
-                  {/* السطر الأوسط: اسم المحل إلى المنطقة (يتكيف خطه تلقائياً دون اقتطاع بالنقاط) */}
-                  <div className="py-0.5 min-w-0 overflow-hidden">
-                    {isDoubleRouteOrder ? (
-                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
-                        <span className="text-amber-800 dark:text-amber-400 font-black shrink-0">{o.regionLine || "المرسل"}</span>
-                        <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-xs">إلى</span>
-                        <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
-                      </div>
-                    ) : (
-                      <div className={`flex items-center gap-1.5 ${dynamicHeaderFont} font-black text-slate-900 dark:text-slate-100 min-w-0 tracking-tight whitespace-nowrap overflow-hidden`}>
-                        <span className="text-emerald-800 dark:text-emerald-400 font-black shrink-0">{o.shopName}</span>
-                        <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-xs">إلى</span>
-                        <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* سطر التفاصيل المالية والنوع والوقت بخطوط ضخمة وبارزة جداً */}
