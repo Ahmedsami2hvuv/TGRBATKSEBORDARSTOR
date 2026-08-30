@@ -42,6 +42,7 @@ import java.util.Locale
 class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var tvStatus: TextView
+    private lateinit var btnToggleChatVisibility: ImageButton
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: ImageButton
     private lateinit var btnMicToggle: ImageButton
@@ -61,6 +62,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private var isTtsMuted = false
     private var isListening = false
     private var isMicPaused = false
+    private var isChatVisible = true
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val SERVER_URL = "https://aboakbr.com/api/ai/admin-voice"
     private val PREFS_NAME = "AdminVoiceAssistantPrefs"
@@ -87,6 +89,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         setContentView(R.layout.activity_voice_assistant)
 
         tvStatus = findViewById(R.id.tvStatus)
+        btnToggleChatVisibility = findViewById(R.id.btnToggleChatVisibility)
         progressBar = findViewById(R.id.progressBar)
         btnClose = findViewById(R.id.btnClose)
         btnMicToggle = findViewById(R.id.btnMicToggle)
@@ -102,13 +105,28 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
+        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false) // الصوت مفعل افتراضياً
         updateVoiceButtonUi()
 
         textToSpeech = TextToSpeech(this, this)
 
         btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
         transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
+
+        // زر إخفاء وإظهار الدردشات
+        btnToggleChatVisibility.setOnClickListener {
+            isChatVisible = !isChatVisible
+            if (isChatVisible) {
+                chatScrollView.visibility = View.VISIBLE
+                btnToggleChatVisibility.setColorFilter(Color.WHITE)
+                Toast.makeText(this, "تم إظهار الدردشة", Toast.LENGTH_SHORT).show()
+                chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
+            } else {
+                chatScrollView.visibility = View.GONE
+                btnToggleChatVisibility.setColorFilter(Color.parseColor("#94A3B8"))
+                Toast.makeText(this, "تم إخفاء الدردشة", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         addMessageToChat(
             sender = "ai",
@@ -144,7 +162,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 textInputContainer.visibility = View.VISIBLE
                 etCommandInput.requestFocus()
                 showKeyboard()
-                chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
+                if (isChatVisible) {
+                    chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
+                }
             }
         }
 
@@ -157,8 +177,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 textToSpeech?.stop()
                 Toast.makeText(this, "🔇 تم كتم صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "🔊 تم تشغيل وتفعيل صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
-                speakOut("تم تفعيل الصوت يا أبو الأكبر!")
+                // بدون نطق أي جملة مزعجة
+                Toast.makeText(this, "🔊 تم تفعيل صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -275,8 +295,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
 
         chatMessagesContainer.addView(messageLayout)
-        chatScrollView.post {
-            chatScrollView.fullScroll(View.FOCUS_DOWN)
+        if (isChatVisible) {
+            chatScrollView.visibility = View.VISIBLE
+            chatScrollView.post {
+                chatScrollView.fullScroll(View.FOCUS_DOWN)
+            }
         }
     }
 
@@ -389,7 +412,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            // مهلة صمت مريحة ومطولة لمنع القطع أثناء التنفس والتحدث بهدوء
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
@@ -415,7 +437,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             override fun onBufferReceived(buffer: ByteArray?) {}
             
             override fun onEndOfSpeech() {
-                // لا نوقف المايك فوراً بل ننتظر مهلة هدوء للتأكد من اكتمال الجملة
                 tvStatus.text = "⚡ أستمع لك... تفضل"
             }
 
@@ -430,7 +451,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         }
                     }, 500)
                 } else if (!pendingSpeechText.isNullOrBlank()) {
-                    // إذا كان هناك نص مجمع، نرسله
                     handler.removeCallbacks(commitSpeechRunnable)
                     handler.post(commitSpeechRunnable)
                 }
@@ -444,7 +464,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         pendingSpeechText = partialText
                         tvStatus.text = "🗣️ $partialText"
                         handler.removeCallbacks(commitSpeechRunnable)
-                        handler.postDelayed(commitSpeechRunnable, 1800L) // مهلة 1.8 ثانية من الصمت قبل الإرسال
+                        handler.postDelayed(commitSpeechRunnable, 1800L)
                     }
                 }
             }
@@ -598,7 +618,20 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     private fun speakOut(text: String) {
         if (isTtsMuted) return
-        val cleanText = text.replace(Regex("[*#\\-]|https?://\\S+"), "")
+        
+        // تنظيف نقي وفائق لجميع الإيموجيات والشرحات والشرطات والرموز الخاصة
+        val cleanText = text
+            .replace(Regex("https?://\\S+"), "")
+            .replace(Regex("[*#_`~|/\\\\<>\\[\\](){}:;]"), " ")
+            .replace(Regex("-+"), " ")
+            .replace(Regex("[\\p{So}\\p{Cn}\\p{Cs}\\p{Sk}]"), " ")
+            .replace(Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF]+"), " ")
+            .replace("ألف", "الف")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        if (cleanText.isBlank()) return
+
         val params = Bundle()
         params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "ai_reply_utterance")
         textToSpeech?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, params, "ai_reply_utterance")

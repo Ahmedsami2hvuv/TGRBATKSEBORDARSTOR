@@ -28,22 +28,39 @@
         android:paddingBottom="6dp"
         android:background="@android:color/transparent">
 
-        <!-- شريط الحالة العلوي الصغير النظيف -->
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content"
+        <!-- شريط الحالة العلوي مع زر إخفاء/إظهار الدردشات -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="🎙️ المساعد الصوتي جاهز..."
-            android:textSize="11.5sp"
-            android:textStyle="bold"
-            android:textColor="#38BDF8"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:background="#220F172A"
-            android:layout_marginBottom="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎙️ المساعد الصوتي جاهز..."
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:textColor="#38BDF8"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:background="#220F172A"
+                android:layout_marginEnd="8dp" />
+
+            <ImageButton
+                android:id="@+id/btnToggleChatVisibility"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_menu_view"
+                android:tint="#FFFFFF"
+                android:background="@drawable/white_circle_black_stroke"
+                android:scaleType="centerInside"
+                android:padding="6dp" />
+        </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progressBar"
