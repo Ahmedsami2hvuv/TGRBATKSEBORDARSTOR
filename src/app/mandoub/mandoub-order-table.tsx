@@ -24,7 +24,7 @@ import { OrderDetailSection } from "./order-detail-section";
 import { MandoubOrderDetailActions } from "./mandoub-order-detail-actions";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
 import { MandoubModalContainer } from "./mandoub-modal-container";
-import { formatBaghdadDateTime } from "@/lib/baghdad-time";
+import { formatBaghdadDateTime, formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
 
 const STATUS_AR: Record<string, string> = {
@@ -288,32 +288,36 @@ function MandoubFullBlockCardGrid({
     );
   }
 
-  // تجميع الطلبات حسب اليوم (التاريخ)
-  const groupedByDate: { date: string; items: OrderTableRowData[] }[] = [];
+  // تجميع الطلبات حسب اليوم بالتاريخ البغدادي الدقيق
+  const groupedByDate: { dateKey: string; dateLabel: string; items: OrderTableRowData[] }[] = [];
   rows.forEach((row) => {
-    const d = row.dateLine || "طلبات أخرى";
+    const rawDate = row.createdAt ? (typeof row.createdAt === 'string' ? new Date(row.createdAt) : row.createdAt) : null;
+    const dateKey = rawDate ? getBaghdadDateString(rawDate) : (row.dateLine || "unknown");
+    const dateLabel = rawDate ? formatBaghdadDateFriendly(rawDate) : (row.dateLine || "طلبات أخرى");
+
     const lastGroup = groupedByDate[groupedByDate.length - 1];
-    if (lastGroup && lastGroup.date === d) {
+    if (lastGroup && lastGroup.dateKey === dateKey) {
       lastGroup.items.push(row);
     } else {
-      groupedByDate.push({ date: d, items: [row] });
+      groupedByDate.push({ dateKey, dateLabel, items: [row] });
     }
   });
 
   return (
     <div className="space-y-6 pb-12">
       {groupedByDate.map((group) => (
-        <div key={group.date} className="space-y-3">
-          {/* شريط الفاصل الزمني بين الأيام */}
-          <div className="flex items-center gap-3 pt-1">
-            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-            <div className="flex items-center gap-2 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/80 dark:bg-indigo-950/50 px-3.5 py-1.5 text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-200 shadow-xs">
-              <span>📅 {group.date}</span>
-              <span className="rounded-full bg-indigo-200 dark:bg-indigo-800 px-2 py-0.5 text-[11px] font-black text-indigo-900 dark:text-indigo-100">
+        <div key={group.dateKey} className="space-y-3">
+          {/* شريط الفاصل الزمني البارز والمميز بين الأيام باللون الأحمر العنابي */}
+          <div className="flex items-center gap-3 pt-3 pb-1">
+            <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-red-400 dark:via-red-800 to-red-600 dark:to-red-700 rounded-full" />
+            <div className="flex items-center gap-2 rounded-2xl border-2 border-red-500 dark:border-red-700 bg-gradient-to-r from-red-600 to-rose-700 px-4 py-1.5 text-xs sm:text-sm font-black text-white shadow-md">
+              <span className="text-base">📅</span>
+              <span>{group.dateLabel}</span>
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-black text-white border border-white/30 backdrop-blur-xs">
                 {group.items.length} طلب
               </span>
             </div>
-            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+            <div className="h-0.5 flex-1 bg-gradient-to-r from-red-600 dark:from-red-700 via-red-400 dark:via-red-800 to-transparent rounded-full" />
           </div>
 
           {/* قائمة الكروت التابعة لهذا اليوم (طلبية تحت الأخرى بعرض كامل ومريح) */}
