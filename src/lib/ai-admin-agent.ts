@@ -71,6 +71,55 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
+  // 0.01 التحايا والسوالف والترحيب
+  if (
+    cleanQ === "شلونك" ||
+    cleanQ === "شلونك شو اخبارك" ||
+    cleanQ === "شلونك شو أخبارك" ||
+    cleanQ === "شخبارك" ||
+    cleanQ.includes("شلونك") ||
+    cleanQ.includes("شخبارك") ||
+    cleanQ.includes("شو اخبارك") ||
+    cleanQ.includes("شو أخبارك") ||
+    cleanQ === "مرحبا" ||
+    cleanQ === "هلا" ||
+    cleanQ === "السلام عليكم" ||
+    cleanQ === "سلام عليكم" ||
+    cleanQ === "صباح الخير" ||
+    cleanQ === "مساء الخير" ||
+    cleanQ.includes("الحمد لله شلونك") ||
+    cleanQ.includes("الحمدلله شلونك")
+  ) {
+    return { category: "friendly_greeting" };
+  }
+
+  // 0.02 فئة رفض أو إلغاء الطلب الصريحة بالسياق أو برقم
+  if (
+    cleanQ === "ارفض الطلب" ||
+    cleanQ === "ارفض" ||
+    cleanQ === "ارفضه" ||
+    cleanQ === "الغي الطلب" ||
+    cleanQ === "الغيه" ||
+    cleanQ === "سوي مرفوض" ||
+    cleanQ === "سوي الطلب مرفوض" ||
+    cleanQ.includes("ارفض الطلب") ||
+    cleanQ.includes("الغي الطلب") ||
+    cleanQ.includes("رفض الطلب") ||
+    cleanQ.includes("إلغاء الطلب") ||
+    cleanQ.includes("الغاء الطلب")
+  ) {
+    const validOrderNums = (text.match(/\b\d{3,5}\b/g) || [])
+      .map(Number)
+      .filter(n => !n.toString().startsWith("07") && !n.toString().startsWith("77"));
+    const orderNum = validOrderNums.length > 0 ? validOrderNums[0] : null;
+
+    return {
+      category: "order_cancel_or_reject",
+      order_number: orderNum,
+      raw_text: text
+    };
+  }
+
   // 0.0 فئة الملخص والتقرير اليومي للأرباح والطلبات
   if (
     cleanQ.includes("انطيني ملخص اليوم") ||
@@ -1070,12 +1119,26 @@ export async function executeSuperSystemAgent(
         };
       }
 
+      case "friendly_greeting": {
+        return {
+          reply: `هلا وغلا بيك يا أبو الأكبر، نورتني يا غالي! 🌸\nأنا بخير وبأفضل حال ما دمت بخير. آمرني وتدلل، جاهز لتنفيذ أي أمر تريده فوراً! 🚀✨`
+        };
+      }
+
       case "order_cancel_or_reject": {
         const { order_number, shop_name } = parsed;
         let targetOrder = null;
 
         if (order_number) {
           targetOrder = await prisma.order.findUnique({ where: { orderNumber: order_number }, include: { shop: true } });
+        }
+
+        // إذا لم يحدد رقم طلب وكان هناك طلب مفتوح بالسياق الحي
+        if (!targetOrder && !order_number && ctx.lastOrderNumber) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: ctx.lastOrderNumber },
+            include: { shop: true }
+          });
         }
 
         if (!targetOrder && shop_name) {
