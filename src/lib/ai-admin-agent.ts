@@ -86,6 +86,31 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "daily_summary_report" };
   }
 
+  // 0.03 فئة عرض واستعلام الطلبات الجديدة (مثل: الطلبات الجديده / اريد اعرف الطلبات الجديده)
+  if (
+    cleanQ.includes("الطلبات الجديده") ||
+    cleanQ.includes("الطلبات الجديدة") ||
+    cleanQ.includes("طلبات جديدة") ||
+    cleanQ.includes("طلبات جديده") ||
+    cleanQ.includes("عرض الطلبات الجديدة") ||
+    cleanQ.includes("شكو طلبات جديدة") ||
+    cleanQ.includes("شكو طلبات جديده")
+  ) {
+    return { category: "pending_orders_list" };
+  }
+
+  // 0.04 فئة تفاصيل أحدث/آخر طلب مسجل بالنظام كلياً
+  if (
+    cleanQ.includes("اخر طلب") ||
+    cleanQ.includes("أخر طلب") ||
+    cleanQ.includes("اخر طلب دخل") ||
+    cleanQ.includes("شنو اخر طلب") ||
+    cleanQ.includes("انطيني اخر طلب") ||
+    cleanQ.includes("عرض اخر طلب")
+  ) {
+    return { category: "last_order_details" };
+  }
+
   // 0.05 أسبقية إنشاء طلب مبيعات صريحة (مثل: سوي لي طلب / سوي طلب جديد / ضيف طلب)
   if (
     cleanQ.includes("سوي لي طلب") ||
@@ -906,6 +931,77 @@ export async function executeSuperSystemAgent(
 
         return {
           reply: `يابا الطلبية رقم #${updated.orderNumber} من محل (${shopName}) إلى منطقة (${regionName}) تم تعديلها وصارت (سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName})`
+        };
+      }
+
+      case "pending_orders_list": {
+        const pendingOrders = await prisma.order.findMany({
+          where: { status: "pending" },
+          take: 5,
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true }
+        });
+
+        if (pendingOrders.length === 0) {
+          return { reply: `يا أبو الأكبر! لا تتوفر أي طلبات جديدة بحالة (pending) حالياً في النظام. 🎉` };
+        }
+
+        const countAll = await prisma.order.count({ where: { status: "pending" } });
+        let replyText = `📋 **الطلبات الجديدة المعلقة حالياً (${countAll} طلبات):**\n\n`;
+        const buttons: { text: string; action: string }[] = [];
+
+        pendingOrders.forEach((ord, index) => {
+          const sName = ord.shop ? ord.shop.name : "غير محدد";
+          const rName = ord.customerRegion ? ord.customerRegion.name : "غير محددة";
+          const total = ord.totalAmount ? Number(ord.totalAmount) : 0;
+          replyText += `${index + 1}. **طلب #${ord.orderNumber}** | المحل: **${sName}** | المنطقة: **${rName}** | المبلغ: **${total} ألف**\n`;
+          buttons.push({
+            text: `🔎 تفاصيل طلب #${ord.orderNumber}`,
+            action: `order_details_${ord.orderNumber}`
+          });
+        });
+
+        return { reply: replyText, buttons: buttons.slice(0, 5) };
+      }
+
+      case "last_order_details": {
+        const latestOrder = await prisma.order.findFirst({
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true, courier: true }
+        });
+
+        if (!latestOrder) {
+          return { reply: `يا أبو الأكبر! لا تتوفر أي طلبات مسجلة في قاعدة البيانات حالياً.` };
+        }
+
+        ctx.lastOrderNumber = latestOrder.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const statusArMap: Record<string, string> = {
+          pending: "جديد",
+          assigned: "مسند",
+          delivered: "مستلم",
+          completed: "مسلم",
+          rejected: "مرفوض",
+          archived: "مؤرشف"
+        };
+        const statusAr = statusArMap[latestOrder.status] || latestOrder.status;
+
+        const shopName = latestOrder.shop ? latestOrder.shop.name : "غير محدد";
+        const regionName = latestOrder.customerRegion ? latestOrder.customerRegion.name : "غير محددة";
+        const phone = latestOrder.customerPhone || "لا يوجد";
+        const price = latestOrder.totalAmount ? Number(latestOrder.totalAmount) : 0;
+        const courierName = latestOrder.courier ? latestOrder.courier.name : "غير مسند بعد";
+
+        const allCouriers = await prisma.courier.findMany({ take: 5 });
+        const buttons = allCouriers.map(c => ({
+          text: `🛵 إسناد لـ كابتن: ${c.name}`,
+          action: `assign_order_${latestOrder.id}_courier_${c.id}`
+        }));
+
+        return {
+          reply: `📌 **تفاصيل أحدث / آخر طلب في النظام يا أبو الأكبر:**\n🔹 **طلب رقم:** #${latestOrder.orderNumber}\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📞 **الهاتف:** ${phone} | 💰 **المبلغ:** ${price} ألف\n📊 **الحالة:** (${statusAr}) | 🛵 **المندوب:** ${courierName}\n\n👇 **اختر الكابتن للإسناد المباشر بالنقر أدناه:**`,
+          buttons: buttons
         };
       }
 
