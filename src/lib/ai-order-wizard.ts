@@ -27,11 +27,41 @@ function normalizeArabic(text: string): string {
     .toLowerCase();
 }
 
+function calculateSimilarity(s1: string, s2: string): number {
+  const longer = s1.length >= s2.length ? s1 : s2;
+  const shorter = s1.length < s2.length ? s1 : s2;
+  if (longer.length === 0) return 1.0;
+
+  // فحص الاحتواء المباشر
+  if (longer.includes(shorter)) return 0.85;
+
+  // حساب مسافة Levenshtein البسيطة
+  const costs: number[] = [];
+  for (let i = 0; i <= longer.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= shorter.length; j++) {
+      if (i === 0) costs[j] = j;
+      else {
+        if (j > 0) {
+          let newValue = costs[j - 1];
+          if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          }
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+    }
+    if (i > 0) costs[shorter.length] = lastValue;
+  }
+  return (longer.length - costs[shorter.length]) / longer.length;
+}
+
 export async function handleOrderCreationWizard(
   userText: string,
   draft: OrderDraftState,
   ctx: { lastOrderNumber?: number | null }
-): Promise<{ handled: boolean; reply?: string; nextDraft?: OrderDraftState | null }> {
+): Promise<{ handled: boolean; reply?: string; buttons?: Array<{ text: string; action: string }>; nextDraft?: OrderDraftState | null }> {
   const clean = normalizeArabic(userText);
 
   // 1. إلغاء إنشاء الطلب
@@ -53,34 +83,43 @@ export async function handleOrderCreationWizard(
         .replace(/^محل\s+/g, "")
         .trim();
 
-      let matchedShop = null;
-
-      // 1. تطابق كامل أو جزئي بعد تنظيف الهمزات والزوائد
-      for (const s of allShops) {
+      // حساب التشابه مع كل المحلات وترتيبها
+      const scoredShops = allShops.map(s => {
         const cleanS = normalizeArabic(s.name);
-        if (cleanS === cleanUser || cleanUser.includes(cleanS) || cleanS.includes(cleanUser)) {
-          matchedShop = s;
-          break;
-        }
-      }
+        let score = calculateSimilarity(cleanS, cleanUser);
+        if (cleanS === cleanUser) score = 1.0;
+        else if (cleanUser.includes(cleanS) || cleanS.includes(cleanUser)) score = 0.9;
+        return { shop: s, score };
+      }).sort((a, b) => b.score - a.score);
 
-      if (!matchedShop) {
+      const best = scoredShops[0];
+
+      // إذا كان التشابه قوي جداً (أكثر من 65%)
+      if (best && best.score >= 0.6) {
         return {
           handled: true,
-          reply: `يا أبو الأكبر، ما لكيت محل باسم (${userText}). المحلات عندك: ${allShops.map(s => s.name).join("، ")}. من أي محل؟ 🏪`,
-          nextDraft: draft
+          reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`,
+          nextDraft: {
+            ...draft,
+            step: "waiting_region",
+            shopId: best.shop.id,
+            shopName: best.shop.name
+          }
         };
       }
 
+      // إذا كان التشابه متوسط، نقترح عليه أقرب 3 محلات
+      const topSuggestions = scoredShops.slice(0, 3).map(s => s.shop);
+      const buttons = topSuggestions.map(s => ({
+        text: `🏪 ${s.name}`,
+        action: s.name
+      }));
+
       return {
         handled: true,
-        reply: `تمام يا غالي (${matchedShop.name})! لأي منطقة الطلب؟ 📍`,
-        nextDraft: {
-          ...draft,
-          step: "waiting_region",
-          shopId: matchedShop.id,
-          shopName: matchedShop.name
-        }
+        reply: `يا أبو الأكبر، قصدك أي محل من هذولي؟ 👇`,
+        buttons: buttons,
+        nextDraft: draft
       };
     }
 
@@ -97,31 +136,45 @@ export async function handleOrderCreationWizard(
         .replace(/^لاي\s*/g, "")
         .trim();
 
-      let matchedRegion = null;
-      for (const r of allRegions) {
-        const cleanR = normalizeArabic(r.name);
-        if (cleanR === cleanUser || cleanUser.includes(cleanR) || cleanR.includes(cleanUser)) {
-          matchedRegion = r;
-          break;
+      // ترتيب المناطق بالبحث الذكي والتشابه الإملائي
+      const ranked = rankRegionsByQuery(userText, allRegions as any);
+      let matchedRegion = ranked.length > 0 ? ranked[0] : null;
+
+      if (!matchedRegion) {
+        const scored = allRegions.map(r => ({
+          region: r,
+          score: calculateSimilarity(normalizeArabic(r.name), cleanUser)
+        })).sort((a, b) => b.score - a.score);
+
+        if (scored[0] && scored[0].score >= 0.5) {
+          matchedRegion = scored[0].region;
         }
       }
 
-      if (!matchedRegion) {
-        const ranked = rankRegionsByQuery(userText, allRegions as any);
-        if (ranked.length > 0) matchedRegion = ranked[0];
+      if (matchedRegion) {
+        return {
+          handled: true,
+          reply: `حلو (${matchedRegion.name})! انطيني رقم هاتف الزبون 📞 (أو اكتب "بدون رقم")`,
+          nextDraft: {
+            ...draft,
+            step: "waiting_phone",
+            regionId: matchedRegion.id,
+            regionName: matchedRegion.name
+          }
+        };
       }
 
-      const regionTitle = matchedRegion ? matchedRegion.name : userText;
+      const topRegions = allRegions.slice(0, 4);
+      const buttons = topRegions.map(r => ({
+        text: `📍 ${r.name}`,
+        action: r.name
+      }));
 
       return {
         handled: true,
-        reply: `حلو (${regionTitle})! انطيني رقم هاتف الزبون 📞 (أو اكتب "بدون رقم")`,
-        nextDraft: {
-          ...draft,
-          step: "waiting_phone",
-          regionId: matchedRegion?.id || null,
-          regionName: regionTitle
-        }
+        reply: `يا أبو الأكبر، ما لكيت هذه المنطقة بالضبط، قصدك أي منطقة؟ 👇`,
+        buttons: buttons,
+        nextDraft: draft
       };
     }
 

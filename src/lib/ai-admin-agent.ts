@@ -815,7 +815,7 @@ export async function executeSuperSystemAgent(
     if (wizardRes.handled) {
       ctx.orderDraft = wizardRes.nextDraft || null;
       ctx.updatedAt = Date.now();
-      return { reply: wizardRes.reply! };
+      return { reply: wizardRes.reply!, buttons: wizardRes.buttons };
     }
   }
 
