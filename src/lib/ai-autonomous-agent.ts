@@ -3,14 +3,14 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "./arabic-region-search";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
-import { getActiveGeminiKeys, markGeminiKeyError, markGeminiKeySuccess } from "./gemini-key-manager";
+import { getAllActiveGeminiKeys, markGeminiKeyError, markGeminiKeySuccess } from "./gemini-pool";
 
 export async function executeAutonomousAiCommand(
   userText: string,
   ctx: { lastOrderNumber?: number | null; orderDraft?: any | null }
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> } | null> {
   try {
-    const keys = await getActiveGeminiKeys();
+    const keys = await getAllActiveGeminiKeys();
     if (!keys || keys.length === 0) return null;
 
     // جلب البيانات الحية من سوبابيس لتزويد الذكاء بالسياق الحقيقي
@@ -239,7 +239,6 @@ export async function executeAutonomousAiCommand(
             include: { shop: true, customerRegion: true, courier: true }
           });
         } else if (plan.shop_name) {
-          // البحث باسم المحل والحالة المذكورة
           let whereClause: any = {
             shop: { name: { contains: plan.shop_name, mode: "insensitive" } }
           };
@@ -279,13 +278,10 @@ export async function executeAutonomousAiCommand(
         else if (targetOrder.status === "delivered" || targetOrder.status === "completed") statusArabic = "واصل ومسلم";
         else if (targetOrder.status === "archived") statusArabic = "مؤرشف";
 
-        // تنسيق تفاصيل الطلب البسيط والمباشر حسب طلب أبو الأكبر حرفياً:
         const replyText = `تفاصيل الطلب:\n${targetOrder.orderNumber}\n${shopName}\n${regionName}\n${phone}\n${subtotal}\n${oType}\n${nTime}\n${statusArabic}`;
 
-        // توليد الأزرار الذكية التفاعلية
         const buttons: Array<{ text: string; action: string }> = [];
 
-        // أزرار الاتصال والواتساب
         if (targetOrder.customerPhone && targetOrder.customerPhone.replace(/\D/g, "").length >= 7) {
           const rawDigits = targetOrder.customerPhone.replace(/\D/g, "");
           const cleanPhone = rawDigits.startsWith("0") ? "964" + rawDigits.slice(1) : (rawDigits.startsWith("964") ? rawDigits : "964" + rawDigits);
@@ -293,7 +289,6 @@ export async function executeAutonomousAiCommand(
           buttons.push({ text: `💬 مراسلة واتساب`, action: `https://wa.me/${cleanPhone}` });
         }
 
-        // أزرار الحالة الذكية حسب وضع الطلب
         if (targetOrder.status === "pending") {
           buttons.push({ text: `🛵 إسناد لمندوب`, action: `إسناد طلب ${targetOrder.orderNumber}` });
           buttons.push({ text: `❌ إلغاء الطلب`, action: `إلغاء طلب ${targetOrder.orderNumber}` });
@@ -341,7 +336,6 @@ export async function executeAutonomousAiCommand(
 
         let courier = allCouriers.find(c => plan.courier_name && c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
         if (!courier && allCouriers.length > 0) {
-          // إذا لم يحدد المندوب، نعرض قائمة المندوبين كأزرار سريعة
           const buttons = allCouriers.slice(0, 5).map(c => ({
             text: `🛵 ${c.name}`,
             action: `اسند طلب ${targetOrder!.orderNumber} للمندوب ${c.name}`
@@ -553,7 +547,6 @@ export async function executeAutonomousAiCommand(
           const regionName = o.customerRegion?.name || "غير محددة";
           const subtotal = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
           replyText += `${idx + 1}. **طلب #${o.orderNumber}** | المحل: **${shopName}** | المنطقة: **${regionName}** | المبلغ: **${subtotal} ألف**\n`;
-          // إزالة علامة # من الأكشن لتجنب أي تعارض
           buttons.push({ text: `🔎 تفاصيل طلب ${o.orderNumber}`, action: `تفاصيل طلب ${o.orderNumber}` });
         });
 
@@ -601,3 +594,6 @@ export async function executeAutonomousAiCommand(
     return null;
   }
 }
+
+// تصدير الاسم البديل لضمان التوافق مع أي استيراد في المشروع
+export const executeAutonomousGeminiAgent = executeAutonomousAiCommand;
