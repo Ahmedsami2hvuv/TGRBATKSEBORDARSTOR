@@ -301,11 +301,17 @@ function parseCustomSystemIntent(userText: string): any {
   }
 
   // 0.4 تعديل تفاصيل الطلب النشط المفتوح حالياً
-  const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل") || cleanQ.includes("تعديل");
+  const hasEditFieldWord = cleanQ.includes("سعر") || cleanQ.includes("رقم") || cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("توصيل") || cleanQ.includes("تعديل") || cleanQ.includes("نوع") || cleanQ.includes("النوع");
   if (
     cleanQ.includes("عدل") ||
     cleanQ.includes("تعديل") ||
     cleanQ.includes("سوي تعديل") ||
+    cleanQ.includes("نوع الطلب") ||
+    cleanQ.includes("عدل نوع") ||
+    cleanQ.includes("غير نوع") ||
+    cleanQ.includes("بدل نوع") ||
+    cleanQ.includes("سوي النوع") ||
+    cleanQ.includes("سوي نوع") ||
     cleanQ.includes("سوي المنطقة") ||
     cleanQ.includes("سوي المنطقه") ||
     cleanQ.includes("عدل الرقم") ||
@@ -323,7 +329,8 @@ function parseCustomSystemIntent(userText: string): any {
     const explicitOrderNum = explicitOrderMatch ? Number(explicitOrderMatch[1]) : null;
 
     let fieldToEdit = "subtotal";
-    if ((cleanQ.includes("رقم") || cleanQ.includes("هاتف")) && !cleanQ.includes("سعر")) fieldToEdit = "phone";
+    if (cleanQ.includes("نوع") || cleanQ.includes("النوع")) fieldToEdit = "order_type";
+    else if ((cleanQ.includes("رقم") || cleanQ.includes("هاتف")) && !cleanQ.includes("سعر")) fieldToEdit = "phone";
     else if (cleanQ.includes("سعر التوصيل") || cleanQ.includes("توصيل")) fieldToEdit = "delivery_price";
     else if (cleanQ.includes("منطقه") || cleanQ.includes("منطقة") || cleanQ.includes("المنطقه") || cleanQ.includes("المنطقة")) fieldToEdit = "region";
     else if (cleanQ.includes("سعر")) fieldToEdit = "subtotal";
@@ -967,13 +974,25 @@ export async function executeSuperSystemAgent(
           return { reply: `يا أبو الأكبر، ما أعرف أي طلب تقصد. اذكرلي رقم الطلب صراحة (مثلاً: "رقم 231").` };
         }
 
-        if (number_val === null && field !== "region" && field !== "phone") {
+        if (number_val === null && field !== "region" && field !== "phone" && field !== "order_type") {
           return { reply: `يا أبو الأكبر، ما لكيت رقم واضح بالرسالة أعدل بيه. اكتب القيمة الجديدة بوضوح.` };
         }
 
         let updateData: any = {};
 
-        if (field === "phone") {
+        if (field === "order_type") {
+          let newType = "مسواق";
+          const cleanT = raw_text.toLowerCase();
+          if (cleanT.includes("مسواق") || cleanT.includes("مسواك") || cleanT.includes("تسوق")) newType = "مسواق";
+          else if (cleanT.includes("روبيان") || cleanT.includes("سمك")) newType = "روبيان";
+          else if (cleanT.includes("ورد") || cleanT.includes("زهور")) newType = "ورد";
+          else if (cleanT.includes("كيك") || cleanT.includes("حلويات")) newType = "حلويات";
+          else if (cleanT.includes("طعام") || cleanT.includes("مطعم") || cleanT.includes("اكل")) newType = "طعام";
+          else if (cleanT.includes("اقمشه") || cleanT.includes("أقمشة") || cleanT.includes("قماش") || cleanT.includes("ملابس") || cleanT.includes("ازياء")) newType = "اقمشه";
+          else if (cleanT.includes("مواد") || cleanT.includes("منزلية") || cleanT.includes("منزليه")) newType = "مواد منزلية";
+
+          updateData.orderType = newType;
+        } else if (field === "phone") {
           const phoneMatch = raw_text.match(/(?:\+964|0)?7[3-9][\d\s]{7,12}\d/);
           if (!phoneMatch) {
             return { reply: `يا أبو الأكبر، ما لكيت رقم هاتف واضح بالرسالة.` };
@@ -1016,7 +1035,7 @@ export async function executeSuperSystemAgent(
         const updated = await prisma.order.update({
           where: { id: targetOrder.id },
           data: updateData,
-          include: { shop: true, customerRegion: true, assignedCourier: true }
+          include: { shop: true, customerRegion: true, courier: true }
         });
 
         ctx.lastOrderNumber = updated.orderNumber;
@@ -1024,12 +1043,13 @@ export async function executeSuperSystemAgent(
 
         const shopName = updated.shop ? updated.shop.name : "المحل";
         const regionName = updated.customerRegion ? updated.customerRegion.name : "غير محددة";
-        const courierName = updated.assignedCourier ? updated.assignedCourier.name : "غير مسند";
+        const courierName = updated.courier ? updated.courier.name : "غير مسند";
         const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
         const deliveryVal = updated.deliveryPrice ? Number(updated.deliveryPrice) : 0;
+        const currentType = updated.orderType || "غير محدد";
 
         return {
-          reply: `يابا الطلبية رقم #${updated.orderNumber} من محل (${shopName}) إلى منطقة (${regionName}) تم تعديلها وصارت (سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName})`
+          reply: `يابا الطلبية رقم #${updated.orderNumber} لـ (${shopName}) تم تعديلها وصارت (النوع: ${currentType} | المنطقة: ${regionName} | سعر الطلب: ${subtotalVal} ألف | سعر التوصيل: ${deliveryVal} ألف | المندوب: ${courierName}) 🚀`
         };
       }
 
