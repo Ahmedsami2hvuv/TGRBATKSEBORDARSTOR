@@ -86,6 +86,27 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "daily_summary_report" };
   }
 
+  // 0.05 أسبقية إنشاء طلب مبيعات صريحة (مثل: سوي لي طلب / سوي طلب جديد / ضيف طلب)
+  if (
+    cleanQ.includes("سوي لي طلب") ||
+    cleanQ.includes("سوي طلب") ||
+    cleanQ.includes("سويلي طلب") ||
+    cleanQ.includes("طلب جديد") ||
+    cleanQ.includes("ضيف طلب") ||
+    cleanQ.includes("ضيفلي طلب") ||
+    cleanQ.includes("انشئ طلب") ||
+    cleanQ.includes("انشئ لي طلب")
+  ) {
+    let phoneMatch = text.match(/(?:07\d{9}|07\d{2}\s*\d{7,8}|\d{10,11})/);
+    let phone = phoneMatch ? phoneMatch[0].replace(/\s+/g, "") : null;
+
+    return {
+      category: "order_create",
+      raw_query: text,
+      phone: phone
+    };
+  }
+
   // 0.1 فئة الإسناد الديناميكي المبعثر المتقدم للطلبات
   if (
     cleanQ.includes("اسناد") ||
@@ -232,8 +253,10 @@ function parseCustomSystemIntent(userText: string): any {
   }
 
   // 0.60 الالتقاط التلقائي الشامل لأي رقم طلب ومعه أي لفظ حالة (مثل: طلب رقم 2054 سوي مرفوض / طلب 2042 حوله إلى مرفوض / 2042 مرفوض)
-  const orderNumMatchGeneral = text.match(/\b\d{3,5}\b/);
-  const orderNumGeneral = orderNumMatchGeneral ? Number(orderNumMatchGeneral[0]) : null;
+  const validOrderNums = (text.match(/\b\d{3,5}\b/g) || [])
+    .map(Number)
+    .filter(n => !n.toString().startsWith("07") && !n.toString().startsWith("77") && !n.toString().startsWith("773"));
+  const orderNumGeneral = validOrderNums.length > 0 ? validOrderNums[0] : null;
 
   if (
     orderNumGeneral &&
