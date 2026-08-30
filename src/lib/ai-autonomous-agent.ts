@@ -158,7 +158,35 @@ export async function executeAutonomousGeminiAgent(
     // التنفيذ الفوري في قاعدة البيانات حسب خطة الذكاء الاصطناعي:
     switch (plan.action) {
       case "CREATE_ORDER": {
-        let shop = allShops.find(s => plan.shop_name && s.name.toLowerCase().includes(plan.shop_name.toLowerCase())) || allShops[0];
+        const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+        const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+
+        const cleanShopQuery = (plan.shop_name || "")
+          .replace(/^من\s+محل\s+/g, "")
+          .replace(/^من\s+/g, "")
+          .replace(/^محل\s+/g, "")
+          .trim()
+          .toLowerCase();
+
+        // 1. حساب أفضل مطابقة للمحل بنسبة التشابه
+        const scoredShops = allShops.map(s => {
+          const sName = s.name.toLowerCase();
+          let score = 0;
+          if (cleanShopQuery && (sName.includes(cleanShopQuery) || cleanShopQuery.includes(sName))) score = 0.9;
+          else if (cleanShopQuery) {
+            // فحص تشابه الحروف
+            let matches = 0;
+            for (let ch of cleanShopQuery) {
+              if (sName.includes(ch)) matches++;
+            }
+            score = matches / Math.max(sName.length, cleanShopQuery.length);
+          }
+          return { shop: s, score };
+        }).sort((a, b) => b.score - a.score);
+
+        let shop = scoredShops.length > 0 && scoredShops[0].score >= 0.55 ? scoredShops[0].shop : null;
+
+        // 2. مطابقة المنطقة
         let region = allRegions.find(r => plan.region_name && r.name.toLowerCase().includes(plan.region_name.toLowerCase())) || null;
         if (!region && plan.region_name) {
           const ranked = rankRegionsByQuery(plan.region_name, allRegions as any);
@@ -168,9 +196,37 @@ export async function executeAutonomousGeminiAgent(
         const subtotal = Number(plan.price || 0);
         const delivery = region ? Number(region.deliveryPrice) : 0;
         const total = subtotal + delivery;
-        const oType = plan.order_type || "غير محدد";
+        const oType = plan.order_type || "مسواق";
         const nTime = plan.note_time || "الان";
 
+        // إذا كان المحل غير معروف، نحفظ باقي البيانات ونسأله عن المحل فقط ونقترح أقرب المحلات!
+        if (!shop) {
+          ctx.orderDraft = {
+            step: "waiting_shop",
+            regionId: region?.id || null,
+            regionName: region ? region.name : plan.region_name,
+            phone: plan.phone || null,
+            orderType: oType,
+            price: subtotal,
+            noteTime: nTime
+          };
+
+          const topShops = scoredShops.slice(0, 4).map(s => s.shop);
+          const buttons = topShops.map(s => ({
+            text: `🏪 ${s.name}`,
+            action: s.name
+          }));
+
+          const regionText = region ? region.name : (plan.region_name || "غير محددة");
+          const phoneText = plan.phone ? plan.phone : "بدون رقم";
+
+          return {
+            reply: `يا أبو الأكبر، حفظت تفاصيل الطلب (إلى ${regionText} | هاتف: ${phoneText} | سعر: ${subtotal} ألف | نوع: ${oType})، بس اسم المحل (${plan.shop_name || "المذكور"}) بيه خطأ أو مو مسجل. قصدك أي محل من هذولي؟ 👇`,
+            buttons: buttons
+          };
+        }
+
+        // إذا كان المحل معروف، ننشئ الطلب فوراً!
         const newOrder = await prisma.order.create({
           data: {
             shopId: shop.id,
@@ -190,6 +246,7 @@ export async function executeAutonomousGeminiAgent(
         pushNotifyAdminsNewPendingOrder(newOrder.orderNumber).catch(() => {});
 
         ctx.lastOrderNumber = newOrder.orderNumber;
+        ctx.orderDraft = null;
 
         return {
           reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${newOrder.orderNumber} لـ (${shop.name}) إلى (${region ? region.name : "غير محددة"}) | نوع: ${oType} | وقت: ${nTime} | السعر: ${subtotal} ألف (المجموع: ${total} ألف) 🚀`

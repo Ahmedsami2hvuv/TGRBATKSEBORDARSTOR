@@ -27,15 +27,13 @@ function normalizeArabic(text: string): string {
     .toLowerCase();
 }
 
-function calculateSimilarity(s1: string, s2: string): number {
+export function calculateSimilarity(s1: string, s2: string): number {
   const longer = s1.length >= s2.length ? s1 : s2;
   const shorter = s1.length < s2.length ? s1 : s2;
   if (longer.length === 0) return 1.0;
 
-  // فحص الاحتواء المباشر
   if (longer.includes(shorter)) return 0.85;
 
-  // حساب مسافة Levenshtein البسيطة
   const costs: number[] = [];
   for (let i = 0; i <= longer.length; i++) {
     let lastValue = i;
@@ -55,6 +53,50 @@ function calculateSimilarity(s1: string, s2: string): number {
     if (i > 0) costs[shorter.length] = lastValue;
   }
   return (longer.length - costs[shorter.length]) / longer.length;
+}
+
+export async function finalizeAndCreateOrder(
+  draft: OrderDraftState,
+  ctx: { lastOrderNumber?: number | null }
+): Promise<{ handled: boolean; reply: string; nextDraft: null }> {
+  const shopId = draft.shopId!;
+  const subtotal = draft.price || 0;
+
+  let deliveryPriceNum = 0;
+  if (draft.regionId) {
+    const reg = await prisma.region.findUnique({ where: { id: draft.regionId } });
+    if (reg?.deliveryPrice) deliveryPriceNum = Number(reg.deliveryPrice);
+  }
+
+  const totalNum = subtotal + deliveryPriceNum;
+  const oType = draft.orderType || "مسواق";
+  const nTime = draft.noteTime || "الان";
+
+  const order = await prisma.order.create({
+    data: {
+      shopId: shopId,
+      status: "pending",
+      orderType: oType,
+      orderNoteTime: nTime,
+      customerRegionId: draft.regionId || null,
+      customerPhone: draft.phone || null,
+      orderSubtotal: new Decimal(subtotal),
+      deliveryPrice: new Decimal(deliveryPriceNum),
+      totalAmount: new Decimal(totalNum),
+      submissionSource: "admin_ai_assistant"
+    }
+  });
+
+  notifyTelegramNewOrder(order.id).catch(() => {});
+  pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+  ctx.lastOrderNumber = order.orderNumber;
+
+  return {
+    handled: true,
+    reply: `تم يا أبو الأكبر! أنشأت الطلب بنجاح #${order.orderNumber} 🎉\n🏪 **المحل:** ${draft.shopName} | 📍 **المنطقة:** ${draft.regionName || "غير محددة"}\n📞 **الهاتف:** ${draft.phone || "بدون رقم"} | 📦 **النوع:** ${oType}\n💰 **السعر:** ${subtotal} ألف (المجموع: ${totalNum} ألف) | ⏰ **الوقت:** ${nTime} 🚀`,
+    nextDraft: null
+  };
 }
 
 export async function handleOrderCreationWizard(
@@ -83,7 +125,6 @@ export async function handleOrderCreationWizard(
         .replace(/^محل\s+/g, "")
         .trim();
 
-      // حساب التشابه مع كل المحلات وترتيبها
       const scoredShops = allShops.map(s => {
         const cleanS = normalizeArabic(s.name);
         let score = calculateSimilarity(cleanS, cleanUser);
@@ -94,21 +135,28 @@ export async function handleOrderCreationWizard(
 
       const best = scoredShops[0];
 
-      // إذا كان التشابه قوي جداً (أكثر من 65%)
-      if (best && best.score >= 0.6) {
+      if (best && best.score >= 0.55) {
+        const updatedDraft: OrderDraftState = {
+          ...draft,
+          shopId: best.shop.id,
+          shopName: best.shop.name
+        };
+
+        // إذا كانت باقي بيانات الطلب محددة مسبقاً، ننشئ الطلب فوراً!
+        if (updatedDraft.price !== undefined && updatedDraft.orderType) {
+          return await finalizeAndCreateOrder(updatedDraft, ctx);
+        }
+
         return {
           handled: true,
           reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`,
           nextDraft: {
-            ...draft,
-            step: "waiting_region",
-            shopId: best.shop.id,
-            shopName: best.shop.name
+            ...updatedDraft,
+            step: "waiting_region"
           }
         };
       }
 
-      // إذا كان التشابه متوسط، نقترح عليه أقرب 3 محلات
       const topSuggestions = scoredShops.slice(0, 3).map(s => s.shop);
       const buttons = topSuggestions.map(s => ({
         text: `🏪 ${s.name}`,
@@ -136,7 +184,6 @@ export async function handleOrderCreationWizard(
         .replace(/^لاي\s*/g, "")
         .trim();
 
-      // ترتيب المناطق بالبحث الذكي والتشابه الإملائي
       const ranked = rankRegionsByQuery(userText, allRegions as any);
       let matchedRegion = ranked.length > 0 ? ranked[0] : null;
 
@@ -152,14 +199,22 @@ export async function handleOrderCreationWizard(
       }
 
       if (matchedRegion) {
+        const updatedDraft: OrderDraftState = {
+          ...draft,
+          regionId: matchedRegion.id,
+          regionName: matchedRegion.name
+        };
+
+        if (updatedDraft.shopId && updatedDraft.price !== undefined && updatedDraft.orderType) {
+          return await finalizeAndCreateOrder(updatedDraft, ctx);
+        }
+
         return {
           handled: true,
           reply: `حلو (${matchedRegion.name})! انطيني رقم هاتف الزبون 📞 (أو اكتب "بدون رقم")`,
           nextDraft: {
-            ...draft,
-            step: "waiting_phone",
-            regionId: matchedRegion.id,
-            regionName: matchedRegion.name
+            ...updatedDraft,
+            step: "waiting_phone"
           }
         };
       }
@@ -186,27 +241,42 @@ export async function handleOrderCreationWizard(
         if (phone.length < 5) phone = null;
       }
 
+      const updatedDraft: OrderDraftState = {
+        ...draft,
+        phone: phone
+      };
+
+      if (updatedDraft.shopId && updatedDraft.price !== undefined && updatedDraft.orderType) {
+        return await finalizeAndCreateOrder(updatedDraft, ctx);
+      }
+
       return {
         handled: true,
         reply: `تمام! شنو نوع أو محتوى الطلبية؟ (مثلاً: سمك، روبيان، مسواق، حلويات، ورد، اقمشة، طعام) 📦`,
         nextDraft: {
-          ...draft,
-          step: "waiting_type",
-          phone: phone
+          ...updatedDraft,
+          step: "waiting_type"
         }
       };
     }
 
     case "waiting_type": {
       const orderType = userText.replace(/[.،,؟!؟]/g, "").trim() || "مسواق";
+      const updatedDraft: OrderDraftState = {
+        ...draft,
+        orderType: orderType
+      };
+
+      if (updatedDraft.shopId && updatedDraft.price !== undefined) {
+        return await finalizeAndCreateOrder(updatedDraft, ctx);
+      }
 
       return {
         handled: true,
         reply: `عاشت إيدك (${orderType})! شكد سعر الطلب؟ (مثلاً: 10 أو 15 أو 0) 💰`,
         nextDraft: {
-          ...draft,
-          step: "waiting_price",
-          orderType: orderType
+          ...updatedDraft,
+          step: "waiting_price"
         }
       };
     }
@@ -220,57 +290,33 @@ export async function handleOrderCreationWizard(
         price = 0;
       }
 
+      const updatedDraft: OrderDraftState = {
+        ...draft,
+        price: price
+      };
+
+      if (updatedDraft.shopId && updatedDraft.orderType && updatedDraft.noteTime) {
+        return await finalizeAndCreateOrder(updatedDraft, ctx);
+      }
+
       return {
         handled: true,
         reply: `ممتاز! شوكت وقت التوصيل المطلوب؟ (مثلاً: الآن، ب4 العصر، مغرباً) ⏰`,
         nextDraft: {
-          ...draft,
-          step: "waiting_time",
-          price: price
+          ...updatedDraft,
+          step: "waiting_time"
         }
       };
     }
 
     case "waiting_time": {
       const noteTime = userText.replace(/[.،,؟!؟]/g, "").trim() || "الان";
-
-      // إنشاء الطلب فوراً في قاعدة بيانات سوبابيس!
-      const shopId = draft.shopId!;
-      const subtotal = draft.price || 0;
-
-      let deliveryPriceNum = 0;
-      if (draft.regionId) {
-        const reg = await prisma.region.findUnique({ where: { id: draft.regionId } });
-        if (reg?.deliveryPrice) deliveryPriceNum = Number(reg.deliveryPrice);
-      }
-
-      const totalNum = subtotal + deliveryPriceNum;
-
-      const order = await prisma.order.create({
-        data: {
-          shopId: shopId,
-          status: "pending",
-          orderType: draft.orderType || "مسواق",
-          orderNoteTime: noteTime,
-          customerRegionId: draft.regionId || null,
-          customerPhone: draft.phone || null,
-          orderSubtotal: new Decimal(subtotal),
-          deliveryPrice: new Decimal(deliveryPriceNum),
-          totalAmount: new Decimal(totalNum),
-          submissionSource: "admin_ai_assistant"
-        }
-      });
-
-      notifyTelegramNewOrder(order.id).catch(() => {});
-      pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-      ctx.lastOrderNumber = order.orderNumber;
-
-      return {
-        handled: true,
-        reply: `تم يا أبو الأكبر! أنشأت الطلب بنجاح #${order.orderNumber} 🎉\n🏪 **المحل:** ${draft.shopName} | 📍 **المنطقة:** ${draft.regionName || "غير محددة"}\n📞 **الهاتف:** ${draft.phone || "بدون رقم"} | 📦 **النوع:** ${draft.orderType}\n💰 **السعر:** ${subtotal} ألف (المجموع: ${totalNum} ألف) | ⏰ **الوقت:** ${noteTime} 🚀`,
-        nextDraft: null
+      const updatedDraft: OrderDraftState = {
+        ...draft,
+        noteTime: noteTime
       };
+
+      return await finalizeAndCreateOrder(updatedDraft, ctx);
     }
 
     default:

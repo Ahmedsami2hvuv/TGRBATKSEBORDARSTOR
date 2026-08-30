@@ -10,6 +10,8 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -67,6 +69,19 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     // سجل الدردشة التراكمية في الجلسة المفتوحة المباشرة
     private val sessionHistory = JSONArray()
 
+    // مؤقت معالجة الصمت والتنفس (Debounce Timer لمنع القطع السريع)
+    private val handler = Handler(Looper.getMainLooper())
+    private var pendingSpeechText: String? = null
+    private val commitSpeechRunnable = Runnable {
+        val textToSend = pendingSpeechText
+        pendingSpeechText = null
+        if (!textToSend.isNullOrBlank()) {
+            stopListening()
+            addMessageToChat(sender = "user", text = textToSend)
+            sendToAdminVoiceApi(textToSend)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_assistant)
@@ -87,7 +102,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false) // الصوت مفعل دائماً افتراضياً
+        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
         updateVoiceButtonUi()
 
         textToSpeech = TextToSpeech(this, this)
@@ -95,7 +110,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
         transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
 
-        // رسالة ترحيبية أصلية في الشات الشفاف الناعم
         addMessageToChat(
             sender = "ai",
             text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀"
@@ -103,6 +117,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         btnMicToggle.setOnClickListener {
             if (isListening) {
+                handler.removeCallbacks(commitSpeechRunnable)
+                pendingSpeechText = null
                 stopListening()
                 isMicPaused = true
                 tvStatus.text = "🛑 الميكروفون متوقف - انقر للتشغيل"
@@ -147,6 +163,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
 
         btnSendText.setOnClickListener {
+            handler.removeCallbacks(commitSpeechRunnable)
             val typedText = etCommandInput.text.toString().trim()
             if (typedText.isNotEmpty()) {
                 etCommandInput.setText("")
@@ -159,8 +176,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
 
         checkOverlayPermissionAndStartFloatingService()
-        
-        // فتح المايك مباشرة فور فتح الواجهة!
         checkPermissionAndStartListening()
     }
 
@@ -184,9 +199,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         imm?.hideSoftInputFromWindow(etCommandInput.windowToken, 0)
     }
 
-    /**
-     * رسم وإضافة رسالة جديدة إلى سجل المحادثة الشفاف المتسلسل للأعلى
-     */
     private fun addMessageToChat(sender: String, text: String, buttonsArray: JSONArray? = null) {
         val messageLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -229,7 +241,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
         messageLayout.addView(tvText)
 
-        // الأزرار التفاعلية المرفقة بالرسالة إن وجدت
         if (buttonsArray != null && buttonsArray.length() > 0) {
             val buttonsLayout = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -253,6 +264,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         setMargins(0, 6, 0, 6)
                     }
                     setOnClickListener {
+                        handler.removeCallbacks(commitSpeechRunnable)
                         addMessageToChat(sender = "user", text = btnText)
                         sendToAdminVoiceApi(btnAction)
                     }
@@ -290,6 +302,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun clearSessionHistoryAndFinish() {
+        handler.removeCallbacks(commitSpeechRunnable)
         Thread {
             try {
                 val client = OkHttpClient()
@@ -324,6 +337,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun restartListeningOnPowerButton() {
+        handler.removeCallbacks(commitSpeechRunnable)
         textToSpeech?.stop()
         stopListening()
         isMicPaused = false
@@ -374,9 +388,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-IQ")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 15000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 15000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            // مهلة صمت مريحة ومطولة لمنع القطع أثناء التنفس والتحدث بهدوء
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
@@ -388,6 +404,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             override fun onBeginningOfSpeech() {
                 isListening = true
+                handler.removeCallbacks(commitSpeechRunnable)
                 tvStatus.text = "🎧 أستمع لصوتك الآن يا أبو الأكبر..."
             }
 
@@ -396,44 +413,58 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
 
             override fun onBufferReceived(buffer: ByteArray?) {}
+            
             override fun onEndOfSpeech() {
-                isListening = false
-                tvStatus.text = "⚡ جاري معالجة وإرسال الأمر..."
-                progressBar.visibility = View.VISIBLE
+                // لا نوقف المايك فوراً بل ننتظر مهلة هدوء للتأكد من اكتمال الجملة
+                tvStatus.text = "⚡ أستمع لك... تفضل"
             }
 
             override fun onError(error: Int) {
-                isListening = false
                 progressBar.visibility = View.GONE
 
-                if (!isMicPaused) {
+                if (!isMicPaused && pendingSpeechText.isNullOrBlank()) {
                     tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث بأمرك يا أبو الأكبر"
                     tvStatus.postDelayed({
                         if (!isMicPaused && !isListening) {
                             startListening()
                         }
-                    }, 600)
-                } else {
-                    tvStatus.text = "🛑 الميكروفون متوقف - انقر للتحدث"
+                    }, 500)
+                } else if (!pendingSpeechText.isNullOrBlank()) {
+                    // إذا كان هناك نص مجمع، نرسله
+                    handler.removeCallbacks(commitSpeechRunnable)
+                    handler.post(commitSpeechRunnable)
                 }
             }
 
-            override fun onResults(results: Bundle?) {
-                isListening = false
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            override fun onPartialResults(partialResults: Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
-                    val text = matches[0]
-                    addMessageToChat(sender = "user", text = text)
-                    sendToAdminVoiceApi(text)
-                } else {
-                    if (!isMicPaused) {
-                        tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
-                        startListening()
+                    val partialText = matches[0]
+                    if (partialText.isNotBlank()) {
+                        pendingSpeechText = partialText
+                        tvStatus.text = "🗣️ $partialText"
+                        handler.removeCallbacks(commitSpeechRunnable)
+                        handler.postDelayed(commitSpeechRunnable, 1800L) // مهلة 1.8 ثانية من الصمت قبل الإرسال
                     }
                 }
             }
 
-            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    val finalText = matches[0]
+                    if (finalText.isNotBlank()) {
+                        pendingSpeechText = finalText
+                        tvStatus.text = "🗣️ $finalText"
+                        handler.removeCallbacks(commitSpeechRunnable)
+                        handler.postDelayed(commitSpeechRunnable, 1200L)
+                    }
+                } else if (!isMicPaused) {
+                    tvStatus.text = "🎙️ أستمع لك... تفضل بالتحدث"
+                    startListening()
+                }
+            }
+
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
@@ -463,7 +494,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     tvStatus.text = "❌ تعذر الاتصال بالسيرفر"
                     addMessageToChat(sender = "ai", text = "عذراً يا أبو الأكبر، تعذر الاتصال بالسيرفر: ${e.message}")
 
-                    // إعادة فتح المايك تلقائياً بعد الخطأ
                     if (!isMicPaused) {
                         tvStatus.postDelayed({
                             if (!isMicPaused && !isListening) {
@@ -501,7 +531,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             if (!isTtsMuted) {
                                 speakOut(reply)
                             } else {
-                                // إذا كان الصوت مكتوماً، نعيد فتح المايك تلقائياً بعد ثانيتين
                                 if (!isMicPaused) {
                                     tvStatus.postDelayed({
                                         if (!isMicPaused && !isListening) {
@@ -549,7 +578,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
 
                 override fun onDone(utteranceId: String?) {
-                    // بمجرد انتهاء نطق الرد الصوتي، يرجع المايك يفتح تلقائياً فوراً!
                     runOnUiThread {
                         if (!isMicPaused) {
                             checkPermissionAndStartListening()
@@ -577,6 +605,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(commitSpeechRunnable)
         stopListening()
         speechRecognizer?.destroy()
         textToSpeech?.stop()
