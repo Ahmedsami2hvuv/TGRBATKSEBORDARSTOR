@@ -1,6 +1,7 @@
-package com.aboakbar.admin
+﻿package com.aboakbar.admin
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -14,7 +15,9 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -41,12 +44,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var btnClose: ImageButton
     private lateinit var btnMicToggle: ImageButton
     private lateinit var btnGeminiPill: GeminiLivePillView
-    private lateinit var btnSendTextAction: ImageButton
     private lateinit var btnKeyboardToggle: ImageButton
+    private lateinit var btnVoiceToggle: ImageButton
     private lateinit var textInputContainer: LinearLayout
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
-    private lateinit var btnToggleTts: Button
     private lateinit var transparentClickDismiss: View
 
     private lateinit var chatScrollView: ScrollView
@@ -74,20 +76,19 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnClose = findViewById(R.id.btnClose)
         btnMicToggle = findViewById(R.id.btnMicToggle)
         btnGeminiPill = findViewById(R.id.btnGeminiPill)
-        btnSendTextAction = findViewById(R.id.btnSendTextAction)
         btnKeyboardToggle = findViewById(R.id.btnKeyboardToggle)
+        btnVoiceToggle = findViewById(R.id.btnVoiceToggle)
         textInputContainer = findViewById(R.id.textInputContainer)
         etCommandInput = findViewById(R.id.etCommandInput)
         btnSendText = findViewById(R.id.btnSendText)
-        btnToggleTts = findViewById(R.id.btnToggleTts)
         transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
 
         chatScrollView = findViewById(R.id.chatScrollView)
         chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
-        updateTtsButtonUi()
+        isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false) // الصوت مفعل دائماً افتراضياً
+        updateVoiceButtonUi()
 
         textToSpeech = TextToSpeech(this, this)
 
@@ -104,7 +105,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             if (isListening) {
                 stopListening()
                 isMicPaused = true
-                tvStatus.text = "🛑 الميكروفون متوقف - اكتب بالنص"
+                tvStatus.text = "🛑 الميكروفون متوقف - انقر للتشغيل"
                 Toast.makeText(this, "تم إيقاف الميكروفون", Toast.LENGTH_SHORT).show()
             } else {
                 isMicPaused = false
@@ -119,41 +120,29 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             }
         }
 
-        btnSendTextAction.setOnClickListener {
-            val typedText = etCommandInput.text.toString().trim()
-            if (typedText.isNotEmpty()) {
-                etCommandInput.setText("")
-                addMessageToChat(sender = "user", text = typedText)
-                sendToAdminVoiceApi(typedText)
-            } else {
-                if (textInputContainer.visibility != View.VISIBLE) {
-                    textInputContainer.visibility = View.VISIBLE
-                    chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
-                } else {
-                    Toast.makeText(this, "يرجى كتابة الأمر النصي أولاً", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
         btnKeyboardToggle.setOnClickListener {
             if (textInputContainer.visibility == View.VISIBLE) {
                 textInputContainer.visibility = View.GONE
+                hideKeyboard()
             } else {
                 textInputContainer.visibility = View.VISIBLE
+                etCommandInput.requestFocus()
+                showKeyboard()
                 chatScrollView.post { chatScrollView.fullScroll(View.FOCUS_DOWN) }
             }
         }
 
-        btnToggleTts.setOnClickListener {
+        btnVoiceToggle.setOnClickListener {
             isTtsMuted = !isTtsMuted
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_TTS_MUTED, isTtsMuted).apply()
-            updateTtsButtonUi()
+            updateVoiceButtonUi()
 
             if (isTtsMuted) {
                 textToSpeech?.stop()
-                Toast.makeText(this, "تم قفل وكتم القراءة الصوتية دائماً", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "🔇 تم كتم صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "تم تشغيل وتفعيل القراءة الصوتية", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "🔊 تم تشغيل وتفعيل صوت المساعد الذكي", Toast.LENGTH_SHORT).show()
+                speakOut("تم تفعيل الصوت يا أبو الأكبر!")
             }
         }
 
@@ -161,6 +150,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             val typedText = etCommandInput.text.toString().trim()
             if (typedText.isNotEmpty()) {
                 etCommandInput.setText("")
+                hideKeyboard()
                 addMessageToChat(sender = "user", text = typedText)
                 sendToAdminVoiceApi(typedText)
             } else {
@@ -169,7 +159,29 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         }
 
         checkOverlayPermissionAndStartFloatingService()
+        
+        // فتح المايك مباشرة فور فتح الواجهة!
         checkPermissionAndStartListening()
+    }
+
+    private fun updateVoiceButtonUi() {
+        if (isTtsMuted) {
+            btnVoiceToggle.setImageResource(android.R.drawable.ic_lock_silent_mode)
+            btnVoiceToggle.setColorFilter(Color.parseColor("#94A3B8"))
+        } else {
+            btnVoiceToggle.setImageResource(android.R.drawable.ic_lock_silent_mode_off)
+            btnVoiceToggle.setColorFilter(Color.parseColor("#0284C7"))
+        }
+    }
+
+    private fun showKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showSoftInput(etCommandInput, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(etCommandInput.windowToken, 0)
     }
 
     /**
@@ -191,10 +203,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             shape = GradientDrawable.RECTANGLE
             cornerRadius = 32f
             if (sender == "user") {
-                setColor(Color.parseColor("#330284C7")) // خلفية خفيفة وشفافة لرسالة أبو الأكبر
+                setColor(Color.parseColor("#330284C7"))
                 setStroke(2, Color.parseColor("#4438BDF8"))
             } else {
-                setColor(Color.parseColor("#440F172A")) // خلفية خفيفة وشفافة لرسالة المساعد الذكي
+                setColor(Color.parseColor("#440F172A"))
                 setStroke(2, Color.parseColor("#3364748B"))
             }
         }
@@ -228,18 +240,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 val btnText = btnObj.optString("text", "")
                 val btnAction = btnObj.optString("action", "")
 
-                val actionBtn = Button(this).apply {
+                val actionButton = Button(this).apply {
                     this.text = btnText
                     textSize = 12f
-                    setTextColor(Color.parseColor("#BAE6FD"))
-                    val btnBg = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 24f
-                        setColor(Color.parseColor("#440284C7"))
-                        setStroke(2, Color.parseColor("#6638BDF8"))
-                    }
-                    background = btnBg
-                    setPadding(16, 8, 16, 8)
+                    setTextColor(Color.WHITE)
+                    setBackgroundResource(R.drawable.btn_gradient)
+                    setPadding(20, 8, 20, 8)
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
@@ -247,57 +253,61 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         setMargins(0, 6, 0, 6)
                     }
                     setOnClickListener {
-                        val payload = if (btnAction.isNotEmpty()) btnAction else btnText
                         addMessageToChat(sender = "user", text = btnText)
-                        sendToAdminVoiceApi(payload)
+                        sendToAdminVoiceApi(btnAction)
                     }
                 }
-                buttonsLayout.addView(actionBtn)
+                buttonsLayout.addView(actionButton)
             }
             messageLayout.addView(buttonsLayout)
         }
 
         chatMessagesContainer.addView(messageLayout)
-
-        // التمرير التلقائي للأعلى للتركيز على آخر رسالة
         chatScrollView.post {
             chatScrollView.fullScroll(View.FOCUS_DOWN)
         }
     }
 
-    private fun clearSessionHistoryAndFinish() {
-        try {
-            while (sessionHistory.length() > 0) {
-                sessionHistory.remove(0)
-            }
-        } catch (e: Exception) {}
-        finish()
-    }
-
     private fun checkOverlayPermissionAndStartFloatingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
-                )
-                startActivity(intent)
-            } else {
-                startService(Intent(this, FloatingWidgetService::class.java))
+            if (Settings.canDrawOverlays(this)) {
+                startFloatingService()
             }
         } else {
-            startService(Intent(this, FloatingWidgetService::class.java))
+            startFloatingService()
         }
     }
 
-    private fun updateTtsButtonUi() {
-        if (isTtsMuted) {
-            btnToggleTts.text = "🔇 مكتوم"
-            btnToggleTts.setBackgroundColor(Color.parseColor("#64748B"))
-        } else {
-            btnToggleTts.text = "🔊 مفعل"
-            btnToggleTts.setBackgroundColor(Color.parseColor("#0284C7"))
-        }
+    private fun startFloatingService() {
+        try {
+            val serviceIntent = Intent(this, FloatingWidgetService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {}
+    }
+
+    private fun clearSessionHistoryAndFinish() {
+        Thread {
+            try {
+                val client = OkHttpClient()
+                val json = JSONObject()
+                json.put("action", "clear_session")
+                json.put("userId", "android_power_button_admin")
+
+                val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+                val request = Request.Builder()
+                    .url(SERVER_URL)
+                    .post(body)
+                    .build()
+
+                client.newCall(request).execute()
+            } catch (e: Exception) {}
+        }.start()
+
+        finish()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -308,7 +318,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     override fun onResume() {
         super.onResume()
-        if (!isListening && !isMicPaused && speechRecognizer != null) {
+        if (!isListening && !isMicPaused) {
             checkPermissionAndStartListening()
         }
     }
@@ -402,7 +412,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         if (!isMicPaused && !isListening) {
                             startListening()
                         }
-                    }, 500)
+                    }, 600)
                 } else {
                     tvStatus.text = "🛑 الميكروفون متوقف - انقر للتحدث"
                 }
@@ -452,6 +462,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     progressBar.visibility = View.GONE
                     tvStatus.text = "❌ تعذر الاتصال بالسيرفر"
                     addMessageToChat(sender = "ai", text = "عذراً يا أبو الأكبر، تعذر الاتصال بالسيرفر: ${e.message}")
+
+                    // إعادة فتح المايك تلقائياً بعد الخطأ
+                    if (!isMicPaused) {
+                        tvStatus.postDelayed({
+                            if (!isMicPaused && !isListening) {
+                                checkPermissionAndStartListening()
+                            }
+                        }, 2000)
+                    }
                 }
             }
 
@@ -481,15 +500,40 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                             if (!isTtsMuted) {
                                 speakOut(reply)
+                            } else {
+                                // إذا كان الصوت مكتوماً، نعيد فتح المايك تلقائياً بعد ثانيتين
+                                if (!isMicPaused) {
+                                    tvStatus.postDelayed({
+                                        if (!isMicPaused && !isListening) {
+                                            checkPermissionAndStartListening()
+                                        }
+                                    }, 1500)
+                                }
                             }
                         } else {
                             val errText = obj.optString("error", "فشل التنفيذ")
                             tvStatus.text = "⚠️ خطأ في المعالجة"
                             addMessageToChat(sender = "ai", text = errText)
+
+                            if (!isMicPaused) {
+                                tvStatus.postDelayed({
+                                    if (!isMicPaused && !isListening) {
+                                        checkPermissionAndStartListening()
+                                    }
+                                }, 2000)
+                            }
                         }
                     } catch (e: Exception) {
                         tvStatus.text = "✅ الاستجابة:"
                         addMessageToChat(sender = "ai", text = resBody)
+
+                        if (!isMicPaused) {
+                            tvStatus.postDelayed({
+                                if (!isMicPaused && !isListening) {
+                                    checkPermissionAndStartListening()
+                                }
+                            }, 2000)
+                        }
                     }
                 }
             }
@@ -499,13 +543,37 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             textToSpeech?.language = Locale("ar")
+            textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    stopListening()
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    // بمجرد انتهاء نطق الرد الصوتي، يرجع المايك يفتح تلقائياً فوراً!
+                    runOnUiThread {
+                        if (!isMicPaused) {
+                            checkPermissionAndStartListening()
+                        }
+                    }
+                }
+
+                override fun onError(utteranceId: String?) {
+                    runOnUiThread {
+                        if (!isMicPaused) {
+                            checkPermissionAndStartListening()
+                        }
+                    }
+                }
+            })
         }
     }
 
     private fun speakOut(text: String) {
         if (isTtsMuted) return
         val cleanText = text.replace(Regex("[*#\\-]|https?://\\S+"), "")
-        textToSpeech?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
+        val params = Bundle()
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "ai_reply_utterance")
+        textToSpeech?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, params, "ai_reply_utterance")
     }
 
     override fun onDestroy() {

@@ -171,24 +171,24 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="10dp" />
 
-            <!-- 4. زر سهم الإرسال السريع -->
+            <!-- 4. زر الكيبورد والكتابة النصية -->
             <ImageButton
-                android:id="@+id/btnSendTextAction"
+                android:id="@+id/btnKeyboardToggle"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@android:drawable/ic_menu_upload"
+                android:src="@android:drawable/ic_menu_edit"
                 android:tint="#000000"
                 android:background="@drawable/white_circle_black_stroke"
                 android:scaleType="centerInside"
                 android:padding="12dp"
                 android:layout_marginEnd="10dp" />
 
-            <!-- 5. زر الكيبورد والكتابة -->
+            <!-- 5. زر تفعيل وكتم صوت المساعد الذكي (Speaker Toggle) -->
             <ImageButton
-                android:id="@+id/btnKeyboardToggle"
+                android:id="@+id/btnVoiceToggle"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@android:drawable/ic_menu_camera"
+                android:src="@android:drawable/ic_lock_silent_mode_off"
                 android:tint="#000000"
                 android:background="@drawable/white_circle_black_stroke"
                 android:scaleType="centerInside"
