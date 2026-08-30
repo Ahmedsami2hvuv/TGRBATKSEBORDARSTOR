@@ -853,9 +853,16 @@ export async function executeSuperSystemAgent(
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
   }
 
-  // 0.25 إذا ذكر اسم المحل مباشرة مع كلمة طلب (مثال: طلب من اكسسوارات ابي الخصيب أو طلب اكسسوارات)
-  if (cleanInit.startsWith("طلب من ") || cleanInit.startsWith("طلب لـ ") || cleanInit.startsWith("طلب ") || cleanInit.startsWith("سوي طلب من ")) {
+  // 0.25 إذا ذكر اسم المحل مباشرة مع كلمة طلب (مثال: سويلي طلب من إكسسوارات أو طلب اكسسوارات)
+  if (
+    cleanInit.startsWith("سويلي طلب من ") ||
+    cleanInit.startsWith("سوي طلب من ") ||
+    cleanInit.startsWith("طلب من ") ||
+    cleanInit.startsWith("طلب لـ ") ||
+    cleanInit.startsWith("طلب ")
+  ) {
     const extractedShopQuery = cleanInit
+      .replace(/^سويلي\s*طلب\s*من\s*/g, "")
       .replace(/^سوي\s*طلب\s*من\s*/g, "")
       .replace(/^طلب\s*من\s*/g, "")
       .replace(/^طلب\s*لـ\s*/g, "")
@@ -863,7 +870,7 @@ export async function executeSuperSystemAgent(
       .replace(/^محل\s*/g, "")
       .trim();
 
-    if (extractedShopQuery.length >= 3) {
+    if (extractedShopQuery.length >= 2) {
       const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
       const scored = allShops.map(s => {
         const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase();
@@ -871,12 +878,13 @@ export async function executeSuperSystemAgent(
         for (let ch of extractedShopQuery) {
           if (cleanS.includes(ch)) matches++;
         }
-        const score = matches / Math.max(cleanS.length, extractedShopQuery.length);
+        let score = matches / Math.max(cleanS.length, extractedShopQuery.length);
+        if (cleanS.includes(extractedShopQuery) || extractedShopQuery.includes(cleanS)) score = Math.max(score, 0.85);
         return { shop: s, score };
       }).sort((a, b) => b.score - a.score);
 
       const best = scored[0];
-      if (best && best.score >= 0.45) {
+      if (best && best.score >= 0.7) {
         ctx.orderDraft = {
           step: "waiting_region",
           shopId: best.shop.id,
@@ -885,6 +893,21 @@ export async function executeSuperSystemAgent(
         ctx.updatedAt = Date.now();
         return {
           reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`
+        };
+      } else {
+        // إذا كان الاسم غير محدد بدقة، نعرض له أزرار المحلات القريبة فوراً!
+        const topShops = scored.slice(0, 4).map(s => s.shop);
+        const buttons = topShops.map(s => ({
+          text: `🏪 ${s.name}`,
+          action: s.name
+        }));
+
+        ctx.orderDraft = { step: "waiting_shop" };
+        ctx.updatedAt = Date.now();
+
+        return {
+          reply: `يا أبو الأكبر، قصدك أي محل من هذولي؟ 👇`,
+          buttons: buttons
         };
       }
     }
@@ -896,7 +919,7 @@ export async function executeSuperSystemAgent(
   } else {
     // 2. إطلاق محرك الذكاء الاصطناعي المستقل المباشر ليتولى فهم وتنفيذ كل شيء بالكامل!
     try {
-      const autoRes = await executeAutonomousGeminiAgent(rawText, sessionKey, ctx);
+      const autoRes = await executeAutonomousGeminiAgent(rawText, ctx);
       if (autoRes && autoRes.reply) {
         return autoRes;
       }
