@@ -1040,24 +1040,10 @@ export async function executeSuperSystemAgent(
         return { shop: s, score };
       }).sort((a, b) => b.score - a.score);
 
-      // إذا كان هناك تطابق تام 100% باسم المحل بالكامل
-      if (scored[0] && scored[0].score === 1.0) {
-        ctx.orderDraft = {
-          step: "waiting_region",
-          shopId: scored[0].shop.id,
-          shopName: scored[0].shop.name
-        };
-        ctx.updatedAt = Date.now();
-        return {
-          reply: `تمام يا غالي (${scored[0].shop.name})! لأي منطقة الطلب؟ 📍`
-        };
-      }
-
-      // إذا كانت كلمة عامة مثل إكسسوارات أو خطأ إملائي، نعرض دائماً أزرار الاقتراحات الذكية!
       const topShops = scored.slice(0, 4).map(s => s.shop);
       const buttons = topShops.map(s => ({
         text: `🏪 ${s.name}`,
-        action: s.name
+        action: `🏪 ${s.name}`
       }));
 
       ctx.orderDraft = { step: "waiting_shop" };

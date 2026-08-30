@@ -302,10 +302,12 @@ export async function handleOrderCreationWizard(
   switch (draft.step) {
     case "waiting_shop": {
       const allShops = await getCachedShops();
+      const isDirectButtonClick = userText.startsWith("🏪 ") || userText.startsWith("محل ");
       const cleanUser = clean
         .replace(/^من\s+محل\s+/g, "")
         .replace(/^من\s+/g, "")
         .replace(/^محل\s+/g, "")
+        .replace(/^🏪\s*/g, "")
         .trim();
 
       const scoredShops = allShops.map(s => {
@@ -318,7 +320,8 @@ export async function handleOrderCreationWizard(
 
       const best = scoredShops[0];
 
-      if (best && best.score >= 0.55) {
+      // إذا نقر المستخدم على الزر مباشرة (🏪 ...) يتم اعتماد المحل فوراً والانتقال للمنطقة
+      if (isDirectButtonClick && best && best.score >= 0.7) {
         const updatedDraft: OrderDraftState = {
           ...draft,
           shopId: best.shop.id,
@@ -339,10 +342,11 @@ export async function handleOrderCreationWizard(
         };
       }
 
+      // دائماً نعرض للمستخدم خيارات المحلات الأقرب حتى لو كتب الاسم صحيحاً لتأكيده بنقرة واحدة وتجنب الخطأ
       const topSuggestions = scoredShops.slice(0, 4).map(s => s.shop);
       const buttons = topSuggestions.map(s => ({
         text: `🏪 ${s.name}`,
-        action: s.name
+        action: `🏪 ${s.name}`
       }));
 
       return {
@@ -355,6 +359,7 @@ export async function handleOrderCreationWizard(
 
     case "waiting_region": {
       const allRegions = await getCachedRegions();
+      const isDirectButtonClick = userText.startsWith("📍 ") || userText.startsWith("منطقة ") || userText.startsWith("منطقه ");
       let cleanUser = clean
         .replace(/^الى\s+منطقة\s+/g, "")
         .replace(/^الي\s+منطقة\s+/g, "")
@@ -362,6 +367,7 @@ export async function handleOrderCreationWizard(
         .replace(/^الي\s+/g, "")
         .replace(/^منطقة\s+/g, "")
         .replace(/^منطقه\s+/g, "")
+        .replace(/^📍\s*/g, "")
         .replace(/^لـ\s*/g, "")
         .replace(/^لاي\s*/g, "")
         .replace(/جيحور/gi, "جيكور")
@@ -384,7 +390,8 @@ export async function handleOrderCreationWizard(
 
       const best = scoredRegions[0];
 
-      if (best && best.score >= 0.65) {
+      // إذا نقر المستخدم على زر المنطقة مباشرة (📍 ...) يتم اعتماد المنطقة فوراً والانتقال للهاتف
+      if (isDirectButtonClick && best && best.score >= 0.7) {
         const matchedRegion = best.region;
         const updatedDraft: OrderDraftState = {
           ...draft,
@@ -406,10 +413,11 @@ export async function handleOrderCreationWizard(
         };
       }
 
+      // دائماً نعرض للمستخدم خيارات المناطق الأقرب حتى لو كتب الاسم لتأكيده بنقرة واحدة وتجنب أي خطأ في المنطقة
       const topRegions = scoredRegions.slice(0, 4).map(item => item.region);
       const buttons = topRegions.map(r => ({
         text: `📍 ${r.name}`,
-        action: r.name
+        action: `📍 ${r.name}`
       }));
 
       return {
