@@ -5,6 +5,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { pushNotifyAdminsNewPendingOrder } from "./web-push-server";
 import { notifyTelegramNewOrder } from "./telegram-notify";
 import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
+import { executeAutonomousGeminiAgent } from "./ai-autonomous-agent";
 
 type ChatSessionContext = {
   lastOrderNumber?: number | null;
@@ -809,9 +810,19 @@ export async function executeSuperSystemAgent(
   // 1. فحص الأزرار السريعة المباشرة (النقر على زر إسناد أو تحديد منطقة)
   if (rawText.startsWith("assign_order_") || rawText.startsWith("set_region_order_")) {
     // يتم معالجتها أدناه مباشرة
+  } else {
+    // 2. إطلاق محرك الذكاء الاصطناعي المستقل المباشر ليتولى فهم وتنفيذ كل شيء بالكامل!
+    try {
+      const autoRes = await executeAutonomousGeminiAgent(rawText, sessionKey, ctx);
+      if (autoRes && autoRes.reply) {
+        return autoRes;
+      }
+    } catch (autoErr) {
+      console.warn("Autonomous Gemini fallback:", autoErr);
+    }
   }
 
-  // 2. التحليل الذكي المباشر عبر عقل الذكاء الاصطناعي (Gemini First Engine)
+  // 3. التحليل الذكي المساعد إذا لزم الأمر
   let parsed = aiParsed;
 
   if (!parsed && !rawText.startsWith("assign_order_") && !rawText.startsWith("set_region_order_")) {
