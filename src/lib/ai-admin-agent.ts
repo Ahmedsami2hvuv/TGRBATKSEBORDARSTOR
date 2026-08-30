@@ -782,21 +782,15 @@ export async function executeSuperSystemAgent(
   const rawText = userText || "";
   const ctx = getSessionContext(sessionKey);
 
-  // 1. فحص القواعد السريعة الثابتة
-  let parsed = aiParsed || parseCustomSystemIntent(rawText);
-
-  // 2. إذا كانت الفئة عامة أو غير معروفة، نفحص جدول القواعد المتعلمة المخزنة في سوبابيس (Supabase Memory)
-  if (!parsed || parsed.category === "general_qa" || !parsed.category) {
-    try {
-      const learnedMatch = await findMatchingLearnedRule(rawText);
-      if (learnedMatch && learnedMatch.category && learnedMatch.category !== "general_qa") {
-        parsed = learnedMatch;
-      }
-    } catch (e) {}
+  // 1. فحص الأزرار السريعة المباشرة (النقر على زر إسناد أو تحديد منطقة)
+  if (rawText.startsWith("assign_order_") || rawText.startsWith("set_region_order_")) {
+    // يتم معالجتها أدناه مباشرة
   }
 
-  // 3. إذا ظلت الفئة غير معروفة، يستدعي الذكاء الخارجي للتحليل وصناعة قاعدة جديدة وتخزينها في سوبابيس!
-  if (!parsed || parsed.category === "general_qa" || !parsed.category) {
+  // 2. التحليل الذكي المباشر عبر عقل الذكاء الاصطناعي (Gemini First Engine)
+  let parsed = aiParsed;
+
+  if (!parsed && !rawText.startsWith("assign_order_") && !rawText.startsWith("set_region_order_")) {
     try {
       const [allShops, allCouriers, allRegions] = await Promise.all([
         prisma.shop.findMany({ select: { name: true } }),
@@ -814,6 +808,11 @@ export async function executeSuperSystemAgent(
     } catch (compileErr) {
       console.warn("Dynamic intent compiler error:", compileErr);
     }
+  }
+
+  // 3. إذا لم يتم التعرف عبر الذكاء، نفحص القواعد السريعة كـ احتياط آمن
+  if (!parsed || parsed.category === "general_qa" || !parsed.category) {
+    parsed = parseCustomSystemIntent(rawText);
   }
 
   try {
