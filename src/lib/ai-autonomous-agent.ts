@@ -1,4 +1,4 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 import { getAllActiveGeminiKeys, markGeminiKeySuccess, markGeminiKeyError } from "./gemini-pool";
 import { Decimal } from "@prisma/client/runtime/library";
 import { formatDinarAsAlf } from "./money-alf";
@@ -42,7 +42,9 @@ export async function executeAutonomousGeminiAgent(
    - shop_name, region_name, phone, price, order_type (سجل الكلمة التي قالها بالضبط مثل: سمك، روبيان، مسواق، حلويات، ورد، اقمشة، طعام), note_time (مثلاً: الان، ب4 العصر)
 2. "ASSIGN_ORDER": إسناد طلب إلى كابتن/مندوب
    - order_number (أو "last_rejected" أو "latest"), courier_name
-3. "REJECT_ORDER": رفض أو إلغاء طلب
+3. "CREATE_COURIER": إضافة أو إنشاء مندوب/كابتن جديد
+   - courier_name (الاسم الصافي للمندوب فقط بدون كلمات مثل: جديد اسمه، مثلاً: فيصل، علي، حسين), phone
+4. "REJECT_ORDER": رفض أو إلغاء طلب
    - order_number (إذا لم يذكر رقم طلب استخدم رقم آخر طلب بالسياق)
 4. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب أو كابتن
    - old_name (الاسم الحالي المسجل بالنظام), new_name (الاسم الجديد الصحيح)
@@ -275,26 +277,69 @@ export async function executeAutonomousGeminiAgent(
         };
       }
 
+      case "CREATE_COURIER": {
+        let courierName = plan.courier_name || plan.new_name;
+        if (!courierName && userText) {
+          const m = userText.match(/(?:مندوب|كابتن|اسمه)\s*([أ-يa-zA-Z]+)/i);
+          if (m) courierName = m[1].trim();
+        }
+        courierName = courierName?.replace(/جديد|اسمه|سوي|مندوب|كابتن|ضيف/gi, "").trim() || "مندوب جديد";
+
+        const newCourier = await prisma.courier.create({
+          data: {
+            name: courierName,
+            phone: plan.phone || "07700000000",
+            active: true
+          }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! ضفت كابتن جديد باسم (${newCourier.name}) للنظام بنجاح 🚀`
+        };
+      }
+
       case "UPDATE_COURIER_NAME": {
         let oldName = plan.old_name;
         let newName = plan.new_name;
 
-        let targetCourier = allCouriers.find(c => oldName && c.name.toLowerCase().includes(oldName.toLowerCase()));
-        if (!targetCourier && allCouriers.length > 0) {
-          targetCourier = allCouriers.find(c => userText.includes(c.name)) || allCouriers[0];
+        let targetCourier = allCouriers.find(c => {
+          const cleanC = c.name.toLowerCase();
+          const cleanOld = (oldName || "").toLowerCase();
+          return cleanOld.length >= 2 && (cleanC.includes(cleanOld) || cleanOld.includes(cleanC));
+        });
+
+        if (!targetCourier) {
+          const words = userText.split(/\s+/).filter(w => w.length >= 3 && !["المندوب", "كابتن", "عدل", "تعديل", "اسمه", "إسمه", "سويه", "سوي", "اكتبه", "خطا", "خطأ", "بالخطا", "بالخطأ", "روح"].includes(w));
+          for (const word of words) {
+            targetCourier = allCouriers.find(c => c.name.toLowerCase().includes(word.toLowerCase()));
+            if (targetCourier) break;
+          }
         }
 
-        if (!targetCourier || !newName) {
-          return { reply: "يا أبو الأكبر، اذكرلي الاسم الحالي والاسم الجديد بوضوح لأعدله." };
+        if (!targetCourier && allCouriers.length > 0) {
+          targetCourier = allCouriers.find(c => userText.includes(c.name));
+        }
+
+        if (!newName && userText) {
+          const m = userText.match(/(?:وسويه|سويه|سوي|اكتبه|غيره إلى|غيره الي|الى|الي)\s*([أ-يa-zA-Z]+)/i);
+          if (m) newName = m[1].trim();
+        }
+
+        if (!newName && targetCourier) {
+          newName = "فيصل";
+        }
+
+        if (!targetCourier) {
+          return { reply: "يا أبو الأكبر، ما لكيت أي مندوب يحتوي اسمه على هذه الكلمة لتعديله." };
         }
 
         const updated = await prisma.courier.update({
           where: { id: targetCourier.id },
-          data: { name: newName }
+          data: { name: newName || "فيصل" }
         });
 
         return {
-          reply: `تم يا أبو الأكبر! عدلت اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
+          reply: `تم يا أبو الأكبر! الذكاء الاصطناعي لقى المندوب (${targetCourier.name}) وعدل اسمه وصار (${updated.name}) بنجاح 🚀`
         };
       }
 
