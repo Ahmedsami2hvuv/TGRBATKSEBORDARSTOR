@@ -521,12 +521,29 @@ function extractPrepItemsFromText(text: string): string {
  * استخراج مبلغ الطلب الفعلي من النص
  */
 function extractOrderAmountFromText(text: string, phone: string | null): number | null {
-  const withoutPhone = phone ? text.replace(phone, "") : text;
-  const nums = (withoutPhone.match(/\d+/g) || [])
+  if (!text) return null;
+
+  // 1. البحث الصريح والقاطع أولاً بعد الكلمات الدلالية للسعر (مثل سعر الطلب 10)
+  const explicitMatch = text.match(/(?:سعر الطلب|السعر|سعر|بـ|ب)\s*(\d{1,4})/i);
+  if (explicitMatch) {
+    const val = Number(explicitMatch[1]);
+    if (val > 0 && val < 1000) return val;
+  }
+
+  // 2. تنظيف أرقام الهواتف من النص
+  let cleanText = text;
+  if (phone) {
+    cleanText = cleanText.replace(phone, "");
+  }
+  cleanText = cleanText.replace(/07\d[\d\s]{7,12}/g, "");
+
+  // 3. البحث عن الأرقام المعقولة المتبقية
+  const nums = (cleanText.match(/\d+/g) || [])
     .map(Number)
-    .filter(n => n > 0 && n < 1000000 && !n.toString().startsWith("77"));
+    .filter(n => n > 0 && n < 1000 && !n.toString().startsWith("07") && !n.toString().startsWith("77"));
+
   if (nums.length === 0) return null;
-  return nums[nums.length - 1];
+  return nums[0];
 }
 
 /**
@@ -566,6 +583,34 @@ export async function executeSuperSystemAgent(
       return {
         reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} لـ (${order.shop.name}) إلى الكابتن (${courier.name})`
       };
+    }
+
+    if (rawText.startsWith("set_region_order_")) {
+      const parts = rawText.split("_");
+      const orderId = parts[3];
+      const regionId = parts[5];
+
+      const region = await prisma.region.findUnique({ where: { id: regionId } });
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+      if (order && region) {
+        const deliveryPrice = Number(region.deliveryPrice || 0);
+        const subtotal = Number(order.orderSubtotal || 0);
+        const total = subtotal + deliveryPrice;
+
+        const updated = await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            customerRegionId: region.id,
+            deliveryPrice: new Decimal(deliveryPrice),
+            totalAmount: new Decimal(total)
+          }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! حددت المنطقة لـ (${region.name}) وسعر التوصيل لـ (${deliveryPrice} ألف) لطلب #${updated.orderNumber} 🚀`
+        };
+      }
     }
 
     if (rawText.startsWith("assign_prep_")) {
@@ -1101,10 +1146,14 @@ export async function executeSuperSystemAgent(
 
         const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
         let matchedRegion: { id: string; name: string; deliveryPrice: any } | null = null;
+
+        // تنظيف صريح للمرادفات الصوتية مثل (جاي كور / جي كور -> جيكور)
+        const textForRegion = fullText.replace(/جاي\s*كور/gi, "جيكور").replace(/جي\s*كور/gi, "جيكور");
+
         for (const reg of allRegions) {
           const cleanR = cleanArabicTextForMatch(reg.name);
-          const cleanT = cleanArabicTextForMatch(fullText);
-          if (cleanR.length >= 3 && cleanT.includes(cleanR)) {
+          const cleanT = cleanArabicTextForMatch(textForRegion);
+          if (cleanR.length >= 2 && (cleanT.includes(cleanR) || cleanR.includes(cleanT))) {
             matchedRegion = reg;
             break;
           }
@@ -1150,12 +1199,24 @@ export async function executeSuperSystemAgent(
 
         const regionName = matchedRegion ? matchedRegion.name : "غير محددة";
         const warnings: string[] = [];
-        if (!matchedRegion) warnings.push("⚠️ ما حددت منطقة، سعر التوصيل انحط 0 — عدله يدوياً.");
+        let regionButtons: Array<{ text: string; action: string }> = [];
+
+        if (!matchedRegion) {
+          warnings.push("⚠️ اختر خيار المنطقة المناسبة أدناه للتعيين المباشر وتحديث السعر بالنقر:");
+          const ranked = rankRegionsByQuery(fullText, allRegions as any);
+          const topRanked = ranked.slice(0, 4);
+          regionButtons = topRanked.map(r => ({
+            text: `📍 تحديد منطقة: ${r.name}`,
+            action: `set_region_order_${order.id}_region_${r.id}`
+          }));
+        }
+
         if (!phone) warnings.push("⚠️ ما لكيت رقم هاتف بالرسالة، ضيفه يدوياً.");
         if (detectedAmount === null) warnings.push("⚠️ ما لكيت سعر واضح بالرسالة، سعر الطلب انحط 0 — عدله يدوياً.");
 
         return {
-          reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${matchedShop.name}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime}${warnings.length ? "\n" + warnings.join("\n") : ""}`
+          reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${matchedShop.name}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime} | السعر: ${subtotalNum} ألف${warnings.length ? "\n" + warnings.join("\n") : ""}`,
+          buttons: regionButtons
         };
       }
 
