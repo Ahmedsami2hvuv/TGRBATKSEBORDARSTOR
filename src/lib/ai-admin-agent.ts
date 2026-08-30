@@ -1008,20 +1008,43 @@ export async function executeSuperSystemAgent(
       case "orders_bulk_archive": {
         const courierName = parsed?.courier_name;
         const shopName = parsed?.shop_name;
-        const fromStatus = parsed?.status || "completed";
+        const rawStatus = parsed?.status || "delivered";
+
+        let statusFilter: any = { in: ["delivered", "completed", "received"] };
+        let statusLabel = "المسلمة";
+
+        if (rawStatus === "rejected" || rawText.includes("مرفوض")) {
+          statusFilter = { in: ["rejected", "cancelled"] };
+          statusLabel = "المرفوضة";
+        } else if (rawStatus === "pending" || rawText.includes("جديد") || rawText.includes("معلق")) {
+          statusFilter = "pending";
+          statusLabel = "المعلقة";
+        }
 
         let where: any = {
-          status: fromStatus
+          status: statusFilter
         };
 
-        let label = `المسلمة`;
+        let label = statusLabel;
+        let matchedCourierObj = null;
 
         if (courierName) {
           const allCouriers = await prisma.courier.findMany();
-          const { match } = findBestMatch(allCouriers, courierName);
-          if (match) {
-            where.assignedCourierId = match.id;
-            label += ` للمندوب (${match.name})`;
+          const cleanQuery = cleanArabicTextForMatch(courierName);
+          for (const c of allCouriers) {
+            const cleanC = cleanArabicTextForMatch(c.name);
+            if (cleanC.length >= 2 && (cleanC.includes(cleanQuery) || cleanQuery.includes(cleanC))) {
+              matchedCourierObj = c;
+              break;
+            }
+          }
+          if (!matchedCourierObj) {
+            const { match } = findBestMatch(allCouriers, courierName);
+            matchedCourierObj = match;
+          }
+          if (matchedCourierObj) {
+            where.assignedCourierId = matchedCourierObj.id;
+            label += ` للمندوب (${matchedCourierObj.name})`;
           }
         }
 
@@ -1036,7 +1059,8 @@ export async function executeSuperSystemAgent(
 
         const countToArchive = await prisma.order.count({ where });
         if (countToArchive === 0) {
-          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات مطابقة بحالة (${fromStatus}) لأرشفتها حالياً.` };
+          const targetName = matchedCourierObj ? matchedCourierObj.name : (courierName || "المحدد");
+          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات ${statusLabel} حالياً للكابتن (${targetName}) لأرشفتها.` };
         }
 
         await prisma.order.updateMany({
