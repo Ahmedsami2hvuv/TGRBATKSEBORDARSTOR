@@ -868,7 +868,6 @@ export async function executeSuperSystemAgent(
     }
   }
 
-  // 0.2 بدء محادثة تفاعلية إذا قال المستخدم طلب جديد فقط بدون تفاصيل
   const cleanInit = rawText
     .replace(/[.،,؟!؟]/g, "")
     .replace(/\s+/g, " ")
@@ -879,6 +878,109 @@ export async function executeSuperSystemAgent(
     .replace(/اريد\s*اسوي/g, "سوي")
     .replace(/اريد\s*سوي/g, "سوي");
 
+  // 0.05 فحص الأوامر المباشرة على الطلبات بالأرقام (رفض، إلغاء، إسناد، تفاصيل، إرجاع لجديد)
+  const orderNumMatch = rawText.match(/(?:طلب|اوردر|رقم)?\s*#?(\d{3,6})/i);
+  const detectedOrderNum = orderNumMatch ? Number(orderNumMatch[1]) : (ctx.lastOrderNumber || null);
+
+  // أ) أمر رفض أو إلغاء طلب
+  if (
+    cleanInit.includes("رفض") ||
+    cleanInit.includes("الغاء") ||
+    cleanInit.includes("إلغاء") ||
+    cleanInit.includes("كنسل") ||
+    cleanInit.includes("سوي له رفض") ||
+    cleanInit.includes("سوي رفض")
+  ) {
+    if (detectedOrderNum) {
+      const targetOrder = await prisma.order.findUnique({
+        where: { orderNumber: detectedOrderNum },
+        include: { shop: true }
+      });
+      if (targetOrder) {
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { status: "rejected" }
+        });
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.orderDraft = null;
+        return {
+          reply: `تم يا أبو الأكبر! غيرت حالة طلب #${updated.orderNumber} لـ (${targetOrder.shop?.name || "المحل"}) إلى (مرفوض / ملغى) ❌`
+        };
+      }
+    }
+  }
+
+  // ب) أمر تفاصيل طلب
+  if (
+    cleanInit.includes("تفاصيل") ||
+    cleanInit.includes("استعرض") ||
+    cleanInit.includes("شوفلي طلب")
+  ) {
+    if (detectedOrderNum) {
+      const targetOrder = await prisma.order.findUnique({
+        where: { orderNumber: detectedOrderNum },
+        include: { shop: true, customerRegion: true, courier: true }
+      });
+      if (targetOrder) {
+        ctx.lastOrderNumber = targetOrder.orderNumber;
+        const shopName = targetOrder.shop?.name || "المحل";
+        const regionName = targetOrder.customerRegion?.name || "غير محددة";
+        const phone = targetOrder.customerPhone || "بدون رقم";
+        const subtotal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 0;
+        const oType = targetOrder.orderType || "مسواق";
+        const nTime = targetOrder.orderNoteTime || "الان";
+        
+        let statusArabic = "جديد";
+        if (targetOrder.status === "assigned") statusArabic = `مسند (${targetOrder.courier?.name || "مندوب"})`;
+        else if (targetOrder.status === "rejected" || targetOrder.status === "cancelled") statusArabic = "مرفوض";
+        else if (targetOrder.status === "delivered" || targetOrder.status === "completed") statusArabic = "واصل ومسلم";
+        else if (targetOrder.status === "archived") statusArabic = "مؤرشف";
+
+        const replyText = `تفاصيل الطلب:\n${targetOrder.orderNumber}\n${shopName}\n${regionName}\n${phone}\n${subtotal}\n${oType}\n${nTime}\n${statusArabic}`;
+        const buttons: Array<{ text: string; action: string }> = [];
+
+        if (targetOrder.customerPhone && targetOrder.customerPhone.replace(/\D/g, "").length >= 7) {
+          const rawDigits = targetOrder.customerPhone.replace(/\D/g, "");
+          const cleanPhone = rawDigits.startsWith("0") ? "964" + rawDigits.slice(1) : (rawDigits.startsWith("964") ? rawDigits : "964" + rawDigits);
+          buttons.push({ text: `📞 اتصال بالزبون`, action: `tel:${targetOrder.customerPhone}` });
+          buttons.push({ text: `💬 مراسلة واتساب`, action: `https://wa.me/${cleanPhone}` });
+        }
+
+        if (targetOrder.status === "pending") {
+          buttons.push({ text: `🛵 إسناد لمندوب`, action: `إسناد طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `❌ إلغاء الطلب`, action: `طلب ${targetOrder.orderNumber} سوي له رفض` });
+        } else if (targetOrder.status === "rejected" || targetOrder.status === "cancelled") {
+          buttons.push({ text: `🛵 إعادة إسناد`, action: `إسناد طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `🔄 إرجاع إلى جديد`, action: `إرجاع طلب ${targetOrder.orderNumber} للجديد` });
+        } else if (targetOrder.status === "assigned") {
+          buttons.push({ text: `🛵 تغيير المندوب`, action: `تغيير مندوب طلب ${targetOrder.orderNumber}` });
+          buttons.push({ text: `🔄 إرجاع إلى جديد`, action: `إرجاع طلب ${targetOrder.orderNumber} للجديد` });
+          buttons.push({ text: `❌ إلغاء الطلب`, action: `طلب ${targetOrder.orderNumber} سوي له رفض` });
+        }
+
+        return { reply: replyText, buttons };
+      }
+    }
+  }
+
+  // ج) أمر إرجاع لجديد
+  if ((cleanInit.includes("رجع") || cleanInit.includes("ارجاع")) && (cleanInit.includes("طلب") || cleanInit.includes("جديد"))) {
+    if (detectedOrderNum) {
+      const targetOrder = await prisma.order.findUnique({ where: { orderNumber: detectedOrderNum } });
+      if (targetOrder) {
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: { status: "pending", assignedCourierId: null }
+        });
+        ctx.lastOrderNumber = updated.orderNumber;
+        return {
+          reply: `تم يا أبو الأكبر! رجعت طلب #${updated.orderNumber} إلى حالة (جديد معلق) بنجاح 🔄`
+        };
+      }
+    }
+  }
+
+  // 0.2 بدء محادثة تفاعلية إذا قال المستخدم طلب جديد فقط بدون تفاصيل
   const isPureNewOrderPrompt =
     cleanInit === "سويلي طلب" ||
     cleanInit === "سوي طلب" ||
@@ -902,13 +1004,16 @@ export async function executeSuperSystemAgent(
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
   }
 
-  // 0.25 إذا ذكر اسم المحل مباشرة مع كلمة طلب (مثال: سويلي طلب من إكسسوارات أو طلب اكسسوارات)
+  // 0.25 إذا ذكر اسم المحل مباشرة مع كلمة طلب (فقط إذا لم يكن أمراً إدارياً أو يحتوي على أرقام)
+  const isAdministrativeCommand = /(?:رفض|الغاء|إلغاء|اسند|إسناد|غير|تغيير|تفاصيل|رجع|ارجاع|جديد|أرشفة|ارشفة|معلق|كابتن|مندوب|\d{3,})/i.test(cleanInit);
+
   if (
-    cleanInit.startsWith("سويلي طلب من ") ||
-    cleanInit.startsWith("سوي طلب من ") ||
-    cleanInit.startsWith("طلب من ") ||
-    cleanInit.startsWith("طلب لـ ") ||
-    cleanInit.startsWith("طلب ")
+    !isAdministrativeCommand &&
+    (cleanInit.startsWith("سويلي طلب من ") ||
+      cleanInit.startsWith("سوي طلب من ") ||
+      cleanInit.startsWith("طلب من ") ||
+      cleanInit.startsWith("طلب لـ ") ||
+      cleanInit.startsWith("طلب "))
   ) {
     const extractedShopQuery = cleanInit
       .replace(/^سويلي\s*طلب\s*من\s*/g, "")
