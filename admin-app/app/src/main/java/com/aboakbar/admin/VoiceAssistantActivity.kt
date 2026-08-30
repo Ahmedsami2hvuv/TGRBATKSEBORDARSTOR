@@ -461,6 +461,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         } catch (e: Exception) {}
     }
 
+    private fun safelyRestartSpeechRecognizer() {
+        if (!isMicPaused && !isFinishing) {
+            checkPermissionAndStartListening()
+        }
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
