@@ -200,7 +200,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         messageLayout.background = bubbleBackground
 
         val tvSender = TextView(this).apply {
-            text = if (sender == "user") "🎙️ أنـت:" else "✨ المساعد الذكي:"
+            this.text = if (sender == "user") "🎙️ أنـت:" else "✨ المساعد الذكي:"
             textSize = 11f
             setTextColor(if (sender == "user") Color.parseColor("#BAE6FD") else Color.parseColor("#38BDF8"))
             setPadding(0, 0, 0, 6)
