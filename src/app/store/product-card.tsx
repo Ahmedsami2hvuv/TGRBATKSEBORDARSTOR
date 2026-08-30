@@ -119,14 +119,17 @@ export function ProductCard({
 
   const getProductShareDetails = () => {
     const bId = product.branchId || product.branch?.id;
-    let shareUrl = typeof window !== "undefined" ? (window.location.origin + window.location.pathname) : "";
-    if (bId) {
-      shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/store/b/${bId}?product=${product.id}`;
-    } else {
-      shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/store?product=${product.id}`;
+    const cId = product.categoryId || product.branch?.categoryId || product.category?.id;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://aboakbr.com";
+    
+    let shareUrl = `${origin}/store/product/${product.id}`;
+    if (cId && bId) {
+      shareUrl = `${origin}/store/c/${cId}?b=${bId}&product=${product.id}`;
+    } else if (bId) {
+      shareUrl = `${origin}/store/b/${bId}?product=${product.id}`;
     }
 
-    const shareMessage = `تعال شوف \n${product.name} \nالموجود بخصيب ستور \nشرايك نشرتيه \n${shareUrl}`;
+    const shareMessage = `تعال شوف:\n${product.name}\nالموجود بخصيب ستور — أبو الأكبر للتوصيل 🛒\n${shareUrl}`;
 
     return { shareUrl, shareMessage };
   };

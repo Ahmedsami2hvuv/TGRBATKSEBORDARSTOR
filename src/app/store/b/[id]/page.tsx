@@ -1,10 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Metadata } from "next";
 import { ProductCard } from "../../product-card";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { unstable_cache } from "next/cache";
+import { getStoreBranchMetadata } from "@/lib/store-meta";
 
 export const revalidate = 60; // تفعيل الكاش الإجمالي لـ 60 ثانية
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ product?: string }>;
+}): Promise<Metadata> {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  return getStoreBranchMetadata(params.id, searchParams?.product);
+}
 
 /**
  * دالة تطهير عميقة وقوية لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization

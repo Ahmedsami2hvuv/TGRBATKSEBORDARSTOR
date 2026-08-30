@@ -1,12 +1,23 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Metadata } from "next";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { CategoryBranchesScroll } from "./_components/category-branches-scroll";
 import { ProductCard } from "../../product-card";
 import { ProductListInfinite } from "./_components/product-list-infinite";
+import { getStoreCategoryMetadata } from "@/lib/store-meta";
 
 export const revalidate = 3600; // تفعيل الكاش لـ 3600 ثانية لتسريع التصفح
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ b?: string; product?: string }>;
+}): Promise<Metadata> {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  return getStoreCategoryMetadata(params.id, searchParams?.b, searchParams?.product);
+}
 
 // دالة تطهير بيانات فائقة الأمان لـ Next.js 15 لضمان تحويل كافة الكائنات المعقدة إلى بسيطة
 function safeJson(data: any) {
@@ -19,7 +30,7 @@ function safeJson(data: any) {
   }));
 }
 
-export default async function CategoryPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ b?: string }> }) {
+export default async function CategoryPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ b?: string; product?: string }> }) {
   // انتظر الـ params أولاً (مطلوب في Next.js 15)
   const params = await props.params;
   const searchParams = await props.searchParams;

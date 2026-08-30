@@ -1,11 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Metadata } from "next";
 import { StoreSlider } from "./_components/store-slider";
 import { ProductCard } from "./product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { getDefaultStoreMetadata, getStoreProductMetadata } from "@/lib/store-meta";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(props: {
+  searchParams: Promise<{ product?: string }>;
+}): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  if (searchParams?.product) {
+    return getStoreProductMetadata(searchParams.product);
+  }
+  return getDefaultStoreMetadata();
+}
 
 async function CategoriesRow() {
   try {

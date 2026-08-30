@@ -5,8 +5,34 @@ import { DraggableBackButton } from "@/components/draggable-back-button";
 import { StoreSidePanels } from "@/components/store-side-panels";
 
 export const metadata: Metadata = {
-  title: "خصيب ستور(ابو الاكبر للتوصيل)",
-  description: "تسوق أفضل المنتجات بأفضل الأسعار",
+  metadataBase: new URL("https://aboakbr.com"),
+  title: {
+    default: "خصيب ستور — أبو الأكبر للتوصيل",
+    template: "%s | خصيب ستور",
+  },
+  description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
+  openGraph: {
+    title: "خصيب ستور — أبو الأكبر للتوصيل",
+    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
+    url: "https://aboakbr.com/store",
+    siteName: "خصيب ستور — أبو الأكبر للتوصيل",
+    images: [
+      {
+        url: "https://aboakbr.com/icon.png",
+        width: 800,
+        height: 800,
+        alt: "خصيب ستور — أبو الأكبر للتوصيل",
+      },
+    ],
+    type: "website",
+    locale: "ar_IQ",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "خصيب ستور — أبو الأكبر للتوصيل",
+    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
+    images: ["https://aboakbr.com/icon.png"],
+  },
 };
 
 import { BottomNav } from "./_components/bottom-nav";
