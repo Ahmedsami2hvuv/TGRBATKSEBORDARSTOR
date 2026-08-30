@@ -434,12 +434,20 @@ function MandoubFullBlockCardGrid({
                       {/* شارات الصادر والوارد الملونة فوق/بجانب اسم المحل مباشرة باليمين */}
                       <MandoubCardMoneyBadges o={o} />
 
-                      {/* بجانبه مباشرة: اسم المحل ← المنطقة بخط عريض وضخم جداً */}
-                      <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
-                        <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
-                        <span className="text-slate-400 font-black shrink-0">←</span>
-                        <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
-                      </div>
+                      {/* بجانبه مباشرة: اسم المحل ← المنطقة (أو منطقة المرسل ← منطقة المستلم للطلبات ذات الوجهتين) */}
+                      {((o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName)) ? (
+                        <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap" title="طلب وجهتين: منطقة المرسل ← منطقة المستلم">
+                          <span className="text-amber-800 dark:text-amber-400 font-black truncate">{o.regionLine || "المرسل"}</span>
+                          <span className="text-slate-400 font-black shrink-0">←</span>
+                          <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 min-w-0 truncate whitespace-nowrap">
+                          <span className="text-emerald-800 dark:text-emerald-400 font-black truncate">{o.shopName}</span>
+                          <span className="text-slate-400 font-black shrink-0">←</span>
+                          <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* أقصى اليسار: رقم الطلب بخط كبير بارز مع شارة تنبيه عدم وجود لوكيشن للزبون */}
