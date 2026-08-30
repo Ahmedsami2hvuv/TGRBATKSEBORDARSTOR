@@ -27,10 +27,17 @@ function getSessionContext(sessionKey: string): ChatSessionContext {
 }
 
 /**
- * تصفير وإعادة ضبط ذاكرة سياق محادثة معينة بـ sessionKey
+ * تصفير وإعادة ضبط ذاكرة سياق محادثة معينة بـ sessionKey أو تصفير الكل
  */
-export function resetChatSessionContext(sessionKey: string = "default") {
-  chatSessionContexts.delete(sessionKey);
+export function resetChatSessionContext(sessionKey?: string) {
+  if (sessionKey) {
+    chatSessionContexts.delete(sessionKey);
+  } else {
+    chatSessionContexts.clear();
+  }
+  chatSessionContexts.delete("default");
+  chatSessionContexts.delete("voice_admin");
+  chatSessionContexts.delete("android_power_button_admin");
 }
 
 /**

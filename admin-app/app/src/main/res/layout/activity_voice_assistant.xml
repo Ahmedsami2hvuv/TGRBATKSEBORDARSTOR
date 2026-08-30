@@ -28,7 +28,7 @@
         android:paddingBottom="6dp"
         android:background="@android:color/transparent">
 
-        <!-- شريط الحالة العلوي مع زر إخفاء/إظهار الدردشات -->
+        <!-- شريط الحالة العلوي مع أزرار إخفاء/إظهار ومسح الدردشات -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,6 +57,17 @@
                 android:layout_height="32dp"
                 android:src="@android:drawable/ic_menu_view"
                 android:tint="#FFFFFF"
+                android:background="@drawable/white_circle_black_stroke"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:layout_marginEnd="6dp" />
+
+            <ImageButton
+                android:id="@+id/btnTrashClearChat"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:tint="#EF4444"
                 android:background="@drawable/white_circle_black_stroke"
                 android:scaleType="centerInside"
                 android:padding="6dp" />

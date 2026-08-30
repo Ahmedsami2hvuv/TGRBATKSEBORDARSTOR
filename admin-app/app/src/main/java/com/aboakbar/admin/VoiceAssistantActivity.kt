@@ -45,6 +45,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
     private lateinit var tvStatus: TextView
     private lateinit var btnToggleChatVisibility: ImageButton
+    private lateinit var btnTrashClearChat: ImageButton
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: ImageButton
     private lateinit var btnMicToggle: ImageButton
@@ -94,6 +95,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             tvStatus = findViewById(R.id.tvStatus)
             btnToggleChatVisibility = findViewById(R.id.btnToggleChatVisibility)
+            btnTrashClearChat = findViewById(R.id.btnTrashClearChat)
             progressBar = findViewById(R.id.progressBar)
             btnClose = findViewById(R.id.btnClose)
             btnMicToggle = findViewById(R.id.btnMicToggle)
@@ -129,6 +131,40 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     btnToggleChatVisibility.setColorFilter(Color.parseColor("#94A3B8"))
                     Toast.makeText(this, "تم إخفاء الدردشة", Toast.LENGTH_SHORT).show()
                 }
+            }
+
+            btnTrashClearChat.setOnClickListener {
+                handler.removeCallbacks(commitSpeechRunnable)
+                pendingSpeechText = null
+                textToSpeech?.stop()
+                chatMessagesContainer.removeAllViews()
+                
+                while (sessionHistory.length() > 0) {
+                    sessionHistory.remove(0)
+                }
+
+                Thread {
+                    try {
+                        val client = OkHttpClient()
+                        val json = JSONObject()
+                        json.put("action", "clear_session")
+                        json.put("userId", "android_power_button_admin")
+
+                        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+                        val request = Request.Builder()
+                            .url(SERVER_URL)
+                            .post(body)
+                            .build()
+
+                        client.newCall(request).execute()
+                    } catch (e: Exception) {}
+                }.start()
+
+                addMessageToChat(
+                    sender = "ai",
+                    text = "تم تصفير سجل الدردشة والبدء بجلسة جديدة يا أبو الأكبر! تفضل بأمرك الجديد 🚀"
+                )
+                Toast.makeText(this, "🗑️ تم مسح سجل المحادثة", Toast.LENGTH_SHORT).show()
             }
 
             addMessageToChat(
@@ -459,7 +495,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    // إشعار فوري بأن المايك مفتوح وجاهز لالتقاط أول حرف!
                     tvStatus.text = "🎙️ أستمع لك الآن... تفضل يا أبو الأكبر"
                     progressBar.visibility = View.VISIBLE
                     

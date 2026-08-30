@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Keyboard, Trash2 } from "lucide-react";
@@ -314,7 +314,18 @@ export function AdminFloatingAiWidget() {
     }
   };
 
-  const clearChatHistory = () => {
+  const clearChatHistory = async () => {
+    try {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      fetch("/api/ai/admin-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clear_session", userId: "voice_admin" })
+      }).catch(() => {});
+    } catch (e) {}
+
     setMessages([
       {
         id: Date.now().toString(),

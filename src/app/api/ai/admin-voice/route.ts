@@ -7,8 +7,8 @@ export async function GET(req: Request) {
     const text = (searchParams.get("text") || searchParams.get("prompt") || searchParams.get("message") || "").trim();
     const action = searchParams.get("action");
 
-    if (action === "reset" || text === "reset") {
-      resetChatSessionContext();
+    if (action === "reset" || action === "clear_session" || text === "reset" || text === "مسح") {
+      resetChatSessionContext(searchParams.get("userId") || undefined);
       return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
     }
 
@@ -39,8 +39,8 @@ export async function POST(req: Request) {
     const text = (body.text || body.prompt || body.message || "").trim();
     const action = body.action;
 
-    if (action === "reset" || text === "reset") {
-      resetChatSessionContext();
+    if (action === "reset" || action === "clear_session" || text === "reset" || text === "مسح") {
+      resetChatSessionContext(body.userId || undefined);
       return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
     }
 
