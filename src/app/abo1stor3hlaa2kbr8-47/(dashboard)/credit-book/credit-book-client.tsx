@@ -52,7 +52,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [balanceFilter, setBalanceFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"blocks" | "table">("blocks");
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // نموذج إضافة شريك جديد
@@ -303,12 +303,12 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
         </span>
       </div>
 
-      {/* 2. شريط الخيارات والبحث والأزرار المنظم */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-        {/* صف الفلاتر والبحث */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
-          {/* حقل البحث */}
-          <div className="relative lg:col-span-4">
+      {/* 2. شريط البحث والخيارات المنظم */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2.5">
+        {/* الصف الأول: خانة البحث في الأعلى وبجانبها زر الإضافة وزر إعدادات دفتر الديون */}
+        <div className="flex items-center gap-2">
+          {/* حقل البحث بالاسم */}
+          <div className="relative flex-1">
             <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
               🔍
             </div>
@@ -330,153 +330,85 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             )}
           </div>
 
-          {/* فلتر نوع الطرف */}
-          <div className="lg:col-span-3">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
-            >
-              <option value="all">👥 جميع الأطراف والجهات</option>
-              <option value="courier">🚚 المناديب فقط</option>
-              <option value="preparer">📦 المجهزين فقط</option>
-              <option value="shop">🏪 المحلات فقط</option>
-              <option value="customer">👤 الزبائن فقط</option>
-              <option value="supplier">🏭 الموردين فقط</option>
-              <option value="external">🌐 أطراف خارجية</option>
-            </select>
-          </div>
+          {/* زر إضافة حساب جديد */}
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="px-3.5 sm:px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-1.5 shrink-0"
+            title="إضافة حساب جديد"
+          >
+            <span>➕</span>
+            <span className="hidden sm:inline">إضافة حساب</span>
+          </button>
 
-          {/* فلتر حالة الرصيد */}
-          <div className="lg:col-span-3">
-            <select
-              value={balanceFilter}
-              onChange={(e) => setBalanceFilter(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
-            >
-              <option value="all">💳 الحسابات النشطة (غير المصفّرة)</option>
-              <option value="owe_us">🟢 نطلبهم (ديون لصالحنا)</option>
-              <option value="we_owe">🔴 يطلبوننا (ديون علينا)</option>
-              <option value="zero">⚪ الحسابات المصفّرة (0 د.ع)</option>
-            </select>
-          </div>
-
-          {/* زر التبديل بين البلوكات والجدول */}
-          <div className="lg:col-span-2 flex items-center justify-end">
-            <div className="flex items-center p-1 bg-slate-100 rounded-xl w-full justify-center">
-              <button
-                type="button"
-                onClick={() => setViewMode("blocks")}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                  viewMode === "blocks"
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                title="عرض البلوكات (كروت مريحة بدون سحب)"
-              >
-                <span>🔲</span>
-                <span>بلوكات</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("table")}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                  viewMode === "table"
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                title="عرض الجدول"
-              >
-                <span>📋</span>
-                <span>جدول</span>
-              </button>
-            </div>
-          </div>
+          {/* زر إعدادات دفتر الديون */}
+          <button
+            type="button"
+            onClick={() => setShowSettingsModal(true)}
+            className="px-3 sm:px-3.5 py-2.5 text-xs font-black text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition flex items-center gap-1.5 shrink-0"
+            title="إعدادات دفتر الديون والعمليات"
+          >
+            <span>⚙️</span>
+            <span className="hidden sm:inline">إعدادات دفتر الديون</span>
+          </button>
         </div>
 
-        {/* صف الأزرار والعمليات المجمعة */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
-          {/* إجراءات التحديد والحذف الجماعي */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => handleSelectAll(selectedPartnerIds.length !== filteredPartners.length)}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5"
-            >
-              <span>{selectedPartnerIds.length === filteredPartners.length && filteredPartners.length > 0 ? "☑️" : "🔲"}</span>
-              <span>{selectedPartnerIds.length === filteredPartners.length && filteredPartners.length > 0 ? "إلغاء تحديد الكل" : "تحديد الكل"}</span>
-            </button>
+        {/* الصف الثاني: فلاتر التصنيف جنباً إلى جنب (وحدة بصف الثانية) */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* فلتر نوع الطرف */}
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer truncate"
+          >
+            <option value="all">👥 جميع الأطراف والجهات</option>
+            <option value="courier">🚚 المناديب فقط</option>
+            <option value="preparer">📦 المجهزين فقط</option>
+            <option value="shop">🏪 المحلات فقط</option>
+            <option value="customer">👤 الزبائن فقط</option>
+            <option value="supplier">🏭 الموردين فقط</option>
+            <option value="external">🌐 أطراف خارجية</option>
+          </select>
 
-            {selectedPartnerIds.length > 0 && (
+          {/* فلتر حالة الرصيد */}
+          <select
+            value={balanceFilter}
+            onChange={(e) => setBalanceFilter(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer truncate"
+          >
+            <option value="all">💳 الحسابات النشطة (غير المصفّرة)</option>
+            <option value="owe_us">🟢 نطلبهم (ديون لصالحنا)</option>
+            <option value="we_owe">🔴 يطلبوننا (ديون علينا)</option>
+            <option value="zero">⚪ الحسابات المصفّرة (0 د.ع)</option>
+          </select>
+        </div>
+
+        {/* شريط الإجراءات الجماعية يظهر فقط عند التحديد */}
+        {selectedPartnerIds.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap animate-in fade-in">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleDeleteSelected}
                 disabled={isDeletingBatch}
-                className="px-3.5 py-2 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-rose-600/20 animate-in fade-in"
+                className="px-3.5 py-1.5 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
               >
                 <span>🗑️</span>
                 <span>مسح المحدد ({selectedPartnerIds.length})</span>
               </button>
-            )}
-
-            <span className="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">
-              عرض ({filteredPartners.length}) من ({allPartners.length}) حساب
+              <button
+                type="button"
+                onClick={() => setSelectedPartnerIds([])}
+                className="px-2.5 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700"
+              >
+                إلغاء التحديد
+              </button>
+            </div>
+            <span className="text-xs font-bold text-slate-400">
+              تم تحديد {selectedPartnerIds.length} من {filteredPartners.length}
             </span>
           </div>
-
-          {/* أزرار العمليات الإدارية والإضافة */}
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <button
-              type="button"
-              onClick={handleSync}
-              disabled={isPending}
-              className="px-3 py-2 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-xl transition disabled:opacity-50 flex items-center gap-1"
-              title="مزامنة وتحديث أطراف النظام من قاعدة البيانات"
-            >
-              <span>🔄</span>
-              <span>مزامنة النظام</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSyncOldDebts}
-              disabled={isPending}
-              className="px-3 py-2 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition disabled:opacity-50 flex items-center gap-1"
-              title="فحص الطلبات المسلمة وتوليد ديون الزبائن بأثر رجعي"
-            >
-              <span>📊</span>
-              <span>ديون الزبائن السابقة</span>
-            </button>
-
-            <Link
-              href="/abo1stor3hlaa2kbr8-47/credit-book/logs"
-              className="px-3 py-2 text-xs font-black text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition flex items-center gap-1"
-            >
-              <span>📋</span>
-              <span>سجل التغييرات</span>
-            </Link>
-
-            {!isAccountant && (
-              <Link
-                href="/abo1stor3hlaa2kbr8-47/credit-book/accountants"
-                className="px-3 py-2 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-xl transition flex items-center gap-1"
-              >
-                <span>🔑</span>
-                <span>المحاسبين</span>
-              </Link>
-            )}
-
-            {/* الزر الرئيسي المميز */}
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-            >
-              <span>➕</span>
-              <span>إضافة حساب جديد</span>
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* اقتراح سريع عند البحث باسم غير موجود */}
@@ -507,7 +439,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
         </div>
       )}
 
-      {/* 3. عرض الحسابات (نظام البلوكات الافتراضي بدون سحب أفقي، أو الجدول المطور) */}
+      {/* 3. عرض الحسابات (نظام البلوكات الرشيق) */}
       {isPending ? (
         <div className="py-20 text-center bg-white rounded-2xl border border-slate-100">
           <div className="inline-block animate-spin text-2xl mb-2">⏳</div>
@@ -519,8 +451,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
           <div className="text-slate-600 font-black text-base">لا توجد حسابات مطابقة للتصفية حالياً</div>
           <p className="text-slate-400 text-xs font-bold mt-1">جرب تغيير شروط البحث أو الفرز أعلاه</p>
         </div>
-      ) : viewMode === "blocks" ? (
-        /* ========== نظام البلوكات الرشيق (اسم المحل والمبلغ فقط) ========== */
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {filteredPartners.map((partner) => {
             const isSelected = selectedPartnerIds.includes(partner.id);
@@ -607,128 +538,115 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             );
           })}
         </div>
-      ) : (
-        /* ========== نظام الجدول المطور (Table View) لمن يفضله ========== */
-        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-xs font-black border-b border-slate-100">
-                  <th className="p-3.5 w-12 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedPartnerIds.length === filteredPartners.length && filteredPartners.length > 0}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
-                    />
-                  </th>
-                  <th className="p-3.5">الاسم</th>
-                  <th className="p-3.5">رقم الهاتف</th>
-                  <th className="p-3.5">النوع</th>
-                  <th className="p-3.5">رصيد الدفتر اليدوي</th>
-                  <th className="p-3.5">المحفظة / التلقائي</th>
-                  <th className="p-3.5">الرصيد الإجمالي</th>
-                  <th className="p-3.5 text-center">الإجراء</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredPartners.map((partner) => {
-                  const typeInfo = typeLabels[partner.type] || { label: partner.type, icon: "👤" };
-                  return (
-                    <tr 
-                      key={partner.id} 
-                      className="hover:bg-indigo-50/30 transition cursor-pointer"
-                      onClick={() => router.push(`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`)}
-                    >
-                      <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedPartnerIds.includes(partner.id)}
-                          onChange={(e) => handleSelectPartner(partner.id, e.target.checked)}
-                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
-                        />
-                      </td>
-                      <td className="p-3.5 font-bold text-slate-800">
-                        <div className="flex items-center gap-2">
-                          <Link 
-                            href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
-                            className="text-slate-800 hover:text-indigo-600 font-black text-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {partner.name}
-                          </Link>
-                          {new Date(partner.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-100 text-indigo-800">
-                              جديد
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3.5 text-slate-500 text-xs font-bold" onClick={(e) => e.stopPropagation()}>
-                        {partner.phone ? (
-                          <div className="flex items-center gap-1.5">
-                            <a href={`tel:${partner.phone}`} className="hover:text-indigo-600" dir="ltr">
-                              {partner.phone}
-                            </a>
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopyPhone(e, partner.id, partner.phone!)}
-                              className="text-[9px] text-slate-400 hover:text-slate-600 px-1 py-0.5 rounded bg-slate-100"
-                            >
-                              {copiedPhoneId === partner.id ? "✓" : "نسخ"}
-                            </button>
-                          </div>
-                        ) : "—"}
-                      </td>
-                      <td className="p-3.5 text-xs">
-                        <span className={`px-2.5 py-0.5 rounded-full font-black border text-[11px] ${typeBadgeStyles[partner.type] || "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                          {typeInfo.icon} {typeInfo.label}
-                        </span>
-                      </td>
-                      <td className="p-3.5 font-bold text-xs">
-                        {partner.manualBalance > 0 ? (
-                          <span className="text-emerald-600 tabular-nums">+{formatDinarAsAlfWithUnit(partner.manualBalance)}</span>
-                        ) : partner.manualBalance < 0 ? (
-                          <span className="text-rose-600 tabular-nums">-{formatDinarAsAlfWithUnit(Math.abs(partner.manualBalance))}</span>
-                        ) : (
-                          <span className="text-slate-400">0</span>
-                        )}
-                      </td>
-                      <td className="p-3.5 font-bold text-xs">
-                        {partner.type === "courier" || partner.type === "preparer" ? (
-                          <div className="flex flex-col">
-                            <span className={`tabular-nums ${partner.autoBalance > 0 ? "text-emerald-600" : partner.autoBalance < 0 ? "text-rose-600" : "text-slate-400"}`}>
-                              {partner.autoBalance > 0 ? "+" : ""}{formatDinarAsAlfWithUnit(partner.autoBalance)}
-                            </span>
-                            <span className="text-[9px] text-slate-400">متبقي: {formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
-                          </div>
-                        ) : partner.type === "shop" ? (
-                          <span className={partner.autoBalance < 0 ? "text-rose-600 tabular-nums" : "text-slate-400"}>
-                            {partner.autoBalance < 0 ? `يطلبنا: ${formatDinarAsAlfWithUnit(Math.abs(partner.autoBalance))}` : "مسدد بالكامل"}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="p-3.5 font-black text-sm">
-                        {partner.balance > 0 ? (
-                          <span className="text-emerald-600 tabular-nums">+{formatDinarAsAlfWithUnit(partner.balance)}</span>
-                        ) : partner.balance < 0 ? (
-                          <span className="text-rose-600 tabular-nums">-{formatDinarAsAlfWithUnit(Math.abs(partner.balance))}</span>
-                        ) : (
-                          <span className="text-slate-400">0 (مصفّر)</span>
-                        )}
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <span className="text-xs font-black text-indigo-600 hover:text-indigo-800">
-                          فتح ⬅️
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      )}
+
+      {/* نافذة إعدادات دفتر الديون المنبثقة */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-sm w-full p-5 text-right animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                <span>⚙️</span>
+                <span>إعدادات دفتر الديون</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* تحديد كافة الحسابات */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleSelectAll(selectedPartnerIds.length !== filteredPartners.length);
+                  setShowSettingsModal(false);
+                }}
+                className="w-full p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-right flex items-center justify-between text-xs font-black text-slate-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <span>☑️</span>
+                  <span>{selectedPartnerIds.length === filteredPartners.length && filteredPartners.length > 0 ? "إلغاء تحديد الكل" : "تحديد كافة الحسابات"}</span>
+                </div>
+                <span className="text-[10px] text-slate-400">({filteredPartners.length} حساب)</span>
+              </button>
+
+              {/* مزامنة أطراف النظام */}
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  handleSync();
+                }}
+                className="w-full p-3 rounded-xl bg-indigo-50/60 hover:bg-indigo-100/70 border border-indigo-100 text-right flex items-center justify-between text-xs font-black text-indigo-800 transition disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <span>🔄</span>
+                  <span>مزامنة أطراف النظام</span>
+                </div>
+                <span className="text-[10px] text-indigo-500">استيراد جهات النظام</span>
+              </button>
+
+              {/* مزامنة ديون الزبائن التاريخية */}
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  handleSyncOldDebts();
+                }}
+                className="w-full p-3 rounded-xl bg-emerald-50/60 hover:bg-emerald-100/70 border border-emerald-100 text-right flex items-center justify-between text-xs font-black text-emerald-800 transition disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <span>📊</span>
+                  <span>مزامنة ديون الزبائن السابقة</span>
+                </div>
+                <span className="text-[10px] text-emerald-500">فحص بأثر رجعي</span>
+              </button>
+
+              {/* سجل التغييرات */}
+              <Link
+                href="/abo1stor3hlaa2kbr8-47/credit-book/logs"
+                onClick={() => setShowSettingsModal(false)}
+                className="w-full p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-right flex items-center justify-between text-xs font-black text-slate-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <span>📋</span>
+                  <span>سجل التغييرات والعمليات</span>
+                </div>
+                <span className="text-slate-400">⬅️</span>
+              </Link>
+
+              {/* روابط المحاسبين */}
+              {!isAccountant && (
+                <Link
+                  href="/abo1stor3hlaa2kbr8-47/credit-book/accountants"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-right flex items-center justify-between text-xs font-black text-slate-700 transition"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>🔑</span>
+                    <span>روابط المحاسبين</span>
+                  </div>
+                  <span className="text-slate-400">⬅️</span>
+                </Link>
+              )}
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="w-full py-2 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}
