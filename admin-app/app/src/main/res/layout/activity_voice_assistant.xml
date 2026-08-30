@@ -15,76 +15,63 @@
         android:clickable="true"
         android:focusable="true" />
 
-    <!-- بوكس الاستجابة الشفاف جداً يظهر فقط عند وجود رد صريح -->
+    <!-- حاوية سجل دردشة المحادثة المتسلسلة بدون خلفية وتصعد للأعلى تلقائياً -->
     <LinearLayout
         android:id="@+id/responseContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_above="@id/bottomGeminiBarLayout"
         android:orientation="vertical"
-        android:padding="12dp"
-        android:visibility="gone">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="10dp"
+        android:background="@android:color/transparent">
 
-        <ScrollView
-            android:id="@+id/responseScrollView"
-            android:layout_width="match_parent"
+        <!-- شريط الحالة العلوي الصغير النظيف -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxHeight="160dp"
-            android:background="#F8FAFC"
-            android:padding="12dp"
-            android:elevation="8dp">
+            android:layout_gravity="center_horizontal"
+            android:text="🎙️ المساعد الصوتي جاهز..."
+            android:textSize="11.5sp"
+            android:textStyle="bold"
+            android:textColor="#38BDF8"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="#220F172A"
+            android:layout_marginBottom="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:visibility="gone"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <!-- السكرول فيو الشفاف الذي يحمل رسائل الدردشة المرتفعة للأعلى -->
+        <ScrollView
+            android:id="@+id/chatScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:background="@android:color/transparent">
 
             <LinearLayout
+                android:id="@+id/chatMessagesContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🎙️ المساعد الاستجابة"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="#0284C7"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:id="@+id/tvTranscript"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#0F172A"
-                    android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:id="@+id/tvResponse"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="#0F172A"
-                    android:lineSpacingExtra="3dp" />
-
-                <LinearLayout
-                    android:id="@+id/buttonsContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
+                android:orientation="vertical"
+                android:gravity="bottom"
+                android:background="@android:color/transparent" />
         </ScrollView>
     </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:visibility="gone"
-        android:layout_above="@id/bottomGeminiBarLayout"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnToggleTts"
@@ -93,6 +80,7 @@
         android:visibility="gone"
         android:text="🔊" />
 
+    <!-- وحدة الكتابة وإدخال الأوامر بنص خفيف وناعم وشفاف -->
     <LinearLayout
         android:id="@+id/textInputContainer"
         android:layout_width="match_parent"
@@ -101,7 +89,10 @@
         android:orientation="horizontal"
         android:visibility="gone"
         android:padding="8dp"
-        android:background="#FFFFFF">
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="8dp"
+        android:background="#330F172A">
 
         <EditText
             android:id="@+id/etCommandInput"
@@ -111,8 +102,8 @@
             android:hint="اكتب أمرك النصي هنا..."
             android:textSize="13sp"
             android:padding="10dp"
-            android:background="#F1F5F9"
-            android:textColor="#0F172A"
+            android:background="#22FFFFFF"
+            android:textColor="#F8FAFC"
             android:textColorHint="#94A3B8"
             android:layout_marginEnd="6dp"
             android:maxLines="2" />
@@ -126,7 +117,7 @@
             android:textColor="#FFFFFF" />
     </LinearLayout>
 
-    <!-- Gemini Live Floating Bar (الشكل والترتيب المطابق 100% للصورة المرفقة) -->
+    <!-- Gemini Live Floating Bar المضيء والعائم في الأسفل -->
     <LinearLayout
         android:id="@+id/bottomGeminiBarLayout"
         android:layout_width="match_parent"
@@ -140,7 +131,7 @@
         android:background="@android:color/transparent"
         android:layoutDirection="ltr">
 
-        <!-- 1. زر إغلاق X أقصى اليسار (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <!-- 1. زر إغلاق X -->
         <ImageButton
             android:id="@+id/btnClose"
             android:layout_width="50dp"
@@ -152,7 +143,7 @@
             android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 2. زر الميكروفون (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <!-- 2. زر الميكروفون -->
         <ImageButton
             android:id="@+id/btnMicToggle"
             android:layout_width="50dp"
@@ -164,7 +155,7 @@
             android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 3. كبسولة Gemini Live المضيئة ذات الألوان المطموشة بالدمج الناعم في المنتصف والمتفاعلة مع الصوت -->
+        <!-- 3. كبسولة Gemini Live المضيئة -->
         <com.aboakbar.admin.GeminiLivePillView
             android:id="@+id/btnGeminiPill"
             android:layout_width="0dp"
@@ -172,7 +163,7 @@
             android:layout_weight="1"
             android:layout_marginEnd="10dp" />
 
-        <!-- 4. زر سهم الإرسال (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <!-- 4. زر سهم الإرسال السريع -->
         <ImageButton
             android:id="@+id/btnSendTextAction"
             android:layout_width="50dp"
@@ -184,7 +175,7 @@
             android:padding="12dp"
             android:layout_marginEnd="10dp" />
 
-        <!-- 5. زر الكاميرا/الكيبورد أقصى اليمين (دائرة بيضاء بإطار أسود دائري صريح) -->
+        <!-- 5. زر الكيبورد والكتابة -->
         <ImageButton
             android:id="@+id/btnKeyboardToggle"
             android:layout_width="50dp"

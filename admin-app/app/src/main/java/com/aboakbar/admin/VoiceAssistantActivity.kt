@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -35,8 +37,6 @@ import java.util.Locale
 class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var tvStatus: TextView
-    private lateinit var tvTranscript: TextView
-    private lateinit var tvResponse: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var btnClose: ImageButton
     private lateinit var btnMicToggle: ImageButton
@@ -46,10 +46,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private lateinit var textInputContainer: LinearLayout
     private lateinit var etCommandInput: EditText
     private lateinit var btnSendText: Button
-    private lateinit var buttonsContainer: LinearLayout
     private lateinit var btnToggleTts: Button
     private lateinit var transparentClickDismiss: View
-    private lateinit var responseContainer: LinearLayout
+
+    private lateinit var chatScrollView: ScrollView
+    private lateinit var chatMessagesContainer: LinearLayout
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var textToSpeech: TextToSpeech? = null
@@ -69,8 +70,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         setContentView(R.layout.activity_voice_assistant)
 
         tvStatus = findViewById(R.id.tvStatus)
-        tvTranscript = findViewById(R.id.tvTranscript)
-        tvResponse = findViewById(R.id.tvResponse)
         progressBar = findViewById(R.id.progressBar)
         btnClose = findViewById(R.id.btnClose)
         btnMicToggle = findViewById(R.id.btnMicToggle)
@@ -80,10 +79,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         textInputContainer = findViewById(R.id.textInputContainer)
         etCommandInput = findViewById(R.id.etCommandInput)
         btnSendText = findViewById(R.id.btnSendText)
-        buttonsContainer = findViewById(R.id.buttonsContainer)
         btnToggleTts = findViewById(R.id.btnToggleTts)
         transparentClickDismiss = findViewById(R.id.transparentClickDismiss)
-        responseContainer = findViewById(R.id.responseContainer)
+
+        chatScrollView = findViewById(R.id.chatScrollView)
+        chatMessagesContainer = findViewById(R.id.chatMessagesContainer)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         isTtsMuted = prefs.getBoolean(KEY_TTS_MUTED, false)
@@ -93,6 +93,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
         transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
+
+        // رسالة ترحيبية أصلية في الشات الشفاف الناعم
+        addMessageToChat(
+            sender = "ai",
+            text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀"
+        )
 
         btnMicToggle.setOnClickListener {
             if (isListening) {
@@ -116,8 +122,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnSendTextAction.setOnClickListener {
             val typedText = etCommandInput.text.toString().trim()
             if (typedText.isNotEmpty()) {
-                tvTranscript.text = "💬 \"$typedText\""
                 etCommandInput.setText("")
+                addMessageToChat(sender = "user", text = typedText)
                 sendToAdminVoiceApi(typedText)
             } else {
                 if (textInputContainer.visibility != View.VISIBLE) {
@@ -152,8 +158,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         btnSendText.setOnClickListener {
             val typedText = etCommandInput.text.toString().trim()
             if (typedText.isNotEmpty()) {
-                tvTranscript.text = "💬 \"$typedText\""
                 etCommandInput.setText("")
+                addMessageToChat(sender = "user", text = typedText)
                 sendToAdminVoiceApi(typedText)
             } else {
                 Toast.makeText(this, "يرجى كتابة الأمر أولاً", Toast.LENGTH_SHORT).show()
@@ -162,6 +168,99 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
         checkOverlayPermissionAndStartFloatingService()
         checkPermissionAndStartListening()
+    }
+
+    /**
+     * رسم وإضافة رسالة جديدة إلى سجل المحادثة الشفاف المتسلسل للأعلى
+     */
+    private fun addMessageToChat(sender: String, text: String, buttonsArray: JSONArray? = null) {
+        val messageLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 16, 24, 16)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 10, 0, 10)
+            }
+        }
+
+        val bubbleBackground = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 32f
+            if (sender == "user") {
+                setColor(Color.parseColor("#330284C7")) // خلفية خفيفة وشفافة لرسالة أبو الأكبر
+                setStroke(2, Color.parseColor("#4438BDF8"))
+            } else {
+                setColor(Color.parseColor("#440F172A")) // خلفية خفيفة وشفافة لرسالة المساعد الذكي
+                setStroke(2, Color.parseColor("#3364748B"))
+            }
+        }
+
+        messageLayout.background = bubbleBackground
+
+        val tvSender = TextView(this).apply {
+            text = if (sender == "user") "🎙️ أنـت:" else "✨ المساعد الذكي:"
+            textSize = 11f
+            setTextColor(if (sender == "user") Color.parseColor("#BAE6FD") else Color.parseColor("#38BDF8"))
+            setPadding(0, 0, 0, 6)
+        }
+        messageLayout.addView(tvSender)
+
+        val tvText = TextView(this).apply {
+            this.text = text
+            textSize = 13.5f
+            setTextColor(Color.parseColor("#F8FAFC"))
+            setLineSpacing(4f, 1f)
+        }
+        messageLayout.addView(tvText)
+
+        // الأزرار التفاعلية المرفقة بالرسالة إن وجدت
+        if (buttonsArray != null && buttonsArray.length() > 0) {
+            val buttonsLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 10, 0, 0)
+            }
+            for (i in 0 until buttonsArray.length()) {
+                val btnObj = buttonsArray.optJSONObject(i) ?: continue
+                val btnText = btnObj.optString("text", "")
+                val btnAction = btnObj.optString("action", "")
+
+                val actionBtn = Button(this).apply {
+                    this.text = btnText
+                    textSize = 12f
+                    setTextColor(Color.parseColor("#BAE6FD"))
+                    val btnBg = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 24f
+                        setColor(Color.parseColor("#440284C7"))
+                        setStroke(2, Color.parseColor("#6638BDF8"))
+                    }
+                    background = btnBg
+                    setPadding(16, 8, 16, 8)
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 6, 0, 6)
+                    }
+                    setOnClickListener {
+                        val payload = if (btnAction.isNotEmpty()) btnAction else btnText
+                        addMessageToChat(sender = "user", text = btnText)
+                        sendToAdminVoiceApi(payload)
+                    }
+                }
+                buttonsLayout.addView(actionBtn)
+            }
+            messageLayout.addView(buttonsLayout)
+        }
+
+        chatMessagesContainer.addView(messageLayout)
+
+        // التمرير التلقائي للأعلى للتركيز على آخر رسالة
+        chatScrollView.post {
+            chatScrollView.fullScroll(View.FOCUS_DOWN)
+        }
     }
 
     private fun clearSessionHistoryAndFinish() {
@@ -312,7 +411,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val text = matches[0]
-                    tvTranscript.text = "💬 \"$text\""
+                    addMessageToChat(sender = "user", text = text)
                     sendToAdminVoiceApi(text)
                 } else {
                     if (!isMicPaused) {
@@ -330,10 +429,8 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun sendToAdminVoiceApi(text: String) {
-        tvStatus.text = "🚀 جاري التنفيذ بالتطبيق..."
+        tvStatus.text = "🚀 جاري التنفيذ بالنظام..."
         progressBar.visibility = View.VISIBLE
-        buttonsContainer.removeAllViews()
-        responseContainer.visibility = View.VISIBLE
 
         val client = OkHttpClient()
         val json = JSONObject()
@@ -352,7 +449,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 runOnUiThread {
                     progressBar.visibility = View.GONE
                     tvStatus.text = "❌ تعذر الاتصال بالسيرفر"
-                    tvResponse.text = e.message ?: "خطأ بالاتصال"
+                    addMessageToChat(sender = "ai", text = "عذراً يا أبو الأكبر، تعذر الاتصال بالسيرفر: ${e.message}")
                 }
             }
 
@@ -366,7 +463,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         if (isOk) {
                             val reply = obj.optString("reply", "")
                             tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
-                            tvResponse.text = reply
+
+                            val buttonsArray = obj.optJSONArray("buttons")
+                            addMessageToChat(sender = "ai", text = reply, buttonsArray = buttonsArray)
 
                             val uObj = JSONObject()
                             uObj.put("role", "user")
@@ -381,54 +480,18 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             if (!isTtsMuted) {
                                 speakOut(reply)
                             }
-
-                            val buttonsArray = obj.optJSONArray("buttons")
-                            renderDynamicButtons(buttonsArray)
                         } else {
                             val errText = obj.optString("error", "فشل التنفيذ")
                             tvStatus.text = "⚠️ خطأ في المعالجة"
-                            tvResponse.text = errText
+                            addMessageToChat(sender = "ai", text = errText)
                         }
                     } catch (e: Exception) {
                         tvStatus.text = "✅ الاستجابة:"
-                        tvResponse.text = resBody
+                        addMessageToChat(sender = "ai", text = resBody)
                     }
                 }
             }
         })
-    }
-
-    private fun renderDynamicButtons(buttonsArray: JSONArray?) {
-        buttonsContainer.removeAllViews()
-        if (buttonsArray == null || buttonsArray.length() == 0) return
-
-        for (i in 0 until buttonsArray.length()) {
-            val btnObj = buttonsArray.optJSONObject(i) ?: continue
-            val btnText = btnObj.optString("text", "")
-            val btnAction = btnObj.optString("action", "")
-
-            val actionBtn = Button(this).apply {
-                text = btnText
-                textSize = 14f
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#0284C7"))
-                setPadding(14, 10, 14, 10)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, 6, 0, 6)
-                }
-
-                setOnClickListener {
-                    tvTranscript.text = "💬 \"$btnText\""
-                    // إرسال btnAction القيمة المحفورة للعملية بدلاً من النص إذا كانت موجودة
-                    val payloadToSend = if (btnAction.isNotEmpty()) btnAction else btnText
-                    sendToAdminVoiceApi(payloadToSend)
-                }
-            }
-            buttonsContainer.addView(actionBtn)
-        }
     }
 
     override fun onInit(status: Int) {
