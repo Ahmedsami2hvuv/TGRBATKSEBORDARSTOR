@@ -1018,6 +1018,43 @@ export async function executeSuperSystemAgent(
         };
       }
 
+      case "courier_update_name": {
+        const oldName = parsed?.old_name || parsed?.courier_name;
+        const newName = parsed?.new_name;
+
+        if (!oldName || !newName) {
+          return { reply: `يا أبو الأكبر، اذكرلي الاسم الحالي والاسم الجديد بوضوح لأعدله.` };
+        }
+
+        const allCouriers = await prisma.courier.findMany();
+        let targetCourier = null;
+        const cleanOld = cleanArabicTextForMatch(oldName);
+        for (const c of allCouriers) {
+          const cleanC = cleanArabicTextForMatch(c.name);
+          if (cleanC.includes(cleanOld) || cleanOld.includes(cleanC)) {
+            targetCourier = c;
+            break;
+          }
+        }
+        if (!targetCourier) {
+          const { match } = findBestMatch(allCouriers, oldName);
+          targetCourier = match;
+        }
+
+        if (!targetCourier) {
+          return { reply: `يا أبو الأكبر، ما لكيت أي مندوب باسم (${oldName}) مسجل بالنظام. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+        }
+
+        const updated = await prisma.courier.update({
+          where: { id: targetCourier.id },
+          data: { name: newName }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! الذكاء الاصطناعي عدل اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
+        };
+      }
+
       case "courier_hide": {
         const allCouriers = await prisma.courier.findMany();
         const { match, ambiguous } = findBestMatch(allCouriers, parsed?.clean_name);

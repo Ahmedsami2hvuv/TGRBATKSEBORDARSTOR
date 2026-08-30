@@ -7,6 +7,8 @@ export interface LearnedIntentResult {
   shop_name?: string | null;
   region_name?: string | null;
   courier_name?: string | null;
+  old_name?: string | null;
+  new_name?: string | null;
   phone?: string | null;
   price?: number | null;
   field?: string | null;
@@ -80,6 +82,8 @@ export async function findMatchingLearnedRule(userText: string): Promise<Learned
           shop_name: actionData.shop_name || null,
           region_name: actionData.region_name || null,
           courier_name: actionData.courier_name || null,
+          old_name: actionData.old_name || null,
+          new_name: actionData.new_name || null,
           price: actionData.price || null,
           status: actionData.status || null,
           raw_text: userText,
@@ -103,20 +107,22 @@ export async function compileAndSaveNewIntent(
 
     const selectedKey = keys[0];
     const systemPrompt = `أنت العقل المدبر ومصمم الأوامر لمنظومة التوصيل وإدارة الطلبات (تطبيق أبو الأكبر).
-مهمتك: قراءة كلام وأمر أبو الأكبر المنطوق أو المكتوب، وفهم نيته بدقة، واستخراج المتغيرات، وتصنيف النية إلى إحدى الفئات التالية حصراً:
+مهمتك: قراءة كلام وأمر أبو الأكبر المنطوق أو المكتوب، وفهم نيته الحقيقية مهما كانت الصيغة العامية، واستخراج المتغيرات، وتصنيف النية إلى إحدى الفئات التالية:
 
 الفئات المتاحة:
-1. "orders_bulk_archive": أرشفة طلبات جماعية لمندوب أو محل أو حالة معينة (مثال: كل طلبات في المندوب احمد المسلمه سوي لهن ارشفه، ارشف طلبات فارس، سوي ارشفة للطلبات المسلمة).
-2. "pending_orders_list": طلب عرض الطلبات الجديدة أو المعلقة (مثال: الطلبات الجديدة، اريد اعرف الطلبات الجديدة، شكو طلبات معلقة).
-3. "last_order_details": طلب تفاصيل آخر أو أحدث طلب في النظام (مثال: اخر طلب، شنو اخر طلب، انطيني اخر طلب دخل).
-4. "order_create": إنشاء أو إضافة طلب جديد (مثال: سوي لي طلب جديد، ضيف طلب، طلب من محل كذا الى كذا).
-5. "order_unassign": إلغاء إسناد طلب أو إرجاعه لحالة جديد (مثال: الغي الاسناد، رجعه لحالة جديد، سوي جديد لطلب كذا).
-6. "order_details": استعلام عن تفاصيل طلب محدد برقم (مثال: تفاصيل طلب 2067، معلومات طلب رقم 2042).
-7. "dynamic_assign_order": إسناد طلب إلى كابتن أو مندوب (مثال: اسند طلب 2054 الى فارس، حوله للمندوب boos).
-8. "daily_summary_report": طلب ملخص اليوم أو الأرباح أو تقرير اليوم (مثال: ملخص اليوم، شكد ارباحنا اليوم).
-9. "order_cancel_or_reject": رفض أو إلغاء طلب (مثال: ارفض طلب 2054، طير الطلب، سوي مرفوض، ارفض الطلب).
-10. "focused_order_edit": تعديل سعر أو رقم هاتف أو منطقة أو نوع لطلب معين (مثال: غير السعر الى 15، عدل نوع الطلب سويه مسواق).
-11. "get_learned_rules_list": استعلام القواعد المبرمجة والمخزنة في سوبابيس (مثال: شنو القواعد المخزنة بسوبابيس، شلون اتاكد انه الذكاء ديبرمج اوامر).
+1. "courier_update_name": تعديل أو تصحيح اسم مندوب أو كابتن (مثال: فيصل اسمه غير صحيح سوي تعديل على اسمه واكتبه فايزر، غير اسم المندوب احمد الى احمد سامي، صحح اسم الكابتن).
+2. "orders_bulk_archive": أرشفة طلبات جماعية لمندوب أو محل أو حالة معينة (مثال: كل طلبات في المندوب احمد المسلمه سوي لهن ارشفه، ارشف طلبات فارس).
+3. "pending_orders_list": طلب عرض الطلبات الجديدة أو المعلقة (مثال: الطلبات الجديدة، شكو طلبات معلقة).
+4. "last_order_details": طلب تفاصيل آخر أو أحدث طلب في النظام (مثال: اخر طلب، شنو اخر طلب).
+5. "order_create": إنشاء أو إضافة طلب جديد (مثال: سوي لي طلب جديد، ضيف طلب، طلب من محل كذا الى كذا).
+6. "order_unassign": إلغاء إسناد طلب أو إرجاعه لحالة جديد (مثال: الغي الاسناد، رجعه جديد).
+7. "order_details": استعلام عن تفاصيل طلب محدد برقم (مثال: تفاصيل طلب 2067).
+8. "dynamic_assign_order": إسناد طلب إلى كابتن أو مندوب (مثال: اسند طلب 2054 الى فارس، اخر طلب مرفوض اسنده لفارس).
+9. "daily_summary_report": طلب ملخص اليوم أو الأرباح (مثال: ملخص اليوم، شكد ارباحنا اليوم).
+10. "order_cancel_or_reject": رفض أو إلغاء طلب (مثال: طلب رقم 2070 سوي له رفض، ارفض طلب 2054، سوي مرفوض).
+11. "focused_order_edit": تعديل سعر أو رقم هاتف أو منطقة أو نوع لطلب معين (مثال: غير السعر الى 15، عدل نوع الطلب سويه مسواق).
+12. "get_learned_rules_list": استعلام القواعد المبرمجة في سوبابيس (مثال: شنو القواعد المخزنة بسوبابيس).
+13. "friendly_greeting": التحايا والسوالف والمحادثة اللبقة (مثال: شلونك، مرحبا، شو اخبارك).
 
 سياق النظام:
 - المحلات المتاحة: ${(extraContext?.shops || []).join(", ") || "عام"}
@@ -126,6 +132,8 @@ export async function compileAndSaveNewIntent(
 أجب بصيغة JSON فقط بهذا الشكل:
 {
   "category": "اسم الفئة من القائمة أعلاه",
+  "old_name": "الاسم القديم إذا كان الأمر تعديل اسم مندوب أو محل وإلا null",
+  "new_name": "الاسم الجديد المراد كتابته وحفظه وإلا null",
   "order_number": رقم الطلب كرقم صحيح إذا ذكر وإلا null,
   "shop_name": "اسم المحل إذا ذكر وإلا null",
   "region_name": "اسم المنطقة إذا ذكرت وإلا null",
@@ -198,6 +206,8 @@ export async function compileAndSaveNewIntent(
             triggerPattern: patternKey,
             intentCategory: parsedJson.category,
             extractedAction: {
+              old_name: parsedJson.old_name,
+              new_name: parsedJson.new_name,
               shop_name: parsedJson.shop_name,
               region_name: parsedJson.region_name,
               courier_name: parsedJson.courier_name,
@@ -217,6 +227,8 @@ export async function compileAndSaveNewIntent(
 
     return {
       category: parsedJson.category,
+      old_name: parsedJson.old_name || null,
+      new_name: parsedJson.new_name || null,
       order_number: parsedJson.order_number ? Number(parsedJson.order_number) : null,
       shop_name: parsedJson.shop_name || null,
       region_name: parsedJson.region_name || null,
