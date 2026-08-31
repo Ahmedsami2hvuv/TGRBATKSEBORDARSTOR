@@ -521,7 +521,7 @@ export function OrderDetailSection({
                         href={telHref(shopContactPhone)}
                         className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                       >
-                        📞 اتصال
+                        اتصال
                       </a>
                       <a
                         href={whatsappMeUrl(shopContactPhone)}
@@ -529,7 +529,7 @@ export function OrderDetailSection({
                         rel="noopener noreferrer"
                         className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                       >
-                        💬 واتس
+                        واتس
                       </a>
                     </div>
                   )}
@@ -909,7 +909,7 @@ export function OrderDetailSection({
                             href={telHref(order.customerPhone)}
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
-                            📞 اتصال
+                            اتصال
                           </a>
                           <a
                             href={whatsappMeUrl(order.customerPhone)}
@@ -917,7 +917,7 @@ export function OrderDetailSection({
                             rel="noopener noreferrer"
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
-                            💬 واتس
+                            واتس
                           </a>
                         </div>
                       )}
@@ -1099,7 +1099,7 @@ export function OrderDetailSection({
                             href={telHref(order.secondCustomerPhone || order.customerPhone!)}
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
-                            📞 اتصال
+                            اتصال
                           </a>
                           <a
                             href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone!)}
@@ -1107,7 +1107,7 @@ export function OrderDetailSection({
                             rel="noopener noreferrer"
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
-                            💬 واتس
+                            واتس
                           </a>
                         </div>
                       )}
