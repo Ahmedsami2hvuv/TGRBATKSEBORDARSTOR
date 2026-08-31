@@ -106,16 +106,6 @@ export function CustomerDoorPhotoQuick({
         >
           {pending ? "جارٍ الرفع..." : "معرض"}
         </button>
-        {hasImage && (
-          <button
-            type="button"
-            disabled={pending || deleting}
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
-          >
-            {deleting ? "جارٍ المسح..." : "مسح"}
-          </button>
-        )}
       </div>
       {pending ? (
         <p className="text-xs font-bold text-sky-800">جارٍ رفع الصورة…</p>
