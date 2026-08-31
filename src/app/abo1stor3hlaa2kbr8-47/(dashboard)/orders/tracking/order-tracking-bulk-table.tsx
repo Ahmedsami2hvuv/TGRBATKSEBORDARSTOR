@@ -310,11 +310,11 @@ function TrackingCardsView({
                 ? o.summary
                 : o.orderType || "—";
 
-              const isDoubleRouteOrder = o.routeModeLabel === "وجهتين" || !!o.customerAlternatePhone || !!o.secondCustomerRegionName;
+              const isDoubleRouteOrder = o.routeModeLabel === "وجهتين" && Boolean(o.secondCustomerRegionName);
 
               const headerTextStr = isDoubleRouteOrder
                 ? `${o.regionName || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
-                : `${o.shopCustomerLabel || ""} إلى ${o.regionName || ""}`;
+                : `${o.shopCustomerLabel || "المحل"} إلى ${o.regionName || "المنطقة"}`;
 
               const textLen = headerTextStr.length;
 
@@ -384,7 +384,7 @@ function TrackingCardsView({
                       )}
                     </div>
 
-                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق بحسب الحالة */}
+                    {/* المنتصف: اسم المحل إلى منطقة الزبون داخل بلوك ملون أنيق بحسب الحالة */}
                     {isDoubleRouteOrder ? (
                       <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-2 py-1 rounded-xl border ${headerBlockBg} overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
                         <span className="font-black whitespace-nowrap text-white">{o.regionName || "المرسل"}</span>

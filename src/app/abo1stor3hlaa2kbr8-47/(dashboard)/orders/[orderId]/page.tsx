@@ -204,7 +204,16 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       phoneProfile={safeCustomerProfile}
       secondPhoneProfile={safeSecondProfile}
     />
-    <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
+    <AdminOrderMoneyEvents 
+      orderId={order.id}
+      orderNumber={order.orderNumber} 
+      orderStatus={order.status}
+      orderSubtotalDinar={order.orderSubtotal ? Number(order.orderSubtotal) : null}
+      totalAmountDinar={order.totalAmount ? Number(order.totalAmount) : null}
+      prepaidAll={order.prepaidAll}
+      nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} 
+      events={safeMoneyEvents} 
+    />
   </div>
  );
 }
