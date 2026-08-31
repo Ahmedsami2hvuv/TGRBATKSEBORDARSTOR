@@ -505,16 +505,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     isListening = true
                     progressBar.visibility = View.VISIBLE
                     if (pendingSpeechText.isNullOrBlank()) {
-                        tvStatus.text = "🎙️ أستمع لك... تفضل يا أبو الأكبر"
+                        tvStatus.text = "🎙️ تفضل بالتحدث..."
                     }
                 }
 
                 override fun onBeginningOfSpeech() {
                     isListening = true
                     handler.removeCallbacks(commitSpeechRunnable)
-                    if (pendingSpeechText.isNullOrBlank()) {
-                        tvStatus.text = "🎧 أستمع لك..."
-                    }
                     try {
                         if (textToSpeech?.isSpeaking == true) {
                             textToSpeech?.stop()
@@ -550,10 +547,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                         return
                     }
 
-                    // إذا كان خطأ صمت عادي ولم يكن المايك موقوفاً يدوياً، نعيد الاستماع بهدوء
+                    // إذا كان خطأ صمت عادي ولم يكن المايك موقوفاً يدوياً، نعيد الاستماع بهدوء وثبات
                     if (!isMicPaused && !isFinishing) {
                         handler.postDelayed({
                             if (!isMicPaused && !isListening && !isFinishing && pendingSpeechText.isNullOrBlank()) {
+                                tvStatus.text = "🎙️ تفضل بالتحدث..."
                                 startListening()
                             }
                         }, 300L)
@@ -596,6 +594,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                     if (!isMicPaused && !isFinishing && pendingSpeechText.isNullOrBlank()) {
                         handler.postDelayed({
                             if (!isMicPaused && !isListening && !isFinishing && pendingSpeechText.isNullOrBlank()) {
+                                tvStatus.text = "🎙️ تفضل بالتحدث..."
                                 startListening()
                             }
                         }, 300L)
@@ -618,7 +617,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     }
 
     private fun sendToAdminVoiceApi(text: String) {
-        tvStatus.text = "🚀 جاري التنفيذ بالنظام..."
+        tvStatus.text = "⏳ جاري التنفيذ..."
         progressBar.visibility = View.VISIBLE
 
         val client = OkHttpClient()
@@ -637,7 +636,7 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     progressBar.visibility = View.GONE
-                    tvStatus.text = "❌ تعذر الاتصال بالسيرفر"
+                    tvStatus.text = "🎙️ تفضل بالتحدث..."
                     addMessageToChat(sender = "ai", text = "عذراً يا أبو الأكبر، تعذر الاتصال بالسيرفر: ${e.message}")
 
                     if (!isMicPaused) {
@@ -654,12 +653,12 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 val resBody = response.body?.string() ?: ""
                 runOnUiThread {
                     progressBar.visibility = View.GONE
+                    tvStatus.text = "🎙️ تفضل بالتحدث..."
                     try {
                         val obj = JSONObject(resBody)
                         val isOk = obj.optBoolean("ok", false)
                         if (isOk) {
                             val reply = obj.optString("reply", "")
-                            tvStatus.text = "✅ تم تنفيذ الأمر بنجاح!"
 
                             val buttonsArray = obj.optJSONArray("buttons")
                             addMessageToChat(sender = "ai", text = reply, buttonsArray = buttonsArray)
@@ -687,7 +686,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             }
                         } else {
                             val errText = obj.optString("error", "فشل التنفيذ")
-                            tvStatus.text = "⚠️ خطأ في المعالجة"
                             addMessageToChat(sender = "ai", text = errText)
 
                             if (!isMicPaused) {
@@ -699,7 +697,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                             }
                         }
                     } catch (e: Exception) {
-                        tvStatus.text = "✅ الاستجابة:"
                         addMessageToChat(sender = "ai", text = resBody)
 
                         if (!isMicPaused) {
