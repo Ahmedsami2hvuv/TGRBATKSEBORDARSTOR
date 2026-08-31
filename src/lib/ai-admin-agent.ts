@@ -1163,14 +1163,14 @@ export async function executeSuperSystemAgent(
     }
   }
 
-  // د) أمر إسناد وتحويل طلب جديد لمحل إلى مندوب (بجميع الصيغ العراقية والعفوية والمباشرة)
-  const isAssignIntent = /(?:اسند|إسناد|اسناد|سويله\s*اسناد|سوي\s*اسناد|حول|حوله|تحويل|وجه|وجهه|توجيه|انطيه|انطي|خليه|ذب|ذبه|حط\s*بظهره|بحصة|بحصه|يستلم|ياخذ|يروح\s*ويا|دز|دزه|لفارس|كابتن|مندوب)/i.test(cleanInit);
+  // د) أمر إسناد وتحويل وتبديل طلبات المحلات للمندوبين (للجديدة والمسندة بكافة الصيغ)
+  const isAssignOrSwapIntent = /(?:اسند|إسناد|اسناد|سويله\s*اسناد|سوي\s*اسناد|حول|حوله|تحويل|وجه|وجهه|توجيه|انطيه|انطي|خليه|ذب|ذبه|حط\s*بظهره|بحصة|بحصه|يستلم|ياخذ|يروح\s*ويا|دز|دزه|بدل|بدله|تبديل|غير|تغيير|سحب|سحبه|المسند|المسنده|المعين|اللي\s*عند|الي\s*عند|يم\s*المندوب|كابتن|مندوب)/i.test(cleanInit);
 
-  if (isAssignIntent || cleanInit.includes("الجديد") || cleanInit.includes("جديد")) {
+  if (isAssignOrSwapIntent || cleanInit.includes("الجديد") || cleanInit.includes("جديد") || cleanInit.includes("مسند") || cleanInit.includes("المسند")) {
     const allCouriers = await getCachedCouriers();
     const allShops = await getCachedShops();
 
-    // 1. البحث عن المندوب المذكور بالنص
+    // 1. البحث عن المندوب المستهدف المذكور بالنص
     let matchedCourier: { id: string; name: string } | null = null;
     for (const c of allCouriers) {
       const cleanC = c.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
@@ -1185,16 +1185,17 @@ export async function executeSuperSystemAgent(
       }
     }
 
-    // 2. إذا تم العثور على المندوب، نبحث عن المحل المذكور بالنص أو رقم الطلب
+    // 2. إذا تم العثور على المندوب المستهدف
     if (matchedCourier) {
-      // أ) إذا كان هناك رقم طلب صريح (مثال: طلب 2099 اسنده لفارس)
+      // أ) إذا كان هناك رقم طلب صريح (مثال: طلب 2099 بدله لفارس أو حول 2099 لفارس)
       if (detectedOrderNum) {
         const targetOrder = await prisma.order.findUnique({
           where: { orderNumber: detectedOrderNum },
-          include: { shop: true, customerRegion: true }
+          include: { shop: true, customerRegion: true, courier: true }
         });
 
         if (targetOrder) {
+          const oldCourierName = targetOrder.courier?.name;
           const updated = await prisma.order.update({
             where: { id: targetOrder.id },
             data: { assignedCourierId: matchedCourier.id, status: "assigned" },
@@ -1209,14 +1210,17 @@ export async function executeSuperSystemAgent(
           const orderType = updated.orderType || "مسواق";
           const noteTime = updated.orderNoteTime || "الان";
           const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+          const swapText = oldCourierName && oldCourierName !== matchedCourier.name 
+            ? `بدلت إسناد طلب #${updated.orderNumber} لمحل (${shopName}) من الكابتن (${oldCourierName}) إلى الكابتن (${matchedCourier.name})` 
+            : `أسندت طلب #${updated.orderNumber} (${shopName}) إلى الكابتن (${matchedCourier.name})`;
 
           return {
-            reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} (${shopName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 المنطقة: ${regionName} | 💰 السعر: ${subtotalVal} ألف\n📦 النوع: ${orderType} | ⏰ الوقت: ${noteTime}`
+            reply: `تم يا أبو الأكبر! ${swapText} 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
           };
         }
       }
 
-      // ب) البحث عن المحل المذكور بالنص (مثال: طلب شيريني غدير الجديد سويله اسناد للمندوب فارس)
+      // ب) البحث عن المحل المذكور بالنص (مثال: طلب شيريني غدير المسند بدله لفارس)
       let matchedShop: { id: string; name: string } | null = null;
       let highestShopScore = 0;
 
@@ -1236,9 +1240,66 @@ export async function executeSuperSystemAgent(
         }
       }
 
+      const wantsAssignedExplicitly = cleanInit.includes("مسند") || cleanInit.includes("المسند") || cleanInit.includes("بدل") || cleanInit.includes("بدله") || cleanInit.includes("غير") || cleanInit.includes("سحب");
+
+      // إذا وُجد محل محدد
       if (matchedShop) {
-        // البحث عن أحدث طلب معلق جديد (pending) أو أحدث طلب لهذا المحل
-        let targetOrder = await prisma.order.findFirst({
+        // إذا طلب تحديداً الطلب المسند أو تبديل المندوب
+        if (wantsAssignedExplicitly) {
+          const assignedOrders = await prisma.order.findMany({
+            where: {
+              shopId: matchedShop.id,
+              status: "assigned"
+            },
+            orderBy: { createdAt: "desc" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+
+          // إذا وجدنا طلباً مسنداً واحداً فقط لمحل شيريني غدير
+          if (assignedOrders.length === 1) {
+            const singleOrder = assignedOrders[0];
+            const oldCourierName = singleOrder.courier?.name || "المندوب السابق";
+            const updated = await prisma.order.update({
+              where: { id: singleOrder.id },
+              data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+              include: { shop: true, customerRegion: true, courier: true }
+            });
+
+            ctx.lastOrderNumber = updated.orderNumber;
+            ctx.updatedAt = Date.now();
+
+            const shopName = updated.shop?.name || matchedShop.name;
+            const regionName = updated.customerRegion?.name || "غير محددة";
+            const orderType = updated.orderType || "مسواق";
+            const noteTime = updated.orderNoteTime || "الان";
+            const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+
+            return {
+              reply: `تم يا أبو الأكبر! بدلت إسناد طلب #${updated.orderNumber} لمحل (${shopName}) من الكابتن (${oldCourierName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
+            };
+          }
+
+          // إذا وجدنا أكثر من طلب مسند لنفس المحل
+          if (assignedOrders.length > 1) {
+            const buttons = assignedOrders.map(o => ({
+              text: `🛵 #${o.orderNumber} | ${o.customerRegion?.name || "غير محددة"} (${o.courier?.name || "مسند"})`,
+              action: `طلب ${o.orderNumber} بدله لـ ${matchedCourier?.name}`
+            }));
+
+            let summaryText = `يا أبو الأكبر، عندك (${assignedOrders.length}) طلبات مسندة حالياً لمحل (${matchedShop.name}). أي طلب منهم تريد تحويله للكابتن (${matchedCourier.name})؟ 👇\n`;
+            assignedOrders.forEach((o, i) => {
+              summaryText += `\n${i + 1}. **طلب #${o.orderNumber}**: منطقة ${o.customerRegion?.name || "غير محددة"} (السعر: ${o.orderSubtotal || 0} ألف) | عند الكابتن: ${o.courier?.name || "غير محدد"}`;
+            });
+
+            return {
+              reply: summaryText,
+              buttons: buttons
+            };
+          }
+        }
+
+        // إذا لم يكن مسنداً صريحاً أو لم نجد مسنداً، نبحث أولاً عن المعلق (pending) ثم المسند (assigned)
+        const pendingOrders = await prisma.order.findMany({
           where: {
             shopId: matchedShop.id,
             status: "pending"
@@ -1247,21 +1308,10 @@ export async function executeSuperSystemAgent(
           include: { shop: true, customerRegion: true }
         });
 
-        // إذا لم نجد طلب pending، نبحث عن أحدث طلب مسند (لتحويله)
-        if (!targetOrder) {
-          targetOrder = await prisma.order.findFirst({
-            where: {
-              shopId: matchedShop.id,
-              status: { in: ["pending", "assigned"] }
-            },
-            orderBy: { createdAt: "desc" },
-            include: { shop: true, customerRegion: true }
-          });
-        }
-
-        if (targetOrder) {
+        if (pendingOrders.length === 1) {
+          const singleOrder = pendingOrders[0];
           const updated = await prisma.order.update({
-            where: { id: targetOrder.id },
+            where: { id: singleOrder.id },
             data: { assignedCourierId: matchedCourier.id, status: "assigned" },
             include: { shop: true, customerRegion: true, courier: true }
           });
@@ -1278,13 +1328,127 @@ export async function executeSuperSystemAgent(
           return {
             reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} الجديد لمحل (${shopName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
           };
-        } else {
+        }
+
+        // إذا كان هناك أكثر من طلب جديد معلق لنفس المحل
+        if (pendingOrders.length > 1) {
+          const buttons = pendingOrders.map(o => ({
+            text: `🛵 #${o.orderNumber} | ${o.customerRegion?.name || "غير محددة"} (${o.orderSubtotal || 0} ألف)`,
+            action: `طلب ${o.orderNumber} اسنده لـ ${matchedCourier?.name}`
+          }));
+
+          let summaryText = `يا أبو الأكبر، عندك (${pendingOrders.length}) طلبات جديدة معلقة لمحل (${matchedShop.name}). أي طلب تريد إسناده للكابتن (${matchedCourier.name})؟ 👇\n`;
+          pendingOrders.forEach((o, i) => {
+            summaryText += `\n${i + 1}. **طلب #${o.orderNumber}**: منطقة ${o.customerRegion?.name || "غير محددة"} | ${o.orderType || "طلب"} (السعر: ${o.orderSubtotal || 0} ألف)`;
+          });
+
           return {
-            reply: `يا أبو الأكبر، بحثت بالنظام وما لكيت أي طلب جديد معلق لمحل (${matchedShop.name}) لإسناده للكابتن (${matchedCourier.name})!`,
-            buttons: [
-              { text: `➕ إنشاء طلب لـ ${matchedShop.name}`, action: `سويلي طلب من ${matchedShop.name}` },
-              { text: `📋 استعراض طلبات ${matchedShop.name}`, action: `طلبات ${matchedShop.name}` }
-            ]
+            reply: summaryText,
+            buttons: buttons
+          };
+        }
+
+        // إذا لم نجد طلبات معلقة، نبحث في المسندة كخيار بديل
+        const fallbackAssigned = await prisma.order.findMany({
+          where: {
+            shopId: matchedShop.id,
+            status: "assigned"
+          },
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true, courier: true }
+        });
+
+        if (fallbackAssigned.length === 1) {
+          const singleOrder = fallbackAssigned[0];
+          const oldCourierName = singleOrder.courier?.name || "المندوب السابق";
+          const updated = await prisma.order.update({
+            where: { id: singleOrder.id },
+            data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+
+          ctx.lastOrderNumber = updated.orderNumber;
+          ctx.updatedAt = Date.now();
+
+          const shopName = updated.shop?.name || matchedShop.name;
+          const regionName = updated.customerRegion?.name || "غير محددة";
+          const orderType = updated.orderType || "مسواق";
+          const noteTime = updated.orderNoteTime || "الان";
+          const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+
+          return {
+            reply: `تم يا أبو الأكبر! بدلت إسناد طلب #${updated.orderNumber} لمحل (${shopName}) من الكابتن (${oldCourierName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
+          };
+        } else if (fallbackAssigned.length > 1) {
+          const buttons = fallbackAssigned.map(o => ({
+            text: `🛵 #${o.orderNumber} | ${o.customerRegion?.name || "غير محددة"} (${o.courier?.name || "مسند"})`,
+            action: `طلب ${o.orderNumber} بدله لـ ${matchedCourier?.name}`
+          }));
+
+          let summaryText = `يا أبو الأكبر، عندك (${fallbackAssigned.length}) طلبات مسندة لمحل (${matchedShop.name}). أي طلب منهم تريد تحويله للكابتن (${matchedCourier.name})؟ 👇\n`;
+          fallbackAssigned.forEach((o, i) => {
+            summaryText += `\n${i + 1}. **طلب #${o.orderNumber}**: منطقة ${o.customerRegion?.name || "غير محددة"} (عند الكابتن: ${o.courier?.name || "غير محدد"})`;
+          });
+
+          return {
+            reply: summaryText,
+            buttons: buttons
+          };
+        }
+
+        return {
+          reply: `يا أبو الأكبر، بحثت بالنظام وما لكيت أي طلب جديد أو مسند لمحل (${matchedShop.name}) لتحويله للكابتن (${matchedCourier.name})!`,
+          buttons: [
+            { text: `➕ إنشاء طلب لـ ${matchedShop.name}`, action: `سويلي طلب من ${matchedShop.name}` },
+            { text: `📋 استعراض طلبات ${matchedShop.name}`, action: `طلبات ${matchedShop.name}` }
+          ]
+        };
+      }
+
+      // ج) إذا لم يذكر اسماً لمحل بل قال "الطلبات المسندة بدلها لفارس" أو "الطلبات المعلقة لفارس"
+      if (wantsAssignedExplicitly) {
+        const allAssigned = await prisma.order.findMany({
+          where: { status: "assigned" },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+          include: { shop: true, customerRegion: true, courier: true }
+        });
+
+        if (allAssigned.length === 1) {
+          const singleOrder = allAssigned[0];
+          const oldCourierName = singleOrder.courier?.name || "المندوب السابق";
+          const updated = await prisma.order.update({
+            where: { id: singleOrder.id },
+            data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+
+          ctx.lastOrderNumber = updated.orderNumber;
+          ctx.updatedAt = Date.now();
+
+          const shopName = updated.shop?.name || "المحل";
+          const regionName = updated.customerRegion?.name || "غير محددة";
+          const orderType = updated.orderType || "مسواق";
+          const noteTime = updated.orderNoteTime || "الان";
+          const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+
+          return {
+            reply: `تم يا أبو الأكبر! بدلت إسناد طلب #${updated.orderNumber} لمحل (${shopName}) من الكابتن (${oldCourierName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
+          };
+        } else if (allAssigned.length > 1) {
+          const buttons = allAssigned.map(o => ({
+            text: `🛵 #${o.orderNumber} | ${o.shop?.name} (${o.customerRegion?.name || "منطقة"})`,
+            action: `طلب ${o.orderNumber} بدله لـ ${matchedCourier?.name}`
+          }));
+
+          let summaryText = `يا أبو الأكبر، عندك (${allAssigned.length}) طلبات مسندة حالياً بالنظام. أي طلب تريد تحويله للكابتن (${matchedCourier.name})؟ 👇\n`;
+          allAssigned.forEach((o, i) => {
+            summaryText += `\n${i + 1}. **طلب #${o.orderNumber}**: محل ${o.shop?.name || "عام"} 📍 ${o.customerRegion?.name || "غير محددة"} (عند: ${o.courier?.name || "مندوب"})`;
+          });
+
+          return {
+            reply: summaryText,
+            buttons: buttons
           };
         }
       }
