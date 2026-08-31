@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-
-const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
-
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { DeliveryLoading } from "@/components/delivery-loading";
+import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 type RegionOption = {
   id: string | null;
@@ -34,7 +34,176 @@ type OrderHistoryItem = {
 
 const regionKey = (id: string | null) => id ?? "__none";
 
-export function AdminCustomerOrderHistory({
+/** مكون تفاعلي عند النقر على رقم الزبون يعرض نافذة عائمة تضم ملف الزبون وطلباته السابقة */
+export function AdminCustomerPhoneInteractive({
+  phone,
+  formattedPhone,
+  regionId,
+  currentOrderId,
+  customerName,
+  customerRegionName,
+  alternatePhone,
+  customerLocationUrl,
+  customerLandmark,
+  customerProfileId,
+}: {
+  phone: string;
+  formattedPhone?: string;
+  regionId?: string | null;
+  currentOrderId: string;
+  customerName?: string | null;
+  customerRegionName?: string | null;
+  alternatePhone?: string | null;
+  customerLocationUrl?: string;
+  customerLandmark?: string;
+  customerProfileId?: string | null;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const displayPhone = formattedPhone || phone;
+
+  const copyPhone = async () => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setShowMenu(true)}
+        className="group inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/80 hover:bg-sky-100/80 active:scale-95 px-2.5 py-1 text-sm font-black text-sky-950 transition-all cursor-pointer shadow-2xs"
+        title="انقر لعرض ملف الزبون أو طلباته السابقة"
+      >
+        <span className="font-mono text-slate-900 font-extrabold">{displayPhone}</span>
+        <span className="text-xs text-sky-600 group-hover:text-sky-800">⚡</span>
+      </button>
+
+      {/* --- نافذة الخيارات العائمة المنبثقة عند النقر على رقم الزبون --- */}
+      {showMenu && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-150 text-right">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>📱</span>
+                  <span>خيارات الزبون</span>
+                </h3>
+                <p className="text-xs font-mono font-bold text-slate-500 mt-0.5">{phone}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMenu(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* خيار: ملف الزبون */}
+              {customerProfileId ? (
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/customers/profiles/${customerProfileId}/edit`}
+                  onClick={() => setShowMenu(false)}
+                  className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-lg">📁</span>
+                    <span>فتح ملف الزبون</span>
+                  </span>
+                  <span className="text-xs font-bold text-sky-700">تعديل الملف ⬅️</span>
+                </Link>
+              ) : (
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/customers/info?phone=${encodeURIComponent(phone)}${regionId ? `&regionId=${encodeURIComponent(regionId)}` : ""}`}
+                  onClick={() => setShowMenu(false)}
+                  className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-lg">📁</span>
+                    <span>ملف وبيانات الزبون</span>
+                  </span>
+                  <span className="text-xs font-bold text-sky-700">عرض ⬅️</span>
+                </Link>
+              )}
+
+              {/* خيار: عرض طلبات الزبون السابقة */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowHistory(true);
+                }}
+                className="flex w-full items-center justify-between rounded-2xl border-2 border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 p-3.5 text-sm font-black text-emerald-950 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-lg">📜</span>
+                  <span>طلبات الزبون السابقة</span>
+                </span>
+                <span className="text-xs font-bold text-emerald-700">عرض السجل ⬅️</span>
+              </button>
+
+              {/* أزرار سريعة: نسخ + اتصال + واتساب */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={copyPhone}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 hover:bg-slate-200 p-2 text-xs font-black text-slate-800 transition-all cursor-pointer"
+                >
+                  <span>{copied ? "✅" : "📋"}</span>
+                  <span>{copied ? "تم النسخ" : "نسخ الرقم"}</span>
+                </button>
+                <a
+                  href={telHref(phone)}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>📞</span>
+                  <span>اتصال</span>
+                </a>
+                <a
+                  href={whatsappMeUrl(phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>💬</span>
+                  <span>واتس</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- النافذة العائمة الشاملة لطلبات الزبون السابقة --- */}
+      {showHistory && (
+        <AdminCustomerOrderHistoryModal
+          phone={phone}
+          regionId={regionId}
+          currentOrderId={currentOrderId}
+          customerName={customerName}
+          customerRegionName={customerRegionName}
+          alternatePhone={alternatePhone}
+          customerLocationUrl={customerLocationUrl}
+          customerLandmark={customerLandmark}
+          customerProfileId={customerProfileId}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/** النافذة العائمة لعرض طلبات الزبون السابقة */
+export function AdminCustomerOrderHistoryModal({
   phone,
   regionId,
   currentOrderId,
@@ -44,7 +213,7 @@ export function AdminCustomerOrderHistory({
   customerLocationUrl,
   customerLandmark,
   customerProfileId,
-  buttonText,
+  onClose,
 }: {
   phone: string;
   regionId?: string | null;
@@ -55,22 +224,13 @@ export function AdminCustomerOrderHistory({
   customerLocationUrl?: string;
   customerLandmark?: string;
   customerProfileId?: string | null;
-  buttonText?: string;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderHistoryItem[] | null>(null);
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string>(regionId ? regionKey(regionId) : "all");
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setSelectedRegionId(regionId ? regionKey(regionId) : "all");
-  }, [open, regionId]);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -79,15 +239,11 @@ export function AdminCustomerOrderHistory({
     if (selectedRegionId !== "all") {
       params.set("regionId", selectedRegionId);
     }
-    params.set("limit", "10");
+    params.set("limit", "15");
     return params.toString();
   }, [phone, selectedRegionId, currentOrderId]);
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setOrders(null);
@@ -112,7 +268,7 @@ export function AdminCustomerOrderHistory({
       .finally(() => {
         setLoading(false);
       });
-  }, [open, query]);
+  }, [query]);
 
   const selectedRegionLabel =
     selectedRegionId === "all"
@@ -129,168 +285,169 @@ export function AdminCustomerOrderHistory({
   const showRegionFilters = regions.length > 1;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-1.5 py-2 text-[11px] sm:text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors min-h-[38px] text-center"
-      >
-        <span className="truncate">{buttonText || "عرض الطلبات"}</span>
-      </button>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div>
-                <h2 className="text-lg font-black text-slate-900">بيانات الزبون وطلباته السابقة</h2>
-                <p className="text-sm text-slate-500">
-                  آخر 10 طلبات مرتبطة بهاتف الزبون في {selectedRegionLabel}.
-                </p>
-              </div>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200" dir="rtl">
+      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 bg-slate-50/80">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+              <span>📜</span>
+              <span>بيانات وطلبات الزبون السابقة ({phone})</span>
+            </h2>
+            <p className="text-xs font-bold text-slate-500 mt-0.5">
+              آخر الطلبات المرتبطة برقم الزبون في {selectedRegionLabel}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-bold cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="max-h-[75vh] overflow-y-auto px-5 py-4 space-y-4">
+          {showRegionFilters && (
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                onClick={() => setSelectedRegionId("all")}
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                  selectedRegionId === "all"
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                }`}
               >
-                ✕
+                الكل
               </button>
+              {regions.map((region) => (
+                <button
+                  key={region.key}
+                  type="button"
+                  onClick={() => setSelectedRegionId(region.key)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                    selectedRegionId === region.key
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {region.name} ({region.count})
+                </button>
+              ))}
             </div>
-            <div className="max-h-[75vh] overflow-y-auto px-5 py-4">
-              {showRegionFilters && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRegionId("all")}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${selectedRegionId === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
-                  >
-                    الكل
-                  </button>
-                  {regions.map((region) => (
-                    <button
-                      key={region.key}
-                      type="button"
-                      onClick={() => setSelectedRegionId(region.key)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${selectedRegionId === region.key ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
-                    >
-                      {region.name} ({region.count})
-                    </button>
+          )}
+
+          {loading && (
+            <div className="py-12">
+              <DeliveryLoading message="جاري استرجاع طلبات الزبون السابقة..." />
+            </div>
+          )}
+
+          {error && <p className="text-sm font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">خطأ: {error}</p>}
+
+          {!loading && !error && orders !== null && (
+            <div className="space-y-4">
+              {/* بطاقة ملخص بيانات الزبون */}
+              <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 shadow-xs">
+                <h3 className="text-xs font-black text-slate-800 mb-2.5">بيانات الزبون المحفوظة</h3>
+                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 text-xs">
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                    <p className="text-[10px] font-bold text-slate-500">الهاتف الرئيسي</p>
+                    <p className="font-bold text-slate-900 font-mono">{phone}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                    <p className="text-[10px] font-bold text-slate-500">الهاتف الثاني</p>
+                    <p className="font-bold text-slate-900 font-mono">{alternatePhone || "—"}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                    <p className="text-[10px] font-bold text-slate-500">المنطقة</p>
+                    <p className="font-bold text-slate-900">{displayedRegionName}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5 col-span-2 sm:col-span-2">
+                    <p className="text-[10px] font-bold text-slate-500">العنوان / النقطة الدالة</p>
+                    <p className="font-bold text-slate-900">{customerLandmark || "—"}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] font-bold text-slate-500">الموقع الجغرافي</p>
+                    {customerLocationUrl ? (
+                      <a href={customerLocationUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 hover:underline">فتح اللوكيشن ↗</a>
+                    ) : (
+                      <p className="font-bold text-slate-400">—</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* قائمة الطلبات السابقة */}
+              {orders.length === 0 ? (
+                <p className="text-center text-sm font-bold text-slate-500 py-8 bg-slate-50 rounded-2xl border border-slate-200">
+                  لا توجد طلبات سابقة مسجلة لهذا الزبون.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-700">سجل الطلبات ({orders.length}):</h4>
+                  {orders.map((item) => (
+                    <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs hover:border-sky-300 transition-colors">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-sky-600 text-white px-2 py-0.5 text-xs font-black font-mono">
+                            #{item.orderNumber}
+                          </span>
+                          <span className="text-xs font-black text-slate-800">
+                            🏪 {item.shop.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded-full bg-slate-100 text-slate-800 px-2.5 py-0.5 text-xs font-black">
+                            {item.status}
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-500">
+                            {new Date(item.createdAt).toLocaleDateString("ar-IQ-u-nu-latn")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-bold text-slate-700">
+                        <div>المنطقة: <span className="text-slate-900">{item.customerRegion?.name ?? "—"}</span></div>
+                        <div>السعر: <span className="font-mono font-black text-slate-900">{item.totalAmount != null ? `${item.totalAmount} ألف` : "—"}</span></div>
+                        <div>النوع: <span className="text-slate-900">{item.orderType || "—"}</span></div>
+                      </div>
+
+                      {item.customerLandmark && (
+                        <p className="text-xs font-bold text-slate-600 mt-1.5">
+                          🏛️ الدالة: {item.customerLandmark}
+                        </p>
+                      )}
+
+                      {item.customerDoorPhotoUrl && (
+                        <div className="mt-2">
+                          <img src={resolvePublicAssetSrc(item.customerDoorPhotoUrl)} alt="صورة باب" className="h-24 w-full rounded-xl object-cover border border-slate-200" />
+                        </div>
+                      )}
+
+                      <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
+                        {item.customerLocationUrl ? (
+                          <a href={item.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-black text-emerald-700 hover:underline">
+                            📍 فتح موقع الطلب ↗
+                          </a>
+                        ) : <span />}
+                        <Link
+                          href={`${SECRET_ADMIN_PATH}/orders/${item.id}`}
+                          target="_blank"
+                          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 text-xs font-bold transition-colors"
+                        >
+                          عرض تفاصيل الطلب ↗
+                        </Link>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-              {loading && (
-                <div className="py-8">
-                  <DeliveryLoading message="جاري استرجاع طلبات الزبون..." />
-                </div>
-              )}
-              {error && <p className="text-sm font-semibold text-rose-600">خطأ: {error}</p>}
-              {!loading && !error && orders !== null && (
-                <div className="space-y-4">
-                  <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                    <h3 className="text-sm font-black text-slate-900">معلومات الزبون</h3>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs uppercase text-slate-500">الهاتف الرئيسي</p>
-                        <p className="text-sm font-bold text-slate-900 font-mono tabular-nums">{phone}</p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs uppercase text-slate-500">الهاتف الثاني</p>
-                        <p className="text-sm font-bold text-slate-900 font-mono tabular-nums">{alternatePhone || "—"}</p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs uppercase text-slate-500">المنطقة</p>
-                        <p className="text-sm font-bold text-slate-900">{displayedRegionName}</p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs uppercase text-slate-500">العنوان/العلامة</p>
-                        <p className="text-sm font-bold text-slate-900">{customerLandmark || "—"}</p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs uppercase text-slate-500">رابط اللوكيشن</p>
-                        {customerLocationUrl ? (
-                          <a href={customerLocationUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-emerald-700 hover:underline">فتح اللوكيشن</a>
-                        ) : (
-                          <p className="text-sm font-bold text-slate-900">—</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {customerProfileId ? (
-                        <Link href={`${SECRET_ADMIN_PATH}/customers/profiles/${customerProfileId}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition-colors">
-                          فتح ملف الزبون
-                        </Link>
-                      ) : (
-                        <Link href={`${SECRET_ADMIN_PATH}/customers/info?phone=${encodeURIComponent(phone)}${regionId ? `&regionId=${encodeURIComponent(regionId)}` : ""}`} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors">
-                          عرض صفحة بيانات الزبون
-                        </Link>
-                      )}
-                    </div>
-                  </section>
-                  {orders.length === 0 ? (
-                    <p className="text-sm text-slate-600">لا توجد طلبات سابقة لهذا الزبون.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {orders.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className="text-sm font-bold text-slate-700">طلب #{item.orderNumber}</p>
-                              <p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString("ar-IQ-u-nu-latn", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{item.status}</span>
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{item.shop.name}</span>
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{item.customerRegion?.name ?? "—"}</span>
-                            </div>
-                          </div>
-                          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                            <div className="rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">نوع الطلب</p>
-                              <p className="text-sm font-bold text-slate-900">{item.orderType || "—"}</p>
-                            </div>
-                            <div className="rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">المبلغ الكلي</p>
-                              <p className="text-sm font-bold text-slate-900">{item.totalAmount != null ? `${item.totalAmount} ` : "—"}</p>
-                            </div>
-                            <div className="rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">التوصيل</p>
-                              <p className="text-sm font-bold text-slate-900">{item.deliveryPrice != null ? `${item.deliveryPrice} ` : "—"}</p>
-                            </div>
-                          </div>
-                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">الهاتف الثاني</p>
-                              <p className="text-sm font-bold text-slate-900 font-mono tabular-nums">{item.alternatePhone || "—"}</p>
-                            </div>
-                            <div className="rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">أقرب نقطة</p>
-                              <p className="text-sm font-bold text-slate-900">{item.customerLandmark || "—"}</p>
-                            </div>
-                          </div>
-                          {item.customerLocationUrl ? (
-                            <div className="mt-3 rounded-xl bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">رابط اللوكيشن</p>
-                              <a href={item.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-emerald-700 hover:underline">فتح اللوكيشن</a>
-                            </div>
-                          ) : null}
-                          {item.customerDoorPhotoUrl ? (
-                            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                              <p className="text-xs uppercase text-slate-500">صورة باب الزبون</p>
-                              <img src={resolvePublicAssetSrc(item.customerDoorPhotoUrl)} alt="صورة باب الزبون" className="mt-2 max-h-44 w-full rounded-xl object-cover" />
-                            </div>
-                          ) : null}
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Link href={`${SECRET_ADMIN_PATH}/orders/${item.id}`} className="inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors">عرض الطلب</Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
+

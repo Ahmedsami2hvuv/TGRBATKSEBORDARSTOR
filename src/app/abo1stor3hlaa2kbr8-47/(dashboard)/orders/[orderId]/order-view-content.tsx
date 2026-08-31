@@ -32,7 +32,7 @@ import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
 import { DeleteAdminVoiceNoteButton } from "./edit/delete-admin-voice-note-button";
-import { AdminCustomerOrderHistory } from "./admin-customer-order-history";
+import { AdminCustomerOrderHistory, AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { OrderFabDock } from "@/components/order-fab-dock";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
@@ -610,9 +610,24 @@ export function OrderViewContent({
                       <span className="font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-400 text-sm" title="رقم الزبون">📞</span>
-                      <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.customerPhone)}</span>
+                      {order.customerPhone ? (
+                        <AdminCustomerPhoneInteractive
+                          phone={order.customerPhone}
+                          formattedPhone={contactLine(order.customerPhone)}
+                          regionId={order.customerRegionId}
+                          currentOrderId={order.id}
+                          customerName={order.customerName}
+                          customerRegionName={order.customerRegion?.name}
+                          alternatePhone={order.alternatePhone}
+                          customerLocationUrl={order.customerLocationUrl || undefined}
+                          customerLandmark={order.customerLandmark || undefined}
+                          customerProfileId={order.customerProfileId}
+                        />
+                      ) : (
+                        <span className="font-mono font-black text-slate-400">—</span>
+                      )}
                     </div>
 
                     {order.alternatePhone && (
@@ -720,15 +735,6 @@ export function OrderViewContent({
                           orderId={order.id}
                           isSecondDestination={false}
                         />
-
-                        {order.customerProfileId && (
-                          <Link
-                            href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`}
-                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors"
-                          >
-                            ملف الزبون 📂
-                          </Link>
-                        )}
                       </div>
 
                       {order.customerLocationUrl?.trim() && order.customerLocationUploadedByName?.trim() && (
@@ -833,9 +839,24 @@ export function OrderViewContent({
                       <span className="font-black text-slate-900 dark:text-white">{order.secondCustomerRegion?.name ?? "—"}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-400 text-sm" title="هاتف المستلم">📞</span>
-                      <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.secondCustomerPhone || "")}</span>
+                      {order.secondCustomerPhone ? (
+                        <AdminCustomerPhoneInteractive
+                          phone={order.secondCustomerPhone}
+                          formattedPhone={contactLine(order.secondCustomerPhone)}
+                          regionId={order.secondCustomerRegionId}
+                          currentOrderId={order.id}
+                          customerName={order.secondCustomerName}
+                          customerRegionName={order.secondCustomerRegion?.name}
+                          alternatePhone={order.secondCustomerAlternatePhone}
+                          customerLocationUrl={order.secondCustomerLocationUrl || undefined}
+                          customerLandmark={order.secondCustomerLandmark || undefined}
+                          customerProfileId={order.secondCustomerProfileId}
+                        />
+                      ) : (
+                        <span className="font-mono font-black text-slate-400">—</span>
+                      )}
                     </div>
 
                     {order.secondCustomerAlternatePhone && (
