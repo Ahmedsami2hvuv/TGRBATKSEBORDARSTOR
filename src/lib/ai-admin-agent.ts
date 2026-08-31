@@ -14,6 +14,7 @@ type ChatSessionContext = {
   lastOrderType?: string | null;
   activeFocusedOrderId?: string | null;
   orderDraft?: OrderDraftState | null;
+  waitingForCarHours?: boolean | null;
   updatedAt?: number;
 };
 
@@ -877,6 +878,187 @@ export async function executeSuperSystemAgent(
     .replace(/سو\s*لي/g, "سويلي")
     .replace(/اريد\s*اسوي/g, "سوي")
     .replace(/اريد\s*سوي/g, "سوي");
+
+  // ==========================================
+  // 🚗 إدارة وضعية (لا يوجد سيارات) التفاعلية
+  // ==========================================
+
+  // 1. إذا كنا بانتظار تحديد مدة أو ساعات وضع عدم وجود سيارات
+  if (ctx.waitingForCarHours) {
+    if (cleanInit.includes("الغاء") || cleanInit.includes("كنسل") || cleanInit.includes("بطلت")) {
+      ctx.waitingForCarHours = null;
+      ctx.updatedAt = Date.now();
+      return { reply: "تم إلغاء تفعيل وضع عدم وجود سيارات يا غالي 🌸" };
+    }
+
+    let hours: number | null = null;
+    let mode: string = "all_day";
+    let modeArabic = "لا يوجد سيارات";
+    let isIndefinite = false;
+
+    // فحص الأرقام والساعات
+    const numDigits = cleanInit.replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9");
+    const matchNum = numDigits.match(/\b\d+\b/);
+
+    if (cleanInit.includes("ساعتين") || cleanInit.includes("ساعتان") || cleanInit === "2" || numDigits === "2") {
+      hours = 2;
+    } else if (cleanInit.includes("ساعة") || cleanInit.includes("ساعه") || cleanInit === "1" || numDigits === "1") {
+      if (matchNum && Number(matchNum[0]) > 0) hours = Number(matchNum[0]);
+      else hours = 1;
+    } else if (matchNum && Number(matchNum[0]) > 0) {
+      hours = Number(matchNum[0]);
+    } else if (cleanInit.includes("نصف ساعة") || cleanInit.includes("نص ساعة")) {
+      hours = 0.5;
+    } else if (cleanInit.includes("صباح") || cleanInit.includes("الصبح")) {
+      mode = "morning";
+      modeArabic = "لا يوجد سيارات صباحاً";
+    } else if (cleanInit.includes("مساء") || cleanInit.includes("المساء") || cleanInit.includes("ليل") || cleanInit.includes("الليل")) {
+      mode = "evening";
+      modeArabic = "لا يوجد سيارات مساءً";
+    } else if (cleanInit.includes("اليوم كله") || cleanInit.includes("طول اليوم") || cleanInit.includes("اليوم باكمل") || cleanInit.includes("كامل")) {
+      mode = "all_day";
+      modeArabic = "لا يوجد سيارات اليوم بأكمله";
+    } else if (cleanInit.includes("مستمر") || cleanInit.includes("دائم") || cleanInit.includes("بدون موقت") || cleanInit.includes("بدون وقت")) {
+      mode = "all_day";
+      isIndefinite = true;
+      modeArabic = "لا يوجد سيارات بشكل مستمر";
+    }
+
+    if (hours !== null || mode !== "off") {
+      let noCarsUntil: Date | null = null;
+      if (hours !== null) {
+        noCarsUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+      } else if (isIndefinite) {
+        noCarsUntil = null;
+      }
+
+      await prisma.globalSettings.upsert({
+        where: { id: "system" },
+        update: {
+          noCarsMode: mode,
+          noCarsUntil: noCarsUntil,
+        },
+        create: {
+          id: "system",
+          noCarsMode: mode,
+          noCarsUntil: noCarsUntil,
+        },
+      });
+
+      ctx.waitingForCarHours = null;
+      ctx.updatedAt = Date.now();
+
+      const timeText = hours !== null 
+        ? `لمدة (${hours}) ساعة (حتى ${noCarsUntil?.toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })})` 
+        : `وضع (${modeArabic})`;
+
+      return {
+        reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات ${timeText} بنجاح 🚗🚫`
+      };
+    }
+  }
+
+  // 2. فحص أوامر تفعيل (لا يوجد سيارات / ماكو سيارات)
+  const isNoCarsCommand =
+    cleanInit === "لا يوجد سيارات" ||
+    cleanInit === "ماكو سيارات" ||
+    cleanInit === "سيارات ماكو" ||
+    cleanInit === "سيارات لايوجد" ||
+    cleanInit === "سيارات لا يوجد" ||
+    cleanInit === "ماكو سيارة" ||
+    cleanInit === "ماكو سياره" ||
+    cleanInit === "ما عندنا سيارات" ||
+    cleanInit === "عدم وجود سيارات" ||
+    cleanInit === "فعل وضع ماكو سيارات" ||
+    cleanInit === "تفعيل ماكو سيارات" ||
+    cleanInit.startsWith("لا يوجد سيارات") ||
+    cleanInit.startsWith("ماكو سيارات") ||
+    cleanInit.startsWith("سيارات ماكو") ||
+    cleanInit.startsWith("سيارات لايوجد");
+
+  if (isNoCarsCommand) {
+    // فحص إذا ذكر عدد الساعات في نفس الأمر مباشرة (مثال: ماكو سيارات لمدة ساعتين)
+    const numDigits = cleanInit.replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9");
+    const matchNum = numDigits.match(/\b\d+\b/);
+
+    if (cleanInit.includes("ساعتين") || cleanInit.includes("ساعتان")) {
+      const noCarsUntil = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      await prisma.globalSettings.upsert({
+        where: { id: "system" },
+        update: { noCarsMode: "all_day", noCarsUntil },
+        create: { id: "system", noCarsMode: "all_day", noCarsUntil },
+      });
+      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (2) ساعة بنجاح 🚗🚫` };
+    }
+
+    if (matchNum && Number(matchNum[0]) > 0 && (cleanInit.includes("ساعة") || cleanInit.includes("ساعه") || cleanInit.includes("مدة") || cleanInit.includes("لمدة"))) {
+      const h = Number(matchNum[0]);
+      const noCarsUntil = new Date(Date.now() + h * 60 * 60 * 1000);
+      await prisma.globalSettings.upsert({
+        where: { id: "system" },
+        update: { noCarsMode: "all_day", noCarsUntil },
+        create: { id: "system", noCarsMode: "all_day", noCarsUntil },
+      });
+      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (${h}) ساعة بنجاح 🚗🚫` };
+    }
+
+    // إذا لم يحدد الساعات، نسأله ونعرض له الأزرار التفاعلية الفورية!
+    ctx.waitingForCarHours = true;
+    ctx.updatedAt = Date.now();
+
+    const buttons = [
+      { text: "⏱️ ساعة واحدة", action: "ساعة واحدة" },
+      { text: "⏱️ ساعتين", action: "ساعتين" },
+      { text: "⏱️ 4 ساعات", action: "4 ساعات" },
+      { text: "⏱️ 8 ساعات", action: "8 ساعات" },
+      { text: "🌅 لا يوجد صباحاً", action: "صباحا" },
+      { text: "🌙 لا يوجد مساءً", action: "مساء" },
+      { text: "🚫 اليوم بأكمله", action: "اليوم كله" },
+      { text: "♾️ مستمر (بدون مؤقت)", action: "مستمر" },
+    ];
+
+    return {
+      reply: `كم ساعة تريد تفعيل وضع (لا يوجد سيارات) يا أبو الأكبر؟ 🚗⏳`,
+      buttons: buttons,
+    };
+  }
+
+  // 3. فحص أوامر إلغاء وضع عدم وجود سيارات (السيارات متوفرة)
+  const isCarsAvailableCommand =
+    cleanInit === "السيارات متوفرة" ||
+    cleanInit === "السيارات متوفره" ||
+    cleanInit === "السيارات متوفره الان" ||
+    cleanInit === "اكو سيارات" ||
+    cleanInit === "السيارات رجعت" ||
+    cleanInit === "رجعت السيارات" ||
+    cleanInit === "توفرت سيارات" ||
+    cleanInit === "توفرت السيارات" ||
+    cleanInit === "الغي وضع ماكو سيارات" ||
+    cleanInit === "الغاء ماكو سيارات" ||
+    cleanInit === "الغاء عدم وجود سيارات" ||
+    cleanInit === "السيارات طبيعي";
+
+  if (isCarsAvailableCommand) {
+    await prisma.globalSettings.upsert({
+      where: { id: "system" },
+      update: {
+        noCarsMode: "off",
+        noCarsUntil: null,
+      },
+      create: {
+        id: "system",
+        noCarsMode: "off",
+        noCarsUntil: null,
+      },
+    });
+
+    ctx.waitingForCarHours = null;
+    ctx.updatedAt = Date.now();
+
+    return {
+      reply: `تم يا أبو الأكبر! ألغيت التفعيل وأصبحت السيارات متوفرة للزبائن بشكل طبيعي الآن 🚗✅`
+    };
+  }
 
   // 0.05 فحص الأوامر المباشرة على الطلبات بالأرقام (رفض، إلغاء، إسناد، تفاصيل، إرجاع لجديد)
   const orderNumMatch = rawText.match(/(?:طلب|اوردر|رقم)?\s*#?(\d{3,6})/i);
