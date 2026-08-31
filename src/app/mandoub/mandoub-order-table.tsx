@@ -364,14 +364,16 @@ function MandoubFullBlockCardGrid({
 
               const textLen = headerTextStr.length;
 
-              // حساب مقاس الخط البارز الذي يملأ الحيز البيني كاملاً بين الزر ورقم الطلب
-              const dynamicHeaderFont = textLen > 40
-                ? "text-xs sm:text-sm md:text-base tracking-tight"
-                : textLen > 28
-                ? "text-sm sm:text-base md:text-lg tracking-tight"
-                : textLen > 18
-                ? "text-base sm:text-lg md:text-xl font-black"
-                : "text-lg sm:text-xl md:text-2xl font-black";
+              // سلّم تكيّفي ذكي متناسب: يكبر للنصوص القصيرة ويصغر تلقائياً للنصوص الطويلة لعدم الاقتطاع
+              const dynamicHeaderFont = textLen > 34
+                ? "text-[10px] xs:text-[11px] sm:text-xs md:text-sm tracking-tighter"
+                : textLen > 27
+                ? "text-[11.5px] xs:text-xs sm:text-sm md:text-base tracking-tight"
+                : textLen > 20
+                ? "text-xs xs:text-sm sm:text-base md:text-lg tracking-tight font-black"
+                : textLen > 14
+                ? "text-sm xs:text-base sm:text-lg md:text-xl font-black"
+                : "text-base xs:text-lg sm:text-xl md:text-2xl font-black";
 
               return (
                 <div
@@ -390,8 +392,8 @@ function MandoubFullBlockCardGrid({
                     <MandoubCardMoneyBadges o={o} />
                   </div>
 
-                  {/* السطر العلوي الموحد: زر الإجراء الدائري + اسم المحل إلى المنطقة (مستغل كامل الحيز البيني) + رقم الطلب */}
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 min-w-0 w-full overflow-hidden whitespace-nowrap">
+                  {/* السطر العلوي الموحد: زر الإجراء الدائري + اسم المحل إلى المنطقة (مستغل كامل الحيز البيني ومتحكم بحجمه تلقائياً) + رقم الطلب */}
+                  <div className="flex items-center justify-between gap-1.5 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 min-w-0 w-full overflow-hidden whitespace-nowrap">
                     {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
                     <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                       {showSelectColumn && (
@@ -456,18 +458,18 @@ function MandoubFullBlockCardGrid({
                       )}
                     </div>
 
-                    {/* المنتصف: اسم المحل إلى المنطقة (يكبر ويستغل الحيز البيني كاملاً) */}
+                    {/* المنتصف: اسم المحل إلى المنطقة (يكبر أو يصغر ديناميكياً ليظهر كاملاً دون أي قطع بالنقاط) */}
                     {isDoubleRouteOrder ? (
-                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 px-2 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
-                        <span className="text-amber-800 dark:text-amber-400 font-black shrink-0">{o.regionLine || "المرسل"}</span>
-                        <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-xs sm:text-sm">إلى</span>
-                        <span className="text-purple-800 dark:text-purple-300 font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
+                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                        <span className="text-amber-800 dark:text-amber-400 font-black whitespace-nowrap">{o.regionLine || "المرسل"}</span>
+                        <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-[10px] sm:text-xs">إلى</span>
+                        <span className="text-purple-800 dark:text-purple-300 font-black whitespace-nowrap">{o.secondCustomerRegionName || "المستلم"}</span>
                       </div>
                     ) : (
-                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 px-2 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
-                        <span className="text-emerald-800 dark:text-emerald-400 font-black shrink-0">{o.shopName}</span>
-                        <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-xs sm:text-sm">إلى</span>
-                        <span className="text-sky-800 dark:text-sky-300 font-black truncate">{o.regionLine}</span>
+                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
+                        <span className="text-emerald-800 dark:text-emerald-400 font-black whitespace-nowrap">{o.shopName}</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-[10px] sm:text-xs">إلى</span>
+                        <span className="text-sky-800 dark:text-sky-300 font-black whitespace-nowrap">{o.regionLine}</span>
                       </div>
                     )}
 
