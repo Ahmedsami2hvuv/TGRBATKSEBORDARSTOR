@@ -1008,6 +1008,7 @@ export function OrderDetailSection({
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
+                            <div className="flex flex-col gap-2">
                               <a 
                                 href={secondLocMerged} 
                                 target="_blank" 
@@ -1020,6 +1021,33 @@ export function OrderDetailSection({
                               >
                                 📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
                               </a>
+                              <WaLocationCustomButtons
+                                userRole="mandoub"
+                                customerPhone={order.secondCustomerPhone || order.customerPhone}
+                                customerPhone2={order.customerPhone2 || undefined}
+                                shopPhone={order.shopPhone || undefined}
+                                orderStatus={order.status}
+                                hasCustomerLocation={!missingSecondCustomerLocation}
+                                hasCourierUploadedLocation={Boolean(order.secondCustomerLocationSetByCourierAt)}
+                                templateVars={{
+                                  clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
+                                  city: order.secondCustomerRegion?.name || order.secondCustomerRegionName || order.regionLine || "—",
+                                  total_price: currentTotalPriceStr,
+                                  total: currentTotalPriceStr,
+                                  delivery: currentCourierName,
+                                  courier: currentCourierName,
+                                  courierName: currentCourierName,
+                                  deliveryName: currentCourierName,
+                                  location_url: secondLocMerged || "",
+                                  landmark: order.secondCustomerLandmark || order.secondCustomerNearestLandmark || order.nearestLandmark || "",
+                                  order_number: String(order.orderNumber || ""),
+                                  customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                                  customer_phone2: order.customerPhone2 || "",
+                                  shop_phone: order.shop?.phone || order.shopPhone || "",
+                                }}
+                                customButtons={customWaButtons}
+                              />
+                            </div>
                           ) : (
                             <MandoubUploadLocationInline 
                               orderId={order.id} 
@@ -1063,6 +1091,26 @@ export function OrderDetailSection({
                         orderId={order.id}
                         isSecondDestination={true}
                       />
+
+                      {/* أزرار الاتصال المباشر والواتس المباشر للمستلم */}
+                      {(order.secondCustomerPhone || order.customerPhone) && (
+                        <div className="flex items-center gap-2 w-full mt-2">
+                          <a
+                            href={telHref(order.secondCustomerPhone || order.customerPhone!)}
+                            className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                          >
+                            📞 اتصال
+                          </a>
+                          <a
+                            href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone!)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
+                          >
+                            💬 واتس
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
