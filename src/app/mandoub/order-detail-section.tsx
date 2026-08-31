@@ -1027,7 +1027,7 @@ export function OrderDetailSection({
                                 customerPhone2={order.customerPhone2 || undefined}
                                 shopPhone={order.shopPhone || undefined}
                                 orderStatus={order.status}
-                                hasCustomerLocation={!missingSecondCustomerLocation}
+                                hasCustomerLocation={Boolean(secondLocMerged)}
                                 hasCourierUploadedLocation={Boolean(order.secondCustomerLocationSetByCourierAt)}
                                 templateVars={{
                                   clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
