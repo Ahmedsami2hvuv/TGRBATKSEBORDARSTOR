@@ -352,6 +352,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
         saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
         preparerShoppingJson: o.preparerShoppingJson,
+        prepaidAll: Boolean(o.prepaidAll),
         vehiclePreference: o.vehiclePreference,
         assignedPreparerIds,
         requestLocationWaUrl,

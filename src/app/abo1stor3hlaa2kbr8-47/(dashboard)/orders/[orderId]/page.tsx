@@ -184,13 +184,26 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
  const safePreparers = JSON.parse(JSON.stringify(preparers));
  const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
+ const safeWaButtonSettings = JSON.parse(JSON.stringify(waButtonSettings));
  const safeStoreProducts = JSON.parse(JSON.stringify(storeProducts));
  const safeTwoWayTemplates = twoWayTemplates ? JSON.parse(JSON.stringify(twoWayTemplates)) : null;
  const safeCouriers = JSON.parse(JSON.stringify(couriersRaw));
+ const safeCustomerProfile = customerProfile ? JSON.parse(JSON.stringify(customerProfile)) : null;
+ const safeSecondProfile = secondProfile ? JSON.parse(JSON.stringify(secondProfile)) : null;
 
  return (
   <div className="space-y-4">
-    <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} twoWayTemplates={safeTwoWayTemplates} couriers={safeCouriers} />
+    <OrderViewContent 
+      order={safeView} 
+      preparers={safePreparers} 
+      customWaButtons={safeWaButtons} 
+      waButtonSettings={safeWaButtonSettings}
+      storeProducts={safeStoreProducts} 
+      twoWayTemplates={safeTwoWayTemplates} 
+      couriers={safeCouriers} 
+      phoneProfile={safeCustomerProfile}
+      secondPhoneProfile={safeSecondProfile}
+    />
     <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
   </div>
  );

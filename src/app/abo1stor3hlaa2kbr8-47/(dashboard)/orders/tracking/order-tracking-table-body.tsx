@@ -24,6 +24,7 @@ export type TrackingTableRow = {
   regionName: string;
   orderType: string;
   routeModeLabel: string;
+  prepaidAll?: boolean;
   totalLabel: string;
   deliveryLabel: string;
   customerPhone: string;
@@ -51,6 +52,7 @@ export type TrackingTableRow = {
   calculatedDebt?: number | null;
   hasDebt?: boolean;
   priceWithDebtLabel?: string;
+  customerName?: string | null;
   // بيانات الوصول السريع
   audioUrl?: string | null;
   adminAudioUrl?: string | null;
@@ -165,6 +167,9 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                     {o.hasCourierUploadedLocation && (
                       <span className="rounded bg-violet-600 px-1 py-0.5 text-[9px] text-white">GPS</span>
                     )}
+                    {o.prepaidAll && (
+                      <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] font-black text-white animate-pulse" title="كلشي واصل">واصل</span>
+                    )}
                     <span className="text-sm">#{o.orderNumber}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -215,7 +220,7 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
               <td className="max-w-[10rem] px-2 py-2 text-xs text-slate-700">
                 <OrderTypeLine orderType={o.orderType} className="text-xs" />
               </td>
-              <td className="px-2 py-2 font-mono tabular-nums text-slate-900">{o.totalLabel}</td>
+              <td className={`px-2 py-2 font-mono tabular-nums ${o.prepaidAll ? "font-black text-emerald-700 bg-emerald-50/50" : "text-slate-900"}`}>{o.totalLabel}</td>
               <td className="px-2 py-2 font-mono tabular-nums text-cyan-700">{o.deliveryLabel}</td>
               <td className="px-2 py-2 font-mono text-xs tabular-nums text-slate-700">
                 <div className="flex flex-col">

@@ -78,6 +78,7 @@ export type PendingOrderRow = {
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;
   preparerShoppingJson?: any;
+  prepaidAll?: boolean;
   vehiclePreference?: string | null;
   assignedPreparerIds: string[];
 };
@@ -3702,7 +3703,11 @@ export default function PendingOrdersClient({
                         🏷️ {order.orderType}
                       </span>
                     )}
-                    {order.orderSubtotal ? (
+                    {order.prepaidAll ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-sm animate-pulse">
+                        ✓ كل شي واصل
+                      </span>
+                    ) : order.orderSubtotal ? (
                       <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
                         {hasLocation && (
                           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />

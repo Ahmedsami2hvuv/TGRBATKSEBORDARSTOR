@@ -295,7 +295,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
         orderType: o.orderType || "—",
         routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
-        totalLabel: o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—",
+        prepaidAll: o.prepaidAll,
+        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
         deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
         calculatedDebt: hasDebt ? calculatedDebt : null,
         hasDebt: hasDebt,
@@ -322,6 +323,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
         preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
         createdAt: o.createdAt,
+        customerName: o.customer?.name || null,
         // بيانات الوصول السريع
         audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
         adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
