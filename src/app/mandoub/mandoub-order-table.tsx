@@ -329,14 +329,18 @@ function MandoubFullBlockCardGrid({
 
               const selected = isSelected ? isSelected(o.id) : false;
 
-              // تحديد اللون والخلفية الخفيفة الناعمة لكل كرت بحسب لون إطاره
-              const statusBorderColor = selected
-                ? "border-indigo-600 ring-2 ring-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40"
-                : isAssigned
-                ? "border-red-500 bg-red-50/60 dark:bg-red-950/30"
+              // تحديد لون بلوك اسم المحل والمنطقة بحسب حالة الطلب
+              const headerBlockBg = isAssigned
+                ? "bg-gradient-to-r from-red-600 to-rose-700 text-white border-red-500 shadow-sm"
                 : isDelivering
-                ? "border-amber-400 bg-amber-50/60 dark:bg-amber-950/30"
-                : "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30";
+                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-400 shadow-sm"
+                : isDelivered
+                ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-500 shadow-sm"
+                : "bg-slate-800 text-white border-slate-700 shadow-sm";
+
+              const cardBgStyle = selected
+                ? "border-indigo-600 ring-2 ring-indigo-500 bg-white dark:bg-slate-900"
+                : "border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900";
 
               const statusBadgeBg = isAssigned
                 ? "bg-red-600 text-white"
@@ -385,14 +389,14 @@ function MandoubFullBlockCardGrid({
                       onOpenRow(o.id);
                     }
                   }}
-                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${statusBorderColor} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer space-y-2`}
+                  className={`group relative flex flex-col justify-between rounded-2xl border-2 ${cardBgStyle} p-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer space-y-2`}
                 >
                   {/* البلوكات المالية الملونة عائمة بشكل مستقل فوق الطرف العلوي للكرت دون أخذ أي مساحة أو مكان من العناصر */}
                   <div className="absolute -top-3.5 right-16 z-20 pointer-events-none flex items-center gap-1 shrink-0">
                     <MandoubCardMoneyBadges o={o} />
                   </div>
 
-                  {/* السطر العلوي الموحد: زر الإجراء الدائري + اسم المحل إلى المنطقة (مستغل كامل الحيز البيني ومتحكم بحجمه تلقائياً) + رقم الطلب */}
+                  {/* السطر العلوي الموحد: زر الإجراء الدائري + اسم المحل إلى المنطقة (بلوك ملون خاص بحسب الحالة) + رقم الطلب */}
                   <div className="flex items-center justify-between gap-1.5 border-b border-slate-200/60 dark:border-slate-800 pb-1.5 min-w-0 w-full overflow-hidden whitespace-nowrap">
                     {/* أقصى اليمين: زر استلام / تسليم أو الشارة أو التحديد / الترتيب */}
                     <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -458,18 +462,18 @@ function MandoubFullBlockCardGrid({
                       )}
                     </div>
 
-                    {/* المنتصف: اسم المحل إلى المنطقة (يكبر أو يصغر ديناميكياً ليظهر كاملاً دون أي قطع بالنقاط) */}
+                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق (أحمر / أصفر / أخضر بحسب حالة الطلب) */}
                     {isDoubleRouteOrder ? (
-                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
-                        <span className="text-amber-800 dark:text-amber-400 font-black whitespace-nowrap">{o.regionLine || "المرسل"}</span>
-                        <span className="text-rose-600 dark:text-rose-400 font-black shrink-0 text-[10px] sm:text-xs">إلى</span>
-                        <span className="text-purple-800 dark:text-purple-300 font-black whitespace-nowrap">{o.secondCustomerRegionName || "المستلم"}</span>
+                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-2 py-1 rounded-xl border ${headerBlockBg} overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                        <span className="font-black whitespace-nowrap text-white">{o.regionLine || "المرسل"}</span>
+                        <span className="shrink-0 text-[10px] sm:text-xs text-white/80 font-bold">إلى</span>
+                        <span className="font-black whitespace-nowrap text-white">{o.secondCustomerRegionName || "المستلم"}</span>
                       </div>
                     ) : (
-                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
-                        <span className="text-emerald-800 dark:text-emerald-400 font-black whitespace-nowrap">{o.shopName}</span>
-                        <span className="text-slate-500 dark:text-slate-400 font-black shrink-0 text-[10px] sm:text-xs">إلى</span>
-                        <span className="text-sky-800 dark:text-sky-300 font-black whitespace-nowrap">{o.regionLine}</span>
+                      <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-2 py-1 rounded-xl border ${headerBlockBg} overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
+                        <span className="font-black whitespace-nowrap text-white">{o.shopName}</span>
+                        <span className="shrink-0 text-[10px] sm:text-xs text-white/80 font-bold">إلى</span>
+                        <span className="font-black whitespace-nowrap text-white">{o.regionLine}</span>
                       </div>
                     )}
 
