@@ -14,8 +14,6 @@ import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { formatDinarAsAlf } from "@/lib/money-alf";
-import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
-import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 const STATUS_UI: Record<string, { ar: string; dot: string }> = {
   pending: { ar: "جديد", dot: "bg-red-500 ring-2 ring-red-200/70" },
@@ -37,81 +35,6 @@ const QUICK_STATUS_VALUES = [
   { value: "cancelled", label: "مرفوض" },
   { value: "archived", label: "مؤرشف" },
 ] as const;
-
-/** مكون مشغل الصوت المصغر */
-function MiniAudioPlayer({ url }: { url: string }) {
-  const [playing, setPlaying] = useState(false);
-  const fullUrl = resolvePublicAssetSrc(url);
-  return (
-    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        onClick={() => {
-          const audio = document.getElementById(`audio-tracking-${url}`) as HTMLAudioElement;
-          if (playing) audio.pause();
-          else audio.play();
-          setPlaying(!playing);
-        }}
-        className="flex size-7 items-center justify-center rounded-full bg-amber-500 text-white shadow-md hover:bg-amber-600 active:scale-90 transition-all border-2 border-white"
-      >
-        {playing ? <span className="text-[10px]">⏸</span> : <span className="text-[10px] mr-[-1px]">▶️</span>}
-      </button>
-      <audio id={`audio-tracking-${url}`} src={fullUrl!} onEnded={() => setPlaying(false)} className="hidden" />
-    </div>
-  );
-}
-
-/** مكون الحاوية المركزية للنوافذ المنبثقة */
-function CenterModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-      <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
-          <span className="font-bold text-slate-800">{title}</span>
-          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
-        </div>
-        <div className="p-4 overflow-y-auto flex-1 text-right">
-          {children}
-        </div>
-        <div className="p-3 border-t bg-slate-50 flex justify-center shrink-0">
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="w-full py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all text-sm border-0 cursor-pointer shadow-md active:scale-95"
-          >
-            إغلاق النافذة
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** مكون نافذة الصورة المنبثقة */
-function ImageModal({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
-      <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
-          <span className="font-bold text-slate-800 text-base">{title}</span>
-          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
-        </div>
-        <div className="p-2 bg-slate-200 overflow-y-auto flex-1 flex items-center justify-center">
-          <img src={resolvePublicAssetSrc(url)!} alt={title} className="max-w-full h-auto max-h-[60vh] object-contain rounded-2xl shadow-inner" />
-        </div>
-        <div className="p-3 border-t bg-slate-50 flex justify-center shrink-0">
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="w-full py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all text-sm border-0 cursor-pointer shadow-md active:scale-95"
-          >
-            إغلاق المعاينة
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function TrackingCardMoneyBadges({ o }: { o: TrackingTableRow }) {
   const pickup = o.pickupSumDinar ?? null;
@@ -215,25 +138,6 @@ function TrackingCardsView({
   isSelected?: (id: string) => boolean;
   onToggleOne?: (id: string) => void;
 }) {
-  const [modalImg, setModalImg] = useState<{ url: string; title: string } | null>(null);
-  const [activeCallId, setActiveCallId] = useState<string | null>(null);
-  const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
-  const [activeLocId, setActiveLocId] = useState<string | null>(null);
-  const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
-  const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleGlobalClick = () => {
-      setActiveCallId(null);
-      setActiveMsgId(null);
-      setActiveLocId(null);
-      setActiveDoorId(null);
-      setActiveAudioId(null);
-    };
-    window.addEventListener("click", handleGlobalClick);
-    return () => window.removeEventListener("click", handleGlobalClick);
-  }, []);
-
   if (!rows.length) {
     return (
       <div className="py-12 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm text-sm sm:text-base">
@@ -328,6 +232,12 @@ function TrackingCardsView({
 
               const hasAssignedCourier = Boolean(o.courierName && o.courierName !== "—" && o.courierName.trim() !== "");
 
+              // حالات الطلب الخاصة (كتابات الحالات)
+              const isPrepaid = Boolean(o.prepaidAll || o.totalLabel === "كل شي واصل" || o.totalLabel === "واصل");
+              const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
+              const hasGps = Boolean(o.hasCourierUploadedLocation || o.customerLocationUrl || !o.missingCustomerLocation);
+              const isDoubleRoute = Boolean(o.routeModeLabel === "وجهتين");
+
               return (
                 <div
                   key={o.id}
@@ -358,7 +268,7 @@ function TrackingCardsView({
                         />
                       )}
 
-                      {/* زر الإسناد للمندوبين بدلاً من زر تم الاستلام وتم التسليم */}
+                      {/* زر الإسناد للمندوبين */}
                       {!isCancelled && (
                         <button
                           type="button"
@@ -399,30 +309,15 @@ function TrackingCardsView({
                       </div>
                     )}
 
-                    {/* أقصى اليسار: رقم الطلب والشارات */}
+                    {/* أقصى اليسار: رقم الطلب */}
                     <div className="flex items-center gap-1 shrink-0">
-                      {o.prepaidAll && (
-                        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white" title="كل شي واصل">واصل</span>
-                      )}
-                      {o.hasCourierUploadedLocation && (
-                        <span className="rounded bg-violet-600 px-1.5 py-0.5 text-[10px] font-black text-white" title="لوكيشن GPS مرفوع">GPS</span>
-                      )}
-                      {o.missingCustomerLocation && (
-                        <span
-                          className="inline-flex size-5 sm:size-6 items-center justify-center rounded-full bg-rose-600 text-white font-black text-[10px] sm:text-xs shadow-sm animate-pulse"
-                          title="بدون لوكيشن للزبون"
-                          aria-label="بدون لوكيشن"
-                        >
-                          !
-                        </span>
-                      )}
                       <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                         #{o.orderNumber}
                       </span>
                     </div>
                   </div>
 
-                  {/* سطر التفاصيل: نوع البضاعة ← السعر ← وقت الطلب وأزرار الوصول السريع */}
+                  {/* سطر التفاصيل: نوع البضاعة ← السعر ← وقت الطلب واسم الزبون */}
                   <div className="space-y-1.5 overflow-hidden">
                     <div className="flex items-center justify-between gap-1.5 text-sm font-black text-slate-800 dark:text-slate-100 flex-wrap min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0 truncate flex-wrap">
@@ -446,218 +341,42 @@ function TrackingCardsView({
                       )}
                     </div>
 
-                    {/* سطر رقم الهاتف والأزرار السريعة */}
+                    {/* سطر كتابات الحالات (واصل، عكسي، gps، وجهتين) ورقم الهاتف */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60" onClick={(e) => e.stopPropagation()}>
+                      {/* كتابات الحالات الأنيقة: واصل و عكسي و gps و وجهتين */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* زر الاتصال */}
-                        {o.customerPhone && o.customerPhone !== "—" && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveCallId(activeCallId === o.id ? null : o.id);
-                                setActiveMsgId(null);
-                                setActiveLocId(null);
-                                setActiveDoorId(null);
-                                setActiveAudioId(null);
-                              }}
-                              className={`size-7 sm:size-8 flex items-center justify-center rounded-full text-white shadow-sm transition-transform active:scale-95 ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
-                              title="خيارات الاتصال"
-                            >
-                              <DynamicIcon iconKey="ui_call" config={icons} fallback="📞" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            </button>
-                            {activeCallId === o.id && (
-                              <CenterModal title="إجراء اتصال بـ:" onClose={() => setActiveCallId(null)}>
-                                <div className="flex flex-col gap-1.5">
-                                  {o.shopPhone && (
-                                    <a href={telHref(o.shopPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-lg">🏢</span> المحل ({o.shopPhone})
-                                    </a>
-                                  )}
-                                  {o.customerPhone && (
-                                    <a href={telHref(o.customerPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-lg">👤</span> الزبون ({o.customerPhone})
-                                    </a>
-                                  )}
-                                  {o.customerAlternatePhone && o.customerAlternatePhone !== "—" && (
-                                    <a href={telHref(o.customerAlternatePhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-lg">👥</span> هاتف بديل ({o.customerAlternatePhone})
-                                    </a>
-                                  )}
-                                </div>
-                              </CenterModal>
-                            )}
-                          </div>
+                        {isPrepaid && (
+                          <span className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-emerald-700" title="كل شي واصل">
+                            واصل
+                          </span>
                         )}
-
-                        {/* زر الواتساب */}
-                        {o.customerPhone && o.customerPhone !== "—" && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMsgId(activeMsgId === o.id ? null : o.id);
-                                setActiveCallId(null);
-                                setActiveLocId(null);
-                                setActiveDoorId(null);
-                                setActiveAudioId(null);
-                              }}
-                              className={`size-7 sm:size-8 flex items-center justify-center rounded-full text-white shadow-sm transition-transform active:scale-95 ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
-                              title="خيارات المراسلة عبر واتساب"
-                            >
-                              <DynamicIcon iconKey="ui_whatsapp" config={icons} fallback="💬" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            </button>
-                            {activeMsgId === o.id && (
-                              <CenterModal title="مراسلة واتساب لـ:" onClose={() => setActiveMsgId(null)}>
-                                <div className="flex flex-col gap-1.5">
-                                  {o.shopPhone && (
-                                    <a href={whatsappMeUrl(o.shopPhone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-lg">🏢</span> المحل ({o.shopPhone})
-                                    </a>
-                                  )}
-                                  {o.customerPhone && (
-                                    <a href={whatsappMeUrl(o.customerPhone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-lg">👤</span> الزبون ({o.customerPhone})
-                                    </a>
-                                  )}
-                                </div>
-                              </CenterModal>
-                            )}
-                          </div>
+                        {isReverse && (
+                          <span className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-rose-700" title="طلب راجع / عكسي">
+                            عكسي
+                          </span>
                         )}
-
-                        {/* زر الموقع GPS */}
-                        {(o.customerLocationUrl || o.shopLocationUrl || o.secondCustomerLocationUrl) && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveLocId(activeLocId === o.id ? null : o.id);
-                                setActiveCallId(null);
-                                setActiveMsgId(null);
-                                setActiveDoorId(null);
-                                setActiveAudioId(null);
-                              }}
-                              className={`size-7 sm:size-8 flex items-center justify-center rounded-full transition-transform active:scale-95 shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'}`}
-                              title="المواقع الجغرافية GPS"
-                            >
-                              <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            </button>
-                            {activeLocId === o.id && (
-                              <CenterModal title="فتح موقع الخريطة لـ:" onClose={() => setActiveLocId(null)}>
-                                <div className="flex flex-col gap-1.5">
-                                  {o.shopLocationUrl && (
-                                    <a href={o.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-800 hover:bg-rose-50 rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-lg">🏢</span> موقع المحل
-                                    </a>
-                                  )}
-                                  {o.customerLocationUrl && (
-                                    <a href={o.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-800 hover:bg-rose-50 rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-lg">👤</span> موقع الزبون
-                                    </a>
-                                  )}
-                                  {o.secondCustomerLocationUrl && (
-                                    <a href={o.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-800 hover:bg-rose-50 rounded-xl border border-slate-100">
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-lg">👥</span> موقع الزبون 2
-                                    </a>
-                                  )}
-                                </div>
-                              </CenterModal>
-                            )}
-                          </div>
+                        {hasGps && (
+                          <span className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-violet-700" title="لوكيشن GPS متوفر">
+                            GPS
+                          </span>
                         )}
-
-                        {/* زر صور الأبواب */}
-                        {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl || o.secondCustomerDoorPhotoUrl) && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDoorId(activeDoorId === o.id ? null : o.id);
-                                setActiveCallId(null);
-                                setActiveMsgId(null);
-                                setActiveLocId(null);
-                                setActiveAudioId(null);
-                              }}
-                              className={`size-7 sm:size-8 flex items-center justify-center rounded-full transition-transform active:scale-95 shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'}`}
-                              title="صور الأبواب"
-                            >
-                              <span className="text-xs">🚪</span>
-                            </button>
-                            {activeDoorId === o.id && (
-                              <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
-                                <div className="flex flex-col gap-1.5">
-                                  {o.shopDoorPhotoUrl && (
-                                    <button
-                                      type="button"
-                                      onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!, title: "صورة باب المحل" }); setActiveDoorId(null); }}
-                                      className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 rounded-xl border border-slate-100 text-right w-full"
-                                    >
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-lg">🏢</span> باب المحل
-                                    </button>
-                                  )}
-                                  {o.customerDoorPhotoUrl && (
-                                    <button
-                                      type="button"
-                                      onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!, title: "صورة باب الزبون" }); setActiveDoorId(null); }}
-                                      className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 rounded-xl border border-slate-100 text-right w-full"
-                                    >
-                                      <span className="size-9 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-lg">👤</span> باب الزبون
-                                    </button>
-                                  )}
-                                </div>
-                              </CenterModal>
-                            )}
-                          </div>
-                        )}
-
-                        {/* زر الصوتيات */}
-                        {(o.audioUrl || o.adminAudioUrl) && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveAudioId(activeAudioId === o.id ? null : o.id);
-                                setActiveCallId(null);
-                                setActiveMsgId(null);
-                                setActiveLocId(null);
-                                setActiveDoorId(null);
-                              }}
-                              className={`size-7 sm:size-8 flex items-center justify-center rounded-full transition-transform active:scale-95 shadow-sm ${activeAudioId === o.id ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200'}`}
-                              title="الملاحظات الصوتية"
-                            >
-                              <DynamicIcon iconKey="ui_audio" config={icons} fallback="🎤" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            </button>
-                            {activeAudioId === o.id && (
-                              <CenterModal title="تشغيل التسجيل الصوتي:" onClose={() => setActiveAudioId(null)}>
-                                <div className="flex flex-col gap-2">
-                                  {o.audioUrl && (
-                                    <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100">
-                                      <span className="text-xs font-black text-slate-700">🏢 من المحل</span>
-                                      <MiniAudioPlayer url={o.audioUrl} />
-                                    </div>
-                                  )}
-                                  {o.adminAudioUrl && (
-                                    <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100">
-                                      <span className="text-xs font-black text-slate-700">👑 من الإدارة</span>
-                                      <MiniAudioPlayer url={o.adminAudioUrl} />
-                                    </div>
-                                  )}
-                                </div>
-                              </CenterModal>
-                            )}
-                          </div>
+                        {isDoubleRoute && (
+                          <span className="inline-flex items-center justify-center rounded-lg bg-sky-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-sky-700" title="طلب وجهتين">
+                            وجهتين
+                          </span>
                         )}
                       </div>
 
                       {/* رقم الهاتف الظاهر */}
-                      <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                        📞 {o.customerPhone || "—"}
+                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
+                        {o.customerAlternatePhone && o.customerAlternatePhone !== "—" && (
+                          <span className="text-slate-400">
+                            {o.customerAlternatePhone} /
+                          </span>
+                        )}
+                        <span>
+                          📞 {o.customerPhone || "—"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -667,14 +386,6 @@ function TrackingCardsView({
           </div>
         </div>
       ))}
-
-      {modalImg && (
-        <ImageModal
-          url={modalImg.url}
-          title={modalImg.title}
-          onClose={() => setModalImg(null)}
-        />
-      )}
     </div>
   );
 }
