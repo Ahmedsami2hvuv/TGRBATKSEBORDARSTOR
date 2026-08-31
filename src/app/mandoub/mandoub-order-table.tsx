@@ -368,14 +368,12 @@ function MandoubFullBlockCardGrid({
 
               const textLen = headerTextStr.length;
 
-              // سلّم تكيّفي ذكي متناسب: يكبر للنصوص القصيرة ويصغر تلقائياً للنصوص الطويلة لعدم الاقتطاع
-              const dynamicHeaderFont = textLen > 34
-                ? "text-[10px] xs:text-[11px] sm:text-xs md:text-sm tracking-tighter"
-                : textLen > 27
-                ? "text-[11.5px] xs:text-xs sm:text-sm md:text-base tracking-tight"
-                : textLen > 20
+              // سلّم تكيّفي مُكبر ليستغل البلوك الملون كاملاً بالداخل دون أي فراغات جانبية
+              const dynamicHeaderFont = textLen > 35
+                ? "text-[11px] xs:text-xs sm:text-sm md:text-base tracking-tighter"
+                : textLen > 26
                 ? "text-xs xs:text-sm sm:text-base md:text-lg tracking-tight font-black"
-                : textLen > 14
+                : textLen > 18
                 ? "text-sm xs:text-base sm:text-lg md:text-xl font-black"
                 : "text-base xs:text-lg sm:text-xl md:text-2xl font-black";
 
