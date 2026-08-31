@@ -948,8 +948,16 @@ export async function executeSuperSystemAgent(
       ctx.waitingForCarHours = null;
       ctx.updatedAt = Date.now();
 
+      const formattedTime = noCarsUntil
+        ? noCarsUntil.toLocaleTimeString("ar-IQ", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Baghdad",
+          })
+        : "";
+
       const timeText = hours !== null 
-        ? `لمدة (${hours}) ساعة (حتى ${noCarsUntil?.toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })})` 
+        ? `لمدة (${hours}) ساعة (حتى ${formattedTime})` 
         : `وضع (${modeArabic})`;
 
       return {
@@ -983,23 +991,33 @@ export async function executeSuperSystemAgent(
 
     if (cleanInit.includes("ساعتين") || cleanInit.includes("ساعتان")) {
       const noCarsUntil = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const formattedTime = noCarsUntil.toLocaleTimeString("ar-IQ", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Baghdad",
+      });
       await prisma.globalSettings.upsert({
         where: { id: "system" },
         update: { noCarsMode: "all_day", noCarsUntil },
         create: { id: "system", noCarsMode: "all_day", noCarsUntil },
       });
-      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (2) ساعة بنجاح 🚗🚫` };
+      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (2) ساعة (حتى ${formattedTime}) بنجاح 🚗🚫` };
     }
 
     if (matchNum && Number(matchNum[0]) > 0 && (cleanInit.includes("ساعة") || cleanInit.includes("ساعه") || cleanInit.includes("مدة") || cleanInit.includes("لمدة"))) {
       const h = Number(matchNum[0]);
       const noCarsUntil = new Date(Date.now() + h * 60 * 60 * 1000);
+      const formattedTime = noCarsUntil.toLocaleTimeString("ar-IQ", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Baghdad",
+      });
       await prisma.globalSettings.upsert({
         where: { id: "system" },
         update: { noCarsMode: "all_day", noCarsUntil },
         create: { id: "system", noCarsMode: "all_day", noCarsUntil },
       });
-      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (${h}) ساعة بنجاح 🚗🚫` };
+      return { reply: `تم يا أبو الأكبر! فعّلت وضعية عدم وجود سيارات لمدة (${h}) ساعة (حتى ${formattedTime}) بنجاح 🚗🚫` };
     }
 
     // إذا لم يحدد الساعات، نسأله ونعرض له الأزرار التفاعلية الفورية!
