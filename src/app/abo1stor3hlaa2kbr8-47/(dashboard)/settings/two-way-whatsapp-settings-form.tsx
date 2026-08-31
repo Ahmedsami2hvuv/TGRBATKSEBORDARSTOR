@@ -69,6 +69,10 @@ export function TwoWayWhatsappSettingsForm({
     {} as WhatsappTemplateSettingsState
   );
 
+  const [enableFloatingButtons, setEnableFloatingButtons] = useState(
+    initialTemplates.enableFloatingButtons !== undefined ? initialTemplates.enableFloatingButtons : true
+  );
+
   const [locationSender, setLocationSender] = useState(initialTemplates.locationSenderTemplate);
   const [locationRecipient, setLocationRecipient] = useState(initialTemplates.locationRecipientTemplate);
   const [notifySender, setNotifySender] = useState(initialTemplates.notifySenderTemplate);
@@ -178,12 +182,42 @@ export function TwoWayWhatsappSettingsForm({
 
   return (
     <form action={action} className="space-y-6">
-      {/* إرسال قواعد الأزرار كـ JSON خفي للسيرفر */}
+      {/* إرسال قواعد الأزرار كـ JSON خفي للسيرفر + حالة تفعيل الأزرار العائمة */}
       <input
         type="hidden"
         name="buttonRulesJson"
         value={JSON.stringify(buttonRules)}
       />
+      <input
+        type="hidden"
+        name="enableFloatingButtons"
+        value={String(enableFloatingButtons)}
+      />
+
+      {/* كرت التفعيل والإيقاف الأنيق للأزرار العائمة للطلب ذو الوجهتين */}
+      <div className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/50 bg-gradient-to-r from-indigo-50 via-white to-purple-50 p-5 flex items-center justify-between gap-4 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">⇄</span>
+            <h3 className="text-base sm:text-lg font-black text-indigo-950 dark:text-indigo-200">
+              إظهار الأزرار العائمة للطلب ذو الوجهتين
+            </h3>
+          </div>
+          <p className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400">
+            عند إيقاف هذا الخيار، ستختفي الأزرار والشريحة العائمة للطلب ذو الوجهتين من صفحة المندوب كلياً.
+          </p>
+        </div>
+
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={enableFloatingButtons}
+            onChange={(e) => setEnableFloatingButtons(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+        </label>
+      </div>
 
       <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-white p-4 sm:p-7 space-y-7 shadow-sm">
         {/* هيدر الشاشة */}

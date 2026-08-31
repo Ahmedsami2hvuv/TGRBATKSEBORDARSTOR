@@ -21,6 +21,7 @@ const SECTION_TWO_WAY_NOTIFY_RECIPIENT = "whatsapp_twoway_notify_recipient_templ
 const SECTION_TWO_WAY_CHAT_SENDER = "whatsapp_twoway_chat_sender_template";
 const SECTION_TWO_WAY_CHAT_RECIPIENT = "whatsapp_twoway_chat_recipient_template";
 const SECTION_TWO_WAY_BUTTON_RULES = "whatsapp_twoway_button_rules";
+const SECTION_TWO_WAY_ENABLE_FLOATING_BUTTONS = "whatsapp_twoway_enable_floating_buttons";
 
 export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
   try {
@@ -36,6 +37,7 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
             SECTION_TWO_WAY_CHAT_SENDER,
             SECTION_TWO_WAY_CHAT_RECIPIENT,
             SECTION_TWO_WAY_BUTTON_RULES,
+            SECTION_TWO_WAY_ENABLE_FLOATING_BUTTONS,
           ],
         },
       },
@@ -44,7 +46,9 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
     const map = new Map<string, any>();
     for (const r of rows) {
       const cfg = r.config as any;
-      if (cfg?.text !== undefined) {
+      if (cfg?.enabled !== undefined) {
+        map.set(r.section, cfg.enabled);
+      } else if (cfg?.text !== undefined) {
         map.set(r.section, cfg.text);
       } else if (cfg?.rules !== undefined) {
         map.set(r.section, cfg.rules);
@@ -52,6 +56,7 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
     }
 
     const savedRules = map.get(SECTION_TWO_WAY_BUTTON_RULES);
+    const savedEnableFloating = map.get(SECTION_TWO_WAY_ENABLE_FLOATING_BUTTONS);
 
     return {
       locationSenderTemplate: map.get(SECTION_TWO_WAY_LOCATION_SENDER) || getDefaultTwoWayLocationSenderTemplate(),
@@ -61,6 +66,7 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
       chatSenderTemplate: map.get(SECTION_TWO_WAY_CHAT_SENDER) || getDefaultTwoWayChatSenderTemplate(),
       chatRecipientTemplate: map.get(SECTION_TWO_WAY_CHAT_RECIPIENT) || getDefaultTwoWayChatRecipientTemplate(),
       buttonRules: Array.isArray(savedRules) && savedRules.length > 0 ? savedRules : getDefaultTwoWayButtonRules(),
+      enableFloatingButtons: savedEnableFloating !== undefined ? Boolean(savedEnableFloating) : true,
     };
   } catch {
     return {
@@ -71,12 +77,23 @@ export async function getTwoWayTemplates(): Promise<TwoWayTemplatesConfig> {
       chatSenderTemplate: getDefaultTwoWayChatSenderTemplate(),
       chatRecipientTemplate: getDefaultTwoWayChatRecipientTemplate(),
       buttonRules: getDefaultTwoWayButtonRules(),
+      enableFloatingButtons: true,
     };
   }
 }
 
 export async function saveTwoWayTemplates(config: Partial<TwoWayTemplatesConfig>): Promise<void> {
   const tasks: Array<Promise<unknown>> = [];
+
+  if (config.enableFloatingButtons !== undefined) {
+    tasks.push(
+      prisma.uISystemSetting.upsert({
+        where: { target_section: { target: TARGET, section: SECTION_TWO_WAY_ENABLE_FLOATING_BUTTONS } },
+        create: { target: TARGET, section: SECTION_TWO_WAY_ENABLE_FLOATING_BUTTONS, config: { enabled: config.enableFloatingButtons } },
+        update: { config: { enabled: config.enableFloatingButtons } },
+      })
+    );
+  }
 
   if (config.locationSenderTemplate !== undefined) {
     const val = config.locationSenderTemplate.trim() || getDefaultTwoWayLocationSenderTemplate();

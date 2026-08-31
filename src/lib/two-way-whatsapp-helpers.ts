@@ -35,6 +35,7 @@ export type TwoWayTemplatesConfig = {
   chatSenderTemplate: string;
   chatRecipientTemplate: string;
   buttonRules?: TwoWayButtonRule[];
+  enableFloatingButtons?: boolean;
 };
 
 export function getDefaultTwoWayLocationSenderTemplate(): string {

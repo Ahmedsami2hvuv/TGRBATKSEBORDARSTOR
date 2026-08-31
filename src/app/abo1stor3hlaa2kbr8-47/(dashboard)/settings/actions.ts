@@ -259,6 +259,7 @@ export async function saveTwoWayWhatsappTemplateSettings(
     }
     const { saveTwoWayTemplates } = await import("@/lib/two-way-whatsapp-settings");
     
+    const enableFloatingButtons = formData.get("enableFloatingButtons") === "true";
     const locationSenderTemplate = formString(formData, "locationSenderTemplate");
     const locationRecipientTemplate = formString(formData, "locationRecipientTemplate");
     const notifySenderTemplate = formString(formData, "notifySenderTemplate");
@@ -277,6 +278,7 @@ export async function saveTwoWayWhatsappTemplateSettings(
     }
 
     await saveTwoWayTemplates({
+      enableFloatingButtons,
       locationSenderTemplate,
       locationRecipientTemplate,
       notifySenderTemplate,

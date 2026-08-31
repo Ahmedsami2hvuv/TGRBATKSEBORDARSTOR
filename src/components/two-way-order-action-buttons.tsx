@@ -133,7 +133,14 @@ export function TwoWayOrderActionButtons({
     }
   }, [twoWayTemplates, buttonRules]);
 
-  if (!mounted || pos.left === -1) return null;
+  if (
+    !mounted ||
+    pos.left === -1 ||
+    twoWayTemplates?.enableFloatingButtons === false ||
+    dynConfig?.enableFloatingButtons === false
+  ) {
+    return null;
+  }
 
   // قواعد الأزرار المطبقة فعلياً
   const currentRules =
