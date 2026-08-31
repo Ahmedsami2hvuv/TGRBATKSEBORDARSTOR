@@ -1163,7 +1163,135 @@ export async function executeSuperSystemAgent(
     }
   }
 
-  // ج) أمر إرجاع لجديد
+  // د) أمر إسناد وتحويل طلب جديد لمحل إلى مندوب (بجميع الصيغ العراقية والعفوية والمباشرة)
+  const isAssignIntent = /(?:اسند|إسناد|اسناد|سويله\s*اسناد|سوي\s*اسناد|حول|حوله|تحويل|وجه|وجهه|توجيه|انطيه|انطي|خليه|ذب|ذبه|حط\s*بظهره|بحصة|بحصه|يستلم|ياخذ|يروح\s*ويا|دز|دزه|لفارس|كابتن|مندوب)/i.test(cleanInit);
+
+  if (isAssignIntent || cleanInit.includes("الجديد") || cleanInit.includes("جديد")) {
+    const allCouriers = await getCachedCouriers();
+    const allShops = await getCachedShops();
+
+    // 1. البحث عن المندوب المذكور بالنص
+    let matchedCourier: { id: string; name: string } | null = null;
+    for (const c of allCouriers) {
+      const cleanC = c.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+      const firstName = cleanC.split(" ")[0];
+
+      if (
+        cleanInit.includes(cleanC) ||
+        (firstName.length >= 3 && (cleanInit.includes(` ${firstName}`) || cleanInit.includes(`ل${firstName}`) || cleanInit.includes(`على ${firstName}`) || cleanInit.includes(`يم ${firstName}`) || cleanInit.startsWith(firstName)))
+      ) {
+        matchedCourier = c;
+        break;
+      }
+    }
+
+    // 2. إذا تم العثور على المندوب، نبحث عن المحل المذكور بالنص أو رقم الطلب
+    if (matchedCourier) {
+      // أ) إذا كان هناك رقم طلب صريح (مثال: طلب 2099 اسنده لفارس)
+      if (detectedOrderNum) {
+        const targetOrder = await prisma.order.findUnique({
+          where: { orderNumber: detectedOrderNum },
+          include: { shop: true, customerRegion: true }
+        });
+
+        if (targetOrder) {
+          const updated = await prisma.order.update({
+            where: { id: targetOrder.id },
+            data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+
+          ctx.lastOrderNumber = updated.orderNumber;
+          ctx.updatedAt = Date.now();
+
+          const shopName = updated.shop?.name || "المحل";
+          const regionName = updated.customerRegion?.name || "غير محددة";
+          const orderType = updated.orderType || "مسواق";
+          const noteTime = updated.orderNoteTime || "الان";
+          const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+
+          return {
+            reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} (${shopName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 المنطقة: ${regionName} | 💰 السعر: ${subtotalVal} ألف\n📦 النوع: ${orderType} | ⏰ الوقت: ${noteTime}`
+          };
+        }
+      }
+
+      // ب) البحث عن المحل المذكور بالنص (مثال: طلب شيريني غدير الجديد سويله اسناد للمندوب فارس)
+      let matchedShop: { id: string; name: string } | null = null;
+      let highestShopScore = 0;
+
+      for (const s of allShops) {
+        const cleanS = s.name.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+        let score = 0;
+
+        if (cleanInit.includes(cleanS)) {
+          score = 1.0;
+        } else {
+          score = calculateSimilarity(cleanS, cleanInit);
+        }
+
+        if (score > highestShopScore && score >= 0.55) {
+          highestShopScore = score;
+          matchedShop = s;
+        }
+      }
+
+      if (matchedShop) {
+        // البحث عن أحدث طلب معلق جديد (pending) أو أحدث طلب لهذا المحل
+        let targetOrder = await prisma.order.findFirst({
+          where: {
+            shopId: matchedShop.id,
+            status: "pending"
+          },
+          orderBy: { createdAt: "desc" },
+          include: { shop: true, customerRegion: true }
+        });
+
+        // إذا لم نجد طلب pending، نبحث عن أحدث طلب مسند (لتحويله)
+        if (!targetOrder) {
+          targetOrder = await prisma.order.findFirst({
+            where: {
+              shopId: matchedShop.id,
+              status: { in: ["pending", "assigned"] }
+            },
+            orderBy: { createdAt: "desc" },
+            include: { shop: true, customerRegion: true }
+          });
+        }
+
+        if (targetOrder) {
+          const updated = await prisma.order.update({
+            where: { id: targetOrder.id },
+            data: { assignedCourierId: matchedCourier.id, status: "assigned" },
+            include: { shop: true, customerRegion: true, courier: true }
+          });
+
+          ctx.lastOrderNumber = updated.orderNumber;
+          ctx.updatedAt = Date.now();
+
+          const shopName = updated.shop?.name || matchedShop.name;
+          const regionName = updated.customerRegion?.name || "غير محددة";
+          const orderType = updated.orderType || "مسواق";
+          const noteTime = updated.orderNoteTime || "الان";
+          const subtotalVal = updated.orderSubtotal ? Number(updated.orderSubtotal) : 0;
+
+          return {
+            reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} الجديد لمحل (${shopName}) إلى الكابتن (${matchedCourier.name}) 🛵💨\n📍 **المنطقة:** ${regionName} | 💰 **السعر:** ${subtotalVal} ألف\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت التوصيل:** ${noteTime}`
+          };
+        } else {
+          return {
+            reply: `يا أبو الأكبر، بحثت بالنظام وما لكيت أي طلب جديد معلق لمحل (${matchedShop.name}) لإسناده للكابتن (${matchedCourier.name})!`,
+            buttons: [
+              { text: `➕ إنشاء طلب لـ ${matchedShop.name}`, action: `سويلي طلب من ${matchedShop.name}` },
+              { text: `📋 استعراض طلبات ${matchedShop.name}`, action: `طلبات ${matchedShop.name}` }
+            ]
+          };
+        }
+      }
+    }
+  }
+
+  // هـ) أمر إرجاع طلب لحالة (جديد معلق)
   if ((cleanInit.includes("رجع") || cleanInit.includes("ارجاع")) && (cleanInit.includes("طلب") || cleanInit.includes("جديد"))) {
     if (detectedOrderNum) {
       const targetOrder = await prisma.order.findUnique({ where: { orderNumber: detectedOrderNum } });
