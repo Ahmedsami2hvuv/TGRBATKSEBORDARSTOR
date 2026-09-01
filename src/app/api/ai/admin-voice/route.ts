@@ -8,7 +8,7 @@ export async function GET(req: Request) {
     const action = searchParams.get("action");
 
     if (action === "reset" || action === "clear_session" || text === "reset" || text === "مسح") {
-      resetChatSessionContext(searchParams.get("userId") || undefined);
+      await resetChatSessionContext(searchParams.get("userId") || undefined);
       return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
     }
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const action = body.action;
 
     if (action === "reset" || action === "clear_session" || text === "reset" || text === "مسح") {
-      resetChatSessionContext(body.userId || undefined);
+      await resetChatSessionContext(body.userId || undefined);
       return NextResponse.json({ ok: true, message: "تم تصفير سياق الذاكرة والبدء بدردشة جديدة ناصعة." });
     }
 

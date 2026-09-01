@@ -344,10 +344,10 @@ export function AdminFloatingAiWidget() {
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
-      fetch("/api/ai/admin-voice", {
+      await fetch("/api/ai/admin-voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear_session", userId: "voice_admin" })
+        body: JSON.stringify({ action: "clear_session", userId: "web_admin_floating_widget" })
       }).catch(() => {});
     } catch (e) {}
 

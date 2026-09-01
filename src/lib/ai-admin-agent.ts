@@ -85,7 +85,7 @@ export async function savePersistentSessionContext(sessionKey: string, ctx: Chat
 /**
  * تصفير وإعادة ضبط ذاكرة سياق محادثة معينة بـ sessionKey أو تصفير الكل
  */
-export function resetChatSessionContext(sessionKey?: string) {
+export async function resetChatSessionContext(sessionKey?: string) {
   if (sessionKey) {
     chatSessionContexts.delete(sessionKey);
   } else {
@@ -96,21 +96,21 @@ export function resetChatSessionContext(sessionKey?: string) {
   chatSessionContexts.delete("android_power_button_admin");
   chatSessionContexts.delete("web_admin_floating_widget");
 
-  // حذفها أيضاً من قاعدة البيانات
+  // حذفها أيضاً بشكل قاطع من قاعدة البيانات
   try {
     if (sessionKey) {
-      prisma.uISystemSetting.deleteMany({
+      await prisma.uISystemSetting.deleteMany({
         where: {
           target: "ai_chat_session",
-          section: sessionKey
+          section: { in: [sessionKey, "default", "voice_admin", "web_admin_floating_widget", "android_power_button_admin"] }
         }
-      }).catch(() => {});
+      });
     } else {
-      prisma.uISystemSetting.deleteMany({
+      await prisma.uISystemSetting.deleteMany({
         where: {
           target: "ai_chat_session"
         }
-      }).catch(() => {});
+      });
     }
   } catch (e) {}
 }
@@ -953,6 +953,25 @@ export async function executeSuperSystemAgent(
     .replace(/سو\s*لي/g, "سويلي")
     .replace(/اريد\s*اسوي/g, "سوي")
     .replace(/اريد\s*سوي/g, "سوي");
+
+  // 0.01 أمر مسح وتصفير الدردشة المباشر (صوتياً أو نصياً)
+  if (
+    cleanInit === "مسح" ||
+    cleanInit === "تصفير" ||
+    cleanInit === "مسح الدردشة" ||
+    cleanInit === "امسح الدردشة" ||
+    cleanInit === "مسح السجل" ||
+    cleanInit === "تصفير السجل" ||
+    cleanInit === "تصفير الدردشة" ||
+    cleanInit === "ابدا من جديد" ||
+    cleanInit === "ابدأ من جديد" ||
+    cleanInit === "دردشة جديدة" ||
+    cleanInit === "دردشه جديده" ||
+    cleanInit === "reset"
+  ) {
+    await resetChatSessionContext(sessionKey);
+    return { reply: "تم تصفير الذاكرة وسجل المحادثة والبدء بدردشة جديدة ناصعة يا أبو الأكبر! تفضل بأمرك الجديد 🚀" };
+  }
 
   // ==========================================
   // 🚗 إدارة وضعية (لا يوجد سيارات) التفاعلية
