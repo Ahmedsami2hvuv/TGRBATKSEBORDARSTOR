@@ -207,12 +207,12 @@ export async function finalizeAndCreateOrder(
 
   const order = await prisma.order.create({
     data: {
-      shopId: shopId,
+      shop: { connect: { id: shopId } },
       status: "pending",
       orderType: oType,
       orderNoteTime: nTime,
-      customerRegionId: draft.regionId || null,
-      customerPhone: draft.phone || null,
+      ...(draft.regionId ? { customerRegion: { connect: { id: draft.regionId } } } : {}),
+      customerPhone: draft.phone || "",
       orderSubtotal: new Decimal(subtotal),
       deliveryPrice: new Decimal(deliveryPriceNum),
       totalAmount: new Decimal(totalNum),

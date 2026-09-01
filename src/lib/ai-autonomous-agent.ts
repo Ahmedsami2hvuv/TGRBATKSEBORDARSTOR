@@ -206,12 +206,12 @@ export async function executeAutonomousAiCommand(
 
         const newOrder = await prisma.order.create({
           data: {
-            shopId: shop.id,
+            shop: { connect: { id: shop.id } },
             status: "pending",
             orderType: oType,
             orderNoteTime: nTime,
-            customerRegionId: region?.id || null,
-            customerPhone: plan.phone || null,
+            ...(region?.id ? { customerRegion: { connect: { id: region.id } } } : {}),
+            customerPhone: plan.phone || "",
             orderSubtotal: new Decimal(subtotal),
             deliveryPrice: new Decimal(delivery),
             totalAmount: new Decimal(total),

@@ -2698,12 +2698,12 @@ export async function executeSuperSystemAgent(
 
         const order = await prisma.order.create({
           data: {
-            shopId: matchedShop.id,
+            shop: { connect: { id: matchedShop.id } },
             status: "pending",
             orderType: orderType,
             orderNoteTime: noteTime,
-            customerRegionId: matchedRegion?.id || null,
-            customerPhone: phone,
+            ...(matchedRegion?.id ? { customerRegion: { connect: { id: matchedRegion.id } } } : {}),
+            customerPhone: phone || "",
             orderSubtotal: new Decimal(subtotalNum),
             deliveryPrice: new Decimal(deliveryPriceNum),
             totalAmount: new Decimal(totalNum),
