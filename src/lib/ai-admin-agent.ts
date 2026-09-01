@@ -1585,7 +1585,17 @@ export async function executeSuperSystemAgent(
     cleanInit === "سوي اوردر";
 
   if (isPureNewOrderPrompt) {
-    ctx.orderDraft = { step: "waiting_shop" };
+    ctx.orderDraft = {
+      step: "waiting_shop",
+      shopId: undefined,
+      shopName: undefined,
+      regionId: undefined,
+      regionName: undefined,
+      phone: undefined,
+      orderType: undefined,
+      price: undefined,
+      noteTime: undefined
+    };
     ctx.updatedAt = Date.now();
     await savePersistentSessionContext(sessionKey, ctx);
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };

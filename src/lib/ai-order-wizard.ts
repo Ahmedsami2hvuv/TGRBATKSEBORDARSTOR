@@ -183,6 +183,20 @@ export async function parseMultiFieldInput(
         }
       }
     }
+
+    // هـ) نوع الطلب في السطر الواحد إذا لم يكن هاتفاً ولا سعراً ولا منطقة ولا وقتاً
+    const cleanOne = normalizeArabic(rawText);
+    if (
+      !draft.orderType &&
+      !phone &&
+      !priceMatch &&
+      !timeMatch &&
+      cleanOne.length >= 2 &&
+      !/^\d+$/.test(cleanOne)
+    ) {
+      draft.orderType = rawText.trim();
+      fieldsFoundCount++;
+    }
   }
 
   return { updatedDraft: draft, fieldsFoundCount };
@@ -236,24 +250,24 @@ export async function handleOrderCreationWizard(
   userText: string,
   draft: OrderDraftState,
   ctx: { lastOrderNumber?: number | null }
-): Promise<{ handled: boolean; reply?: string; buttons?: Array<{ text: string; action: string }>; nextDraft?: OrderDraftState | null }> {
-  const clean = normalizeArabic(userText);
+): Promise<{ handled: boolean; reply?: string; nextDraft?: OrderDraftState | null; buttons?: Array<{ text: string; action: string }> }> {
+  const clean = userText.replace(/[.،,؟!؟]/g, "").trim().toLowerCase();
 
-  // 1. إلغاء إنشاء الطلب
-  if (clean === "الغاء" || clean === "كنسل" || clean.includes("الغاء الطلب") || clean.includes("بطلت")) {
+  // 1. إلغاء العملية
+  if (clean.includes("الغاء") || clean.includes("إلغاء") || clean.includes("كنسل") || clean.includes("بطلت") || clean.includes("مسح")) {
     return {
       handled: true,
-      reply: "تم إلغاء إنشاء الطلب يا أبو الأكبر! تدلل وآمرني بأي شيء ثاني 🌸",
+      reply: "تم إلغاء إنشاء الطلب ومسح المسودة بنجاح يا غالي 🌸",
       nextDraft: null
     };
   }
 
-  // 2. إذا كنا في أي خطوة بعد اختيار المحل وتم إرسال تفاصيل متعددة (أسطر أو معلومات مجمعة)
+  // 2. إذا كنا في أي خطوة بعد اختيار المحل وتم إرسال تفاصيل متعددة مجمعة في رسالة واحدة (أكثر من معلومتين)
   if (draft.step && draft.step !== "waiting_shop") {
     const allRegions = await getCachedRegions();
     const { updatedDraft, fieldsFoundCount } = await parseMultiFieldInput(userText, draft, allRegions);
 
-    if (fieldsFoundCount >= 2 || (updatedDraft.regionId && updatedDraft.price !== undefined)) {
+    if (fieldsFoundCount >= 2) {
       // إذا اكتملت الحقول الأساسية (محل + منطقة + سعر + نوع)
       if (updatedDraft.shopId && updatedDraft.regionId && updatedDraft.price !== undefined && updatedDraft.orderType) {
         return await finalizeAndCreateOrder(updatedDraft, ctx);
@@ -277,7 +291,7 @@ export async function handleOrderCreationWizard(
       if (!updatedDraft.orderType) {
         return {
           handled: true,
-          reply: `تمام! شنو نوع أو محتوى الطلبية؟ 📦`,
+          reply: `تمام! شنو نوع أو محتوى الطلبية؟ (مثلاً: ورد، ماء، طعام) 📦`,
           nextDraft: { ...updatedDraft, step: "waiting_type" }
         };
       }
