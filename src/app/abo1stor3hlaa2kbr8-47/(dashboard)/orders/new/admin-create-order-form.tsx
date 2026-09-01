@@ -161,6 +161,8 @@ export function AdminCreateOrderForm({
  const [secondPrefillLoading, setSecondPrefillLoading] = useState(false);
   const [firstSuggestedRegions, setFirstSuggestedRegions] = useState<Array<{ id: string; name: string; deliveryPrice: string }>>([]);
   const [secondSuggestedRegions, setSecondSuggestedRegions] = useState<Array<{ id: string; name: string; deliveryPrice: string }>>([]);
+  const [firstPreviousRegions, setFirstPreviousRegions] = useState<Array<{ id: string; name: string; deliveryPrice?: string; count?: number }>>([]);
+  const [secondPreviousRegions, setSecondPreviousRegions] = useState<Array<{ id: string; name: string; deliveryPrice?: string; count?: number }>>([]);
 
  // --- Prep Draft State ---
  const [pasteText, setPasteText] = useState("");
