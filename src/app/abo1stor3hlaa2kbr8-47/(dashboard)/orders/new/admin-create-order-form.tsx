@@ -1,3 +1,4 @@
+"use client";
 
 function CustomerPhoneSuggestionsCard({
   phone,
@@ -93,7 +94,6 @@ function CustomerPhoneSuggestionsCard({
   );
 }
 
-"use client";
 
 import { useActionState, useEffect, useMemo, useState, useRef } from "react";
 import { ad } from "@/lib/admin-ui";
