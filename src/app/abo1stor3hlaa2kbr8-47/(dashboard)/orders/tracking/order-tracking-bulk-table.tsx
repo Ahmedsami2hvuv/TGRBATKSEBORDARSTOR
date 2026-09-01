@@ -125,6 +125,7 @@ function TrackingCardsView({
   rows,
   onOpenRow,
   onAssignOrder,
+  onRejectOrder,
   icons,
   showSelectColumn,
   isSelected,
@@ -134,6 +135,7 @@ function TrackingCardsView({
   rows: TrackingTableRow[];
   onOpenRow: (id: string) => void;
   onAssignOrder: (row: TrackingTableRow) => void;
+  onRejectOrder?: (row: TrackingTableRow) => void;
   icons: GlobalIconsConfig | null;
   showSelectColumn?: boolean;
   isSelected?: (id: string) => boolean;
@@ -326,8 +328,18 @@ function TrackingCardsView({
                       </div>
                     )}
 
-                    {/* أقصى اليسار: رقم الطلب */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    {/* أقصى اليسار: زر رفض الطلب ورقم الطلب */}
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {onRejectOrder && !isCancelled && (
+                        <button
+                          type="button"
+                          onClick={() => onRejectOrder(o)}
+                          className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-200 dark:border-rose-800 text-xs sm:text-sm font-black shadow-xs transition active:scale-90"
+                          title="رفض الطلب ❌"
+                        >
+                          ❌
+                        </button>
+                      )}
                       <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                         #{o.orderNumber}
                       </span>
@@ -462,6 +474,7 @@ export function OrderTrackingBulkTable({
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
   const [assignOrder, setAssignOrder] = useState<TrackingTableRow | null>(null);
+  const [rejectOrder, setRejectOrder] = useState<TrackingTableRow | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -823,6 +836,7 @@ export function OrderTrackingBulkTable({
           rows={rows}
           onOpenRow={(id) => router.push(`${SECRET_ADMIN_PATH}/orders/${id}`)}
           onAssignOrder={(r) => setAssignOrder(r)}
+          onRejectOrder={(r) => setRejectOrder(r)}
           icons={icons}
           showSelectColumn={showSelectColumn}
           isSelected={(id) => selected.has(id)}
@@ -875,25 +889,25 @@ export function OrderTrackingBulkTable({
       {/* نافذة الإسناد السريع للمندوبين */}
       {assignOrder && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="mt-8 w-full max-w-md animate-in slide-in-from-top-4 rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200" dir="rtl">
+          <div className="mt-8 w-full max-w-md animate-in slide-in-from-top-4 rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800" dir="rtl">
             <div className="mb-4 flex items-center justify-between border-b pb-3">
               <div>
-                <h3 className="text-xl font-black text-slate-900">إسناد لمندوب</h3>
-                <p className="text-sm font-bold text-slate-500">الطلب #{assignOrder.orderNumber}</p>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">إسناد لمندوب</h3>
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">الطلب #{assignOrder.orderNumber}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setAssignOrder(null)}
-                className="h-10 w-10 rounded-full bg-slate-100 text-xl font-bold text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+                className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto pt-1 space-y-3">
-              <div className="flex items-center gap-2 bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
+              <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
                 <input type="checkbox" id="direct-receipt-tracking-modal" className="h-5 w-5 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-400" />
-                <label htmlFor="direct-receipt-tracking-modal" className="text-sm font-black text-emerald-950 cursor-pointer select-none">
+                <label htmlFor="direct-receipt-tracking-modal" className="text-sm font-black text-emerald-950 dark:text-emerald-300 cursor-pointer select-none">
                   استلام مباشر للمندوب (تخطي الموافقة) ⚡
                 </label>
               </div>
@@ -920,8 +934,8 @@ export function OrderTrackingBulkTable({
                       }}
                       className={`w-full rounded-2xl border-2 px-3.5 py-3 text-right text-sm sm:text-base font-bold transition active:scale-[0.98] disabled:opacity-60 ${
                         isCurrent
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-400"
-                          : "border-slate-100 bg-slate-50 text-slate-900 hover:border-emerald-500 hover:bg-emerald-50"
+                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 ring-2 ring-emerald-400"
+                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white hover:border-emerald-500 hover:bg-emerald-50"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -929,7 +943,7 @@ export function OrderTrackingBulkTable({
                         {isCurrent && <span className="text-emerald-600 font-bold text-xs">✓</span>}
                       </div>
                       {isCurrent && (
-                        <span className="block text-[11px] font-bold text-emerald-700 mt-0.5">مسند حالياً</span>
+                        <span className="block text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">مسند حالياً</span>
                       )}
                     </button>
                   );
@@ -939,6 +953,48 @@ export function OrderTrackingBulkTable({
           </div>
         </div>
       )}
+
+      {/* نافذة تأكيد رفض الطلب السريع */}
+      {rejectOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setRejectOrder(null)}>
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 animate-in zoom-in-95 duration-200 text-center" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-950/60 text-2xl text-rose-600">
+              ❌
+            </div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">هل تريد رفض الطلب #{rejectOrder.orderNumber}؟</h3>
+            <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+              {rejectOrder.shopCustomerLabel} إلى {rejectOrder.regionName}
+            </p>
+
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={bulkPending}
+                onClick={async () => {
+                  const fd = new FormData();
+                  fd.append("orderIds", rejectOrder.id);
+                  fd.append("targetStatus", "cancelled");
+                  setRejectOrder(null);
+                  const res = await bulkUpdateOrdersStatus({}, fd);
+                  if (res.error) alert(res.error);
+                  else router.refresh();
+                }}
+                className="flex-1 rounded-2xl bg-rose-600 py-3 text-sm font-black text-white shadow-md transition hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+              >
+                نعم، رفض الطلب ❌
+              </button>
+              <button
+                type="button"
+                onClick={() => setRejectOrder(null)}
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-5 py-3 text-sm font-black text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
