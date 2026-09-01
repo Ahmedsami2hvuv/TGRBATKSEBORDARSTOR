@@ -237,6 +237,14 @@ function TrackingCardsView({
               const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
               const hasGps = Boolean(o.hasCourierUploadedLocation || o.customerLocationUrl || !o.missingCustomerLocation);
               const isDoubleRoute = Boolean(o.routeModeLabel === "وجهتين");
+              const hasPreparerPricing = Boolean(
+                o.preparerShoppingJson &&
+                  (typeof o.preparerShoppingJson === "object"
+                    ? Object.keys(o.preparerShoppingJson).length > 0
+                    : typeof o.preparerShoppingJson === "string"
+                    ? (o.preparerShoppingJson as string).trim().length > 2
+                    : false)
+              );
 
               return (
                 <div
@@ -353,6 +361,16 @@ function TrackingCardsView({
                         >
                           ✏️
                         </Link>
+                        {hasPreparerPricing && (
+                          <Link
+                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-200 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 text-xs font-black shadow-2xs transition-all active:scale-90"
+                            title="تعديل أسعار التجهيز 💰"
+                          >
+                            💰
+                          </Link>
+                        )}
                         {isPrepaid && (
                           <span className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-emerald-700" title="كل شي واصل">
                             واصل
