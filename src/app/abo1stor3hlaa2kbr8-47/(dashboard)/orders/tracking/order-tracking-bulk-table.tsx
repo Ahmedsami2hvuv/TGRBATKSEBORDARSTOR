@@ -328,18 +328,8 @@ function TrackingCardsView({
                       </div>
                     )}
 
-                    {/* أقصى اليسار: زر رفض الطلب ورقم الطلب */}
-                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {onRejectOrder && !isCancelled && (
-                        <button
-                          type="button"
-                          onClick={() => onRejectOrder(o)}
-                          className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-200 dark:border-rose-800 text-xs sm:text-sm font-black shadow-xs transition active:scale-90"
-                          title="رفض الطلب ❌"
-                        >
-                          ❌
-                        </button>
-                      )}
+                    {/* أقصى اليسار: رقم الطلب */}
+                    <div className="flex items-center gap-1 shrink-0">
                       <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                         #{o.orderNumber}
                       </span>
@@ -370,7 +360,7 @@ function TrackingCardsView({
                       )}
                     </div>
 
-                    {/* سطر كتابات الحالات (واصل، عكسي، gps، وجهتين) ورقم الهاتف */}
+                    {/* سطر كتابات الحالات (واصل، عكسي، gps، وجهتين) ورقم الهاتف مع زر رفض الطلب */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60" onClick={(e) => e.stopPropagation()}>
                       {/* كتابات الحالات الأنيقة: واصل و عكسي و gps و وجهتين + إيموجي قلم التعديل */}
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -414,8 +404,18 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* رقم الهاتف الظاهر */}
+                      {/* رقم الهاتف الظاهر وزر رفض الطلب */}
                       <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
+                        {onRejectOrder && !isCancelled && (
+                          <button
+                            type="button"
+                            onClick={() => onRejectOrder(o)}
+                            className="flex size-7 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-200 dark:border-rose-800 text-xs font-black shadow-xs transition active:scale-90"
+                            title="رفض الطلب ❌"
+                          >
+                            ❌
+                          </button>
+                        )}
                         {o.customerAlternatePhone && o.customerAlternatePhone !== "—" && (
                           <span className="text-slate-400">
                             {o.customerAlternatePhone} /
@@ -426,6 +426,7 @@ function TrackingCardsView({
                         </span>
                       </div>
                     </div>
+
                   </div>
                 </div>
               );
