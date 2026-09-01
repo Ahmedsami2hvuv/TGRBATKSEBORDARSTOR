@@ -1117,6 +1117,7 @@ export function AdminCreateOrderForm({
   placeholder="اكتب أو الصق الرقم أولاً"
   required
  />
+ <CustomerPhoneSuggestionsCard phone={firstPhone} selectedRegionId={firstRegionId} onSelectRegion={setFirstRegionId} />
  </label>
  )}
 
@@ -1166,6 +1167,7 @@ export function AdminCreateOrderForm({
   placeholder="اكتب أو الصق الرقم"
   required
  />
+ <CustomerPhoneSuggestionsCard phone={firstPhone} selectedRegionId={firstRegionId} onSelectRegion={setFirstRegionId} />
  </label>
  )}
 
