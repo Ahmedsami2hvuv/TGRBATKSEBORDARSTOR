@@ -2,23 +2,55 @@ import { NextResponse } from "next/server";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { prisma } from "@/lib/prisma";
 
+function getPhoneVariants(raw: string): { normalized: string; variants: string[]; last9Digits: string } | null {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 8) return null;
+
+  const last9 = digits.slice(-9);
+  const local11 = `0${digits.slice(-10)}`;
+  const rawClean = raw.trim();
+
+  const variantsSet = new Set<string>([
+    rawClean,
+    local11,
+    digits,
+    `+964${last9}`,
+    `964${last9}`,
+    `0${last9}`,
+    last9,
+  ]);
+
+  const norm = normalizeIraqMobileLocal11(rawClean) || local11;
+
+  return {
+    normalized: norm,
+    variants: Array.from(variantsSet),
+    last9Digits: last9,
+  };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const phoneRaw = searchParams.get("phone")?.trim() ?? "";
   const regionId = searchParams.get("regionId")?.trim() ?? "";
   const shopId = searchParams.get("shopId")?.trim() ?? "";
 
-  const phone = normalizeIraqMobileLocal11(phoneRaw);
-  if (!phone) {
+  const phoneInfo = getPhoneVariants(phoneRaw);
+  if (!phoneInfo) {
     return NextResponse.json({ profile: null, suggestedRegions: [] });
   }
 
-  // 1. البحث عن كافة المناطق المربوطة بهذا الهاتف سابقاً
+  const { normalized: phone, variants, last9Digits } = phoneInfo;
   const suggestedRegionsMap = new Map<string, { id: string; name: string; deliveryPrice: string }>();
 
-  // أ) من جدول CustomerPhoneProfile
+  // 1. البحث في جدول CustomerPhoneProfile
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
-    where: { phone },
+    where: {
+      OR: [
+        { phone: { in: variants } },
+        { phone: { contains: last9Digits } },
+      ],
+    },
     select: {
       id: true,
       phone: true,
@@ -38,7 +70,7 @@ export async function GET(request: Request) {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 10,
+    take: 15,
   });
 
   for (const pp of phoneProfiles) {
@@ -51,9 +83,14 @@ export async function GET(request: Request) {
     }
   }
 
-  // ب) من جدول Customer
+  // 2. البحث في جدول Customer
   const customers = await prisma.customer.findMany({
-    where: { phone },
+    where: {
+      OR: [
+        { phone: { in: variants } },
+        { phone: { contains: last9Digits } },
+      ],
+    },
     select: {
       id: true,
       shopId: true,
@@ -74,7 +111,7 @@ export async function GET(request: Request) {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 10,
+    take: 15,
   });
 
   for (const c of customers) {
@@ -87,12 +124,14 @@ export async function GET(request: Request) {
     }
   }
 
-  // جـ) من جدول Order
+  // 3. البحث في جدول Order (طرف أول أو طرف ثاني)
   const orders = await prisma.order.findMany({
     where: {
       OR: [
-        { customer: { phone } },
-        { secondCustomerPhone: phone },
+        { customerPhone: { in: variants } },
+        { customerPhone: { contains: last9Digits } },
+        { secondCustomerPhone: { in: variants } },
+        { secondCustomerPhone: { contains: last9Digits } },
       ],
     },
     select: {
@@ -112,7 +151,7 @@ export async function GET(request: Request) {
       },
     },
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 20,
   });
 
   for (const o of orders) {
@@ -134,16 +173,15 @@ export async function GET(request: Request) {
 
   const suggestedRegions = Array.from(suggestedRegionsMap.values());
 
-  // 2. البحث عن الـ Profile المفضل حسب (shopId و regionId) إذا تم تمريره، أو أحدث profile متاح
+  // 4. بناء الـ profile للبيانات المحفوظة
   let profile: any = null;
-
   const targetRegionId = regionId || (suggestedRegions[0]?.id ?? "");
 
   if (targetRegionId) {
     if (shopId) {
       profile = await prisma.customer.findFirst({
         where: {
-          phone,
+          OR: [{ phone: { in: variants } }, { phone: { contains: last9Digits } }],
           customerRegionId: targetRegionId,
           shopId,
         },
@@ -162,8 +200,11 @@ export async function GET(request: Request) {
     }
 
     if (!profile) {
-      const phoneProfile = await prisma.customerPhoneProfile.findUnique({
-        where: { phone_regionId: { phone, regionId: targetRegionId } },
+      const phoneProfile = await prisma.customerPhoneProfile.findFirst({
+        where: {
+          OR: [{ phone: { in: variants } }, { phone: { contains: last9Digits } }],
+          regionId: targetRegionId,
+        },
         select: {
           id: true,
           phone: true,
@@ -194,7 +235,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // إذا لم نجد profile محدد ولكن توجد بيانات في Customer بشكل عام لهذا الهاتف
   if (!profile && customers.length > 0) {
     const c = customers[0];
     profile = {
