@@ -1514,11 +1514,11 @@ ${productsText}`;
               return (
                 <div
                   key={`${i}-${p.line}`}
-                  className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
+                  className={`w-full relative flex flex-col justify-between rounded-xl border-2 p-2.5 text-start transition min-h-[72px] select-none ${
                     isSelected ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-250 shadow-md scale-[1.01]" :
                     active ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 ring-2 ring-indigo-200" :
-                    priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm"
-                  } cursor-pointer`}
+                    priced ? "border-emerald-800 bg-emerald-900 text-white shadow-sm" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm"
+                  } cursor-pointer active:scale-[0.99]`}
                   onClick={() => {
                     if (selectionMode) {
                       toggleProductSelection(i);
@@ -1529,51 +1529,40 @@ ${productsText}`;
                     }
                   }}
                 >
+                  {/* رأس البطاقة: الصورة إن وجدت، واسم المنتج والمجهز */}
+                  <div className="flex items-start gap-2 w-full">
+                    {photoUrl && (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewImageUrl(resolvePublicAssetSrc(photoUrl)!);
+                          setPreviewZoom(1);
+                        }}
+                        className="shrink-0 w-9 h-9 rounded-lg overflow-hidden border border-white/20 bg-white/10 active:scale-90 transition-transform cursor-zoom-in"
+                      >
+                        <img
+                          src={resolvePublicAssetSrc(photoUrl)!}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
 
-                  {/* صورة المنتج */}
-                  {photoUrl && (
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewImageUrl(resolvePublicAssetSrc(photoUrl)!);
-                        setPreviewZoom(1);
-                      }}
-                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in mt-2"
-                    >
-                      <img
-                        src={resolvePublicAssetSrc(photoUrl)!}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
-                    <p className={`text-[11px] font-black leading-tight pr-1 flex items-center gap-1 flex-wrap ${
-                      isSelected ? "text-sky-900 dark:text-sky-100" :
-                      active ? "text-indigo-900 dark:text-indigo-100" :
-                      priced ? "text-white" : "text-slate-800 dark:text-slate-200"
-                    }`}>
-                      <span>{p.line}</span>
-                    </p>
-
-                    <div className="flex flex-col gap-0.5 mt-1 pb-4">
-                      {branch && (
-                        <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap self-start ${
-                          isSelected ? 'bg-sky-100/80 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300' :
-                          active ? 'bg-indigo-100/80 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300' :
-                          priced ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'
-                        }`}>
-                          📍 {branch}
-                        </p>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs sm:text-[13px] font-black leading-snug break-words ${
+                        isSelected ? "text-sky-900 dark:text-sky-100" :
+                        active ? "text-indigo-900 dark:text-indigo-100" :
+                        priced ? "text-white" : "text-slate-800 dark:text-slate-200"
+                      }`}>
+                        <span>{p.line}</span>
+                      </p>
 
                       {prepName && (
-                        <span className={`text-[7px] font-bold flex items-center gap-0.5 self-start ${
-                          p.isFulfilledByAdmin ? "text-amber-500" :
-                          isSelected ? "text-sky-700 dark:text-sky-300" :
-                          active ? "text-indigo-700 dark:text-indigo-300" :
-                          priced ? "text-emerald-300" : "text-slate-400"
+                        <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold mt-1 px-1.5 py-0.5 rounded ${
+                          p.isFulfilledByAdmin ? "text-amber-300 bg-amber-950/40 border border-amber-500/30" :
+                          isSelected ? "text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-900/40" :
+                          active ? "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/40" :
+                          priced ? "text-emerald-200 bg-emerald-950/40 border border-emerald-700/50" : "text-slate-500 bg-slate-100 dark:bg-slate-800"
                         }`}>
                           👤 {prepName}
                         </span>
@@ -1581,31 +1570,40 @@ ${productsText}`;
                     </div>
                   </div>
 
-                  {/* شارة العدد في الركن الأيسر السفلي للمنتج (تظهر لطلبات المتجر فقط) */}
-                  {isStoreOrder && displayQty && (
-                    <div className="absolute bottom-1 left-1 z-10">
-                      <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
-                        {displayQty}×
-                      </span>
+                  {/* أسفل البطاقة: الكمية (إن وجدت) والأسعار بخط كبير وواضح */}
+                  <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
+                    {/* شارة العدد لطلبات المتجر */}
+                    <div>
+                      {isStoreOrder && displayQty ? (
+                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                          {displayQty}×
+                        </span>
+                      ) : <span />}
                     </div>
-                  )}
 
-                  {/* شارة السعر في الأعلى */}
-                  <div className="absolute top-1 left-1 flex gap-1 items-center">
-                    {priced ? (
-                      <div className="flex gap-0.5">
-                        {!hideBuyPrice && (
-                          <span className={`font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm ${priced ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>{p.buyAlf}</span>
-                        )}
-                        {!hideSellPrice && (
-                          <span className="font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm bg-indigo-500 text-white">{p.sellAlf}</span>
-                        )}
-                      </div>
-                    ) : (
-                      isMeat && (
-                        <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shadow-sm">تسعير</span>
-                      )
-                    )}
+                    {/* شارات الأسعار المكبرة بالأسفل */}
+                    <div className="flex items-center gap-1 mr-auto">
+                      {priced ? (
+                        <div className="flex items-center gap-1">
+                          {!hideBuyPrice && (
+                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-emerald-500 text-white border border-emerald-400/30">
+                              {p.buyAlf}
+                            </span>
+                          )}
+                          {!hideSellPrice && (
+                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-indigo-500 text-white border border-indigo-400/30">
+                              {p.sellAlf}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        isMeat ? (
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-500/30 shadow-sm">
+                            تسعير
+                          </span>
+                        ) : null
+                      )}
+                    </div>
                   </div>
                 </div>
               );

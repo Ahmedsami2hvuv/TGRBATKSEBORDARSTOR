@@ -974,84 +974,81 @@ export function PreparerShoppingDraftEditClient({
                     setSelectedPriceIndex(i);
                     setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   }}
-                  className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
+                  className={`w-full relative flex flex-col justify-between rounded-xl border-2 p-2.5 text-start transition min-h-[72px] select-none ${
                     active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
                     isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
-                    priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
-                  } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
+                    priced ? "border-emerald-800 bg-emerald-900 text-white shadow-sm" : "border-slate-200 bg-white shadow-sm"
+                  } ${isMeat && priced ? "opacity-90 cursor-default" : ""} active:scale-[0.99]`}
                 >
-                  {/* صورة المنتج */}
-                  {productImagesMap[p.line.trim().toLowerCase()] && (
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setZoomImage({
-                          url: productImagesMap[p.line.trim().toLowerCase()],
-                          title: p.line
-                        });
-                      }}
-                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in mt-2"
-                    >
-                      <img
-                        src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
+                  {/* رأس البطاقة: الصورة واسم المنتج والمجهز */}
+                  <div className="flex items-start gap-2 w-full">
+                    {productImagesMap[p.line.trim().toLowerCase()] && (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomImage({
+                            url: productImagesMap[p.line.trim().toLowerCase()],
+                            title: p.line
+                          });
+                        }}
+                        className="shrink-0 w-9 h-9 rounded-lg overflow-hidden border border-white/20 bg-white/10 active:scale-90 transition-transform cursor-zoom-in"
+                      >
+                        <img
+                          src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
 
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
-                      <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 flex-wrap ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs sm:text-[13px] font-black leading-snug break-words ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
                         <span>{p.line}</span>
                       </p>
 
-                    <div className="flex items-center justify-between gap-1 mt-1 pb-4">
-                        <div className="flex flex-wrap items-center gap-1 min-w-0">
-                            {productBranchMap[p.line.trim().toLowerCase()] && (
-                              <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}>
-                                📍 {productBranchMap[p.line.trim().toLowerCase()]}
-                              </p>
-                            )}
-
-                            {isAssignedToOther ? (
-                              <p className="text-[7px] font-bold text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
-                                ⚠️ {p.assignedPreparerName || "مجهز آخر"}
-                              </p>
-                            ) : p.assignedPreparerId === preparerId ? (
-                              <p className="text-[7px] font-bold text-emerald-300">لك</p>
-                            ) : priced ? (
-                              <p className={`text-[7px] font-bold ${isOthers ? "text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400" : "text-emerald-300"}`}>
-                                {isPricedByOther ? `⚠️ ${p.pricedBy || "مجهز آخر"}` : (p.pricedById === "auto" ? "تلقائي" : "أنت")}
-                              </p>
-                            ) : null}
-                        </div>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {isAssignedToOther ? (
+                          <span className="text-[8px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+                            ⚠️ {p.assignedPreparerName || "مجهز آخر"}
+                          </span>
+                        ) : p.assignedPreparerId === preparerId ? (
+                          <span className="text-[8px] font-bold text-emerald-300 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-700/40">لك</span>
+                        ) : priced ? (
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${isOthers ? "text-rose-700 bg-rose-50 border border-rose-200" : "text-emerald-200 bg-emerald-950/40 border border-emerald-700/40"}`}>
+                            {isPricedByOther ? `⚠️ ${p.pricedBy || "مجهز آخر"}` : (p.pricedById === "auto" ? "تلقائي" : "أنت")}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                </div>
-
-                {/* شارة العدد في الركن الأيسر السفلي للمنتج (تظهر لطلبات المتجر فقط) */}
-                {isStoreOrder && displayQty && (
-                  <div className="absolute bottom-1 left-1 z-10">
-                    <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shadow-sm border border-rose-500/40">
-                      {displayQty}×
-                    </span>
                   </div>
-                )}
 
-                {/* شارة السعر - مطلقة لتوفير المساحة الرأسية */}
-                <div className="absolute top-1 left-1">
-                    {isMeat ? (
+                  {/* أسفل البطاقة: الكمية وسعر الشراء المكبر */}
+                  <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
+                    {/* شارة العدد لطلبات المتجر */}
+                    <div>
+                      {isStoreOrder && displayQty ? (
+                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                          {displayQty}×
+                        </span>
+                      ) : <span />}
+                    </div>
+
+                    {/* شارة السعر المكبرة بالأسفل */}
+                    <div className="flex items-center gap-1 mr-auto">
+                      {isMeat ? (
                         priced ? (
-                            <span className="text-[7px] font-bold text-emerald-400 bg-emerald-950/50 px-1 py-0.5 rounded shadow-sm border border-emerald-800/20">تلقائي</span>
+                          <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-600/40 shadow-sm">تلقائي 🥩</span>
                         ) : (
-                            <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shadow-sm">تسعير</span>
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shadow-sm">تسعير 🥩</span>
                         )
-                    ) : priced ? (
-                        <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm ${isOthers ? "bg-slate-200 text-slate-500" : "bg-emerald-500 text-white"}`}>{p.buyAlf}</span>
-                    ) : (
-                        null
-                    )}
-                </div>
-              </button>
+                      ) : priced ? (
+                        <span className={`font-mono text-xs sm:text-[13px] font-black px-2.5 py-0.5 rounded-md shadow-sm border ${isOthers ? "bg-slate-200 text-slate-500 border-slate-300" : "bg-emerald-500 text-white border-emerald-400/30"}`}>
+                          {p.buyAlf}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
             );
           })}
         </div>
