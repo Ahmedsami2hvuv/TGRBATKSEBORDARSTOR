@@ -159,6 +159,8 @@ export function AdminCreateOrderForm({
  const [secondPrefill, setSecondPrefill] = useState<CustomerPrefill | null>(null);
  const [firstPrefillLoading, setFirstPrefillLoading] = useState(false);
  const [secondPrefillLoading, setSecondPrefillLoading] = useState(false);
+  const [firstSuggestedRegions, setFirstSuggestedRegions] = useState<Array<{ id: string; name: string; deliveryPrice: string }>>([]);
+  const [secondSuggestedRegions, setSecondSuggestedRegions] = useState<Array<{ id: string; name: string; deliveryPrice: string }>>([]);
 
  // --- Prep Draft State ---
  const [pasteText, setPasteText] = useState("");
@@ -1057,6 +1059,29 @@ export function AdminCreateOrderForm({
  onValueChange={setFirstRegionId}
  regionsLookup={regions}
  />
+ {firstSuggestedRegions.length > 0 && (
+  <div className="flex flex-col gap-1.5 mt-2 p-2.5 rounded-xl bg-amber-50/90 border border-amber-300/80 shadow-xs animate-in fade-in duration-200">
+    <span className="text-[11px] font-black text-amber-900 flex items-center gap-1">
+      📍 مناطق مسجلة سابقاً لهذا الرقم (اختر بنقرة واحدة):
+    </span>
+    <div className="flex flex-wrap gap-1.5">
+      {firstSuggestedRegions.map((reg) => (
+        <button
+          key={reg.id}
+          type="button"
+          onClick={() => setFirstRegionId(reg.id)}
+          className={`px-3 py-1 text-xs font-black rounded-lg border transition-all flex items-center gap-1 active:scale-95 ${
+            firstRegionId === reg.id
+              ? "bg-amber-600 border-amber-700 text-white shadow-sm"
+              : "bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
+          }`}
+        >
+          <span>📍 {reg.name}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+ )}
 
  {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
  {firstPrefill && (
