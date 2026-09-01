@@ -163,6 +163,27 @@ export function AdminCreateOrderForm({
   const [secondSuggestedRegions, setSecondSuggestedRegions] = useState<Array<{ id: string; name: string; deliveryPrice: string }>>([]);
   const [firstPreviousRegions, setFirstPreviousRegions] = useState<Array<{ id: string; name: string; deliveryPrice?: string; count?: number }>>([]);
   const [secondPreviousRegions, setSecondPreviousRegions] = useState<Array<{ id: string; name: string; deliveryPrice?: string; count?: number }>>([]);
+  const allFirstSuggestedRegions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count?: number }>();
+    for (const r of firstPreviousRegions) {
+      if (r.id && r.name) map.set(r.id, r);
+    }
+    for (const r of firstSuggestedRegions) {
+      if (r.id && r.name && !map.has(r.id)) map.set(r.id, r);
+    }
+    return Array.from(map.values());
+  }, [firstPreviousRegions, firstSuggestedRegions]);
+
+  const allSecondSuggestedRegions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count?: number }>();
+    for (const r of secondPreviousRegions) {
+      if (r.id && r.name) map.set(r.id, r);
+    }
+    for (const r of secondSuggestedRegions) {
+      if (r.id && r.name && !map.has(r.id)) map.set(r.id, r);
+    }
+    return Array.from(map.values());
+  }, [secondPreviousRegions, secondSuggestedRegions]);
 
  // --- Prep Draft State ---
  const [pasteText, setPasteText] = useState("");
