@@ -75,7 +75,15 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
     private val PREFS_NAME = "AdminVoiceAssistantPrefs"
     private val KEY_TTS_MUTED = "is_tts_muted"
 
-    private val sessionHistory = JSONArray()
+    companion object {
+        data class SavedChatMessage(
+            val sender: String,
+            val text: String,
+            val buttonsJsonStr: String? = null
+        )
+        val persistentChatMessages = mutableListOf<SavedChatMessage>()
+        val sessionHistory = JSONArray()
+    }
 
     private val handler = Handler(Looper.getMainLooper())
     private var pendingSpeechText: String? = null
@@ -122,8 +130,9 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             textToSpeech = TextToSpeech(this, this)
 
-            btnClose.setOnClickListener { clearSessionHistoryAndFinish() }
-            transparentClickDismiss.setOnClickListener { clearSessionHistoryAndFinish() }
+            // إغلاق هادئ بدون مسح الذاكرة أو تصفير مسودة الطلب
+            btnClose.setOnClickListener { closeAssistantQuietly() }
+            transparentClickDismiss.setOnClickListener { closeAssistantQuietly() }
 
             // زر تبديل الخلفية المعتمة لإخفاء الشاشة والتطبيقات التي في الخلفية عند أخذ سكرين شوت
             btnToggleSolidBackground.setOnClickListener {
@@ -153,11 +162,13 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
             }
 
+            // زر سلة المهملات: هو المسؤول الحصري عن مسح وتصفير الدردشة من التطبيق والسيرفر
             btnTrashClearChat.setOnClickListener {
                 handler.removeCallbacks(commitSpeechRunnable)
                 pendingSpeechText = null
                 textToSpeech?.stop()
                 chatMessagesContainer.removeAllViews()
+                persistentChatMessages.clear()
                 
                 while (sessionHistory.length() > 0) {
                     sessionHistory.remove(0)
@@ -182,15 +193,32 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 addMessageToChat(
                     sender = "ai",
-                    text = "تم تصفير سجل الدردشة والبدء بجلسة جديدة يا أبو الأكبر! تفضل بأمرك الجديد 🚀"
+                    text = "تم تصفير سجل الدردشة والبدء بجلسة جديدة يا أبو الأكبر! تفضل بأمرك الجديد 🚀",
+                    saveToPersistent = true
                 )
                 Toast.makeText(this, "🗑️ تم مسح سجل المحادثة", Toast.LENGTH_SHORT).show()
             }
 
-            addMessageToChat(
-                sender = "ai",
-                text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀"
-            )
+            // استرجاع سجل الدردشة السابق إذا كانت النافذة قد أغلقت مؤقتاً لجلب رقم أو اسم
+            if (persistentChatMessages.isNotEmpty()) {
+                for (msg in persistentChatMessages) {
+                    val btns = if (!msg.buttonsJsonStr.isNullOrBlank()) {
+                        try { JSONArray(msg.buttonsJsonStr) } catch (e: Exception) { null }
+                    } else null
+                    addMessageToChat(
+                        sender = msg.sender,
+                        text = msg.text,
+                        buttonsArray = btns,
+                        saveToPersistent = false
+                    )
+                }
+            } else {
+                addMessageToChat(
+                    sender = "ai",
+                    text = "أهلاً بك يا أبو الأكبر! المساعد الصوتي جاهز لتنفيذ أوامرك فوراً بالصوت أو الكتابة 🚀",
+                    saveToPersistent = true
+                )
+            }
 
             btnMicToggle.setOnClickListener {
                 if (isListening) {
@@ -279,7 +307,16 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         imm?.hideSoftInputFromWindow(etCommandInput.windowToken, 0)
     }
 
-    private fun addMessageToChat(sender: String, text: String, buttonsArray: JSONArray? = null) {
+    private fun addMessageToChat(
+        sender: String,
+        text: String,
+        buttonsArray: JSONArray? = null,
+        saveToPersistent: Boolean = true
+    ) {
+        if (saveToPersistent) {
+            persistentChatMessages.add(SavedChatMessage(sender, text, buttonsArray?.toString()))
+        }
+
         val messageLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 16, 24, 16)
@@ -399,26 +436,18 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         } catch (e: Exception) {}
     }
 
-    private fun clearSessionHistoryAndFinish() {
-        handler.removeCallbacks(commitSpeechRunnable)
-        Thread {
-            try {
-                val client = OkHttpClient()
-                val json = JSONObject()
-                json.put("action", "clear_session")
-                json.put("userId", "android_power_button_admin")
-
-                val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-                val request = Request.Builder()
-                    .url(SERVER_URL)
-                    .post(body)
-                    .build()
-
-                client.newCall(request).execute()
-            } catch (e: Exception) {}
-        }.start()
-
+    private fun closeAssistantQuietly() {
+        try {
+            handler.removeCallbacks(commitSpeechRunnable)
+            pendingSpeechText = null
+            stopListening()
+            textToSpeech?.stop()
+        } catch (e: Exception) {}
         finish()
+    }
+
+    override fun onBackPressed() {
+        closeAssistantQuietly()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -427,10 +456,21 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         restartListeningOnPowerButton()
     }
 
+    override fun onPause() {
+        super.onPause()
+        try {
+            handler.removeCallbacks(commitSpeechRunnable)
+            pendingSpeechText = null
+            stopListening()
+            textToSpeech?.stop()
+        } catch (e: Exception) {}
+    }
+
     override fun onResume() {
         super.onResume()
-        if (!isListening && !isMicPaused) {
-            checkPermissionAndStartListening()
+        tvStatus.text = "🎙️ تفضل بالتحدث..."
+        if (!isMicPaused && !isFinishing) {
+            safelyRestartSpeechRecognizer()
         }
     }
 
