@@ -343,8 +343,16 @@ function TrackingCardsView({
 
                     {/* سطر كتابات الحالات (واصل، عكسي، gps، وجهتين) ورقم الهاتف */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60" onClick={(e) => e.stopPropagation()}>
-                      {/* كتابات الحالات الأنيقة: واصل و عكسي و gps و وجهتين */}
+                      {/* كتابات الحالات الأنيقة: واصل و عكسي و gps و وجهتين + إيموجي قلم التعديل */}
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 px-1.5 py-0.5 text-xs font-black shadow-2xs transition-all active:scale-90"
+                          title="تعديل الطلب من الخارج ✏️"
+                        >
+                          ✏️
+                        </Link>
                         {isPrepaid && (
                           <span className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-emerald-700" title="كل شي واصل">
                             واصل
