@@ -1,3 +1,98 @@
+
+function CustomerPhoneSuggestionsCard({
+  phone,
+  selectedRegionId,
+  onSelectRegion,
+  title = "مناطق هذا الزبون المسجلة سابقاً (اختيار سريع):",
+}: {
+  phone: string;
+  selectedRegionId: string;
+  onSelectRegion: (regionId: string) => void;
+  title?: string;
+}) {
+  const [regions, setRegions] = useState<Array<{ id: string; name: string; count?: number; deliveryPrice?: string }>>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const digits = phone.replace(/\D/g, "");
+    if (!phone.trim() || digits.length < 7) {
+      setRegions([]);
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/customers/regions-by-phone?phone=${encodeURIComponent(phone.trim())}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!active) return;
+          if (data.regions && data.regions.length > 0) {
+            setRegions(data.regions);
+            if (!selectedRegionId && data.regions[0]?.id) {
+              onSelectRegion(data.regions[0].id);
+            }
+          } else {
+            setRegions([]);
+          }
+          setLoading(false);
+        })
+        .catch(() => {
+          if (active) {
+            setRegions([]);
+            setLoading(false);
+          }
+        });
+    }, 150);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [phone]);
+
+  if (loading) {
+    return <p className="text-[11px] text-sky-600 italic mt-1.5 animate-pulse">🔍 جارٍ البحث عن المناطق المحفوظة لهذا الرقم...</p>;
+  }
+
+  if (regions.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200/80 p-3.5 shadow-sm mt-2 mb-1 animate-in fade-in duration-200">
+      <div className="flex items-center gap-1.5 mb-2 text-sky-900">
+        <span className="text-sm">🕒</span>
+        <p className="text-xs font-black">{title}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {regions.map((r, i) => {
+          const isThisSelected = selectedRegionId === r.id;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelectRegion(r.id)}
+              className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition shadow-sm active:scale-95 ${
+                isThisSelected
+                  ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200 font-black"
+                  : "bg-white text-sky-800 border-sky-200 hover:bg-sky-100 hover:border-sky-300 font-bold"
+              }`}
+            >
+              <span>📍</span>
+              <span>{r.name}</span>
+              {r.count !== undefined && r.count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${isThisSelected ? 'bg-emerald-700 text-white' : 'bg-sky-100 text-sky-700'}`}>
+                  ({r.count})
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, useRef } from "react";
