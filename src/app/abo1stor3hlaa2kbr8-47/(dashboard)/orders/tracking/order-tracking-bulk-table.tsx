@@ -178,8 +178,8 @@ function TrackingCardsView({
             <div className="h-0.5 flex-1 bg-gradient-to-r from-red-600 dark:from-red-700 via-red-400 dark:via-red-800 to-transparent rounded-full" />
           </div>
 
-          {/* قائمة الكروت التابعة لهذا اليوم */}
-          <div className="flex flex-col gap-3">
+          {/* قائمة الكروت التابعة لهذا اليوم: عمودين في الحاسوب وعمود في الموبايل */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {group.items.map((o) => {
               const isPending = o.orderStatus === "pending";
               const isAssigned = o.orderStatus === "assigned";
