@@ -18,7 +18,7 @@ type ChatSessionContext = {
   updatedAt?: number;
 };
 
-// ذاكرة سياق منفصلة لكل محادثة/أدمن بدالة Map حازمة بدلاً من متغير عام واحد
+// ذاكرة سياق منفصلة لكل محادثة/أدمن بدالة Map
 const chatSessionContexts: Map<string, ChatSessionContext> = new Map();
 
 function getSessionContext(sessionKey: string): ChatSessionContext {
@@ -26,6 +26,60 @@ function getSessionContext(sessionKey: string): ChatSessionContext {
     chatSessionContexts.set(sessionKey, {});
   }
   return chatSessionContexts.get(sessionKey)!;
+}
+
+/**
+ * جلب سياق المحادثة الدائم من قاعدة البيانات سوبابيس (لضمان الاستمرارية عبر كل خوادم Vercel Serverless)
+ */
+export async function getPersistentSessionContext(sessionKey: string): Promise<ChatSessionContext> {
+  const localCtx = getSessionContext(sessionKey);
+  try {
+    const row = await prisma.uISystemSetting.findUnique({
+      where: {
+        target_section: {
+          target: "ai_chat_session",
+          section: sessionKey
+        }
+      }
+    });
+    if (row && row.config && typeof row.config === "object") {
+      const dbConfig = row.config as ChatSessionContext;
+      // إذا كان وقت تحديث قاعدة البيانات أحدث من الذاكرة المحلية أو الذاكرة المحلية فارغة
+      if (!localCtx.updatedAt || (dbConfig.updatedAt && dbConfig.updatedAt >= localCtx.updatedAt)) {
+        Object.assign(localCtx, dbConfig);
+      }
+    }
+  } catch (e) {}
+  return localCtx;
+}
+
+/**
+ * حفظ سياق المحادثة الدائم في قاعدة البيانات سوبابيس
+ */
+export async function savePersistentSessionContext(sessionKey: string, ctx: ChatSessionContext) {
+  try {
+    ctx.updatedAt = Date.now();
+    const localCtx = getSessionContext(sessionKey);
+    Object.assign(localCtx, ctx);
+
+    await prisma.uISystemSetting.upsert({
+      where: {
+        target_section: {
+          target: "ai_chat_session",
+          section: sessionKey
+        }
+      },
+      update: {
+        config: ctx as any,
+        updatedAt: new Date()
+      },
+      create: {
+        target: "ai_chat_session",
+        section: sessionKey,
+        config: ctx as any
+      }
+    });
+  } catch (e) {}
 }
 
 /**
@@ -40,12 +94,31 @@ export function resetChatSessionContext(sessionKey?: string) {
   chatSessionContexts.delete("default");
   chatSessionContexts.delete("voice_admin");
   chatSessionContexts.delete("android_power_button_admin");
+  chatSessionContexts.delete("web_admin_floating_widget");
+
+  // حذفها أيضاً من قاعدة البيانات
+  try {
+    if (sessionKey) {
+      prisma.uISystemSetting.deleteMany({
+        where: {
+          target: "ai_chat_session",
+          section: sessionKey
+        }
+      }).catch(() => {});
+    } else {
+      prisma.uISystemSetting.deleteMany({
+        where: {
+          target: "ai_chat_session"
+        }
+      }).catch(() => {});
+    }
+  } catch (e) {}
 }
 
 /**
  * تعيين وتحديث الطلب النشط المفتوح حالياً بمحادثة معينة
  */
-export function setActiveFocusedOrder(sessionKeyOrOrderId: string | number, possibleOrderId?: string | number) {
+export async function setActiveFocusedOrder(sessionKeyOrOrderId: string | number, possibleOrderId?: string | number) {
   let sessionKey = "default";
   let orderIdOrNumber: string | number;
 
@@ -56,13 +129,14 @@ export function setActiveFocusedOrder(sessionKeyOrOrderId: string | number, poss
     orderIdOrNumber = sessionKeyOrOrderId;
   }
 
-  const ctx = getSessionContext(sessionKey);
+  const ctx = await getPersistentSessionContext(sessionKey);
   if (typeof orderIdOrNumber === "number") {
     ctx.lastOrderNumber = orderIdOrNumber;
   } else {
     ctx.activeFocusedOrderId = String(orderIdOrNumber);
   }
   ctx.updatedAt = Date.now();
+  await savePersistentSessionContext(sessionKey, ctx);
 }
 
 /**
@@ -816,7 +890,7 @@ export async function executeSuperSystemAgent(
   aiParsed?: any
 ) {
   const rawText = userText || "";
-  const ctx = getSessionContext(sessionKey);
+  const ctx = await getPersistentSessionContext(sessionKey);
 
   // 0.1 فحص إذا كانت هناك جلسة تفاعلية نشطة لإنشاء طلب خطوة بخطوة
   if (ctx.orderDraft && ctx.orderDraft.step) {
@@ -824,6 +898,7 @@ export async function executeSuperSystemAgent(
     if (wizardRes.handled) {
       ctx.orderDraft = wizardRes.nextDraft || null;
       ctx.updatedAt = Date.now();
+      await savePersistentSessionContext(sessionKey, ctx);
       return { reply: wizardRes.reply!, buttons: wizardRes.buttons };
     }
   }
@@ -1493,6 +1568,7 @@ export async function executeSuperSystemAgent(
   if (isPureNewOrderPrompt) {
     ctx.orderDraft = { step: "waiting_shop" };
     ctx.updatedAt = Date.now();
+    await savePersistentSessionContext(sessionKey, ctx);
     return { reply: "من أي محل يا أبو الأكبر؟ 🏪" };
   }
 
@@ -1540,6 +1616,7 @@ export async function executeSuperSystemAgent(
 
       ctx.orderDraft = { step: "waiting_shop" };
       ctx.updatedAt = Date.now();
+      await savePersistentSessionContext(sessionKey, ctx);
 
       return {
         reply: `يا أبو الأكبر، قصدك أي محل من هذولي؟ 👇`,
