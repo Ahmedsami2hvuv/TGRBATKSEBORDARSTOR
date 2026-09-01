@@ -1,7 +1,8 @@
-package com.aboakbar.admin
+﻿package com.aboakbar.admin
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
 import android.service.voice.VoiceInteractionSessionService
@@ -15,10 +16,16 @@ class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
 class AdminVoiceSession(context: Context) : VoiceInteractionSession(context) {
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
-        val intent = Intent(context, VoiceAssistantActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        context.startActivity(intent)
+        try {
+            val intent = Intent(context, FloatingWidgetService::class.java).apply {
+                action = "ACTION_EXPAND_CHAT"
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        } catch (e: Exception) {}
         finish()
     }
 }

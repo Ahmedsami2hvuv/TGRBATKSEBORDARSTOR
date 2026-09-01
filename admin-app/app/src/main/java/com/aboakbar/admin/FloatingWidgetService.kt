@@ -1,5 +1,8 @@
 ﻿package com.aboakbar.admin
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -23,6 +26,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
+import androidx.core.app.NotificationCompat
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -42,7 +46,6 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
 
     private var isChatExpanded = false
 
-    // عناصر نافذة الدردشة العائمة
     private var tvFloatingStatus: TextView? = null
     private var floatingProgressBar: ProgressBar? = null
     private var floatingChatContainer: LinearLayout? = null
@@ -86,6 +89,8 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
 
+        startForegroundNotification()
+
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -94,6 +99,32 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
 
         initBubbleView()
         initChatOverlayView()
+    }
+
+    private fun startForegroundNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "floating_ai_assistant_channel"
+            val channelName = "المساعد العائم الذكي"
+            val chan = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(chan)
+
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setContentTitle("المساعد العائم الذكي ✨")
+                .setContentText("المساعد نشط وجاهز للعمل فوق التطبيقات")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+
+            startForeground(8821, notification)
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "ACTION_EXPAND_CHAT") {
+            handler.post { expandChatOverlay() }
+        }
+        return START_STICKY
     }
 
     private fun initBubbleView() {
@@ -167,7 +198,9 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
 
                         bubbleParams!!.x = initialX + diffX
                         bubbleParams!!.y = initialY + diffY
-                        windowManager?.updateViewLayout(bubbleView, bubbleParams)
+                        try {
+                            windowManager?.updateViewLayout(bubbleView, bubbleParams)
+                        } catch (e: Exception) {}
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
@@ -292,6 +325,16 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
             }
         }
 
+        // إغلاق/تصغير عند النقر خارج النافذة العائمة
+        chatOverlayView?.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_OUTSIDE) {
+                collapseChatOverlay()
+                true
+            } else {
+                false
+            }
+        }
+
         val displayMetrics = resources.displayMetrics
         val overlayWidth = (displayMetrics.widthPixels * 0.92).toInt()
 
@@ -306,15 +349,12 @@ class FloatingWidgetService : Service(), TextToSpeech.OnInitListener {
             overlayWidth,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
-            y = 120
+            y = 100
         }
-
-        // استرجاع الدردشة السابقة
-        renderPersistedMessages()
     }
 
     private fun updateVoiceButtonUi() {
