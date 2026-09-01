@@ -129,6 +129,7 @@ function TrackingCardsView({
   showSelectColumn,
   isSelected,
   onToggleOne,
+  columns = 2,
 }: {
   rows: TrackingTableRow[];
   onOpenRow: (id: string) => void;
@@ -137,6 +138,7 @@ function TrackingCardsView({
   showSelectColumn?: boolean;
   isSelected?: (id: string) => boolean;
   onToggleOne?: (id: string) => void;
+  columns?: 1 | 2 | 3;
 }) {
   if (!rows.length) {
     return (
@@ -145,6 +147,13 @@ function TrackingCardsView({
       </div>
     );
   }
+
+  const gridColsClass =
+    columns === 1
+      ? "grid grid-cols-1 gap-3"
+      : columns === 2
+      ? "grid grid-cols-1 md:grid-cols-2 gap-3"
+      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3";
 
   // تجميع الطلبات حسب اليوم بالتاريخ البغدادي الدقيق
   const groupedByDate: { dateKey: string; dateLabel: string; items: TrackingTableRow[] }[] = [];
@@ -178,8 +187,8 @@ function TrackingCardsView({
             <div className="h-0.5 flex-1 bg-gradient-to-r from-red-600 dark:from-red-700 via-red-400 dark:via-red-800 to-transparent rounded-full" />
           </div>
 
-          {/* قائمة الكروت التابعة لهذا اليوم: عمودين في الحاسوب وعمود في الموبايل */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* قائمة الكروت التابعة لهذا اليوم بحسب عدد الأعمدة المختار */}
+          <div className={gridColsClass}>
             {group.items.map((o) => {
               const isPending = o.orderStatus === "pending";
               const isAssigned = o.orderStatus === "assigned";
@@ -430,6 +439,16 @@ export function OrderTrackingBulkTable({
   const [quickStatus, setQuickStatus] = useState<string>("all");
   const [quickCourier, setQuickCourier] = useState<string>("any");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [cardColumns, setCardColumns] = useState<1 | 2 | 3>(2);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("tracking_card_columns");
+      if (saved === "1" || saved === "2" || saved === "3") {
+        setCardColumns(Number(saved) as 1 | 2 | 3);
+      }
+    }
+  }, []);
 
   const selectedCount = selected.size;
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
@@ -585,31 +604,57 @@ export function OrderTrackingBulkTable({
           </div>
         ) : <div />}
 
-        {/* أزرار التبديل بين عرض الكروت وعرض الجدول */}
-        <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200">
+        {/* أزرار التبديل بين عرض الكروت وعرض الجدول مع خيارات 1 2 3 */}
+        <div className="flex items-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={() => setViewMode("cards")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition ${
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition ${
               viewMode === "cards"
-                ? "bg-white text-sky-900 shadow-xs ring-1 ring-slate-200"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-900 text-sky-900 dark:text-sky-300 shadow-xs ring-1 ring-slate-200 dark:ring-slate-700"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
             }`}
           >
             <span>📱</span>
-            <span>عرض البطاقات</span>
+            <span>البطاقات</span>
           </button>
+
+          {viewMode === "cards" && (
+            <div className="flex items-center gap-1 border-r border-l border-slate-300 dark:border-slate-600 px-1.5 animate-in fade-in zoom-in-95 duration-150">
+              {([1, 2, 3] as const).map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => {
+                    setCardColumns(num);
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("tracking_card_columns", String(num));
+                    }
+                  }}
+                  className={`h-7 px-2.5 rounded-lg text-xs font-black transition active:scale-90 ${
+                    cardColumns === num
+                      ? "bg-sky-600 text-white shadow-xs"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-sky-50 border border-slate-200 dark:border-slate-700"
+                  }`}
+                  title={`عرض ${num} ${num === 1 ? "طلب" : "طلبات"} بالسطر`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition ${
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition ${
               viewMode === "table"
-                ? "bg-white text-sky-900 shadow-xs ring-1 ring-slate-200"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-900 text-sky-900 dark:text-sky-300 shadow-xs ring-1 ring-slate-200 dark:ring-slate-700"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
             }`}
           >
             <span>📋</span>
-            <span>عرض الجدول</span>
+            <span>الجدول</span>
           </button>
         </div>
       </div>
@@ -782,6 +827,7 @@ export function OrderTrackingBulkTable({
           showSelectColumn={showSelectColumn}
           isSelected={(id) => selected.has(id)}
           onToggleOne={toggleOne}
+          columns={cardColumns}
         />
       ) : (
         <UnifiedOrderListTable
