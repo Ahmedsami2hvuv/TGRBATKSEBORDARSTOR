@@ -9,6 +9,6 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.aboakbar.admin"
-            android:targetClass="com.aboakbar.admin.VoiceAssistantActivity" />
+            android:targetClass="com.aboakbar.admin.FloatingAiChatActivity" />
     </shortcut>
 </shortcuts>

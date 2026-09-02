@@ -17,7 +17,7 @@ class FloatingAiTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        val intent = Intent(this, VoiceAssistantActivity::class.java).apply {
+        val intent = Intent(this, FloatingAiChatActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         try {

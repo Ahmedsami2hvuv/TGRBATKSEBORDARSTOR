@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@drawable/bg_dialog_floating_card"
+    android:padding="14dp">
+
+    <!-- Header Bar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="المساعد الذكي العائم"
+                android:textColor="#38BDF8"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Toggle Voice TTS -->
+            <ImageButton
+                android:id="@+id/btnFloatingVoiceToggle"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_lock_silent_mode_off"
+                android:tint="#38BDF8"
+                android:contentDescription="صوت المساعد" />
+
+            <!-- Clear Chat Trash -->
+            <ImageButton
+                android:id="@+id/btnFloatingTrashClear"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_delete"
+                android:tint="#F87171"
+                android:contentDescription="مسح الدردشة" />
+
+            <!-- Close Dialog Button -->
+            <ImageButton
+                android:id="@+id/btnFloatingClose"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:tint="#94A3B8"
+                android:contentDescription="إغلاق" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2564748B" />
+
+    <!-- Chat Messages Scroll Area -->
+    <ScrollView
+        android:id="@+id/floatingChatScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/floatingChatContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+    </ScrollView>
+
+    <!-- Status Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp">
+
+        <ProgressBar
+            android:id="@+id/floatingProgressBar"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="6dp"
+            android:indeterminateTint="#38BDF8"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvFloatingStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎙️ تفضل بالتحدث أو كتابة أمرك..."
+            android:textColor="#94A3B8"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Bottom Action & Input Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Mic Button -->
+        <ImageButton
+            android:id="@+id/btnFloatingMic"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/btn_gradient"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:tint="#FFFFFF"
+            android:contentDescription="الميكروفون" />
+
+        <!-- Text Input Field -->
+        <EditText
+            android:id="@+id/etFloatingInput"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_floating_input"
+            android:hint="اكتب أمرك أو الصق الرقم هنا..."
+            android:textColorHint="#64748B"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:inputType="text"
+            android:imeOptions="actionSend" />
+
+        <!-- Send Button -->
+        <Button
+            android:id="@+id/btnFloatingSend"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:background="@drawable/btn_gradient"
+            android:text="إرسال"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:minWidth="60dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
+    </LinearLayout>
+</LinearLayout>

@@ -9,7 +9,7 @@ class FloatingAiActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            val intent = Intent(this, VoiceAssistantActivity::class.java).apply {
+            val intent = Intent(this, FloatingAiChatActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
             startActivity(intent)

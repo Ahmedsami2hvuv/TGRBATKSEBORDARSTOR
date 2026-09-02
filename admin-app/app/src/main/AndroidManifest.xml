@@ -93,6 +93,21 @@
             </intent-filter>
         </service>
 
+        <!-- نافذة الدردشة العائمة المستقلة للمساعد الذكي -->
+        <activity
+            android:name="com.aboakbar.admin.FloatingAiChatActivity"
+            android:theme="@style/Theme.FloatingAiChatDialog"
+            android:label="المساعد العائم"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"

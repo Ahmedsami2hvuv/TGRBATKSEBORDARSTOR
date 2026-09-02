@@ -1443,132 +1443,140 @@ export function AdminCreateOrderForm({
  </>
  ) : (
  <>
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>رقم المرسل</span>
- <input
- name="firstCustomerPhone"
- className={ad.input}
-  value={firstPhone}
-  onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
-  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
-  inputMode="numeric"
-  required
- />
- <CustomerPhoneSuggestionsCard phone={firstPhone} selectedRegionId={firstRegionId} onSelectRegion={setFirstRegionId} title="مناطق هذا المرسل المسجلة سابقاً (اختيار سريع):" />
- </label>
+  {/* صف أرقام الهواتف متجاورة */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>رقم المرسل</span>
+      <input
+        name="firstCustomerPhone"
+        className={ad.input}
+        value={firstPhone}
+        onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
+        onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
+        inputMode="numeric"
+        required
+      />
+      <CustomerPhoneSuggestionsCard phone={firstPhone} selectedRegionId={firstRegionId} onSelectRegion={setFirstRegionId} title="مناطق هذا المرسل المسجلة سابقاً (اختيار سريع):" />
+    </label>
 
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>رقم المستلم</span>
- <input
- name="secondCustomerPhone"
- className={ad.input}
-  value={secondPhone}
-  onChange={(e) => setSecondPhone(sanitizePhone(e.target.value))}
-  onBlur={(e) => handlePhoneBlur(e.target.value, setSecondPhone)}
-  required
- />
-  <CustomerPhoneSuggestionsCard phone={secondPhone} selectedRegionId={secondRegionId} onSelectRegion={setSecondRegionId} title="مناطق هذا المستلم المسجلة سابقاً (اختيار سريع):" />
- </label>
-
- <RegionSearchPicker
- fieldName="firstCustomerRegionId"
- label="منطقة المرسل"
- required
- value={firstRegionId}
- onValueChange={setFirstRegionId}
- regionsLookup={regions}
- />
-
- {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المرسل...</p>}
- {firstPrefill && (
- <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
- <div className="flex justify-between items-start gap-3">
- <div className="space-y-1 flex-1">
- <p className="font-bold text-emerald-800">بيانات محفوظة للمرسل:</p>
- <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
- <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
- </div>
- {firstPrefill.customerDoorPhotoUrl && (
- <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
- )}
- </div>
- <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
- setFirstRegionId(firstPrefill.customerRegionId ?? "");
- setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
- setFirstLandmark(firstPrefill.customerLandmark ?? "");
- setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
- setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
- setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
- setFirstPrefillApplied(true);
- }}>تطبيق بيانات المرسل</button>
- </div>
- )}
-
- <RegionSearchPicker
- fieldName="secondCustomerRegionId"
- label="منطقة المستلم"
- required
- value={secondRegionId}
- onValueChange={setSecondRegionId}
- regionsLookup={regions}
- />
-
- {secondPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المستلم...</p>}
- {secondPrefill && (
- <div className="rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 shadow-sm transition-all">
- <div className="flex justify-between items-start gap-3">
- <div className="space-y-1 flex-1">
- <p className="font-bold text-sky-800">بيانات محفوظة للمستلم:</p>
- <p className="text-xs">المنطقة: {regions.find(r => r.id === secondPrefill.customerRegionId)?.name || '—'}</p>
- <p className="text-xs italic text-slate-600">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
- </div>
- {secondPrefill.customerDoorPhotoUrl && (
- <img src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
- )}
- </div>
- <button 
-  type="button" 
-  disabled={secondPrefillApplied}
-  className={`mt-2 w-full rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all ${
-    secondPrefillApplied 
-      ? "bg-slate-400 cursor-not-allowed" 
-      : "bg-sky-600 hover:bg-sky-700"
-  }`}
-  onClick={() => {
-    setSecondRegionId(secondPrefill.customerRegionId ?? "");
-    setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
-    setSecondLandmark(secondPrefill.customerLandmark ?? "");
-    setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
-    setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
-    setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
-    setSecondPrefillApplied(true);
-  }}
- >
-  {secondPrefillApplied ? "تم تطبيق البيانات بنجاح ✅" : "تطبيق بيانات المستلم"}
- </button>
- </div>
- )}
-
- {secondSavedDoorPhotoUrl && (
-  <div className="rounded-xl border border-sky-300 bg-sky-50/50 p-3 flex items-center gap-3 animate-in fade-in duration-300">
-    <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة باب المستلم الثاني" />
-    <div className="flex-1 text-right">
-      <p className="text-xs font-black text-sky-800">📸 تم تطبيق صورة باب المستلم بنجاح</p>
-      <p className="text-[10px] text-slate-500 mt-0.5">سيتم إرفاق هذه الصورة تلقائياً مع الطلب للمندوب.</p>
-    </div>
-    <button 
-      type="button" 
-      onClick={() => {
-        setSecondSavedDoorPhotoUrl(null);
-        setSecondRawDoorPhotoUrl(null);
-        setSecondPrefillApplied(false);
-      }}
-      className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer border-0 bg-transparent"
-    >
-      إلغاء الصورة
-    </button>
+    <label className="flex flex-col gap-1 text-sm">
+      <span className={ad.label}>رقم المستلم</span>
+      <input
+        name="secondCustomerPhone"
+        className={ad.input}
+        value={secondPhone}
+        onChange={(e) => setSecondPhone(sanitizePhone(e.target.value))}
+        onBlur={(e) => handlePhoneBlur(e.target.value, setSecondPhone)}
+        required
+      />
+      <CustomerPhoneSuggestionsCard phone={secondPhone} selectedRegionId={secondRegionId} onSelectRegion={setSecondRegionId} title="مناطق هذا المستلم المسجلة سابقاً (اختيار سريع):" />
+    </label>
   </div>
- )}
+
+  {/* صف مناطق المرسل والمستلم متجاورة */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="space-y-2">
+      <RegionSearchPicker
+        fieldName="firstCustomerRegionId"
+        label="منطقة المرسل"
+        required
+        value={firstRegionId}
+        onValueChange={setFirstRegionId}
+        regionsLookup={regions}
+      />
+      {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المرسل...</p>}
+      {firstPrefill && (
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
+          <div className="flex justify-between items-start gap-3">
+            <div className="space-y-1 flex-1">
+              <p className="font-bold text-emerald-800">بيانات محفوظة للمرسل:</p>
+              <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || "—"}</p>
+              <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || "لا يوجد"}</p>
+            </div>
+            {firstPrefill.customerDoorPhotoUrl && (
+              <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+            )}
+          </div>
+          <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+            setFirstRegionId(firstPrefill.customerRegionId ?? "");
+            setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
+            setFirstLandmark(firstPrefill.customerLandmark ?? "");
+            setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
+            setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+            setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+            setFirstPrefillApplied(true);
+          }}>تطبيق بيانات المرسل</button>
+        </div>
+      )}
+    </div>
+
+    <div className="space-y-2">
+      <RegionSearchPicker
+        fieldName="secondCustomerRegionId"
+        label="منطقة المستلم"
+        required
+        value={secondRegionId}
+        onValueChange={setSecondRegionId}
+        regionsLookup={regions}
+      />
+      {secondPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المستلم...</p>}
+      {secondPrefill && (
+        <div className="rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 shadow-sm transition-all">
+          <div className="flex justify-between items-start gap-3">
+            <div className="space-y-1 flex-1">
+              <p className="font-bold text-sky-800">بيانات محفوظة للمستلم:</p>
+              <p className="text-xs">المنطقة: {regions.find(r => r.id === secondPrefill.customerRegionId)?.name || "—"}</p>
+              <p className="text-xs italic text-slate-600">أقرب نقطة: {secondPrefill.customerLandmark || "لا يوجد"}</p>
+            </div>
+            {secondPrefill.customerDoorPhotoUrl && (
+              <img src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+            )}
+          </div>
+          <button 
+            type="button" 
+            disabled={secondPrefillApplied}
+            className={`mt-2 w-full rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all ${
+              secondPrefillApplied 
+                ? "bg-slate-400 cursor-not-allowed" 
+                : "bg-sky-600 hover:bg-sky-700"
+            }`}
+            onClick={() => {
+              setSecondRegionId(secondPrefill.customerRegionId ?? "");
+              setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
+              setSecondLandmark(secondPrefill.customerLandmark ?? "");
+              setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
+              setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
+              setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
+              setSecondPrefillApplied(true);
+            }}
+          >
+            {secondPrefillApplied ? "تم تطبيق البيانات بنجاح ✅" : "تطبيق بيانات المستلم"}
+          </button>
+        </div>
+      )}
+
+      {secondSavedDoorPhotoUrl && (
+        <div className="rounded-xl border border-sky-300 bg-sky-50/50 p-3 flex items-center gap-3 animate-in fade-in duration-300">
+          <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة باب المستلم الثاني" />
+          <div className="flex-1 text-right">
+            <p className="text-xs font-black text-sky-800">📸 تم تطبيق صورة باب المستلم بنجاح</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">سيتم إرفاق هذه الصورة تلقائياً مع الطلب للمندوب.</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => {
+              setSecondSavedDoorPhotoUrl(null);
+              setSecondRawDoorPhotoUrl(null);
+              setSecondPrefillApplied(false);
+            }}
+            className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer border-0 bg-transparent"
+          >
+            إلغاء الصورة
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
 
                  {/* سعر الطلب */}
                  
