@@ -453,6 +453,7 @@ export function OrderTrackingBulkTable({
   const [quickCourier, setQuickCourier] = useState<string>("any");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [cardColumns, setCardColumns] = useState<1 | 2 | 3>(2);
+  const [showCardsMenu, setShowCardsMenu] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -461,6 +462,12 @@ export function OrderTrackingBulkTable({
         setCardColumns(Number(saved) as 1 | 2 | 3);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => setShowCardsMenu(false);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
   }, []);
 
   const selectedCount = selected.size;
@@ -618,50 +625,83 @@ export function OrderTrackingBulkTable({
           </div>
         ) : <div />}
 
-        {/* أزرار التبديل بين عرض الكروت وعرض الجدول مع خيارات 1 2 3 */}
-        <div className="flex items-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+        {/* أزرار التبديل بين عرض الكروت وعرض الجدول مع قائمة منسدلة لاختيار 1 2 3 */}
+        <div className="flex items-center gap-1 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+          {/* زر البطاقات مع القائمة المنسدلة */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => {
+                if (viewMode !== "cards") {
+                  setViewMode("cards");
+                  setShowCardsMenu(true);
+                } else {
+                  setShowCardsMenu((v) => !v);
+                }
+              }}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95 ${
+                viewMode === "cards"
+                  ? "bg-white dark:bg-slate-900 text-sky-900 dark:text-sky-300 shadow-xs ring-1 ring-slate-200 dark:ring-slate-700"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+              }`}
+              title="عرض البطاقات (انقر لاختيار 1 أو 2 أو 3 طلبات بالسطر)"
+            >
+              <span>📱</span>
+              <span>البطاقات</span>
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[10px] font-black">
+                {cardColumns}
+              </span>
+              <span className="text-[9px] text-slate-400">
+                {showCardsMenu ? "▲" : "▼"}
+              </span>
+            </button>
+
+            {/* القائمة المنسدلة لاختيار عدد الأعمدة 1 2 3 */}
+            {showCardsMenu && (
+              <div className="absolute top-full right-0 mt-1.5 z-30 w-36 rounded-2xl bg-white dark:bg-slate-900 p-1.5 shadow-xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2 py-1 text-[10px] font-black text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-1">
+                  الطلبات بالسطر:
+                </div>
+                <div className="space-y-1">
+                  {([1, 2, 3] as const).map((num) => {
+                    const isSelectedNum = cardColumns === num;
+                    return (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => {
+                          setCardColumns(num);
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("tracking_card_columns", String(num));
+                          }
+                          setShowCardsMenu(false);
+                        }}
+                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-black transition active:scale-95 ${
+                          isSelectedNum
+                            ? "bg-sky-600 text-white shadow-xs"
+                            : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span>
+                          {num === 1 ? "1 (طلب واحد)" : num === 2 ? "2 (طلبين)" : "3 (ثلاث طلبات)"}
+                        </span>
+                        {isSelectedNum && <span className="text-xs">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* زر الجدول */}
           <button
             type="button"
-            onClick={() => setViewMode("cards")}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition ${
-              viewMode === "cards"
-                ? "bg-white dark:bg-slate-900 text-sky-900 dark:text-sky-300 shadow-xs ring-1 ring-slate-200 dark:ring-slate-700"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-            }`}
-          >
-            <span>📱</span>
-            <span>البطاقات</span>
-          </button>
-
-          {viewMode === "cards" && (
-            <div className="flex items-center gap-1 border-r border-l border-slate-300 dark:border-slate-600 px-1.5 animate-in fade-in zoom-in-95 duration-150">
-              {([1, 2, 3] as const).map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => {
-                    setCardColumns(num);
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("tracking_card_columns", String(num));
-                    }
-                  }}
-                  className={`h-7 px-2.5 rounded-lg text-xs font-black transition active:scale-90 ${
-                    cardColumns === num
-                      ? "bg-sky-600 text-white shadow-xs"
-                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-sky-50 border border-slate-200 dark:border-slate-700"
-                  }`}
-                  title={`عرض ${num} ${num === 1 ? "طلب" : "طلبات"} بالسطر`}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setViewMode("table")}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition ${
+            onClick={() => {
+              setViewMode("table");
+              setShowCardsMenu(false);
+            }}
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95 ${
               viewMode === "table"
                 ? "bg-white dark:bg-slate-900 text-sky-900 dark:text-sky-300 shadow-xs ring-1 ring-slate-200 dark:ring-slate-700"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900"

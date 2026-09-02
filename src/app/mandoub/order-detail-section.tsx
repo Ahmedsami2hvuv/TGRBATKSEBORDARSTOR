@@ -40,6 +40,7 @@ import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
 import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
+import { PhoneActionModal, type PhoneActionModalProps } from "@/components/phone-action-modal";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المجهز",
@@ -280,9 +281,58 @@ export function OrderDetailSection({
     ? (!getCleanValue(order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone))
     : (!getCleanValue(order.secondCustomerPhone, order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone));
 
-  const isFromSecondProfileLandmark = !getCleanValue(order.secondCustomerLandmark) && !!getCleanValue(secondPhoneProfile?.landmark);
-  const isFromSecondProfileLocation = !getCleanValue(order.secondCustomerLocationUrl) && !!getCleanValue(secondPhoneProfile?.locationUrl);
-  const isFromSecondProfilePhoto = !getCleanValue(order.secondCustomerDoorPhotoUrl) && !!getCleanValue(secondPhoneProfile?.photoUrl);
+  const [phoneModal, setPhoneModal] = useState<PhoneActionModalProps | null>(null);
+
+  const handleSenderCallClick = (e: React.MouseEvent) => {
+    if (order.customerPhone && mergedAlternate && mergedAlternate.trim() !== order.customerPhone.trim()) {
+      e.preventDefault();
+      setPhoneModal({
+        type: "call",
+        phone1: order.customerPhone,
+        phone2: mergedAlternate,
+        onClose: () => setPhoneModal(null),
+      });
+    }
+  };
+
+  const handleSenderWaClick = (e: React.MouseEvent) => {
+    if (order.customerPhone && mergedAlternate && mergedAlternate.trim() !== order.customerPhone.trim()) {
+      e.preventDefault();
+      setPhoneModal({
+        type: "whatsapp",
+        phone1: order.customerPhone,
+        phone2: mergedAlternate,
+        onClose: () => setPhoneModal(null),
+      });
+    }
+  };
+
+  const recipientP1 = order.secondCustomerPhone || order.customerPhone || "";
+  const recipientP2 = mergedSecondAlternate || "";
+
+  const handleRecipientCallClick = (e: React.MouseEvent) => {
+    if (recipientP1 && recipientP2 && recipientP2.trim() !== recipientP1.trim()) {
+      e.preventDefault();
+      setPhoneModal({
+        type: "call",
+        phone1: recipientP1,
+        phone2: recipientP2,
+        onClose: () => setPhoneModal(null),
+      });
+    }
+  };
+
+  const handleRecipientWaClick = (e: React.MouseEvent) => {
+    if (recipientP1 && recipientP2 && recipientP2.trim() !== recipientP1.trim()) {
+      e.preventDefault();
+      setPhoneModal({
+        type: "whatsapp",
+        phone1: recipientP1,
+        phone2: recipientP2,
+        onClose: () => setPhoneModal(null),
+      });
+    }
+  };
 
   const isSmartHintValid = (s: string | null | undefined) => {
     if (!s) return false;
@@ -907,12 +957,14 @@ export function OrderDetailSection({
                         <div className="flex items-center gap-2 w-full mt-2">
                           <a
                             href={telHref(order.customerPhone)}
+                            onClick={handleSenderCallClick}
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
                             اتصال
                           </a>
                           <a
                             href={whatsappMeUrl(order.customerPhone)}
+                            onClick={handleSenderWaClick}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
@@ -1097,12 +1149,14 @@ export function OrderDetailSection({
                         <div className="flex items-center gap-2 w-full mt-2">
                           <a
                             href={telHref(order.secondCustomerPhone || order.customerPhone!)}
+                            onClick={handleRecipientCallClick}
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-sky-600 hover:bg-sky-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
                           >
                             اتصال
                           </a>
                           <a
                             href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone!)}
+                            onClick={handleRecipientWaClick}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-2 py-1.5 text-xs sm:text-sm font-black text-white active:scale-95 transition-all gap-1.5 shadow-sm"
@@ -1587,6 +1641,8 @@ export function OrderDetailSection({
         />
       )}
 
+      {/* النافذة العائمة لاختيار الرقم الأول أو الثاني للمكالمة والواتساب */}
+      {phoneModal && <PhoneActionModal {...phoneModal} />}
     </section>
   );
 }

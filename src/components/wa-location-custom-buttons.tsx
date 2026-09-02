@@ -7,6 +7,7 @@ import {
   type MandoubWaButtonVariableValues,
 } from "@/lib/mandoub-wa-button-template";
 import { openUrlFromUserGesture, whatsappMeUrl } from "@/lib/whatsapp";
+import { PhoneActionModal } from "@/components/phone-action-modal";
 
 export type WaButtonNextItem = {
   id: string;
