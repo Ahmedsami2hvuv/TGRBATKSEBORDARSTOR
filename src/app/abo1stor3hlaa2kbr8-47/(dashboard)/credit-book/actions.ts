@@ -894,6 +894,8 @@ export async function getPartnerDetails(partnerId: string) {
     } else if (partner.type === "shop" && partner.externalId) {
       // للمحلات: جلب تفاصيل الطلبات وتوليد قيود تلقائية للديون وعمليات التسديد
       try {
+        await ensureMissingPreparerMoneyEvents(undefined, partner.externalId);
+
         const orders = await prisma.order.findMany({
           where: {
             shopId: partner.externalId,
@@ -926,8 +928,7 @@ export async function getPartnerDetails(partnerId: string) {
               }
             }
           },
-          orderBy: { createdAt: "desc" },
-          take: 150
+          orderBy: { createdAt: "desc" }
         });
 
         let autoGave = 0;
