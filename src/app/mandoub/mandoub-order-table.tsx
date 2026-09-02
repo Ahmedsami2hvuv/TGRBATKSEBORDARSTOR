@@ -375,7 +375,7 @@ function MandoubFullBlockCardGrid({
                 ? "text-sm xs:text-base sm:text-lg md:text-xl tracking-tight font-black"
                 : textLen > 18
                 ? "text-base xs:text-lg sm:text-xl md:text-2xl font-black"
-                : "text-lg xs:text-xl sm:text-2xl md:text-3xl font-black";
+                : "text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black";
 
               return (
                 <div
@@ -460,15 +460,15 @@ function MandoubFullBlockCardGrid({
                       )}
                     </div>
 
-                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق (مرفوع للأعلى وموسع من الأسفل ومكبر الخط) */}
+                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق (مرفوع للأعلى وموسع عمودياً باتجاه الأسفل) */}
                     {isDoubleRouteOrder ? (
-                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 -mt-1 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-2xl border ${headerBlockBg} shadow-xs overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 -mt-1 px-2.5 sm:px-3 py-3 sm:py-3.5 min-h-[48px] sm:min-h-[52px] rounded-2xl border ${headerBlockBg} shadow-sm overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
                         <span className="font-black whitespace-nowrap text-white">{o.regionLine || "المرسل"}</span>
                         <span className="shrink-0 text-xs sm:text-sm text-white/90 font-bold">إلى</span>
                         <span className="font-black whitespace-nowrap text-white">{o.secondCustomerRegionName || "المستلم"}</span>
                       </div>
                     ) : (
-                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 -mt-1 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-2xl border ${headerBlockBg} shadow-xs overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
+                      <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 -mt-1 px-2.5 sm:px-3 py-3 sm:py-3.5 min-h-[48px] sm:min-h-[52px] rounded-2xl border ${headerBlockBg} shadow-sm overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`}>
                         <span className="font-black whitespace-nowrap text-white">{o.shopName}</span>
                         <span className="shrink-0 text-xs sm:text-sm text-white/90 font-bold">إلى</span>
                         <span className="font-black whitespace-nowrap text-white">{o.regionLine}</span>
