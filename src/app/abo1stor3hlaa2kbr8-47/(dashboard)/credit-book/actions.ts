@@ -2037,20 +2037,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       return { success: false, error: "الشريك غير موجود" };
     }
 
-    // 1. حساب الرصيد اليدوي الحالي
-    let totalGave = 0;
-    let totalTook = 0;
-    partner.transactions.forEach((t) => {
-      const amt = Number(t.amount);
-      if (t.kind === "gave") {
-        totalGave += amt;
-      } else if (t.kind === "took") {
-        totalTook += amt;
-      }
-    });
-    const manualBalance = totalGave - totalTook;
-
-    // 2. إذا كان زبوناً (customer): تسديد وإغلاق كافة فوارق الطلبيات المرتبطة به
+    // 1. إذا كان زبوناً (customer): تسديد وإغلاق كافة فوارق الطلبيات المرتبطة به
     if (partner.type === "customer") {
       for (const tx of partner.transactions) {
         if (tx.note) {
@@ -2092,7 +2079,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 3. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
+    // 2. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
     if (partner.type === "shop" && partner.externalId) {
       const unpaidOrders = await prisma.order.findMany({
         where: {
@@ -2131,10 +2118,10 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 4. إذا كان شريكا من نوع مورد (supplier): تسديد كافة طلبات المورد في preparerShoppingJson
+    // 3. إذا كان شريكا من نوع مورد (supplier): تسديد كافة طلبات المورد في preparerShoppingJson
     if (partner.type === "supplier" && partner.externalId) {
       const orders = await prisma.order.findMany({
-        where: { preparerShoppingJson: { not: null } },
+        where: { preparerShoppingJson: { contains: partner.externalId } },
         select: { id: true, preparerShoppingJson: true }
       });
 
@@ -2159,7 +2146,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 5. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
+    // 4. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
     if (partner.type === "courier" && partner.externalId) {
       const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
       const adminTotalNum = adminTotal.toNumber();
@@ -2176,13 +2163,16 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 6. تصفية الرصيد اليدوي بإضافة معاملة موازنة يدوية إذا كان غير صفري
-    if (manualBalance !== 0) {
-      const zeroAmt = Math.abs(manualBalance);
-      const zeroKind = manualBalance > 0 ? "took" : "gave";
-      const zeroNote = "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)";
+    // 5. حساب الرصيد الكلي الصافي للشريك بعد كافة التسويات لضمان تصفيره إلى 0.00 د.ع تماماً
+    const partnerDetails = await getPartnerDetails(partnerId);
+    const netCurrentBalance = partnerDetails ? partnerDetails.balance : 0;
 
-      await prisma.creditBookTransaction.create({
+    if (netCurrentBalance !== 0) {
+      const zeroAmt = Math.abs(netCurrentBalance);
+      const zeroKind = netCurrentBalance > 0 ? "took" : "gave";
+      const zeroNote = "تصفير وتصفية الرصيد الكلي بالكامل (موازنة تلقائية)";
+
+      const newTx = await prisma.creditBookTransaction.create({
         data: {
           partnerId: partner.id,
           amount: zeroAmt,
@@ -2191,6 +2181,13 @@ export async function zeroPartnerAccount(partnerId: string) {
           createdAt: new Date(),
         }
       });
+
+      try {
+        const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+        await logTransactionAuthor(newTx.id, "create", "النظام");
+      } catch (logErr) {
+        console.error("Failed to log zero transaction author:", logErr);
+      }
     }
 
     // تحديث تاريخ تعديل الشريك
