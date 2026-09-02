@@ -281,6 +281,10 @@ export function OrderDetailSection({
     ? (!getCleanValue(order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone))
     : (!getCleanValue(order.secondCustomerPhone, order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone));
 
+  const isFromSecondProfileLandmark = !getCleanValue(order.secondCustomerLandmark) && !!getCleanValue(secondPhoneProfile?.landmark);
+  const isFromSecondProfileLocation = !getCleanValue(order.secondCustomerLocationUrl) && !!getCleanValue(secondPhoneProfile?.locationUrl);
+  const isFromSecondProfilePhoto = !getCleanValue(order.secondCustomerDoorPhotoUrl) && !!getCleanValue(secondPhoneProfile?.photoUrl);
+
   const [phoneModal, setPhoneModal] = useState<PhoneActionModalProps | null>(null);
 
   const handleSenderCallClick = (e: React.MouseEvent) => {
