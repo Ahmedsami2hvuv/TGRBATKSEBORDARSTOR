@@ -96,6 +96,7 @@ type CustomerPrefill = {
   customerDoorPhotoUrl: string | null;
   alternatePhone: string | null;
   isBlocked?: boolean;
+  isShopBlocked?: boolean;
 };
 
 export function OrderEditForm({
@@ -136,6 +137,7 @@ export function OrderEditForm({
   defaultAssignedCourierId,
   defaultPrepaidAll,
   defaultIsBlocked,
+  defaultIsShopBlocked,
   shops,
   regions,
   couriers,
@@ -177,6 +179,7 @@ export function OrderEditForm({
   defaultAssignedCourierId: string;
   defaultPrepaidAll: boolean;
   defaultIsBlocked?: boolean;
+  defaultIsShopBlocked?: boolean;
   shops: ShopOpt[];
   regions: RegionOpt[];
   couriers: CourierOpt[];
@@ -202,6 +205,7 @@ export function OrderEditForm({
   const [secondCustLandmark, setSecondCustLandmark] = useState(defaultSecondCustomerLandmark);
 
   const [isBlocked, setIsBlocked] = useState(!!defaultIsBlocked);
+  const [isShopBlocked, setIsShopBlocked] = useState(!!defaultIsShopBlocked);
   const [firstPrefill, setFirstPrefill] = useState<CustomerPrefill | null>(null);
   const [secondPrefill, setSecondPrefill] = useState<CustomerPrefill | null>(null);
   const [firstPrefillLoading, setFirstPrefillLoading] = useState(false);
@@ -394,6 +398,7 @@ export function OrderEditForm({
     if (firstPrefill.alternatePhone) setAlternatePhone(firstPrefill.alternatePhone);
     if (firstPrefill.customerDoorPhotoUrl) setFirstDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
     if (firstPrefill.isBlocked !== undefined) setIsBlocked(firstPrefill.isBlocked);
+    if (firstPrefill.isShopBlocked !== undefined) setIsShopBlocked(firstPrefill.isShopBlocked);
   };
 
   const applySecondPrefill = () => {
@@ -555,10 +560,21 @@ export function OrderEditForm({
 
       {isBlocked && (
         <div
-          className="animate-pulse rounded-xl border-4 border-red-600 bg-red-100 px-4 py-3 text-center text-lg font-black text-red-900 shadow-lg"
+          className="animate-pulse rounded-xl border-4 border-red-600 bg-red-100 px-4 py-3 text-center text-base font-black text-red-950 shadow-md flex items-center justify-center gap-2"
           role="alert"
         >
-          🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
+          <span>🛑</span>
+          <span>تنبيه: هذا الزبون محظور عاماً من التوصيل (شامل لكل المحلات في النظام)</span>
+        </div>
+      )}
+
+      {!isBlocked && isShopBlocked && (
+        <div
+          className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2.5 text-center text-sm font-black text-amber-950 shadow-sm flex items-center justify-center gap-2"
+          role="alert"
+        >
+          <span>⚠️</span>
+          <span>تنبيه: هذا الزبون محظور من هذا المحل ({shops.find((s) => s.id === shopId)?.name || "هذا المحل"}) فقط</span>
         </div>
       )}
 
@@ -796,20 +812,64 @@ export function OrderEditForm({
         </label>
       </div>
 
-      <div className="rounded-xl border-2 border-red-200 bg-red-50/30 p-4">
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            name="isBlocked"
-            checked={isBlocked}
-            onChange={(e) => setIsBlocked(e.target.checked)}
-            className="h-6 w-6 rounded border-red-400 text-red-600 focus:ring-red-500"
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-red-900">حظر هذا الزبون (Block Customer)</span>
-            <span className="text-xs text-red-700">عند التفعيل، سيتم وضع علامة حظر على هذا الرقم في هذه المنطقة.</span>
-          </div>
-        </label>
+      {/* خيارات حظر الزبون (عام وخاص بالمحل) */}
+      <div className="space-y-3 rounded-2xl border-2 border-red-200 bg-gradient-to-b from-red-50/40 to-slate-50/60 p-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-red-200/80 pb-2">
+          <span className="text-sm font-black text-red-950 flex items-center gap-1.5">
+            🚫 خيارات حظر الزبون
+          </span>
+          <span className="text-xs font-semibold text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
+            تحكم بالحظر
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* 1. حظر الزبون عاماً (كل المحلات) */}
+          <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 transition-all ${
+            isBlocked
+              ? "border-red-600 bg-red-50/90 shadow-sm"
+              : "border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/30"
+          }`}>
+            <input
+              type="checkbox"
+              name="isBlocked"
+              checked={isBlocked}
+              onChange={(e) => setIsBlocked(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-red-400 text-red-600 focus:ring-red-500"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-extrabold text-red-950 flex items-center gap-1">
+                🛑 حظر الزبون عاماً (كل المحلات)
+              </span>
+              <span className="mt-1 text-xs leading-relaxed text-red-800">
+                يمنع أي محل أو عميل في النظام من رفع أي طلب لهذا الزبون كلياً.
+              </span>
+            </div>
+          </label>
+
+          {/* 2. حظر الزبون من هذا المحل فقط */}
+          <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 transition-all ${
+            isShopBlocked
+              ? "border-amber-600 bg-amber-50/90 shadow-sm"
+              : "border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/30"
+          }`}>
+            <input
+              type="checkbox"
+              name="isShopBlocked"
+              checked={isShopBlocked}
+              onChange={(e) => setIsShopBlocked(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-amber-500 text-amber-600 focus:ring-amber-500"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-extrabold text-amber-950 flex items-center gap-1">
+                ⚠️ حظر الزبون من ({shops.find((s) => s.id === shopId)?.name || "هذا المحل"}) فقط
+              </span>
+              <span className="mt-1 text-xs leading-relaxed text-amber-800">
+                يمنع هذا المحل تحديداً من رفع طلب له، بينما تستطيع باقي المحلات رفع طلبات له بشكل طبيعي.
+              </span>
+            </div>
+          </label>
+        </div>
       </div>
 
       <label className="flex flex-col gap-1 text-sm">

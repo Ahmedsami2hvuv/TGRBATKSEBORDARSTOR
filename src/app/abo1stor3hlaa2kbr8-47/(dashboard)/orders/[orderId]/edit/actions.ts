@@ -163,6 +163,7 @@ export async function updateOrderAdmin(
   if (!(await assertAdmin())) return { error: "غير مصرّح" };
 
   const isBlocked = formData.get("isBlocked") === "on";
+  const isShopBlocked = formData.get("isShopBlocked") === "on";
   const shopId = String(formData.get("shopId") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
   const orderTypeRaw = String(formData.get("orderType") ?? "").trim();
@@ -373,17 +374,67 @@ export async function updateOrderAdmin(
   await syncPhoneProfileFromOrder(orderId);
   await syncSecondPhoneProfileFromOrder(orderId);
 
+  // معالجة الحظر العام
   if (isBlocked) {
     await blockCustomerAction(phoneLocal);
   } else {
-    // We don't automatically unblock globally when one order is edited,
-    // but we can unblock for this region if needed.
-    // For now, let's keep it consistent.
+    const wasGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: phoneLocal },
+    });
+    if (wasGlobalBlocked) {
+      await unblockCustomerAction(phoneLocal);
+    }
+  }
+
+  // معالجة حظر المحل
+  if (shopId && phoneLocal) {
+    if (isShopBlocked) {
+      await blockCustomerFromShopAction(phoneLocal, shopId);
+    } else {
+      await unblockCustomerFromShopAction(phoneLocal, shopId);
+    }
   }
 
   revalidateAdminOrderPaths(orderId);
   if (status === "archived") redirect("/abo1stor3hlaa2kbr8-47/orders/archived");
   redirect("/abo1stor3hlaa2kbr8-47/orders/tracking");
+}
+
+export async function blockCustomerFromShopAction(phone: string, shopId: string) {
+  if (!(await assertAdmin())) return { error: "غير مصرّح" };
+  const phoneLocal = normalizeIraqMobileLocal11(phone);
+  if (!phoneLocal || !shopId) return { error: "بيانات غير صالحة" };
+
+  await prisma.shopBlockedPhone.upsert({
+    where: {
+      shopId_phone: {
+        shopId,
+        phone: phoneLocal,
+      },
+    },
+    create: {
+      shopId,
+      phone: phoneLocal,
+    },
+    update: {},
+  });
+
+  return { ok: true };
+}
+
+export async function unblockCustomerFromShopAction(phone: string, shopId: string) {
+  if (!(await assertAdmin())) return { error: "غير مصرّح" };
+  const phoneLocal = normalizeIraqMobileLocal11(phone);
+  if (!phoneLocal || !shopId) return { error: "بيانات غير صالحة" };
+
+  await prisma.shopBlockedPhone.deleteMany({
+    where: {
+      shopId,
+      phone: phoneLocal,
+    },
+  });
+
+  return { ok: true };
 }
 
 export async function blockCustomerAction(phone: string) {

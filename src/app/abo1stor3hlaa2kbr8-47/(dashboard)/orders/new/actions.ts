@@ -158,12 +158,27 @@ export async function createAdminOrder(
 
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone) || customerPhone;
 
-    // فحص الحظر العالمي قبل إنشاء مسودة التجهيز من الأدمن
-    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
-      where: { phone: phoneLocal },
-    });
+    // فحص الحظر العام وحظر المحل قبل إنشاء مسودة التجهيز من الأدمن
+    const [isGlobalBlocked, isShopBlocked] = await Promise.all([
+      prisma.globalBlockedPhone.findUnique({
+        where: { phone: phoneLocal },
+      }),
+      shopId
+        ? prisma.shopBlockedPhone.findUnique({
+            where: {
+              shopId_phone: {
+                shopId,
+                phone: phoneLocal,
+              },
+            },
+          })
+        : null,
+    ]);
     if (isGlobalBlocked) {
-      return { error: `عذراً، الرقم ${phoneLocal} محظور عالمياً ولا يمكن إنشاء طلب له.` };
+      return { error: `عذراً، الرقم ${phoneLocal} محظور عاماً من التوصيل ولا يمكن إنشاء طلب له.` };
+    }
+    if (isShopBlocked) {
+      return { error: `عذراً، الرقم ${phoneLocal} محظور من رفع الطلبات عبر هذا المحل.` };
     }
 
     const productAssignmentsRaw = String(formData.get("productAssignmentsJson") ?? "").trim();
@@ -271,12 +286,27 @@ export async function createAdminOrder(
   const firstPhone = normalizeIraqMobileLocal11(firstPhoneRaw);
   if (!firstPhone) return { error: "رقم الزبون غير صالح." };
 
-  // فحص الحظر العالمي للرقم الأول
-  const isFirstBlocked = await prisma.globalBlockedPhone.findUnique({
-    where: { phone: firstPhone },
-  });
+  // فحص الحظر العام وحظر المحل للرقم الأول
+  const [isFirstBlocked, isFirstShopBlocked] = await Promise.all([
+    prisma.globalBlockedPhone.findUnique({
+      where: { phone: firstPhone },
+    }),
+    shopId
+      ? prisma.shopBlockedPhone.findUnique({
+          where: {
+            shopId_phone: {
+              shopId,
+              phone: firstPhone,
+            },
+          },
+        })
+      : null,
+  ]);
   if (isFirstBlocked) {
-    return { error: `عذراً، رقم الزبون (${firstPhone}) محظور عالمياً.` };
+    return { error: `عذراً، رقم الزبون (${firstPhone}) محظور عاماً من التوصيل.` };
+  }
+  if (isFirstShopBlocked) {
+    return { error: `عذراً، رقم الزبون (${firstPhone}) محظور من رفع الطلبات عبر هذا المحل.` };
   }
 
   if (!firstRegionIdRaw) return { error: "منطقة الزبون مطلوبة." };

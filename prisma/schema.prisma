@@ -71,6 +71,20 @@ model GlobalBlockedPhone {
   updatedAt DateTime @updatedAt
 }
 
+model ShopBlockedPhone {
+  id        String   @id @default(cuid())
+  shopId    String
+  phone     String
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, phone])
+  @@index([shopId])
+  @@index([phone])
+}
+
 /**
  * تتبّع استيراد صفحات طلبات الموقع القديم d.ksebstor — لاستئناف السحب بعد تجديد الكوكي وتلخيص الإحصائيات.
  */
@@ -116,6 +130,7 @@ model Shop {
   employees     Employee[]
   orders        Order[]
   preparerLinks PreparerShop[]
+  blockedPhones ShopBlockedPhone[]
   region        Region         @relation(fields: [regionId], references: [id])
 }
 

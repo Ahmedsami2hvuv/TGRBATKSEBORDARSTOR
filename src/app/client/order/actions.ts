@@ -65,12 +65,25 @@ export async function submitEmployeePreparationDraft(
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
     if (!phoneLocal) return { error: "رقم الهاتف غير صحيح." };
 
-    // Global block check
-    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
-      where: { phone: phoneLocal },
-    });
+    // Global and Shop block check
+    const [isGlobalBlocked, isShopBlocked] = await Promise.all([
+      prisma.globalBlockedPhone.findUnique({
+        where: { phone: phoneLocal },
+      }),
+      prisma.shopBlockedPhone.findUnique({
+        where: {
+          shopId_phone: {
+            shopId: submitter.shopId,
+            phone: phoneLocal,
+          },
+        },
+      }),
+    ]);
     if (isGlobalBlocked) {
-      return { error: "عذراً، هذا الرقم محظور عالمياً ولا يمكن إنشاء طلب تجهيز له." };
+      return { error: "عذراً، هذا الرقم محظور عاماً من التوصيل ولا يمكن إنشاء طلب له." };
+    }
+    if (isShopBlocked) {
+      return { error: "عذراً، هذا الرقم محظور من رفع الطلبات عبر متجركم." };
     }
 
     const region = await prisma.region.findUnique({
@@ -208,12 +221,25 @@ export async function submitOrder(
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
     if (!phoneLocal) return { error: "رقم الهاتف غير صحيح" };
 
-    // Global block check
-    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
-      where: { phone: phoneLocal },
-    });
+    // Global and Shop block check
+    const [isGlobalBlocked, isShopBlocked] = await Promise.all([
+      prisma.globalBlockedPhone.findUnique({
+        where: { phone: phoneLocal },
+      }),
+      prisma.shopBlockedPhone.findUnique({
+        where: {
+          shopId_phone: {
+            shopId: submitter.shopId,
+            phone: phoneLocal,
+          },
+        },
+      }),
+    ]);
     if (isGlobalBlocked) {
-      return { error: "عذراً، هذا الرقم محظور من التوصيل حالياً." };
+      return { error: "عذراً، هذا الرقم محظور عاماً من التوصيل حالياً." };
+    }
+    if (isShopBlocked) {
+      return { error: "عذراً، هذا الرقم محظور من رفع الطلبات عبر متجركم." };
     }
 
     let existingOrder = null;

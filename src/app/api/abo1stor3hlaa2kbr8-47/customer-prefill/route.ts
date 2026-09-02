@@ -235,20 +235,40 @@ export async function GET(request: Request) {
     }
   }
 
-  if (!profile && customers.length > 0) {
-    const c = customers[0];
+  // 5. فحص الحظر العام وحظر المحل
+  const [globalBlocked, shopBlocked] = await Promise.all([
+    prisma.globalBlockedPhone.findFirst({
+      where: {
+        OR: [{ phone: { in: variants } }, { phone: { contains: last9Digits } }],
+      },
+    }),
+    shopId
+      ? prisma.shopBlockedPhone.findFirst({
+          where: {
+            shopId,
+            OR: [{ phone: { in: variants } }, { phone: { contains: last9Digits } }],
+          },
+        })
+      : null,
+  ]);
+
+  if (profile) {
+    profile.isBlocked = !!globalBlocked || !!profile.isBlocked;
+    profile.isShopBlocked = !!shopBlocked;
+  } else if (globalBlocked || shopBlocked) {
     profile = {
-      id: c.id,
-      source: "customer" as const,
-      shopId: c.shopId,
-      name: c.name ?? "",
-      phone: c.phone,
-      customerRegionId: c.customerRegionId,
-      customerLocationUrl: c.customerLocationUrl ?? "",
-      customerLandmark: c.customerLandmark ?? "",
-      customerDoorPhotoUrl: c.customerDoorPhotoUrl?.trim() ? c.customerDoorPhotoUrl : null,
-      alternatePhone: c.alternatePhone,
-      isBlocked: false,
+      id: "",
+      source: "phoneProfile" as const,
+      shopId: shopId || null,
+      name: "",
+      phone: phone,
+      customerRegionId: targetRegionId || null,
+      customerLocationUrl: "",
+      customerLandmark: "",
+      customerDoorPhotoUrl: null,
+      alternatePhone: null,
+      isBlocked: !!globalBlocked,
+      isShopBlocked: !!shopBlocked,
     };
   }
 

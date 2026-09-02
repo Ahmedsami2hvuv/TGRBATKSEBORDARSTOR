@@ -91,6 +91,19 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       return { error: "لا يوجد محل مفعل لاستقبال الطلبات حالياً" };
     }
 
+    // فحص حظر المحل
+    const isShopBlocked = await prisma.shopBlockedPhone.findUnique({
+      where: {
+        shopId_phone: {
+          shopId: shop.id,
+          phone: phoneLocal,
+        },
+      },
+    });
+    if (isShopBlocked) {
+      return { error: "عذراً، هذا الرقم محظور من الطلب عبر هذا المحل." };
+    }
+
     let customer = await prisma.customer.findFirst({
       where: { shopId: shop.id, phone: phoneLocal }
     });

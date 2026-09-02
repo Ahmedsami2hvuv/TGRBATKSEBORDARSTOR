@@ -66,9 +66,9 @@ export default async function EditOrderPage({ params }: Props) {
   }
 
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
-  const customerPhoneProfile =
+  const [customerPhoneProfile, globalBlockedRecord, shopBlockedRecord] = await Promise.all([
     customerPhoneNorm && order.customerRegionId
-      ? await prisma.customerPhoneProfile.findUnique({
+      ? prisma.customerPhoneProfile.findUnique({
           where: {
             phone_regionId: {
               phone: customerPhoneNorm,
@@ -84,7 +84,23 @@ export default async function EditOrderPage({ params }: Props) {
             alternatePhone: true,
           },
         })
-      : null;
+      : null,
+    customerPhoneNorm
+      ? prisma.globalBlockedPhone.findUnique({
+          where: { phone: customerPhoneNorm },
+        })
+      : null,
+    customerPhoneNorm && order.shopId
+      ? prisma.shopBlockedPhone.findUnique({
+          where: {
+            shopId_phone: {
+              shopId: order.shopId,
+              phone: customerPhoneNorm,
+            },
+          },
+        })
+      : null,
+  ]);
 
   const getCustomerDoorUrl = () => {
     const fromCustomer = order.customer?.customerDoorPhotoUrl?.trim();
@@ -269,7 +285,8 @@ export default async function EditOrderPage({ params }: Props) {
           }))}
           couriers={couriers.map((c) => ({ id: c.id, name: c.name }))}
           defaultPrepaidAll={order.prepaidAll}
-          defaultIsBlocked={customerPhoneProfile?.isBlocked ?? false}
+          defaultIsBlocked={!!globalBlockedRecord || (customerPhoneProfile?.isBlocked ?? false)}
+          defaultIsShopBlocked={!!shopBlockedRecord}
         />
       </section>
       <AdminOrderMoneyEvents

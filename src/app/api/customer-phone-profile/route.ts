@@ -44,28 +44,35 @@ export async function GET(request: Request) {
 
   const regionId = searchParams.get("regionId")?.trim() ?? "";
   const phoneRaw = searchParams.get("phone")?.trim() ?? "";
+  const shopId = searchParams.get("shopId")?.trim() ?? "";
   const phone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
 
   if (!phone || !regionId) {
      return NextResponse.json({ profile: null });
   }
 
-  const [profile, globalBlock] = await Promise.all([
+  const [profile, globalBlock, shopBlock] = await Promise.all([
     prisma.customerPhoneProfile.findUnique({
         where: { phone_regionId: { phone, regionId } }
     }),
     prisma.globalBlockedPhone.findUnique({
         where: { phone }
-    })
+    }),
+    shopId
+      ? prisma.shopBlockedPhone.findUnique({
+          where: { shopId_phone: { shopId, phone } },
+        })
+      : null,
   ]);
 
-  if (!profile && !globalBlock) {
+  if (!profile && !globalBlock && !shopBlock) {
     return NextResponse.json({ profile: null });
   }
 
   const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
   let landmark = profile?.landmark?.trim() ?? "";
   const isBlocked = !!profile?.isBlocked || !!globalBlock;
+  const isShopBlocked = !!shopBlock;
 
   if (isBlocked && !landmark.includes(BLOCKED_PREFIX)) {
     landmark = `${BLOCKED_PREFIX} ${landmark}`.trim();
@@ -78,6 +85,7 @@ export async function GET(request: Request) {
       alternatePhone: profile?.alternatePhone?.trim() ?? null,
       photoUrl: profile?.photoUrl?.trim() ?? "",
       isBlocked: isBlocked,
+      isShopBlocked: isShopBlocked,
     },
   });
 }
