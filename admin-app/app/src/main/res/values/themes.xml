@@ -20,12 +20,11 @@
         <item name="android:backgroundDimAmount">0.35</item>
     </style>
 
-    <!-- ستايل النافذة العائمة المستقلة للمساعد الذكي -->
+    <!-- ستايل النافذة العائمة المستقلة للمساعد الذكي الزجاجي الشفاف -->
     <style name="Theme.FloatingAiChatDialog" parent="Theme.Material3.DayNight.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">true</item>
-        <item name="android:backgroundDimEnabled">true</item>
-        <item name="android:backgroundDimAmount">0.40</item>
+        <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowCloseOnTouchOutside">true</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowNoTitle">true</item>

@@ -93,14 +93,16 @@
             </intent-filter>
         </service>
 
-        <!-- نافذة الدردشة العائمة المستقلة للمساعد الذكي -->
+        <!-- نافذة الدردشة العائمة المستقلة للمساعد الذكي (معزولة كلياً عن التطبيق الرئيسي) -->
         <activity
             android:name="com.aboakbar.admin.FloatingAiChatActivity"
             android:theme="@style/Theme.FloatingAiChatDialog"
             android:label="المساعد العائم"
             android:windowSoftInputMode="adjustResize"
-            android:launchMode="singleTop"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
             android:excludeFromRecents="true"
+            android:showOnLockScreen="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI" />
