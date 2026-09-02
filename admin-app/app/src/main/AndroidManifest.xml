@@ -108,6 +108,12 @@
             </intent-filter>
         </activity>
 
+        <!-- خدمة الزر العائم الدائري فوق التطبيقات -->
+        <service
+            android:name="com.aboakbar.admin.FloatingBubbleService"
+            android:enabled="true"
+            android:exported="false" />
+
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
