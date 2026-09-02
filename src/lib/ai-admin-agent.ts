@@ -2594,160 +2594,23 @@ export async function executeSuperSystemAgent(
       }
 
       case "order_create": {
-        const fullText = parsed?.raw_query || rawText;
-        const phone = parsed?.phone || null;
-
-        const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
-        if (allShops.length === 0) {
-          return { reply: `يا أبو الأكبر، ما عندك أي محل مسجل بالنظام بعد.` };
-        }
-
-        // 1. استخراج ومطابقة المحل بنسبة التشابه الذكي
-        let matchedShop: { id: string; name: string } | null = null;
-        
-        const cleanQuery = cleanArabicTextForMatch(fullText)
-          .replace(/^سويلي\s*طلب\s*من\s*/g, "")
-          .replace(/^سوي\s*طلب\s*من\s*/g, "")
-          .replace(/^طلب\s*من\s*/g, "")
-          .replace(/^محل\s*/g, "")
-          .trim();
-
-        const scoredShops = allShops.map(s => {
-          const cleanS = cleanArabicTextForMatch(s.name);
-          let score = 0;
-          if (cleanS === cleanQuery || cleanQuery.includes(cleanS) || cleanS.includes(cleanQuery)) {
-            score = 0.95;
-          } else {
-            let matches = 0;
-            for (let ch of cleanQuery) {
-              if (cleanS.includes(ch)) matches++;
-            }
-            score = matches / Math.max(cleanS.length, cleanQuery.length);
-          }
-          return { shop: s, score };
-        }).sort((a, b) => b.score - a.score);
-
-        if (scoredShops[0] && scoredShops[0].score >= 0.45) {
-          matchedShop = scoredShops[0].shop;
-        }
-
-        // إذا لم يتطابق المحل بدقة، نقترح أقرب المحلات بأزرار تفاعلية فوراً!
-        if (!matchedShop) {
-          const topShops = scoredShops.slice(0, 4).map(s => s.shop);
-          const buttons = topShops.map(s => ({
-            text: `🏪 ${s.name}`,
-            action: s.name
-          }));
-
-          // استخراج ما يمكن استخراجه من المنطقة والسعر لحفظها
-          const allRegionsTemp = await prisma.region.findMany({ select: { id: true, name: true } });
-          const rankedReg = rankRegionsByQuery(fullText, allRegionsTemp as any);
-          const tempReg = rankedReg.length > 0 ? rankedReg[0] : null;
-
-          const subtotalNum = parsed?.price ? Number(parsed.price) : 0;
-
-          ctx.orderDraft = {
-            step: "waiting_shop",
-            regionId: tempReg?.id || null,
-            regionName: tempReg ? tempReg.name : null,
-            phone: phone,
-            orderType: "مسواق",
-            price: subtotalNum,
-            noteTime: "الان"
-          };
-          ctx.updatedAt = Date.now();
-
-          return {
-            reply: `يا أبو الأكبر، ما لكيت هذا الاسم بالضبط. قصدك أي محل من هذولي؟ 👇`,
-            buttons: buttons
-          };
-        }
-
-        const allRegions = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-        let matchedRegion: { id: string; name: string; deliveryPrice: any } | null = null;
-
-        // تنظيف صريح للمرادفات الصوتية مثل (جاي كور / جي كور -> جيكور)
-        const textForRegion = fullText.replace(/جاي\s*كور/gi, "جيكور").replace(/جي\s*كور/gi, "جيكور");
-
-        for (const reg of allRegions) {
-          const cleanR = cleanArabicTextForMatch(reg.name);
-          const cleanT = cleanArabicTextForMatch(textForRegion);
-          if (cleanR.length >= 2 && (cleanT.includes(cleanR) || cleanR.includes(cleanT))) {
-            matchedRegion = reg;
-            break;
-          }
-        }
-
-        if (!matchedRegion) {
-          const ranked = rankRegionsByQuery(textForRegion, allRegions as any);
-          if (ranked.length > 0) {
-            matchedRegion = ranked[0];
-          }
-        }
-
-        let orderType = "اقمشه";
-        const cleanType = fullText.toLowerCase();
-        if (cleanType.includes("مسواق") || cleanType.includes("مسواك") || cleanType.includes("تسوق")) orderType = "مسواق";
-        else if (cleanType.includes("روبيان") || cleanType.includes("سمك") || cleanType.includes("اسماك")) orderType = "روبيان";
-        else if (cleanType.includes("ورد") || cleanType.includes("زهور")) orderType = "ورد";
-        else if (cleanType.includes("كيك") || cleanType.includes("حلويات") || cleanType.includes("معجنات")) orderType = "حلويات";
-        else if (cleanType.includes("طعام") || cleanType.includes("وجبة") || cleanType.includes("مطعم") || cleanType.includes("اكل")) orderType = "طعام";
-        else if (cleanType.includes("اقمشه") || cleanType.includes("أقمشة") || cleanType.includes("قماش") || cleanType.includes("ملابس") || cleanType.includes("ازياء") || cleanType.includes("فستان")) orderType = "اقمشه";
-        else if (cleanType.includes("مواد") || cleanType.includes("منزليه") || cleanType.includes("منزلية")) orderType = "مواد منزلية";
-
-        let noteTime = "غير محدد";
-        if (fullText.includes("الان") || fullText.includes("الآن")) noteTime = "الان";
-        else if (fullText.includes("ب4 العصر") || fullText.includes("العصر") || fullText.includes("عصر")) noteTime = "ب4 العصر";
-        else if (fullText.includes("مغرب")) noteTime = "مغرباً";
-        else if (fullText.includes("فوري")) noteTime = "فوري";
-
-        const deliveryPriceNum = matchedRegion?.deliveryPrice ? Number(matchedRegion.deliveryPrice) : 0;
-        const detectedAmount = extractOrderAmountFromText(fullText, phone);
-        const subtotalNum = detectedAmount ?? 0;
-        const totalNum = subtotalNum + deliveryPriceNum;
-
-        const order = await prisma.order.create({
-          data: {
-            shop: { connect: { id: matchedShop.id } },
-            status: "pending",
-            orderType: orderType,
-            orderNoteTime: noteTime,
-            ...(matchedRegion?.id ? { customerRegion: { connect: { id: matchedRegion.id } } } : {}),
-            customerPhone: phone || "",
-            orderSubtotal: new Decimal(subtotalNum),
-            deliveryPrice: new Decimal(deliveryPriceNum),
-            totalAmount: new Decimal(totalNum),
-            submissionSource: "admin_ai_assistant",
-          }
-        });
-
-        notifyTelegramNewOrder(order.id).catch(() => {});
-        pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-        ctx.lastOrderNumber = order.orderNumber;
-        ctx.updatedAt = Date.now();
-
-        const regionName = matchedRegion ? matchedRegion.name : "غير محددة";
-        const warnings: string[] = [];
-        let regionButtons: Array<{ text: string; action: string }> = [];
-
-        if (!matchedRegion) {
-          warnings.push("⚠️ اختر خيار المنطقة المناسبة أدناه للتعيين المباشر وتحديث السعر بالنقر:");
-          const ranked = rankRegionsByQuery(fullText, allRegions as any);
-          const topRanked = ranked.slice(0, 4);
-          regionButtons = topRanked.map(r => ({
-            text: `📍 تحديد منطقة: ${r.name}`,
-            action: `set_region_order_${order.id}_region_${r.id}`
-          }));
-        }
-
-        if (!phone) warnings.push("⚠️ ما لكيت رقم هاتف بالرسالة، ضيفه يدوياً.");
-        if (detectedAmount === null) warnings.push("⚠️ ما لكيت سعر واضح بالرسالة، سعر الطلب انحط 0 — عدله يدوياً.");
-
-        return {
-          reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${order.orderNumber} لـ (${matchedShop.name}) إلى (${regionName}) | نوع: ${orderType} | وقت: ${noteTime} | السعر: ${subtotalNum} ألف${warnings.length ? "\n" + warnings.join("\n") : ""}`,
-          buttons: regionButtons
+        const initialDraft: OrderDraftState = {
+          step: "waiting_shop",
+          shopId: null,
+          shopName: null,
+          regionId: null,
+          regionName: null,
+          phone: null,
+          orderType: null,
+          price: undefined,
+          noteTime: null
         };
+
+        const wizardRes = await handleOrderCreationWizard(rawText, initialDraft, ctx);
+        ctx.orderDraft = wizardRes.nextDraft || null;
+        ctx.updatedAt = Date.now();
+        await savePersistentSessionContext(sessionKey, ctx);
+        return { reply: wizardRes.reply!, buttons: wizardRes.buttons };
       }
 
       case "debt_record": {
