@@ -510,7 +510,7 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {(o.customerPhone || o.phoneLine) && (
-                        <span className="text-xs font-mono font-black text-slate-700 dark:text-slate-300 truncate shrink-0 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                        <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 truncate shrink-0">
                           📞 {o.customerPhone || o.phoneLine}
                         </span>
                       )}

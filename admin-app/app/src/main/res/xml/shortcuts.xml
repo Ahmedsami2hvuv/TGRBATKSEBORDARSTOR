@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_floating_ai"
+        android:enabled="true"
+        android:icon="@drawable/ic_ai_stars"
+        android:shortcutShortLabel="@string/shortcut_ai_short"
+        android:shortcutLongLabel="@string/shortcut_ai_long">
+        <intent
+            android:action="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI"
+            android:targetPackage="com.aboakbar.admin"
+            android:targetClass="com.aboakbar.admin.FloatingAiActivity" />
+    </shortcut>
+</shortcuts>

@@ -64,7 +64,40 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- نشاط تشغيل المساعد العائم عبر اختصار النقر المطول -->
+        <activity
+            android:name="com.aboakbar.admin.FloatingAiActivity"
+            android:theme="@style/Theme.TransparentVoiceAssistant"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- خدمة المساعد العائم بشريط الستارة العلوية (Quick Settings Tile) -->
+        <service
+            android:name="com.aboakbar.admin.FloatingAiTileService"
+            android:label="✨ المساعد العائم"
+            android:icon="@drawable/ic_ai_stars"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- خدمة النافذة العائمة القابلة للسحب والتحريك فوق التطبيقات -->
+        <service
+            android:name="com.aboakbar.admin.FloatingAiOverlayService"
+            android:enabled="true"
+            android:exported="false" />
 
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
