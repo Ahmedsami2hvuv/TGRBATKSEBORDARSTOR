@@ -46,7 +46,7 @@ class FloatingBubbleService : Service() {
 
         val bubbleText = TextView(this).apply {
             text = "✨ AI"
-            textSize = 14f
+            textSize = 15f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
 
@@ -56,7 +56,7 @@ class FloatingBubbleService : Service() {
                 setStroke(4, Color.WHITE)
             }
             background = bg
-            elevation = 16f
+            elevation = 18f
         }
 
         bubbleView = bubbleText
@@ -68,9 +68,11 @@ class FloatingBubbleService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
+        val sizePx = (58 * resources.displayMetrics.density).toInt()
+
         layoutParams = WindowManager.LayoutParams(
-            145, // width
-            145, // height
+            sizePx, // width
+            sizePx, // height
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
@@ -107,7 +109,7 @@ class FloatingBubbleService : Service() {
                         val diffX = (event.rawX - initialTouchX).toInt()
                         val diffY = (event.rawY - initialTouchY).toInt()
 
-                        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+                        if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) {
                             isClick = false
                             longClickRunnable?.let { handler.removeCallbacks(it) }
                         }

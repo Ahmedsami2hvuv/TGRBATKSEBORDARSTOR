@@ -1,13 +1,15 @@
-﻿package com.aboakbar.admin
+package com.aboakbar.admin
 
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -77,9 +79,15 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         Thread.setDefaultUncaughtExceptionHandler { _, _ -> }
 
         try {
+            // طلب إذن الظهور فوق التطبيقات إذا لم يكن ممنوحاً لضمان ظهور الزر العائم
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                Toast.makeText(this, "يرجى تفعيل إذن الظهور فوق التطبيقات لظهور الزر العائم 🚀", Toast.LENGTH_LONG).show()
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                startActivity(intent)
+            }
+
             setContentView(R.layout.activity_floating_ai_chat)
 
-            // ضبط حجم نافذة الـ Dialog لتكون مريحة وفخمة
             window?.setLayout(
                 (resources.displayMetrics.widthPixels * 0.94).toInt(),
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -102,7 +110,7 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
             textToSpeech = TextToSpeech(this, this)
 
-            // زر الإغلاق
+            // زر الإغلاق: يغلق النافذة ويظهر الزر العائم مكانه فوراً
             btnFloatingClose.setOnClickListener {
                 closeQuietly()
             }
@@ -226,6 +234,15 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         imm?.hideSoftInputFromWindow(etFloatingInput.windowToken, 0)
     }
 
+    private fun showFloatingBubble() {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
+                val bubbleIntent = Intent(this, FloatingBubbleService::class.java)
+                startService(bubbleIntent)
+            }
+        } catch (e: Exception) {}
+    }
+
     private fun closeQuietly() {
         try {
             handler.removeCallbacks(commitSpeechRunnable)
@@ -233,11 +250,25 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
             stopListening()
             textToSpeech?.stop()
         } catch (e: Exception) {}
+        showFloatingBubble()
         finish()
     }
 
     override fun onBackPressed() {
         closeQuietly()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // إخفاء الزر العائم أثناء فتح نافذة الدردشة حتى لا يغطي الشاشة
+        try {
+            stopService(Intent(this, FloatingBubbleService::class.java))
+        } catch (e: Exception) {}
+
+        tvFloatingStatus.text = "🎙️ تفضل بالتحدث أو كتابة أمرك..."
+        if (!isMicPaused && !isFinishing) {
+            safelyRestartSpeechRecognizer()
+        }
     }
 
     override fun onPause() {
@@ -250,11 +281,11 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         } catch (e: Exception) {}
     }
 
-    override fun onResume() {
-        super.onResume()
-        tvFloatingStatus.text = "🎙️ تفضل بالتحدث أو كتابة أمرك..."
-        if (!isMicPaused && !isFinishing) {
-            safelyRestartSpeechRecognizer()
+    override fun onStop() {
+        super.onStop()
+        // إذا خرج المستخدم من النافذة (مثلاً زر الهوم للذهاب للواتساب) نظهر الزر العائم فوق التطبيقات
+        if (!isFinishing) {
+            showFloatingBubble()
         }
     }
 
