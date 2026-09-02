@@ -430,7 +430,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
     const orders = await db.order.findMany({
       where: {
         status: { notIn: ["draft", "priced", "cancelled"] },
-        preparerShoppingJson: { not: null }
+        preparerShoppingJson: { contains: supplierId }
       },
       include: {
         customerRegion: { select: { name: true } },
@@ -476,47 +476,58 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           }
         });
 
+        const orderNums: number[] = [];
+        const txMap = new Map<number, typeof allSupplierTxs[0]>();
         for (const tx of allSupplierTxs) {
           const match = tx.note?.match(/طلب رقم:\s*#(\d+)/);
-          if (!match) continue;
-          const orderNum = parseInt(match[1], 10);
-
-          const order = await db.order.findFirst({
-            where: { orderNumber: orderNum },
-            select: { id: true, status: true, preparerShoppingJson: true }
-          });
-
-          let shouldDelete = false;
-
-          if (!order) {
-            shouldDelete = true;
-          } else if (["draft", "priced", "cancelled"].includes(order.status)) {
-            shouldDelete = true;
-          } else {
-            let products: any[] = [];
-            let parsed: any = {};
-            try {
-              parsed = typeof order.preparerShoppingJson === "string"
-                ? JSON.parse(order.preparerShoppingJson)
-                : order.preparerShoppingJson || {};
-              products = parsed?.products || [];
-            } catch {
-              products = [];
-            }
-
-            const isStillSupplier = products.some(
-              (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
-            );
-
-            if (!isStillSupplier || parsed?.supplierDebtDeleted || parsed?.supplierDebtHidden) {
-              shouldDelete = true;
-            }
+          if (match) {
+            const num = parseInt(match[1], 10);
+            orderNums.push(num);
+            txMap.set(num, tx);
           }
+        }
 
-          if (shouldDelete) {
-            await db.creditBookTransaction.delete({
-              where: { id: tx.id }
-            });
+        if (orderNums.length > 0) {
+          const matchingOrders = await db.order.findMany({
+            where: { orderNumber: { in: orderNums } },
+            select: { orderNumber: true, status: true, preparerShoppingJson: true }
+          });
+          const matchingMap = new Map(matchingOrders.map((o: any) => [o.orderNumber, o]));
+
+          for (const num of orderNums) {
+            const order: any = matchingMap.get(num);
+            const tx = txMap.get(num);
+            if (!tx) continue;
+
+            let shouldDelete = false;
+            if (!order || ["draft", "priced", "cancelled"].includes(order.status)) {
+              shouldDelete = true;
+            } else {
+              let products: any[] = [];
+              let parsed: any = {};
+              try {
+                parsed = typeof order.preparerShoppingJson === "string"
+                  ? JSON.parse(order.preparerShoppingJson)
+                  : order.preparerShoppingJson || {};
+                products = parsed?.products || [];
+              } catch {
+                products = [];
+              }
+
+              const isStillSupplier = products.some(
+                (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
+              );
+
+              if (!isStillSupplier || parsed?.supplierDebtDeleted || parsed?.supplierDebtHidden) {
+                shouldDelete = true;
+              }
+            }
+
+            if (shouldDelete) {
+              await db.creditBookTransaction.delete({
+                where: { id: tx.id }
+              });
+            }
           }
         }
       } catch (cleanupErr) {
@@ -568,8 +579,9 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           }
         });
 
+        const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+
         if (!exists) {
-          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
@@ -580,37 +592,29 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
             }
           });
 
-          // تسجيل منشئ المعاملة بالنظام
           try {
             const { logTransactionAuthor } = await import("./transaction-logger");
             await logTransactionAuthor(newTx.id, "create", "النظام");
           } catch (logErr) {
             console.error("Failed to log transaction creator as System:", logErr);
           }
-
-          // تحديث تاريخ الشريك ليصعد في القائمة
-          await db.creditBookPartner.update({
-            where: { id: cbPartner.id },
-            data: { updatedAt: new Date() }
-          });
         } else {
-          // تحديث المعاملة الحالية بالقيم والأسعار والملاحظات الجديدة
-          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
-          await db.creditBookTransaction.update({
-            where: { id: exists.id },
-            data: {
-              amount: totalBuyAlf,
-              note: noteText,
-            }
-          });
-
-          // تحديث تاريخ الشريك ليصعد في القائمة
-          await db.creditBookPartner.update({
-            where: { id: cbPartner.id },
-            data: { updatedAt: new Date() }
-          });
+          if (exists.note !== noteText || Number(exists.amount) !== totalBuyAlf) {
+            await db.creditBookTransaction.update({
+              where: { id: exists.id },
+              data: {
+                amount: totalBuyAlf,
+                note: noteText,
+              }
+            });
+          }
         }
       }
+
+      await db.creditBookPartner.update({
+        where: { id: cbPartner.id },
+        data: { updatedAt: new Date() }
+      });
     }
   } catch (error) {
     console.error("Error in syncSupplierTransactions:", error);
