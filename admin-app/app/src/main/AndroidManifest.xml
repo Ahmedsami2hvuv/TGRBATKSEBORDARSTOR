@@ -93,12 +93,6 @@
             </intent-filter>
         </service>
 
-        <!-- خدمة النافذة العائمة القابلة للسحب والتحريك فوق التطبيقات -->
-        <service
-            android:name="com.aboakbar.admin.FloatingAiOverlayService"
-            android:enabled="true"
-            android:exported="false" />
-
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
