@@ -1454,6 +1454,7 @@ export function AdminCreateOrderForm({
   inputMode="numeric"
   required
  />
+ <CustomerPhoneSuggestionsCard phone={firstPhone} selectedRegionId={firstRegionId} onSelectRegion={setFirstRegionId} title="مناطق هذا المرسل المسجلة سابقاً (اختيار سريع):" />
  </label>
 
  <label className="flex flex-col gap-1 text-sm">
@@ -1466,6 +1467,7 @@ export function AdminCreateOrderForm({
   onBlur={(e) => handlePhoneBlur(e.target.value, setSecondPhone)}
   required
  />
+  <CustomerPhoneSuggestionsCard phone={secondPhone} selectedRegionId={secondRegionId} onSelectRegion={setSecondRegionId} title="مناطق هذا المستلم المسجلة سابقاً (اختيار سريع):" />
  </label>
 
  <RegionSearchPicker
