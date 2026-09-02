@@ -819,7 +819,13 @@ export default async function MandoubPage({ searchParams }: Props) {
       orderStatus: o.status,
       shopName: (() => {
         if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
-        if (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()) {
+        if (
+          o.submittedByCompanyPreparer?.name ||
+          o.submittedByCompanyPreparerId != null ||
+          o.submissionSource === "company_preparer" ||
+          (o.shop?.name && (o.shop.name.trim() === "الإدارة" || o.shop.name.trim() === "طلبات الإدارة العامة")) ||
+          (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim())
+        ) {
           return "الإدارة";
         }
         return o.shop.name;
@@ -965,7 +971,13 @@ export default async function MandoubPage({ searchParams }: Props) {
     orderNoteTime: o.orderNoteTime?.trim() ?? "",
       shopName: (() => {
         if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
-        if (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()) {
+        if (
+          o.submittedByCompanyPreparer?.name ||
+          o.submittedByCompanyPreparerId != null ||
+          o.submissionSource === "company_preparer" ||
+          (o.shop?.name && (o.shop.name.trim() === "الإدارة" || o.shop.name.trim() === "طلبات الإدارة العامة")) ||
+          (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim())
+        ) {
           return "الإدارة";
         }
         return o.shop.name;

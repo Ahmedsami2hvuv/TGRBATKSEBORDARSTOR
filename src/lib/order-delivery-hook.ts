@@ -43,40 +43,59 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           where: { id: order.shopId },
           select: { name: true, phone: true }
         });
-        if (shop) {
-          const cbPartner = await db.creditBookPartner.findFirst({
-            where: {
-              externalId: order.shopId,
-              type: { in: ["shop", "deleted_shop"] }
-            }
-          });
 
-          if (!cbPartner) {
-            await db.creditBookPartner.create({
-              data: {
-                name: `${shop.name} (محل/مجهز)`,
-                phone: shop.phone || null,
-                type: "shop",
+        const isExcludedShop =
+          !shop ||
+          shop.name.trim() === "الإدارة" ||
+          shop.name.trim() === "طلبات الإدارة العامة" ||
+          order.submissionSource === "company_preparer" ||
+          Boolean(order.submittedByCompanyPreparerId);
+
+        if (shop && !isExcludedShop) {
+          // التحقق من أن المحل ليس اسماً لمورد أو مجهز مسجل
+          const isSupplierOrPrep = (await db.storeSupplier.findFirst({
+            where: { name: { equals: shop.name.trim(), mode: "insensitive" } },
+            select: { id: true }
+          })) || (await db.companyPreparer.findFirst({
+            where: { name: { equals: shop.name.trim(), mode: "insensitive" } },
+            select: { id: true }
+          }));
+
+          if (!isSupplierOrPrep) {
+            const cbPartner = await db.creditBookPartner.findFirst({
+              where: {
                 externalId: order.shopId,
-                updatedAt: new Date()
+                type: { in: ["shop", "deleted_shop"] }
               }
             });
-          } else if (cbPartner.type === "deleted_shop") {
-            await db.creditBookPartner.update({
-              where: { id: cbPartner.id },
-              data: {
-                type: "shop",
-                updatedAt: new Date()
-              }
-            });
-          } else {
-            // تحديث تاريخ التعديل ليصعد الحساب للأعلى
-            await db.creditBookPartner.update({
-              where: { id: cbPartner.id },
-              data: {
-                updatedAt: new Date()
-              }
-            });
+
+            if (!cbPartner) {
+              await db.creditBookPartner.create({
+                data: {
+                  name: `${shop.name} (محل/مجهز)`,
+                  phone: shop.phone || null,
+                  type: "shop",
+                  externalId: order.shopId,
+                  updatedAt: new Date()
+                }
+              });
+            } else if (cbPartner.type === "deleted_shop") {
+              await db.creditBookPartner.update({
+                where: { id: cbPartner.id },
+                data: {
+                  type: "shop",
+                  updatedAt: new Date()
+                }
+              });
+            } else {
+              // تحديث تاريخ التعديل ليصعد الحساب للأعلى
+              await db.creditBookPartner.update({
+                where: { id: cbPartner.id },
+                data: {
+                  updatedAt: new Date()
+                }
+              });
+            }
           }
         }
       }

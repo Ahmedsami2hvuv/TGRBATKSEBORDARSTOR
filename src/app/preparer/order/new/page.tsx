@@ -90,13 +90,50 @@ export default async function PreparerOrderNewPage({ searchParams }: Props) {
     return obj;
   }
 
-  const shops = deepSanitize(preparer.shopLinks.map((l) => ({
-    id: l.shop.id,
-    name: l.shop.name,
-    photoUrl: l.shop.photoUrl,
-    shopRegionName: l.shop.region.name,
-    shopDeliveryAlf: Number(l.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR,
-  })));
+  // جلب أو إنشاء محل الإدارة ليكون الخيار الافتراضي والأساسي دائماً
+  let adminShop = await prisma.shop.findFirst({
+    where: { name: { in: ["الإدارة", "طلبات الإدارة العامة"] } },
+    include: { region: true }
+  });
+
+  if (!adminShop) {
+    const firstRegion = await prisma.region.findFirst();
+    if (firstRegion) {
+      adminShop = await prisma.shop.create({
+        data: {
+          name: "الإدارة",
+          phone: "07733921568",
+          locationUrl: "",
+          regionId: firstRegion.id,
+        },
+        include: { region: true }
+      });
+    }
+  }
+
+  const linkedShops = preparer.shopLinks
+    .filter((l) => l.shop && l.shop.id !== adminShop?.id && l.shop.name.trim() !== preparer.name.trim())
+    .map((l) => ({
+      id: l.shop.id,
+      name: l.shop.name,
+      photoUrl: l.shop.photoUrl,
+      shopRegionName: l.shop.region?.name || "—",
+      shopDeliveryAlf: l.shop.region ? Number(l.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR : 0,
+    }));
+
+  const allShops = [];
+  if (adminShop && adminShop.region) {
+    allShops.push({
+      id: adminShop.id,
+      name: adminShop.name,
+      photoUrl: adminShop.photoUrl,
+      shopRegionName: adminShop.region.name,
+      shopDeliveryAlf: Number(adminShop.region.deliveryPrice.toString()) / ALF_PER_DINAR,
+    });
+  }
+  allShops.push(...linkedShops);
+
+  const shops = deepSanitize(allShops);
 
   if (shops.length === 0) {
     return (

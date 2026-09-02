@@ -213,12 +213,16 @@ export function OrderDetailSection({
     (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
   const shopContactPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : order.shop.phone?.trim() || "");
 
-  const effectiveShopName =
-    order.submittedByCompanyPreparer?.name &&
-    order.shop?.name &&
-    order.shop.name.trim() === order.submittedByCompanyPreparer.name.trim()
-      ? "الإدارة"
-      : order.shop.name;
+  const isPreparerOrAdminOrder =
+    Boolean(order.submittedByCompanyPreparer?.name) ||
+    Boolean(order.submittedByCompanyPreparerId) ||
+    order.submissionSource === "company_preparer" ||
+    (order.shop?.name && (order.shop.name.trim() === "الإدارة" || order.shop.name.trim() === "طلبات الإدارة العامة")) ||
+    (Boolean(order.submittedByCompanyPreparer?.name) && Boolean(order.shop?.name) && order.shop.name.trim() === order.submittedByCompanyPreparer.name.trim());
+
+  const effectiveShopName = isPreparerOrAdminOrder
+    ? "الإدارة"
+    : order.shop.name;
 
   const customerDoorDisplay = getCleanValue(
     order.customerDoorPhotoUrl,
@@ -537,7 +541,7 @@ export function OrderDetailSection({
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-slate-400 text-sm" title="اسم المحل">🏢</span>
-                    <span className="font-black text-slate-900 dark:text-white">{order.shop.name}</span>
+                    <span className="font-black text-slate-900 dark:text-white">{effectiveShopName}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -1526,7 +1530,7 @@ export function OrderDetailSection({
             preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
             orderStatus={order.status}
             orderNumber={order.orderNumber}
-            shopName={order.shop.name}
+            shopName={effectiveShopName}
             city={order.customerRegion?.name ?? ""}
             totalPrice={currentTotalPriceStr}
             deliveryName={currentCourierName}

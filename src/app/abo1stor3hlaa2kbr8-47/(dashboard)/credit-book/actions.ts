@@ -902,6 +902,8 @@ export async function getPartnerDetails(partnerId: string) {
             routeMode: { not: "double" },
             shopCostPaidAt: null,
             status: { in: ["delivered", "archived"] },
+            submittedByCompanyPreparerId: null,
+            submissionSource: { not: "company_preparer" },
             OR: [
               { orderSubtotal: { gt: 0 } },
               { prepaidAll: true }
@@ -1720,12 +1722,22 @@ export async function syncSystemPartners() {
 
     // ج) استيراد ومزامنة المحلات
     const shops = await prisma.shop.findMany();
+    const allSuppliersNames = new Set((await prisma.storeSupplier.findMany({ select: { name: true } })).map(s => s.name.trim().toLowerCase()));
+    const allPreparersNames = new Set((await prisma.companyPreparer.findMany({ select: { name: true } })).map(p => p.name.trim().toLowerCase()));
+
     for (const shop of shops) {
       const key = `shop_${shop.id}`;
       const exists = partnerMap.get(key);
       const expectedName = `${shop.name} (محل/مجهز)`;
+      const trimmedName = shop.name.trim().toLowerCase();
 
-      if (shop.hideFromCreditBook) {
+      const isExcluded =
+        trimmedName === "الإدارة".toLowerCase() ||
+        trimmedName === "طلبات الإدارة العامة".toLowerCase() ||
+        allSuppliersNames.has(trimmedName) ||
+        allPreparersNames.has(trimmedName);
+
+      if (shop.hideFromCreditBook || isExcluded) {
         if (exists && !exists.type.startsWith("deleted_")) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },

@@ -323,7 +323,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         routeMode: o.routeMode === "double" ? "double" : "single",
         shopName: o.routeMode === "double"
           ? `من ${o.customerRegion?.name ?? "غير معروف"} إلى ${o.secondCustomerRegion?.name ?? "غير معروف"}`
-          : normalizeAdminShopName(o.shop?.name ?? "غير معروف"),
+          : (o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
+            ? "الإدارة"
+            : normalizeAdminShopName(o.shop?.name ?? "غير معروف"),
         secondCustomerRegionName: o.secondCustomerRegion?.name || null,
         regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
         orderType: o.orderType?.trim() ? o.orderType : "—",

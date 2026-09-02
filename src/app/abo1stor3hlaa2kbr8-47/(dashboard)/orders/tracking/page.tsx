@@ -43,8 +43,10 @@ function formatShopWithCustomer(
   shopName: string,
   customerName: string | null | undefined,
   routeMode?: string | null,
+  isPreparerOrder?: boolean,
 ): string {
   if (routeMode === "double") return "وجهتين";
+  if (isPreparerOrder) return "الإدارة";
   return normalizeAdminShopName(shopName) || "—";
 }
 
@@ -291,7 +293,12 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         orderNumber: o.orderNumber,
         orderStatus: o.status,
         assignedCourierId: o.assignedCourierId ?? null,
-        shopCustomerLabel: formatShopWithCustomer(o.shop?.name ?? "غير معروف", o.customer?.name, o.routeMode),
+        shopCustomerLabel: formatShopWithCustomer(
+          o.shop?.name ?? "غير معروف",
+          o.customer?.name,
+          o.routeMode,
+          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
+        ),
         regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
         orderType: o.orderType || "—",
         routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
