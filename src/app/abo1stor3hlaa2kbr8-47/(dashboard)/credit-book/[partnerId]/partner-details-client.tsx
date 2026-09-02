@@ -642,32 +642,21 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           <p className="text-xs text-slate-400 font-medium mt-1">تاريخ الإنشاء: {new Date(partner.createdAt).toLocaleDateString("ar-EG")}</p>
         </div>
 
-        <div className="flex flex-col gap-4 w-full md:w-auto">
-          {/* البلوك الحسابي الموحد (أخذت، أعطيت، الكلي) */}
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl min-w-[280px] text-right space-y-2">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-              <span>أعطيت (نطلبه):</span>
-              <span className="text-emerald-600 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.totalGave)}</span>
-            </div>
-            <div className="flex justify-between items-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-200">
-              <span>أخذت (يطلبنا):</span>
-              <span className="text-rose-600 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.totalTook)}</span>
-            </div>
-            {(partner.type === "courier" || partner.type === "preparer") && (
-              <div className="flex justify-between items-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-200">
-                <span>متبقي المحفظة للإدارة:</span>
-                <span className="text-indigo-700 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-xs font-black text-slate-700">الكلي:</span>
-              <span className={`text-sm font-black tabular-nums ${
-                partner.balance > 0 ? "text-emerald-600" : partner.balance < 0 ? "text-rose-600" : "text-slate-500"
-              }`}>
-                {partner.balance > 0 ? "نطلبه: " : partner.balance < 0 ? "يطلبنا: " : ""}
-                {formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
-              </span>
-            </div>
+        <div className="flex flex-col gap-3 w-full md:w-auto">
+          {/* بطاقة رقم الرصيد الباقي فقط بشكل ضخم وعملاق مع لون أخضر أو أحمر */}
+          <div className={`p-4 sm:p-6 rounded-2xl border text-center transition-all shadow-sm flex flex-col items-center justify-center min-w-[240px] md:min-w-[280px] ${
+            partner.balance > 0 
+              ? "bg-emerald-50/90 border-emerald-200/90 text-emerald-700" 
+              : partner.balance < 0 
+                ? "bg-rose-50/90 border-rose-200/90 text-rose-700" 
+                : "bg-slate-50 border-slate-200 text-slate-600"
+          }`}>
+            <span className="text-4xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight">
+              {partner.balance > 0 ? "+" : ""}{partner.balance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
+            </span>
+            <span className="text-xs sm:text-sm font-black mt-1 opacity-80">
+              {partner.balance > 0 ? "نطلبه (باقي لصالحنا)" : partner.balance < 0 ? "يطلبنا (باقي علينا)" : "الحساب مصفّر"}
+            </span>
           </div>
 
           {/* زرا تسجيل أعطيت وأخذت وتصفير الحساب */}
