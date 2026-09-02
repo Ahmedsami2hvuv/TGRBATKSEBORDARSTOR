@@ -1443,8 +1443,8 @@ export function AdminCreateOrderForm({
  </>
  ) : (
  <>
-  {/* صف أرقام الهواتف متجاورة */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  {/* صف أرقام الهواتف متجاورة دوماً */}
+  <div className="grid grid-cols-2 gap-2 sm:gap-4">
     <label className="flex flex-col gap-1 text-sm">
       <span className={ad.label}>رقم المرسل</span>
       <input
@@ -1473,8 +1473,8 @@ export function AdminCreateOrderForm({
     </label>
   </div>
 
-  {/* صف مناطق المرسل والمستلم متجاورة */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  {/* صف مناطق المرسل والمستلم متجاورة دوماً */}
+  <div className="grid grid-cols-2 gap-2 sm:gap-4">
     <div className="space-y-2">
       <RegionSearchPicker
         fieldName="firstCustomerRegionId"
