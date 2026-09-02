@@ -111,6 +111,12 @@ export function WaLocationCustomButtons({
     return null;
   }
 
+  const [activePhoneModal, setActivePhoneModal] = useState<{
+    phone1: string;
+    phone2?: string | null;
+    messageText: string;
+  } | null>(null);
+
   const handleButtonClick = (btn: WaButtonNextItem) => {
     const variants = splitMandoubWaTemplateVariants(btn.templateText || "");
     if (variants.length === 0) {
@@ -124,12 +130,6 @@ export function WaLocationCustomButtons({
 
   const sendWaMessage = (btn: WaButtonNextItem, rawTemplate: string) => {
     setOpenModalBtnId(null);
-    const targetPhone =
-      btn.recipient === "customer2" && customerPhone2
-        ? customerPhone2
-        : btn.recipient === "shop" && shopPhone
-        ? shopPhone
-        : customerPhone || templateVars.customer_phone || "";
 
     const text = applyMandoubWaTemplate(rawTemplate, {
       ...templateVars,
@@ -137,6 +137,26 @@ export function WaLocationCustomButtons({
       customer_phone2: customerPhone2 || templateVars.customer_phone2 || "",
       shop_phone: shopPhone || templateVars.shop_phone || "",
     });
+
+    const isCustomerTarget = btn.recipient !== "shop";
+    const p1 = customerPhone || templateVars.customer_phone || "";
+    const p2 = customerPhone2 || templateVars.customer_phone2 || "";
+
+    if (isCustomerTarget && p1 && p2 && p1.trim() !== p2.trim()) {
+      setActivePhoneModal({
+        phone1: p1,
+        phone2: p2,
+        messageText: text,
+      });
+      return;
+    }
+
+    const targetPhone =
+      btn.recipient === "customer2" && customerPhone2
+        ? customerPhone2
+        : btn.recipient === "shop" && shopPhone
+        ? shopPhone
+        : p1;
 
     const url = whatsappMeUrl(targetPhone, text);
     if (url && url !== "#") {
@@ -165,6 +185,16 @@ export function WaLocationCustomButtons({
           </div>
         );
       })}
+
+      {activePhoneModal && (
+        <PhoneActionModal
+          type="whatsapp"
+          phone1={activePhoneModal.phone1}
+          phone2={activePhoneModal.phone2}
+          messageText={activePhoneModal.messageText}
+          onClose={() => setActivePhoneModal(null)}
+        />
+      )}
     </>
   );
 }

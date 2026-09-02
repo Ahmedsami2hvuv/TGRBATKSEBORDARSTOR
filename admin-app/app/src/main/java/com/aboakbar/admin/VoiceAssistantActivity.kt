@@ -281,7 +281,10 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 }
             }
 
-            checkOverlayPermissionAndStartFloatingService()
+            try {
+                stopService(Intent(this, FloatingWidgetService::class.java))
+            } catch (e: Exception) {}
+
             safelyRestartSpeechRecognizer()
 
         } catch (e: Exception) {}
@@ -415,25 +418,6 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
                 chatScrollView.fullScroll(View.FOCUS_DOWN)
             }
         }
-    }
-
-    private fun checkOverlayPermissionAndStartFloatingService() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Settings.canDrawOverlays(this)) {
-                    startFloatingService()
-                }
-            } else {
-                startFloatingService()
-            }
-        } catch (e: Exception) {}
-    }
-
-    private fun startFloatingService() {
-        try {
-            val serviceIntent = Intent(this, FloatingWidgetService::class.java)
-            startService(serviceIntent)
-        } catch (e: Exception) {}
     }
 
     private fun closeAssistantQuietly() {
