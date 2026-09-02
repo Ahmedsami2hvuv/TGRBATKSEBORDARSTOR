@@ -322,6 +322,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         const manualBalance = totalGave - totalTook;
         let autoBalance = 0;
         let walletRemain = 0;
+        let shopOrderCount = 0;
 
         if (p.type === "courier" && p.externalId) {
           try {
@@ -360,8 +361,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
-        let shopOrderCount = 0;
-        if (p.type === "shop" && p.externalId) {
+        } else if (p.type === "shop" && p.externalId) {
           try {
             const { autoDebt, orderCount } = await getShopAutoDebt(p.externalId);
             autoBalance = -autoDebt;
