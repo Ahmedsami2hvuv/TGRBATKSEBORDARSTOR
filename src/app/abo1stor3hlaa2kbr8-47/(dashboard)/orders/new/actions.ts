@@ -157,17 +157,18 @@ export async function createAdminOrder(
     }
 
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone) || customerPhone;
+    const prepShopId = String(formData.get("shopId") ?? "").trim();
 
     // فحص الحظر العام وحظر المحل قبل إنشاء مسودة التجهيز من الأدمن
     const [isGlobalBlocked, isShopBlocked] = await Promise.all([
       prisma.globalBlockedPhone.findUnique({
         where: { phone: phoneLocal },
       }),
-      shopId
+      prepShopId
         ? prisma.shopBlockedPhone.findUnique({
             where: {
               shopId_phone: {
-                shopId,
+                shopId: prepShopId,
                 phone: phoneLocal,
               },
             },
@@ -291,11 +292,11 @@ export async function createAdminOrder(
     prisma.globalBlockedPhone.findUnique({
       where: { phone: firstPhone },
     }),
-    shopId
+    targetShopId
       ? prisma.shopBlockedPhone.findUnique({
           where: {
             shopId_phone: {
-              shopId,
+              shopId: targetShopId,
               phone: firstPhone,
             },
           },
