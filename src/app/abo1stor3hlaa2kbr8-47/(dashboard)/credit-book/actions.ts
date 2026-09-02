@@ -243,49 +243,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       console.error("Failed to silently auto-update old notes layout:", err);
     }
 
-    // تصحيح معاملات التصفير التلقائية (الموازنة التلقائية) للزبائن بعد تحديث أو حذف الديون
-    try {
-      const customerPartners = await prisma.creditBookPartner.findMany({
-        where: { type: "customer" },
-        include: {
-          transactions: true
-        }
-      });
 
-      for (const partner of customerPartners) {
-        const zeroTx = partner.transactions.find(t => t.note === "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)");
-        if (zeroTx) {
-          let otherBalance = 0;
-          partner.transactions.forEach(t => {
-            if (t.id === zeroTx.id) return;
-            const amt = Number(t.amount || 0);
-            if (t.kind === "gave") {
-              otherBalance += amt;
-            } else if (t.kind === "took") {
-              otherBalance -= amt;
-            }
-          });
-
-          if (otherBalance > 0) {
-            if (Number(zeroTx.amount) !== otherBalance || zeroTx.kind !== "took") {
-              await prisma.creditBookTransaction.update({
-                where: { id: zeroTx.id },
-                data: {
-                  amount: otherBalance,
-                  kind: "took"
-                }
-              });
-            }
-          } else {
-            await prisma.creditBookTransaction.delete({
-              where: { id: zeroTx.id }
-            });
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to silently auto-correct zero balance transactions:", err);
-    }
 
     try {
       const rootExists = await prisma.creditBookPartner.findFirst({
@@ -2070,7 +2028,7 @@ export async function deleteAdminPaymentEvent(eventId: string) {
   }
 }
 
-// 13. تصفير وتصفية حساب الشريك (مع تسديد الطلبات التلقائية للمحلات وحركات محفظة المناديب)
+// 13. تصفير وتصفية حساب الشريك (مع تسديد الطلبات التلقائية للزبائن والموردين والمحلات وحركات محفظة المناديب)
 export async function zeroPartnerAccount(partnerId: string) {
   try {
     const { isAdminSession } = await import("@/lib/admin-session");
@@ -2083,8 +2041,10 @@ export async function zeroPartnerAccount(partnerId: string) {
       include: {
         transactions: {
           select: {
+            id: true,
             amount: true,
-            kind: true
+            kind: true,
+            note: true
           }
         }
       }
@@ -2107,7 +2067,49 @@ export async function zeroPartnerAccount(partnerId: string) {
     });
     const manualBalance = totalGave - totalTook;
 
-    // 2. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
+    // 2. إذا كان زبوناً (customer): تسديد وإغلاق كافة فوارق الطلبيات المرتبطة به
+    if (partner.type === "customer") {
+      for (const tx of partner.transactions) {
+        if (tx.note) {
+          const match = tx.note.match(/#(\d+)/);
+          if (match && match[1]) {
+            const orderNum = parseInt(match[1], 10);
+            const order = await prisma.order.findFirst({
+              where: { orderNumber: orderNum },
+              include: {
+                moneyEvents: {
+                  where: { kind: "delivery_in", deletedAt: null }
+                }
+              }
+            });
+
+            if (order) {
+              const expectedDinar = Number(order.totalAmount || 0);
+              const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
+              const diff = expectedDinar - receivedDinar;
+
+              if (diff > 0) {
+                // تسجيل حركة وارد delivery_in لتسديد فارق الطلب بالكامل حتى لا يعاد احتسابه كدين
+                await prisma.orderCourierMoneyEvent.create({
+                  data: {
+                    orderId: order.id,
+                    courierId: null,
+                    kind: "delivery_in",
+                    amountDinar: new Decimal(diff),
+                    expectedDinar: order.totalAmount,
+                    matchesExpected: true,
+                    mismatchReason: "",
+                    mismatchNote: "تم تسديد دين الطلب عبر تصفير الحساب في دفتر الديون",
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 3. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
     if (partner.type === "shop" && partner.externalId) {
       const unpaidOrders = await prisma.order.findMany({
         where: {
@@ -2130,7 +2132,6 @@ export async function zeroPartnerAccount(partnerId: string) {
         const remaining = subtotal - pickupPaid;
 
         if (remaining > 0) {
-          // تسجيل حركة صادر (pickup_out) بقيمة المبلغ المتبقي للطلب
           await prisma.orderCourierMoneyEvent.create({
             data: {
               orderId: order.id,
@@ -2147,12 +2148,39 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 3. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
+    // 4. إذا كان شريكا من نوع مورد (supplier): تسديد كافة طلبات المورد في preparerShoppingJson
+    if (partner.type === "supplier" && partner.externalId) {
+      const orders = await prisma.order.findMany({
+        where: { preparerShoppingJson: { not: null } },
+        select: { id: true, preparerShoppingJson: true }
+      });
+
+      for (const o of orders) {
+        let json: any = {};
+        try {
+          json = typeof o.preparerShoppingJson === "string" ? JSON.parse(o.preparerShoppingJson) : o.preparerShoppingJson || {};
+        } catch {
+          json = {};
+        }
+
+        if (json.supplierId === partner.externalId && !json.supplierPaid) {
+          json.supplierPaid = true;
+          json.supplierPaidAt = new Date().toISOString();
+          await prisma.order.update({
+            where: { id: o.id },
+            data: {
+              preparerShoppingJson: JSON.stringify(json)
+            }
+          });
+        }
+      }
+    }
+
+    // 5. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
     if (partner.type === "courier" && partner.externalId) {
       const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
       const adminTotalNum = adminTotal.toNumber();
       if (adminTotalNum !== 0) {
-        // إضافة قيد محفظة منوع لتصفية حساب الإدارة
         const direction = adminTotalNum > 0 ? CourierWalletMiscDirection.give : CourierWalletMiscDirection.take;
         await prisma.courierWalletMiscEntry.create({
           data: {
@@ -2165,7 +2193,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 4. تصفية الرصيد اليدوي بإضافة معاملة موازنة يدوية إذا كان غير صفري
+    // 6. تصفية الرصيد اليدوي بإضافة معاملة موازنة يدوية إذا كان غير صفري
     if (manualBalance !== 0) {
       const zeroAmt = Math.abs(manualBalance);
       const zeroKind = manualBalance > 0 ? "took" : "gave";
@@ -2846,49 +2874,7 @@ export async function syncOldCustomerDebts() {
       }
     }
 
-    // تصحيح معاملات التصفير التلقائية (الموازنة التلقائية) للزبائن بعد تحديث أو حذف الديون
-    try {
-      const customerPartners = await prisma.creditBookPartner.findMany({
-        where: { type: "customer" },
-        include: {
-          transactions: true
-        }
-      });
 
-      for (const partner of customerPartners) {
-        const zeroTx = partner.transactions.find(t => t.note === "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)");
-        if (zeroTx) {
-          let otherBalance = 0;
-          partner.transactions.forEach(t => {
-            if (t.id === zeroTx.id) return;
-            const amt = Number(t.amount || 0);
-            if (t.kind === "gave") {
-              otherBalance += amt;
-            } else if (t.kind === "took") {
-              otherBalance -= amt;
-            }
-          });
-
-          if (otherBalance > 0) {
-            if (Number(zeroTx.amount) !== otherBalance || zeroTx.kind !== "took") {
-              await prisma.creditBookTransaction.update({
-                where: { id: zeroTx.id },
-                data: {
-                  amount: otherBalance,
-                  kind: "took"
-                }
-              });
-            }
-          } else {
-            await prisma.creditBookTransaction.delete({
-              where: { id: zeroTx.id }
-            });
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to auto-correct zero balance transactions in sync:", err);
-    }
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     
