@@ -692,6 +692,24 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
         </div>
       </div>
 
+      {/* شريط توضيحي مميز للمحلات التي لديها أكثر من 150 طلباً */}
+      {partner.type === "shop" && partner.transactions.filter(t => t.isAuto).length >= 150 && (
+        <div className="bg-purple-50/90 border border-purple-200 p-4 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-purple-950 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <h4 className="text-sm font-black">محل مميز ونشط (أكثر من 150 طلباً)</h4>
+              <p className="text-xs text-purple-700 font-medium">
+                تم احتساب كافة سجلات وطلبات هذا المحل بالكامل ومطابقة حسابه 100% بدون أي حدود سابقة.
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-purple-200/80 text-purple-900 font-black text-xs rounded-xl border border-purple-300 shrink-0">
+            🔥 {partner.transactions.filter(t => t.isAuto).length} سجل تلقائي
+          </span>
+        </div>
+      )}
+
       {/* نموذج إضافة معاملة جديدة بالكامل بشكل أفقي - يتم فتحه فقط عند النقر على الأزرار في الأعلى */}
       {isFormOpen && (
         <div id="manual-tx-form" className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right animate-in fade-in slide-in-from-top-4 duration-200 space-y-4">

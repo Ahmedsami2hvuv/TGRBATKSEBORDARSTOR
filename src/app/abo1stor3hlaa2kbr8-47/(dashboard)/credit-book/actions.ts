@@ -28,10 +28,11 @@ export interface PartnerWithBalance {
   totalGave: number;
   totalTook: number;
   walletRemain?: number; // متبقي المحفظة للمندوب/المجهز (من النظام)
+  orderCount?: number; // عدد الطلبات التراكمية للمحل/الشريك
 }
 
 // دالة مساعدة لحساب الديون التلقائية للمحلات (الطلبات غير المسددة)
-async function getShopAutoDebt(shopId: string): Promise<number> {
+async function getShopAutoDebt(shopId: string): Promise<{ autoDebt: number; orderCount: number }> {
   // ضمان وجود المعاملات المالية للمجهز للطلبات التي أنشأها أو سعرها المجهز
   await ensureMissingPreparerMoneyEvents(undefined, shopId);
 
@@ -40,7 +41,7 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
     select: { hideFromCreditBook: true }
   });
 
-  if (!shop || shop.hideFromCreditBook) return 0;
+  if (!shop || shop.hideFromCreditBook) return { autoDebt: 0, orderCount: 0 };
 
   const orders = await prisma.order.findMany({
     where: {
@@ -96,7 +97,7 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
     }
   }
 
-  return autoTook - autoGave;
+  return { autoDebt: autoTook - autoGave, orderCount: orders.length };
 }
 
 // دالة لتطهير الحسابات التالفة بسبب تكرار بادئات الحذف
@@ -359,10 +360,12 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
-        } else if (p.type === "shop" && p.externalId) {
+        let shopOrderCount = 0;
+        if (p.type === "shop" && p.externalId) {
           try {
-            const shopUnpaid = await getShopAutoDebt(p.externalId);
-            autoBalance = -shopUnpaid;
+            const { autoDebt, orderCount } = await getShopAutoDebt(p.externalId);
+            autoBalance = -autoDebt;
+            shopOrderCount = orderCount;
           } catch (e) {
             console.error(`Failed to get shop auto debt for ${p.name}:`, e);
           }
@@ -385,7 +388,8 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           balance,
           totalGave,
           totalTook,
-          walletRemain
+          walletRemain,
+          orderCount: shopOrderCount
         };
       })
     );

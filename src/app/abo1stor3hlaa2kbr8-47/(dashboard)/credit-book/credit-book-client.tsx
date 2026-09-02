@@ -502,6 +502,11 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                           جديد
                         </span>
                       )}
+                      {partner.type === "shop" && (partner.orderCount || 0) >= 150 && (
+                        <span className="px-1.5 py-0.5 rounded-lg text-[9px] font-black bg-purple-100 text-purple-700 border border-purple-200" title={`محل مميز ونشط: لديه أكثر من 150 طلباً (${partner.orderCount} طلب) - تم احتسابها ومطابقتها بالكامل`}>
+                          🔥 أكثر من 150 طلب ({partner.orderCount})
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] font-bold text-slate-400">
