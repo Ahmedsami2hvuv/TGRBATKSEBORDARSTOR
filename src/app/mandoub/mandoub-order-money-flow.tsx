@@ -30,6 +30,7 @@ import {
   moneyWardTotalValueClass,
 } from "@/lib/money-entry-ui";
 import { useRouter } from "next/navigation";
+import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
 
 const initialCash: MandoubCashState = {};
 
@@ -56,19 +57,7 @@ export type MandoubMoneyEventUi = {
 };
 
 function formatRecordedAtClient(d: Date | string): string {
-  const dateObj = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dateObj.getTime())) return "—";
-  const date = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(dateObj);
-  const time = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(dateObj);
-  return `${date} ${time}`;
+  return formatBaghdadMoneyRecordedAt(d).fullStr;
 }
 
 function isManualDeletionReasonClient(

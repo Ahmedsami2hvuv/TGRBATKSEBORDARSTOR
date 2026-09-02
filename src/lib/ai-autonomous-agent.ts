@@ -143,90 +143,25 @@ export async function executeAutonomousAiCommand(
     // التنفيذ الفوري في سوبابيس حسب الخطة:
     switch (plan.action) {
       case "CREATE_ORDER": {
-        const cleanShopQuery = (plan.shop_name || "")
-          .replace(/^من\s+محل\s+/g, "")
-          .replace(/^من\s+/g, "")
-          .replace(/^محل\s+/g, "")
-          .trim()
-          .toLowerCase();
+        const initialDraft: OrderDraftState = {
+          step: "waiting_shop",
+          shopId: null,
+          shopName: plan.shop_name || null,
+          regionId: null,
+          regionName: plan.region_name || null,
+          phone: plan.phone || null,
+          orderType: plan.order_type || null,
+          price: plan.price !== undefined && plan.price !== null ? Number(plan.price) : undefined,
+          noteTime: plan.note_time || null
+        };
 
-        const scoredShops = allShops.map(s => {
-          const sName = s.name.toLowerCase();
-          let score = 0;
-          if (cleanShopQuery && (sName.includes(cleanShopQuery) || cleanShopQuery.includes(sName))) score = 0.9;
-          else if (cleanShopQuery) {
-            let matches = 0;
-            for (let ch of cleanShopQuery) {
-              if (sName.includes(ch)) matches++;
-            }
-            score = matches / Math.max(sName.length, cleanShopQuery.length);
-          }
-          return { shop: s, score };
-        }).sort((a, b) => b.score - a.score);
-
-        let shop = scoredShops.length > 0 && scoredShops[0].score >= 0.55 ? scoredShops[0].shop : null;
-
-        let region = allRegions.find(r => plan.region_name && r.name.toLowerCase().includes(plan.region_name.toLowerCase())) || null;
-        if (!region && plan.region_name) {
-          const ranked = rankRegionsByQuery(plan.region_name, allRegions as any);
-          if (ranked.length > 0) region = ranked[0];
-        }
-
-        const subtotal = Number(plan.price || 0);
-        const delivery = region ? Number(region.deliveryPrice) : 0;
-        const total = subtotal + delivery;
-        const oType = plan.order_type || "مسواق";
-        const nTime = plan.note_time || "الان";
-
-        if (!shop) {
-          ctx.orderDraft = {
-            step: "waiting_shop",
-            regionId: region?.id || null,
-            regionName: region ? region.name : plan.region_name,
-            phone: plan.phone || null,
-            orderType: oType,
-            price: subtotal,
-            noteTime: nTime
-          };
-
-          const topShops = scoredShops.slice(0, 4).map(s => s.shop);
-          const buttons = topShops.map(s => ({
-            text: `🏪 ${s.name}`,
-            action: s.name
-          }));
-
-          const regionText = region ? region.name : (plan.region_name || "غير محددة");
-          const phoneText = plan.phone ? plan.phone : "بدون رقم";
-
-          return {
-            reply: `يا أبو الأكبر، حفظت تفاصيل الطلب (إلى ${regionText} | هاتف: ${phoneText} | سعر: ${subtotal} ألف | نوع: ${oType})، بس اسم المحل (${plan.shop_name || "المذكور"}) بيه خطأ أو مو مسجل. قصدك أي محل من هذولي؟ 👇`,
-            buttons: buttons
-          };
-        }
-
-        const newOrder = await prisma.order.create({
-          data: {
-            shop: { connect: { id: shop.id } },
-            status: "pending",
-            orderType: oType,
-            orderNoteTime: nTime,
-            ...(region?.id ? { customerRegion: { connect: { id: region.id } } } : {}),
-            customerPhone: plan.phone || "",
-            orderSubtotal: new Decimal(subtotal),
-            deliveryPrice: new Decimal(delivery),
-            totalAmount: new Decimal(total),
-            submissionSource: "admin_ai_assistant"
-          }
-        });
-
-        notifyTelegramNewOrder(newOrder.id).catch(() => {});
-        pushNotifyAdminsNewPendingOrder(newOrder.orderNumber).catch(() => {});
-
-        ctx.lastOrderNumber = newOrder.orderNumber;
-        ctx.orderDraft = null;
-
+        const { handleOrderCreationWizard } = await import("./ai-order-wizard");
+        const wizardRes = await handleOrderCreationWizard(userText, initialDraft, ctx);
+        ctx.orderDraft = wizardRes.nextDraft || null;
+        ctx.updatedAt = Date.now();
         return {
-          reply: `تم يا أبو الأكبر! أنشأت طلب مبيعات جديد #${newOrder.orderNumber} لـ (${shop.name}) إلى (${region ? region.name : "غير محددة"}) | نوع: ${oType} | وقت: ${nTime} | السعر: ${subtotal} ألف (المجموع: ${total} ألف) 🚀`
+          reply: wizardRes.reply || "من أي محل يا أبو الأكبر؟ 🏪",
+          buttons: wizardRes.buttons || []
         };
       }
 

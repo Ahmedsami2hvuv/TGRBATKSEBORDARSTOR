@@ -28,6 +28,7 @@ import {
   moneyWardSummaryBoxClass,
   moneyWardTotalValueClass,
 } from "@/lib/money-entry-ui";
+import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
 
 const initialCash: MandoubCashState = {};
 
@@ -47,22 +48,6 @@ export type AdminOrderMoneyEventRow = {
   recordedByCompanyPreparerId: string | null;
   courierId?: string | null;
 };
-
-function formatRecordedAt(iso: string): string {
-  const dateObj = new Date(iso);
-  if (Number.isNaN(dateObj.getTime())) return "—";
-  const date = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(dateObj);
-  const time = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(dateObj);
-  return `${date} ${time}`;
-}
 
 export function AdminOrderMoneyEvents({
   orderId,
@@ -358,6 +343,7 @@ export function AdminOrderMoneyEvents({
             const phrase = phraseById[ev.id] ?? "";
             const canSubmitHard = phrase.trim() === ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE;
             const isRecordedByAdmin = !ev.courierId && !ev.recordedByCompanyPreparerId;
+            const timeInfo = formatBaghdadMoneyRecordedAt(ev.recordedAt);
 
             return (
               <li
@@ -384,8 +370,13 @@ export function AdminOrderMoneyEvents({
                         <span className="font-black text-slate-900 text-sm">
                           {isRecordedByAdmin ? "🏢 الإدارة" : ev.performedByDisplayName || "المندوب"}
                         </span>
-                        <span className="text-xs font-mono text-slate-500 [direction:ltr]">
-                          {formatRecordedAt(ev.recordedAt)}
+                        <span
+                          className="text-xs font-mono font-bold text-slate-600 inline-flex items-center gap-1.5 bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg shadow-2xs"
+                          dir="ltr"
+                        >
+                          <span className="tabular-nums">{timeInfo.dateStr}</span>
+                          <span className="text-slate-300 font-normal">|</span>
+                          <span className="tabular-nums">{timeInfo.timeStr}</span>
                         </span>
                       </div>
 

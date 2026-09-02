@@ -50,7 +50,7 @@ export function getIraqTime(date: Date): { year: number; month: number; day: num
     day: "numeric",
     hour: "numeric",
     minute: "numeric",
-    hour12: false
+    hour12: false,
   });
   const parts = formatter.formatToParts(date);
   const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || "0");
@@ -62,3 +62,21 @@ export function getIraqTime(date: Date): { year: number; month: number; day: num
     minutes: getPart("minute")
   };
 }
+
+export function formatBaghdadMoneyRecordedAt(dateInput: Date | string): { dateStr: string; timeStr: string; fullStr: string } {
+  const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(dateObj.getTime())) return { dateStr: "—", timeStr: "—", fullStr: "—" };
+
+  const iraq = getIraqTime(dateObj);
+  const y = iraq.year;
+  const m = String(iraq.month).padStart(2, "0");
+  const d = String(iraq.day).padStart(2, "0");
+  const hh = String(iraq.hours).padStart(2, "0");
+  const mm = String(iraq.minutes).padStart(2, "0");
+
+  const dateStr = `${y}/${m}/${d}`;
+  const timeStr = `${hh}:${mm}`;
+  return { dateStr, timeStr, fullStr: `${dateStr}  ${timeStr}` };
+}
+
+

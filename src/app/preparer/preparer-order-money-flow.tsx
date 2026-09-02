@@ -28,6 +28,7 @@ import {
 import { PREPARER_ORDER_EDIT_PANEL_EVT } from "@/lib/preparer-edit-panel-events";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
 
 const initialCash: PreparerCashState = {};
 
@@ -61,19 +62,7 @@ function isManualDeletionReasonClient(r: MoneyEventUi["deletedReason"]): boolean
 }
 
 function formatRecordedAtClient(d: Date | string): string {
-  const dateObj = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dateObj.getTime())) return "—";
-  const date = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(dateObj);
-  const time = new Intl.DateTimeFormat("ar-IQ-u-nu-latn", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(dateObj);
-  return `${date} ${time}`;
+  return formatBaghdadMoneyRecordedAt(d).fullStr;
 }
 
 export function PreparerOrderMoneyFlow({
