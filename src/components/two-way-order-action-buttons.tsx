@@ -679,5 +679,9 @@ export function TwoWayOrderActionButtons({
     </>
   );
 
+  if (!mounted || typeof document === "undefined" || !document.body) {
+    return null;
+  }
+
   return createPortal(fabContent, document.body);
 }

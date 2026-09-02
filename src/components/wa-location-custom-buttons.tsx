@@ -48,6 +48,11 @@ export function WaLocationCustomButtons({
 }: Props) {
   const [buttons, setButtons] = useState<WaButtonNextItem[]>(customButtons || []);
   const [openModalBtnId, setOpenModalBtnId] = useState<string | null>(null);
+  const [activePhoneModal, setActivePhoneModal] = useState<{
+    phone1: string;
+    phone2?: string | null;
+    messageText: string;
+  } | null>(null);
 
   useEffect(() => {
     if (customButtons) {
@@ -111,12 +116,6 @@ export function WaLocationCustomButtons({
   if (locationButtons.length === 0) {
     return null;
   }
-
-  const [activePhoneModal, setActivePhoneModal] = useState<{
-    phone1: string;
-    phone2?: string | null;
-    messageText: string;
-  } | null>(null);
 
   const handleButtonClick = (btn: WaButtonNextItem) => {
     const variants = splitMandoubWaTemplateVariants(btn.templateText || "");
