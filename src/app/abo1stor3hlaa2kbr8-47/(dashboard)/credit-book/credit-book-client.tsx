@@ -459,10 +459,10 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             const typeInfo = typeLabels[partner.type] || { label: partner.type, icon: "👤" };
 
             return (
-              <div
+              <Link
                 key={partner.id}
-                onClick={() => router.push(`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`)}
-                className={`group relative bg-white rounded-2xl p-3 sm:p-3.5 border transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 hover:shadow-sm ${
+                href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
+                className={`group relative bg-white rounded-2xl p-3 sm:p-3.5 border transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 hover:shadow-sm no-underline ${
                   isSelected 
                     ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/10" 
                     : partner.balance > 0
@@ -476,12 +476,18 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div 
                     className="shrink-0 flex items-center"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={(e) => handleSelectPartner(partner.id, e.target.checked)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleSelectPartner(partner.id, e.target.checked);
+                      }}
                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
                     />
                   </div>
@@ -534,7 +540,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                     ◀
                   </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

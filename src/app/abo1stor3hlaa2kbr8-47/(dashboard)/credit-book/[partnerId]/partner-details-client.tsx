@@ -112,6 +112,14 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   const [newName, setNewName] = useState(initialPartner.name);
   const [isSavingName, setIsSavingName] = useState(false);
 
+  useEffect(() => {
+    setPartner(initialPartner);
+    setNewName(initialPartner.name);
+    setEditDetailsName(initialPartner.name);
+    setEditDetailsPhone(initialPartner.phone || "");
+    setSearchQuery("");
+  }, [initialPartner]);
+
   const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
   const [editDetailsName, setEditDetailsName] = useState(initialPartner.name);
   const [editDetailsPhone, setEditDetailsPhone] = useState(initialPartner.phone || "");

@@ -9,6 +9,7 @@ interface PageProps {
 }
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function PartnerDetailsPage({ params }: PageProps) {
   const resolvedParams = await params;
@@ -39,7 +40,7 @@ export default async function PartnerDetailsPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <PartnerDetailsClient partner={partner} allActivePartners={allActivePartners} />
+      <PartnerDetailsClient key={resolvedParams.partnerId} partner={partner} allActivePartners={allActivePartners} />
     </div>
   );
 }
