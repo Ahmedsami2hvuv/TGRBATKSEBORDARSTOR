@@ -152,49 +152,57 @@ export async function parseMultiFieldInput(
       }
     }
   } else {
-    // معالجة السطر الواحد إذا احتوى على هاتف وسعر ومنطقة
+    // معالجة السطر الواحد إذا احتوى على هاتف وسعر ومنطقة ونوع ووقت
+    let textRemaining = rawText;
     const phone = cleanAndNormalizePhone(rawText);
     if (phone && !draft.phone) {
       draft.phone = phone;
       fieldsFoundCount++;
+      // حذف رقم الهاتف تماماً من النص المتبقي حتى لا يتم اعتباره سعراً
+      textRemaining = textRemaining.replace(new RegExp(phone, "g"), "").replace(/07[3-9]\d{8}/g, "").replace(/07\d+/g, "").trim();
     }
 
-    const priceMatch = rawText.match(/(?:سعر|سعره|بـ|مبلغ)?\s*(\d+|[٠-٩]+)\s*(?:الف|ألف|k|دينار)?(?:\s|$)/i);
+    const priceMatch = textRemaining.match(/(?:سعر|سعره|بـ|مبلغ|حساب)?\s*(\b\d{1,4}\b|[٠-٩]{1,4})\s*(?:الف|ألف|k|دينار|دع)?(?:\s|$)/i);
     if (priceMatch && (draft.price === undefined || draft.price === null)) {
-      const num = priceMatch[1].replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9");
-      draft.price = Number(num);
-      fieldsFoundCount++;
+      const numStr = priceMatch[1];
+      if (numStr.length <= 4 && !numStr.startsWith("07") && !numStr.startsWith("٠٧")) {
+        const num = numStr.replace(/[٠۰]/g, "0").replace(/[١۱]/g, "1").replace(/[٢۲]/g, "2").replace(/[٣۳]/g, "3").replace(/[٤۴]/g, "4").replace(/[٥۵]/g, "5").replace(/[٦۶]/g, "6").replace(/[٧۷]/g, "7").replace(/[٨۸]/g, "8").replace(/[٩۹]/g, "9");
+        draft.price = Number(num);
+        fieldsFoundCount++;
+        textRemaining = textRemaining.replace(priceMatch[0], "").trim();
+      }
     }
 
-    const timeMatch = rawText.match(/(?:ب?\d+\s*(?:العصر|الظهر|مغرب|الصبح|مساء|صباحا|ليلا)|العصر|المغرب|الظهر|الصبح|الان|باجر)/i);
+    const timeMatch = textRemaining.match(/(?:ب?\d+\s*(?:العصر|الظهر|مغرب|الصبح|مساء|صباحا|ليلا)|العصر|المغرب|الظهر|الصبح|الان|باجر)/i);
     if (timeMatch && !draft.noteTime) {
       draft.noteTime = timeMatch[0].trim();
       fieldsFoundCount++;
+      textRemaining = textRemaining.replace(timeMatch[0], "").trim();
     }
 
     if (!draft.regionId) {
       for (const reg of allRegions) {
         const cleanR = normalizeArabic(reg.name);
-        if (cleanR.length >= 3 && normalizeArabic(rawText).includes(cleanR)) {
+        if (cleanR.length >= 3 && normalizeArabic(textRemaining).includes(cleanR)) {
           draft.regionId = reg.id;
           draft.regionName = reg.name;
           fieldsFoundCount++;
+          textRemaining = textRemaining.replace(new RegExp(reg.name, "gi"), "").trim();
           break;
         }
       }
     }
 
     // هـ) نوع الطلب في السطر الواحد إذا لم يكن هاتفاً ولا سعراً ولا منطقة ولا وقتاً
-    const cleanOne = normalizeArabic(rawText);
+    const cleanOne = normalizeArabic(textRemaining);
     if (
       !draft.orderType &&
-      !phone &&
-      !priceMatch &&
-      !timeMatch &&
       cleanOne.length >= 2 &&
-      !/^\d+$/.test(cleanOne)
+      !/^\d+$/.test(cleanOne) &&
+      !cleanOne.includes("سوي") &&
+      !cleanOne.includes("طلب")
     ) {
-      draft.orderType = rawText.trim();
+      draft.orderType = textRemaining.trim();
       fieldsFoundCount++;
     }
   }
@@ -453,7 +461,8 @@ export async function handleOrderCreationWizard(
         phone: phone
       };
 
-      if (updatedDraft.shopId && updatedDraft.price !== undefined && updatedDraft.orderType) {
+      // إذا كانت جميع الحقول الأخرى محددة صراحة مسبقاً
+      if (updatedDraft.shopId && updatedDraft.regionId && updatedDraft.price !== undefined && updatedDraft.orderType && updatedDraft.noteTime) {
         return await finalizeAndCreateOrder(updatedDraft, ctx);
       }
 
@@ -474,7 +483,7 @@ export async function handleOrderCreationWizard(
         orderType: orderType
       };
 
-      if (updatedDraft.shopId && updatedDraft.price !== undefined) {
+      if (updatedDraft.shopId && updatedDraft.regionId && updatedDraft.price !== undefined && updatedDraft.noteTime) {
         return await finalizeAndCreateOrder(updatedDraft, ctx);
       }
 
@@ -502,7 +511,7 @@ export async function handleOrderCreationWizard(
         price: price
       };
 
-      if (updatedDraft.shopId && updatedDraft.orderType && updatedDraft.noteTime) {
+      if (updatedDraft.shopId && updatedDraft.regionId && updatedDraft.orderType && updatedDraft.noteTime) {
         return await finalizeAndCreateOrder(updatedDraft, ctx);
       }
 
