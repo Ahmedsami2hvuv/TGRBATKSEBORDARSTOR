@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertMandoubWaButton, type WaButtonsFormState } from "../actions";
-import { ad } from "@/lib/admin-ui";
 import {
   ICON_CHOICES,
   ORDER_STATUS_OPTIONS,
@@ -24,14 +23,15 @@ export default function NewWaButtonPage() {
   const [visibilityScopes, setVisibilityScopes] = useState<VisibilityScope[]>(["all"]);
   const [customerLocationRules, setCustomerLocationRules] = useState<CustomerLocationRule[]>(["any"]);
   const [recipients, setRecipients] = useState<string[]>(["customer"]);
+  const [showNextToLocation, setShowNextToLocation] = useState(false);
 
-  const toggleRecipient = (val: string, checked: boolean) => {
+  const toggleRecipient = (val: string) => {
     setRecipients((prev) => {
       let next;
-      if (checked) {
-        next = [...new Set([...prev, val])];
-      } else {
+      if (prev.includes(val)) {
         next = prev.filter((s) => s !== val);
+      } else {
+        next = [...new Set([...prev, val])];
       }
       return next.length ? next : ["customer"];
     });
@@ -44,75 +44,97 @@ export default function NewWaButtonPage() {
     }
   }, [state.ok, router]);
 
-  const toggleVisibility = (val: VisibilityScope, checked: boolean) => {
+  const toggleVisibility = (val: VisibilityScope) => {
     setVisibilityScopes((prev) => {
       if (val === "all") {
-        return checked ? ["all"] : [];
+        return prev.includes("all") ? [] : ["all"];
       }
       const withoutAll = prev.filter((x) => x !== "all");
-      const next = checked ? [...withoutAll, val] : withoutAll.filter((x) => x !== val);
+      const next = withoutAll.includes(val)
+        ? withoutAll.filter((x) => x !== val)
+        : [...withoutAll, val];
       return next.length ? next : ["all"];
     });
   };
 
-  const toggleLocationRule = (val: CustomerLocationRule, checked: boolean) => {
+  const toggleLocationRule = (val: CustomerLocationRule) => {
     setCustomerLocationRules((prev) => {
       if (val === "any") {
-        return checked ? ["any"] : [];
+        return prev.includes("any") ? [] : ["any"];
       }
       const withoutAny = prev.filter((x) => x !== "any");
-      const next = checked ? [...withoutAny, val] : withoutAny.filter((x) => x !== val);
+      const next = withoutAny.includes(val)
+        ? withoutAny.filter((x) => x !== val)
+        : [...withoutAny, val];
       return next.length ? next : ["any"];
     });
   };
 
-  const toggleStatus = (val: string, checked: boolean) => {
+  const toggleStatus = (val: string) => {
     setStatuses((prev) => {
-      if (checked) return [...new Set([...prev, val])];
-      return prev.filter((s) => s !== val);
+      if (prev.includes(val)) {
+        return prev.filter((s) => s !== val);
+      }
+      return [...new Set([...prev, val])];
     });
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className={ad.h1}>إضافة زر واتساب جديد</h1>
-          <p className={ad.lead}>عرّف خصائص وحالات ظهور الزر الجديد.</p>
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+      {/* الترويسة الرئيسية */}
+      <div className="rounded-3xl border border-sky-150 bg-gradient-to-r from-sky-50 via-white to-cyan-50/40 p-6 sm:p-7 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-200 bg-sky-500 text-3xl shadow-sm text-white">
+              ➕
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+                إضافة زر واتساب جديد
+              </h1>
+              <p className="mt-1 text-sm text-slate-600">
+                عرّف خصائص وحالات ظهور الزر الجديد، ثم ستتمكن من كتابة نماذج الرسائل مباشرة.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/wa-buttons"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm"
+          >
+            ← العودة للقائمة
+          </Link>
         </div>
-        <Link
-          href="/abo1stor3hlaa2kbr8-47/wa-buttons"
-          className={ad.btnDark}
-        >
-          ← العودة للقائمة
-        </Link>
       </div>
 
-      <div className={ad.section}>
+      <div className="rounded-3xl border border-sky-150 bg-white p-6 sm:p-8 shadow-sm">
         <form action={formAction} className="space-y-6">
-          {/* We omit id for a new record */}
           <input type="hidden" name="id" value="" />
           <input type="hidden" name="recipient" value={recipients.join(",")} />
+          <input type="hidden" name="showNextToLocation" value={showNextToLocation ? "true" : "false"} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>اسم الزر</span>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span>اسم الزر</span>
+                <span className="text-rose-500">*</span>
+              </label>
               <input
                 name="label"
-                className={ad.input}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-base font-bold text-slate-800 outline-none focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-100 transition"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 required
                 autoComplete="off"
-                placeholder="مثال: لوكيشن الزبون، تأكيد الطلب..."
+                placeholder="مثال: تأكيد الطلب، لوكيشن الزبون، وصول المندوب..."
               />
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>أيقونة الزر</span>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-800">أيقونة الزر</label>
               <select
                 name="iconKey"
-                className={ad.select}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-base font-bold text-slate-800 outline-none focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-100 transition"
                 value={iconKey}
                 onChange={(e) => setIconKey(e.target.value)}
               >
@@ -122,151 +144,187 @@ export default function NewWaButtonPage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
 
-          <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/20 p-4">
-            <h3 className="text-sm font-bold text-slate-800 border-b border-sky-100 pb-2">شروط ظهور الزر</h3>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-700">1. من يظهر له الزر (Visibility Scope)</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {VISIBILITY_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className="inline-flex items-center gap-2 text-sm cursor-pointer select-none"
-                    >
-                      <input
-                        type="checkbox"
-                        name="visibilityScopes"
-                        value={opt.value}
-                        checked={visibilityScopes.includes(opt.value)}
-                        onChange={(e) => toggleVisibility(opt.value, e.target.checked)}
-                        className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
-                      />
-                      <span>{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  إذا اخترت «الكل» فستُلغى الاختيارات الأخرى ويظهر للجميع.
-                </p>
+          <div className="space-y-5 pt-2">
+            {/* 1. من يظهر له الزر */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                <span className="text-sm font-extrabold text-slate-800">
+                  1. من يظهر له الزر (Visibility Scope)
+                </span>
+                <span className="text-xs text-slate-500">اختر الفئات المصرح لها</span>
               </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-700">2. حالة لوكيشن الزبون</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {(
-                    [
-                      { value: "any", label: "الكل" },
-                      { value: "exists", label: "موجود لوكيشن" },
-                      { value: "missing", label: "بدون لوكيشن" },
-                      {
-                        value: "courier_gps",
-                        label: "مرفوع GPS",
-                      },
-                    ] as Array<{ value: CustomerLocationRule; label: string }>
-                  ).map((opt) => (
-                    <label
+              <div className="flex flex-wrap gap-2 pt-1">
+                {VISIBILITY_OPTIONS.map((opt) => {
+                  const isSelected = visibilityScopes.includes(opt.value);
+                  return (
+                    <button
                       key={opt.value}
-                      className="inline-flex items-center gap-2 text-sm cursor-pointer select-none"
+                      type="button"
+                      onClick={() => toggleVisibility(opt.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs sm:text-sm font-extrabold transition shadow-2xs ${
+                        isSelected
+                          ? "bg-sky-600 text-white shadow-sm"
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50"
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        name="customerLocationRules"
-                        value={opt.value}
-                        checked={customerLocationRules.includes(opt.value)}
-                        onChange={(e) => toggleLocationRule(opt.value, e.target.checked)}
-                        className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
-                      />
+                      <span>{isSelected ? "✓" : "+"}</span>
                       <span>{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  تحديد ظهور الزر بناءً على توفر لوكيشن للزبون في النظام.
-                </p>
+                    </button>
+                  );
+                })}
               </div>
+              {visibilityScopes.map((v) => (
+                <input key={v} type="hidden" name="visibilityScopes" value={v} />
+              ))}
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-sky-100/60">
-              <p className="text-xs font-bold text-slate-700">3. حالات الطلب لظهور الزر</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {ORDER_STATUS_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className="inline-flex items-center gap-2 text-sm cursor-pointer select-none"
-                  >
-                    <input
-                      type="checkbox"
-                      name="statuses"
-                      value={opt.value}
-                      checked={statuses.includes(opt.value)}
-                      onChange={(e) => toggleStatus(opt.value, e.target.checked)}
-                      className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
+            {/* 2. حالة لوكيشن الزبون */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                <span className="text-sm font-extrabold text-slate-800">
+                  2. شرط توفر لوكيشن الزبون
+                </span>
+                <span className="text-xs text-slate-500">متى يظهر الزر حسب موقع الزبون</span>
               </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(
+                  [
+                    { value: "any", label: "الكل (في جميع الحالات)" },
+                    { value: "exists", label: "موجود لوكيشن للزبون" },
+                    { value: "missing", label: "بدون لوكيشن (اللوكيشن مفقود)" },
+                    { value: "courier_gps", label: "لوكيشن مرفوع من المندوب (GPS)" },
+                  ] as Array<{ value: CustomerLocationRule; label: string }>
+                ).map((opt) => {
+                  const isSelected = customerLocationRules.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleLocationRule(opt.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs sm:text-sm font-extrabold transition shadow-2xs ${
+                        isSelected
+                          ? "bg-sky-600 text-white shadow-sm"
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50"
+                      }`}
+                    >
+                      <span>{isSelected ? "✓" : "+"}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {customerLocationRules.map((r) => (
+                <input key={r} type="hidden" name="customerLocationRules" value={r} />
+              ))}
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-sky-100/60">
-              <p className="text-xs font-bold text-slate-700">4. جهات الاتصال المستلمة للرسالة (Recipient)</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {/* 3. حالات الطلب */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                <span className="text-sm font-extrabold text-slate-800">
+                  3. حالات الطلب لظهور الزر
+                </span>
+                <span className="text-xs text-slate-500">الحالات التي ينشط فيها الزر</span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {ORDER_STATUS_OPTIONS.map((opt) => {
+                  const isSelected = statuses.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleStatus(opt.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-extrabold transition shadow-2xs ${
+                        isSelected
+                          ? "bg-sky-600 text-white shadow-sm"
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50"
+                      }`}
+                    >
+                      <span>{isSelected ? "✓" : "+"}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {statuses.map((st) => (
+                <input key={st} type="hidden" name="statuses" value={st} />
+              ))}
+            </div>
+
+            {/* 4. موقع الإظهار المباشر بجانب زر اللوكيشن */}
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/30 p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="inline-flex items-center gap-2.5 text-sm font-extrabold text-slate-900 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showNextToLocation}
+                    onChange={(e) => setShowNextToLocation(e.target.checked)}
+                    className="h-5 w-5 rounded border-indigo-400 text-indigo-600 focus:ring-indigo-300"
+                  />
+                  <span>📍 إظهار بجانب زر رفع / لصق اللوكيشن في تفاصيل الطلب</span>
+                </label>
+              </div>
+              <p className="text-xs text-slate-600 pr-7">
+                عند التفعيل، سيظهر هذا الزر بنصف الحجم بجانب زر رفع اللوكيشن في تفاصيل الطلبية لدى المندوب والإدارة للوصول السريع.
+              </p>
+            </div>
+
+            {/* 5. جهات الاتصال المستلمة */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/20 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                <span className="text-sm font-extrabold text-slate-800">
+                  5. جهات الاتصال المستلمة (Recipient)
+                </span>
+                <span className="text-xs text-slate-500">لمن تُرسل الرسالة</span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
                 {[
-                  { value: "shop", label: "المحل (العميل)" },
-                  { value: "customer", label: "الزبون الأول" },
-                  { value: "customer2", label: "الزبون الثاني" },
-                ].map((opt) => (
-                  <label key={opt.value} className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      value={opt.value}
-                      checked={recipients.includes(opt.value)}
-                      onChange={(e) => toggleRecipient(opt.value, e.target.checked)}
-                      className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
+                  { value: "customer", label: "الزبون الأول (رقم الهاتف 1)" },
+                  { value: "customer2", label: "الزبون الثاني (رقم الهاتف 2)" },
+                  { value: "shop", label: "المحل / العميل صاحب الطلب" },
+                ].map((opt) => {
+                  const isSelected = recipients.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleRecipient(opt.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs sm:text-sm font-extrabold transition shadow-2xs ${
+                        isSelected
+                          ? "bg-purple-600 text-white shadow-sm"
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-purple-50"
+                      }`}
+                    >
+                      <span>{isSelected ? "✓" : "+"}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-[11px] text-slate-500">
-                اختر جهات الاتصال المسموح بظهورها عند نقر هذا الزر. إذا اخترت جهة واحدة، فسيتم الإرسال إليها مباشرة دون تخيير المندوب.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-2 border-t border-sky-100/60 bg-emerald-50/20 p-3 rounded-xl border border-emerald-100">
-              <p className="text-xs font-bold text-emerald-900">5. موقع الإظهار المباشر (Location Placement)</p>
-              <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-800 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  name="showNextToLocation"
-                  value="true"
-                  className="rounded border-emerald-400 text-emerald-600 focus:ring-emerald-200 h-4 w-4"
-                />
-                <span>إظهار بجانب زر رفع/لصق لوكيشن 📍</span>
-              </label>
-              <p className="text-[11px] text-slate-500">
-                عند تحديد هذا الخيار، سيظهر هذا الزر بنصف الحجم بجانب زر رفع اللوكيشن في تفاصيل الطلبية لدى المندوب والإدارة.
-              </p>
             </div>
           </div>
 
-          {state.error ? <p className={ad.error}>{state.error}</p> : null}
+          {state.error ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
+              {state.error}
+            </p>
+          ) : null}
 
-          <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-slate-200 flex items-center gap-3">
             <button
               type="submit"
               disabled={pending}
-              className={ad.btnPrimary}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-6 py-3 text-base font-extrabold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 disabled:opacity-50"
             >
-              {pending ? "جارٍ الحفظ…" : "إضافة الزر وحفظه"}
+              <span>➕</span>
+              <span>{pending ? "جارٍ الإنشاء…" : "إنشاء الزر وحفظه"}</span>
             </button>
             <Link
               href="/abo1stor3hlaa2kbr8-47/wa-buttons"
-              className={ad.btnDark}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-base font-bold text-slate-700 hover:bg-slate-50 transition"
             >
               إلغاء
             </Link>
@@ -276,3 +334,4 @@ export default function NewWaButtonPage() {
     </div>
   );
 }
+
