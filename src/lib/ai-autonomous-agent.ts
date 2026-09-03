@@ -182,7 +182,7 @@ export async function executeAutonomousAiCommand(
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4500);
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
 
           const response = await fetch(url, {
             method: "POST",
@@ -1254,7 +1254,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
 
           const res = await fetch(url, {
             method: "POST",
