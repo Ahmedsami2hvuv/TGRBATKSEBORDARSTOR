@@ -27,6 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
@@ -142,7 +143,11 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 Thread {
                     try {
-                        val client = OkHttpClient()
+                        val client = OkHttpClient.Builder()
+                            .connectTimeout(60, TimeUnit.SECONDS)
+                            .readTimeout(60, TimeUnit.SECONDS)
+                            .writeTimeout(60, TimeUnit.SECONDS)
+                            .build()
                         val json = JSONObject()
                         json.put("action", "clear_session")
                         json.put("userId", "android_floating_window_admin")
@@ -401,7 +406,11 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         tvFloatingStatus.text = "⏳ جاري التنفيذ..."
         floatingProgressBar.visibility = View.VISIBLE
 
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
         val json = JSONObject()
         json.put("text", text)
         json.put("userId", "android_floating_window_admin")

@@ -41,6 +41,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
@@ -176,7 +177,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
 
                 Thread {
                     try {
-                        val client = OkHttpClient()
+                        val client = OkHttpClient.Builder()
+                            .connectTimeout(60, TimeUnit.SECONDS)
+                            .readTimeout(60, TimeUnit.SECONDS)
+                            .writeTimeout(60, TimeUnit.SECONDS)
+                            .build()
                         val json = JSONObject()
                         json.put("action", "clear_session")
                         json.put("userId", "android_power_button_admin")
@@ -644,7 +649,11 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         tvStatus.text = "⏳ جاري التنفيذ..."
         progressBar.visibility = View.VISIBLE
 
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
         val json = JSONObject()
         json.put("text", text)
         json.put("userId", "android_power_button_admin")
