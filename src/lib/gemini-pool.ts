@@ -96,8 +96,30 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
     keysList.push({ id: "env_single", key: envKeySingle, label: "Env Single Key" });
   }
 
+  // 7. المفاتيح الأساسية المعتمدة لحسابات أبو الأكبر (Fallback Builtin Active Keys)
+  const builtinKeys = [
+    { id: "builtin_reozaki", key: "AIzaSyAX9j894_6VRZK5FT7QSVaBRHkOrNQ4FNg", label: "ريوزاكي" },
+    { id: "builtin_alhoria", key: "AQ.Ab8RN6JV0I_k0feDrqwhz0cHSjknerqk_MQf_4fqM33VK6GrNA", label: "الحرية" },
+    { id: "builtin_amriki", key: "AQ.Ab8RN6JM2EHOZZvDCp0K6KBsk0OGwP-KA9UFrfFsrF_kkFBtiQ", label: "الامريكي" },
+    { id: "builtin_mojahz", key: "AQ.Ab8RN6KiTeX5qxwC_O9cUCff36koDPXdkYt0nFegc3HypLJ_oA", label: "المجهز" }
+  ];
+
+  for (const bk of builtinKeys) {
+    if (!keysList.some(k => k.key === bk.key)) {
+      keysList.push(bk);
+    }
+  }
+
   return keysList;
 }
+
+export const SUPPORTED_GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-flash-latest",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-2.5-pro"
+];
 
 export async function getNextActiveGeminiKey(): Promise<GeminiKeyRecord | null> {
   const list = await getAllActiveGeminiKeys();
