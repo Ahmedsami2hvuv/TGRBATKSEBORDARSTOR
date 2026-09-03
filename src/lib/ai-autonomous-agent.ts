@@ -18,6 +18,38 @@ export async function executeAutonomousAiCommand(
       };
     }
 
+    const cleanLower = userText.toLowerCase().trim();
+    const isExplicitAdminCommand =
+      cleanLower.includes("ارشف") ||
+      cleanLower.includes("أرشف") ||
+      cleanLower.includes("ارشفة") ||
+      cleanLower.includes("أرشفة") ||
+      cleanLower.includes("صفر") ||
+      cleanLower.includes("تصفير") ||
+      cleanLower.includes("غير اسم") ||
+      cleanLower.includes("حول طلب") ||
+      cleanLower.includes("اسند") ||
+      cleanLower.includes("انقل طلب") ||
+      cleanLower.includes("كم طلب") ||
+      cleanLower.includes("غير واصل") ||
+      cleanLower.includes("مو واصل") ||
+      cleanLower.includes("غير مسلم") ||
+      cleanLower.includes("ارباح") ||
+      cleanLower.includes("أرباح") ||
+      cleanLower.includes("رصيد مجهز") ||
+      cleanLower.includes("محفظة مجهز") ||
+      cleanLower.includes("ديون مجهز") ||
+      cleanLower.includes("سوي طلب") ||
+      cleanLower.includes("سويلي طلب");
+
+    // استجابة فورية سريعة جداً للمحادثة والاستشارات العامة بدون أدوات ثقيلة (أقل من ثانيتين)
+    if (!isExplicitAdminCommand) {
+      const quickReply = await askGeminiFreeChat(userText);
+      if (quickReply) {
+        return { reply: quickReply };
+      }
+    }
+
     // جلب البيانات من الكاش السريع المحمي في الذاكرة لمنع تشنج قاعدة البيانات
     const [allCouriers, allShops, allRegions] = await Promise.all([
       getCachedCouriers(),
@@ -173,8 +205,7 @@ export async function executeAutonomousAiCommand(
     let successfulKeyId: string | null = null;
 
     const cleanInputText = userText.replace(/#/g, "");
-    // استخدام الموديلات الأحدث والأسرع استجابة فورية المعتمدة من جوجل
-    const candidateModels = ["gemini-3.6-flash", "gemini-3.7-flash"];
+    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-pro"];
 
     for (const k of keys) {
       if (functionCallResult || directTextReply) break;
@@ -182,7 +213,7 @@ export async function executeAutonomousAiCommand(
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const timeoutId = setTimeout(() => controller.abort(), 7500);
 
           const response = await fetch(url, {
             method: "POST",
@@ -203,7 +234,7 @@ export async function executeAutonomousAiCommand(
 - المناطق: [${regionsList}]
 
 القواعد الصارمة:
-1. إذا كان كلام أبو الأكبر سؤالاً عاماً، استشارة، نقاشاً، أسئلة عن أسعار الكباب، أسعار الصرف والدولار، مقارنة لابتوب وديسكتوب، آيفون 16، نصائح تسويق، سوالف، أو محادثة عادية: أجب عليه مباشرة بنص كامل ومفصل وذكي ولبق (text reply) دون استدعاء أي أداة وبإيجاز مفيد.
+1. إذا كان كلام أبو الأكبر سؤالاً عاماً، استشارة، نقاشاً، أسئلة عن أسعار الكباب، أسعار الصرف والدولار، مقارنة لابتوب وديسكتوب، آيفون 16، نصائح تسويق، سوالف، أو محادثة عادية: أجب عليه مباشرة بنص كامل ومفصل وذكي ولبق (text reply) دون استدعاء أي أداة.
 2. إذا كان كلام أبو الأكبر استعلاماً أو أمراً إدارياً يخص طلبات المندوبين، أرباحهم، الأرشفة، التصفير، الطلبات الجديدة، المجهزين، أو تفاصيل الطلبات: استدعِ الدالة المناسبة (Function Call) مع تمرير المتغيرات المستخرجة بدقة.
 
 كلام وأمر أبو الأكبر هو: "${cleanInputText}"`
@@ -213,8 +244,7 @@ export async function executeAutonomousAiCommand(
               ],
               tools: geminiTools,
               generationConfig: {
-                temperature: 0.3,
-                maxOutputTokens: 500
+                temperature: 0.4
               }
             })
           });
@@ -1246,7 +1276,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
     const keys = await getAllActiveGeminiKeys();
     if (!keys || keys.length === 0) return null;
 
-    const candidateModels = ["gemini-3.6-flash", "gemini-3.7-flash"];
+    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash"];
     const cleanInput = userText.replace(/#/g, "").trim();
 
     for (const k of keys) {
@@ -1254,7 +1284,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
 
           const res = await fetch(url, {
             method: "POST",
@@ -1268,7 +1298,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
                     {
                       text: `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي والشخصي والعقل المفكر لـ أبو الأكبر).
 تحدث بلهجة عراقية محترمة، واعية، ذكية، ومباشرة.
-أجب عن سؤال واستشارة ونقاش أبو الأكبر بأسلوب ذكي ومقنع ومفيد وبإيجاز مرتب:
+أجب عن سؤال واستشارة ونقاش أبو الأكبر بأسلوب ذكي ومقنع ومفيد ومختصر بدون إطالة زائدة وبدون قوالب مسبقة:
 سؤال وكلام أبو الأكبر: "${cleanInput}"`
                     }
                   ]
