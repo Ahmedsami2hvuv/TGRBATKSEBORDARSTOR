@@ -64,8 +64,8 @@ export async function executeAutonomousAiCommand(
     - old_name, new_name
 16. "CREATE_COURIER": إضافة مندوب جديد
     - courier_name, phone
-17. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام (مثل: اسعار الصرف اليوم، لابتوب لو ديسكتوب، نصائح تسويق)، نقاش، أو محادثة عادية من أبو الأكبر بذكاء جيمناي الطبيعي!
-    - reply_text (اكتب ردك الذكي والمقنع واللبق بالكامل هنا بلهجة عراقية محترمة دون قوالب جامدة).
+17. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام (مثل: اسعار الكباب اليوم، اسعار الصرف والدولار، لابتوب لو ديسكتوب، نصائح تجارية، أفكار للتطبيق، نقاش، أسئلة عامة، سوالف) بذكاء جيمناي الطبيعي!
+    - reply_text (مهم جداً: اكتب إجابتك وتحليلك الذكي والمفصل والكامل هنا بالعامية العراقية المحترمة والواعية، وممنوع تركه فارغاً!).
 
 أجب بـ JSON فقط:
 {
@@ -83,7 +83,7 @@ export async function executeAutonomousAiCommand(
   "status": "...",
   "field": "...",
   "value": "...",
-  "reply_text": "..."
+  "reply_text": "إجابتك الذكية الشاملة والمفصلة هنا"
 }`;
 
     let lastCandidateText: string | null = null;
@@ -750,6 +750,15 @@ export async function executeAutonomousAiCommand(
       case "CONSULTATION_OR_CHAT":
       case "FRIENDLY_CHAT":
       default: {
+        if (plan.reply_text && plan.reply_text.trim().length > 3 && !plan.reply_text.includes("تدلل يا أبو الأكبر، آمرني")) {
+          return { reply: plan.reply_text.trim() };
+        }
+
+        const freeReply = await askGeminiFreeChat(userText);
+        if (freeReply) {
+          return { reply: freeReply };
+        }
+
         return {
           reply: plan.reply_text || "تدلل يا أبو الأكبر، أنا وياك وأسمعك. آمرني بأي استشارة أو أمر وأنا بالخدمة دائماً 🌸"
         };
@@ -759,6 +768,63 @@ export async function executeAutonomousAiCommand(
     console.error("Error in autonomous AI agent:", error);
     return null;
   }
+}
+
+/**
+ * دالة الاستشارة الحرة والمحادثة الذكية المباشرة عبر Google Gemini
+ */
+export async function askGeminiFreeChat(userText: string): Promise<string | null> {
+  try {
+    const keys = await getAllActiveGeminiKeys();
+    if (!keys || keys.length === 0) return null;
+
+    const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
+    const cleanInput = userText.replace(/#/g, "").trim();
+
+    for (const k of keys) {
+      for (const model of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k.key}`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 7500);
+
+          const res = await fetch(url, {
+            method: "POST",
+            signal: controller.signal,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    {
+                      text: `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي والشخصي والعقل المفكر لـ أبو الأكبر).
+تحدث بلهجة عراقية محترمة، واعية، ذكية، ومباشرة.
+أجب عن سؤال واستشارة ونقاش أبو الأكبر بالتفصيل وبأسلوب ذكي ومقنع ومفيد وبدون قوالب مسبقة:
+سؤال وكلام أبو الأكبر: "${cleanInput}"`
+                    }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.5
+              }
+            })
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (txt?.trim()) {
+              return txt.trim();
+            }
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  return null;
 }
 
 // تصدير الاسم البديل لضمان التوافق مع أي استيراد في المشروع
