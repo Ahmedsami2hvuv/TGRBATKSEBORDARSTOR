@@ -95,11 +95,23 @@ export async function bulkUpdateOrdersStatus(
     for (const orderId of finalOrderIds) {
       const updateData = { ...baseData };
 
-      if (targetStatus !== "archived") {
-        if (needsCourier && courierId) {
-          updateData.courier = { connect: { id: courierId } };
-        } else {
-          updateData.courier = { disconnect: true };
+      if (targetStatus === "archived") {
+        const currentOrder = selectedOrders.find((o) => o.id === orderId);
+        const cid = currentOrder?.courierEarningForCourierId || currentOrder?.assignedCourierId;
+        if (cid && (currentOrder?.courierEarningDinar == null || currentOrder?.courierEarningForCourierId == null)) {
+          const courierRecord = await tx.courier.findUnique({ where: { id: cid } });
+          if (courierRecord && currentOrder?.deliveryPrice != null) {
+            const { computeCourierDeliveryEarningDinar } = await import("@/lib/courier-earnings");
+            const earning = computeCourierDeliveryEarningDinar(
+              courierRecord.vehicleType,
+              currentOrder.deliveryPrice,
+              courierRecord.zeroEarning,
+            );
+            if (earning != null) {
+              updateData.courierEarningDinar = earning as any;
+              updateData.courierEarningForCourierId = cid;
+            }
+          }
         }
       }
 
@@ -108,7 +120,12 @@ export async function bulkUpdateOrdersStatus(
         data: updateData,
       });
 
-      if (targetStatus === "delivered" || targetStatus === "pending" || targetStatus === "cancelled") {
+      if (
+        targetStatus === "delivered" ||
+        targetStatus === "archived" ||
+        targetStatus === "pending" ||
+        targetStatus === "cancelled"
+      ) {
         const { syncOrderCourierMoneyExpectations } = await import("@/lib/order-courier-money-sync");
         await syncOrderCourierMoneyExpectations(tx, orderId);
       }
