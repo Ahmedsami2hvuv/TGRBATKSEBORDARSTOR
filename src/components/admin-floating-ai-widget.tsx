@@ -41,6 +41,10 @@ export function AdminFloatingAiWidget() {
   const isOpenRef = useRef(isOpen);
   const isMicPausedRef = useRef(isMicPaused);
   const isMutedRef = useRef(isMuted);
+  const isSendingRef = useRef(false);
+  const lastSentTextRef = useRef("");
+  const lastSentTimeRef = useRef(0);
+  const silenceTimerRef = useRef<any>(null);
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -159,7 +163,12 @@ export function AdminFloatingAiWidget() {
 
     try {
       if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch (e) {}
+        try {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
+        } catch (e) {}
+        recognitionRef.current = null;
       }
 
       const rec = new SpeechRecognition();
@@ -168,7 +177,6 @@ export function AdminFloatingAiWidget() {
       rec.interimResults = true;
 
       let finalTranscript = "";
-      let silenceTimer: any = null;
 
       rec.onstart = () => {
         setIsListening(true);
@@ -177,6 +185,8 @@ export function AdminFloatingAiWidget() {
       };
 
       rec.onresult = (event: any) => {
+        if (isSendingRef.current) return;
+
         let interimTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
@@ -190,25 +200,25 @@ export function AdminFloatingAiWidget() {
         if (fullSpokenText) {
           setStatusText(`🎙️ أستمع لك: "${fullSpokenText}"`);
 
-          // تصفير مؤقت الصمت عند استمرار الكلام
-          if (silenceTimer) clearTimeout(silenceTimer);
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
-          // انتظار 2.2 ثانية من الصمت التام للتأكد أن المستخدم أنهى طلبه بالكامل
-          silenceTimer = setTimeout(() => {
-            if (fullSpokenText.trim()) {
+          silenceTimerRef.current = setTimeout(() => {
+            if (fullSpokenText.trim() && !isSendingRef.current) {
               if (recognitionRef.current) {
-                try { recognitionRef.current.stop(); } catch (e) {}
+                try {
+                  recognitionRef.current.onresult = null;
+                  recognitionRef.current.stop();
+                } catch (e) {}
               }
               setIsListening(false);
               sendApiCommand(fullSpokenText);
             }
-          }, 2200);
+          }, 1800);
         }
       };
 
       rec.onerror = (err: any) => {
         if (err.error === "no-speech") {
-          // فقط إذا لم ينطق شيئاً ننتظر صوته دون مقاطعة
           setStatusText("🎙️ بانتظار صوتك... تحدث الآن");
         } else {
           setIsListening(false);
@@ -217,10 +227,7 @@ export function AdminFloatingAiWidget() {
       };
 
       rec.onend = () => {
-        // إذا كان الاستماع متوقفاً ولم ينته بعد
-        if (isOpenRef.current && !isMicPausedRef.current && !isListening) {
-          // يبقى في حالة استعداد
-        }
+        setIsListening(false);
       };
 
       recognitionRef.current = rec;
@@ -234,8 +241,12 @@ export function AdminFloatingAiWidget() {
   // تبديل حالة المايكروفون يدوياً
   const toggleVoiceListening = () => {
     if (isListening) {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (e) {}
+        try {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.stop();
+        } catch (e) {}
       }
       setIsListening(false);
       setIsMicPaused(true);
@@ -246,20 +257,41 @@ export function AdminFloatingAiWidget() {
     }
   };
 
-  // إرسال الأمر ومعالجته
+  // إرسال الأمر ومعالجته مع حماية صارمة لمنع التكرار
   const sendApiCommand = async (textToSend: string) => {
-    if (!textToSend.trim()) return;
+    const cleanText = (textToSend || "").trim();
+    if (!cleanText) return;
 
-    const userMsgId = Date.now().toString();
+    // حماية صارمة: منع إرسال نفس الطلب إذا كان قيد المعالجة أو تم إرساله قبل لحظات
+    const now = Date.now();
+    if (isSendingRef.current) return;
+    if (now - lastSentTimeRef.current < 3000 && lastSentTextRef.current === cleanText) {
+      return;
+    }
+
+    isSendingRef.current = true;
+    lastSentTextRef.current = cleanText;
+    lastSentTimeRef.current = now;
+
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    setIsListening(false);
+
+    const userMsgId = now.toString();
     const timeStr = new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
 
-    // إضافة رسالة المستخدم فوراً إلى سجل المحادثة
+    // إضافة رسالة المستخدم مرة واحدة فقط
     setMessages(prev => [
       ...prev,
       {
         id: userMsgId,
         sender: "user",
-        text: textToSend,
+        text: cleanText,
         timestamp: timeStr
       }
     ]);
@@ -271,7 +303,7 @@ export function AdminFloatingAiWidget() {
       const res = await fetch("/api/ai/admin-voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToSend, userId: "web_admin_floating_widget" })
+        body: JSON.stringify({ text: cleanText, userId: "web_admin_floating_widget" })
       });
 
       const data = await res.json();
@@ -293,14 +325,8 @@ export function AdminFloatingAiWidget() {
           }
         ]);
 
-        // نطق الاستجابة وإعادة فتح المايكروفون تلقائياً بعد اكتمال النطق
-        speakResponse(data.reply || "", () => {
-          setTimeout(() => {
-            if (isOpenRef.current && !isMicPausedRef.current) {
-              startVoiceListening();
-            }
-          }, 500);
-        });
+        // نطق الاستجابة مرة واحدة بدون تشغيل المايك التلقائي الذي يسبب الصدى والتكرار
+        speakResponse(data.reply || "");
       } else {
         setStatusText("⚠️ خطأ في المعالجة.");
         setMessages(prev => [
@@ -312,30 +338,15 @@ export function AdminFloatingAiWidget() {
             timestamp: aiTimeStr
           }
         ]);
-        // إعادة فتح المايك بعد الخطأ
-        setTimeout(() => {
-          if (isOpenRef.current && !isMicPausedRef.current) {
-            startVoiceListening();
-          }
-        }, 1200);
       }
     } catch (err: any) {
       setIsLoading(false);
-      setStatusText("❌ تعذر الاتصال بالسيرفر.");
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 2).toString(),
-          sender: "ai",
-          text: err.message || "خطأ بالاتصال بالسيرفر",
-          timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
-        }
-      ]);
+      setStatusText("⚠️ تعذر الاتصال بالسيرفر.");
+    } finally {
+      // فتح قفل الإرسال بعد ثانية كاملة لضمان الاستقرار
       setTimeout(() => {
-        if (isOpenRef.current && !isMicPausedRef.current) {
-          startVoiceListening();
-        }
-      }, 1500);
+        isSendingRef.current = false;
+      }, 1000);
     }
   };
 
