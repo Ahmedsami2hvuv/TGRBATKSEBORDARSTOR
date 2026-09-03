@@ -321,21 +321,40 @@ function parseCustomSystemIntent(userText: string): any {
     };
   }
 
-  // 0.1 فئة الإسناد الديناميكي المبعثر المتقدم للطلبات
+  // 0.05 استعلام واستعراض الطلبات المسندة للمندوبين
   if (
-    cleanQ.includes("اسناد") ||
-    cleanQ.includes("إسناد") ||
-    cleanQ.includes("اسند") ||
-    cleanQ.includes("سوي له اسناد") ||
-    cleanQ.includes("سوي اسناد") ||
-    cleanQ.includes("سوي لي اسناد") ||
-    cleanQ.includes("للمندوب") ||
-    cleanQ.includes("للمنجوب") ||
-    cleanQ.includes("الي المندوب") ||
-    cleanQ.includes("الى المندوب") ||
-    cleanQ.includes("الى فارس") ||
-    cleanQ.includes("الي فارس")
+    (cleanQ.includes("طلبات") || cleanQ.includes("اوردرات") || cleanQ.includes("طلبيات") || cleanQ.includes("شنو") || cleanQ.includes("عرض") || cleanQ.includes("استعرض") || cleanQ.includes("قائمة")) &&
+    (cleanQ.includes("مسنده") || cleanQ.includes("مسندة") || cleanQ.includes("المسنده") || cleanQ.includes("المسندة") || cleanQ.includes("عند المندوب") || cleanQ.includes("عند المندوبين")) &&
+    !cleanQ.includes("اسند") && !cleanQ.includes("حول")
   ) {
+    let courierMatch = text.match(/(?:للمندوب|للمنجوب|للكابتن|عند المندوب|عند الكابتن|المندوب|كابتن)\s*([أ-يa-zA-Z\s]+?)$/i);
+    let courierName = courierMatch ? courierMatch[1].trim() : null;
+    return {
+      category: "orders_assigned_list",
+      courier_name: courierName,
+      raw_text: text
+    };
+  }
+
+  // 0.1 فئة الإسناد الصريح المباشر للطلبات
+  const isExplicitAssignCommand =
+    (cleanQ.includes("اسند") ||
+      cleanQ.includes("إسناد") ||
+      cleanQ.includes("اسناد") ||
+      cleanQ.includes("سوي له اسناد") ||
+      cleanQ.includes("سوي اسناد") ||
+      cleanQ.includes("سوي لي اسناد") ||
+      cleanQ.includes("حول الطلب") ||
+      cleanQ.includes("حول طلب")) &&
+    !cleanQ.includes("شنو") &&
+    !cleanQ.includes("ماهي") &&
+    !cleanQ.includes("عرض") &&
+    !cleanQ.includes("استعرض") &&
+    !cleanQ.includes("صفر") &&
+    !cleanQ.includes("تصفير") &&
+    !cleanQ.includes("حساب");
+
+  if (isExplicitAssignCommand) {
     let courierMatch = text.match(/(?:للمندوب|للمنجوب|إلى المندوب|الي المندوب|المندوب|كابتن|لكابتن|إلى|الي|لـ|ل)\s*([أ-يa-zA-Z\s]+?)$/i);
     let courierName = courierMatch ? courierMatch[1].trim() : null;
 
@@ -715,7 +734,7 @@ function parseCustomSystemIntent(userText: string): any {
     (cleanQ.includes("مندوب") || cleanQ.includes("كابتن") || cleanQ.includes("حساب") || cleanQ.includes("مستحقات"))
   ) {
     let cleanName = text
-      .replace(/صفر لي|صفرلي|صفر|تصفير|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|كابتن|مندوب|لـ|ل/gi, "")
+      .replace(/صفر لي|صفرلي|صفر|تصفير|حسابي|حسابه|حسابهم|حساب|حسابات|مستحقات|مستحقاته|مستحقاتهم|المندوب|الكابتن|كابتن|مندوب|لـ|ل/gi, "")
       .trim();
     return {
       category: "courier_zero",
@@ -1810,6 +1829,59 @@ export async function executeSuperSystemAgent(
         };
       }
 
+      case "orders_assigned_list": {
+        const allCouriers = await prisma.courier.findMany();
+        let targetCourier = null;
+        if (parsed?.courier_name) {
+          const { match } = findBestMatch(allCouriers, parsed.courier_name);
+          targetCourier = match;
+        }
+
+        const whereClause: any = {
+          status: { in: ["assigned", "delivering"] }
+        };
+        if (targetCourier) {
+          whereClause.assignedCourierId = targetCourier.id;
+        }
+
+        const assignedOrders = await prisma.order.findMany({
+          where: whereClause,
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: { shop: true, customerRegion: true, courier: true }
+        });
+
+        if (assignedOrders.length === 0) {
+          if (targetCourier) {
+            return { reply: `يا أبو الأكبر، ماكو أي طلبات مسندة حالياً للكابتن (${targetCourier.name}) 🛵` };
+          }
+          return { reply: `يا أبو الأكبر، ماكو أي طلبات مسندة للمندوبين حالياً. كل الطلبات إما جديدة معلقة أو مكتملة واصلة! 🚀` };
+        }
+
+        const title = targetCourier
+          ? `🛵 **الطلبات المسندة للكابتن (${targetCourier.name}) (${assignedOrders.length} طلب):**\n`
+          : `🛵 **الطلبات المسندة للمندوبين حالياً (${assignedOrders.length} طلب):**\n`;
+
+        let summary = title;
+        assignedOrders.forEach((o, i) => {
+          const cName = o.courier?.name || "مندوب";
+          const sName = o.shop?.name || "محل";
+          const rName = o.customerRegion?.name || "غير محددة";
+          const price = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+          summary += `\n${i + 1}. **طلب #${o.orderNumber}** ⬅️ للكابتن (${cName}) | محل: ${sName} | منطقة: ${rName} (${price} ألف)`;
+        });
+
+        const buttons = assignedOrders.slice(0, 5).map(o => ({
+          text: `🔍 تفاصيل #${o.orderNumber}`,
+          action: `تفاصيل طلب ${o.orderNumber}`
+        }));
+
+        return {
+          reply: summary,
+          buttons: buttons
+        };
+      }
+
       case "dynamic_assign_order": {
         const { courier_name, target_status, search_query } = parsed;
 
@@ -1850,32 +1922,47 @@ export async function executeSuperSystemAgent(
           });
         }
 
-        if (!targetOrder) {
+        if (!targetOrder && search_query && search_query.length > 1) {
           const allOrders = await prisma.order.findMany({
+            where: { status: { in: ["pending", "assigned"] } },
             orderBy: { createdAt: "desc" },
+            take: 20,
             include: { shop: true, customerRegion: true }
           });
 
-          if (search_query && search_query.length > 1) {
-            const cleanSearch = cleanArabicTextForMatch(search_query);
-            targetOrder = allOrders.find(o => {
-              const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
-              const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
-              const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
-              return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
-            }) || null;
-          }
-
-          if (!targetOrder) {
-            targetOrder = allOrders.find(o => o.status !== "delivered" && o.status !== "completed") || allOrders[0] || null;
-          }
+          const cleanSearch = cleanArabicTextForMatch(search_query);
+          targetOrder = allOrders.find(o => {
+            const sName = o.shop ? cleanArabicTextForMatch(o.shop.name) : "";
+            const rName = o.customerRegion ? cleanArabicTextForMatch(o.customerRegion.name) : "";
+            const oType = o.orderType ? cleanArabicTextForMatch(o.orderType) : "";
+            return cleanSearch.includes(sName) || cleanSearch.includes(rName) || cleanSearch.includes(oType) || sName.includes(cleanSearch) || rName.includes(cleanSearch) || oType.includes(cleanSearch);
+          }) || null;
         }
 
         if (!targetOrder) {
-          return { reply: `يا أبو الأكبر، ما لكيت أي طلب مطابق لإسناده.` };
+          const pendingOrders = await prisma.order.findMany({
+            where: { status: "pending" },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            include: { shop: true, customerRegion: true }
+          });
+
+          if (pendingOrders.length === 0) {
+            return { reply: `يا أبو الأكبر، ما عندك أي طلب جديد معلق حالياً لإسناده للكابتن (${matchedCourier?.name || "المندوب"}).` };
+          }
+
+          const buttons = pendingOrders.map(o => ({
+            text: `🛵 #${o.orderNumber} | ${o.shop?.name || "محل"} (${o.customerRegion?.name || "منطقة"})`,
+            action: `اسند طلب ${o.orderNumber} الى ${matchedCourier?.name || "فارس"}`
+          }));
+
+          return {
+            reply: `يا أبو الأكبر، أي طلب تريد إسناده للكابتن (${matchedCourier?.name || "المندوب"})؟ اختر من الطلبات المعلقة 👇`,
+            buttons: buttons
+          };
         }
 
-        if (targetOrder.status === "completed") {
+        if (targetOrder.status === "completed" || targetOrder.status === "delivered") {
           return { reply: `يا أبو الأكبر، طلب #${targetOrder.orderNumber} مكتمل ومسلم بالفعل، فما تقدر تغير إسناده!` };
         }
 
@@ -2740,12 +2827,27 @@ export async function executeSuperSystemAgent(
 
       case "courier_zero": {
         const allCouriers = await prisma.courier.findMany();
+        if (allCouriers.length === 0) {
+          return { reply: `يا أبو الأكبر، ما عندك أي مندوب مسجل بالنظام لتصفير حسابه.` };
+        }
+
         const { match, ambiguous } = findBestMatch(allCouriers, parsed?.clean_name);
         if (!match) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `صفر حساب المندوب ${c.name}`
+          }));
+
           if (ambiguous.length > 0) {
-            return { reply: `يا أبو الأكبر، فيه أكثر من مندوب يشبه هذا الاسم: ${namesListForReply(ambiguous)}. حدد الاسم بالضبط.` };
+            return {
+              reply: `يا أبو الأكبر، قصدك تصفير حساب أي مندوب من هذولي؟ 👇`,
+              buttons: ambiguous.map(c => ({ text: `🛵 ${c.name}`, action: `صفر حساب المندوب ${c.name}` }))
+            };
           }
-          return { reply: `يا أبو الأكبر، ما گدرت ألكى مندوب بهذا الاسم. المندوبين عندك: ${namesListForReply(allCouriers)}.` };
+          return {
+            reply: `يا أبو الأكبر، قصدك تصفير حساب أي كابتن مندوب؟ 👇`,
+            buttons: buttons
+          };
         }
 
         await prisma.courier.update({
@@ -2753,7 +2855,7 @@ export async function executeSuperSystemAgent(
           data: { mandoubTotalsResetAt: new Date() }
         });
 
-        return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${match.name})` };
+        return { reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${match.name}) بنجاح 🚀` };
       }
 
       default: {
