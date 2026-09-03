@@ -2954,38 +2954,43 @@ export async function executeSuperSystemAgent(
       default: {
         try {
           const keys = await getAllActiveGeminiKeys();
-          if (keys.length > 0) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keys[0].key}`;
-            const gRes = await fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    role: "user",
-                    parts: [
+          const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
+          for (const k of keys) {
+            for (const modelName of candidateModels) {
+              try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
+                const gRes = await fetch(url, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    contents: [
                       {
-                        text: `أنت المساعد الذكي الخاص بـ (أبو الأكبر) لإدارة متجره ومنظومة التوصيل.
-رد على كلام أبو الأكبر بلهجة عراقية محترمة وذكية ومباشرة بدون تكرار كلامه أو جمل عامة فارغة:
-كلام أبو الأكبر: "${rawText}"`
+                        role: "user",
+                        parts: [
+                          {
+                            text: `أنت نموذج الذكاء الاصطناعي Google Gemini والمساعد الذكي والعقل المدبر لـ (أبو الأكبر) في متجره ونظام التوصيل.
+رد على كلام واستشارة وسؤال أبو الأكبر بذكاء وعمق ولهجة عراقية محترمة وواعية ومباشرة وبدون قوالب مسبقة:
+كلام وسؤال أبو الأكبر: "${rawText}"`
+                          }
+                        ]
                       }
-                    ]
+                    ],
+                    generationConfig: { temperature: 0.4 }
+                  })
+                });
+                if (gRes.ok) {
+                  const gData = await gRes.json();
+                  const ans = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (ans?.trim()) {
+                    return { reply: ans.trim() };
                   }
-                ],
-                generationConfig: { temperature: 0.3 }
-              })
-            });
-            if (gRes.ok) {
-              const gData = await gRes.json();
-              const ans = gData.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (ans?.trim()) {
-                return { reply: ans.trim() };
-              }
+                }
+              } catch (innerErr) {}
             }
           }
         } catch (e) {}
 
-        return { reply: `يا أبو الأكبر، استمعت لرسالتك. هل تحب أسويلك طلب جديد أو استعرضلك الطلبات أو المندوبين؟ أمرني بالخدمة! 🌸` };
+        return { reply: "تدلل يا أبو الأكبر، أنا أسمعك وجاهز لأي سؤال أو استشارة أو أمر تريده يا غالي 🌸" };
       }
     }
   } catch (err: any) {

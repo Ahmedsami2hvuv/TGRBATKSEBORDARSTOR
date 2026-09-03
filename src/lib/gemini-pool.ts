@@ -27,13 +27,12 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
 
   // 2. جلب المفاتيح من جدول AIConfig
   try {
-    const aiConfigs = await prisma.aIConfig.findMany({
-      where: { isActive: true }
-    });
+    const aiConfigs = await prisma.aIConfig.findMany();
     for (const c of aiConfigs) {
-      if (c.apiKey?.trim() && (c.apiKey.startsWith("AIzaSy") || c.provider?.toLowerCase().includes("gemini") || c.provider?.toLowerCase().includes("google"))) {
-        if (!keysList.some(k => k.key === c.apiKey.trim())) {
-          keysList.push({ id: `aiconfig_${c.id}`, key: c.apiKey.trim(), label: c.label || "AIConfig Key" });
+      if (c.apiKey?.trim()) {
+        const cleanK = c.apiKey.trim();
+        if (!keysList.some(k => k.key === cleanK)) {
+          keysList.push({ id: `aiconfig_${c.id}`, key: cleanK, label: c.label || c.provider || "AIConfig Key" });
         }
       }
     }

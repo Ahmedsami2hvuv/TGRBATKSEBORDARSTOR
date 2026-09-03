@@ -84,53 +84,56 @@ export async function executeAutonomousAiCommand(
   "reply_text": "..."
 }`;
 
-    let lastCandidateText = null;
-    let successfulKeyId = null;
+    let lastCandidateText: string | null = null;
+    let successfulKeyId: string | null = null;
 
     // تنظيف رقم الشباك من النص
     const cleanInputText = userText.replace(/#/g, "");
+    const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
 
     for (const k of keys) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${k.key}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6500);
+      if (lastCandidateText) break;
+      for (const modelName of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 7500);
 
-        const response = await fetch(url, {
-          method: "POST",
-          signal: controller.signal,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  { text: systemPrompt },
-                  { text: `رسالة وأمر أبو الأكبر هي: "${cleanInputText}"` }
-                ]
+          const response = await fetch(url, {
+            method: "POST",
+            signal: controller.signal,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: systemPrompt },
+                    { text: `رسالة وأمر أبو الأكبر هي: "${cleanInputText}"` }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.3
               }
-            ],
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json"
-            }
-          })
-        });
-        clearTimeout(timeoutId);
+            })
+          });
+          clearTimeout(timeoutId);
 
-        if (response.ok) {
-          const data = await response.json();
-          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (txt) {
-            lastCandidateText = txt;
-            successfulKeyId = k.id;
-            break;
+          if (response.ok) {
+            const data = await response.json();
+            const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (txt && txt.trim().length > 0) {
+              lastCandidateText = txt.trim();
+              successfulKeyId = k.id;
+              break;
+            }
+          } else {
+            await markGeminiKeyError(k.id);
           }
-        } else {
-          await markGeminiKeyError(k.id);
+        } catch (err) {
+          // محاولة الموديل التالي أو المفتاح التالي
         }
-      } catch (err) {
-        await markGeminiKeyError(k.id);
       }
     }
 
@@ -142,7 +145,23 @@ export async function executeAutonomousAiCommand(
       await markGeminiKeySuccess(successfulKeyId);
     }
 
-    const plan = JSON.parse(lastCandidateText);
+    // محاولة استخراج كائن JSON من رد جيمناي
+    let plan: any = null;
+    try {
+      let jsonStr = lastCandidateText;
+      const jsonMatch = lastCandidateText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+      plan = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      // إذا لم يكن الرد JSON (أي كان استشارة أو محادثة أو نصاً طبيعياً من جيمناي)
+      return { reply: lastCandidateText };
+    }
+
+    if (!plan || !plan.action) {
+      return { reply: lastCandidateText };
+    }
 
     // التنفيذ الفوري في سوبابيس حسب الخطة:
     switch (plan.action) {
