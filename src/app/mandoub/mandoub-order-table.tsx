@@ -893,6 +893,40 @@ export function MandoubOrderTable({
         </div>
       )}
 
+      {showQuickSelect && (
+        <div className="px-2 py-2 sm:px-3 mb-3 flex items-center justify-between gap-2 rounded-2xl border-2 border-red-200 bg-gradient-to-r from-red-50 via-rose-50 to-white dark:bg-slate-800 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={toggleAll}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black shadow-xs transition active:scale-95 ${
+                allSelected
+                  ? "bg-red-600 border-red-700 text-white hover:bg-red-700"
+                  : "bg-white border-red-300 text-red-900 hover:bg-red-50"
+              }`}
+            >
+              <span className="text-sm">{allSelected ? "❎" : "☑️"}</span>
+              <span>{allSelected ? "إلغاء تحديد الكل" : `تحديد الكل (${rowIds.length})`}</span>
+            </button>
+
+            <span className="text-xs font-black text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+              {selectedIds.size > 0 ? `تم تحديد (${selectedIds.size}) من أصل (${rowIds.length})` : `إجمالي الطلبات: (${rowIds.length})`}
+            </span>
+          </div>
+
+          {setShowQuickSelect && (
+            <button
+              type="button"
+              onClick={() => setShowQuickSelect(false)}
+              className="flex size-7 items-center justify-center rounded-lg bg-slate-200/70 hover:bg-slate-300 text-slate-700 text-xs font-black transition shrink-0"
+              title="إغلاق التحديد السريع"
+            >
+              ✖
+            </button>
+          )}
+        </div>
+      )}
+
       {isSortingMode && rowIds.length > 1 && (
         <div className="px-2 py-2 sm:px-3 mb-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
           <button

@@ -26,7 +26,7 @@ function IconLink() {
   );
 }
 
-import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
+import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
 
 export function AdminCustomerLocationQuick({
   orderId,
@@ -36,6 +36,7 @@ export function AdminCustomerLocationQuick({
   shopPhone,
   orderStatus,
   templateVars,
+  customButtons,
 }: {
   orderId: string;
   target?: "first" | "second";
@@ -44,6 +45,7 @@ export function AdminCustomerLocationQuick({
   shopPhone?: string;
   orderStatus?: string;
   templateVars?: Record<string, string>;
+  customButtons?: WaButtonNextItem[];
 }) {
   const [gpsState, gpsAction, gpsPending] = useActionState(
     uploadCustomerLocationFromView.bind(null, orderId),
@@ -137,6 +139,7 @@ export function AdminCustomerLocationQuick({
             shopPhone={shopPhone}
             orderStatus={orderStatus}
             templateVars={templateVars}
+            customButtons={customButtons}
           />
         </div>
       </div>

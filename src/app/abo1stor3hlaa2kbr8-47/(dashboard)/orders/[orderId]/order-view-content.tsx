@@ -703,31 +703,6 @@ export function OrderViewContent({
                                 customer_phone2: order.customerPhone2 || "",
                                 shop_phone: submitterPhone || "",
                               }}
-                            />
-                            <WaLocationCustomButtons
-                              userRole="admin"
-                              customerPhone={order.customerPhone}
-                              customerPhone2={order.customerPhone2 || undefined}
-                              shopPhone={submitterPhone || undefined}
-                              orderStatus={order.status}
-                              hasCustomerLocation={false}
-                              hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-                              templateVars={{
-                                clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                                city: order.customerRegion?.name || "—",
-                                total_price: currentTotalPriceStr,
-                                total: currentTotalPriceStr,
-                                delivery: currentCourierName,
-                                courier: currentCourierName,
-                                courierName: currentCourierName,
-                                deliveryName: currentCourierName,
-                                location_url: order.customerLocationUrl || "",
-                                landmark: order.customerLandmark || "",
-                                order_number: String(order.orderNumber || ""),
-                                customer_phone: order.customerPhone || "",
-                                customer_phone2: order.customerPhone2 || "",
-                                shop_phone: submitterPhone || "",
-                              }}
                               customButtons={waButtonSettings}
                             />
                           </div>
@@ -925,31 +900,6 @@ export function OrderViewContent({
                               city: order.secondCustomerRegion?.name || "",
                               total_price: String(order.totalAmount || ""),
                               delivery: order.courier?.name || "",
-                              location_url: order.secondCustomerLocationUrl || "",
-                              landmark: order.secondCustomerLandmark || "",
-                              order_number: String(order.orderNumber || ""),
-                              customer_phone: order.secondCustomerPhone || order.customerPhone || "",
-                              customer_phone2: order.customerPhone2 || "",
-                              shop_phone: submitterPhone || "",
-                            }}
-                          />
-                          <WaLocationCustomButtons
-                            userRole="admin"
-                            customerPhone={order.secondCustomerPhone || order.customerPhone}
-                            customerPhone2={order.customerPhone2 || undefined}
-                            shopPhone={submitterPhone || undefined}
-                            orderStatus={order.status}
-                            hasCustomerLocation={false}
-                            hasCourierUploadedLocation={Boolean(order.secondCustomerLocationSetByCourierAt)}
-                            templateVars={{
-                              clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                              city: order.secondCustomerRegion?.name || "—",
-                              total_price: currentTotalPriceStr,
-                              total: currentTotalPriceStr,
-                              delivery: currentCourierName,
-                              courier: currentCourierName,
-                              courierName: currentCourierName,
-                              deliveryName: currentCourierName,
                               location_url: order.secondCustomerLocationUrl || "",
                               landmark: order.secondCustomerLandmark || "",
                               order_number: String(order.orderNumber || ""),
