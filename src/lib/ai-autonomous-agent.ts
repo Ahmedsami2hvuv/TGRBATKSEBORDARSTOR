@@ -25,76 +25,154 @@ export async function executeAutonomousAiCommand(
     const shopsList = allShops.map(s => `${s.name} (id: ${s.id})`).join(", ");
     const regionsList = allRegions.map(r => `${r.name} (سعر: ${r.deliveryPrice})`).join(", ");
 
-    const systemPrompt = `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي الشخصي والعقل المدبر لمنظومة التوصيل والمتجر الإلكتروني الخاص بـ أبو الأكبر).
-تتحدث بلهجة عراقية محترمة، ذكية، لبقة، ومباشرة. أنت العقل الأول الذي يستمع لأبو الأكبر، يفهم مقصده بدقة متناهية، ويقرر ما إذا كان الأمر يحتاج استشارة أو إجابة حرة أو تحليلاً إدارياً أو تنفيذاً في قاعدة البيانات.
+    const geminiTools = [
+      {
+        functionDeclarations: [
+          {
+            name: "get_agent_remaining_orders",
+            description: "استعلام الطلبات غير الواصلة أو المتبقية قيد التوصيل لمندوب معين (مثل: المندوب نجم كم طلب عده غير واصل)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                agent_name: { type: "STRING", description: "اسم المندوب" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "get_agent_orders",
+            description: "استعلام حالة وتفاصيل كافة طلبات مندوب معين (المسلمة وقيد التوصيل والمؤرشفة)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                agent_name: { type: "STRING", description: "اسم المندوب" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "get_agent_profits",
+            description: "استعلام أرباح ومحفظة وحساب مندوب معين (مثل: شكد أرباح مندوب أحمد، مصفّي أرباح اليوم)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                agent_name: { type: "STRING", description: "اسم المندوب" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "get_supplier_balance",
+            description: "استعلام رصيد ومحفظة وحساب مجهز معين (مثل: مجهز علي شكد باقي بمحفظته)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                supplier_name: { type: "STRING", description: "اسم المجهز" }
+              },
+              required: ["supplier_name"]
+            }
+          },
+          {
+            name: "get_pending_orders_summary",
+            description: "استعلام عدد وتفاصيل الطلبات الجديدة المعلقة (مثل: كم طلب جديد عدنه، شكو طلبات معلقة)",
+            parameters: {
+              type: "OBJECT",
+              properties: {}
+            }
+          },
+          {
+            name: "archive_agent_orders",
+            description: "أرشفة الطلبات المسلمة/المكتملة فقط لمندوب أو عدة مندوبين (ممنوع مساس الطلبات غير المسلمة)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                agent_name: { type: "STRING", description: "اسم المندوب أو المندوبين" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "reset_agent_balance",
+            description: "تصفير حساب ومستحقات مندوب معين",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                agent_name: { type: "STRING", description: "اسم المندوب" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "assign_order_to_agent",
+            description: "إسناد طلب مبيعات معين إلى مندوب",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                order_number: { type: "INTEGER", description: "رقم الطلب إذا ذكر" },
+                agent_name: { type: "STRING", description: "اسم المندوب" }
+              },
+              required: ["agent_name"]
+            }
+          },
+          {
+            name: "get_order_details",
+            description: "جلب واستعراض تفاصيل طلب معين برقم الطلب",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                order_number: { type: "INTEGER", description: "رقم الطلب" }
+              },
+              required: ["order_number"]
+            }
+          },
+          {
+            name: "get_daily_summary",
+            description: "تقرير وملخص أرباح اليوم ومبيعات المتجر",
+            parameters: {
+              type: "OBJECT",
+              properties: {}
+            }
+          },
+          {
+            name: "create_order",
+            description: "إنشاء أو إضافة طلب مبيعات جديد",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                shop_name: { type: "STRING", description: "اسم المحل" },
+                region_name: { type: "STRING", description: "اسم المنطقة" },
+                price: { type: "NUMBER", description: "سعر الطلب" },
+                phone: { type: "STRING", description: "رقم الهاتف" },
+                order_type: { type: "STRING", description: "نوع الطلب" },
+                note_time: { type: "STRING", description: "وقت التوصيل" }
+              }
+            }
+          },
+          {
+            name: "update_agent_name",
+            description: "تعديل وتصحيح اسم مندوب مسجل (فقط عند وجود أمر صريح بتعديل أو تصحيح الاسم)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                old_name: { type: "STRING", description: "الاسم القديم الحالي" },
+                new_name: { type: "STRING", description: "الاسم الجديد" }
+              },
+              required: ["old_name", "new_name"]
+            }
+          }
+        ]
+      }
+    ];
 
-قاعدة بيانات سوبابيس الحالية:
-- المندوبين: [${couriersList}]
-- المحلات: [${shopsList}]
-- المناطق: [${regionsList}]
-
-العمليات المتاحة (action):
-1. "CREATE_ORDER": إنشاء طلب مبيعات جديد
-   - shop_name, region_name, price, phone, order_type, note_time
-2. "GET_PENDING_ORDERS": استعلام عدد وقائمة الطلبات الجديدة المعلقة (مثال: كم طلب جديد عدنه، شكو طلبات معلقة)
-3. "GET_COURIER_ORDERS_STATUS": استعلام حالة وعدد طلبات مندوب معين (مثال: المندوب نجم كم طلب عده غير واصل، طلبيات نجم، شكد عنده طلبات)
-   - courier_name
-4. "BULK_ARCHIVE": أرشفة الطلبات المسلمة/المكتملة فقط لمندوب أو عدة مندوبين
-   - courier_name, status
-5. "COURIER_ZERO": تصفير حساب ومستحقات مندوب معين
-   - courier_name
-6. "GET_ASSIGNED_ORDERS": استعلام وعرض الطلبات المسندة للمندوبين حالياً
-   - courier_name
-7. "ASSIGN_ORDER": إسناد طلب إلى مندوب
-   - order_number, courier_name
-8. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل
-   - order_number, shop_name, status
-9. "GET_LAST_ORDER": جلب آخر طلب في النظام
-10. "REJECT_ORDER": رفض أو إلغاء طلب
-    - order_number
-11. "RESET_TO_NEW": إعادة طلب إلى حالة جديد (إلغاء الإسناد)
-    - order_number
-12. "CHANGE_COURIER": تغيير مندوب الطلب
-    - order_number, courier_name
-13. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
-    - order_number, field, value
-14. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام طلبيات مندوب اليوم
-    - courier_name
-15. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل (فقط عند وجود أمر صريح مثل: غير اسم المندوب فلان الى علان)
-    - old_name, new_name
-16. "CREATE_COURIER": إضافة مندوب جديد
-    - courier_name, phone
-17. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام (مثل: اسعار الكباب اليوم، اسعار الصرف والدولار، لابتوب لو ديسكتوب، نصائح تجارية، أفكار للتطبيق، نقاش، أسئلة عامة، سوالف) بذكاء جيمناي الطبيعي!
-    - reply_text (مهم جداً: اكتب إجابتك وتحليلك الذكي والمفصل والكامل هنا بالعامية العراقية المحترمة والواعية، وممنوع تركه فارغاً!).
-
-أجب بـ JSON فقط:
-{
-  "action": "اسم العملية من القائمة أعلاه",
-  "shop_name": "...",
-  "region_name": "...",
-  "courier_name": "...",
-  "old_name": "...",
-  "new_name": "...",
-  "order_number": 0,
-  "order_type": "...",
-  "price": 0,
-  "phone": "...",
-  "note_time": "...",
-  "status": "...",
-  "field": "...",
-  "value": "...",
-  "reply_text": "إجابتك الذكية الشاملة والمفصلة هنا"
-}`;
-
-    let lastCandidateText: string | null = null;
+    let functionCallResult: { name: string; args: any } | null = null;
+    let directTextReply: string | null = null;
     let successfulKeyId: string | null = null;
 
-    // تنظيف رقم الشباك من النص
     const cleanInputText = userText.replace(/#/g, "");
     const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
 
     for (const k of keys) {
-      if (lastCandidateText) break;
+      if (functionCallResult || directTextReply) break;
       for (const modelName of candidateModels) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
@@ -110,13 +188,27 @@ export async function executeAutonomousAiCommand(
                 {
                   role: "user",
                   parts: [
-                    { text: systemPrompt },
-                    { text: `رسالة وأمر أبو الأكبر هي: "${cleanInputText}"` }
+                    {
+                      text: `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي والشخصي والعقل المدبر لـ أبو الأكبر لإدارة متجره ومنظومة التوصيل).
+تتحدث بلهجة عراقية محترمة، واعية، ذكية، ومباشرة.
+
+قاعدة بيانات سوبابيس الحالية:
+- المندوبين: [${couriersList}]
+- المحلات: [${shopsList}]
+- المناطق: [${regionsList}]
+
+القواعد الصارمة:
+1. إذا كان كلام أبو الأكبر سؤالاً عاماً، استشارة، نقاشاً، أسئلة عن أسعار الكباب، أسعار الصرف والدولار، مقارنة لابتوب وديسكتوب، آيفون 16، نصائح تسويق، سوالف، أو محادثة عادية: أجب عليه مباشرة بنص كامل ومفصل وذكي ولبق (text reply) دون استدعاء أي أداة.
+2. إذا كان كلام أبو الأكبر استعلاماً أو أمراً إدارياً يخص طلبات المندوبين، أرباحهم، الأرشفة، التصفير، الطلبات الجديدة، المجهزين، أو تفاصيل الطلبات: استدعِ الدالة المناسبة (Function Call) مع تمرير المتغيرات المستخرجة بدقة.
+
+كلام وأمر أبو الأكبر هو: "${cleanInputText}"`
+                    }
                   ]
                 }
               ],
+              tools: geminiTools,
               generationConfig: {
-                temperature: 0.3
+                temperature: 0.4
               }
             })
           });
@@ -124,49 +216,419 @@ export async function executeAutonomousAiCommand(
 
           if (response.ok) {
             const data = await response.json();
-            const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (txt && txt.trim().length > 0) {
-              lastCandidateText = txt.trim();
-              successfulKeyId = k.id;
-              break;
+            const candidate = data.candidates?.[0];
+            const parts = candidate?.content?.parts || [];
+
+            for (const part of parts) {
+              if (part.functionCall) {
+                functionCallResult = {
+                  name: part.functionCall.name,
+                  args: part.functionCall.args || {}
+                };
+                successfulKeyId = k.id;
+                break;
+              }
+              if (part.text && part.text.trim().length > 0) {
+                directTextReply = part.text.trim();
+                successfulKeyId = k.id;
+              }
             }
+
+            if (functionCallResult || directTextReply) break;
           } else {
             await markGeminiKeyError(k.id);
           }
         } catch (err) {
-          // محاولة الموديل التالي أو المفتاح التالي
+          // محاولة التالي
         }
       }
-    }
-
-    if (!lastCandidateText) {
-      return null;
     }
 
     if (successfulKeyId) {
       await markGeminiKeySuccess(successfulKeyId);
     }
 
-    // محاولة استخراج كائن JSON من رد جيمناي
-    let plan: any = null;
-    try {
-      let jsonStr = lastCandidateText;
-      const jsonMatch = lastCandidateText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
+    // إذا كان الجواب نصياً مباشراً من جيمناي (استشارة، كباب، دولار، لابتوب، سوالف)
+    if (!functionCallResult && directTextReply) {
+      return { reply: directTextReply };
+    }
+
+    if (!functionCallResult) {
+      return null;
+    }
+
+    const { name: funcName, args: funcArgs } = functionCallResult;
+
+    // التنفيذ الفوري في سوبابيس حسب الدالة المستدعاة من جيمناي:
+    switch (funcName) {
+      case "get_agent_remaining_orders":
+      case "get_agent_orders": {
+        const agentName = funcArgs.agent_name || userText;
+        let matchedCourier = allCouriers.find(c => agentName && (c.name.toLowerCase().includes(agentName.toLowerCase()) || agentName.toLowerCase().includes(c.name.toLowerCase())));
+        if (!matchedCourier && funcArgs.agent_name) {
+          const { match } = findBestMatch(allCouriers, funcArgs.agent_name);
+          matchedCourier = match;
+        }
+
+        if (!matchedCourier) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `طلبات المندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، تقصد استعلام طلبات أي مندوب من هذولي؟ 👇`,
+            buttons
+          };
+        }
+
+        const [undeliveredCount, deliveredCount, archivedCount, activeOrders] = await Promise.all([
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: "archived"
+            }
+          }),
+          prisma.order.findMany({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["assigned", "delivering"] }
+            },
+            take: 5,
+            include: { shop: true, customerRegion: true }
+          })
+        ]);
+
+        let replyText = `🛵 **إحصائية طلبات الكابتن (${matchedCourier.name}) حالياً:**\n`;
+        replyText += `🔹 **طلبات غير واصلة (قيد التوصيل):** ${undeliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات واصلة ومسلّمة:** ${deliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات مؤرشفة:** ${archivedCount} طلبات\n`;
+
+        if (activeOrders.length > 0) {
+          replyText += `\n📋 **الطلبات قيد التوصيل حالياً:**\n`;
+          activeOrders.forEach((o, i) => {
+            const sName = o.shop?.name || "محل";
+            const rName = o.customerRegion?.name || "منطقة";
+            const price = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+            replyText += `${i + 1}. **طلب #${o.orderNumber}** ⬅️ (${sName}) إلى (${rName}) بمبلغ ${price} ألف\n`;
+          });
+        }
+
+        const buttons = [];
+        if (deliveredCount > 0) {
+          buttons.push({
+            text: `📦 أرشفة مسلّمات ${matchedCourier.name}`,
+            action: `ارشف طلبيات ${matchedCourier.name} المسلمة`
+          });
+        }
+        buttons.push({
+          text: `💰 تصفير حساب ${matchedCourier.name}`,
+          action: `صفر حساب المندوب ${matchedCourier.name}`
+        });
+
+        return { reply: replyText, buttons };
       }
-      plan = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      // إذا لم يكن الرد JSON (أي كان استشارة أو محادثة أو نصاً طبيعياً من جيمناي)
-      return { reply: lastCandidateText };
-    }
 
-    if (!plan || !plan.action) {
-      return { reply: lastCandidateText };
-    }
+      case "get_agent_profits": {
+        const agentName = funcArgs.agent_name || userText;
+        let matchedCourier = allCouriers.find(c => agentName && (c.name.toLowerCase().includes(agentName.toLowerCase()) || agentName.toLowerCase().includes(c.name.toLowerCase())));
+        if (!matchedCourier && funcArgs.agent_name) {
+          const { match } = findBestMatch(allCouriers, funcArgs.agent_name);
+          matchedCourier = match;
+        }
 
-    // التنفيذ الفوري في سوبابيس حسب الخطة:
-    switch (plan.action) {
+        if (!matchedCourier) {
+          return { reply: `يا أبو الأكبر، ما لكيت مندوب مطابق للاسم (${funcArgs.agent_name || "المحدد"}). المندوبين: ${allCouriers.map(c => c.name).join("، ")}.` };
+        }
+
+        const deliveredOrders = await prisma.order.findMany({
+          where: {
+            assignedCourierId: matchedCourier.id,
+            status: { in: ["delivered", "completed", "received"] }
+          },
+          select: { deliveryPrice: true, totalAmount: true }
+        });
+
+        const totalDelivered = deliveredOrders.length;
+        const totalProfit = deliveredOrders.reduce((sum, o) => sum + Number(o.deliveryPrice || 0), 0);
+
+        return {
+          reply: `💰 **تقرير أرباح ومستحقات الكابتن (${matchedCourier.name}):**\n🔹 **الطلبات المسلمة اليوم:** ${totalDelivered} طلبات\n🔹 **أرباح التوصيل الصافية:** ${totalProfit} ألف دينار 🚀`,
+          buttons: [
+            { text: `💰 تصفير حساب ${matchedCourier.name}`, action: `صفر حساب المندوب ${matchedCourier.name}` },
+            { text: `📦 أرشفة طلبات ${matchedCourier.name}`, action: `ارشف طلبيات ${matchedCourier.name} المسلمة` }
+          ]
+        };
+      }
+
+      case "get_supplier_balance": {
+        const supplierName = funcArgs.supplier_name || userText;
+        const preparers = await prisma.companyPreparer.findMany();
+        let matched = preparers.find(p => supplierName && (p.name.toLowerCase().includes(supplierName.toLowerCase()) || supplierName.toLowerCase().includes(p.name.toLowerCase())));
+        if (!matched && funcArgs.supplier_name) {
+          const { match } = findBestMatch(preparers, funcArgs.supplier_name);
+          matched = match;
+        }
+
+        if (!matched) {
+          return { reply: `يا أبو الأكبر، ما لكيت مجهز باسم (${funcArgs.supplier_name || "المحدد"}). المجهزين: ${preparers.map(p => p.name).join("، ")}.` };
+        }
+
+        const salary = Number(matched.salary || 0);
+        return {
+          reply: `🏬 **محفظة وحساب المجهز (${matched.name}):**\n🔹 **الرصيد / المستحقات:** ${salary} ألف دينار 💼`
+        };
+      }
+
+      case "get_pending_orders_summary": {
+        const pendingCount = await prisma.order.count({ where: { status: "pending" } });
+        if (pendingCount === 0) {
+          return { reply: "يا أبو الأكبر، ما عندنا أي طلبات جديدة معلقة حالياً! كل الطلبات مفرزة ومسندة 🎉" };
+        }
+
+        const pendingOrders = await prisma.order.findMany({
+          where: { status: "pending" },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: { shop: true, customerRegion: true }
+        });
+
+        let replyText = `📋 **عندنا حالياً (${pendingCount}) طلبات جديدة معلقة يا أبو الأكبر:**\n\n`;
+        const buttons: Array<{ text: string; action: string }> = [];
+
+        pendingOrders.forEach((o, idx) => {
+          const shopName = o.shop?.name || "المحل";
+          const regionName = o.customerRegion?.name || "غير محددة";
+          const subtotal = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+          replyText += `${idx + 1}. **طلب #${o.orderNumber}** | المحل: **${shopName}** | المنطقة: **${regionName}** | المبلغ: **${subtotal} ألف**\n`;
+          buttons.push({ text: `🔎 تفاصيل طلب ${o.orderNumber}`, action: `تفاصيل طلب ${o.orderNumber}` });
+        });
+
+        return { reply: replyText, buttons };
+      }
+
+      case "archive_agent_orders": {
+        let courier = allCouriers.find(c => funcArgs.agent_name && (c.name.toLowerCase().includes(funcArgs.agent_name.toLowerCase()) || funcArgs.agent_name.toLowerCase().includes(c.name.toLowerCase())));
+        if (!courier && funcArgs.agent_name) {
+          const { match } = findBestMatch(allCouriers, funcArgs.agent_name);
+          courier = match;
+        }
+
+        if (courier) {
+          const deliveredOrders = await prisma.order.findMany({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            },
+            select: { id: true }
+          });
+
+          const undeliveredCount = await prisma.order.count({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          });
+
+          if (deliveredOrders.length === 0) {
+            const undNote = undeliveredCount > 0 ? ` (عنده حالياً ${undeliveredCount} طلبات قيد التوصيل لم تسلّم بعد).` : ``;
+            return {
+              reply: `ماكو طلبيات مسلمة حالياً للمندوب (${courier.name}) حتى تتأرشف 🌸${undNote}`
+            };
+          }
+
+          await prisma.order.updateMany({
+            where: { id: { in: deliveredOrders.map(o => o.id) } },
+            data: { status: "archived", archivedAt: new Date() }
+          });
+
+          const undeliveredNote = undeliveredCount > 0
+            ? `(ملاحظة: الطلبات غير المسلمة (${undeliveredCount} طلب) بقت قيد التوصيل).`
+            : `(ملاحظة: لا توجد طلبات أخرى قيد التوصيل لهذا المندوب).`;
+
+          return {
+            reply: `تمت أرشفة (${deliveredOrders.length}) طلب مسلّم للمندوب ${courier.name} بنجاح 📦✨\n${undeliveredNote}`
+          };
+        }
+
+        let where: any = { status: { in: ["delivered", "completed", "received"] } };
+        const count = await prisma.order.count({ where });
+        if (count === 0) {
+          return { reply: `ماكو أي طلبيات مسلمة حالياً في النظام لأرشفتها 🌸` };
+        }
+
+        await prisma.order.updateMany({ where, data: { status: "archived", archivedAt: new Date() } });
+
+        return {
+          reply: `تمت أرشفة (${count}) طلب مسلّم في النظام بنجاح يا أبو الأكبر 📦✨ (الطلبات غير المسلمة بقت قيد التوصيل).`
+        };
+      }
+
+      case "reset_agent_balance": {
+        const agentName = funcArgs.agent_name || userText;
+        let matchedCourier = allCouriers.find(c => agentName && (c.name.toLowerCase().includes(agentName.toLowerCase()) || agentName.toLowerCase().includes(c.name.toLowerCase())));
+        if (!matchedCourier && funcArgs.agent_name) {
+          const { match } = findBestMatch(allCouriers, funcArgs.agent_name);
+          matchedCourier = match;
+        }
+
+        if (!matchedCourier) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `صفر حساب المندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، قصدك تصفير حساب أي كابتن مندوب؟ 👇`,
+            buttons
+          };
+        }
+
+        await prisma.courier.update({
+          where: { id: matchedCourier.id },
+          data: { mandoubTotalsResetAt: new Date() }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${matchedCourier.name}) بنجاح 🚀`
+        };
+      }
+
+      case "assign_order_to_agent": {
+        let orderNum = Number(funcArgs.order_number);
+        if (!orderNum) {
+          const m = userText.match(/\d+/);
+          if (m) orderNum = Number(m[0]);
+        }
+
+        let targetOrder = null;
+        if (orderNum && orderNum > 0) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: orderNum },
+            include: { shop: true, customerRegion: true }
+          });
+        } else if (ctx.lastOrderNumber) {
+          targetOrder = await prisma.order.findUnique({
+            where: { orderNumber: ctx.lastOrderNumber },
+            include: { shop: true, customerRegion: true }
+          });
+        } else {
+          targetOrder = await prisma.order.findFirst({
+            where: { status: { in: ["pending", "rejected"] } },
+            orderBy: { createdAt: "desc" },
+            include: { shop: true, customerRegion: true }
+          });
+        }
+
+        if (!targetOrder) {
+          return { reply: "يا أبو الأكبر، ما لكيت أي طلب مطابق لإسناده." };
+        }
+
+        let courier = allCouriers.find(c => funcArgs.agent_name && (c.name.toLowerCase().includes(funcArgs.agent_name.toLowerCase()) || funcArgs.agent_name.toLowerCase().includes(c.name.toLowerCase())));
+        if (!courier && funcArgs.agent_name) {
+          const { match } = findBestMatch(allCouriers, funcArgs.agent_name);
+          courier = match;
+        }
+
+        if (!courier) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `اسند طلب ${targetOrder.orderNumber} للمندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، أسند طلب #${targetOrder.orderNumber} لأي كابتن؟ 👇`,
+            buttons
+          };
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: targetOrder.id },
+          data: {
+            assignedCourierId: courier.id,
+            status: "assigned"
+          }
+        });
+
+        ctx.lastOrderNumber = updated.orderNumber;
+        ctx.updatedAt = Date.now();
+
+        const shopName = targetOrder.shop?.name || "المحل";
+        const regionName = targetOrder.customerRegion?.name || "غير محددة";
+        const orderType = targetOrder.orderType || "غير محدد";
+        const noteTime = targetOrder.orderNoteTime || "الان";
+        const subtotalVal = targetOrder.orderSubtotal ? Number(targetOrder.orderSubtotal) : 0;
+        const totalVal = targetOrder.totalAmount ? Number(targetOrder.totalAmount) : subtotalVal;
+
+        return {
+          reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${courier.name}) 🛵\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت الطلب:** ${noteTime}\n💰 **سعر الطلب:** ${subtotalVal} ألف (المجموع: ${totalVal} ألف)`
+        };
+      }
+
+      case "create_order": {
+        const initialDraft: OrderDraftState = {
+          step: "waiting_shop",
+          shopId: null,
+          shopName: funcArgs.shop_name || null,
+          regionId: null,
+          regionName: funcArgs.region_name || null,
+          phone: funcArgs.phone || null,
+          orderType: funcArgs.order_type || null,
+          price: funcArgs.price !== undefined && funcArgs.price !== null ? Number(funcArgs.price) : undefined,
+          noteTime: funcArgs.note_time || null
+        };
+
+        const { handleOrderCreationWizard } = await import("./ai-order-wizard");
+        const wizardRes = await handleOrderCreationWizard(userText, initialDraft, ctx);
+        ctx.orderDraft = wizardRes.nextDraft || null;
+        ctx.updatedAt = Date.now();
+        return {
+          reply: wizardRes.reply || "من أي محل يا أبو الأكبر؟ 🏪",
+          buttons: wizardRes.buttons || []
+        };
+      }
+
+      case "get_daily_summary": {
+        const { getDailySummaryReport } = await import("./ai-order-wizard");
+        return await getDailySummaryReport();
+      }
+
+      case "update_agent_name": {
+        const oldName = funcArgs.old_name;
+        const newName = funcArgs.new_name;
+        let targetCourier = allCouriers.find(c => oldName && (c.name.toLowerCase().includes(oldName.toLowerCase()) || oldName.toLowerCase().includes(c.name.toLowerCase())));
+        if (!targetCourier && oldName) {
+          const { match } = findBestMatch(allCouriers, oldName);
+          targetCourier = match;
+        }
+
+        if (!targetCourier) {
+          return { reply: `يا أبو الأكبر، ما لكيت مندوب باسم (${oldName}). المندوبين: ${allCouriers.map(c => c.name).join("، ")}.` };
+        }
+
+        if (!newName) {
+          return { reply: `يا أبو الأكبر، اذكرلي الاسم الجديد بوضوح لأعدل بيه المندوب (${targetCourier.name}).` };
+        }
+
+        const updated = await prisma.courier.update({
+          where: { id: targetCourier.id },
+          data: { name: newName }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! عدلت اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
+        };
+      }
+
       case "CREATE_ORDER": {
         const initialDraft: OrderDraftState = {
           step: "waiting_shop",
