@@ -7,6 +7,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 import { findMatchingLearnedRule, compileAndSaveNewIntent } from "./ai-intent-compiler";
 import { executeAutonomousGeminiAgent } from "./ai-autonomous-agent";
 import { handleOrderCreationWizard, OrderDraftState, calculateSimilarity } from "./ai-order-wizard";
+import { handleCustomerCreationWizard, CustomerDraftState } from "./ai-customer-wizard";
 import { getCachedShops, getCachedRegions, getCachedCouriers } from "./ai-data-cache";
 
 type ChatSessionContext = {
@@ -14,6 +15,7 @@ type ChatSessionContext = {
   lastOrderType?: string | null;
   activeFocusedOrderId?: string | null;
   orderDraft?: OrderDraftState | null;
+  customerDraft?: CustomerDraftState | null;
   waitingForCarHours?: boolean | null;
   updatedAt?: number;
 };
@@ -982,6 +984,12 @@ export async function executeSuperSystemAgent(
     ctx.updatedAt = Date.now();
   }
 
+  if (isInterruptionOrGeneralQuery && ctx.customerDraft) {
+    ctx.customerDraft = null;
+    ctx.updatedAt = Date.now();
+  }
+
+  // معالجة مسودة الطلب النشطة
   if (ctx.orderDraft && ctx.orderDraft.step) {
     const wizardRes = await handleOrderCreationWizard(rawText, ctx.orderDraft, ctx);
     if (wizardRes.handled) {
@@ -989,6 +997,17 @@ export async function executeSuperSystemAgent(
       ctx.updatedAt = Date.now();
       await savePersistentSessionContext(sessionKey, ctx);
       return { reply: wizardRes.reply!, buttons: wizardRes.buttons };
+    }
+  }
+
+  // معالجة مسودة تسجيل الزبون النشطة
+  if (ctx.customerDraft && ctx.customerDraft.step) {
+    const custRes = await handleCustomerCreationWizard(rawText, ctx.customerDraft);
+    if (custRes.handled) {
+      ctx.customerDraft = custRes.nextDraft || null;
+      ctx.updatedAt = Date.now();
+      await savePersistentSessionContext(sessionKey, ctx);
+      return { reply: custRes.reply, buttons: custRes.buttons };
     }
   }
 
@@ -1060,6 +1079,35 @@ export async function executeSuperSystemAgent(
   ) {
     await resetChatSessionContext(sessionKey);
     return { reply: "تم تصفير الذاكرة وسجل المحادثة والبدء بدردشة جديدة ناصعة يا أبو الأكبر! تفضل بأمرك الجديد 🚀" };
+  }
+
+  // 0.012 أمر بدء تسجيل زبون جديد تفاعلي بالخطوات
+  const cleanCustCheck = cleanInit
+    .replace(/اريد\s*اضيف/g, "اضيف")
+    .replace(/اريد\s*اسجل/g, "اسجل")
+    .replace(/اريد\s*حفظ/g, "حفظ");
+
+  if (
+    cleanCustCheck === "اضيف زبون" ||
+    cleanCustCheck === "اضف زبون" ||
+    cleanCustCheck === "ضيف زبون" ||
+    cleanCustCheck === "اسجل زبون" ||
+    cleanCustCheck === "سجل زبون" ||
+    cleanCustCheck === "تسجيل زبون" ||
+    cleanCustCheck === "اضافة زبون" ||
+    cleanCustCheck === "إضافة زبون" ||
+    cleanCustCheck === "زبون جديد" ||
+    cleanCustCheck.startsWith("اضيف زبون") ||
+    cleanCustCheck.startsWith("ضيف زبون") ||
+    cleanCustCheck.startsWith("سجل زبون") ||
+    cleanCustCheck.startsWith("اضافة زبون")
+  ) {
+    const initialCustomerDraft: CustomerDraftState = { step: "waiting_phone" };
+    const custRes = await handleCustomerCreationWizard(rawText, initialCustomerDraft);
+    ctx.customerDraft = custRes.nextDraft || initialCustomerDraft;
+    ctx.updatedAt = Date.now();
+    await savePersistentSessionContext(sessionKey, ctx);
+    return { reply: custRes.reply || "يا هلا بأبو الأكبر! انطيني رقم هاتف الزبون 📞 (ضروري)", buttons: custRes.buttons };
   }
 
   // 0.015 أمر بدء إنشاء طلب جديد تفاعلي بالخطوات

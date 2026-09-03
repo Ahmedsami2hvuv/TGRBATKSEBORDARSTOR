@@ -195,6 +195,20 @@ export async function executeAutonomousAiCommand(
               },
               required: ["old_name", "new_name"]
             }
+          },
+          {
+            name: "create_customer_profile",
+            description: "تسجيل وحفظ بروفايل زبون جديد في النظام (رقم هاتف الزبون ضروري، المنطقة ضرورية، اللوكيشن اختياري، النقطة الدالة اختيارية)",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                phone: { type: "STRING", description: "رقم هاتف الزبون (ضروري)" },
+                region_name: { type: "STRING", description: "اسم منطقة الزبون (ضروري)" },
+                location_url: { type: "STRING", description: "رابط لوكيشن الخريطة (اختياري)" },
+                landmark: { type: "STRING", description: "أقرب نقطة دالة أو تفاصيل العنوان (اختياري)" }
+              },
+              required: ["phone", "region_name"]
+            }
           }
         ]
       }
@@ -662,6 +676,22 @@ export async function executeAutonomousAiCommand(
 
         return {
           reply: `تم يا أبو الأكبر! عدلت اسم الكابتن من (${targetCourier.name}) إلى (${updated.name}) بنجاح 🚀`
+        };
+      }
+
+      case "create_customer_profile": {
+        const { handleCustomerCreationWizard } = await import("./ai-customer-wizard");
+        const initialDraft = {
+          step: "waiting_phone" as const,
+          phone: funcArgs.phone || null,
+          regionName: funcArgs.region_name || null,
+          locationUrl: funcArgs.location_url || null,
+          landmark: funcArgs.landmark || null
+        };
+        const custRes = await handleCustomerCreationWizard(userText, initialDraft);
+        return {
+          reply: custRes.reply || "يا هلا بأبو الأكبر! انطيني رقم هاتف الزبون 📞 (ضروري)",
+          buttons: custRes.buttons || []
         };
       }
 
