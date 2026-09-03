@@ -107,11 +107,9 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
 }
 
 export const SUPPORTED_GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-flash-latest",
   "gemini-3.6-flash",
   "gemini-3.7-flash",
-  "gemini-2.5-pro"
+  "gemini-flash-latest"
 ];
 
 export async function getNextActiveGeminiKey(): Promise<GeminiKeyRecord | null> {
