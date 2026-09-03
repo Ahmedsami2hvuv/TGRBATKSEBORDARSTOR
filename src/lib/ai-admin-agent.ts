@@ -157,28 +157,33 @@ function parseCustomSystemIntent(userText: string): any {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const firstLine = lines[0] ? lines[0].toLowerCase() : cleanQ;
 
-  // 0.005 أرشفة جماعية لطلبات مندوب أو محل أو حالة معينة
-  if (
-    cleanQ.includes("سوي لهن ارشفه") ||
-    cleanQ.includes("سوي لهن أرشفة") ||
-    cleanQ.includes("سوي ارشفه") ||
-    cleanQ.includes("سوي أرشفة") ||
-    cleanQ.includes("ارشف طلبات") ||
-    cleanQ.includes("أرشف طلبات") ||
-    cleanQ.includes("ارشفة الطلبات") ||
-    cleanQ.includes("أرشفة الطلبات") ||
-    (cleanQ.includes("ارشفه") && cleanQ.includes("المندوب"))
-  ) {
-    let courierMatch = text.match(/(?:المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z\s]+?)(?=\s*(?:المسلمه|المسلمة|سوي|ارشفه|أرشفة)|$)/i);
-    let courierName = courierMatch ? courierMatch[1].trim() : null;
+  // 0.005 أرشفة جماعية لطلبات المندوبين المسلمة أو المكتملة
+  const isArchiveCommand =
+    cleanQ.includes("ارشف") ||
+    cleanQ.includes("أرشف") ||
+    cleanQ.includes("ارشفه") ||
+    cleanQ.includes("أرشفة") ||
+    cleanQ.includes("ارشيف") ||
+    cleanQ.includes("أرشيف") ||
+    cleanQ.includes("للارشيف") ||
+    cleanQ.includes("للأرشيف") ||
+    cleanQ.includes("بالارشيف") ||
+    cleanQ.includes("بالأرشيف") ||
+    cleanQ.includes("صفّي") ||
+    cleanQ.includes("صفي") ||
+    cleanQ.includes("تؤرشف") ||
+    cleanQ.includes("تأرشف") ||
+    (cleanQ.includes("ذبه") && (cleanQ.includes("ارشيف") || cleanQ.includes("أرشيف")));
 
+  if (isArchiveCommand) {
     let status = "completed";
     if (cleanQ.includes("مرفوض")) status = "rejected";
-    else if (cleanQ.includes("مسلم") || cleanQ.includes("مسلمه") || cleanQ.includes("مسلمة")) status = "completed";
+    else if (cleanQ.includes("مسلم") || cleanQ.includes("مسلمه") || cleanQ.includes("مسلمة") || cleanQ.includes("مسلمات") || cleanQ.includes("المسلمات") || cleanQ.includes("المسلم") || cleanQ.includes("مكتمل") || cleanQ.includes("مكتملة") || cleanQ.includes("مكتمله") || cleanQ.includes("المكتملة") || cleanQ.includes("واصل") || cleanQ.includes("واصلة") || cleanQ.includes("الواصلة") || cleanQ.includes("تسلمت") || cleanQ.includes("التسلمت")) {
+      status = "completed";
+    }
 
     return {
       category: "orders_bulk_archive",
-      courier_name: courierName,
       status: status,
       raw_text: text
     };
@@ -2082,71 +2087,145 @@ export async function executeSuperSystemAgent(
       }
 
       case "orders_bulk_archive": {
-        const courierName = parsed?.courier_name;
-        const shopName = parsed?.shop_name;
-        const rawStatus = parsed?.status || "delivered";
-
-        let statusFilter: any = { in: ["delivered", "completed", "received"] };
-        let statusLabel = "المسلمة";
-
-        if (rawStatus === "rejected" || rawText.includes("مرفوض")) {
-          statusFilter = { in: ["rejected", "cancelled"] };
-          statusLabel = "المرفوضة";
-        } else if (rawStatus === "pending" || rawText.includes("جديد") || rawText.includes("معلق")) {
-          statusFilter = "pending";
-          statusLabel = "المعلقة";
+        const allCouriers = await prisma.courier.findMany();
+        if (allCouriers.length === 0) {
+          return { reply: `يا أبو الأكبر، ما عندك أي مندوب مسجل بالنظام بعد.` };
         }
 
-        let where: any = {
-          status: statusFilter
-        };
+        const cleanRaw = cleanArabicTextForMatch(rawText);
+        const isAllCouriers = cleanRaw.includes("كل المندوبين") || cleanRaw.includes("جميع المندوبين") || cleanRaw.includes("لكل المندوبين");
 
-        let label = statusLabel;
-        let matchedCourierObj = null;
-
-        if (courierName) {
-          const allCouriers = await prisma.courier.findMany();
-          const cleanQuery = cleanArabicTextForMatch(courierName);
+        let matchedCouriers: typeof allCouriers = [];
+        if (isAllCouriers) {
+          matchedCouriers = allCouriers;
+        } else {
           for (const c of allCouriers) {
             const cleanC = cleanArabicTextForMatch(c.name);
-            if (cleanC.length >= 2 && (cleanC.includes(cleanQuery) || cleanQuery.includes(cleanC))) {
-              matchedCourierObj = c;
-              break;
+            if (cleanC.length >= 2 && cleanRaw.includes(cleanC)) {
+              matchedCouriers.push(c);
             }
           }
-          if (!matchedCourierObj) {
-            const { match } = findBestMatch(allCouriers, courierName);
-            matchedCourierObj = match;
-          }
-          if (matchedCourierObj) {
-            where.assignedCourierId = matchedCourierObj.id;
-            label += ` للمندوب (${matchedCourierObj.name})`;
-          }
         }
 
-        if (shopName) {
-          const allShops = await prisma.shop.findMany();
-          const { match } = findBestMatch(allShops, shopName);
-          if (match) {
-            where.shopId = match.id;
-            label += ` لمحل (${match.name})`;
+        // إذا لم نجد أسماء صريحة ولكن مرر parsed.courier_name
+        if (matchedCouriers.length === 0 && parsed?.courier_name) {
+          const { match } = findBestMatch(allCouriers, parsed.courier_name);
+          if (match) matchedCouriers.push(match);
+        }
+
+        // إذا لم نجد أي مندوب في نص الرسالة
+        if (matchedCouriers.length === 0) {
+          const couriersWithDelivered = await prisma.order.findMany({
+            where: {
+              status: { in: ["delivered", "completed", "received"] },
+              assignedCourierId: { not: null }
+            },
+            select: { courier: true }
+          });
+
+          const distinctCouriersMap = new Map();
+          couriersWithDelivered.forEach(o => {
+            if (o.courier) distinctCouriersMap.set(o.courier.id, o.courier);
+          });
+          const availableCouriers = Array.from(distinctCouriersMap.values());
+
+          const buttons = (availableCouriers.length > 0 ? availableCouriers : allCouriers).slice(0, 6).map(c => ({
+            text: `📦 أرشفة مسلمات (${c.name})`,
+            action: `ارشف كل طلبيات ${c.name} المسلمة`
+          }));
+
+          return {
+            reply: `يا أبو الأكبر، قصدك أرشفة الطلبات المسلمة لأي مندوب؟ اذكر اسمه أو اختر من الأزرار 👇`,
+            buttons: buttons
+          };
+        }
+
+        // الآن نقوم بأرشفة الطلبات المسلمة فقط لكل مندوب تم تحديده
+        let results: Array<{
+          courier: any;
+          archivedCount: number;
+          undeliveredCount: number;
+        }> = [];
+
+        let totalArchived = 0;
+
+        for (const courier of matchedCouriers) {
+          // 1. جلب الطلبات المسلمة فقط لهذا المندوب
+          const deliveredOrders = await prisma.order.findMany({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            },
+            select: { id: true, orderNumber: true }
+          });
+
+          // 2. حساب الطلبات غير المسلمة التي بقت قيد التوصيل
+          const undeliveredCount = await prisma.order.count({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          });
+
+          if (deliveredOrders.length > 0) {
+            const ids = deliveredOrders.map(o => o.id);
+            await prisma.order.updateMany({
+              where: { id: { in: ids } },
+              data: {
+                status: "archived",
+                archivedAt: new Date()
+              }
+            });
+            totalArchived += deliveredOrders.length;
+          }
+
+          results.push({
+            courier,
+            archivedCount: deliveredOrders.length,
+            undeliveredCount
+          });
+        }
+
+        // صياغة الرد اللبق والتأكيد على شرط المسلمة كما طلب المستخدم بالحرف
+        if (results.length === 1) {
+          const res = results[0];
+          if (res.archivedCount > 0) {
+            const undeliveredNote = res.undeliveredCount > 0
+              ? `(ملاحظة: الطلبات غير المسلمة (${res.undeliveredCount} طلب) بقت قيد التوصيل).`
+              : `(ملاحظة: لا توجد طلبات أخرى قيد التوصيل لهذا المندوب).`;
+
+            return {
+              reply: `تمت أرشفة (${res.archivedCount}) طلب مسلّم للمندوب ${res.courier.name} بنجاح 📦✨\n${undeliveredNote}`
+            };
+          } else {
+            const undeliveredNote = res.undeliveredCount > 0
+              ? ` (عنده حالياً ${res.undeliveredCount} طلبات قيد التوصيل لم تسلّم بعد).`
+              : ``;
+            return {
+              reply: `ماكو طلبيات مسلمة حالياً للمندوب (${res.courier.name}) حتى تتأرشف 🌸${undeliveredNote}`
+            };
+          }
+        } else {
+          // عدة مندوبين
+          if (totalArchived > 0) {
+            let replyText = `تمت أرشفة الطلبات المسلمة بنجاح يا أبو الأكبر 📦✨:\n`;
+            results.forEach(res => {
+              if (res.archivedCount > 0) {
+                const undNote = res.undeliveredCount > 0 ? `(${res.undeliveredCount} بقت قيد التوصيل)` : `(كل طلباته مسلمة)`;
+                replyText += `\n• **الكابتن (${res.courier.name}):** تمت أرشفة ${res.archivedCount} طلب مسلّم ${undNote}`;
+              } else {
+                const undNote = res.undeliveredCount > 0 ? `(عنده ${res.undeliveredCount} طلبات قيد التوصيل)` : `(لا توجد طلبات)`;
+                replyText += `\n• **الكابتن (${res.courier.name}):** لا توجد طلبات مسلمة لأرشفتها ${undNote}`;
+              }
+            });
+            replyText += `\n\n🎯 **المجموع الكلي المؤرشف:** ${totalArchived} طلب مسلّم.`;
+            return { reply: replyText };
+          } else {
+            return {
+              reply: `ماكو أي طلبيات مسلمة حالياً للمندوبين المحددين (${results.map(r => r.courier.name).join("، ")}) حتى تتأرشف 🌸 (الطلبات الحالية بقت قيد التوصيل).`
+            };
           }
         }
-
-        const countToArchive = await prisma.order.count({ where });
-        if (countToArchive === 0) {
-          const targetName = matchedCourierObj ? matchedCourierObj.name : (courierName || "المحدد");
-          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات ${statusLabel} حالياً للكابتن (${targetName}) لأرشفتها.` };
-        }
-
-        await prisma.order.updateMany({
-          where,
-          data: { status: "archived" }
-        });
-
-        return {
-          reply: `تم يا أبو الأكبر! أرشفت (${countToArchive}) طلبات ${label} بنجاح وخزنت الأمر بقاعدة البيانات 🚀`
-        };
       }
 
       case "get_learned_rules_list": {

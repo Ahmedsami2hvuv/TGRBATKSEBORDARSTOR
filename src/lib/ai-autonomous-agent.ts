@@ -451,20 +451,59 @@ export async function executeAutonomousAiCommand(
       }
 
       case "BULK_ARCHIVE": {
-        let courier = allCouriers.find(c => plan.courier_name && c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
-        let where: any = { status: { in: ["delivered", "completed", "received"] } };
-        if (plan.status === "rejected") where.status = { in: ["rejected", "cancelled"] };
-        if (courier) where.assignedCourierId = courier.id;
-
-        const count = await prisma.order.count({ where });
-        if (count === 0) {
-          return { reply: `يا أبو الأكبر، ما لكيت أي طلبات مطابقة لأرشفتها حالياً للكابتن (${courier ? courier.name : "المحدد"}).` };
+        let courier = allCouriers.find(c => plan.courier_name && (c.name.toLowerCase().includes(plan.courier_name.toLowerCase()) || plan.courier_name.toLowerCase().includes(c.name.toLowerCase())));
+        if (!courier && plan.courier_name) {
+          const { match } = findBestMatch(allCouriers, plan.courier_name);
+          courier = match;
         }
 
-        await prisma.order.updateMany({ where, data: { status: "archived" } });
+        if (courier) {
+          const deliveredOrders = await prisma.order.findMany({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            },
+            select: { id: true }
+          });
+
+          const undeliveredCount = await prisma.order.count({
+            where: {
+              assignedCourierId: courier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          });
+
+          if (deliveredOrders.length === 0) {
+            const undNote = undeliveredCount > 0 ? ` (عنده حالياً ${undeliveredCount} طلبات قيد التوصيل لم تسلّم بعد).` : ``;
+            return {
+              reply: `ماكو طلبيات مسلمة حالياً للمندوب (${courier.name}) حتى تتأرشف 🌸${undNote}`
+            };
+          }
+
+          await prisma.order.updateMany({
+            where: { id: { in: deliveredOrders.map(o => o.id) } },
+            data: { status: "archived", archivedAt: new Date() }
+          });
+
+          const undeliveredNote = undeliveredCount > 0
+            ? `(ملاحظة: الطلبات غير المسلمة (${undeliveredCount} طلب) بقت قيد التوصيل).`
+            : `(ملاحظة: لا توجد طلبات أخرى قيد التوصيل لهذا المندوب).`;
+
+          return {
+            reply: `تمت أرشفة (${deliveredOrders.length}) طلب مسلّم للمندوب ${courier.name} بنجاح 📦✨\n${undeliveredNote}`
+          };
+        }
+
+        let where: any = { status: { in: ["delivered", "completed", "received"] } };
+        const count = await prisma.order.count({ where });
+        if (count === 0) {
+          return { reply: `ماكو أي طلبيات مسلمة حالياً في النظام لأرشفتها 🌸` };
+        }
+
+        await prisma.order.updateMany({ where, data: { status: "archived", archivedAt: new Date() } });
 
         return {
-          reply: `تم يا أبو الأكبر! أرشفت (${count}) طلبات بنجاح للكابتن (${courier ? courier.name : "الكل"}) 🚀`
+          reply: `تمت أرشفة (${count}) طلب مسلّم في النظام بنجاح يا أبو الأكبر 📦✨ (الطلبات غير المسلمة بقت قيد التوصيل).`
         };
       }
 
