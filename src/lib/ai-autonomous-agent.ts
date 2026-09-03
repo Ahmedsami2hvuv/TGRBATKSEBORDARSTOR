@@ -25,8 +25,8 @@ export async function executeAutonomousAiCommand(
     const shopsList = allShops.map(s => `${s.name} (id: ${s.id})`).join(", ");
     const regionsList = allRegions.map(r => `${r.name} (سعر: ${r.deliveryPrice})`).join(", ");
 
-    const systemPrompt = `أنت العقل المدبر والذكاء الاصطناعي المستقل لنظام إدارة الطلبات والمبيعات (أبو الأكبر).
-مهمتك: فهم أمر أبو الأكبر بدقة متناهية وترجمته إلى خطة تنفيذ JSON مباشرة.
+    const systemPrompt = `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي الشخصي والعقل المدبر لمنظومة التوصيل والمتجر الإلكتروني الخاص بـ أبو الأكبر).
+تتحدث بلهجة عراقية محترمة، ذكية، لبقة، ومباشرة. أنت العقل الأول الذي يستمع لأبو الأكبر، يفهم مقصده بدقة متناهية، ويقرر ما إذا كان الأمر يحتاج استشارة أو إجابة حرة أو تحليلاً إدارياً أو تنفيذاً في قاعدة البيانات.
 
 قاعدة بيانات سوبابيس الحالية:
 - المندوبين: [${couriersList}]
@@ -35,35 +35,39 @@ export async function executeAutonomousAiCommand(
 
 العمليات المتاحة (action):
 1. "CREATE_ORDER": إنشاء طلب مبيعات جديد
-    - shop_name, region_name, price, phone, order_type, note_time
-2. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل وحالة الطلب
-    - order_number, shop_name, status (pending, assigned, rejected, delivered)
-3. "ASSIGN_ORDER": إسناد طلب إلى مندوب
-    - order_number, courier_name
-4. "REJECT_ORDER": رفض أو إلغاء طلب
+   - shop_name, region_name, price, phone, order_type, note_time
+2. "BULK_ARCHIVE": أرشفة الطلبات المسلمة/المكتملة فقط لمندوب أو عدة مندوبين
+   - courier_name, status
+3. "COURIER_ZERO": تصفير حساب ومستحقات مندوب معين
+   - courier_name
+4. "GET_ASSIGNED_ORDERS": استعلام وعرض الطلبات المسندة للمندوبين حالياً
+   - courier_name
+5. "ASSIGN_ORDER": إسناد طلب إلى مندوب
+   - order_number, courier_name
+6. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل
+   - order_number, shop_name, status
+7. "GET_PENDING_ORDERS": استعلام الطلبات الجديدة المعلقة
+8. "GET_LAST_ORDER": جلب آخر طلب في النظام
+9. "REJECT_ORDER": رفض أو إلغاء طلب
+   - order_number
+10. "RESET_TO_NEW": إعادة طلب إلى حالة جديد (إلغاء الإسناد)
     - order_number
-5. "RESET_TO_NEW": إعادة طلب إلى حالة جديد
-    - order_number
-6. "CHANGE_COURIER": تغيير مندوب الطلب
+11. "CHANGE_COURIER": تغيير مندوب الطلب
     - order_number, courier_name
-7. "CREATE_COURIER": إضافة مندوب جديد
-    - courier_name, phone
-8. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل
-    - old_name, new_name
-9. "BULK_ARCHIVE": أرشفة طلبات منتهية أو ملغاة
-    - courier_name, status
-10. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
+12. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
     - order_number, field, value
-11. "GET_PENDING_ORDERS": استعلام الطلبات الجديدة المعلقة
-12. "GET_LAST_ORDER": جلب آخر طلب في النظام
 13. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام طلبيات مندوب اليوم
     - courier_name
-14. "FRIENDLY_CHAT": رد محادثة وسوالف عامة
-    - reply_text
+14. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل
+    - old_name, new_name
+15. "CREATE_COURIER": إضافة مندوب جديد
+    - courier_name, phone
+16. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام، تحليل إداري، نقاش، أو محادثة عادية من أبو الأكبر بذكاء جيمناي الطبيعي!
+    - reply_text (اكتب ردك الذكي والمقنع واللبق بالكامل هنا بلهجة عراقية محترمة دون قوالب جامدة).
 
 أجب بـ JSON فقط:
 {
-  "action": "اسم العملية",
+  "action": "اسم العملية من القائمة أعلاه",
   "shop_name": "...",
   "region_name": "...",
   "courier_name": "...",
@@ -562,10 +566,92 @@ export async function executeAutonomousAiCommand(
         };
       }
 
+      case "COURIER_ZERO": {
+        const courierQuery = plan.courier_name || userText;
+        let matchedCourier = allCouriers.find(c => courierQuery && (c.name.toLowerCase().includes(courierQuery.toLowerCase()) || courierQuery.toLowerCase().includes(c.name.toLowerCase())));
+        if (!matchedCourier && plan.courier_name) {
+          const { match } = findBestMatch(allCouriers, plan.courier_name);
+          matchedCourier = match;
+        }
+
+        if (!matchedCourier) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `صفر حساب المندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، قصدك تصفير حساب أي كابتن مندوب؟ 👇`,
+            buttons
+          };
+        }
+
+        await prisma.courier.update({
+          where: { id: matchedCourier.id },
+          data: { mandoubTotalsResetAt: new Date() }
+        });
+
+        return {
+          reply: `تم يا أبو الأكبر! صفرت حساب ومستحقات الكابتن المندوب (${matchedCourier.name}) بنجاح 🚀`
+        };
+      }
+
+      case "GET_ASSIGNED_ORDERS": {
+        let matchedCourier = null;
+        if (plan.courier_name) {
+          matchedCourier = allCouriers.find(c => c.name.toLowerCase().includes(plan.courier_name.toLowerCase()));
+          if (!matchedCourier) {
+            const { match } = findBestMatch(allCouriers, plan.courier_name);
+            matchedCourier = match;
+          }
+        }
+
+        const whereClause: any = {
+          status: { in: ["assigned", "delivering"] }
+        };
+        if (matchedCourier) {
+          whereClause.assignedCourierId = matchedCourier.id;
+        }
+
+        const assignedOrders = await prisma.order.findMany({
+          where: whereClause,
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: { shop: true, customerRegion: true, courier: true }
+        });
+
+        if (assignedOrders.length === 0) {
+          if (matchedCourier) {
+            return { reply: `يا أبو الأكبر، ماكو أي طلبات مسندة حالياً للكابتن (${matchedCourier.name}) 🛵` };
+          }
+          return { reply: `يا أبو الأكبر، ماكو أي طلبات مسندة للمندوبين حالياً. كل الطلبات إما جديدة معلقة أو مكتملة واصلة! 🚀` };
+        }
+
+        const title = matchedCourier
+          ? `🛵 **الطلبات المسندة للكابتن (${matchedCourier.name}) (${assignedOrders.length} طلب):**\n`
+          : `🛵 **الطلبات المسندة للمندوبين حالياً (${assignedOrders.length} طلب):**\n`;
+
+        let summary = title;
+        assignedOrders.forEach((o, i) => {
+          const cName = o.courier?.name || "مندوب";
+          const sName = o.shop?.name || "محل";
+          const rName = o.customerRegion?.name || "غير محددة";
+          const price = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+          summary += `\n${i + 1}. **طلب #${o.orderNumber}** ⬅️ للكابتن (${cName}) | محل: ${sName} | منطقة: ${rName} (${price} ألف)`;
+        });
+
+        const buttons = assignedOrders.slice(0, 5).map(o => ({
+          text: `🔍 تفاصيل #${o.orderNumber}`,
+          action: `تفاصيل طلب ${o.orderNumber}`
+        }));
+
+        return { reply: summary, buttons };
+      }
+
+      case "CONSULTATION_OR_CHAT":
       case "FRIENDLY_CHAT":
       default: {
         return {
-          reply: plan.reply_text || "تدلل يا أبو الأكبر، آمرني بأي أمر وأنا بالخدمة دائماً 🌸"
+          reply: plan.reply_text || "تدلل يا أبو الأكبر، أنا وياك وأسمعك. آمرني بأي استشارة أو أمر وأنا بالخدمة دائماً 🌸"
         };
       }
     }

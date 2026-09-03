@@ -997,6 +997,20 @@ export async function executeSuperSystemAgent(
     return { reply: "تم تصفير الذاكرة وسجل المحادثة والبدء بدردشة جديدة ناصعة يا أبو الأكبر! تفضل بأمرك الجديد 🚀" };
   }
 
+  // 0.02 إطلاق عقل Google Gemini المستقل كبوابة أولى لتفسير وتنفيذ كل الأوامر والاستشارات والمحادثات
+  if (!rawText.startsWith("assign_order_") && !rawText.startsWith("set_region_order_") && !ctx.waitingForCarHours) {
+    try {
+      const geminiBrainRes = await executeAutonomousGeminiAgent(rawText, ctx);
+      if (geminiBrainRes && geminiBrainRes.reply) {
+        ctx.updatedAt = Date.now();
+        await savePersistentSessionContext(sessionKey, ctx);
+        return geminiBrainRes;
+      }
+    } catch (geminiBrainErr) {
+      console.warn("[Gemini Brain Orchestrator Fallback]:", geminiBrainErr);
+    }
+  }
+
   // ==========================================
   // 🚗 إدارة وضعية (لا يوجد سيارات) التفاعلية
   // ==========================================
