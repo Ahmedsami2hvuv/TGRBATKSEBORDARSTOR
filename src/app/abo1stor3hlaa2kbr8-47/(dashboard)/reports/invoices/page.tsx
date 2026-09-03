@@ -14,7 +14,9 @@ type Props = {
   searchParams: Promise<{ day?: string; q?: string; type?: string }>;
 };
 
-type InvoiceReportRow = {
+export type PerformerRole = "all" | "courier" | "preparer" | "supplier" | "shop" | "transfer" | "admin";
+
+export type InvoiceReportRow = {
   id: string;
   source: "order" | "given" | "received" | "transfer";
   sourceLabel: string;
@@ -23,6 +25,8 @@ type InvoiceReportRow = {
   orderNumber?: number;
   orderId?: string;
   courierName: string;
+  performerRole: "courier" | "preparer" | "supplier" | "shop" | "transfer" | "admin";
+  performerRoleLabel: string;
   partyName: string;
   kind: string;
   status: string;
@@ -139,24 +143,30 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
 
     // تحديد المنفذ الفعلي للمعاملة المالية بدقة
     let performedByName = "الإدارة";
-    let performedRole = "إدارة";
+    let performedRole: "courier" | "preparer" | "supplier" | "shop" | "transfer" | "admin" = "admin";
+    let performedRoleLabel = "إدارة";
 
     if (ev.recordedByCompanyPreparer) {
       const isSupplier = ev.recordedByCompanyPreparer.notes?.includes("[SUPPLIER]");
       performedByName = ev.recordedByCompanyPreparer.name;
-      performedRole = isSupplier ? "مورد" : "مجهز";
+      performedRole = isSupplier ? "supplier" : "preparer";
+      performedRoleLabel = isSupplier ? "مورد" : "مجهز";
     } else if (ev.courier && ev.courierId) {
       performedByName = ev.courier.name;
-      performedRole = "مندوب";
+      performedRole = "courier";
+      performedRoleLabel = "مندوب";
     } else if (ev.recordedByCompanyPreparerId) {
       performedByName = "مجهز";
-      performedRole = "مجهز";
+      performedRole = "preparer";
+      performedRoleLabel = "مجهز";
     } else if (ev.courierId && ev.courier?.name) {
       performedByName = ev.courier.name;
-      performedRole = "مندوب";
+      performedRole = "courier";
+      performedRoleLabel = "مندوب";
     } else {
       performedByName = "الإدارة";
-      performedRole = "إدارة";
+      performedRole = "admin";
+      performedRoleLabel = "إدارة";
     }
 
     const orderNumber = order.orderNumber;
@@ -171,7 +181,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const searchText = [
       String(orderNumber),
       performedByName,
-      performedRole,
+      performedRoleLabel,
       sourceLabel,
       typeLabel,
       details,
@@ -193,6 +203,8 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       orderNumber,
       orderId: order.id,
       courierName: performedByName,
+      performerRole: performedRole,
+      performerRoleLabel: performedRoleLabel,
       partyName: order.shop.name,
       kind: ev.kind,
       status: deleted ? "ملغاة" : "مرتبطة بطلب",
@@ -227,6 +239,8 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       typeLabel,
       amountDinar: amount,
       courierName,
+      performerRole: "courier",
+      performerRoleLabel: "مندوب",
       partyName: courierName,
       kind: entry.direction,
       status: deleted ? "ملغاة" : "سجل يدوي",
@@ -250,7 +264,8 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const prep = entry.employee.walletForCompanyPreparer;
     const personName = prep?.name || entry.employee.name;
     const isSupplier = prep?.notes?.includes("[SUPPLIER]");
-    const roleLabel = isSupplier ? "مورد" : prep ? "مجهز" : "موظف";
+    const performedRole: "courier" | "preparer" | "supplier" | "shop" | "transfer" | "admin" = isSupplier ? "supplier" : prep ? "preparer" : "shop";
+    const roleLabel = isSupplier ? "مورد" : prep ? "مجهز" : "موظف محل";
     const details = entry.label;
     const dateLabel = formatYMDLocal(createdAt);
     const timeLabel = formatTime(createdAt);
@@ -264,6 +279,8 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       typeLabel,
       amountDinar: amount,
       courierName: personName,
+      performerRole: performedRole,
+      performerRoleLabel: roleLabel,
       partyName: personName,
       kind: entry.direction,
       status: deleted ? "ملغاة" : isSupplier ? "سجل مورد" : prep ? "سجل مجهز" : "سجل موظف",
@@ -302,6 +319,8 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       typeLabel,
       amountDinar: amount,
       courierName: fromName !== "أدمن" ? fromName : toName,
+      performerRole: "transfer",
+      performerRoleLabel: "تحويل",
       partyName: details,
       kind: transfer.status,
       status: transfer.status,

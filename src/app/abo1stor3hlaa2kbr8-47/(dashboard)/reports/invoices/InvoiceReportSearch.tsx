@@ -11,13 +11,15 @@ import {
   batchHardDeleteWalletLedgerRows,
   type WalletLedgerDeleteState,
 } from "./actions";
-import type { InvoiceReportRow } from "./page";
+import type { InvoiceReportRow, PerformerRole } from "./page";
 
 type Props = {
   rows: InvoiceReportRow[];
   initialQuery?: string;
   selectedDayIso: string;
 };
+
+type CategoryFilter = "all" | "courier" | "preparer" | "supplier" | "order" | "transfer" | "admin";
 
 function normalizeSearchValue(value?: string): string {
   if (!value) return "";
@@ -29,6 +31,8 @@ function normalizeSearchValue(value?: string): string {
 }
 
 export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso }: Props) {
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
+  const [selectedPerformerName, setSelectedPerformerName] = useState<string>("");
   const [query, setQuery] = useState(initialQuery ?? "");
   const normalizedQuery = useMemo(() => normalizeSearchValue(query), [query]);
   const [softState, softAction, softPending] = useActionState(softDeleteWalletLedgerRow, {} as WalletLedgerDeleteState);
@@ -36,13 +40,73 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
   const [batchHardState, batchHardAction, batchHardPending] = useActionState(batchHardDeleteWalletLedgerRows, {} as WalletLedgerDeleteState);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // إحصائيات الأعداد حسب الفئات
+  const countsByCategory = useMemo(() => {
+    const counts: Record<CategoryFilter, number> = {
+      all: 0,
+      courier: 0,
+      preparer: 0,
+      supplier: 0,
+      order: 0,
+      transfer: 0,
+      admin: 0,
+    };
+    for (const r of rows) {
+      if (r.deleted) continue;
+      counts.all++;
+      if (r.performerRole === "courier") counts.courier++;
+      if (r.performerRole === "preparer") counts.preparer++;
+      if (r.performerRole === "supplier") counts.supplier++;
+      if (r.source === "order") counts.order++;
+      if (r.performerRole === "transfer") counts.transfer++;
+      if (r.performerRole === "admin" || r.performerRole === "shop") counts.admin++;
+    }
+    return counts;
+  }, [rows]);
+
+  // قائمة أسماء المنفذين الفريدة حسب الفئة المختارة
+  const performerNamesForCategory = useMemo(() => {
+    const names = new Set<string>();
+    for (const r of rows) {
+      if (r.deleted) continue;
+      if (selectedCategory === "courier" && r.performerRole !== "courier") continue;
+      if (selectedCategory === "preparer" && r.performerRole !== "preparer") continue;
+      if (selectedCategory === "supplier" && r.performerRole !== "supplier") continue;
+      if (selectedCategory === "order" && r.source !== "order") continue;
+      if (selectedCategory === "transfer" && r.performerRole !== "transfer") continue;
+      if (selectedCategory === "admin" && r.performerRole !== "admin" && r.performerRole !== "shop") continue;
+      if (r.courierName && r.courierName !== "غير معروف" && r.courierName !== "الإدارة") {
+        names.add(r.courierName);
+      }
+    }
+    return Array.from(names).sort();
+  }, [rows, selectedCategory]);
+
   const filteredRows = useMemo(() => {
-    if (!normalizedQuery) return rows;
-    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
-    return rows.filter((row) =>
-      tokens.every((token) => row.searchText.includes(token))
-    );
-  }, [normalizedQuery, rows]);
+    return rows.filter((row) => {
+      // 1. فلتر الفئة
+      if (selectedCategory === "courier" && row.performerRole !== "courier") return false;
+      if (selectedCategory === "preparer" && row.performerRole !== "preparer") return false;
+      if (selectedCategory === "supplier" && row.performerRole !== "supplier") return false;
+      if (selectedCategory === "order" && row.source !== "order") return false;
+      if (selectedCategory === "transfer" && row.performerRole !== "transfer") return false;
+      if (selectedCategory === "admin" && row.performerRole !== "admin" && row.performerRole !== "shop") return false;
+
+      // 2. فلتر اختيار الاسم المحدد من القائمة
+      if (selectedPerformerName && row.courierName !== selectedPerformerName) {
+        return false;
+      }
+
+      // 3. فلتر البحث النصي الفوري
+      if (normalizedQuery) {
+        const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+        const match = tokens.every((token) => row.searchText.includes(token));
+        if (!match) return false;
+      }
+
+      return true;
+    });
+  }, [rows, selectedCategory, selectedPerformerName, normalizedQuery]);
 
   const activeFilteredRows = useMemo(
     () => filteredRows.filter((row) => !row.deleted),
@@ -88,20 +152,84 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
     }
   }, [filteredRows, selectedIds]);
 
+  const categoryTabs: { id: CategoryFilter; label: string; icon: string }[] = [
+    { id: "all", label: "الكل", icon: "📋" },
+    { id: "courier", label: "المندوبين", icon: "🛵" },
+    { id: "preparer", label: "المجهزين", icon: "📦" },
+    { id: "supplier", label: "الموردين", icon: "🚚" },
+    { id: "order", label: "فواتير الطلبات", icon: "🏪" },
+    { id: "transfer", label: "التحويلات", icon: "🔄" },
+    { id: "admin", label: "الإدارة والمحلات", icon: "⚙️" },
+  ];
+
   return (
     <>
+      {/* تبويبات الفلترة حسب النوع */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {categoryTabs.map((tab) => {
+          const count = countsByCategory[tab.id];
+          const isSelected = selectedCategory === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(tab.id);
+                setSelectedPerformerName("");
+              }}
+              className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition-all shadow-sm ${
+                isSelected
+                  ? "bg-slate-900 text-white shadow-md scale-105"
+                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-black ${
+                  isSelected ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className={`${ad.section} rounded-3xl border border-slate-200 bg-white p-6 shadow-sm`}>
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto] items-end">
           <label className="flex flex-col gap-2">
-            <span className={ad.label}>بحث فوري</span>
+            <span className={ad.label}>بحث فوري في المعاملات</span>
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="مبلغ، رقم طلب، اسم مندوب أو مجهز أو مورد، حالة، وقت، تاريخ"
+              placeholder="ابحث بالاسم، المبلغ، رقم الطلب، الحالة، التاريخ..."
               className={ad.input}
             />
           </label>
+
+          {performerNamesForCategory.length > 0 ? (
+            <label className="flex flex-col gap-2">
+              <span className={ad.label}>تحديد الاسم مباشرة</span>
+              <select
+                value={selectedPerformerName}
+                onChange={(e) => setSelectedPerformerName(e.target.value)}
+                className={ad.input}
+              >
+                <option value="">جميع الأسماء ({performerNamesForCategory.length})</option>
+                {performerNamesForCategory.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div className="hidden lg:block" />
+          )}
+
           <div className="text-right">
             <p className={ad.label}>اليوم</p>
             <p className="mt-2 text-base font-black text-slate-900">{selectedDayIso}</p>
