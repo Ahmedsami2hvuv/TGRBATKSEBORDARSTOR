@@ -75,10 +75,10 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
           include: {
             shop: { select: { name: true } },
             customerRegion: { select: { name: true } },
-            courier: { select: { name: true } },
           },
         },
         courier: { select: { name: true } },
+        recordedByCompanyPreparer: { select: { name: true, notes: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -89,7 +89,14 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     }),
     prisma.employeeWalletMiscEntry.findMany({
       where: { createdAt: { gte: from, lte: to } },
-      include: { employee: { select: { name: true } } },
+      include: {
+        employee: {
+          select: {
+            name: true,
+            walletForCompanyPreparer: { select: { name: true, notes: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.walletPeerTransfer.findMany({
@@ -97,8 +104,18 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       include: {
         fromCourier: { select: { name: true } },
         toCourier: { select: { name: true } },
-        fromEmployee: { select: { name: true } },
-        toEmployee: { select: { name: true } },
+        fromEmployee: {
+          select: {
+            name: true,
+            walletForCompanyPreparer: { select: { name: true, notes: true } },
+          },
+        },
+        toEmployee: {
+          select: {
+            name: true,
+            walletForCompanyPreparer: { select: { name: true, notes: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -119,7 +136,29 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const amount = Number(ev.amountDinar);
     const order = ev.order;
     const createdAt = ev.createdAt;
-    const courierName = ev.courier?.name ?? order.courier?.name ?? "غير معروف";
+
+    // تحديد المنفذ الفعلي للمعاملة المالية بدقة
+    let performedByName = "الإدارة";
+    let performedRole = "إدارة";
+
+    if (ev.recordedByCompanyPreparer) {
+      const isSupplier = ev.recordedByCompanyPreparer.notes?.includes("[SUPPLIER]");
+      performedByName = ev.recordedByCompanyPreparer.name;
+      performedRole = isSupplier ? "مورد" : "مجهز";
+    } else if (ev.courier && ev.courierId) {
+      performedByName = ev.courier.name;
+      performedRole = "مندوب";
+    } else if (ev.recordedByCompanyPreparerId) {
+      performedByName = "مجهز";
+      performedRole = "مجهز";
+    } else if (ev.courierId && ev.courier?.name) {
+      performedByName = ev.courier.name;
+      performedRole = "مندوب";
+    } else {
+      performedByName = "الإدارة";
+      performedRole = "إدارة";
+    }
+
     const orderNumber = order.orderNumber;
     const sourceLabel = "فواتير الطلبات";
     const typeLabel = orderKindLabels[ev.kind] ?? `فاتورة طلب (${ev.kind})`;
@@ -127,9 +166,12 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const dateLabel = formatYMDLocal(createdAt);
     const timeLabel = formatTime(createdAt);
     const isIncomingOrder = ev.kind === "order_in" || ev.kind === "delivery_in";
+
+    // لا يتم وضع اسم المندوب المسند للطلب إطلاقاً إلا إذا كان هو المنفذ الفعلي
     const searchText = [
       String(orderNumber),
-      courierName,
+      performedByName,
+      performedRole,
       sourceLabel,
       typeLabel,
       details,
@@ -150,7 +192,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       amountDinar: amount,
       orderNumber,
       orderId: order.id,
-      courierName,
+      courierName: performedByName,
       partyName: order.shop.name,
       kind: ev.kind,
       status: deleted ? "ملغاة" : "مرتبطة بطلب",
@@ -175,7 +217,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const dateLabel = formatYMDLocal(createdAt);
     const timeLabel = formatTime(createdAt);
     const courierName = entry.courier.name;
-    const searchText = [typeLabel, courierName, details, dateLabel, timeLabel, String(amount)].join(" ").toLowerCase();
+    const searchText = [typeLabel, courierName, "مندوب", details, dateLabel, timeLabel, String(amount)].join(" ").toLowerCase();
 
     const deleted = entry.deletedAt != null;
     rows.push({
@@ -205,11 +247,14 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
     const createdAt = entry.createdAt;
     const incoming = entry.direction === "take";
     const typeLabel = incoming ? "وارد" : "صادر";
-    const personName = entry.employee.name;
+    const prep = entry.employee.walletForCompanyPreparer;
+    const personName = prep?.name || entry.employee.name;
+    const isSupplier = prep?.notes?.includes("[SUPPLIER]");
+    const roleLabel = isSupplier ? "مورد" : prep ? "مجهز" : "موظف";
     const details = entry.label;
     const dateLabel = formatYMDLocal(createdAt);
     const timeLabel = formatTime(createdAt);
-    const searchText = [typeLabel, personName, details, dateLabel, timeLabel, String(amount)].join(" ").toLowerCase();
+    const searchText = [typeLabel, personName, roleLabel, details, dateLabel, timeLabel, String(amount)].join(" ").toLowerCase();
 
     const deleted = entry.deletedAt != null;
     rows.push({
@@ -221,7 +266,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       courierName: personName,
       partyName: personName,
       kind: entry.direction,
-      status: deleted ? "ملغاة" : "سجل مجز",
+      status: deleted ? "ملغاة" : isSupplier ? "سجل مورد" : prep ? "سجل مجهز" : "سجل موظف",
       direction: deleted ? "neutral" : incoming ? "in" : "out",
       deleted,
       rowColorClass: deleted ? "bg-slate-100" : incoming ? "bg-rose-50" : "bg-emerald-50",
@@ -237,8 +282,13 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
   for (const transfer of walletTransfers) {
     const amount = Number(transfer.amountDinar);
     const createdAt = transfer.createdAt;
-    const fromName = transfer.fromCourier?.name ?? transfer.fromEmployee?.name ?? (transfer.fromKind === "admin" ? "أدمن" : "غير معروف");
-    const toName = transfer.toCourier?.name ?? transfer.toEmployee?.name ?? (transfer.toKind === "admin" ? "أدمن" : "غير معروف");
+    
+    const fromPrep = transfer.fromEmployee?.walletForCompanyPreparer;
+    const fromName = transfer.fromCourier?.name ?? fromPrep?.name ?? transfer.fromEmployee?.name ?? (transfer.fromKind === "admin" ? "أدمن" : "غير معروف");
+
+    const toPrep = transfer.toEmployee?.walletForCompanyPreparer;
+    const toName = transfer.toCourier?.name ?? toPrep?.name ?? transfer.toEmployee?.name ?? (transfer.toKind === "admin" ? "أدمن" : "غير معروف");
+    
     const typeLabel = `تحويل ${transfer.status === "accepted" ? "مقبول" : transfer.status === "rejected" ? "مرفوض" : "معلق"}`;
     const details = `من ${fromName} إلى ${toName}`;
     const dateLabel = formatYMDLocal(createdAt);

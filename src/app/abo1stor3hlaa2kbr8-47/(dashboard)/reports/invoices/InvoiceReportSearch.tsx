@@ -98,7 +98,7 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="مبلغ، رقم طلب، اسم مندوب، حالة، وقت، تاريخ"
+              placeholder="مبلغ، رقم طلب، اسم مندوب أو مجهز أو مورد، حالة، وقت، تاريخ"
               className={ad.input}
             />
           </label>
@@ -145,7 +145,7 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
               <th className="px-4 py-3 border-b border-slate-200">النوع</th>
               <th className="px-4 py-3 border-b border-slate-200">الحالة</th>
               <th className="px-4 py-3 border-b border-slate-200">الطلب / الطرف</th>
-              <th className="px-4 py-3 border-b border-slate-200">مندوب / مجز</th>
+              <th className="px-4 py-3 border-b border-slate-200">المنفذ (مندوب / مجهز / مورد)</th>
               <th className="px-4 py-3 border-b border-slate-200">المبلغ</th>
               <th className="px-4 py-3 border-b border-slate-200">تفاصيل</th>
               <th className="px-4 py-3 border-b border-slate-200">إجراءات</th>
