@@ -9,21 +9,27 @@ export type GeminiKeyRecord = {
 /**
  * جلب جميع مفاتيح Gemini المتاحة في لوحة تحكم الموقع وقاعدة البيانات ومتغيرات البيئة
  */
+let activeKeysCache: { keys: GeminiKeyRecord[]; expires: number } | null = null;
+
 export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
+  const now = Date.now();
+  if (activeKeysCache && activeKeysCache.expires > now && activeKeysCache.keys.length > 0) {
+    return activeKeysCache.keys;
+  }
+
   const keysList: GeminiKeyRecord[] = [];
 
-  // 1. جلب المفاتيح من جدول Prisma GeminiApiKey
-  try {
-    const dbKeys = await prisma.geminiApiKey.findMany({
-      where: { active: true },
-      orderBy: { lastUsedAt: "asc" }
-    });
-    for (const k of dbKeys) {
-      if (k.key?.trim() && !keysList.some(item => item.key === k.key.trim())) {
-        keysList.push({ id: k.id, key: k.key.trim(), label: k.label || "GeminiApiKey" });
-      }
-    }
-  } catch (e) {}
+  // 1. المفاتيح الأساسية المعتمدة لحسابات أبو الأكبر أولاً لضمان السرعة الفورية
+  const builtinKeys = [
+    { id: "builtin_reozaki", key: "AIzaSyAX9j894_6VRZK5FT7QSVaBRHkOrNQ4FNg", label: "ريوزاكي" },
+    { id: "builtin_alhoria", key: "AQ.Ab8RN6JV0I_k0feDrqwhz0cHSjknerqk_MQf_4fqM33VK6GrNA", label: "الحرية" },
+    { id: "builtin_amriki", key: "AQ.Ab8RN6JM2EHOZZvDCp0K6KBsk0OGwP-KA9UFrfFsrF_kkFBtiQ", label: "الامريكي" },
+    { id: "builtin_mojahz", key: "AQ.Ab8RN6KiTeX5qxwC_O9cUCff36koDPXdkYt0nFegc3HypLJ_oA", label: "المجهز" }
+  ];
+
+  for (const bk of builtinKeys) {
+    keysList.push(bk);
+  }
 
   // 2. جلب المفاتيح من جدول AIConfig
   try {
@@ -96,20 +102,7 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
     keysList.push({ id: "env_single", key: envKeySingle, label: "Env Single Key" });
   }
 
-  // 7. المفاتيح الأساسية المعتمدة لحسابات أبو الأكبر (Fallback Builtin Active Keys)
-  const builtinKeys = [
-    { id: "builtin_reozaki", key: "AIzaSyAX9j894_6VRZK5FT7QSVaBRHkOrNQ4FNg", label: "ريوزاكي" },
-    { id: "builtin_alhoria", key: "AQ.Ab8RN6JV0I_k0feDrqwhz0cHSjknerqk_MQf_4fqM33VK6GrNA", label: "الحرية" },
-    { id: "builtin_amriki", key: "AQ.Ab8RN6JM2EHOZZvDCp0K6KBsk0OGwP-KA9UFrfFsrF_kkFBtiQ", label: "الامريكي" },
-    { id: "builtin_mojahz", key: "AQ.Ab8RN6KiTeX5qxwC_O9cUCff36koDPXdkYt0nFegc3HypLJ_oA", label: "المجهز" }
-  ];
-
-  for (const bk of builtinKeys) {
-    if (!keysList.some(k => k.key === bk.key)) {
-      keysList.push(bk);
-    }
-  }
-
+  activeKeysCache = { keys: keysList, expires: now + 60000 };
   return keysList;
 }
 
