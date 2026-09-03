@@ -967,6 +967,13 @@ export async function executeSuperSystemAgent(
     lowerRaw.includes("صرف") ||
     lowerRaw.includes("دينار") ||
     lowerRaw.includes("دولار") ||
+    lowerRaw.includes("كباب") ||
+    lowerRaw.includes("رايك") ||
+    lowerRaw.includes("شنو") ||
+    lowerRaw.includes("شرايك") ||
+    lowerRaw.includes("منتج") ||
+    lowerRaw.includes("ستور") ||
+    lowerRaw.includes("لحم بعجين") ||
     lowerRaw.includes("الغاء") ||
     lowerRaw.includes("بطلت");
 
