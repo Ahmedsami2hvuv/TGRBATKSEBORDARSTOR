@@ -12,7 +12,11 @@ export async function executeAutonomousAiCommand(
 ): Promise<{ reply: string; buttons?: Array<{ text: string; action: string }> } | null> {
   try {
     const keys = await getAllActiveGeminiKeys();
-    if (!keys || keys.length === 0) return null;
+    if (!keys || keys.length === 0) {
+      return {
+        reply: "⚠️ يا أبو الأكبر: لا تتوفر أي مفاتيح Google Gemini نشطة في النظام حالياً. يرجى إضافة مفاتيح جيمناي في صفحة الإعدادات ⚙️ ليعمل عقل جيمناي بالكامل!"
+      };
+    }
 
     // جلب البيانات من الكاش السريع المحمي في الذاكرة لمنع تشنج قاعدة البيانات
     const [allCouriers, allShops, allRegions] = await Promise.all([

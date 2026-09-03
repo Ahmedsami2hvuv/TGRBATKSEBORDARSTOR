@@ -3133,7 +3133,7 @@ export async function executeSuperSystemAgent(
           }
         } catch (e) {}
 
-        return { reply: "تدلل يا أبو الأكبر، أنا أسمعك وجاهز لأي سؤال أو استشارة أو أمر تريده يا غالي 🌸" };
+        return { reply: "⚠️ يا أبو الأكبر: تعذر الاتصال بـ Google Gemini لعدم توفر مفاتيح نشطة أو انتهاء الحصة. يرجى مراجعة مفاتيح جيمناي في صفحة الإعدادات ⚙️" };
       }
     }
   } catch (err: any) {

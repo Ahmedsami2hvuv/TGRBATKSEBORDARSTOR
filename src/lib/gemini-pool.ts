@@ -38,7 +38,23 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
     }
   } catch (e) {}
 
-  // 3. جلب المفاتيح من Supabase Direct REST API
+  // 3. جلب المفاتيح من جدول UISystemSetting أو StoreSetting
+  try {
+    const uiSettings = await prisma.uISystemSetting.findMany();
+    for (const s of uiSettings) {
+      const configStr = JSON.stringify(s.config || {});
+      const matches = configStr.match(/AIzaSy[a-zA-Z0-9_\-]{30,45}/g);
+      if (matches) {
+        matches.forEach((k, idx) => {
+          if (!keysList.some(item => item.key === k)) {
+            keysList.push({ id: `uisetting_${s.id}_${idx}`, key: k, label: "UISetting Gemini Key" });
+          }
+        });
+      }
+    }
+  } catch (e) {}
+
+  // 4. جلب المفاتيح من Supabase Direct REST API لجدول GeminiApiKey
   try {
     const supabaseUrl = process.env.SUPABASE_URL || "https://trfjlxxeldnegjgdqefm.supabase.co";
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_OzGTq6fwKa3dh5qeIfyZkw__LLSzJNR";
@@ -63,7 +79,7 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
     }
   } catch (e) {}
 
-  // 4. مفاتيح مجمعة من البيئة GEMINI_KEYS (مفصولة بفواصل)
+  // 5. مفاتيح مجمعة من البيئة GEMINI_KEYS (مفصولة بفواصل)
   const envKeysGroup = process.env.GEMINI_KEYS || process.env.GEMINI_API_KEYS;
   if (envKeysGroup?.trim()) {
     const splitted = envKeysGroup.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
@@ -74,7 +90,7 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
     });
   }
 
-  // 5. مفاتيح بيئة فردية GEMINI_API_KEY و GOOGLE_API_KEY
+  // 6. مفاتيح بيئة فردية GEMINI_API_KEY و GOOGLE_API_KEY
   const envKeySingle = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
   if (envKeySingle && !keysList.some(k => k.key === envKeySingle)) {
     keysList.push({ id: "env_single", key: envKeySingle, label: "Env Single Key" });
