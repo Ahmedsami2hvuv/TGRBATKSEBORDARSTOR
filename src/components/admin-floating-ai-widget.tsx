@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Keyboard, Trash2 } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, X, Sparkles, Move, Loader2, Keyboard, Trash2, Pencil, Check } from "lucide-react";
 
 type ChatLogMessage = {
   id: string;
@@ -20,6 +20,8 @@ export function AdminFloatingAiWidget() {
   const [hasMoved, setHasMoved] = useState(false);
 
   const [inputMessage, setInputMessage] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
   const [statusText, setStatusText] = useState("المساعد الصوتي الذكي جاهز");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -500,10 +502,58 @@ export function AdminFloatingAiWidget() {
                       : "bg-slate-900/90 text-slate-200 rounded-tl-none border border-slate-800"
                   }`}
                 >
-                  {msg.sender === "user" && <span className="font-bold text-[10px] text-blue-200 block mb-1">🎙️ أنـت:</span>}
+                  {msg.sender === "user" && (
+                    <div className="flex items-center justify-between gap-2 mb-1.5 border-b border-blue-500/40 pb-1">
+                      <span className="font-bold text-[10px] text-blue-200">🎙️ أنـت:</span>
+                      <button
+                        onClick={() => {
+                          setEditingMessageId(msg.id);
+                          setEditingText(msg.text);
+                        }}
+                        className="px-2 py-0.5 bg-blue-700/80 hover:bg-blue-800 text-blue-100 hover:text-white rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold shadow-xs active:scale-95"
+                        title="تعديل هذه الرسالة وإعادة إرسالها"
+                      >
+                        <Pencil className="w-2.5 h-2.5" />
+                        <span>تعديل</span>
+                      </button>
+                    </div>
+                  )}
+
                   {msg.sender === "ai" && <span className="font-bold text-[10px] text-sky-400 block mb-1">✨ المساعد الذكي:</span>}
 
-                  {msg.text}
+                  {editingMessageId === msg.id && msg.sender === "user" ? (
+                    <div className="space-y-2 mt-1">
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        className="w-full p-2 text-xs bg-slate-950 text-white rounded-xl border border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none min-h-[60px] leading-relaxed"
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <button
+                          onClick={() => setEditingMessageId(null)}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] rounded-lg transition-colors"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const clean = editingText.trim();
+                            if (!clean || isLoading) return;
+                            setEditingMessageId(null);
+                            await sendApiCommand(clean);
+                          }}
+                          disabled={!editingText.trim() || isLoading}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded-lg flex items-center gap-1 transition-colors shadow-sm disabled:opacity-50 active:scale-95"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>إرسال التعديل</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>{msg.text}</div>
+                  )}
 
                   {/* الأزرار التفاعلية المباشرة المرفقة بالرسالة */}
                   {msg.buttons && msg.buttons.length > 0 && (
