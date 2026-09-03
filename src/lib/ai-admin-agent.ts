@@ -1055,6 +1055,27 @@ export async function executeSuperSystemAgent(
     return { reply: "تم تصفير الذاكرة وسجل المحادثة والبدء بدردشة جديدة ناصعة يا أبو الأكبر! تفضل بأمرك الجديد 🚀" };
   }
 
+  // 0.015 أمر بدء إنشاء طلب جديد تفاعلي بالخطوات
+  if (
+    cleanInit === "سوي طلب" ||
+    cleanInit === "سويلي طلب" ||
+    cleanInit === "سوي لي طلب" ||
+    cleanInit === "اريد اسوي طلب" ||
+    cleanInit === "اريد طلب جديد" ||
+    cleanInit === "طلب جديد" ||
+    cleanInit === "انشاء طلب" ||
+    cleanInit === "إنشاء طلب" ||
+    cleanInit === "سوي طلب جديد"
+  ) {
+    const { handleOrderCreationWizard } = await import("./ai-order-wizard");
+    const initialDraft = { step: "waiting_shop" as const };
+    const wizardRes = await handleOrderCreationWizard(rawText, initialDraft, ctx);
+    ctx.orderDraft = wizardRes.nextDraft || initialDraft;
+    ctx.updatedAt = Date.now();
+    await savePersistentSessionContext(sessionKey, ctx);
+    return { reply: wizardRes.reply || "يا أبو الأكبر، من أي محل الطلب؟ 🏪", buttons: wizardRes.buttons };
+  }
+
   // 0.02 إطلاق عقل Google Gemini المستقل كبوابة أولى لتفسير وتنفيذ كل الأوامر والاستشارات والمحادثات
   if (!rawText.startsWith("assign_order_") && !rawText.startsWith("set_region_order_") && !ctx.waitingForCarHours) {
     try {

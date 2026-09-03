@@ -326,10 +326,13 @@ export async function handleOrderCreationWizard(
       const allShops = await getCachedShops();
       const isDirectButtonClick = userText.startsWith("🏪 ") || userText.startsWith("محل ");
       const cleanUser = clean
+        .replace(/^اسم\s+المحل\s+/g, "")
         .replace(/^من\s+محل\s+/g, "")
         .replace(/^من\s+/g, "")
         .replace(/^محل\s+/g, "")
         .replace(/^🏪\s*/g, "")
+        .replace(/أو\s*الأكبر/gi, "ابو الاكبر")
+        .replace(/او\s*الاكبر/gi, "ابو الاكبر")
         .trim();
 
       const scoredShops = allShops.map(s => {
@@ -342,8 +345,8 @@ export async function handleOrderCreationWizard(
 
       const best = scoredShops[0];
 
-      // إذا نقر المستخدم على الزر مباشرة (🏪 ...) يتم اعتماد المحل فوراً والانتقال للمنطقة
-      if (isDirectButtonClick && best && best.score >= 0.7) {
+      // اعتماد المحل فوراً صوتياً أو بالنقر والانتقال لخطوة المنطقة
+      if (best && best.score >= 0.6) {
         const updatedDraft: OrderDraftState = {
           ...draft,
           shopId: best.shop.id,
@@ -354,9 +357,16 @@ export async function handleOrderCreationWizard(
           return await finalizeAndCreateOrder(updatedDraft, ctx);
         }
 
+        const allRegions = await getCachedRegions();
+        const popularRegions = allRegions.slice(0, 4).map(r => ({
+          text: `📍 ${r.name}`,
+          action: `📍 ${r.name}`
+        }));
+
         return {
           handled: true,
           reply: `تمام يا غالي (${best.shop.name})! لأي منطقة الطلب؟ 📍`,
+          buttons: popularRegions,
           nextDraft: {
             ...updatedDraft,
             step: "waiting_region"
@@ -364,7 +374,7 @@ export async function handleOrderCreationWizard(
         };
       }
 
-      // دائماً نعرض للمستخدم خيارات المحلات الأقرب حتى لو كتب الاسم صحيحاً لتأكيده بنقرة واحدة وتجنب الخطأ
+      // إذا لم يتطابق الاسم نعرض الخيارات
       const topSuggestions = scoredShops.slice(0, 4).map(s => s.shop);
       const buttons = topSuggestions.map(s => ({
         text: `🏪 ${s.name}`,
@@ -381,7 +391,6 @@ export async function handleOrderCreationWizard(
 
     case "waiting_region": {
       const allRegions = await getCachedRegions();
-      const isDirectButtonClick = userText.startsWith("📍 ") || userText.startsWith("منطقة ") || userText.startsWith("منطقه ");
       let cleanUser = clean
         .replace(/^الى\s+منطقة\s+/g, "")
         .replace(/^الي\s+منطقة\s+/g, "")
@@ -389,12 +398,17 @@ export async function handleOrderCreationWizard(
         .replace(/^الي\s+/g, "")
         .replace(/^منطقة\s+/g, "")
         .replace(/^منطقه\s+/g, "")
+        .replace(/^ثبت\s+عليها\s+/g, "")
+        .replace(/^ثبت\s+على\s+/g, "")
         .replace(/^📍\s*/g, "")
         .replace(/^لـ\s*/g, "")
         .replace(/^لاي\s*/g, "")
         .replace(/جيحور/gi, "جيكور")
         .replace(/جاي\s*كور/gi, "جيكور")
         .replace(/نار\s*خوز/gi, "نهر خوز")
+        .replace(/أعلنها\s*الخوز/gi, "نهر خوز")
+        .replace(/اعلنها\s*الخوز/gi, "نهر خوز")
+        .replace(/نهر\s*الحوز/gi, "نهر خوز")
         .trim();
 
       const scoredRegions = allRegions.map(r => {
@@ -412,8 +426,8 @@ export async function handleOrderCreationWizard(
 
       const best = scoredRegions[0];
 
-      // إذا نقر المستخدم على زر المنطقة مباشرة (📍 ...) يتم اعتماد المنطقة فوراً والانتقال للهاتف
-      if (isDirectButtonClick && best && best.score >= 0.7) {
+      // اعتماد المنطقة فوراً صوتياً أو بالنقر والانتقال لطلب السعر والهاتف
+      if (best && best.score >= 0.6) {
         const matchedRegion = best.region;
         const updatedDraft: OrderDraftState = {
           ...draft,
@@ -427,15 +441,15 @@ export async function handleOrderCreationWizard(
 
         return {
           handled: true,
-          reply: `حلو (${matchedRegion.name})! انطيني رقم هاتف الزبون 📞 (أو اكتب "بدون رقم")`,
+          reply: `عاشت إيدك (${matchedRegion.name} - توصيل ${matchedRegion.deliveryPrice} ألف)! شكد سعر الطلب يا أبو الأكبر؟ (مثلاً: 10 أو 15) 💰`,
           nextDraft: {
             ...updatedDraft,
-            step: "waiting_phone"
+            step: "waiting_price"
           }
         };
       }
 
-      // دائماً نعرض للمستخدم خيارات المناطق الأقرب حتى لو كتب الاسم لتأكيده بنقرة واحدة وتجنب أي خطأ في المنطقة
+      // إذا لم تتطابق نعرض أقرب المناطق
       const topRegions = scoredRegions.slice(0, 4).map(item => item.region);
       const buttons = topRegions.map(r => ({
         text: `📍 ${r.name}`,
