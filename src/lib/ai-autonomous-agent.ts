@@ -173,7 +173,8 @@ export async function executeAutonomousAiCommand(
     let successfulKeyId: string | null = null;
 
     const cleanInputText = userText.replace(/#/g, "");
-    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-pro"];
+    // استخدام الموديلات الأسرع والأخف استجابة فورية
+    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest"];
 
     for (const k of keys) {
       if (functionCallResult || directTextReply) break;
@@ -181,7 +182,7 @@ export async function executeAutonomousAiCommand(
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 7500);
+          const timeoutId = setTimeout(() => controller.abort(), 4500);
 
           const response = await fetch(url, {
             method: "POST",
@@ -202,7 +203,7 @@ export async function executeAutonomousAiCommand(
 - المناطق: [${regionsList}]
 
 القواعد الصارمة:
-1. إذا كان كلام أبو الأكبر سؤالاً عاماً، استشارة، نقاشاً، أسئلة عن أسعار الكباب، أسعار الصرف والدولار، مقارنة لابتوب وديسكتوب، آيفون 16، نصائح تسويق، سوالف، أو محادثة عادية: أجب عليه مباشرة بنص كامل ومفصل وذكي ولبق (text reply) دون استدعاء أي أداة.
+1. إذا كان كلام أبو الأكبر سؤالاً عاماً، استشارة، نقاشاً، أسئلة عن أسعار الكباب، أسعار الصرف والدولار، مقارنة لابتوب وديسكتوب، آيفون 16، نصائح تسويق، سوالف، أو محادثة عادية: أجب عليه مباشرة بنص كامل ومفصل وذكي ولبق (text reply) دون استدعاء أي أداة وبإيجاز مفيد.
 2. إذا كان كلام أبو الأكبر استعلاماً أو أمراً إدارياً يخص طلبات المندوبين، أرباحهم، الأرشفة، التصفير، الطلبات الجديدة، المجهزين، أو تفاصيل الطلبات: استدعِ الدالة المناسبة (Function Call) مع تمرير المتغيرات المستخرجة بدقة.
 
 كلام وأمر أبو الأكبر هو: "${cleanInputText}"`
@@ -212,7 +213,8 @@ export async function executeAutonomousAiCommand(
               ],
               tools: geminiTools,
               generationConfig: {
-                temperature: 0.4
+                temperature: 0.3,
+                maxOutputTokens: 500
               }
             })
           });
@@ -1244,7 +1246,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
     const keys = await getAllActiveGeminiKeys();
     if (!keys || keys.length === 0) return null;
 
-    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-pro"];
+    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest"];
     const cleanInput = userText.replace(/#/g, "").trim();
 
     for (const k of keys) {
@@ -1252,7 +1254,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k.key}`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 7500);
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
 
           const res = await fetch(url, {
             method: "POST",
@@ -1266,14 +1268,15 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
                     {
                       text: `أنت نموذج الذكاء الاصطناعي Google Gemini (المساعد الذكي والشخصي والعقل المفكر لـ أبو الأكبر).
 تحدث بلهجة عراقية محترمة، واعية، ذكية، ومباشرة.
-أجب عن سؤال واستشارة ونقاش أبو الأكبر بالتفصيل وبأسلوب ذكي ومقنع ومفيد وبدون قوالب مسبقة:
+أجب عن سؤال واستشارة ونقاش أبو الأكبر بأسلوب ذكي ومقنع ومفيد وبإيجاز مرتب:
 سؤال وكلام أبو الأكبر: "${cleanInput}"`
                     }
                   ]
                 }
               ],
               generationConfig: {
-                temperature: 0.5
+                temperature: 0.4,
+                maxOutputTokens: 500
               }
             })
           });
