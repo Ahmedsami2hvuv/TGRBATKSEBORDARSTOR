@@ -78,7 +78,8 @@ export function WaLocationCustomButtons({
     if (!btn.showNextToLocation) return false;
 
     // فحص الصلاحية
-    const scopes = (btn.visibilityScope ?? "all").split(",").map((s) => s.trim());
+    const rawScope = btn.visibilityScope && btn.visibilityScope.trim() ? btn.visibilityScope.trim() : "all";
+    const scopes = rawScope.split(",").map((s) => s.trim()).filter(Boolean);
     const matchRole =
       scopes.includes("all") ||
       (userRole === "admin" && scopes.includes("admin")) ||

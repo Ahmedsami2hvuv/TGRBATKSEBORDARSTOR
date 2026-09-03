@@ -275,20 +275,40 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         ? (o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "")
         : (o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "");
 
-      // حساب رابط طلب الموقع الجغرافي ورابط تبليغ الزبون
-      const requestLocationBtn = waButtons.find(b => 
-        b.label.includes("طلب لوكيشن") || 
-        b.label.includes("طلب لكيشن") || 
-        b.label.includes("طلب الموقع") ||
-        b.label.includes("لوكيشن") ||
-        b.label.includes("لكيشن")
-      );
-      const notifyCustomerBtn = waButtons.find(b => 
-        b.label.includes("تبليغ زبون") || 
-        b.label.includes("تبليغ") || 
-        b.label.includes("إشعار") ||
-        b.label.includes("اشعار")
-      );
+      // حساب رابط طلب الموقع الجغرافي ورابط تبليغ الزبون مع فحص صلاحية الظهور للإدارة
+      const requestLocationBtn = waButtons.find(b => {
+        const scopes = (b.visibilityScope && b.visibilityScope.trim() ? b.visibilityScope : "all")
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const canSeeAdmin = scopes.includes("all") || scopes.includes("admin");
+        if (!canSeeAdmin) return false;
+
+        return (
+          b.label.includes("طلب لوكيشن") || 
+          b.label.includes("طلب لكيشن") || 
+          b.label.includes("طلب الموقع") ||
+          b.label.includes("لوكيشن") ||
+          b.label.includes("لكيشن")
+        );
+      });
+
+      const notifyCustomerBtn = waButtons.find(b => {
+        const scopes = (b.visibilityScope && b.visibilityScope.trim() ? b.visibilityScope : "all")
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const canSeeAdmin = scopes.includes("all") || scopes.includes("admin");
+        if (!canSeeAdmin) return false;
+
+        return (
+          b.label.includes("تبليغ زبون") || 
+          b.label.includes("تبليغ") || 
+          b.label.includes("إشعار") ||
+          b.label.includes("اشعار")
+        );
+      });
+
       let requestLocationWaUrl = null;
       let notifyCustomerWaUrl = null;
 

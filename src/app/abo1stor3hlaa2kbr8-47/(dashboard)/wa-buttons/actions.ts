@@ -106,6 +106,10 @@ export async function upsertMandoubWaButton(
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
   return { ok: true };
 }
 
@@ -127,6 +131,10 @@ export async function updateMandoubWaButtonTemplates(
   });
 
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
   return { ok: true };
 }
 
@@ -136,6 +144,10 @@ export async function deleteMandoubWaButton(formData: FormData): Promise<void> {
 
   await prisma.mandoubWaButtonSetting.delete({ where: { id } });
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
 }
 
 export async function duplicateMandoubWaButton(
@@ -163,5 +175,10 @@ export async function duplicateMandoubWaButton(
   });
 
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
 }
+
 
