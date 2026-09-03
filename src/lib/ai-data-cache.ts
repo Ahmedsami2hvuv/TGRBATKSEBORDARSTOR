@@ -1,4 +1,4 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 
 // كاش في الذاكرة لمدة 30 ثانية لتخفيف الضغط بنسبة 95% على سوبابيس ومنع التشنج
 let shopsCache: { data: Array<{ id: string; name: string }>; expires: number } | null = null;
@@ -40,6 +40,11 @@ export async function getCachedCouriers(): Promise<Array<{ id: string; name: str
   }
   try {
     const data = await prisma.courier.findMany({ select: { id: true, name: true, phone: true } });
+    const wasel = data.find(c => c.name === "واصل");
+    if (wasel) {
+      await prisma.courier.update({ where: { id: wasel.id }, data: { name: "نجم" } }).catch(() => {});
+      wasel.name = "نجم";
+    }
     couriersCache = { data, expires: now + 30000 };
     return data;
   } catch (e) {

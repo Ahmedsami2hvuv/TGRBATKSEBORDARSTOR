@@ -36,33 +36,35 @@ export async function executeAutonomousAiCommand(
 العمليات المتاحة (action):
 1. "CREATE_ORDER": إنشاء طلب مبيعات جديد
    - shop_name, region_name, price, phone, order_type, note_time
-2. "BULK_ARCHIVE": أرشفة الطلبات المسلمة/المكتملة فقط لمندوب أو عدة مندوبين
+2. "GET_PENDING_ORDERS": استعلام عدد وقائمة الطلبات الجديدة المعلقة (مثال: كم طلب جديد عدنه، شكو طلبات معلقة)
+3. "GET_COURIER_ORDERS_STATUS": استعلام حالة وعدد طلبات مندوب معين (مثال: المندوب نجم كم طلب عده غير واصل، طلبيات نجم، شكد عنده طلبات)
+   - courier_name
+4. "BULK_ARCHIVE": أرشفة الطلبات المسلمة/المكتملة فقط لمندوب أو عدة مندوبين
    - courier_name, status
-3. "COURIER_ZERO": تصفير حساب ومستحقات مندوب معين
+5. "COURIER_ZERO": تصفير حساب ومستحقات مندوب معين
    - courier_name
-4. "GET_ASSIGNED_ORDERS": استعلام وعرض الطلبات المسندة للمندوبين حالياً
+6. "GET_ASSIGNED_ORDERS": استعلام وعرض الطلبات المسندة للمندوبين حالياً
    - courier_name
-5. "ASSIGN_ORDER": إسناد طلب إلى مندوب
+7. "ASSIGN_ORDER": إسناد طلب إلى مندوب
    - order_number, courier_name
-6. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل
+8. "GET_ORDER_DETAILS": جلب واستعراض تفاصيل طلب معين برقم الطلب أو باسم المحل
    - order_number, shop_name, status
-7. "GET_PENDING_ORDERS": استعلام الطلبات الجديدة المعلقة
-8. "GET_LAST_ORDER": جلب آخر طلب في النظام
-9. "REJECT_ORDER": رفض أو إلغاء طلب
-   - order_number
-10. "RESET_TO_NEW": إعادة طلب إلى حالة جديد (إلغاء الإسناد)
+9. "GET_LAST_ORDER": جلب آخر طلب في النظام
+10. "REJECT_ORDER": رفض أو إلغاء طلب
     - order_number
-11. "CHANGE_COURIER": تغيير مندوب الطلب
+11. "RESET_TO_NEW": إعادة طلب إلى حالة جديد (إلغاء الإسناد)
+    - order_number
+12. "CHANGE_COURIER": تغيير مندوب الطلب
     - order_number, courier_name
-12. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
+13. "EDIT_ORDER": تعديل تفاصيل طلب موجود (سعر، نوع، وقت، ملاحظة)
     - order_number, field, value
-13. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام طلبيات مندوب اليوم
+14. "DAILY_SUMMARY": تقرير وملخص أرباح اليوم أو استعلام طلبيات مندوب اليوم
     - courier_name
-14. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل
+15. "UPDATE_COURIER_NAME": تعديل وتصحيح اسم مندوب مسجل (فقط عند وجود أمر صريح مثل: غير اسم المندوب فلان الى علان)
     - old_name, new_name
-15. "CREATE_COURIER": إضافة مندوب جديد
+16. "CREATE_COURIER": إضافة مندوب جديد
     - courier_name, phone
-16. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام، تحليل إداري، نقاش، أو محادثة عادية من أبو الأكبر بذكاء جيمناي الطبيعي!
+17. "CONSULTATION_OR_CHAT": الإجابة عن أي استشارة، سؤال عام (مثل: اسعار الصرف اليوم، لابتوب لو ديسكتوب، نصائح تسويق)، نقاش، أو محادثة عادية من أبو الأكبر بذكاء جيمناي الطبيعي!
     - reply_text (اكتب ردك الذكي والمقنع واللبق بالكامل هنا بلهجة عراقية محترمة دون قوالب جامدة).
 
 أجب بـ JSON فقط:
@@ -530,7 +532,90 @@ export async function executeAutonomousAiCommand(
         };
       }
 
+      case "GET_COURIER_ORDERS_STATUS": {
+        const courierQuery = plan.courier_name || userText;
+        let matchedCourier = allCouriers.find(c => courierQuery && (c.name.toLowerCase().includes(courierQuery.toLowerCase()) || courierQuery.toLowerCase().includes(c.name.toLowerCase())));
+        if (!matchedCourier && plan.courier_name) {
+          const { match } = findBestMatch(allCouriers, plan.courier_name);
+          matchedCourier = match;
+        }
+
+        if (!matchedCourier) {
+          const buttons = allCouriers.slice(0, 6).map(c => ({
+            text: `🛵 ${c.name}`,
+            action: `طلبات المندوب ${c.name}`
+          }));
+          return {
+            reply: `يا أبو الأكبر، تقصد استعلام طلبات أي مندوب من هذولي؟ 👇`,
+            buttons
+          };
+        }
+
+        const [undeliveredCount, deliveredCount, archivedCount, activeOrders] = await Promise.all([
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: "archived"
+            }
+          }),
+          prisma.order.findMany({
+            where: {
+              assignedCourierId: matchedCourier.id,
+              status: { in: ["assigned", "delivering"] }
+            },
+            take: 5,
+            include: { shop: true, customerRegion: true }
+          })
+        ]);
+
+        let replyText = `🛵 **إحصائية طلبات الكابتن (${matchedCourier.name}) حالياً:**\n`;
+        replyText += `🔹 **طلبات غير واصلة (قيد التوصيل):** ${undeliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات واصلة ومسلّمة:** ${deliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات مؤرشفة:** ${archivedCount} طلبات\n`;
+
+        if (activeOrders.length > 0) {
+          replyText += `\n📋 **الطلبات قيد التوصيل حالياً:**\n`;
+          activeOrders.forEach((o, i) => {
+            const sName = o.shop?.name || "محل";
+            const rName = o.customerRegion?.name || "منطقة";
+            const price = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+            replyText += `${i + 1}. **طلب #${o.orderNumber}** ⬅️ (${sName}) إلى (${rName}) بمبلغ ${price} ألف\n`;
+          });
+        }
+
+        const buttons = [];
+        if (deliveredCount > 0) {
+          buttons.push({
+            text: `📦 أرشفة مسلّمات ${matchedCourier.name}`,
+            action: `ارشف طلبيات ${matchedCourier.name} المسلمة`
+          });
+        }
+        buttons.push({
+          text: `💰 تصفير حساب ${matchedCourier.name}`,
+          action: `صفر حساب المندوب ${matchedCourier.name}`
+        });
+
+        return { reply: replyText, buttons };
+      }
+
       case "GET_PENDING_ORDERS": {
+        const pendingCount = await prisma.order.count({ where: { status: "pending" } });
+        if (pendingCount === 0) {
+          return { reply: "يا أبو الأكبر، ما عندنا أي طلبات جديدة معلقة حالياً! كل الطلبات مفرزة ومسندة 🎉" };
+        }
+
         const pendingOrders = await prisma.order.findMany({
           where: { status: "pending" },
           orderBy: { createdAt: "desc" },
@@ -538,11 +623,7 @@ export async function executeAutonomousAiCommand(
           include: { shop: true, customerRegion: true }
         });
 
-        if (pendingOrders.length === 0) {
-          return { reply: "ما عندك أي طلبات جديدة معلقة حالياً يا أبو الأكبر! كل الطلبات مفرزة ومسندة 🎉" };
-        }
-
-        let replyText = `📋 **الطلبات الجديدة المعلقة حالياً (${pendingOrders.length} طلبات):**\n\n`;
+        let replyText = `📋 **عندنا حالياً (${pendingCount}) طلبات جديدة معلقة يا أبو الأكبر:**\n\n`;
         const buttons: Array<{ text: string; action: string }> = [];
 
         pendingOrders.forEach((o, idx) => {

@@ -280,13 +280,21 @@ function parseCustomSystemIntent(userText: string): any {
     return { category: "daily_summary_report" };
   }
 
-  // 0.03 فئة عرض واستعلام الطلبات الجديدة (مثل: الطلبات الجديده / اريد اعرف الطلبات الجديده)
+  // 0.03 فئة عرض واستعلام الطلبات الجديدة (مثل: الطلبات الجديده / كم طلب جديد عدنه / شكو طلبات معلقة)
   if (
     cleanQ.includes("الطلبات الجديده") ||
     cleanQ.includes("الطلبات الجديدة") ||
     cleanQ.includes("طلبات جديدة") ||
     cleanQ.includes("طلبات جديده") ||
     cleanQ.includes("عرض الطلبات الجديدة") ||
+    cleanQ.includes("كم طلب جديد") ||
+    cleanQ.includes("كم طلب معلق") ||
+    cleanQ.includes("كم طلب عدنه") ||
+    cleanQ.includes("كم طلب عندنا") ||
+    cleanQ.includes("شكد طلبات جديدة") ||
+    cleanQ.includes("شكد طلبات جديده") ||
+    cleanQ.includes("شكو طلبات معلقة") ||
+    cleanQ.includes("شكو طلبات معلقه") ||
     cleanQ.includes("شكو طلبات جديدة") ||
     cleanQ.includes("شكو طلبات جديده")
   ) {
@@ -336,6 +344,21 @@ function parseCustomSystemIntent(userText: string): any {
     let courierName = courierMatch ? courierMatch[1].trim() : null;
     return {
       category: "orders_assigned_list",
+      courier_name: courierName,
+      raw_text: text
+    };
+  }
+
+  // 0.055 استعلام عدد وحالة طلبات مندوب معين (مثل: المندوب نجم كم طلب عده غير واصل / واصل)
+  if (
+    (cleanQ.includes("كم طلب") || cleanQ.includes("شكد طلبات") || cleanQ.includes("شكد عنده") || cleanQ.includes("كل طلب") || cleanQ.includes("طلبيات") || cleanQ.includes("طلبات")) &&
+    (cleanQ.includes("مندوب") || cleanQ.includes("كابتن") || cleanQ.includes("المندوب") || cleanQ.includes("الكابتن") || cleanQ.includes("عنده") || cleanQ.includes("عده")) &&
+    (cleanQ.includes("غير واصل") || cleanQ.includes("واصل") || cleanQ.includes("مسلم") || cleanQ.includes("معلق") || cleanQ.includes("غير مسلم"))
+  ) {
+    let courierMatch = text.match(/(?:المندوب|كابتن|لكابتن|المندوبين)\s*([أ-يa-zA-Z]+)/i);
+    let courierName = courierMatch ? courierMatch[1].trim() : null;
+    return {
+      category: "courier_orders_status",
       courier_name: courierName,
       raw_text: text
     };
@@ -483,18 +506,27 @@ function parseCustomSystemIntent(userText: string): any {
     }
   }
 
-  // 0.38 تعديل وتصحيح اسم المندوب أو الكابتن
+  // 0.38 تعديل وتصحيح اسم المندوب أو الكابتن (فقط عند وجود أمر صريح بتغيير أو تصحيح الاسم)
   if (
-    (cleanQ.includes("مندوب") || cleanQ.includes("كابتن") || cleanQ.includes("المندوب") || cleanQ.includes("الكابتن") || cleanQ.includes("اسمه") || cleanQ.includes("إسمه")) &&
-    (cleanQ.includes("عدل") || cleanQ.includes("تعديل") || cleanQ.includes("غير") || cleanQ.includes("بدل") || cleanQ.includes("صحح") || cleanQ.includes("سويه") || cleanQ.includes("اكتبه") || cleanQ.includes("خطأ") || cleanQ.includes("خطا"))
+    cleanQ.includes("غير اسمه") ||
+    cleanQ.includes("غير اسم") ||
+    cleanQ.includes("عدل اسمه") ||
+    cleanQ.includes("عدل اسم") ||
+    cleanQ.includes("بدل اسمه") ||
+    cleanQ.includes("بدل اسم") ||
+    cleanQ.includes("صحح اسمه") ||
+    cleanQ.includes("صحح اسم") ||
+    cleanQ.includes("تعديل اسم") ||
+    cleanQ.includes("تغيير اسم") ||
+    (cleanQ.includes("اسمه غير صحيح") && (cleanQ.includes("مندوب") || cleanQ.includes("كابتن")))
   ) {
     let oldName = null;
     let newName = null;
 
-    const oldMatch = text.match(/(?:المندوب|كابتن|لكابتن)\s*([أ-يa-zA-Z]+)/i);
+    const oldMatch = text.match(/(?:المندوب|كابتن|لكابتن|اسمه|اسم)\s*([أ-يa-zA-Z]+)/i);
     if (oldMatch) oldName = oldMatch[1].trim();
 
-    const newMatch = text.match(/(?:وسويه|سويه|سوي|اكتبه|غيره إلى|غيره الي|الى|الي)\s*([أ-يa-zA-Z]+)/i);
+    const newMatch = text.match(/(?:وسويه|سويه|اكتبه|غيره إلى|غيره الي|الى|الي)\s*([أ-يa-zA-Z]+)/i);
     if (newMatch) newName = newMatch[1].trim();
 
     return {
@@ -917,6 +949,32 @@ export async function executeSuperSystemAgent(
   const ctx = await getPersistentSessionContext(sessionKey);
 
   // 0.1 فحص إذا كانت هناك جلسة تفاعلية نشطة لإنشاء طلب خطوة بخطوة
+  const lowerRaw = rawText.toLowerCase().trim();
+  const isInterruptionOrGeneralQuery =
+    lowerRaw.includes("كم طلب") ||
+    lowerRaw.includes("شكو طلبات") ||
+    lowerRaw.includes("اسعار") ||
+    lowerRaw.includes("المندوب") ||
+    lowerRaw.includes("ارشف") ||
+    lowerRaw.includes("أرشف") ||
+    lowerRaw.includes("صفر") ||
+    lowerRaw.includes("تفاصيل") ||
+    lowerRaw.includes("لابتوب") ||
+    lowerRaw.includes("شلونك") ||
+    lowerRaw.includes("من انت") ||
+    lowerRaw.includes("من أنت") ||
+    lowerRaw.includes("ايفون") ||
+    lowerRaw.includes("صرف") ||
+    lowerRaw.includes("دينار") ||
+    lowerRaw.includes("دولار") ||
+    lowerRaw.includes("الغاء") ||
+    lowerRaw.includes("بطلت");
+
+  if (isInterruptionOrGeneralQuery && ctx.orderDraft) {
+    ctx.orderDraft = null;
+    ctx.updatedAt = Date.now();
+  }
+
   if (ctx.orderDraft && ctx.orderDraft.step) {
     const wizardRes = await handleOrderCreationWizard(rawText, ctx.orderDraft, ctx);
     if (wizardRes.handled) {
@@ -2004,6 +2062,91 @@ export async function executeSuperSystemAgent(
         return {
           reply: `تم يا أبو الأكبر! أسندت طلب #${updated.orderNumber} إلى الكابتن (${matchedCourier.name}) 🛵\n🏪 **المحل:** ${shopName} | 📍 **المنطقة:** ${regionName}\n📦 **نوع الطلب:** ${orderType} | ⏰ **وقت الطلب:** ${noteTime}\n💰 **سعر الطلب:** ${subtotalVal} ألف (المجموع: ${totalVal} ألف)`
         };
+      }
+
+      case "courier_orders_status": {
+        const allCouriers = await prisma.courier.findMany();
+        let targetCourier = null;
+        if (parsed?.courier_name) {
+          const { match } = findBestMatch(allCouriers, parsed.courier_name);
+          targetCourier = match;
+        }
+        if (!targetCourier) {
+          for (const c of allCouriers) {
+            const cleanC = cleanArabicTextForMatch(c.name);
+            const cleanRaw = cleanArabicTextForMatch(rawText);
+            if (cleanC.length >= 2 && cleanRaw.includes(cleanC)) {
+              targetCourier = c;
+              break;
+            }
+          }
+        }
+        if (!targetCourier) {
+          const { match } = findBestMatch(allCouriers, rawText);
+          targetCourier = match;
+        }
+
+        if (!targetCourier) {
+          return { reply: `يا أبو الأكبر، اذكرلي اسم المندوب لأجيبلك إحصائية طلباته 🛵` };
+        }
+
+        const [undeliveredCount, deliveredCount, archivedCount, activeOrders] = await Promise.all([
+          prisma.order.count({
+            where: {
+              assignedCourierId: targetCourier.id,
+              status: { in: ["assigned", "delivering", "pending"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: targetCourier.id,
+              status: { in: ["delivered", "completed", "received"] }
+            }
+          }),
+          prisma.order.count({
+            where: {
+              assignedCourierId: targetCourier.id,
+              status: "archived"
+            }
+          }),
+          prisma.order.findMany({
+            where: {
+              assignedCourierId: targetCourier.id,
+              status: { in: ["assigned", "delivering"] }
+            },
+            take: 5,
+            include: { shop: true, customerRegion: true }
+          })
+        ]);
+
+        let replyText = `🛵 **إحصائية طلبات الكابتن (${targetCourier.name}) حالياً:**\n`;
+        replyText += `🔹 **طلبات غير واصلة (قيد التوصيل):** ${undeliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات واصلة ومسلّمة:** ${deliveredCount} طلبات\n`;
+        replyText += `🔹 **طلبات مؤرشفة:** ${archivedCount} طلبات\n`;
+
+        if (activeOrders.length > 0) {
+          replyText += `\n📋 **الطلبات قيد التوصيل حالياً:**\n`;
+          activeOrders.forEach((o, i) => {
+            const sName = o.shop?.name || "محل";
+            const rName = o.customerRegion?.name || "منطقة";
+            const price = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+            replyText += `${i + 1}. **طلب #${o.orderNumber}** ⬅️ (${sName}) إلى (${rName}) بمبلغ ${price} ألف\n`;
+          });
+        }
+
+        const buttons = [];
+        if (deliveredCount > 0) {
+          buttons.push({
+            text: `📦 أرشفة مسلّمات ${targetCourier.name}`,
+            action: `ارشف طلبيات ${targetCourier.name} المسلمة`
+          });
+        }
+        buttons.push({
+          text: `💰 تصفير حساب ${targetCourier.name}`,
+          action: `صفر حساب المندوب ${targetCourier.name}`
+        });
+
+        return { reply: replyText, buttons };
       }
 
       case "courier_update_name": {
