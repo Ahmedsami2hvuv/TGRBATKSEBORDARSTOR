@@ -392,9 +392,14 @@ function TrackingCardsView({
                             عكسي
                           </span>
                         )}
-                        {hasGps && (
+                        {hasGps ? (
                           <span className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-violet-700" title="لوكيشن GPS متوفر">
                             GPS
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center gap-1 rounded-lg bg-rose-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-rose-700 animate-pulse" title="الزبون لا يملك لوكيشن ⚠️">
+                            <span>📍</span>
+                            <span>بدون لوكيشن</span>
                           </span>
                         )}
                         {isDoubleRoute && (
