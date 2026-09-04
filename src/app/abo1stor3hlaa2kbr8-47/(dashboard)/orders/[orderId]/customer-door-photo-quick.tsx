@@ -25,7 +25,8 @@ export function CustomerDoorPhotoQuick({
   isSecondCustomer?: boolean;
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraFileRef = useRef<HTMLInputElement>(null);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     uploadCustomerDoorPhotoFromView.bind(null, orderId),
     initial,
@@ -43,14 +44,13 @@ export function CustomerDoorPhotoQuick({
     }
   }
 
-  async function handleFileInputChange() {
-    const file = fileRef.current?.files?.[0];
+  async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
     if (!(file instanceof File) || file.size <= 0) return;
 
     let photoToUpload = file;
     try {
       photoToUpload = await compressImageForMandoubUpload(file);
-      assignFileToInput(fileRef.current, photoToUpload);
+      assignFileToInput(inputEl, photoToUpload);
     } catch (err) {
       console.error("خطأ في ضغط الصورة:", err);
     }
@@ -62,33 +62,46 @@ export function CustomerDoorPhotoQuick({
     }
     await formAction(fd);
 
-    if (fileRef.current) {
-      fileRef.current.value = "";
+    if (inputEl) {
+      inputEl.value = "";
     }
   }
 
   return (
     <div className="mt-2 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
+        {/* مدخل الكاميرا المباشر */}
         <input
-          ref={fileRef}
+          ref={cameraFileRef}
           type="file"
-          name="customerDoorPhoto"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={() => {
-            void handleFileInputChange();
+          name="customerDoorPhotoCamera"
+          accept="image/*"
+          capture="environment"
+          className="sr-only hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            void handleFileSelected(file, cameraFileRef.current);
           }}
         />
+        {/* مدخل المعرض المباشر */}
+        <input
+          ref={galleryFileRef}
+          type="file"
+          name="customerDoorPhotoGallery"
+          accept="image/*"
+          className="sr-only hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            void handleFileSelected(file, galleryFileRef.current);
+          }}
+        />
+
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-200 disabled:opacity-60"
+          className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-200 disabled:opacity-60 cursor-pointer active:scale-95"
           onClick={() => {
-            const el = fileRef.current;
-            if (!el) return;
-            el.setAttribute("capture", "environment");
-            el.click();
+            cameraFileRef.current?.click();
           }}
         >
           {pending ? "جارٍ الرفع..." : "كاميرا"}
@@ -96,12 +109,9 @@ export function CustomerDoorPhotoQuick({
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-60 cursor-pointer active:scale-95"
           onClick={() => {
-            const el = fileRef.current;
-            if (!el) return;
-            el.removeAttribute("capture");
-            el.click();
+            galleryFileRef.current?.click();
           }}
         >
           {pending ? "جارٍ الرفع..." : "معرض"}

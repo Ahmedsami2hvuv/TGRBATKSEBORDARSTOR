@@ -39,6 +39,7 @@ export function MandoubDoorPhotoForm({
   const [revertState, revertFormAction, revertPending] = useActionState(revertShopDoorPhotoToOriginal, {});
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [compressing, setCompressing] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const router = useRouter();
@@ -63,21 +64,46 @@ export function MandoubDoorPhotoForm({
         <input type="hidden" name="exp" value={exp} />
         <input type="hidden" name="s" value={s} />
 
+        {/* مدخل الكاميرا */}
         <input
           ref={inputRef}
-          name="doorPhoto"
           type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={async () => {
-            const input = inputRef.current;
+          name={fileFieldName}
+          accept="image/*"
+          capture="environment"
+          className="sr-only hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
             const form = formRef.current;
-            if (!input?.files?.length || !form) return;
-            const raw = input.files[0];
+            if (!file || !form) return;
             setCompressing(true);
             try {
-              const out = await compressImageForMandoubUpload(raw);
-              assignFileToInput(input, out);
+              const out = await compressImageForMandoubUpload(file);
+              assignFileToInput(inputRef.current, out);
+            } catch {
+              /* يبقى الملف الأصلي */
+            } finally {
+              setCompressing(false);
+            }
+            form.requestSubmit();
+          }}
+        />
+
+        {/* مدخل المعرض */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          name={`${fileFieldName}Gallery`}
+          accept="image/*"
+          className="sr-only hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            const form = formRef.current;
+            if (!file || !form) return;
+            setCompressing(true);
+            try {
+              const out = await compressImageForMandoubUpload(file);
+              assignFileToInput(inputRef.current, out);
             } catch {
               /* يبقى الملف الأصلي */
             } finally {
@@ -92,10 +118,7 @@ export function MandoubDoorPhotoForm({
             type="button"
             disabled={busy}
             onClick={() => {
-              const el = inputRef.current;
-              if (!el) return;
-              el.setAttribute("capture", "environment");
-              el.click();
+              inputRef.current?.click();
             }}
             className={btnCam}
           >
@@ -106,10 +129,7 @@ export function MandoubDoorPhotoForm({
             type="button"
             disabled={busy}
             onClick={() => {
-              const el = inputRef.current;
-              if (!el) return;
-              el.removeAttribute("capture");
-              el.click();
+              galleryInputRef.current?.click();
             }}
             className={btnGal}
           >

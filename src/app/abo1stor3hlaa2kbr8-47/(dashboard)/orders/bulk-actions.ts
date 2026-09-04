@@ -84,20 +84,52 @@ export async function bulkUpdateOrdersStatus(
     }
   }
 
-  // عند الأرشفة: لا نمسح المندوب الحالي لكي يبقى مسجلاً مع الطلبية في الأرشيف
-  const baseData: any = {
-    status: directReceipt ? "delivering" : targetStatus,
-    customerPaymentReceivedAt: directReceipt ? new Date() : (targetStatus === "archived" ? undefined : null),
-    archivedAt: targetStatus === "archived" ? new Date() : null,
-  };
+  const finalStatus = directReceipt ? "delivering" : targetStatus;
 
   await prisma.$transaction(async (tx) => {
     for (const orderId of finalOrderIds) {
-      const updateData = { ...baseData };
+      const currentOrder = selectedOrders.find((o) => o.id === orderId);
+      const prevStatus = currentOrder?.status || "pending";
 
-      if (targetStatus === "archived") {
-        const currentOrder = selectedOrders.find((o) => o.id === orderId);
-        const cid = currentOrder?.courierEarningForCourierId || currentOrder?.assignedCourierId;
+      // 1. تسوية الحركات المالية عند تغير حالة الطلب
+      if (prevStatus !== finalStatus) {
+        const { reconcileMoneyEventsOnOrderStatusChange } = await import("@/lib/order-money-reconcile");
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, prevStatus as any, finalStatus as any);
+      }
+
+      const updateData: any = {
+        status: finalStatus,
+        customerPaymentReceivedAt: directReceipt ? new Date() : (targetStatus === "archived" ? undefined : null),
+        archivedAt: targetStatus === "archived" ? new Date() : null,
+      };
+
+      // 2. تحديث المندوب بحسب الحالة والمدخلات
+      if (targetStatus === "assigned" || targetStatus === "delivering" || targetStatus === "delivered") {
+        if (courierId) {
+          updateData.assignedCourierId = courierId;
+        }
+      } else if (targetStatus === "pending" || targetStatus === "cancelled") {
+        updateData.assignedCourierId = null;
+        updateData.courierEarningDinar = null;
+        updateData.courierEarningForCourierId = null;
+      }
+
+      // 3. عند التسليم أو الأرشفة: احتساب أرباح التوصيل للمندوب
+      const effectiveCourierId = updateData.assignedCourierId !== undefined ? updateData.assignedCourierId : currentOrder?.assignedCourierId;
+      if (finalStatus === "delivered" && effectiveCourierId && currentOrder?.deliveryPrice != null) {
+        const courierRecord = await tx.courier.findUnique({ where: { id: effectiveCourierId } });
+        if (courierRecord) {
+          const { computeCourierDeliveryEarningDinar } = await import("@/lib/courier-earnings");
+          const earning = computeCourierDeliveryEarningDinar(
+            courierRecord.vehicleType,
+            currentOrder.deliveryPrice,
+            courierRecord.zeroEarning,
+          );
+          updateData.courierEarningDinar = earning as any;
+          updateData.courierEarningForCourierId = effectiveCourierId;
+        }
+      } else if (targetStatus === "archived") {
+        const cid = currentOrder?.courierEarningForCourierId || effectiveCourierId;
         if (cid && (currentOrder?.courierEarningDinar == null || currentOrder?.courierEarningForCourierId == null)) {
           const courierRecord = await tx.courier.findUnique({ where: { id: cid } });
           if (courierRecord && currentOrder?.deliveryPrice != null) {
@@ -113,6 +145,9 @@ export async function bulkUpdateOrdersStatus(
             }
           }
         }
+      } else if (finalStatus !== "delivered" && finalStatus !== "archived") {
+        updateData.courierEarningDinar = null;
+        updateData.courierEarningForCourierId = null;
       }
 
       await tx.order.update({
@@ -120,25 +155,30 @@ export async function bulkUpdateOrdersStatus(
         data: updateData,
       });
 
-      if (
-        targetStatus === "delivered" ||
-        targetStatus === "archived" ||
-        targetStatus === "pending" ||
-        targetStatus === "cancelled"
-      ) {
-        const { syncOrderCourierMoneyExpectations } = await import("@/lib/order-courier-money-sync");
-        await syncOrderCourierMoneyExpectations(tx, orderId);
-      }
+      // 4. مزامنة التوقعات المالية مع الصناديق
+      const { syncOrderCourierMoneyExpectations } = await import("@/lib/order-courier-money-sync");
+      await syncOrderCourierMoneyExpectations(tx, orderId);
     }
   });
 
-  if (targetStatus === "assigned" && courierId) {
+  if ((finalStatus === "assigned" || finalStatus === "delivering") && courierId) {
     const updatedOrders = await prisma.order.findMany({
       where: { id: { in: finalOrderIds } },
       select: { id: true, orderNumber: true }
     });
     for (const o of updatedOrders) {
       void pushNotifyCourierNewAssignment(courierId, o.orderNumber, o.id);
+    }
+  }
+
+  if (finalStatus === "delivered" || finalStatus === "archived") {
+    try {
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      for (const orderId of finalOrderIds) {
+        await handleOrderDelivered(orderId);
+      }
+    } catch (err) {
+      console.error("Hook error in bulk status change:", err);
     }
   }
 
