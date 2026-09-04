@@ -268,6 +268,14 @@ export function OrderDetailSection({
     secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
       ? order.secondCustomerDoorPhotoUploadedByName
       : null;
+
+  const senderLocUploaderName = order.customerLocationUploadedByName?.trim() || (phoneProfile as any)?.locationUploadedByName || (phoneProfile as any)?.uploadedByName;
+  const senderDoorUploaderName = order.customerDoorPhotoUploadedByName?.trim() || (phoneProfile as any)?.photoUploadedByName || (phoneProfile as any)?.uploadedByName;
+  const senderLandmarkUploaderName = (order as any).customerLandmarkUploadedByName || order.customerLocationUploadedByName || order.customerDoorPhotoUploadedByName || (phoneProfile as any)?.landmarkUploadedByName;
+
+  const secondLocUploaderName = (order as any).secondCustomerLocationUploadedByName?.trim() || (secondPhoneProfile as any)?.locationUploadedByName || order.customerLocationUploadedByName;
+  const secondDoorUploaderName = order.secondCustomerDoorPhotoUploadedByName?.trim() || (secondPhoneProfile as any)?.photoUploadedByName || secondDoorCaptionName || order.customerDoorPhotoUploadedByName;
+  const secondLandmarkUploaderName = (order as any).secondCustomerLandmarkUploadedByName || (order as any).secondCustomerLocationUploadedByName || order.secondCustomerDoorPhotoUploadedByName || (secondPhoneProfile as any)?.landmarkUploadedByName;
   const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
@@ -957,8 +965,8 @@ export function OrderDetailSection({
                           isSecondDestination={false}
                         />
                       </div>
-                      {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && order.customerLocationUploadedByName?.trim() && (
-                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
+                      {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && senderLocUploaderName && (
+                        <div className="mt-0.5"><ImageUploaderCaption name={senderLocUploaderName} /></div>
                       )}
 
                       {order.customerPhone && (
@@ -993,8 +1001,8 @@ export function OrderDetailSection({
                       <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-500/80 dark:border-emerald-400/80 shadow-md shadow-emerald-500/10">
                         <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                       </div>
-                      {order.customerDoorPhotoUploadedByName?.trim() ? (
-                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} /></div>
+                      {senderDoorUploaderName ? (
+                        <div className="mt-0.5"><ImageUploaderCaption name={senderDoorUploaderName} /></div>
                       ) : null}
                     </div>
                   ) : (
@@ -1017,6 +1025,7 @@ export function OrderDetailSection({
                     fontSizeConfig={activeConfig}
                     isFromProfile={isFromProfileLandmark}
                     label="📍 دالة:"
+                    uploadedByName={senderLandmarkUploaderName}
                   />
                 </div>
 
@@ -1140,6 +1149,10 @@ export function OrderDetailSection({
                           )}
                         </div>
                       )}
+
+                      {courierSettings?.showLocationBtn !== false && secondLocMerged && secondLocUploaderName && (
+                        <div className="mt-0.5"><ImageUploaderCaption name={secondLocUploaderName} /></div>
+                      )}
                       
                       <OtherRegionsCustomerDetails 
                         phone={order.secondCustomerPhone!} 
@@ -1184,7 +1197,7 @@ export function OrderDetailSection({
                         <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-violet-500/80 dark:border-violet-400/80 shadow-md shadow-violet-500/10 relative">
                           <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(secondDoorMerged))} />
                         </div>
-                        {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
+                        {secondDoorUploaderName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorUploaderName} /></div> : null}
                       </div>
                     ) : (
                       <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-350 dark:border-slate-700 text-xs text-slate-400 font-bold">
@@ -1208,6 +1221,7 @@ export function OrderDetailSection({
                       fontSizeConfig={activeConfig}
                       isFromProfile={isFromSecondProfileLandmark}
                       label="📍 دالة:"
+                      uploadedByName={secondLandmarkUploaderName}
                     />
                   </div>
 

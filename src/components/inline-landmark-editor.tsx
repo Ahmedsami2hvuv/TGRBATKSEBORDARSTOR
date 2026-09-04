@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
+import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 
 interface InlineLandmarkEditorProps {
   orderId: string;
@@ -10,6 +11,7 @@ interface InlineLandmarkEditorProps {
   fontSizeConfig?: any; // To apply custom font size
   isFromProfile?: boolean;
   label?: string; // e.g., "📍 أقرب نقطة دالة:" or "📍 النقطة الدالة:"
+  uploadedByName?: string | null;
 }
 
 export function InlineLandmarkEditor({
@@ -18,7 +20,8 @@ export function InlineLandmarkEditor({
   isSecondDestination = false,
   fontSizeConfig,
   isFromProfile = false,
-  label = "📍 دالة:"
+  label = "📍 دالة:",
+  uploadedByName
 }: InlineLandmarkEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [landmark, setLandmark] = useState(initialLandmark);
@@ -112,6 +115,11 @@ export function InlineLandmarkEditor({
           </svg>
         </div>
       </div>
+      {uploadedByName?.trim() ? (
+        <div className="mt-0.5 pr-1">
+          <ImageUploaderCaption name={uploadedByName} />
+        </div>
+      ) : null}
 
       {/* Floating Modal Window */}
       {isOpen && (

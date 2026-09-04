@@ -774,6 +774,7 @@ export function OrderViewContent({
                     initialLandmark={order.customerLandmark}
                     isSecondDestination={false}
                     label="📍 دالة:"
+                    uploadedByName={order.customerLocationUploadedByName || order.customerDoorPhotoUploadedByName}
                   />
                 </div>
 
@@ -973,6 +974,7 @@ export function OrderViewContent({
                     initialLandmark={order.secondCustomerLandmark}
                     isSecondDestination={true}
                     label="📍 دالة:"
+                    uploadedByName={order.secondCustomerDoorPhotoUploadedByName || order.customerLocationUploadedByName}
                   />
                 </div>
 
