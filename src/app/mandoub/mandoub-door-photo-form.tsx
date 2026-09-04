@@ -22,6 +22,8 @@ const btnCam = "inline-flex w-full items-center justify-center gap-1 rounded-lg 
 const btnGal = "inline-flex w-full items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white py-1 text-[10px] font-black text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-95 disabled:opacity-60";
 const btnUndo = "inline-flex items-center justify-center gap-1 rounded-lg border border-amber-400 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-900 shadow-sm transition hover:bg-amber-100 active:scale-95 disabled:opacity-60";
 
+const fileFieldName = "doorPhoto";
+
 export function MandoubDoorPhotoForm({
   orderId,
   nextUrl,
