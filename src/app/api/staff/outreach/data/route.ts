@@ -354,12 +354,17 @@ export async function POST(req: Request) {
 
     // 8. حفظ نموذج
     if (action === "save_template") {
-      const title = (payload?.title || "").trim();
       const content = (payload?.content || "").trim();
+      let title = (payload?.title || "").trim();
       const templateId = payload?.templateId ? String(payload.templateId).trim() : null;
 
-      if (!title || !content) {
-        return NextResponse.json({ ok: false, error: "يرجى كتابة عنوان ونص الرسالة." }, { status: 400 });
+      if (!content) {
+        return NextResponse.json({ ok: false, error: "يرجى كتابة أو لصق نص الرسالة." }, { status: 400 });
+      }
+
+      if (!title) {
+        const firstLine = content.split("\n")[0].trim();
+        title = firstLine.length > 45 ? firstLine.slice(0, 45) + "..." : firstLine || "نموذج رسالة";
       }
 
       if (templateId) {

@@ -67,6 +67,7 @@ export function StaffOutreachClient({
     count: 0,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const templateTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // النوافذ المنبثقة
   const [showAddListModal, setShowAddListModal] = useState(false);
@@ -576,13 +577,17 @@ export function StaffOutreachClient({
 
   // حفظ نموذج
   const handleSaveTemplate = async () => {
-    if (!editingTemplate || !editingTemplate.title.trim() || !editingTemplate.content.trim()) {
-      showToast("يرجى ملء عنوان ونص الرسالة");
+    if (!editingTemplate || !editingTemplate.content.trim()) {
+      showToast("يرجى كتابة أو لصق نص الرسالة");
       return;
     }
 
-    const tplTitle = editingTemplate.title.trim();
     const tplContent = editingTemplate.content.trim();
+    let tplTitle = editingTemplate.title.trim();
+    if (!tplTitle) {
+      const firstLine = tplContent.split("\n")[0].trim();
+      tplTitle = firstLine.length > 40 ? firstLine.slice(0, 40) + "..." : firstLine || "نموذج رسالة";
+    }
     const tplId = editingTemplate.id;
 
     startTransition(async () => {
@@ -1099,7 +1104,7 @@ export function StaffOutreachClient({
               )}
               <button
                 onClick={() => {
-                  setEditingTemplate({ title: `نموذج إعلاني ${templates.length + 1}`, content: "" });
+                  setEditingTemplate({ title: "", content: "" });
                   setShowTemplateModal(true);
                 }}
                 className="rounded-xl bg-purple-600 px-3 py-2 text-[11px] font-black text-white shadow-sm hover:bg-purple-700 active:scale-95 transition"
@@ -1118,7 +1123,7 @@ export function StaffOutreachClient({
               </p>
               <button
                 onClick={() => {
-                  setEditingTemplate({ title: "نموذج إعلاني 1", content: "" });
+                  setEditingTemplate({ title: "", content: "" });
                   setShowTemplateModal(true);
                 }}
                 className="mt-4 inline-flex items-center gap-1 rounded-2xl bg-purple-600 px-4 py-2.5 text-xs font-black text-white shadow-md hover:bg-purple-700 active:scale-95 transition"
@@ -1134,10 +1139,10 @@ export function StaffOutreachClient({
                   className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 hover:border-purple-300 transition"
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-black text-purple-900">
-                      {idx + 1}. {tpl.title}
+                    <span className="text-xs font-black text-purple-900 line-clamp-1">
+                      {tpl.title || tpl.content.split("\n")[0] || `نموذج ${idx + 1}`}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => {
                           setEditingTemplate({ id: tpl.id, title: tpl.title, content: tpl.content });
@@ -1399,26 +1404,49 @@ export function StaffOutreachClient({
 
             <div className="mt-4 space-y-4">
               <div>
-                <label className="text-xs font-black text-slate-700">عنوان النموذج</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-700">عنوان النموذج (اختياري)</label>
+                  <span className="text-[10px] font-bold text-slate-400">إذا تركته فارغاً سيأخذ أول سطر تلقائياً</span>
+                </div>
                 <input
                   type="text"
                   value={editingTemplate.title}
                   onChange={(e) => setEditingTemplate({ ...editingTemplate, title: e.target.value })}
-                  placeholder="مثال: نموذج عروض نهاية الأسبوع"
-                  className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-purple-500 focus:outline-none"
+                  placeholder="مثال: عروض التوصيل (أو اتركه فارغاً)"
+                  className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-purple-500 focus:outline-none placeholder-slate-300"
                 />
               </div>
 
               <div>
                 <label className="text-xs font-black text-slate-700">نص الرسالة الإعلانية</label>
                 <textarea
+                  ref={templateTextareaRef}
                   rows={6}
                   value={editingTemplate.content}
+                  onPaste={() => {
+                    setTimeout(() => {
+                      if (templateTextareaRef.current) {
+                        templateTextareaRef.current.scrollTop = 0;
+                        templateTextareaRef.current.setSelectionRange(0, 0);
+                      }
+                    }, 50);
+                  }}
                   onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
-                  placeholder="اكتب نص الرسالة هنا..."
+                  placeholder="الصق أو اكتب نص الرسالة هنا..."
                   className="mt-1 w-full rounded-2xl border border-slate-200 p-3 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
                 />
               </div>
+
+              {/* بطاقة معاينة بداية النموذج فور اللصق */}
+              {editingTemplate.content.trim() && (
+                <div className="rounded-2xl bg-purple-50 border border-purple-200/80 p-3 text-xs animate-in fade-in">
+                  <span className="font-black text-purple-900 block mb-1">👀 بداية النموذج الملصق:</span>
+                  <p className="font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">
+                    {editingTemplate.content.slice(0, 160)}
+                    {editingTemplate.content.length > 160 ? "..." : ""}
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button
