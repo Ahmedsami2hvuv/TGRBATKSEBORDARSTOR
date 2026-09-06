@@ -153,7 +153,7 @@ export async function POST(req: Request) {
 
     const emp = await verifyStaff(staffEmployeeId, token, sig);
 
-    // 1. جلب البيانات مع مطابقة الزبائن والتكرار
+    // 1. جلب البيانات مع مطابقة الزبائن والتكرار واسترجاع كافة القوائم السابقة
     if (action === "get_data") {
       const templates = await prisma.staffOutreachTemplate.findMany({
         where: {
@@ -163,58 +163,90 @@ export async function POST(req: Request) {
         orderBy: { createdAt: "asc" },
       });
 
-      const latestList = await prisma.staffOutreachList.findFirst({
+      // 1. البحث عن القائمة الرئيسية الدائمة للموظف أو إنشاؤها
+      let mainList = await prisma.staffOutreachList.findFirst({
         where: { staffEmployeeId: emp.id },
-        orderBy: { createdAt: "desc" },
-        include: {
-          items: {
-            orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (!mainList) {
+        mainList = await prisma.staffOutreachList.create({
+          data: {
+            id: crypto.randomUUID(),
+            staffEmployeeId: emp.id,
+            title: "قائمة مهام التواصل الرئيسية",
           },
-        },
+        });
+      }
+
+      // 2. دمج أي أرقام من قوائم سابقة أخرى للموظف ونقلها للقائمة الرئيسية فوراً
+      try {
+        const otherLists = await prisma.staffOutreachList.findMany({
+          where: {
+            staffEmployeeId: emp.id,
+            id: { not: mainList.id },
+          },
+          select: { id: true },
+        });
+
+        if (otherLists.length > 0) {
+          const otherListIds = otherLists.map((l) => l.id);
+          await prisma.staffOutreachItem.updateMany({
+            where: { listId: { in: otherListIds } },
+            data: { listId: mainList.id },
+          });
+          await prisma.staffOutreachList.deleteMany({
+            where: { id: { in: otherListIds } },
+          });
+        }
+      } catch (e) {}
+
+      // 3. جلب جميع الأرقام المحفوظة في قاعدة البيانات السحابية للموظف
+      const allItems = await prisma.staffOutreachItem.findMany({
+        where: { listId: mainList.id },
+        orderBy: { createdAt: "asc" },
       });
 
       let enrichedMap: Record<string, any> = {};
-      if (latestList && latestList.items.length > 0) {
+      if (allItems.length > 0) {
         enrichedMap = await enrichItemsWithCustomerData(
           emp.id,
-          latestList.id,
-          latestList.items.map((i) => ({ id: i.id, phone: i.phone }))
+          mainList.id,
+          allItems.map((i) => ({ id: i.id, phone: i.phone }))
         );
       }
 
       return NextResponse.json({
         ok: true,
         data: {
-          list: latestList
-            ? {
-                id: latestList.id,
-                title: latestList.title,
-                createdAt: latestList.createdAt.toISOString(),
-                items: latestList.items.map((i) => {
-                  const extra = enrichedMap[i.id] || {
-                    isDuplicateHistory: false,
-                    isExistingCustomer: false,
-                    regions: [],
-                    ordersCount: 0,
-                  };
-                  return {
-                    id: i.id,
-                    phone: i.phone,
-                    originalInput: i.originalInput,
-                    status: i.status as "pending" | "whatsapp_opened" | "completed",
-                    templateUsed: i.templateUsed,
-                    openedAt: i.openedAt?.toISOString() || null,
-                    completedAt: i.completedAt?.toISOString() || null,
-                    createdAt: i.createdAt.toISOString(),
-                    isDuplicateHistory: extra.isDuplicateHistory,
-                    duplicateSource: extra.duplicateSource,
-                    isExistingCustomer: extra.isExistingCustomer,
-                    regions: extra.regions,
-                    ordersCount: extra.ordersCount,
-                  };
-                }),
-              }
-            : null,
+          list: {
+            id: mainList.id,
+            title: mainList.title,
+            createdAt: mainList.createdAt.toISOString(),
+            items: allItems.map((i) => {
+              const extra = enrichedMap[i.id] || {
+                isDuplicateHistory: false,
+                isExistingCustomer: false,
+                regions: [],
+                ordersCount: 0,
+              };
+              return {
+                id: i.id,
+                phone: i.phone,
+                originalInput: i.originalInput,
+                status: i.status as "pending" | "whatsapp_opened" | "completed",
+                templateUsed: i.templateUsed,
+                openedAt: i.openedAt?.toISOString() || null,
+                completedAt: i.completedAt?.toISOString() || null,
+                createdAt: i.createdAt.toISOString(),
+                isDuplicateHistory: extra.isDuplicateHistory,
+                duplicateSource: extra.duplicateSource,
+                isExistingCustomer: extra.isExistingCustomer,
+                regions: extra.regions,
+                ordersCount: extra.ordersCount,
+              };
+            }),
+          },
           templates: templates.map((t) => ({
             id: t.id,
             title: t.title,
@@ -225,41 +257,32 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. إنشاء أو دمج قائمة
+    // 2. إنشاء أو دمج أرقام في قاعدة البيانات السحابية الدائمة
     if (action === "create_list") {
       const extracted = extractPhonesPure(payload?.rawText || "");
       if (extracted.length === 0) {
         return NextResponse.json({ ok: false, error: "لم يتم العثور على أرقام هواتف أو يوزرات صالحة." }, { status: 400 });
       }
 
-      let targetListId: string;
+      // البحث عن القائمة الرئيسية الدائمة للموظف
+      let mainList = await prisma.staffOutreachList.findFirst({
+        where: { staffEmployeeId: emp.id },
+        orderBy: { createdAt: "asc" },
+      });
 
-      if (payload?.appendToExisting) {
-        const existing = await prisma.staffOutreachList.findFirst({
-          where: { staffEmployeeId: emp.id },
-          orderBy: { createdAt: "desc" },
-        });
-        if (existing) {
-          targetListId = existing.id;
-        } else {
-          const newList = await prisma.staffOutreachList.create({
-            data: {
-              staffEmployeeId: emp.id,
-              title: payload?.title?.trim() || `قائمة ${new Date().toLocaleDateString("ar-IQ")}`,
-            },
-          });
-          targetListId = newList.id;
-        }
-      } else {
-        const newList = await prisma.staffOutreachList.create({
+      if (!mainList) {
+        mainList = await prisma.staffOutreachList.create({
           data: {
+            id: crypto.randomUUID(),
             staffEmployeeId: emp.id,
-            title: payload?.title?.trim() || `قائمة (${extracted.length} رقم) - ${new Date().toLocaleDateString("ar-IQ")}`,
+            title: "قائمة مهام التواصل الرئيسية",
           },
         });
-        targetListId = newList.id;
       }
 
+      const targetListId = mainList.id;
+
+      // فحص الأرقام الموجودة لمنع التكرار
       const existingItems = await prisma.staffOutreachItem.findMany({
         where: { listId: targetListId },
         select: { phone: true },
@@ -281,8 +304,9 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         ok: true,
-        message: `تمت إضافة ${newItems.length} رقم بنجاح ${extracted.length > newItems.length ? `(تم تنبيه وتجاهل ${extracted.length - newItems.length} مكرر)` : ""}`,
+        message: `تم حفظ ${newItems.length} رقم بنجاح في قاعدة البيانات ${extracted.length > newItems.length ? `(تم تجاهل ${extracted.length - newItems.length} رقم مكرر)` : ""}`,
         listId: targetListId,
+        newCount: newItems.length,
       });
     }
 

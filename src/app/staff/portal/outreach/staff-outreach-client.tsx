@@ -485,6 +485,12 @@ export function StaffOutreachClient({
             : data.rawText;
           totalExtractedCount += data.count || 0;
           setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedCount });
+
+          // حفظ فوري وتلقائي في قاعدة البيانات السحابية
+          await callApi("create_list", {
+            rawText: data.rawText,
+            appendToExisting: true,
+          });
         }
       } catch (err) {
         console.error("Error processing image index:", i, err);
@@ -493,10 +499,9 @@ export function StaffOutreachClient({
 
     setIsAiProcessing(false);
 
-    if (accumulatedText.trim()) {
-      showToast(`اكتمل الفحص بنجاح! تم استخراج ${totalExtractedCount} رقم ومعرف من ${totalFiles} صورة ✨`);
-      setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${accumulatedText}` : accumulatedText));
-      setShowAddListModal(true);
+    if (totalExtractedCount > 0) {
+      showToast(`تم استخراج وحفظ ${totalExtractedCount} رقماً ومعرفاً بنجاح في قاعدة البيانات السحابية ☁️✨`);
+      await loadData(false);
     } else {
       showToast("تم فحص الصور ولكن لم يتم العثور على أرقام أو يوزرات واضحة.");
     }
