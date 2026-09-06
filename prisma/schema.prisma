@@ -293,8 +293,54 @@ model StaffEmployee {
   lastSalaryAddedAt   DateTime           @default(now())
   staffTransactions   StaffTransaction[]
   marketplaceItems    MarketplaceItem[]
+  outreachLists       StaffOutreachList[]
+  outreachTemplates   StaffOutreachTemplate[]
 
   @@index([active, createdAt])
+}
+
+model StaffOutreachList {
+  id              String              @id @default(cuid())
+  staffEmployeeId String
+  title           String              @default("قائمة تواصل")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  staffEmployee   StaffEmployee       @relation(fields: [staffEmployeeId], references: [id], onDelete: Cascade)
+  items           StaffOutreachItem[]
+
+  @@index([staffEmployeeId])
+  @@index([createdAt])
+}
+
+model StaffOutreachItem {
+  id              String            @id @default(cuid())
+  listId          String
+  phone           String
+  originalInput   String            @default("")
+  status          String            @default("pending") // 'pending' | 'whatsapp_opened' | 'completed'
+  templateUsed    String?           @db.Text
+  openedAt        DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  list            StaffOutreachList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@index([listId, status])
+  @@index([phone])
+}
+
+model StaffOutreachTemplate {
+  id              String         @id @default(cuid())
+  staffEmployeeId String?
+  title           String
+  content         String         @db.Text
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  staffEmployee   StaffEmployee? @relation(fields: [staffEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([staffEmployeeId])
+  @@index([isActive])
 }
 
 model StaffTransaction {

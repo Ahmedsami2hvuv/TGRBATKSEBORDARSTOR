@@ -68,6 +68,19 @@ export function StaffPortalMenuClient({
           </a>
 
           <Link
+            href={`/staff/portal/outreach?${authQ}`}
+            className="group w-full rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2 border-2 border-emerald-300"
+          >
+            <DynamicIcon
+              iconKey="ui_chat"
+              config={icons}
+              className="w-5 h-5"
+              fallback={<span>🎯</span>}
+            />
+            مهمة مراسلة الزبائن وتخزين الأرقام
+          </Link>
+
+          <Link
             href={`/staff/portal/preparation?${authQ}`}
             className="group w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
           >
