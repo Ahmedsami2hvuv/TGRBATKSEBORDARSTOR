@@ -125,47 +125,60 @@ export const DEFAULT_OUTREACH_TEMPLATES = [
 ];
 
 /**
- * دالة مساعدة نقية لتنظيف الأرقام واستخراجها
+ * دالة مساعدة نقية لتنظيف واستخراج الرقم أو اليوزر
  */
-export function cleanPhonePure(input: string): string | null {
+export function cleanPhoneOrUsername(input: string): string | null {
   if (!input) return null;
   let text = input.trim();
 
-  const waMeMatch = text.match(/(?:wa\.me\/|phone=|send\?phone=|\/)([0-9+]+)/i);
-  if (waMeMatch && waMeMatch[1]) {
-    text = waMeMatch[1];
+  // 1. إذا كان رابط واتساب بيوزر أو رقم: wa.me/... أو api.whatsapp.com/...
+  const waMatch = text.match(/(?:https?:\/\/)?(?:wa\.me\/|api\.whatsapp\.com\/send\?phone=|\/)([a-zA-Z0-9_.+@-]+)/i);
+  if (waMatch && waMatch[1]) {
+    text = waMatch[1].replace(/[?#].*$/, "");
   }
 
-  let cleaned = text.replace(/[^0-9+]/g, "");
-
-  if (cleaned.startsWith("+")) {
-    cleaned = cleaned.substring(1);
-  } else if (cleaned.startsWith("00")) {
-    cleaned = cleaned.substring(2);
+  // 2. إذا كان رابط تيليجرام: t.me/username
+  const tgMatch = text.match(/(?:https?:\/\/)?(?:t\.me\/|telegram\.me\/)([a-zA-Z0-9_]+)/i);
+  if (tgMatch && tgMatch[1]) {
+    text = tgMatch[1];
   }
 
-  if (cleaned.startsWith("07") && cleaned.length === 11) {
-    cleaned = "964" + cleaned.substring(1);
-  } else if ((cleaned.startsWith("7") || cleaned.startsWith("8")) && cleaned.length === 10) {
-    cleaned = "964" + cleaned;
-  } else if (cleaned.startsWith("96407") && cleaned.length === 14) {
-    cleaned = "964" + cleaned.substring(4);
+  // 3. فحص هل هو يوزر يبدأ بـ @ أو يحتوي على حروف إنجليزية
+  const isUsername = /^@?[a-zA-Z0-9_.-]{3,35}$/.test(text) && /[a-zA-Z]/.test(text);
+  if (isUsername) {
+    let cleanUser = text.replace(/^@/, "").trim();
+    if (cleanUser.length >= 3 && cleanUser.length <= 35) {
+      return `@${cleanUser}`;
+    }
   }
 
-  if (cleaned.length >= 8 && cleaned.length <= 16) {
-    return cleaned;
+  // 4. إذا كان رقماً هاتفياً
+  let cleanedDigits = text.replace(/[^0-9+]/g, "");
+  if (cleanedDigits.startsWith("+")) cleanedDigits = cleanedDigits.substring(1);
+  else if (cleanedDigits.startsWith("00")) cleanedDigits = cleanedDigits.substring(2);
+
+  if (cleanedDigits.startsWith("07") && cleanedDigits.length === 11) {
+    cleanedDigits = "964" + cleanedDigits.substring(1);
+  } else if ((cleanedDigits.startsWith("7") || cleanedDigits.startsWith("8")) && cleanedDigits.length === 10) {
+    cleanedDigits = "964" + cleanedDigits;
+  } else if (cleanedDigits.startsWith("96407") && cleanedDigits.length === 14) {
+    cleanedDigits = "964" + cleanedDigits.substring(4);
+  }
+
+  if (cleanedDigits.length >= 8 && cleanedDigits.length <= 16) {
+    return cleanedDigits;
   }
 
   return null;
 }
 
 /**
- * استخراج كل الأرقام من نص طويل
+ * استخراج كل الأرقام واليوزرات من نص طويل
  */
 export function extractPhonesPure(rawText: string): { phone: string; originalInput: string }[] {
   if (!rawText) return [];
 
-  const lines = rawText.split(/[\r\n,;]+/);
+  const lines = rawText.split(/[\r\n,;\t]+/);
   const seen = new Set<string>();
   const results: { phone: string; originalInput: string }[] = [];
 
@@ -173,15 +186,16 @@ export function extractPhonesPure(rawText: string): { phone: string; originalInp
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    const phone = cleanPhonePure(trimmed);
-    if (phone && !seen.has(phone)) {
-      seen.add(phone);
-      results.push({ phone, originalInput: trimmed });
+    const parsed = cleanPhoneOrUsername(trimmed);
+    if (parsed && !seen.has(parsed)) {
+      seen.add(parsed);
+      results.push({ phone: parsed, originalInput: trimmed });
     } else {
-      const matches = trimmed.match(/(?:https?:\/\/wa\.me\/[0-9+]+|07[3-9][0-9]{8}|9647[3-9][0-9]{8}|\+9647[3-9][0-9]{8})/g);
+      // البحث عن أي روابط أو أرقام أو يوزرات داخل السطر
+      const matches = trimmed.match(/(?:https?:\/\/wa\.me\/[a-zA-Z0-9_.+@-]+|@[a-zA-Z0-9_.-]{3,35}|07[3-9][0-9]{8}|9647[3-9][0-9]{8}|\+9647[3-9][0-9]{8})/g);
       if (matches) {
         for (const m of matches) {
-          const p = cleanPhonePure(m);
+          const p = cleanPhoneOrUsername(m);
           if (p && !seen.has(p)) {
             seen.add(p);
             results.push({ phone: p, originalInput: m });

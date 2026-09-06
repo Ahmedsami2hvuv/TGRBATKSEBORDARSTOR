@@ -218,9 +218,10 @@ export function StaffOutreachClient({
         };
       });
 
-      // 3. فتح الواتساب
+      // 3. فتح الواتساب (يدعم الأرقام واليوزرات)
       const encodedMsg = encodeURIComponent(template.content);
-      const whatsappUrl = `https://wa.me/${item.phone}?text=${encodedMsg}`;
+      const cleanTarget = item.phone.replace(/^@/, "").trim();
+      const whatsappUrl = `https://wa.me/${cleanTarget}?text=${encodedMsg}`;
       window.open(whatsappUrl, "_blank");
 
       showToast(`تم فتح الواتساب بنموذج: ${template.title} 💬`);
@@ -245,10 +246,21 @@ export function StaffOutreachClient({
         };
       });
 
-      // 2. توجيه الموظف لتطبيق الاتصال للحفظ
-      window.location.href = `tel:${item.phone}`;
+      const isUser = item.phone.startsWith("@") || /[a-zA-Z]/.test(item.phone);
 
-      showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
+      if (isUser) {
+        // إذا كان يوزر يتم نسخه للحافظة فوراً لتسهيل حفظه
+        try {
+          navigator.clipboard.writeText(item.phone);
+          showToast(`تم نسخ المعرف (${item.phone}) للحفظ وتحويله للمكتمل 🔵📋`);
+        } catch {
+          showToast("تم تحويل المعرف إلى المكتمل 🔵");
+        }
+      } else {
+        // إذا كان رقماً يتم توجيهه للاتصال
+        window.location.href = `tel:${item.phone}`;
+        showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
+      }
 
       // 3. الحفظ في السيرفر بالخلفية
       callApi("update_status", {
@@ -1203,7 +1215,8 @@ export function StaffOutreachClient({
                 onClick={() => {
                   const tpl = getRandomTemplate();
                   const encoded = encodeURIComponent(tpl.content);
-                  window.open(`https://wa.me/${selectedCompletedItem.phone}?text=${encoded}`, "_blank");
+                  const cleanTarget = selectedCompletedItem.phone.replace(/^@/, "").trim();
+                  window.open(`https://wa.me/${cleanTarget}?text=${encoded}`, "_blank");
                   showToast("تم فتح محادثة الواتساب 💬");
                 }}
                 className="w-full rounded-2xl bg-emerald-600 py-3 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition flex items-center justify-center gap-2"
@@ -1212,15 +1225,28 @@ export function StaffOutreachClient({
                 <span>فتح محادثة الواتساب</span>
               </button>
 
-              <button
-                onClick={() => {
-                  window.location.href = `tel:${selectedCompletedItem.phone}`;
-                }}
-                className="w-full rounded-2xl bg-sky-600 py-3 text-xs font-black text-white shadow-md hover:bg-sky-700 active:scale-95 transition flex items-center justify-center gap-2"
-              >
-                <span>📞</span>
-                <span>فتح تطبيق الاتصال</span>
-              </button>
+              {selectedCompletedItem.phone.startsWith("@") || /[a-zA-Z]/.test(selectedCompletedItem.phone) ? (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCompletedItem.phone);
+                    showToast(`تم نسخ المعرف (${selectedCompletedItem.phone}) بنجاح 📋`);
+                  }}
+                  className="w-full rounded-2xl bg-sky-600 py-3 text-xs font-black text-white shadow-md hover:bg-sky-700 active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  <span>📋</span>
+                  <span>نسخ المعرف لحفظه</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    window.location.href = `tel:${selectedCompletedItem.phone}`;
+                  }}
+                  className="w-full rounded-2xl bg-sky-600 py-3 text-xs font-black text-white shadow-md hover:bg-sky-700 active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  <span>📞</span>
+                  <span>فتح تطبيق الاتصال</span>
+                </button>
+              )}
 
               <button
                 onClick={() => handleResetItemToPending(selectedCompletedItem)}
