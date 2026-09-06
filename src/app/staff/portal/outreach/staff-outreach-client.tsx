@@ -14,6 +14,11 @@ interface OutreachItem {
   openedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  isDuplicateHistory?: boolean;
+  duplicateSource?: string;
+  isExistingCustomer?: boolean;
+  regions?: string[];
+  ordersCount?: number;
 }
 
 interface OutreachTemplate {
@@ -54,8 +59,13 @@ export function StaffOutreachClient({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // معالجة صور الذكاء الاصطناعي
+  // معالجة صور الذكاء الاصطناعي المتعددة التدريجية
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [aiProgress, setAiProgress] = useState<{ current: number; total: number; count: number }>({
+    current: 0,
+    total: 0,
+    count: 0,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // النوافذ المنبثقة
@@ -82,7 +92,7 @@ export function StaffOutreachClient({
   // مفتاح التخزين المؤقت في المتصفح
   const cacheKey = `kse:outreach:${staffId}`;
 
-  // دالة الاتصال المباشر والآمن بالـ API (Route Handler)
+  // دالة الاتصال المباشر والآمن بالـ API
   const callApi = async (action: string, payload: any = {}) => {
     try {
       const res = await fetch("/api/staff/outreach/data", {
@@ -142,17 +152,19 @@ export function StaffOutreachClient({
     }
   }, [list, templates]);
 
-  // حساب الإحصائيات
+  // حساب الإحصائيات مع إحصائيات التكرار والزبائن السابقين
   const stats = useMemo(() => {
     if (!list || !list.items) {
-      return { total: 0, pending: 0, whatsappOpened: 0, completed: 0, remaining: 0 };
+      return { total: 0, pending: 0, whatsappOpened: 0, completed: 0, remaining: 0, existingCustomers: 0, duplicates: 0 };
     }
     const total = list.items.length;
     const pending = list.items.filter((i) => i.status === "pending").length;
     const whatsappOpened = list.items.filter((i) => i.status === "whatsapp_opened").length;
     const completed = list.items.filter((i) => i.status === "completed").length;
     const remaining = pending + whatsappOpened;
-    return { total, pending, whatsappOpened, completed, remaining };
+    const existingCustomers = list.items.filter((i) => i.isExistingCustomer).length;
+    const duplicates = list.items.filter((i) => i.isDuplicateHistory).length;
+    return { total, pending, whatsappOpened, completed, remaining, existingCustomers, duplicates };
   }, [list]);
 
   // تصفية العناصر
@@ -162,7 +174,12 @@ export function StaffOutreachClient({
       .filter((i) => i.status === "pending" || i.status === "whatsapp_opened")
       .filter((i) => {
         if (!searchQuery.trim()) return true;
-        return i.phone.includes(searchQuery.trim()) || i.originalInput.includes(searchQuery.trim());
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          i.phone.toLowerCase().includes(q) ||
+          i.originalInput.toLowerCase().includes(q) ||
+          (i.regions && i.regions.some((r) => r.toLowerCase().includes(q)))
+        );
       });
   }, [list, searchQuery]);
 
@@ -172,7 +189,12 @@ export function StaffOutreachClient({
       .filter((i) => i.status === "completed")
       .filter((i) => {
         if (!searchQuery.trim()) return true;
-        return i.phone.includes(searchQuery.trim()) || i.originalInput.includes(searchQuery.trim());
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          i.phone.toLowerCase().includes(q) ||
+          i.originalInput.toLowerCase().includes(q) ||
+          (i.regions && i.regions.some((r) => r.toLowerCase().includes(q)))
+        );
       });
   }, [list, searchQuery]);
 
@@ -194,13 +216,47 @@ export function StaffOutreachClient({
     return activeTemplates[randomIndex];
   };
 
-  // التعامل مع النقر على رقم في قائمة العمل
+  // التعامل مع النقر على رقم أو يوزر في قائمة العمل
   const handleItemClick = async (item: OutreachItem) => {
     if (isSelectMode) {
       toggleSelectItem(item.id);
       return;
     }
 
+    const isUserOnly = item.phone.startsWith("@") || /[a-zA-Z]/.test(item.phone);
+
+    // إذا كان يوزراً فقط: يفتح الواتساب ويكتمل مباشرة بنقرة واحدة
+    if (isUserOnly) {
+      const template = getRandomTemplate();
+      const encodedMsg = encodeURIComponent(template.content);
+      const cleanTarget = item.phone.replace(/^@/, "").trim();
+      const whatsappUrl = `https://wa.me/${cleanTarget}?text=${encodedMsg}`;
+      window.open(whatsappUrl, "_blank");
+
+      // تحويله للمكتمل فوراً في الواجهة
+      setList((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((i) =>
+            i.id === item.id
+              ? { ...i, status: "completed", templateUsed: template.title, completedAt: new Date().toISOString() }
+              : i
+          ),
+        };
+      });
+
+      showToast(`تم فتح الواتساب لليوزر (${item.phone}) واكتملت المهمة مباشرة 🔵`);
+
+      callApi("update_status", {
+        itemId: item.id,
+        status: "completed",
+        templateUsed: template.title,
+      });
+      return;
+    }
+
+    // إذا كان رقماً هاتفياً
     if (item.status === "pending") {
       // 1. اختيار رسالة عشوائية
       const template = getRandomTemplate();
@@ -218,10 +274,9 @@ export function StaffOutreachClient({
         };
       });
 
-      // 3. فتح الواتساب (يدعم الأرقام واليوزرات)
+      // 3. فتح الواتساب
       const encodedMsg = encodeURIComponent(template.content);
-      const cleanTarget = item.phone.replace(/^@/, "").trim();
-      const whatsappUrl = `https://wa.me/${cleanTarget}?text=${encodedMsg}`;
+      const whatsappUrl = `https://wa.me/${item.phone}?text=${encodedMsg}`;
       window.open(whatsappUrl, "_blank");
 
       showToast(`تم فتح الواتساب بنموذج: ${template.title} 💬`);
@@ -246,21 +301,9 @@ export function StaffOutreachClient({
         };
       });
 
-      const isUser = item.phone.startsWith("@") || /[a-zA-Z]/.test(item.phone);
-
-      if (isUser) {
-        // إذا كان يوزر يتم نسخه للحافظة فوراً لتسهيل حفظه
-        try {
-          navigator.clipboard.writeText(item.phone);
-          showToast(`تم نسخ المعرف (${item.phone}) للحفظ وتحويله للمكتمل 🔵📋`);
-        } catch {
-          showToast("تم تحويل المعرف إلى المكتمل 🔵");
-        }
-      } else {
-        // إذا كان رقماً يتم توجيهه للاتصال
-        window.location.href = `tel:${item.phone}`;
-        showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
-      }
+      // 2. توجيه الموظف لتطبيق الاتصال للحفظ
+      window.location.href = `tel:${item.phone}`;
+      showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
 
       // 3. الحفظ في السيرفر بالخلفية
       callApi("update_status", {
@@ -297,7 +340,6 @@ export function StaffOutreachClient({
 
     const idsToDelete = Array.from(selectedIds);
 
-    // تحديث الواجهة فورياً
     setList((prev) => {
       if (!prev) return prev;
       return {
@@ -359,7 +401,7 @@ export function StaffOutreachClient({
     await callApi("bulk_update", { itemIds: idsToUpdate, status: "pending" });
   };
 
-  // دالة ضغط وتصغير الصورة في المتصفح لتسريع الرفع وتفادي أي قيود حجم
+  // دالة ضغط وتصغير الصورة في المتصفح
   const compressImage = async (file: File, maxDim = 1280, quality = 0.82): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -397,45 +439,64 @@ export function StaffOutreachClient({
     });
   };
 
-  // معالجة رفع صورة واستخراج الأرقام بالذكاء الاصطناعي (AI OCR)
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // معالجة رفع صور متعددة (حتى 100 صورة) واستخراج الأرقام تدريجياً
+  const handleMultipleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files).slice(0, 100); // دعم حتى 100 صورة
+    const totalFiles = fileList.length;
 
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     setIsAiProcessing(true);
-    showToast("جاري فحص الصورة واستخراج الأرقام بالذكاء الاصطناعي... 🤖");
+    setAiProgress({ current: 1, total: totalFiles, count: 0 });
+    showToast(`بدء فحص ${totalFiles} صورة بالذكاء الاصطناعي بشكل تدريجي... 🤖`);
 
-    try {
-      // 1. ضغط الصورة في المتصفح لتكون سريعة جداً
-      const compressedBase64 = await compressImage(file);
+    let accumulatedText = "";
+    let totalExtractedCount = 0;
 
-      // 2. إرسال الصورة إلى API الذكاء الاصطناعي
-      const response = await fetch("/api/staff/outreach/ai-extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          staffEmployeeId: staffId,
-          token,
-          sig,
-          imageBase64: compressedBase64,
-        }),
-      });
+    for (let i = 0; i < totalFiles; i++) {
+      const file = fileList[i];
+      setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedCount });
 
-      const data = await response.json();
+      try {
+        // ضغط الصورة
+        const compressedBase64 = await compressImage(file);
 
-      if (response.ok && data.ok && data.rawText) {
-        showToast(`تم استخراج ${data.count} رقم بنجاح بواسطة الذكاء الاصطناعي! ✨`);
-        setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${data.rawText}` : data.rawText));
-        setShowAddListModal(true);
-      } else {
-        showToast(data.error || "لم يتمكن الذكاء الاصطناعي من استخراج أرقام من هذه الصورة");
+        // إرسال الصورة للذكاء الاصطناعي
+        const response = await fetch("/api/staff/outreach/ai-extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            staffEmployeeId: staffId,
+            token,
+            sig,
+            imageBase64: compressedBase64,
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.ok && data.rawText) {
+          accumulatedText = accumulatedText.trim()
+            ? `${accumulatedText.trim()}\n${data.rawText}`
+            : data.rawText;
+          totalExtractedCount += data.count || 0;
+          setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedCount });
+        }
+      } catch (err) {
+        console.error("Error processing image index:", i, err);
       }
-    } catch (err: any) {
-      showToast(err?.message || "حدث خطأ أثناء فحص الصورة");
-    } finally {
-      setIsAiProcessing(false);
+    }
+
+    setIsAiProcessing(false);
+
+    if (accumulatedText.trim()) {
+      showToast(`اكتمل الفحص بنجاح! تم استخراج ${totalExtractedCount} رقم ومعرف من ${totalFiles} صورة ✨`);
+      setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${accumulatedText}` : accumulatedText));
+      setShowAddListModal(true);
+    } else {
+      showToast("تم فحص الصور ولكن لم يتم العثور على أرقام أو يوزرات واضحة.");
     }
   };
 
@@ -569,36 +630,50 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* مؤشر فحص الذكاء الاصطناعي للصورة */}
+      {/* مؤشر فحص الذكاء الاصطناعي للصور المتعددة التدريجي */}
       {isAiProcessing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 p-4 backdrop-blur-md animate-in fade-in">
-          <div className="rounded-3xl bg-white p-8 text-center shadow-2xl border border-sky-200 max-w-sm">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-100 text-3xl animate-bounce">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md animate-in fade-in">
+          <div className="rounded-3xl bg-white p-6 text-center shadow-2xl border border-sky-200 max-w-sm w-full">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-3xl animate-bounce">
               🤖
             </div>
-            <h3 className="mt-4 text-base font-black text-slate-900">جاري قراءة الصورة بالذكاء الاصطناعي...</h3>
-            <p className="mt-1 text-xs font-bold text-slate-500">
-              يقوم الذكاء الاصطناعي الآن بمسح الصورة واستخراج جميع أرقام الهواتف وروابط الواتساب منها بدقة.
+            <h3 className="mt-3 text-base font-black text-slate-900">
+              جاري فحص الصور بالذكاء الاصطناعي...
+            </h3>
+            <p className="mt-1 text-xs font-bold text-sky-700">
+              فحص الصورة <strong>{aiProgress.current}</strong> من أصل <strong>{aiProgress.total}</strong>
             </p>
-            <div className="mt-4 flex justify-center">
-              <span className="inline-block h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                <span className="block h-full w-full bg-sky-500 animate-pulse"></span>
-              </span>
+            <p className="text-[11px] font-bold text-slate-500 mt-1">
+              تم استخراج <strong>{aiProgress.count}</strong> رقماً ومعرفاً حتى الآن ✨
+            </p>
+
+            {/* شريط تقدم تفاعلي */}
+            <div className="mt-4 w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+              <div
+                className="bg-gradient-to-r from-sky-500 to-indigo-600 h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.round((aiProgress.current / Math.max(1, aiProgress.total)) * 100)}%`,
+                }}
+              ></div>
             </div>
+            <p className="mt-2 text-[10px] font-bold text-slate-400">
+              {Math.round((aiProgress.current / Math.max(1, aiProgress.total)) * 100)}% مكتمل
+            </p>
           </div>
         </div>
       )}
 
-      {/* مدخل ملف مخفي لرفع الصورة */}
+      {/* مدخل ملف مخفي يدعم حتى 100 صورة دفعة واحدة */}
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleImageUpload}
+        onChange={handleMultipleImagesUpload}
         accept="image/*"
+        multiple
         className="hidden"
       />
 
-      {/* بطاقة العنوان العلوية مع زر الإضافة السريع وزر الذكاء الاصطناعي */}
+      {/* بطاقة العنوان العلوية مع زر الإضافة السريع وزر الذكاء الاصطناعي المتعدد */}
       <div className="rounded-3xl bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-700 p-6 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center justify-between">
@@ -612,7 +687,7 @@ export function StaffOutreachClient({
           </div>
 
           <p className="mt-2 text-xs font-bold text-sky-100 leading-relaxed">
-            مراسلة مئات الزبائن بالواتساب بنماذج عشوائية وحفظ أرقامهم في هاتفك، مع دعم الاستخراج الذكي من الصور.
+            مراسلة الزبائن بالواتساب واليوزرات، مع ربط ذكي بقاعدة بيانات الزبائن وتنبيه الأرقام المكررة.
           </p>
 
           {/* أزرار الإجراءات السريعة العلوية */}
@@ -628,13 +703,13 @@ export function StaffOutreachClient({
               <span>إضافة قائمة جديدة</span>
             </button>
 
-            {/* زر رفع صورة واستخراج الأرقام بالذكاء الاصطناعي */}
+            {/* زر رفع حتى 100 صورة بالذكاء الاصطناعي */}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center justify-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 px-4 py-3 text-xs font-black shadow-md transition active:scale-95"
             >
               <span>📷</span>
-              <span>استخراج من صورة (AI)</span>
+              <span>رفع صور (حتى 100 صورة AI)</span>
             </button>
 
             {list && list.items.length > 0 && (
@@ -661,16 +736,26 @@ export function StaffOutreachClient({
         </div>
       </div>
 
-      {/* شريط الإحصائيات الذكي */}
-      <div className="grid grid-cols-4 gap-2 text-center">
+      {/* شريط الإحصائيات الذكي مع مؤشرات الزبائن والتكرار */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
         <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-200">
-          <p className="text-[10px] font-black text-slate-400">إجمالي الأرقام</p>
+          <p className="text-[10px] font-black text-slate-400">إجمالي الأرقام واليوزرات</p>
           <p className="mt-1 text-xl font-black text-slate-800">{stats.total}</p>
+          {stats.existingCustomers > 0 && (
+            <span className="mt-1 inline-block text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+              🛍️ {stats.existingCustomers} زبون سابق
+            </span>
+          )}
         </div>
 
         <div className="rounded-2xl bg-amber-50 p-3 shadow-sm border border-amber-200">
           <p className="text-[10px] font-black text-amber-600">بانتظار البدء</p>
           <p className="mt-1 text-xl font-black text-amber-700">{stats.pending}</p>
+          {stats.duplicates > 0 && (
+            <span className="mt-1 inline-block text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full">
+              ⚠️ {stats.duplicates} مكرر سابقاً
+            </span>
+          )}
         </div>
 
         <div className="rounded-2xl bg-emerald-50 p-3 shadow-sm border border-emerald-200">
@@ -748,7 +833,7 @@ export function StaffOutreachClient({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن رقم أو نص..."
+                placeholder="ابحث عن رقم، يوزر، أو منطقة..."
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-9 text-xs font-bold text-slate-800 placeholder-slate-400 shadow-sm focus:border-sky-500 focus:outline-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
@@ -806,18 +891,6 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* دليل خطوة بخطوة للموظف */}
-      {activeTab === "active" && filteredActiveItems.length > 0 && !isSelectMode && (
-        <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-3 text-[11px] font-bold text-amber-900 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">💡</span>
-            <span>
-              <strong>طريقة العمل:</strong> انقر أولاً لفتح الواتساب (يصبح أخضر 🟢)، ثم انقر ثانياً لفتح الاتصال لحفظ الرقم (يصبح أزرق 🔵).
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* محتوى التبويب 1: الأرقام الحالية (قيد العمل) */}
       {activeTab === "active" && (
         <div className="space-y-2.5">
@@ -834,7 +907,7 @@ export function StaffOutreachClient({
               <p className="mt-1 text-xs font-bold text-slate-500">
                 {list && list.items.length > 0
                   ? "جميع الأرقام تم إكمالها وانتقلت لخانة المكتمل بنجاح."
-                  : "انقر على زر (إضافة قائمة جديدة) أو (استخراج من صورة) للبدء فوراً."}
+                  : "انقر على زر (إضافة قائمة جديدة) أو (رفع صور بالذكاء الاصطناعي) للبدء فوراً."}
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <button
@@ -852,7 +925,7 @@ export function StaffOutreachClient({
                   className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-5 py-3 text-xs font-black text-slate-900 shadow-md transition active:scale-95 hover:bg-amber-300"
                 >
                   <span>📷</span>
-                  <span>رفع صورة بالذكاء الاصطناعي</span>
+                  <span>رفع صور (حتى 100 صورة AI)</span>
                 </button>
               </div>
             </div>
@@ -860,14 +933,13 @@ export function StaffOutreachClient({
             filteredActiveItems.map((item, index) => {
               const isGreen = item.status === "whatsapp_opened";
               const isSelected = selectedIds.has(item.id);
+              const isUserOnly = item.phone.startsWith("@") || /[a-zA-Z]/.test(item.phone);
 
               return (
                 <div
                   key={item.id}
                   className={`group relative overflow-hidden rounded-2xl transition-all duration-200 shadow-md ${
-                    isSelected
-                      ? "ring-4 ring-indigo-500 border-indigo-600"
-                      : ""
+                    isSelected ? "ring-4 ring-indigo-500 border-indigo-600" : ""
                   } ${
                     isGreen
                       ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-2 border-emerald-400"
@@ -894,19 +966,60 @@ export function StaffOutreachClient({
                       <div className="flex items-center gap-3">
                         <span
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-inner ${
-                            isGreen ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
+                            isGreen
+                              ? "bg-white/20 text-white"
+                              : isUserOnly
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {isGreen ? "🟢 2" : `${index + 1}`}
+                          {isGreen ? "🟢 2" : isUserOnly ? "@" : `${index + 1}`}
                         </span>
 
                         <div>
-                          <p className={`text-base font-black tracking-wider ${isGreen ? "text-white" : "text-slate-900"}`} dir="ltr">
-                            {item.phone}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {/* رقم الهاتف أو اليوزر */}
+                            <p className={`text-base font-black tracking-wider ${isGreen ? "text-white" : "text-slate-900"}`} dir="ltr">
+                              {item.phone}
+                            </p>
 
-                          <p className={`text-xs font-bold mt-0.5 flex items-center gap-1.5 ${isGreen ? "text-emerald-100" : "text-slate-500"}`}>
-                            {isGreen ? (
+                            {/* شارة اليوزر */}
+                            {isUserOnly && (
+                              <span className="rounded-full bg-purple-100 border border-purple-300 px-2 py-0.5 text-[10px] font-black text-purple-800">
+                                👤 يوزر
+                              </span>
+                            )}
+
+                            {/* تنبيه الرقم المكرر */}
+                            {item.isDuplicateHistory && (
+                              <span className="rounded-full bg-rose-100 border border-rose-300 px-2 py-0.5 text-[10px] font-black text-rose-800 animate-pulse">
+                                ⚠️ مكرر سابقاً ({item.duplicateSource})
+                              </span>
+                            )}
+
+                            {/* شارة الزبون السابق والمناطق */}
+                            {item.isExistingCustomer && (
+                              <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-black text-emerald-900">
+                                🛍️ زبون سابق ({item.ordersCount} طلبات)
+                              </span>
+                            )}
+                          </div>
+
+                          {/* عرض المناطق المسجلة للزبون */}
+                          {item.regions && item.regions.length > 0 && (
+                            <p className="text-[11px] font-black text-sky-700 mt-1 flex items-center gap-1">
+                              <span>📍 المنطقة:</span>
+                              <span className="bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-lg">
+                                {item.regions.join(" / ")}
+                              </span>
+                            </p>
+                          )}
+
+                          {/* نص الخطوة والإجراء */}
+                          <p className={`text-xs font-bold mt-1 flex items-center gap-1.5 ${isGreen ? "text-emerald-100" : "text-slate-500"}`}>
+                            {isUserOnly ? (
+                              <span>💬 يوزر واتساب: انقر للمراسلة (اكتمال فوري)</span>
+                            ) : isGreen ? (
                               <span>📞 الخطوة 2: انقر لفتح تطبيق الاتصال وحفظ الرقم</span>
                             ) : (
                               <span>💬 الخطوة 1: انقر لفتح الواتساب بالرسالة الإعلانية</span>
@@ -920,10 +1033,12 @@ export function StaffOutreachClient({
                           className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black shadow-sm ${
                             isGreen
                               ? "bg-white text-emerald-800 animate-pulse font-black"
+                              : isUserOnly
+                              ? "bg-purple-600 text-white"
                               : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           }`}
                         >
-                          {isGreen ? "فتح الاتصال 📞" : "فتح الواتساب 💬"}
+                          {isGreen ? "فتح الاتصال 📞" : isUserOnly ? "واتساب (فوري) 💬" : "فتح الواتساب 💬"}
                         </span>
                       </div>
                     </button>
@@ -943,7 +1058,7 @@ export function StaffOutreachClient({
               <span className="text-4xl">⏳</span>
               <h3 className="mt-3 text-base font-black text-slate-800">لا توجد أرقام مكتملة بعد</h3>
               <p className="mt-1 text-xs font-bold text-slate-500">
-                عند النقر على الرقم مرتين (واتساب ثم اتصال)، سيتحول للون الأزرق ويظهر هنا.
+                عند إكمال مراسلة الرقم أو اليوزر، سيتحول للون الأزرق ويظهر هنا.
               </p>
             </div>
           ) : (
@@ -980,9 +1095,16 @@ export function StaffOutreachClient({
                         ✅ {index + 1}
                       </span>
                       <div>
-                        <p className="text-base font-black tracking-wider text-white" dir="ltr">
-                          {item.phone}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-black tracking-wider text-white" dir="ltr">
+                            {item.phone}
+                          </p>
+                          {item.regions && item.regions.length > 0 && (
+                            <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black">
+                              📍 {item.regions.join(" / ")}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] font-bold text-sky-100 mt-0.5">
                           {item.templateUsed ? `النموذج: ${item.templateUsed}` : "مكتمل ومخزن"}
                         </p>
@@ -1068,7 +1190,7 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* شريط الإجراءات العائم السفلي عند تحديد أرقام (Bottom Floating Action Bar) */}
+      {/* شريط الإجراءات العائم السفلي عند تحديد أرقام */}
       {isSelectMode && selectedIds.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-md rounded-3xl bg-slate-900/95 p-4 shadow-2xl backdrop-blur-md border border-white/20 text-white animate-in slide-in-from-bottom-6">
           <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
@@ -1113,13 +1235,13 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* نافذة إضافة قائمة جديدة (Modal) */}
+      {/* نافذة إضافة قائمة جديدة */}
       {showAddListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900">
-                {appendToExisting ? "📥 دمج أرقام إضافية في القائمة الحالية" : "➕ إضافة قائمة أرقام أو روابط جديدة"}
+                {appendToExisting ? "📥 دمج أرقام إضافية في القائمة الحالية" : "➕ إضافة قائمة أرقام أو يوزرات جديدة"}
               </h3>
               <button
                 onClick={() => setShowAddListModal(false)}
@@ -1130,17 +1252,17 @@ export function StaffOutreachClient({
             </div>
 
             <div className="mt-4 space-y-4">
-              {/* زر رفع صورة مباشر داخل النافذة */}
+              {/* زر رفع حتى 100 صورة داخل النافذة */}
               <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                   <span className="text-xl">📷</span>
-                  <span>هل لديك صورة أو سكرين شوت تحتوي على أرقام؟</span>
+                  <span>رفع صور (حتى 100 صورة سكرين شوت أو كاميرا)</span>
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-2 text-xs font-black text-slate-950 shadow-sm active:scale-95 transition whitespace-nowrap"
                 >
-                  استخراج بالذكاء الاصطناعي ✨
+                  رفع الصور واستخراجها ✨
                 </button>
               </div>
 
@@ -1159,18 +1281,18 @@ export function StaffOutreachClient({
 
               <div>
                 <label className="text-xs font-black text-slate-700">
-                  الصق الأرقام أو الروابط هنا (يدعم روابط wa.me وأرقام مختلفة في أسطر)
+                  الصق الأرقام أو اليوزرات أو الروابط هنا (يدعم روابط wa.me، يوزرات @username، وأرقام)
                 </label>
                 <textarea
                   rows={8}
                   value={rawTextInput}
                   onChange={(e) => setRawTextInput(e.target.value)}
-                  placeholder={`https://wa.me/9647707663735\n07765058901\n07882910055\n+9647812986658\nhttps://wa.me/9647726614525`}
+                  placeholder={`https://wa.me/9647707663735\n@sarah_user\n07765058901\nhttps://wa.me/user_ahmed\n+9647812986658`}
                   className="mt-1 w-full rounded-2xl border border-slate-200 p-3 text-xs font-mono font-bold text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:outline-none"
                   dir="ltr"
                 />
                 <p className="mt-1 text-[11px] font-bold text-slate-400">
-                  ✨ سيقوم النظام تلقائياً بتنظيف الأرقام، استخراجها، ومنع التكرار.
+                  ✨ سيقوم النظام تلقائياً بتنظيف الأرقام واليوزرات، فحص التكرارات السابقة، ومطابقة الزبائن.
                 </p>
               </div>
 
@@ -1194,7 +1316,7 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* نافذة خيارات الرقم المكتمل (Modal) */}
+      {/* نافذة خيارات الرقم المكتمل */}
       {selectedCompletedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 text-center">
@@ -1205,6 +1327,12 @@ export function StaffOutreachClient({
             <h3 className="mt-3 text-lg font-black text-slate-900" dir="ltr">
               {selectedCompletedItem.phone}
             </h3>
+
+            {selectedCompletedItem.regions && selectedCompletedItem.regions.length > 0 && (
+              <p className="mt-1 text-xs font-black text-sky-700">
+                📍 المنطقة: {selectedCompletedItem.regions.join(" / ")}
+              </p>
+            )}
 
             <p className="mt-1 text-xs font-bold text-slate-500">
               هذا الرقم مكتمل. ما الإجراء الذي ترغب بتنفيذه؟
@@ -1253,7 +1381,7 @@ export function StaffOutreachClient({
                 className="w-full rounded-2xl border border-amber-300 bg-amber-50 py-3 text-xs font-black text-amber-800 hover:bg-amber-100 active:scale-95 transition flex items-center justify-center gap-2"
               >
                 <span>🔄</span>
-                <span>إعادة الرقم لقائمة العمل (غير مكتمل)</span>
+                <span>إعادة لقائمة العمل (غير مكتمل)</span>
               </button>
 
               <button
@@ -1275,7 +1403,7 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* نافذة إضافة وتعديل النموذج (Modal) */}
+      {/* نافذة إضافة وتعديل النموذج */}
       {showTemplateModal && editingTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-slate-100">

@@ -18,6 +18,130 @@ async function verifyStaff(staffEmployeeId: string, token: string, sig: string) 
   return emp;
 }
 
+/**
+ * مطابقة الأرقام مع قاعدة بيانات الزبائن والتكرارات
+ */
+async function enrichItemsWithCustomerData(
+  staffEmployeeId: string,
+  currentListId: string | null,
+  items: Array<{ id: string; phone: string }>
+) {
+  if (!items || items.length === 0) return {};
+
+  const phones = items.map((i) => i.phone);
+  const cleanDigitsList = phones
+    .map((p) => p.replace(/\D/g, ""))
+    .filter((d) => d.length >= 8);
+
+  const last9List = Array.from(new Set(cleanDigitsList.map((d) => d.slice(-9))));
+
+  // 1. فحص التكرارات في القوائم الأخرى لنفس الموظف
+  let historyDuplicateMap = new Map<string, string>();
+  try {
+    const historyItems = await prisma.staffOutreachItem.findMany({
+      where: {
+        phone: { in: phones },
+        list: { staffEmployeeId },
+        ...(currentListId ? { listId: { not: currentListId } } : {}),
+      },
+      select: { phone: true, list: { select: { title: true } } },
+    });
+
+    for (const h of historyItems) {
+      historyDuplicateMap.set(h.phone, h.list?.title || "قائمة سابقة");
+    }
+  } catch (e) {}
+
+  // 2. جلب الملفات المسجلة من CustomerPhoneProfile
+  let phoneProfiles: any[] = [];
+  if (last9List.length > 0) {
+    try {
+      phoneProfiles = await prisma.customerPhoneProfile.findMany({
+        where: {
+          OR: last9List.map((l9) => ({ phone: { contains: l9 } })),
+        },
+        include: {
+          region: { select: { name: true } },
+        },
+      });
+    } catch (e) {}
+  }
+
+  // 3. جلب الطلبات السابقة من جدول Order
+  let pastOrders: any[] = [];
+  if (last9List.length > 0) {
+    try {
+      pastOrders = await prisma.order.findMany({
+        where: {
+          OR: last9List.map((l9) => ({
+            OR: [{ customerPhone: { contains: l9 } }, { secondCustomerPhone: { contains: l9 } }],
+          })),
+        },
+        select: {
+          customerPhone: true,
+          secondCustomerPhone: true,
+          customerRegion: { select: { name: true } },
+          secondCustomerRegion: { select: { name: true } },
+        },
+        take: 300,
+      });
+    } catch (e) {}
+  }
+
+  const resultMap: Record<
+    string,
+    {
+      isDuplicateHistory: boolean;
+      duplicateSource?: string;
+      isExistingCustomer: boolean;
+      regions: string[];
+      ordersCount: number;
+    }
+  > = {};
+
+  for (const item of items) {
+    const p = item.phone;
+    const digits = p.replace(/\D/g, "");
+    const last9 = digits.length >= 8 ? digits.slice(-9) : null;
+
+    const dupSource = historyDuplicateMap.get(p);
+    const isDup = Boolean(dupSource);
+
+    const regionsSet = new Set<string>();
+    let ordersCount = 0;
+
+    if (last9) {
+      for (const cp of phoneProfiles) {
+        if (cp.phone && cp.phone.includes(last9) && cp.region?.name) {
+          regionsSet.add(cp.region.name);
+        }
+      }
+
+      for (const ord of pastOrders) {
+        const matchMain = ord.customerPhone && ord.customerPhone.includes(last9);
+        const matchSec = ord.secondCustomerPhone && ord.secondCustomerPhone.includes(last9);
+        if (matchMain || matchSec) {
+          ordersCount += 1;
+          if (ord.customerRegion?.name) regionsSet.add(ord.customerRegion.name);
+          if (ord.secondCustomerRegion?.name) regionsSet.add(ord.secondCustomerRegion.name);
+        }
+      }
+    }
+
+    const isCustomer = regionsSet.size > 0 || ordersCount > 0;
+
+    resultMap[item.id] = {
+      isDuplicateHistory: isDup,
+      duplicateSource: dupSource,
+      isExistingCustomer: isCustomer,
+      regions: Array.from(regionsSet),
+      ordersCount,
+    };
+  }
+
+  return resultMap;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -29,7 +153,7 @@ export async function POST(req: Request) {
 
     const emp = await verifyStaff(staffEmployeeId, token, sig);
 
-    // 1. جلب البيانات
+    // 1. جلب البيانات مع مطابقة الزبائن والتكرار
     if (action === "get_data") {
       let templates = await prisma.staffOutreachTemplate.findMany({
         where: {
@@ -65,6 +189,15 @@ export async function POST(req: Request) {
         },
       });
 
+      let enrichedMap: Record<string, any> = {};
+      if (latestList && latestList.items.length > 0) {
+        enrichedMap = await enrichItemsWithCustomerData(
+          emp.id,
+          latestList.id,
+          latestList.items.map((i) => ({ id: i.id, phone: i.phone }))
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         data: {
@@ -73,16 +206,29 @@ export async function POST(req: Request) {
                 id: latestList.id,
                 title: latestList.title,
                 createdAt: latestList.createdAt.toISOString(),
-                items: latestList.items.map((i) => ({
-                  id: i.id,
-                  phone: i.phone,
-                  originalInput: i.originalInput,
-                  status: i.status as "pending" | "whatsapp_opened" | "completed",
-                  templateUsed: i.templateUsed,
-                  openedAt: i.openedAt?.toISOString() || null,
-                  completedAt: i.completedAt?.toISOString() || null,
-                  createdAt: i.createdAt.toISOString(),
-                })),
+                items: latestList.items.map((i) => {
+                  const extra = enrichedMap[i.id] || {
+                    isDuplicateHistory: false,
+                    isExistingCustomer: false,
+                    regions: [],
+                    ordersCount: 0,
+                  };
+                  return {
+                    id: i.id,
+                    phone: i.phone,
+                    originalInput: i.originalInput,
+                    status: i.status as "pending" | "whatsapp_opened" | "completed",
+                    templateUsed: i.templateUsed,
+                    openedAt: i.openedAt?.toISOString() || null,
+                    completedAt: i.completedAt?.toISOString() || null,
+                    createdAt: i.createdAt.toISOString(),
+                    isDuplicateHistory: extra.isDuplicateHistory,
+                    duplicateSource: extra.duplicateSource,
+                    isExistingCustomer: extra.isExistingCustomer,
+                    regions: extra.regions,
+                    ordersCount: extra.ordersCount,
+                  };
+                }),
               }
             : null,
           templates: templates.map((t) => ({
@@ -99,7 +245,7 @@ export async function POST(req: Request) {
     if (action === "create_list") {
       const extracted = extractPhonesPure(payload?.rawText || "");
       if (extracted.length === 0) {
-        return NextResponse.json({ ok: false, error: "لم يتم العثور على أرقام هواتف صالحة." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "لم يتم العثور على أرقام هواتف أو يوزرات صالحة." }, { status: 400 });
       }
 
       let targetListId: string;
@@ -150,7 +296,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         ok: true,
-        message: `تمت إضافة ${newItems.length} رقم بنجاح ${extracted.length > newItems.length ? `(تم تجاهل ${extracted.length - newItems.length} مكرر)` : ""}`,
+        message: `تمت إضافة ${newItems.length} رقم بنجاح ${extracted.length > newItems.length ? `(تم تنبيه وتجاهل ${extracted.length - newItems.length} مكرر)` : ""}`,
         listId: targetListId,
       });
     }
