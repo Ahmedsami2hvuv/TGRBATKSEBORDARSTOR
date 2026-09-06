@@ -1421,32 +1421,28 @@ export function StaffOutreachClient({
                 <label className="text-xs font-black text-slate-700">نص الرسالة الإعلانية</label>
                 <textarea
                   ref={templateTextareaRef}
-                  rows={6}
+                  rows={7}
+                  dir="rtl"
                   value={editingTemplate.content}
-                  onPaste={() => {
-                    setTimeout(() => {
-                      if (templateTextareaRef.current) {
-                        templateTextareaRef.current.scrollTop = 0;
-                        templateTextareaRef.current.setSelectionRange(0, 0);
-                      }
-                    }, 50);
+                  onPaste={(e) => {
+                    const text = e.clipboardData?.getData("text");
+                    if (text !== undefined) {
+                      e.preventDefault();
+                      setEditingTemplate((prev) => (prev ? { ...prev, content: text } : null));
+                      setTimeout(() => {
+                        if (templateTextareaRef.current) {
+                          templateTextareaRef.current.focus();
+                          templateTextareaRef.current.setSelectionRange(0, 0);
+                          templateTextareaRef.current.scrollTop = 0;
+                        }
+                      }, 10);
+                    }
                   }}
                   onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
                   placeholder="الصق أو اكتب نص الرسالة هنا..."
-                  className="mt-1 w-full rounded-2xl border border-slate-200 p-3 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
+                  className="mt-1 w-full rounded-2xl border border-slate-200 p-3 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:outline-none leading-relaxed"
                 />
               </div>
-
-              {/* بطاقة معاينة بداية النموذج فور اللصق */}
-              {editingTemplate.content.trim() && (
-                <div className="rounded-2xl bg-purple-50 border border-purple-200/80 p-3 text-xs animate-in fade-in">
-                  <span className="font-black text-purple-900 block mb-1">👀 بداية النموذج الملصق:</span>
-                  <p className="font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">
-                    {editingTemplate.content.slice(0, 160)}
-                    {editingTemplate.content.length > 160 ? "..." : ""}
-                  </p>
-                </div>
-              )}
 
               <div className="flex gap-2 pt-2">
                 <button
