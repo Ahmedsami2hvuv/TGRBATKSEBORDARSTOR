@@ -12,11 +12,10 @@ import {
   saveTemplateAction,
   deleteTemplateAction,
   resetDefaultTemplatesAction,
-  extractPhonesFromImageWithAIAction,
   bulkDeleteItemsAction,
   bulkUpdateItemStatusAction,
-  DEFAULT_OUTREACH_TEMPLATES,
 } from "./actions";
+import { DEFAULT_OUTREACH_TEMPLATES } from "./constants";
 
 interface OutreachItem {
   id: string;
@@ -340,36 +339,84 @@ export function StaffOutreachClient({
     await bulkUpdateItemStatusAction(staffId, token, sig, { itemIds: idsToUpdate, status: "pending" });
   };
 
+  // دالة ضغط وتصغير الصورة في المتصفح لتسريع الرفع وتفادي أي قيود حجم
+  const compressImage = async (file: File, maxDim = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(reader.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
+          resolve(compressedBase64);
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // معالجة رفع صورة واستخراج الأرقام بالذكاء الاصطناعي (AI OCR)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // إعادة تعيين الـ input ليسمح باختيار نفس الصورة مجدداً إن أراد
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Data = reader.result as string;
-      setIsAiProcessing(true);
-      showToast("جاري فحص الصورة واستخراج الأرقام بالذكاء الاصطناعي... 🤖");
+    setIsAiProcessing(true);
+    showToast("جاري فحص الصورة واستخراج الأرقام بالذكاء الاصطناعي... 🤖");
 
-      try {
-        const res = await extractPhonesFromImageWithAIAction(staffId, token, sig, base64Data);
-        if (res.ok && res.rawText) {
-          showToast(`تم استخراج ${res.count} رقم بنجاح بواسطة الذكاء الاصطناعي! ✨`);
-          setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${res.rawText}` : res.rawText));
-          setShowAddListModal(true);
-        } else {
-          showToast(res.error || "لم يتمكن الذكاء الاصطناعي من استخراج أرقام من هذه الصورة");
-        }
-      } catch (err: any) {
-        showToast(err?.message || "حدث خطأ أثناء فحص الصورة");
-      } finally {
-        setIsAiProcessing(false);
+    try {
+      // 1. ضغط الصورة في المتصفح لتكون سريعة جداً
+      const compressedBase64 = await compressImage(file);
+
+      // 2. إرسال الصورة إلى API الذكاء الاصطناعي
+      const response = await fetch("/api/staff/outreach/ai-extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffEmployeeId: staffId,
+          token,
+          sig,
+          imageBase64: compressedBase64,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.ok && data.rawText) {
+        showToast(`تم استخراج ${data.count} رقم بنجاح بواسطة الذكاء الاصطناعي! ✨`);
+        setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${data.rawText}` : data.rawText));
+        setShowAddListModal(true);
+      } else {
+        showToast(data.error || "لم يتمكن الذكاء الاصطناعي من استخراج أرقام من هذه الصورة");
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      showToast(err?.message || "حدث خطأ أثناء فحص الصورة");
+    } finally {
+      setIsAiProcessing(false);
+    }
   };
 
   // إضافة قائمة جديدة
