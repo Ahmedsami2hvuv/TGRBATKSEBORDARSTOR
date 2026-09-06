@@ -166,6 +166,7 @@ export async function POST(req: Request) {
       if (templates.length === 0) {
         await prisma.staffOutreachTemplate.createMany({
           data: DEFAULT_OUTREACH_TEMPLATES.map((t) => ({
+            id: crypto.randomUUID(),
             staffEmployeeId: emp.id,
             title: t.title,
             content: t.content,
@@ -286,6 +287,7 @@ export async function POST(req: Request) {
       if (newItems.length > 0) {
         await prisma.staffOutreachItem.createMany({
           data: newItems.map((item) => ({
+            id: crypto.randomUUID(),
             listId: targetListId,
             phone: item.phone,
             originalInput: item.originalInput,
@@ -369,21 +371,46 @@ export async function POST(req: Request) {
 
     // 8. حفظ نموذج
     if (action === "save_template") {
-      if (payload.templateId) {
-        await prisma.staffOutreachTemplate.update({
-          where: { id: payload.templateId },
-          data: {
-            title: payload.title.trim(),
-            content: payload.content.trim(),
-            isActive: payload.isActive !== undefined ? payload.isActive : true,
-          },
+      const title = (payload?.title || "").trim();
+      const content = (payload?.content || "").trim();
+      const templateId = payload?.templateId ? String(payload.templateId).trim() : null;
+
+      if (!title || !content) {
+        return NextResponse.json({ ok: false, error: "يرجى كتابة عنوان ونص الرسالة." }, { status: 400 });
+      }
+
+      if (templateId) {
+        const existing = await prisma.staffOutreachTemplate.findUnique({
+          where: { id: templateId },
         });
+
+        if (existing) {
+          await prisma.staffOutreachTemplate.update({
+            where: { id: templateId },
+            data: {
+              title,
+              content,
+              isActive: payload.isActive !== undefined ? Boolean(payload.isActive) : true,
+            },
+          });
+        } else {
+          await prisma.staffOutreachTemplate.create({
+            data: {
+              id: templateId,
+              staffEmployeeId: emp.id,
+              title,
+              content,
+              isActive: true,
+            },
+          });
+        }
       } else {
         await prisma.staffOutreachTemplate.create({
           data: {
+            id: crypto.randomUUID(),
             staffEmployeeId: emp.id,
-            title: payload.title.trim(),
-            content: payload.content.trim(),
+            title,
+            content,
             isActive: true,
           },
         });
@@ -393,9 +420,11 @@ export async function POST(req: Request) {
 
     // 9. حذف نموذج
     if (action === "delete_template") {
-      await prisma.staffOutreachTemplate.delete({
-        where: { id: payload.templateId },
-      });
+      if (payload.templateId) {
+        await prisma.staffOutreachTemplate.deleteMany({
+          where: { id: payload.templateId },
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -407,6 +436,7 @@ export async function POST(req: Request) {
 
       await prisma.staffOutreachTemplate.createMany({
         data: DEFAULT_OUTREACH_TEMPLATES.map((t) => ({
+          id: crypto.randomUUID(),
           staffEmployeeId: emp.id,
           title: t.title,
           content: t.content,

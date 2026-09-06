@@ -12,7 +12,7 @@ export async function ensureOutreachTablesExist(): Promise<void> {
     // 1. جدول قوائم التواصل StaffOutreachList
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "StaffOutreachList" (
-        "id" TEXT NOT NULL,
+        "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
         "staffEmployeeId" TEXT NOT NULL,
         "title" TEXT NOT NULL DEFAULT 'قائمة تواصل',
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -24,7 +24,7 @@ export async function ensureOutreachTablesExist(): Promise<void> {
     // 2. جدول أرقام الزبائن StaffOutreachItem
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "StaffOutreachItem" (
-        "id" TEXT NOT NULL,
+        "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
         "listId" TEXT NOT NULL,
         "phone" TEXT NOT NULL,
         "originalInput" TEXT NOT NULL DEFAULT '',
@@ -41,7 +41,7 @@ export async function ensureOutreachTablesExist(): Promise<void> {
     // 3. جدول النماذج الإعلانية StaffOutreachTemplate
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "StaffOutreachTemplate" (
-        "id" TEXT NOT NULL,
+        "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
         "staffEmployeeId" TEXT,
         "title" TEXT NOT NULL,
         "content" TEXT NOT NULL,
@@ -52,7 +52,16 @@ export async function ensureOutreachTablesExist(): Promise<void> {
       );
     `);
 
-    // 4. إنشاء الفهارس (Indexes)
+    // 4. تعيين DEFAULT gen_random_uuid() للأعمدة في حال تم إنشاؤها مسبقاً بدونه
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "StaffOutreachList" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
+        ALTER TABLE "StaffOutreachItem" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
+        ALTER TABLE "StaffOutreachTemplate" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
+      `);
+    } catch (e) {}
+
+    // 5. إنشاء الفهارس (Indexes)
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "StaffOutreachList_staffEmployeeId_idx" ON "StaffOutreachList"("staffEmployeeId");
       CREATE INDEX IF NOT EXISTS "StaffOutreachItem_listId_status_idx" ON "StaffOutreachItem"("listId", "status");

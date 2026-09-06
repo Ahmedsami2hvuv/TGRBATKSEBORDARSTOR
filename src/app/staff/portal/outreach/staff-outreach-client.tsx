@@ -580,18 +580,22 @@ export function StaffOutreachClient({
       return;
     }
 
+    const tplTitle = editingTemplate.title.trim();
+    const tplContent = editingTemplate.content.trim();
+    const tplId = editingTemplate.id;
+
     startTransition(async () => {
       const res = await callApi("save_template", {
-        templateId: editingTemplate.id,
-        title: editingTemplate.title,
-        content: editingTemplate.content,
+        templateId: tplId,
+        title: tplTitle,
+        content: tplContent,
       });
 
       if (res.ok) {
         showToast("تم حفظ النموذج بنجاح ✨");
-        setEditingTemplate(null);
         setShowTemplateModal(false);
-        loadData(false);
+        setEditingTemplate(null);
+        await loadData(false);
       } else {
         showToast(res.error || "فشل في حفظ النموذج");
       }
@@ -604,6 +608,7 @@ export function StaffOutreachClient({
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     showToast("تم حذف النموذج");
     await callApi("delete_template", { templateId });
+    await loadData(false);
   };
 
   // استعادة النماذج الـ 24
