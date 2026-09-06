@@ -155,30 +155,13 @@ export async function POST(req: Request) {
 
     // 1. جلب البيانات مع مطابقة الزبائن والتكرار
     if (action === "get_data") {
-      let templates = await prisma.staffOutreachTemplate.findMany({
+      const templates = await prisma.staffOutreachTemplate.findMany({
         where: {
-          OR: [{ staffEmployeeId: emp.id }, { staffEmployeeId: null }],
+          staffEmployeeId: emp.id,
           isActive: true,
         },
         orderBy: { createdAt: "asc" },
       });
-
-      if (templates.length === 0) {
-        await prisma.staffOutreachTemplate.createMany({
-          data: DEFAULT_OUTREACH_TEMPLATES.map((t) => ({
-            id: crypto.randomUUID(),
-            staffEmployeeId: emp.id,
-            title: t.title,
-            content: t.content,
-            isActive: true,
-          })),
-        });
-
-        templates = await prisma.staffOutreachTemplate.findMany({
-          where: { staffEmployeeId: emp.id, isActive: true },
-          orderBy: { createdAt: "asc" },
-        });
-      }
 
       const latestList = await prisma.staffOutreachList.findFirst({
         where: { staffEmployeeId: emp.id },
@@ -428,22 +411,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 10. استعادة النماذج الـ 24
+    // 10. مسح كافة النماذج
     if (action === "reset_templates") {
       await prisma.staffOutreachTemplate.deleteMany({
         where: { staffEmployeeId: emp.id },
       });
-
-      await prisma.staffOutreachTemplate.createMany({
-        data: DEFAULT_OUTREACH_TEMPLATES.map((t) => ({
-          id: crypto.randomUUID(),
-          staffEmployeeId: emp.id,
-          title: t.title,
-          content: t.content,
-          isActive: true,
-        })),
-      });
-
       return NextResponse.json({ ok: true });
     }
 
