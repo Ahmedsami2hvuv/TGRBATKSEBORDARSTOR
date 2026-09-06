@@ -282,14 +282,56 @@ export async function POST(req: Request) {
 
       const targetListId = mainList.id;
 
-      // فحص الأرقام الموجودة لمنع التكرار
+      // فحص الأرقام المسجلة في القائمة ومعرفة حالتها بدقة
       const existingItems = await prisma.staffOutreachItem.findMany({
         where: { listId: targetListId },
-        select: { phone: true },
+        select: { id: true, phone: true, status: true },
       });
-      const existingPhones = new Set(existingItems.map((i) => i.phone));
-      const newItems = extracted.filter((e) => !existingPhones.has(e.phone));
 
+      const existingMap = new Map<string, { id: string; status: string }>();
+      for (const item of existingItems) {
+        existingMap.set(item.phone, { id: item.id, status: item.status });
+      }
+
+      // تصفية الأرقام المستخرجة ومطابقتها
+      const uniqueExtractedMap = new Map<string, { phone: string; originalInput: string }>();
+      for (const item of extracted) {
+        if (!uniqueExtractedMap.has(item.phone)) {
+          uniqueExtractedMap.set(item.phone, item);
+        }
+      }
+      const uniqueExtracted = Array.from(uniqueExtractedMap.values());
+
+      const newItems: typeof uniqueExtracted = [];
+      const duplicateCompleted: Array<{ id: string; phone: string }> = [];
+      const duplicateActive: Array<{ id: string; phone: string }> = [];
+
+      for (const item of uniqueExtracted) {
+        const exist = existingMap.get(item.phone);
+        if (!exist) {
+          newItems.push(item);
+        } else if (exist.status === "completed") {
+          duplicateCompleted.push({ id: exist.id, phone: item.phone });
+        } else {
+          duplicateActive.push({ id: exist.id, phone: item.phone });
+        }
+      }
+
+      let reactivatedCount = 0;
+      if (payload?.reactivateCompleted && duplicateCompleted.length > 0) {
+        const completedIds = duplicateCompleted.map((d) => d.id);
+        await prisma.staffOutreachItem.updateMany({
+          where: { id: { in: completedIds } },
+          data: {
+            status: "pending",
+            openedAt: null,
+            completedAt: null,
+          },
+        });
+        reactivatedCount = duplicateCompleted.length;
+      }
+
+      // إضافة العناصر الجديدة
       if (newItems.length > 0) {
         await prisma.staffOutreachItem.createMany({
           data: newItems.map((item) => ({
@@ -302,11 +344,64 @@ export async function POST(req: Request) {
         });
       }
 
+      const newUsernames = newItems.filter((i) => i.phone.startsWith("@") || /[a-zA-Z]/.test(i.phone));
+      const newPhones = newItems.filter((i) => !i.phone.startsWith("@") && !/[a-zA-Z]/.test(i.phone));
+
       return NextResponse.json({
         ok: true,
-        message: `تم حفظ ${newItems.length} رقم بنجاح في قاعدة البيانات ${extracted.length > newItems.length ? `(تم تجاهل ${extracted.length - newItems.length} رقم مكرر)` : ""}`,
+        message: `تم استخراج ${uniqueExtracted.length} عنصر (${newItems.length} جديد، ${duplicateCompleted.length} مكتمل سابقاً، ${duplicateActive.length} قيد العمل)`,
         listId: targetListId,
-        newCount: newItems.length,
+        summary: {
+          totalExtracted: uniqueExtracted.length,
+          newCount: newItems.length,
+          newUsernamesCount: newUsernames.length,
+          newPhonesCount: newPhones.length,
+          duplicateCompletedCount: duplicateCompleted.length,
+          duplicateCompletedPhones: duplicateCompleted.map((d) => d.phone),
+          duplicateActiveCount: duplicateActive.length,
+          reactivatedCount,
+        },
+      });
+    }
+
+    // 2.1 إعادة تفعيل أرقام مكتملة ونقلها لقيد العمل
+    if (action === "reactivate_completed") {
+      const phones: string[] = payload?.phones || [];
+      const itemIds: string[] = payload?.itemIds || [];
+
+      let count = 0;
+      if (itemIds.length > 0) {
+        const res = await prisma.staffOutreachItem.updateMany({
+          where: {
+            id: { in: itemIds },
+            list: { staffEmployeeId: emp.id },
+          },
+          data: {
+            status: "pending",
+            openedAt: null,
+            completedAt: null,
+          },
+        });
+        count = res.count;
+      } else if (phones.length > 0) {
+        const res = await prisma.staffOutreachItem.updateMany({
+          where: {
+            phone: { in: phones },
+            list: { staffEmployeeId: emp.id },
+          },
+          data: {
+            status: "pending",
+            openedAt: null,
+            completedAt: null,
+          },
+        });
+        count = res.count;
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `تمت إعادة ${count} أرقام إلى قائمة العمل بنجاح 🚀`,
+        count,
       });
     }
 

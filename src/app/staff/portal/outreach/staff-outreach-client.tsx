@@ -73,6 +73,17 @@ export function StaffOutreachClient({
   const [showAddListModal, setShowAddListModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showAiSummaryModal, setShowAiSummaryModal] = useState(false);
+  const [aiSummaryData, setAiSummaryData] = useState<{
+    totalExtracted: number;
+    newCount: number;
+    newUsernamesCount: number;
+    newPhonesCount: number;
+    duplicateCompletedCount: number;
+    duplicateCompletedPhones: string[];
+    duplicateActiveCount: number;
+    reactivatedCount: number;
+  } | null>(null);
   const [selectedCompletedItem, setSelectedCompletedItem] = useState<OutreachItem | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<{ id?: string; title: string; content: string } | null>(null);
 
@@ -455,12 +466,17 @@ export function StaffOutreachClient({
     setAiProgress({ current: 1, total: totalFiles, count: 0 });
     showToast(`بدء فحص ${totalFiles} صورة بالذكاء الاصطناعي بشكل تدريجي... 🤖`);
 
-    let accumulatedText = "";
-    let totalExtractedCount = 0;
+    let totalExtractedSum = 0;
+    let newCountSum = 0;
+    let newUsernamesSum = 0;
+    let newPhonesSum = 0;
+    let duplicateCompletedSum = 0;
+    const duplicateCompletedPhonesSet = new Set<string>();
+    let duplicateActiveSum = 0;
 
     for (let i = 0; i < totalFiles; i++) {
       const file = fileList[i];
-      setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedCount });
+      setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedSum });
 
       try {
         // ضغط الصورة
@@ -480,17 +496,29 @@ export function StaffOutreachClient({
 
         const data = await response.json();
         if (response.ok && data.ok && data.rawText) {
-          accumulatedText = accumulatedText.trim()
-            ? `${accumulatedText.trim()}\n${data.rawText}`
-            : data.rawText;
-          totalExtractedCount += data.count || 0;
-          setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedCount });
-
-          // حفظ فوري وتلقائي في قاعدة البيانات السحابية
-          await callApi("create_list", {
+          // حفظ فوري وتلقائي في قاعدة البيانات السحابية مع الحصول على التصنيف الدقيق
+          const saveRes = await callApi("create_list", {
             rawText: data.rawText,
             appendToExisting: true,
           });
+
+          if (saveRes.ok && saveRes.summary) {
+            totalExtractedSum += saveRes.summary.totalExtracted || 0;
+            newCountSum += saveRes.summary.newCount || 0;
+            newUsernamesSum += saveRes.summary.newUsernamesCount || 0;
+            newPhonesSum += saveRes.summary.newPhonesCount || 0;
+            duplicateCompletedSum += saveRes.summary.duplicateCompletedCount || 0;
+            if (saveRes.summary.duplicateCompletedPhones) {
+              for (const p of saveRes.summary.duplicateCompletedPhones) {
+                duplicateCompletedPhonesSet.add(p);
+              }
+            }
+            duplicateActiveSum += saveRes.summary.duplicateActiveCount || 0;
+          } else {
+            totalExtractedSum += data.count || 0;
+          }
+
+          setAiProgress({ current: i + 1, total: totalFiles, count: totalExtractedSum });
         }
       } catch (err) {
         console.error("Error processing image index:", i, err);
@@ -499,12 +527,41 @@ export function StaffOutreachClient({
 
     setIsAiProcessing(false);
 
-    if (totalExtractedCount > 0) {
-      showToast(`تم استخراج وحفظ ${totalExtractedCount} رقماً ومعرفاً بنجاح في قاعدة البيانات السحابية ☁️✨`);
+    if (totalExtractedSum > 0) {
+      const summaryObj = {
+        totalExtracted: totalExtractedSum,
+        newCount: newCountSum,
+        newUsernamesCount: newUsernamesSum,
+        newPhonesCount: newPhonesSum,
+        duplicateCompletedCount: duplicateCompletedSum,
+        duplicateCompletedPhones: Array.from(duplicateCompletedPhonesSet),
+        duplicateActiveCount: duplicateActiveSum,
+        reactivatedCount: 0,
+      };
+      setAiSummaryData(summaryObj);
+      setShowAiSummaryModal(true);
       await loadData(false);
     } else {
       showToast("تم فحص الصور ولكن لم يتم العثور على أرقام أو يوزرات واضحة.");
     }
+  };
+
+  // إعادة تنشيط الأرقام المكتملة المستخرجة بالذكاء الاصطناعي
+  const handleReactivateCompletedFromAi = async () => {
+    if (!aiSummaryData || aiSummaryData.duplicateCompletedPhones.length === 0) return;
+    const phones = aiSummaryData.duplicateCompletedPhones;
+
+    startTransition(async () => {
+      const res = await callApi("reactivate_completed", { phones });
+      if (res.ok) {
+        showToast(`تم نقل ${res.count || phones.length} رقم من المكتمل إلى قيد العمل بنجاح 🚀`);
+        setShowAiSummaryModal(false);
+        setActiveTab("active");
+        await loadData(false);
+      } else {
+        showToast(res.error || "حدث خطأ أثناء النقل");
+      }
+    });
   };
 
   // إضافة قائمة جديدة
@@ -1621,6 +1678,144 @@ export function StaffOutreachClient({
                   إغلاق النافذة
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تقرير نتائج فحص واستخراج الصور بالذكاء الاصطناعي */}
+      {showAiSummaryModal && aiSummaryData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-sky-100 max-h-[90vh] overflow-y-auto">
+            {/* الأيقونة العلوية */}
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-3xl shadow-lg shadow-sky-200">
+              🤖
+            </div>
+
+            {/* العنوان */}
+            <div className="mt-3 text-center">
+              <h3 className="text-base font-black text-slate-900">
+                تقرير فحص الصور بالذكاء الاصطناعي
+              </h3>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                تم الانتهاء من فحص الصور واستخراج المعرفات والأرقام بدقة
+              </p>
+            </div>
+
+            {/* شبكة الإحصائيات التوضيحية */}
+            <div className="mt-4 space-y-2.5">
+              {/* إجمالي المستخرج */}
+              <div className="flex items-center justify-between rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📷</span>
+                  <span className="text-xs font-black text-slate-700">إجمالي ما تم استخراجه من الصور</span>
+                </div>
+                <span className="text-sm font-black text-slate-900 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm">
+                  {aiSummaryData.totalExtracted}
+                </span>
+              </div>
+
+              {/* أرقام جديدة دخلت قيد العمل */}
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🟢</span>
+                    <div>
+                      <h4 className="text-xs font-black text-emerald-900">أرقام ويوزرات جديدة دخلت قيد العمل</h4>
+                      <p className="text-[10px] font-bold text-emerald-700 mt-0.5">
+                        جاهزة الآن لبدء التواصل معها فوراً
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-base font-black text-emerald-800 bg-white px-3 py-1 rounded-xl border border-emerald-300 shadow-sm">
+                    {aiSummaryData.newCount}
+                  </span>
+                </div>
+
+                {aiSummaryData.newCount > 0 && (
+                  <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-emerald-200/60 text-[11px] font-bold text-emerald-800">
+                    <span className="rounded-lg bg-white/80 px-2 py-0.5 border border-emerald-200">
+                      📞 {aiSummaryData.newPhonesCount} رقم هاتف
+                    </span>
+                    <span className="rounded-lg bg-white/80 px-2 py-0.5 border border-emerald-200">
+                      👤 {aiSummaryData.newUsernamesCount} يوزر معرف
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* أرقام مكررة في المكتمل */}
+              {aiSummaryData.duplicateCompletedCount > 0 && (
+                <div className="rounded-2xl bg-sky-50 border border-sky-200 p-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🔵</span>
+                      <div>
+                        <h4 className="text-xs font-black text-sky-900">أرقام موجودة سابقاً في (المكتمل)</h4>
+                        <p className="text-[10px] font-bold text-sky-700 mt-0.5">
+                          تم التواصل معها مسبقاً ومحفوظة في خانة المكتمل
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-base font-black text-sky-800 bg-white px-3 py-1 rounded-xl border border-sky-300 shadow-sm">
+                      {aiSummaryData.duplicateCompletedCount}
+                    </span>
+                  </div>
+
+                  {/* زر إعادة التنشيط ونقلهم لقيد العمل */}
+                  <div className="mt-3 pt-2.5 border-t border-sky-200/60">
+                    <button
+                      disabled={isPending}
+                      onClick={handleReactivateCompletedFromAi}
+                      className="w-full rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 py-2.5 px-3 text-xs font-black text-white shadow-md active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <span>🔄</span>
+                      <span>
+                        {isPending
+                          ? "جاري النقل والتنشيط..."
+                          : `نقل هذه الأرقام (${aiSummaryData.duplicateCompletedCount}) إلى قيد العمل لمراسلتهم مجدداً`}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* أرقام مكررة في قيد العمل */}
+              {aiSummaryData.duplicateActiveCount > 0 && (
+                <div className="flex items-center justify-between rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🟡</span>
+                    <div>
+                      <h4 className="text-xs font-black text-amber-900">أرقام موجودة مسبقاً في (قيد العمل)</h4>
+                      <p className="text-[10px] font-bold text-amber-700">موجودة في قائمتك الحالية بانتظار التواصل</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-amber-800 bg-white px-2.5 py-1 rounded-xl border border-amber-300 shadow-sm">
+                    {aiSummaryData.duplicateActiveCount}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* أزرار الإغلاق والمتابعة */}
+            <div className="mt-5 space-y-2">
+              <button
+                onClick={() => {
+                  setShowAiSummaryModal(false);
+                  setActiveTab("active");
+                }}
+                className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 py-3 text-xs font-black text-white shadow-lg active:scale-95 transition flex items-center justify-center gap-2"
+              >
+                <span>🚀</span>
+                <span>الانتقال إلى قيد العمل والبدء بالمراسلة</span>
+              </button>
+
+              <button
+                onClick={() => setShowAiSummaryModal(false)}
+                className="w-full rounded-2xl bg-slate-100 hover:bg-slate-200 py-2.5 text-xs font-bold text-slate-600 active:scale-95 transition"
+              >
+                إغلاق
+              </button>
             </div>
           </div>
         </div>
