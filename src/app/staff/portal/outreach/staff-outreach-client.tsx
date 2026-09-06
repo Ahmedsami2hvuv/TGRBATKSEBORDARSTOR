@@ -3,18 +3,6 @@
 import { useEffect, useState, useTransition, useMemo, useRef } from "react";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
-import {
-  getOutreachDataAction,
-  createOutreachListAction,
-  updateItemStatusAction,
-  deleteItemAction,
-  clearListAction,
-  saveTemplateAction,
-  deleteTemplateAction,
-  resetDefaultTemplatesAction,
-  bulkDeleteItemsAction,
-  bulkUpdateItemStatusAction,
-} from "./actions";
 import { DEFAULT_OUTREACH_TEMPLATES } from "./constants";
 
 interface OutreachItem {
@@ -94,6 +82,26 @@ export function StaffOutreachClient({
   // مفتاح التخزين المؤقت في المتصفح
   const cacheKey = `kse:outreach:${staffId}`;
 
+  // دالة الاتصال المباشر والآمن بالـ API (Route Handler)
+  const callApi = async (action: string, payload: any = {}) => {
+    try {
+      const res = await fetch("/api/staff/outreach/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffEmployeeId: staffId,
+          token,
+          sig,
+          action,
+          payload,
+        }),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { ok: false, error: err?.message || "فشل الاتصال بالخادم" };
+    }
+  };
+
   // تحميل البيانات الأولية
   const loadData = async (useCache = true) => {
     if (useCache) {
@@ -108,7 +116,7 @@ export function StaffOutreachClient({
       } catch {}
     }
 
-    const res = await getOutreachDataAction(staffId, token, sig);
+    const res = await callApi("get_data");
     if (res.ok && res.data) {
       setList(res.data.list);
       setTemplates(res.data.templates);
@@ -218,7 +226,7 @@ export function StaffOutreachClient({
       showToast(`تم فتح الواتساب بنموذج: ${template.title} 💬`);
 
       // 4. الحفظ في السيرفر بالخلفية
-      updateItemStatusAction(staffId, token, sig, {
+      callApi("update_status", {
         itemId: item.id,
         status: "whatsapp_opened",
         templateUsed: template.title,
@@ -243,7 +251,7 @@ export function StaffOutreachClient({
       showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
 
       // 3. الحفظ في السيرفر بالخلفية
-      updateItemStatusAction(staffId, token, sig, {
+      callApi("update_status", {
         itemId: item.id,
         status: "completed",
       });
@@ -290,7 +298,7 @@ export function StaffOutreachClient({
     setIsSelectMode(false);
     showToast(`تم مسح ${count} أرقام بنجاح 🗑️`);
 
-    await bulkDeleteItemsAction(staffId, token, sig, { itemIds: idsToDelete });
+    await callApi("bulk_delete", { itemIds: idsToDelete });
   };
 
   // نقل الأرقام المحددة إلى المكتمل (Bulk Complete)
@@ -313,7 +321,7 @@ export function StaffOutreachClient({
     setIsSelectMode(false);
     showToast(`تم تحويل ${count} أرقام إلى المكتمل 🔵`);
 
-    await bulkUpdateItemStatusAction(staffId, token, sig, { itemIds: idsToUpdate, status: "completed" });
+    await callApi("bulk_update", { itemIds: idsToUpdate, status: "completed" });
   };
 
   // إعادة الأرقام المحددة لقائمة العمل (Bulk Reset to Pending)
@@ -336,7 +344,7 @@ export function StaffOutreachClient({
     setIsSelectMode(false);
     showToast(`تمت إعادة ${count} أرقام لقائمة العمل 🚀`);
 
-    await bulkUpdateItemStatusAction(staffId, token, sig, { itemIds: idsToUpdate, status: "pending" });
+    await callApi("bulk_update", { itemIds: idsToUpdate, status: "pending" });
   };
 
   // دالة ضغط وتصغير الصورة في المتصفح لتسريع الرفع وتفادي أي قيود حجم
@@ -427,7 +435,7 @@ export function StaffOutreachClient({
     }
 
     startTransition(async () => {
-      const res = await createOutreachListAction(staffId, token, sig, {
+      const res = await callApi("create_list", {
         title: listTitleInput,
         rawText: rawTextInput,
         appendToExisting,
@@ -456,7 +464,21 @@ export function StaffOutreachClient({
     });
     setSelectedCompletedItem(null);
     showToast("تم حذف الرقم من القائمة");
-    await deleteItemAction(staffId, token, sig, { itemId });
+    await callApi("delete_item", { itemId });
+  };
+
+  // إعادة الرقم للعمل
+  const handleResetItemToPending = async (item: OutreachItem) => {
+    setList((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((i) => (i.id === item.id ? { ...i, status: "pending" } : i)),
+      };
+    });
+    setSelectedCompletedItem(null);
+    showToast("تمت إعادة الرقم لقائمة العمل");
+    await callApi("update_status", { itemId: item.id, status: "pending" });
   };
 
   // تفريغ القائمة
@@ -475,7 +497,7 @@ export function StaffOutreachClient({
       };
     });
     showToast("تم مسح الأرقام بنجاح");
-    await clearListAction(staffId, token, sig, { listId: list.id, onlyCompleted });
+    await callApi("clear_list", { listId: list.id, onlyCompleted });
   };
 
   // حفظ نموذج
@@ -486,7 +508,7 @@ export function StaffOutreachClient({
     }
 
     startTransition(async () => {
-      const res = await saveTemplateAction(staffId, token, sig, {
+      const res = await callApi("save_template", {
         templateId: editingTemplate.id,
         title: editingTemplate.title,
         content: editingTemplate.content,
@@ -508,14 +530,14 @@ export function StaffOutreachClient({
     if (!window.confirm("هل أنت متأكد من حذف هذا النموذج؟")) return;
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     showToast("تم حذف النموذج");
-    await deleteTemplateAction(staffId, token, sig, { templateId });
+    await callApi("delete_template", { templateId });
   };
 
   // استعادة النماذج الـ 24
   const handleResetTemplates = async () => {
     if (!window.confirm("هل تريد استعادة النماذج الـ 24 الأصلية؟ سيتم استبدال النماذج الحالية.")) return;
     startTransition(async () => {
-      const res = await resetDefaultTemplatesAction(staffId, token, sig);
+      const res = await callApi("reset_templates");
       if (res.ok) {
         showToast("تمت استعادة 24 نموذج بنجاح 🚀");
         loadData(false);
