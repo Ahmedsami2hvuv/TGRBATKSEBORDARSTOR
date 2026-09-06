@@ -48,23 +48,24 @@ export async function POST(req: Request) {
       }
     }
 
-    const prompt = `أنت خبير فائق الدقة والذكاء في استخراج بيانات التواصل (أرقام الهواتف، اليوزرات وأسماء المستخدمين Usernames، وروابط الواتساب) من الصور ولقطات الشاشة ومحادثات الواتساب.
-مهمتك بدقة متناهية:
-1. استخرج كل أرقام الهواتف (العراقية والدولية) الظاهرة في الصورة.
-2. استخرج كل اليوزرات وأسماء المستخدمين (Usernames) الظاهرة للزبائن أو جهات الاتصال في الواتساب (مثلاً المعرفات التي تبدأ بـ @ أو أسماء الحسابات أو المعرفات الظاهرة بدلاً من الأرقام).
-3. استخرج أي روابط واتساب (مثل wa.me/ أو wa.me/username أو api.whatsapp.com).
-4. تجاهل الكلمات العادية غير المتعلقة بالتواصل مثل الأسعار والتواريخ والرسائل العامة.
-5. أرجع النتيجة على شكل قائمة فقط، كل رقم أو يوزر في سطر مستقل بدون أي شرح أو مقدمات إضافية.`;
+    const prompt = `استخرج بدقة فائقة كل أرقام الهواتف (العراقية والدولية مثل 07... أو 964... أو +964...) وكل أسماء المستخدمين واليوزرات (مثل @username أو المعرفات) وروابط الواتساب (wa.me) الظاهرة في هذه الصورة أو لقطة الشاشة.
+أرجع فقط قائمة بالأرقام واليوزرات المستخرجة، كل رقم أو يوزر في سطر مستقل، بدون أي كلمات أو شروحات إضافية.`;
 
     let extractedText = "";
     let lastError = "";
 
-    const candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+    const candidateModels = [
+      "gemini-1.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-pro",
+      "gemini-2.5-flash",
+      "gemini-flash-latest"
+    ];
 
     for (const k of keys) {
       for (const model of candidateModels) {
         try {
-          const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${k.key}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k.key}`;
           const geminiReqBody = {
             contents: [
               {
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
           } else {
             const errData = await res.json().catch(() => ({}));
             lastError = errData?.error?.message || `HTTP ${res.status}`;
-            await markGeminiKeyError(k.id);
+            await markGeminiKeyError(k.id, res.status === 429);
           }
         } catch (e: any) {
           lastError = e?.message || "فشل الاتصال بـ Gemini API";

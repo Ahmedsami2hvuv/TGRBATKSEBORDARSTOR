@@ -4,11 +4,25 @@
 export const DEFAULT_OUTREACH_TEMPLATES: { id: string; title: string; content: string }[] = [];
 
 /**
+ * تحويل الأرقام العربية/المشرقية والفارسية إلى أرقام لاتينية 0-9
+ */
+export function normalizeDigits(input: string): string {
+  if (!input) return "";
+  const arabicNumerals = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  const persianNumerals = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+  let result = input;
+  for (let i = 0; i < 10; i++) {
+    result = result.replaceAll(arabicNumerals[i], String(i)).replaceAll(persianNumerals[i], String(i));
+  }
+  return result;
+}
+
+/**
  * دالة مساعدة نقية لتنظيف واستخراج الرقم أو اليوزر
  */
 export function cleanPhoneOrUsername(input: string): string | null {
   if (!input) return null;
-  let text = input.trim();
+  let text = normalizeDigits(input.trim());
 
   // 1. إذا كان رابط واتساب بيوزر أو رقم: wa.me/... أو api.whatsapp.com/...
   const waMatch = text.match(/(?:https?:\/\/)?(?:wa\.me\/|api\.whatsapp\.com\/send\?phone=|\/)([a-zA-Z0-9_.+@-]+)/i);
@@ -57,7 +71,8 @@ export function cleanPhoneOrUsername(input: string): string | null {
 export function extractPhonesPure(rawText: string): { phone: string; originalInput: string }[] {
   if (!rawText) return [];
 
-  const lines = rawText.split(/[\r\n,;\t]+/);
+  const normalized = normalizeDigits(rawText);
+  const lines = normalized.split(/[\r\n,;\t]+/);
   const seen = new Set<string>();
   const results: { phone: string; originalInput: string }[] = [];
 
