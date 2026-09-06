@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, useMemo } from "react";
+import { useEffect, useState, useTransition, useMemo, useRef } from "react";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import {
@@ -12,6 +12,9 @@ import {
   saveTemplateAction,
   deleteTemplateAction,
   resetDefaultTemplatesAction,
+  extractPhonesFromImageWithAIAction,
+  bulkDeleteItemsAction,
+  bulkUpdateItemStatusAction,
   DEFAULT_OUTREACH_TEMPLATES,
 } from "./actions";
 
@@ -59,6 +62,14 @@ export function StaffOutreachClient({
   const [activeTab, setActiveTab] = useState<"active" | "completed" | "templates">("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // التحديد المتعدد (Multi-Select)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // معالجة صور الذكاء الاصطناعي
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // النوافذ المنبثقة
   const [showAddListModal, setShowAddListModal] = useState(false);
@@ -158,6 +169,9 @@ export function StaffOutreachClient({
       });
   }, [list, searchQuery]);
 
+  // العناصر الحالية المعروضة بحسب التبويب النشط
+  const currentTabItems = activeTab === "active" ? filteredActiveItems : filteredCompletedItems;
+
   // اختيار نموذج رسالة عشوائي
   const getRandomTemplate = (): OutreachTemplate => {
     const activeTemplates = templates.filter((t) => t.isActive);
@@ -175,6 +189,11 @@ export function StaffOutreachClient({
 
   // التعامل مع النقر على رقم في قائمة العمل
   const handleItemClick = async (item: OutreachItem) => {
+    if (isSelectMode) {
+      toggleSelectItem(item.id);
+      return;
+    }
+
     if (item.status === "pending") {
       // 1. اختيار رسالة عشوائية
       const template = getRandomTemplate();
@@ -232,6 +251,127 @@ export function StaffOutreachClient({
     }
   };
 
+  // التحكم في التحديد الفردي
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
+
+  // تحديد الكل / إلغاء تحديد الكل
+  const handleToggleSelectAll = () => {
+    if (selectedIds.size === currentTabItems.length && currentTabItems.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(currentTabItems.map((i) => i.id)));
+    }
+  };
+
+  // حذف الأرقام المحددة (Bulk Delete)
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`هل أنت متأكد من مسح ${count} أرقام محددة نهائياً؟`)) return;
+
+    const idsToDelete = Array.from(selectedIds);
+
+    // تحديث الواجهة فورياً
+    setList((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter((i) => !selectedIds.has(i.id)),
+      };
+    });
+
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+    showToast(`تم مسح ${count} أرقام بنجاح 🗑️`);
+
+    await bulkDeleteItemsAction(staffId, token, sig, { itemIds: idsToDelete });
+  };
+
+  // نقل الأرقام المحددة إلى المكتمل (Bulk Complete)
+  const handleBulkComplete = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    const idsToUpdate = Array.from(selectedIds);
+
+    setList((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((i) =>
+          selectedIds.has(i.id) ? { ...i, status: "completed", completedAt: new Date().toISOString() } : i
+        ),
+      };
+    });
+
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+    showToast(`تم تحويل ${count} أرقام إلى المكتمل 🔵`);
+
+    await bulkUpdateItemStatusAction(staffId, token, sig, { itemIds: idsToUpdate, status: "completed" });
+  };
+
+  // إعادة الأرقام المحددة لقائمة العمل (Bulk Reset to Pending)
+  const handleBulkResetPending = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    const idsToUpdate = Array.from(selectedIds);
+
+    setList((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((i) =>
+          selectedIds.has(i.id) ? { ...i, status: "pending", openedAt: null, completedAt: null } : i
+        ),
+      };
+    });
+
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+    showToast(`تمت إعادة ${count} أرقام لقائمة العمل 🚀`);
+
+    await bulkUpdateItemStatusAction(staffId, token, sig, { itemIds: idsToUpdate, status: "pending" });
+  };
+
+  // معالجة رفع صورة واستخراج الأرقام بالذكاء الاصطناعي (AI OCR)
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // إعادة تعيين الـ input ليسمح باختيار نفس الصورة مجدداً إن أراد
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      setIsAiProcessing(true);
+      showToast("جاري فحص الصورة واستخراج الأرقام بالذكاء الاصطناعي... 🤖");
+
+      try {
+        const res = await extractPhonesFromImageWithAIAction(staffId, token, sig, base64Data);
+        if (res.ok && res.rawText) {
+          showToast(`تم استخراج ${res.count} رقم بنجاح بواسطة الذكاء الاصطناعي! ✨`);
+          setRawTextInput((prev) => (prev.trim() ? `${prev.trim()}\n${res.rawText}` : res.rawText));
+          setShowAddListModal(true);
+        } else {
+          showToast(res.error || "لم يتمكن الذكاء الاصطناعي من استخراج أرقام من هذه الصورة");
+        }
+      } catch (err: any) {
+        showToast(err?.message || "حدث خطأ أثناء فحص الصورة");
+      } finally {
+        setIsAiProcessing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // إضافة قائمة جديدة
   const handleCreateList = async () => {
     if (!rawTextInput.trim()) {
@@ -270,20 +410,6 @@ export function StaffOutreachClient({
     setSelectedCompletedItem(null);
     showToast("تم حذف الرقم من القائمة");
     await deleteItemAction(staffId, token, sig, { itemId });
-  };
-
-  // إعادة الرقم للعمل
-  const handleResetItemToPending = async (item: OutreachItem) => {
-    setList((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        items: prev.items.map((i) => (i.id === item.id ? { ...i, status: "pending" } : i)),
-      };
-    });
-    setSelectedCompletedItem(null);
-    showToast("تمت إعادة الرقم لقائمة العمل");
-    await updateItemStatusAction(staffId, token, sig, { itemId: item.id, status: "pending" });
   };
 
   // تفريغ القائمة
@@ -353,7 +479,7 @@ export function StaffOutreachClient({
   };
 
   return (
-    <div className="space-y-4 pb-16">
+    <div className="space-y-4 pb-24">
       {/* إشعار عائم Toast */}
       {toastMessage && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-slate-900/95 px-5 py-3 text-sm font-bold text-white shadow-2xl backdrop-blur border border-white/20 animate-in fade-in slide-in-from-top-4 flex items-center gap-2">
@@ -362,7 +488,36 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* بطاقة العنوان العلوية مع زر الإضافة السريع */}
+      {/* مؤشر فحص الذكاء الاصطناعي للصورة */}
+      {isAiProcessing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 p-4 backdrop-blur-md animate-in fade-in">
+          <div className="rounded-3xl bg-white p-8 text-center shadow-2xl border border-sky-200 max-w-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-100 text-3xl animate-bounce">
+              🤖
+            </div>
+            <h3 className="mt-4 text-base font-black text-slate-900">جاري قراءة الصورة بالذكاء الاصطناعي...</h3>
+            <p className="mt-1 text-xs font-bold text-slate-500">
+              يقوم الذكاء الاصطناعي الآن بمسح الصورة واستخراج جميع أرقام الهواتف وروابط الواتساب منها بدقة.
+            </p>
+            <div className="mt-4 flex justify-center">
+              <span className="inline-block h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                <span className="block h-full w-full bg-sky-500 animate-pulse"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مدخل ملف مخفي لرفع الصورة */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        className="hidden"
+      />
+
+      {/* بطاقة العنوان العلوية مع زر الإضافة السريع وزر الذكاء الاصطناعي */}
       <div className="rounded-3xl bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-700 p-6 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center justify-between">
@@ -376,7 +531,7 @@ export function StaffOutreachClient({
           </div>
 
           <p className="mt-2 text-xs font-bold text-sky-100 leading-relaxed">
-            أداة ذكية لتسهيل مراسلة مئات الزبائن بالواتساب بنماذج عشوائية وحفظ أرقامهم في هاتفك بنقرتين فقط.
+            مراسلة مئات الزبائن بالواتساب بنماذج عشوائية وحفظ أرقامهم في هاتفك، مع دعم الاستخراج الذكي من الصور.
           </p>
 
           {/* أزرار الإجراءات السريعة العلوية */}
@@ -390,6 +545,15 @@ export function StaffOutreachClient({
             >
               <span>➕</span>
               <span>إضافة قائمة جديدة</span>
+            </button>
+
+            {/* زر رفع صورة واستخراج الأرقام بالذكاء الاصطناعي */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 px-4 py-3 text-xs font-black shadow-md transition active:scale-95"
+            >
+              <span>📷</span>
+              <span>استخراج من صورة (AI)</span>
             </button>
 
             {list && list.items.length > 0 && (
@@ -410,7 +574,7 @@ export function StaffOutreachClient({
               className="flex items-center justify-center gap-2 rounded-2xl bg-purple-500/40 border border-purple-200/30 px-4 py-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-purple-500/60"
             >
               <span>📝</span>
-              <span>النماذج الإعلانية ({templates.length})</span>
+              <span>النماذج ({templates.length})</span>
             </button>
           </div>
         </div>
@@ -442,7 +606,10 @@ export function StaffOutreachClient({
       {/* التبويبات الرئيسية */}
       <div className="flex rounded-2xl bg-slate-200/70 p-1 font-black text-xs">
         <button
-          onClick={() => setActiveTab("active")}
+          onClick={() => {
+            setActiveTab("active");
+            setSelectedIds(new Set());
+          }}
           className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 ${
             activeTab === "active"
               ? "bg-white text-slate-900 shadow-sm"
@@ -458,7 +625,10 @@ export function StaffOutreachClient({
         </button>
 
         <button
-          onClick={() => setActiveTab("completed")}
+          onClick={() => {
+            setActiveTab("completed");
+            setSelectedIds(new Set());
+          }}
           className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 ${
             activeTab === "completed"
               ? "bg-white text-sky-900 shadow-sm"
@@ -474,7 +644,10 @@ export function StaffOutreachClient({
         </button>
 
         <button
-          onClick={() => setActiveTab("templates")}
+          onClick={() => {
+            setActiveTab("templates");
+            setSelectedIds(new Set());
+          }}
           className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 ${
             activeTab === "templates"
               ? "bg-white text-purple-900 shadow-sm"
@@ -485,41 +658,75 @@ export function StaffOutreachClient({
         </button>
       </div>
 
-      {/* شريط البحث وخيارات القائمة */}
+      {/* شريط البحث وخيارات التحديد والإفراغ */}
       {(activeTab === "active" || activeTab === "completed") && (
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث عن رقم أو نص..."
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-9 text-xs font-bold text-slate-800 placeholder-slate-400 shadow-sm focus:border-sky-500 focus:outline-none"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-            {searchQuery && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث عن رقم أو نص..."
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-9 text-xs font-bold text-slate-800 placeholder-slate-400 shadow-sm focus:border-sky-500 focus:outline-none"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* زر تفعيل وضع التحديد */}
+            {currentTabItems.length > 0 && (
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 hover:text-slate-600"
+                onClick={() => {
+                  setIsSelectMode(!isSelectMode);
+                  if (isSelectMode) setSelectedIds(new Set());
+                }}
+                className={`rounded-2xl px-3.5 py-2.5 text-xs font-black transition shadow-sm whitespace-nowrap active:scale-95 ${
+                  isSelectMode
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
               >
-                ✕
+                {isSelectMode ? "إلغاء التحديد" : "تحديد أرقام ☑️"}
+              </button>
+            )}
+
+            {list && list.items.length > 0 && !isSelectMode && (
+              <button
+                onClick={() => handleClearList(activeTab === "completed")}
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-black text-rose-700 hover:bg-rose-100 active:scale-95 transition whitespace-nowrap shadow-sm"
+              >
+                {activeTab === "completed" ? "مسح المكتمل 🗑️" : "مسح الكل 🗑️"}
               </button>
             )}
           </div>
 
-          {list && list.items.length > 0 && (
-            <button
-              onClick={() => handleClearList(activeTab === "completed")}
-              className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-black text-rose-700 hover:bg-rose-100 active:scale-95 transition whitespace-nowrap shadow-sm"
-            >
-              {activeTab === "completed" ? "مسح المكتمل 🗑️" : "مسح الكل 🗑️"}
-            </button>
+          {/* شريط أدوات التحديد المتعدد السريع */}
+          {isSelectMode && currentTabItems.length > 0 && (
+            <div className="flex items-center justify-between rounded-2xl bg-indigo-50 border border-indigo-200 p-3 text-xs font-bold text-indigo-950 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleToggleSelectAll}
+                  className="rounded-xl bg-white border border-indigo-300 px-3 py-1.5 text-xs font-black text-indigo-900 shadow-sm active:scale-95 transition"
+                >
+                  {selectedIds.size === currentTabItems.length ? "إلغاء تحديد الكل" : "تحديد الكل (Select All) ☑️"}
+                </button>
+                <span>تم تحديد: <strong>{selectedIds.size}</strong> من {currentTabItems.length}</span>
+              </div>
+            </div>
           )}
         </div>
       )}
 
       {/* دليل خطوة بخطوة للموظف */}
-      {activeTab === "active" && filteredActiveItems.length > 0 && (
+      {activeTab === "active" && filteredActiveItems.length > 0 && !isSelectMode && (
         <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-3 text-[11px] font-bold text-amber-900 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base">💡</span>
@@ -546,80 +753,100 @@ export function StaffOutreachClient({
               <p className="mt-1 text-xs font-bold text-slate-500">
                 {list && list.items.length > 0
                   ? "جميع الأرقام تم إكمالها وانتقلت لخانة المكتمل بنجاح."
-                  : "انقر على زر (إضافة قائمة جديدة) وألصق أرقام أو روابط الزبائن للبدء فوراً."}
+                  : "انقر على زر (إضافة قائمة جديدة) أو (استخراج من صورة) للبدء فوراً."}
               </p>
-              <button
-                onClick={() => {
-                  setAppendToExisting(false);
-                  setShowAddListModal(true);
-                }}
-                className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-xs font-black text-white shadow-md transition active:scale-95 hover:bg-sky-700"
-              >
-                <span>➕</span>
-                <span>إضافة قائمة أرقام أو روابط الآن</span>
-              </button>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => {
+                    setAppendToExisting(false);
+                    setShowAddListModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-xs font-black text-white shadow-md transition active:scale-95 hover:bg-sky-700"
+                >
+                  <span>➕</span>
+                  <span>إضافة قائمة أرقام أو روابط</span>
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-5 py-3 text-xs font-black text-slate-900 shadow-md transition active:scale-95 hover:bg-amber-300"
+                >
+                  <span>📷</span>
+                  <span>رفع صورة بالذكاء الاصطناعي</span>
+                </button>
+              </div>
             </div>
           ) : (
             filteredActiveItems.map((item, index) => {
               const isGreen = item.status === "whatsapp_opened";
+              const isSelected = selectedIds.has(item.id);
 
               return (
                 <div
                   key={item.id}
                   className={`group relative overflow-hidden rounded-2xl transition-all duration-200 shadow-md ${
+                    isSelected
+                      ? "ring-4 ring-indigo-500 border-indigo-600"
+                      : ""
+                  } ${
                     isGreen
                       ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-2 border-emerald-400"
                       : "bg-white text-slate-800 border-2 border-slate-200 hover:border-sky-400"
                   }`}
                 >
-                  <button
-                    onClick={() => handleItemClick(item)}
-                    className="w-full p-4 text-right flex items-center justify-between gap-3 active:scale-[0.99] transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* رقم الترتيب أو الحالة */}
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-inner ${
-                          isGreen ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
-                        }`}
-                      >
-                        {isGreen ? "🟢 2" : `${index + 1}`}
-                      </span>
-
-                      <div>
-                        {/* رقم الهاتف بصيغة واضحة */}
-                        <p className={`text-base font-black tracking-wider ${isGreen ? "text-white" : "text-slate-900"}`} dir="ltr">
-                          {item.phone}
-                        </p>
-
-                        {/* نص الإجراء */}
-                        <p className={`text-xs font-bold mt-0.5 flex items-center gap-1.5 ${isGreen ? "text-emerald-100" : "text-slate-500"}`}>
-                          {isGreen ? (
-                            <>
-                              <span>📞 الخطوة 2: انقر لفتح تطبيق الاتصال وحفظ الرقم</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>💬 الخطوة 1: انقر لفتح الواتساب بالرسالة الإعلانية</span>
-                            </>
-                          )}
-                        </p>
+                  <div className="flex items-center">
+                    {/* خانة التحديد في وضع التحديد */}
+                    {isSelectMode && (
+                      <div className="px-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectItem(item.id)}
+                          className="h-5 w-5 rounded-lg border-2 border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
                       </div>
-                    </div>
+                    )}
 
-                    {/* زر أو أيقونة الإجراء */}
-                    <div className="shrink-0 text-left">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black shadow-sm ${
-                          isGreen
-                            ? "bg-white text-emerald-800 animate-pulse font-black"
-                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        }`}
-                      >
-                        {isGreen ? "فتح الاتصال 📞" : "فتح الواتساب 💬"}
-                      </span>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => handleItemClick(item)}
+                      className="w-full p-4 text-right flex items-center justify-between gap-3 active:scale-[0.99] transition flex-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-inner ${
+                            isGreen ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {isGreen ? "🟢 2" : `${index + 1}`}
+                        </span>
+
+                        <div>
+                          <p className={`text-base font-black tracking-wider ${isGreen ? "text-white" : "text-slate-900"}`} dir="ltr">
+                            {item.phone}
+                          </p>
+
+                          <p className={`text-xs font-bold mt-0.5 flex items-center gap-1.5 ${isGreen ? "text-emerald-100" : "text-slate-500"}`}>
+                            {isGreen ? (
+                              <span>📞 الخطوة 2: انقر لفتح تطبيق الاتصال وحفظ الرقم</span>
+                            ) : (
+                              <span>💬 الخطوة 1: انقر لفتح الواتساب بالرسالة الإعلانية</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-left">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black shadow-sm ${
+                            isGreen
+                              ? "bg-white text-emerald-800 animate-pulse font-black"
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          }`}
+                        >
+                          {isGreen ? "فتح الاتصال 📞" : "فتح الواتساب 💬"}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -639,33 +866,57 @@ export function StaffOutreachClient({
               </p>
             </div>
           ) : (
-            filteredCompletedItems.map((item, index) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedCompletedItem(item)}
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 p-4 text-white shadow-md border-2 border-sky-400 cursor-pointer transition active:scale-98 hover:shadow-lg flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xs font-black text-white">
-                    ✅ {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-base font-black tracking-wider text-white" dir="ltr">
-                      {item.phone}
-                    </p>
-                    <p className="text-[11px] font-bold text-sky-100 mt-0.5">
-                      {item.templateUsed ? `النموذج: ${item.templateUsed}` : "مكتمل ومخزن"}
-                    </p>
+            filteredCompletedItems.map((item, index) => {
+              const isSelected = selectedIds.has(item.id);
+
+              return (
+                <div
+                  key={item.id}
+                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md border-2 border-sky-400 transition flex items-center ${
+                    isSelected ? "ring-4 ring-indigo-400" : ""
+                  }`}
+                >
+                  {isSelectMode && (
+                    <div className="px-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectItem(item.id)}
+                        className="h-5 w-5 rounded-lg border-2 border-white text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  <div
+                    onClick={() => {
+                      if (isSelectMode) toggleSelectItem(item.id);
+                      else setSelectedCompletedItem(item);
+                    }}
+                    className="flex-1 p-4 cursor-pointer flex items-center justify-between active:scale-98"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xs font-black text-white">
+                        ✅ {index + 1}
+                      </span>
+                      <div>
+                        <p className="text-base font-black tracking-wider text-white" dir="ltr">
+                          {item.phone}
+                        </p>
+                        <p className="text-[11px] font-bold text-sky-100 mt-0.5">
+                          {item.templateUsed ? `النموذج: ${item.templateUsed}` : "مكتمل ومخزن"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      <span className="rounded-xl bg-white/20 px-3 py-1.5 text-xs font-black text-white border border-white/30">
+                        خيارات ⚙️
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="shrink-0">
-                  <span className="rounded-xl bg-white/20 px-3 py-1.5 text-xs font-black text-white border border-white/30">
-                    خيارات ⚙️
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -736,6 +987,51 @@ export function StaffOutreachClient({
         </div>
       )}
 
+      {/* شريط الإجراءات العائم السفلي عند تحديد أرقام (Bottom Floating Action Bar) */}
+      {isSelectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-md rounded-3xl bg-slate-900/95 p-4 shadow-2xl backdrop-blur-md border border-white/20 text-white animate-in slide-in-from-bottom-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+            <span className="text-xs font-black text-sky-400">
+              تم تحديد ({selectedIds.size}) أرقام
+            </span>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-[11px] font-bold text-slate-400 hover:text-white"
+            >
+              إلغاء التحديد ✕
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkDelete}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-rose-600 hover:bg-rose-700 py-3 text-xs font-black text-white shadow-md active:scale-95 transition"
+            >
+              <span>🗑️</span>
+              <span>مسح المحدد ({selectedIds.size})</span>
+            </button>
+
+            {activeTab === "active" ? (
+              <button
+                onClick={handleBulkComplete}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-sky-600 hover:bg-sky-700 py-3 text-xs font-black text-white shadow-md active:scale-95 transition"
+              >
+                <span>🔵</span>
+                <span>تعيين كمكتمل</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleBulkResetPending}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-amber-600 hover:bg-amber-700 py-3 text-xs font-black text-white shadow-md active:scale-95 transition"
+              >
+                <span>🔄</span>
+                <span>إعادة لقائمة العمل</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* نافذة إضافة قائمة جديدة (Modal) */}
       {showAddListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in">
@@ -753,6 +1049,20 @@ export function StaffOutreachClient({
             </div>
 
             <div className="mt-4 space-y-4">
+              {/* زر رفع صورة مباشر داخل النافذة */}
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                  <span className="text-xl">📷</span>
+                  <span>هل لديك صورة أو سكرين شوت تحتوي على أرقام؟</span>
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-2 text-xs font-black text-slate-950 shadow-sm active:scale-95 transition whitespace-nowrap"
+                >
+                  استخراج بالذكاء الاصطناعي ✨
+                </button>
+              </div>
+
               {!appendToExisting && (
                 <div>
                   <label className="text-xs font-black text-slate-700">اسم القائمة (اختياري)</label>

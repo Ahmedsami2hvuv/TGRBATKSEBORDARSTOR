@@ -552,6 +552,180 @@ export async function deleteTemplateAction(
 }
 
 /**
+ * استخراج أرقام الهواتف من صورة عبر الذكاء الاصطناعي (Gemini Vision)
+ */
+export async function extractPhonesFromImageWithAIAction(
+  staffEmployeeId: string,
+  token: string,
+  sig: string,
+  base64Image: string
+) {
+  try {
+    await verifyStaff(staffEmployeeId, token, sig);
+
+    if (!base64Image || typeof base64Image !== "string") {
+      return { ok: false, error: "لم يتم استلام الصورة بشكل صحيح." };
+    }
+
+    const { getAllActiveGeminiKeys, markGeminiKeySuccess, markGeminiKeyError } = await import("@/lib/gemini-pool");
+    const keys = await getAllActiveGeminiKeys();
+
+    if (keys.length === 0) {
+      return { ok: false, error: "لا يوجد مفتاح ذكاء اصطناعي متاح حالياً. يرجى التأكد من إضافة مفاتيح في الإعدادات." };
+    }
+
+    let cleanBase64 = base64Image;
+    let mimeType = "image/jpeg";
+
+    if (base64Image.startsWith("data:")) {
+      const parts = base64Image.split(";base64,");
+      if (parts.length === 2) {
+        mimeType = parts[0].replace("data:", "").split(";")[0] || "image/jpeg";
+        cleanBase64 = parts[1];
+      }
+    }
+
+    const prompt = `أنت خبير فائق الدقة في استخراج أرقام الهواتف وروابط الواتساب من الصور، لقطات الشاشة، والمستندات.
+مهمتك:
+1. استخرج كل أرقام الهواتف (العراقية والدولية) الموجودة في هذه الصورة بدقة متناهية.
+2. استخرج أي روابط واتساب (مثل wa.me أو api.whatsapp.com) إن وجدت.
+3. تجاهل أي أرقام أخرى لا تمثل أرقام هواتف (مثل الأسعار، التواريخ، أو أرقام الطلبات القصيرة).
+4. أرجع النتيجة على شكل قائمة بالأرقام فقط، كل رقم في سطر مستقل بدون أي نصوص أو مقدمات أو شرح إضافي.`;
+
+    let extractedText = "";
+    let lastError = "";
+
+    const candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+
+    for (const k of keys) {
+      for (const model of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${k.key}`;
+          const body = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: mimeType,
+                      data: cleanBase64,
+                    },
+                  },
+                ],
+              },
+            ],
+          };
+
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textResult && typeof textResult === "string" && textResult.trim()) {
+              extractedText = textResult;
+              await markGeminiKeySuccess(k.id);
+              break;
+            }
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            lastError = errData?.error?.message || `HTTP ${res.status}`;
+            await markGeminiKeyError(k.id);
+          }
+        } catch (e: any) {
+          lastError = e?.message || "فشل الاتصال بـ Gemini API";
+        }
+      }
+      if (extractedText) break;
+    }
+
+    if (!extractedText) {
+      return { ok: false, error: lastError || "لم يتمكن الذكاء الاصطناعي من قراءة الصورة أو استخراج الأرقام منها." };
+    }
+
+    const phones = await extractAllPhonesFromText(extractedText);
+    if (phones.length === 0) {
+      return { ok: false, error: "تم فحص الصورة بنجاح بواسطة الذكاء الاصطناعي ولكن لم يتم العثور على أرقام هواتف واضحة فيها." };
+    }
+
+    return {
+      ok: true,
+      rawText: phones.map((p) => p.phone).join("\n"),
+      count: phones.length,
+      phones,
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "حدث خطأ غير متوقع أثناء استخراج الأرقام بالذكاء الاصطناعي." };
+  }
+}
+
+/**
+ * حذف أرقام متعددة دفعة واحدة (Bulk Delete)
+ */
+export async function bulkDeleteItemsAction(
+  staffEmployeeId: string,
+  token: string,
+  sig: string,
+  payload: { itemIds: string[] }
+) {
+  try {
+    await verifyStaff(staffEmployeeId, token, sig);
+    if (!payload.itemIds || payload.itemIds.length === 0) {
+      return { ok: false, error: "لم يتم تحديد أي أرقام للحذف." };
+    }
+
+    await prisma.staffOutreachItem.deleteMany({
+      where: { id: { in: payload.itemIds } },
+    });
+
+    return { ok: true, count: payload.itemIds.length };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "فشل في حذف الأرقام المحددة." };
+  }
+}
+
+/**
+ * تحديث حالة أرقام متعددة دفعة واحدة (Bulk Status Update)
+ */
+export async function bulkUpdateItemStatusAction(
+  staffEmployeeId: string,
+  token: string,
+  sig: string,
+  payload: { itemIds: string[]; status: "pending" | "whatsapp_opened" | "completed" }
+) {
+  try {
+    await verifyStaff(staffEmployeeId, token, sig);
+    if (!payload.itemIds || payload.itemIds.length === 0) {
+      return { ok: false, error: "لم يتم تحديد أي أرقام." };
+    }
+
+    const updateData: any = { status: payload.status };
+    if (payload.status === "completed") {
+      updateData.completedAt = new Date();
+    } else if (payload.status === "whatsapp_opened") {
+      updateData.openedAt = new Date();
+    } else if (payload.status === "pending") {
+      updateData.openedAt = null;
+      updateData.completedAt = null;
+    }
+
+    await prisma.staffOutreachItem.updateMany({
+      where: { id: { in: payload.itemIds } },
+      data: updateData,
+    });
+
+    return { ok: true, count: payload.itemIds.length };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "فشل في تحديث حالة الأرقام المحددة." };
+  }
+}
+
+/**
  * استعادة النماذج الـ 24 الافتراضية
  */
 export async function resetDefaultTemplatesAction(staffEmployeeId: string, token: string, sig: string) {
