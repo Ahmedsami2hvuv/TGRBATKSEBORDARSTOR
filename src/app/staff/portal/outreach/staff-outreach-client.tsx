@@ -729,14 +729,6 @@ export function StaffOutreachClient({
                 <span>دمج أرقام إضافية</span>
               </button>
             )}
-
-            <button
-              onClick={() => setActiveTab("templates")}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-purple-500/40 border border-purple-200/30 px-4 py-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-purple-500/60"
-            >
-              <span>📝</span>
-              <span>النماذج ({templates.length})</span>
-            </button>
           </div>
         </div>
       </div>
