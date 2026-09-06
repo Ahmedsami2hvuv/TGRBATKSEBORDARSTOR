@@ -71,6 +71,7 @@ export function StaffOutreachClient({
   // النوافذ المنبثقة
   const [showAddListModal, setShowAddListModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [selectedCompletedItem, setSelectedCompletedItem] = useState<OutreachItem | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<{ id?: string; title: string; content: string } | null>(null);
 
@@ -678,95 +679,52 @@ export function StaffOutreachClient({
         className="hidden"
       />
 
-      {/* بطاقة العنوان العلوية مع زر الإضافة السريع وزر الذكاء الاصطناعي المتعدد */}
-      <div className="rounded-3xl bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-700 p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-sky-100">
-                إدارة مهام التواصل والتسويق
-              </span>
-              <h1 className="mt-1 text-2xl font-black">مراسلة الزبائن والإعلانات 🎯</h1>
-            </div>
-            <span className="text-3xl">📱</span>
+      {/* شريط التحكم العلوي المدمج والأنيق */}
+      <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-200 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-lg">📱</span>
+          <div className="min-w-0">
+            <h1 className="text-xs font-black text-slate-900 truncate">مراسلة الزبائن</h1>
+            <p className="text-[10px] font-bold text-slate-500">
+              {stats.remaining > 0 ? `باقي ${stats.remaining} رقم` : "لا توجد أرقام متبقية"}
+            </p>
           </div>
+        </div>
 
-          <p className="mt-2 text-xs font-bold text-sky-100 leading-relaxed">
-            مراسلة الزبائن بالواتساب واليوزرات، مع ربط ذكي بقاعدة بيانات الزبائن وتنبيه الأرقام المكررة.
-          </p>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* زر رفع الصور بالذكاء الاصطناعي السريع */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 px-3 py-2 text-[11px] font-black shadow-sm transition active:scale-95"
+          >
+            <span>📷</span>
+            <span>صور AI</span>
+          </button>
 
-          {/* أزرار الإجراءات السريعة العلوية */}
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-            <button
-              onClick={() => {
-                setAppendToExisting(false);
-                setShowAddListModal(true);
-              }}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-xs font-black text-indigo-900 shadow-md transition active:scale-95 hover:bg-slate-50"
-            >
-              <span>➕</span>
-              <span>إضافة قائمة جديدة</span>
-            </button>
+          {/* زر إضافة أرقام جديدة */}
+          <button
+            onClick={() => {
+              setAppendToExisting(false);
+              setShowAddListModal(true);
+            }}
+            className="flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-[11px] font-black shadow-sm transition active:scale-95"
+          >
+            <span>➕</span>
+            <span>إضافة</span>
+          </button>
 
-            {/* زر رفع حتى 100 صورة بالذكاء الاصطناعي */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 px-4 py-3 text-xs font-black shadow-md transition active:scale-95"
-            >
-              <span>📷</span>
-              <span>رفع صور (حتى 100 صورة AI)</span>
-            </button>
-
-            {list && list.items.length > 0 && (
-              <button
-                onClick={() => {
-                  setAppendToExisting(true);
-                  setShowAddListModal(true);
-                }}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-white/20 border border-white/30 px-4 py-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-white/30"
-              >
-                <span>📥</span>
-                <span>دمج أرقام إضافية</span>
-              </button>
-            )}
-          </div>
+          {/* زر الخيارات الموحد */}
+          <button
+            onClick={() => setShowOptionsMenu(true)}
+            className="flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 text-[11px] font-black transition active:scale-95 border border-slate-200"
+          >
+            <span>⚙️</span>
+            <span>الخيارات</span>
+          </button>
         </div>
       </div>
 
-      {/* شريط الإحصائيات الذكي مع مؤشرات الزبائن والتكرار */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-        <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-200">
-          <p className="text-[10px] font-black text-slate-400">إجمالي الأرقام واليوزرات</p>
-          <p className="mt-1 text-xl font-black text-slate-800">{stats.total}</p>
-          {stats.existingCustomers > 0 && (
-            <span className="mt-1 inline-block text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-              🛍️ {stats.existingCustomers} زبون سابق
-            </span>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-amber-50 p-3 shadow-sm border border-amber-200">
-          <p className="text-[10px] font-black text-amber-600">بانتظار البدء</p>
-          <p className="mt-1 text-xl font-black text-amber-700">{stats.pending}</p>
-          {stats.duplicates > 0 && (
-            <span className="mt-1 inline-block text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full">
-              ⚠️ {stats.duplicates} مكرر سابقاً
-            </span>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-emerald-50 p-3 shadow-sm border border-emerald-200">
-          <p className="text-[10px] font-black text-emerald-600">تم الواتساب 🟢</p>
-          <p className="mt-1 text-xl font-black text-emerald-700">{stats.whatsappOpened}</p>
-        </div>
-
-        <div className="rounded-2xl bg-sky-50 p-3 shadow-sm border border-sky-200">
-          <p className="text-[10px] font-black text-sky-600">مكتمل ومخزن 🔵</p>
-          <p className="mt-1 text-xl font-black text-sky-700">{stats.completed}</p>
-        </div>
-      </div>
-
-      {/* التبويبات الرئيسية */}
+      {/* التبويبات الرئيسية المباشرة (قيد العمل والمكتمل) */}
       <div className="flex rounded-2xl bg-slate-200/70 p-1 font-black text-xs">
         <button
           onClick={() => {
@@ -806,19 +764,17 @@ export function StaffOutreachClient({
           )}
         </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("templates");
-            setSelectedIds(new Set());
-          }}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 ${
-            activeTab === "templates"
-              ? "bg-white text-purple-900 shadow-sm"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <span>📑 النماذج ({templates.length})</span>
-        </button>
+        {activeTab === "templates" && (
+          <button
+            onClick={() => {
+              setActiveTab("templates");
+              setSelectedIds(new Set());
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 bg-white text-purple-900 shadow-sm"
+          >
+            <span>📑 النماذج ({templates.length})</span>
+          </button>
+        )}
       </div>
 
       {/* شريط البحث وخيارات التحديد والإفراغ */}
@@ -1458,6 +1414,160 @@ export function StaffOutreachClient({
                   className="rounded-2xl border border-slate-200 bg-slate-100 px-5 py-3 text-xs font-black text-slate-700 hover:bg-slate-200 active:scale-95 transition"
                 >
                   إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* نافذة الخيارات الموحدة */}
+      {showOptionsMenu && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚙️</span>
+                <h3 className="text-base font-black text-slate-900">خيارات مهمة التواصل والإحصائيات</h3>
+              </div>
+              <button
+                onClick={() => setShowOptionsMenu(false)}
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 text-sm font-black"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-5">
+              {/* بطاقات الإحصائيات الشاملة */}
+              <div>
+                <h4 className="text-xs font-black text-slate-500 mb-2">📊 إحصائيات التواصل</h4>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200">
+                    <p className="text-[10px] font-black text-slate-500">إجمالي الأرقام واليوزرات</p>
+                    <p className="mt-1 text-lg font-black text-slate-800">{stats.total}</p>
+                    {stats.existingCustomers > 0 && (
+                      <span className="mt-1 inline-block text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                        🛍️ {stats.existingCustomers} زبون سابق
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl bg-amber-50 p-3 border border-amber-200">
+                    <p className="text-[10px] font-black text-amber-600">بانتظار البدء</p>
+                    <p className="mt-1 text-lg font-black text-amber-700">{stats.pending}</p>
+                    {stats.duplicates > 0 && (
+                      <span className="mt-1 inline-block text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full">
+                        ⚠️ {stats.duplicates} مكرر
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl bg-emerald-50 p-3 border border-emerald-200">
+                    <p className="text-[10px] font-black text-emerald-600">تم الواتساب 🟢</p>
+                    <p className="mt-1 text-lg font-black text-emerald-700">{stats.whatsappOpened}</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-sky-50 p-3 border border-sky-200">
+                    <p className="text-[10px] font-black text-sky-600">مكتمل ومخزن 🔵</p>
+                    <p className="mt-1 text-lg font-black text-sky-700">{stats.completed}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* إدارة النماذج */}
+              <div>
+                <h4 className="text-xs font-black text-slate-500 mb-2">📑 النماذج الإعلانية</h4>
+                <button
+                  onClick={() => {
+                    setShowOptionsMenu(false);
+                    setActiveTab("templates");
+                  }}
+                  className="w-full flex items-center justify-between rounded-2xl bg-purple-50 border border-purple-200 p-3.5 text-xs font-black text-purple-900 hover:bg-purple-100 transition active:scale-95 shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>📝</span>
+                    <span>استعراض وتعديل النماذج ({templates.length})</span>
+                  </div>
+                  <span>←</span>
+                </button>
+              </div>
+
+              {/* أدوات وإجراءات القائمة */}
+              <div>
+                <h4 className="text-xs font-black text-slate-500 mb-2">📥 إجراءات القائمة</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setShowOptionsMenu(false);
+                      setAppendToExisting(false);
+                      setShowAddListModal(true);
+                    }}
+                    className="w-full flex items-center justify-between rounded-2xl bg-slate-50 border border-slate-200 p-3 text-xs font-black text-slate-800 hover:bg-slate-100 transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>📋</span>
+                      <span>إنشاء قائمة أرقام جديدة</span>
+                    </div>
+                    <span>➕</span>
+                  </button>
+
+                  {list && list.items.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        setAppendToExisting(true);
+                        setShowAddListModal(true);
+                      }}
+                      className="w-full flex items-center justify-between rounded-2xl bg-indigo-50 border border-indigo-200 p-3 text-xs font-black text-indigo-900 hover:bg-indigo-100 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📥</span>
+                        <span>دمج أرقام إضافية في القائمة الحالية</span>
+                      </div>
+                      <span>➕</span>
+                    </button>
+                  )}
+
+                  {list && list.items.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        handleClearList(true);
+                      }}
+                      className="w-full flex items-center justify-between rounded-2xl bg-rose-50 border border-rose-200 p-3 text-xs font-black text-rose-700 hover:bg-rose-100 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🗑️</span>
+                        <span>مسح الأرقام المكتملة فقط ({stats.completed})</span>
+                      </div>
+                      <span>تنظيف</span>
+                    </button>
+                  )}
+
+                  {list && list.items.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        handleClearList(false);
+                      }}
+                      className="w-full flex items-center justify-between rounded-2xl bg-rose-100 border border-rose-300 p-3 text-xs font-black text-rose-800 hover:bg-rose-200 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>مسح وتفريغ القائمة بالكامل ({stats.total})</span>
+                      </div>
+                      <span>مسح الكل</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowOptionsMenu(false)}
+                  className="w-full rounded-2xl bg-slate-900 py-3 text-xs font-black text-white hover:bg-slate-800 transition active:scale-95"
+                >
+                  إغلاق النافذة
                 </button>
               </div>
             </div>
