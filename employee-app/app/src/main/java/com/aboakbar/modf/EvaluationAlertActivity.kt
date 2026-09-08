@@ -146,6 +146,23 @@ class EvaluationAlertActivity : Activity() {
         dialog.show()
     }
 
+    private fun normalizeIraqiPhoneForWhatsApp(raw: String): String {
+        var clean = raw.replace("[^0-9]".toRegex(), "")
+        while (clean.startsWith("00")) {
+            clean = clean.substring(2)
+        }
+        if (clean.startsWith("964") && clean.length >= 12) {
+            return clean
+        }
+        if (clean.startsWith("07") && clean.length == 11) {
+            return "964" + clean.substring(1)
+        }
+        if (clean.startsWith("7") && clean.length == 10) {
+            return "964" + clean
+        }
+        return clean
+    }
+
     private fun sendEvaluationViaWhatsapp() {
         if (customerPhone.isEmpty()) {
             Toast.makeText(this, "رقم هاتف الزبون غير متوفر", Toast.LENGTH_SHORT).show()
@@ -153,17 +170,19 @@ class EvaluationAlertActivity : Activity() {
             return
         }
 
-        // 1. فتح تطبيق الواتساب مباشرة برقم الزبون والرسالة
+        val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(customerPhone)
+
+        // 1. فتح تطبيق الواتساب مباشرة برقم الزبون الدولي والرسالة
         try {
             val encodedMessage = Uri.encode(generatedMessage)
-            val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$customerPhone&text=$encodedMessage")
+            val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$waFormattedPhone&text=$encodedMessage")
             val intent = Intent(Intent.ACTION_VIEW, waUri).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             startActivity(intent)
         } catch (e: Exception) {
             try {
-                val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$customerPhone&text=" + Uri.encode(generatedMessage)))
+                val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$waFormattedPhone&text=" + Uri.encode(generatedMessage)))
                 waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(waIntent)
             } catch (ex: Exception) {
@@ -178,7 +197,7 @@ class EvaluationAlertActivity : Activity() {
         val interval = EvaluationSchedulerService.getIntervalMinutes(this)
         EvaluationSchedulerService.scheduleNextEvaluation(this, interval)
 
-        Toast.makeText(this, "تم إرسال طلب التقييم وتأشير الطلب في النظام بنجاح!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تم فتح الواتساب لإرسال التقييم وتأشير الطلب بنجاح!", Toast.LENGTH_SHORT).show()
         finish()
     }
 

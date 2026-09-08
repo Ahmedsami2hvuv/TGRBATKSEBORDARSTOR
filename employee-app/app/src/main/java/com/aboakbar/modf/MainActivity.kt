@@ -150,6 +150,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // تشغيل مجدول التقييمات التلقائي فور فتح التطبيق
+        if (EvaluationSchedulerService.isEnabled(this)) {
+            EvaluationSchedulerService.scheduleNextEvaluation(this, EvaluationSchedulerService.getIntervalMinutes(this))
+        }
+
         requestAppPermissions()
         setupLongPressMenu()
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { parseStatusesCsv } from "@/lib/mandoub-wa-button-template";
@@ -34,6 +34,24 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
     }
     return dbClickedIds;
   });
+
+  // مزامنة تلقائية للمعرفات المحلية مع قاعدة البيانات
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("staff_archived_clicked_ids");
+        const localClickedIds: string[] = saved ? JSON.parse(saved) : [];
+        if (localClickedIds.length > 0) {
+          localClickedIds.forEach(id => {
+            const row = rows.find(r => r.id === id);
+            if (row && !row.adminOrderCode?.includes("RATING_REQUESTED")) {
+              markOrderRatingRequested(id).catch(() => {});
+            }
+          });
+        }
+      } catch (e) {}
+    }
+  }, [rows]);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return rows;

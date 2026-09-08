@@ -54,6 +54,15 @@ async function verifyRequest(request: Request) {
   return verifyStaffEmployeePortalQuery(se, exp, sig);
 }
 
+function normalizeIraqiPhone(phone: string): string {
+  let d = (phone || "").replace(/\D/g, "");
+  while (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("964") && d.length >= 12) return d;
+  if (d.startsWith("07") && d.length === 11) return "964" + d.slice(1);
+  if (d.startsWith("7") && d.length === 10) return "964" + d;
+  return d;
+}
+
 export async function GET(request: Request) {
   try {
     const verification = await verifyRequest(request);
@@ -82,7 +91,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // جلب الطلبات المؤرشفة التي لم يتم إرسال طلب تقييم لها إطلاقاً
+    // جلب الطلبات المؤرشفة الأحدث التي لم يتم إرسال طلب تقييم لها
     const pendingOrders = await prisma.order.findMany({
       where: {
         status: "archived",
@@ -91,7 +100,7 @@ export async function GET(request: Request) {
         },
         customerPhone: { not: "" }
       },
-      orderBy: { orderNumber: "asc" },
+      orderBy: { orderNumber: "desc" },
       take: 50,
       include: {
         shop: { select: { name: true } },
@@ -116,6 +125,7 @@ export async function GET(request: Request) {
       const shopName = o.shop?.name || "";
       const regionName = o.customerRegion?.name || "";
       const courierName = o.courier?.name || "";
+      const waPhone = normalizeIraqiPhone(o.customerPhone);
 
       let renderedMessage = randomTemplate
         .replace(/\{shopName\}|\{\{\{clientshop\}\}\}/g, shopName)
@@ -131,6 +141,7 @@ export async function GET(request: Request) {
         shopName: shopName,
         regionName: regionName,
         customerPhone: o.customerPhone,
+        waPhone: waPhone,
         alternatePhone: o.secondCustomerPhone || o.alternatePhone || null,
         courierName: courierName,
         totalAmount: priceStr,

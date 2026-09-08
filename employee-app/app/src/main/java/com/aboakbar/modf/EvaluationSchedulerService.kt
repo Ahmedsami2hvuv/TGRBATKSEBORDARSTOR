@@ -178,7 +178,16 @@ object EvaluationSchedulerService {
                                     putExtra("remainingCount", totalPending)
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                                 }
-                                context.startActivity(alertIntent)
+
+                                // 1. محاولة فتح النافذة المنبثقة مباشرة فوق الشاشة
+                                try {
+                                    context.startActivity(alertIntent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+
+                                // 2. إصدار إشعار عالي الأولوية (Heads-Up Banner) لضمان ظهور التنبيه حتى لو كان التطبيق بالخلفية
+                                showEvaluationNotification(context, orderId, orderNumber, shopName, regionName, customerPhone, generatedMessage, totalPending, alertIntent)
                             } else {
                                 if (isManual) {
                                     android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -199,5 +208,65 @@ object EvaluationSchedulerService {
                 }
             }
         })
+    }
+
+    private fun showEvaluationNotification(
+        context: Context,
+        orderId: String,
+        orderNumber: Int,
+        shopName: String,
+        regionName: String,
+        customerPhone: String,
+        generatedMessage: String,
+        remainingCount: Int,
+        alertIntent: Intent
+    ) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
+            val channelId = "evaluation_scheduler_channel"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = android.app.NotificationChannel(
+                    channelId,
+                    "تذكيرات تقييم الطلبات",
+                    android.app.NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "إشعارات تذكير الموظف بإرسال طلبات التقييم المجدولة للزبائن"
+                    enableLights(true)
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 300, 200, 300)
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+
+            val pendingIntent = PendingIntent.getActivity(context, 7777, alertIntent, pendingFlags)
+
+            val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("⭐ حان موعد تقييم طلب #$orderNumber")
+                .setContentText("محل: $shopName | $regionName — اضغط للإرسال بالواتساب")
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
+                .setFullScreenIntent(pendingIntent, true)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setVibrate(longArrayOf(0, 300, 200, 300))
+                .addAction(
+                    android.R.drawable.ic_menu_send,
+                    "💬 إرسال التقييم الآن",
+                    pendingIntent
+                )
+
+            notificationManager.notify(7777, builder.build())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
