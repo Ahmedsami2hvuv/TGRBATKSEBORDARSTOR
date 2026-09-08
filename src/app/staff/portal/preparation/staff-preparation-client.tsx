@@ -259,7 +259,6 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
                           }`}>
                             {isSup ? 'مورد' : 'مجهز'}
                           </span>
-                          {!p.available && <span className="text-[9px] font-bold text-rose-500">(غير متاح)</span>}
                         </div>
                       </div>
                     </button>
