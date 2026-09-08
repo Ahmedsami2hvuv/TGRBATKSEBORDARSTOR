@@ -48,6 +48,7 @@ export default async function StaffSubmittedDraftEditPage({ params, searchParams
       prisma.companyPreparer.findMany({
         where: {
           active: true,
+          availableForAssignment: true,
         },
         select: { id: true, name: true, phone: true, notes: true },
         orderBy: { name: "asc" },

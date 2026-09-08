@@ -47,6 +47,7 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     prisma.companyPreparer.findMany({
       where: {
         active: true,
+        availableForAssignment: true,
       },
       select: { id: true, name: true, notes: true, availableForAssignment: true },
       orderBy: { name: "asc" },
@@ -61,7 +62,7 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     getGlobalIcons(),
   ]);
 
-  // مزامنة أي مورد من StoreSupplier غير موجود في CompanyPreparer لضمان إمكانية إسناد الطلب له
+  // مزامنة أي مورد نشط من StoreSupplier غير موجود في CompanyPreparer
   const preparerIdsSet = new Set(rawPreparers.map((p) => p.id));
   const missingSuppliers = storeSuppliers.filter((s) => !preparerIdsSet.has(s.id));
   if (missingSuppliers.length > 0) {
@@ -74,12 +75,14 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
             name: sup.name,
             phone: sup.phone,
             active: true,
+            availableForAssignment: true,
             notes: "[SUPPLIER]",
           },
           update: {
             name: sup.name,
             phone: sup.phone,
             active: true,
+            availableForAssignment: true,
           },
         });
         rawPreparers.push({
@@ -93,6 +96,9 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
       }
     }
   }
+
+  // تصفية نهائية للتأكد من ظهور المتاحين والنشطين فقط بدون المخفيين
+  const activeAvailableOnly = rawPreparers.filter((p) => p.availableForAssignment !== false);
 
   // دالة التطهير العميقة لضمان توافق Next.js 15
   function deepSanitize(obj: any): any {
@@ -116,10 +122,10 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
 
   // Serialization fix for Next.js 15
   const sanitizedStaff = deepSanitize(staff);
-  const sanitizedPreparers = deepSanitize(rawPreparers.map((p) => ({
+  const sanitizedPreparers = deepSanitize(activeAvailableOnly.map((p) => ({
     id: p.id,
     name: p.name,
-    available: p.availableForAssignment,
+    available: true,
     isSupplier: Boolean(p.notes?.includes("[SUPPLIER]")),
   })));
 
