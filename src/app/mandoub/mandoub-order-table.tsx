@@ -360,7 +360,7 @@ function MandoubFullBlockCardGrid({
                 : "text-sky-600 dark:text-sky-400";
 
               // حساب سلم الخطوط التكيفي التلقائي بناءً على إجمالي عدد حروف الكلمتين
-              const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerRegionName;
+              const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
               const totalHeaderTextLen = isDoubleRouteOrder
                 ? ((o.regionLine || "المرسل").length + (o.secondCustomerRegionName || "المستلم").length)
                 : ((o.shopName || "").length + (o.regionLine || "").length);
@@ -391,8 +391,6 @@ function MandoubFullBlockCardGrid({
                 : o.summary && o.summary.trim()
                 ? o.summary
                 : o.orderType || "—";
-
-              const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
 
               const headerTextStr = isDoubleRouteOrder
                 ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
