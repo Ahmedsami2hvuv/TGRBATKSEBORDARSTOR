@@ -345,9 +345,15 @@ export async function toggleCourierHidden(id: string, hidden: boolean) {
   try {
     await prisma.courier.update({
       where: { id },
-      data: { hiddenFromReports: hidden }
+      data: {
+        hiddenFromReports: hidden,
+        ...(hidden ? { availableForAssignment: false } : { availableForAssignment: true }),
+      },
     });
     revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/new`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     return { success: true };
   } catch (e) {
     return { error: "فشل تعديل حالة الإخفاء" };
