@@ -193,7 +193,18 @@ export default async function MandoubPage({ searchParams }: Props) {
   }
 
   const botToken = await getBotTokenByPurpose("courier");
-  const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
+  let botInfo: any = null;
+  if (botToken) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1200);
+      const r = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, { signal: controller.signal });
+      clearTimeout(timer);
+      if (r.ok) botInfo = await r.json();
+    } catch (e) {
+      botInfo = null;
+    }
+  }
   const botUsername = botInfo?.result?.username;
   const portalUrl = buildDelegatePortalUrl(courier.id, getPublicAppUrl());
 
