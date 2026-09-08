@@ -365,19 +365,19 @@ function MandoubFullBlockCardGrid({
                 ? ((o.regionLine || "المرسل").length + (o.secondCustomerRegionName || "المستلم").length)
                 : ((o.shopName || "").length + (o.regionLine || "").length);
 
-              let framelessFontClass = "text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black";
-              if (totalHeaderTextLen <= 12) {
-                framelessFontClass = "text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black tracking-tight";
-              } else if (totalHeaderTextLen <= 20) {
+              let framelessFontClass = "text-xl xs:text-2xl sm:text-3xl font-black";
+              if (totalHeaderTextLen <= 14) {
                 framelessFontClass = "text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight";
-              } else if (totalHeaderTextLen <= 28) {
+              } else if (totalHeaderTextLen <= 22) {
                 framelessFontClass = "text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black tracking-tight";
-              } else if (totalHeaderTextLen <= 38) {
-                framelessFontClass = "text-lg xs:text-xl sm:text-2xl md:text-3xl font-black tracking-tight";
-              } else if (totalHeaderTextLen <= 50) {
-                framelessFontClass = "text-base xs:text-lg sm:text-xl md:text-2xl font-black tracking-tighter";
+              } else if (totalHeaderTextLen <= 30) {
+                framelessFontClass = "text-base xs:text-lg sm:text-xl md:text-2xl font-black tracking-tight";
+              } else if (totalHeaderTextLen <= 40) {
+                framelessFontClass = "text-xs xs:text-sm sm:text-base md:text-lg font-black tracking-tighter";
+              } else if (totalHeaderTextLen <= 52) {
+                framelessFontClass = "text-[11px] xs:text-xs sm:text-sm md:text-base font-black tracking-tighter";
               } else {
-                framelessFontClass = "text-sm xs:text-base sm:text-lg md:text-xl font-black tracking-tighter";
+                framelessFontClass = "text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-black tracking-tighter";
               }
 
               // حساب المبلغ الكلي الظاهر بدقة
@@ -493,16 +493,16 @@ function MandoubFullBlockCardGrid({
                     {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق أو نص عريض تكيّفي بدون إطار ملون بلون الحالة */}
                     {isFramelessHeader ? (
                       isDoubleRouteOrder ? (
-                        <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 py-1 overflow-hidden whitespace-nowrap text-center font-black ${framelessFontClass}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
-                          <span className={`font-black whitespace-nowrap truncate ${statusShopTextColor}`}>{o.regionLine || "المرسل"}</span>
+                        <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-0.5 py-1 overflow-hidden whitespace-nowrap text-center font-black ${framelessFontClass}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                          <span className={`font-black whitespace-nowrap shrink-0 ${statusShopTextColor}`}>{o.regionLine || "المرسل"}</span>
                           <span className="shrink-0 text-slate-400 dark:text-slate-500 font-black text-xs xs:text-sm sm:text-base opacity-80">إلى</span>
-                          <span className="font-black whitespace-nowrap truncate text-slate-900 dark:text-white">{o.secondCustomerRegionName || "المستلم"}</span>
+                          <span className="font-black whitespace-nowrap shrink-0 text-slate-900 dark:text-white">{o.secondCustomerRegionName || "المستلم"}</span>
                         </div>
                       ) : (
-                        <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 py-1 overflow-hidden whitespace-nowrap text-center font-black ${framelessFontClass}`}>
-                          <span className={`font-black whitespace-nowrap truncate ${statusShopTextColor}`}>{o.shopName}</span>
+                        <div className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-0.5 py-1 overflow-hidden whitespace-nowrap text-center font-black ${framelessFontClass}`}>
+                          <span className={`font-black whitespace-nowrap shrink-0 ${statusShopTextColor}`}>{o.shopName}</span>
                           <span className="shrink-0 text-slate-400 dark:text-slate-500 font-black text-xs xs:text-sm sm:text-base opacity-80">إلى</span>
-                          <span className="font-black whitespace-nowrap truncate text-slate-900 dark:text-white">{o.regionLine}</span>
+                          <span className="font-black whitespace-nowrap shrink-0 text-slate-900 dark:text-white">{o.regionLine}</span>
                         </div>
                       )
                     ) : isDoubleRouteOrder ? (
