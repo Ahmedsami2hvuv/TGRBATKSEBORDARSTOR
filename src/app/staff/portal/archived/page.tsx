@@ -13,7 +13,7 @@ export default async function StaffArchivedDaysPage({ searchParams }: { searchPa
 
   const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
-  // تجميع الطلبات المؤرشفة حسب الأيام (نفس كود الإدارة بالضبط)
+  // تجميع الطلبات المؤرشفة المخصصة للموظف حسب الأيام (التي ليس بها موقع زبون مسبقاً أو تم رفع موقعها من المندوب)
   const rows = await prisma.$queryRaw<Array<{ day: string; cnt: bigint }>>(
     Prisma.sql`
       SELECT
@@ -23,9 +23,18 @@ export default async function StaffArchivedDaysPage({ searchParams }: { searchPa
         ) AS day,
         COUNT(*)::bigint AS cnt
       FROM "Order" o
+      LEFT JOIN "Customer" c ON o."customerId" = c."id"
       WHERE o.status = 'archived'
         AND o."createdAt" IS NOT NULL
+        AND (
+          (
+            (o."customerLocationUrl" IS NULL OR trim(o."customerLocationUrl") = '')
+            AND (c."customerLocationUrl" IS NULL OR trim(c."customerLocationUrl") = '')
+          )
+          OR o."customerLocationSetByCourierAt" IS NOT NULL
+        )
       GROUP BY 1
+      HAVING COUNT(*) > 0
       ORDER BY 1 DESC
     `,
   );
