@@ -916,7 +916,7 @@ function AdminDeliveryFormModal({
   );
 }
 
-/** مكون الزر العائم الدائري القابل للسحب والتحريك للإدارة (مع منع الرفريش بالسحب) */
+/** مكون الزر العائم الدائري القابل للسحب والتحريك للإدارة */
 function AdminFloatingStatusFab({
   mode,
   onClick,
@@ -925,10 +925,16 @@ function AdminFloatingStatusFab({
   onClick: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [pos, setPos] = useState({ left: 16, top: 120 });
-  const dragRef = useRef<{ startX: number; startY: number; origLeft: number; origTop: number; moved: boolean } | null>(null);
-  const nodeRef = useRef<HTMLDivElement | null>(null);
-  const STORAGE_KEY = "adminOrderFloatingStatusFab_pos_v1";
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0,
+  });
+  const movedRef = useRef(false);
+  const STORAGE_KEY = "adminOrderFloatingStatusFab_pos_v2";
 
   useEffect(() => {
     setMounted(true);
@@ -936,76 +942,57 @@ function AdminFloatingStatusFab({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const p = JSON.parse(saved);
-        if (typeof p.left === "number" && typeof p.top === "number") {
+        if (typeof p.x === "number" && typeof p.y === "number") {
           const maxLeft = Math.max(10, window.innerWidth - 75);
           const maxTop = Math.max(10, window.innerHeight - 75);
           setPos({
-            left: Math.min(Math.max(10, p.left), maxLeft),
-            top: Math.min(Math.max(10, p.top), maxTop),
+            x: Math.min(Math.max(10, p.x), maxLeft),
+            y: Math.min(Math.max(10, p.y), maxTop),
           });
+          return;
         }
-      } else {
-        setPos({ left: 16, top: window.innerHeight - 150 });
       }
     } catch {}
+    const defaultX = 16;
+    const defaultY = Math.max(80, window.innerHeight - 150);
+    setPos({ x: defaultX, y: defaultY });
   }, []);
 
-  // منع الـ pull-to-refresh عند سحب الزر باللمس على الهواتف
-  useEffect(() => {
-    const el = nodeRef.current;
-    if (!el) return;
-    const preventTouch = (e: TouchEvent) => {
-      if (e.cancelable) {
-        try {
-          e.preventDefault();
-        } catch {}
-      }
-    };
-    el.addEventListener("touchstart", preventTouch, { passive: false });
-    el.addEventListener("touchmove", preventTouch, { passive: false });
-    return () => {
-      el.removeEventListener("touchstart", preventTouch);
-      el.removeEventListener("touchmove", preventTouch);
-    };
-  }, [mounted]);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      origLeft: pos.left,
-      origTop: pos.top,
-      moved: false,
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch || !pos) return;
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    dragStartRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      initialX: pos.x,
+      initialY: pos.y,
     };
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
-    if (Math.hypot(dx, dy) > 10) {
-      d.moved = true;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || !pos) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const deltaX = touch.clientX - dragStartRef.current.startX;
+    const deltaY = touch.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+      movedRef.current = true;
     }
-    if (!d.moved) return;
-    const maxLeft = Math.max(10, window.innerWidth - 70);
-    const maxTop = Math.max(10, window.innerHeight - 70);
-    const nextLeft = Math.min(Math.max(10, d.origLeft + dx), maxLeft);
-    const nextTop = Math.min(Math.max(10, d.origTop + dy), maxTop);
-    setPos({ left: nextLeft, top: nextTop });
+
+    const maxLeft = Math.max(10, window.innerWidth - 75);
+    const maxTop = Math.max(10, window.innerHeight - 75);
+    const newX = Math.min(Math.max(10, dragStartRef.current.initialX + deltaX), maxLeft);
+    const newY = Math.min(Math.max(10, dragStartRef.current.initialY + deltaY), maxTop);
+    setPos({ x: newX, y: newY });
   };
 
-  const onPointerUp = (e: React.PointerEvent) => {
-    const d = dragRef.current;
-    dragRef.current = null;
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
-    if (d?.moved) {
+  const handleTouchEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    if (movedRef.current && pos) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
       } catch {}
@@ -1014,24 +1001,71 @@ function AdminFloatingStatusFab({
     }
   };
 
-  if (!mounted || typeof document === "undefined") return null;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!pos) return;
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: pos.x,
+      initialY: pos.y,
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current || !pos) return;
+      const deltaX = e.clientX - dragStartRef.current.startX;
+      const deltaY = e.clientY - dragStartRef.current.startY;
+
+      if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+        movedRef.current = true;
+      }
+
+      const maxLeft = Math.max(10, window.innerWidth - 75);
+      const maxTop = Math.max(10, window.innerHeight - 75);
+      const newX = Math.min(Math.max(10, dragStartRef.current.initialX + deltaX), maxLeft);
+      const newY = Math.min(Math.max(10, dragStartRef.current.initialY + deltaY), maxTop);
+      setPos({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      if (movedRef.current && pos) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+        } catch {}
+      } else {
+        onClick();
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [pos, onClick]);
+
+  if (!mounted || !pos) return null;
 
   const isPickedUp = mode === "pickedUp";
 
-  return createPortal(
+  return (
     <div
-      ref={nodeRef}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
       style={{
         position: "fixed",
-        left: pos.left,
-        top: pos.top,
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
         zIndex: 1250,
         touchAction: "none",
-        userSelect: "none",
       }}
       className="cursor-grab active:cursor-grabbing select-none"
     >
@@ -1048,8 +1082,7 @@ function AdminFloatingStatusFab({
           {isPickedUp ? "استلام" : "تسليم"}
         </span>
       </button>
-    </div>,
-    document.body
+    </div>
   );
 }
 
