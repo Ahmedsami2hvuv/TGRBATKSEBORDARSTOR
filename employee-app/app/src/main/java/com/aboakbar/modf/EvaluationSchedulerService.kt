@@ -99,21 +99,27 @@ object EvaluationSchedulerService {
         val se = prefs.getString("se", "") ?: ""
         val exp = prefs.getString("exp", "") ?: ""
         val sig = prefs.getString("sig", "") ?: ""
+        val staffId = prefs.getString("staff_id", "") ?: ""
+        val savedPortalUrl = prefs.getString("admin_token", "") ?: ""
 
-        if (se.isEmpty() || exp.isEmpty() || sig.isEmpty()) {
+        if (se.isEmpty() && exp.isEmpty() && sig.isEmpty() && savedPortalUrl.isEmpty() && staffId.isEmpty()) {
             if (isManual) {
                 Toast.makeText(context, "يرجى تسجيل الدخول إلى بوابتك في التطبيق أولاً", Toast.LENGTH_SHORT).show()
             }
             return
         }
 
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url("$BACKEND_URL/api/employee/evaluation-queue")
-            .header("x-employee-se", se)
-            .header("x-employee-exp", exp)
-            .header("x-employee-sig", sig)
             .get()
-            .build()
+
+        if (se.isNotEmpty()) requestBuilder.header("x-employee-se", se)
+        if (exp.isNotEmpty()) requestBuilder.header("x-employee-exp", exp)
+        if (sig.isNotEmpty()) requestBuilder.header("x-employee-sig", sig)
+        if (staffId.isNotEmpty()) requestBuilder.header("x-employee-staff-id", staffId)
+        if (savedPortalUrl.isNotEmpty()) requestBuilder.header("Authorization", "Bearer $savedPortalUrl")
+
+        val request = requestBuilder.build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -130,16 +136,37 @@ object EvaluationSchedulerService {
                     try {
                         val json = JSONObject(body)
                         if (json.getBoolean("success")) {
-                            val nextItem = json.optJSONObject("nextItem")
                             val totalPending = json.optInt("totalPendingCount", 0)
+                            val queueArray = json.optJSONArray("queue")
+                            val locallyRatedSet = prefs.getStringSet("locally_rated_order_ids", setOf()) ?: setOf()
 
-                            if (nextItem != null) {
-                                val orderId = nextItem.getString("id")
-                                val orderNumber = nextItem.getInt("orderNumber")
-                                val shopName = nextItem.optString("shopName", "")
-                                val regionName = nextItem.optString("regionName", "")
-                                val customerPhone = nextItem.optString("customerPhone", "")
-                                val generatedMessage = nextItem.optString("generatedMessage", "")
+                            var targetItem: JSONObject? = null
+
+                            if (queueArray != null && queueArray.length() > 0) {
+                                for (i in 0 until queueArray.length()) {
+                                    val item = queueArray.getJSONObject(i)
+                                    val id = item.getString("id")
+                                    if (!locallyRatedSet.contains(id)) {
+                                        targetItem = item
+                                        break
+                                    }
+                                }
+                            }
+
+                            if (targetItem == null && json.has("nextItem") && !json.isNull("nextItem")) {
+                                val item = json.getJSONObject("nextItem")
+                                if (!locallyRatedSet.contains(item.getString("id"))) {
+                                    targetItem = item
+                                }
+                            }
+
+                            if (targetItem != null) {
+                                val orderId = targetItem.getString("id")
+                                val orderNumber = targetItem.getInt("orderNumber")
+                                val shopName = targetItem.optString("shopName", "—")
+                                val regionName = targetItem.optString("regionName", "—")
+                                val customerPhone = targetItem.optString("customerPhone", "")
+                                val generatedMessage = targetItem.optString("generatedMessage", "")
 
                                 val alertIntent = Intent(context, EvaluationAlertActivity::class.java).apply {
                                     putExtra("orderId", orderId)
@@ -162,6 +189,12 @@ object EvaluationSchedulerService {
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                    }
+                } else {
+                    if (isManual) {
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            Toast.makeText(context, "خطأ من السيرفر: ${response.code}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }

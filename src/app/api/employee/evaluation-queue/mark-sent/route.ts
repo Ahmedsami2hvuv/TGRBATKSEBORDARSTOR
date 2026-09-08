@@ -7,6 +7,7 @@ async function verifyRequest(request: Request) {
   let se = request.headers.get("x-employee-se") || urlObj.searchParams.get("se") || undefined;
   let exp = request.headers.get("x-employee-exp") || urlObj.searchParams.get("exp") || undefined;
   let sig = request.headers.get("x-employee-sig") || urlObj.searchParams.get("s") || undefined;
+  const staffIdHeader = request.headers.get("x-employee-staff-id") || urlObj.searchParams.get("staff_id");
 
   const authHeader = request.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -28,6 +29,15 @@ async function verifyRequest(request: Request) {
     }
   }
 
+  if (staffIdHeader) {
+    const emp = await prisma.staffEmployee.findFirst({
+      where: { OR: [{ id: staffIdHeader }, { portalToken: staffIdHeader }] }
+    });
+    if (emp) {
+      return { ok: true, staffEmployeeId: emp.id, token: emp.portalToken };
+    }
+  }
+
   if (!se || !exp || !sig) {
     const tokenMatch = urlObj.searchParams.get("token");
     if (tokenMatch) {
@@ -43,6 +53,37 @@ async function verifyRequest(request: Request) {
   return verifyStaffEmployeePortalQuery(se, exp, sig);
 }
 
+async function handleMarkSent(orderId: string) {
+  if (!orderId) {
+    return NextResponse.json({ error: "معرف الطلب مفقود" }, { status: 400 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: String(orderId) },
+    select: { id: true, adminOrderCode: true }
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
+  }
+
+  const currentCode = order.adminOrderCode || "";
+  if (currentCode.includes("RATING_REQUESTED")) {
+    return NextResponse.json({ success: true, message: "تم تأشير الطلب مسبقاً" });
+  }
+
+  const newCode = currentCode.length > 0 
+    ? `${currentCode}__RATING_REQUESTED`
+    : "RATING_REQUESTED";
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { adminOrderCode: newCode }
+  });
+
+  return NextResponse.json({ success: true, message: "تم تأشير الطلب كمُرسل تقييمه بنجاح", adminOrderCode: newCode });
+}
+
 export async function POST(request: Request) {
   try {
     const verification = await verifyRequest(request);
@@ -50,35 +91,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { orderId } = body;
+    let orderId: string | undefined;
+    try {
+      const body = await request.json();
+      orderId = body.orderId;
+    } catch (e) {
+      const urlObj = new URL(request.url);
+      orderId = urlObj.searchParams.get("orderId") || undefined;
+    }
 
     if (!orderId) {
-      return NextResponse.json({ error: "معرف الطلب مفقود" }, { status: 400 });
+      const urlObj = new URL(request.url);
+      orderId = urlObj.searchParams.get("orderId") || undefined;
     }
 
-    const order = await prisma.order.findUnique({
-      where: { id: String(orderId) },
-      select: { id: true, adminOrderCode: true }
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
-    }
-
-    const currentCode = order.adminOrderCode || "";
-    const newCode = currentCode.length > 0 
-      ? (currentCode.endsWith("__RATING_REQUESTED") ? currentCode : `${currentCode}__RATING_REQUESTED`)
-      : "RATING_REQUESTED";
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { adminOrderCode: newCode }
-    });
-
-    return NextResponse.json({ success: true, message: "تم تأشير الطلب كمُرسل تقييمه بنجاح" });
+    return await handleMarkSent(orderId || "");
   } catch (error: any) {
     console.error("Mark rating requested API error:", error);
+    return NextResponse.json({ error: error.message || "فشل تأشير الطلب" }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const verification = await verifyRequest(request);
+    if (!verification.ok) {
+      return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
+    }
+
+    const urlObj = new URL(request.url);
+    const orderId = urlObj.searchParams.get("orderId") || "";
+
+    return await handleMarkSent(orderId);
+  } catch (error: any) {
+    console.error("Mark rating requested API error (GET):", error);
     return NextResponse.json({ error: error.message || "فشل تأشير الطلب" }, { status: 500 });
   }
 }

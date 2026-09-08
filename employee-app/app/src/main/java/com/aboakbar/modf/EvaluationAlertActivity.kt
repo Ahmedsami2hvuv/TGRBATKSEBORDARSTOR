@@ -160,14 +160,14 @@ class EvaluationAlertActivity : Activity() {
             }
         }
 
-        // 2. تأشير الطلب في السيرفر كمُرسل تقييم
+        // 2. تأشير الطلب في السيرفر ومحلياً كمُرسل تقييم
         markOrderRatedOnServer(orderId)
 
         // 3. جدولة التنبيه القادم بعد الفاصل الزمني المحدد من الآن
         val interval = EvaluationSchedulerService.getIntervalMinutes(this)
         EvaluationSchedulerService.scheduleNextEvaluation(this, interval)
 
-        Toast.makeText(this, "تم فتح الواتساب لإرسال طلب التقييم بنجاح!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تم إرسال طلب التقييم وتأشير الطلب في النظام بنجاح!", Toast.LENGTH_SHORT).show()
         finish()
     }
 
@@ -178,23 +178,38 @@ class EvaluationAlertActivity : Activity() {
         val se = sharedPreferences.getString("se", "") ?: ""
         val exp = sharedPreferences.getString("exp", "") ?: ""
         val sig = sharedPreferences.getString("sig", "") ?: ""
+        val staffId = sharedPreferences.getString("staff_id", "") ?: ""
+        val savedPortalUrl = sharedPreferences.getString("admin_token", "") ?: ""
+
+        // حفظ محلي فوري لمنع التكرار
+        val locallyRatedSet = sharedPreferences.getStringSet("locally_rated_order_ids", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        locallyRatedSet.add(id)
+        sharedPreferences.edit().putStringSet("locally_rated_order_ids", locallyRatedSet).apply()
 
         val json = JSONObject().apply {
             put("orderId", id)
         }
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
 
-        val request = Request.Builder()
-            .url("$BACKEND_URL/api/employee/evaluation-queue/mark-sent")
-            .header("x-employee-se", se)
-            .header("x-employee-exp", exp)
-            .header("x-employee-sig", sig)
+        val requestBuilder = Request.Builder()
+            .url("$BACKEND_URL/api/employee/evaluation-queue/mark-sent?orderId=$id")
             .post(body)
-            .build()
+
+        if (se.isNotEmpty()) requestBuilder.header("x-employee-se", se)
+        if (exp.isNotEmpty()) requestBuilder.header("x-employee-exp", exp)
+        if (sig.isNotEmpty()) requestBuilder.header("x-employee-sig", sig)
+        if (staffId.isNotEmpty()) requestBuilder.header("x-employee-staff-id", staffId)
+        if (savedPortalUrl.isNotEmpty()) requestBuilder.header("Authorization", "Bearer $savedPortalUrl")
+
+        val request = requestBuilder.build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
-            override fun onResponse(call: Call, response: Response) {}
+            override fun onFailure(call: Call, e: IOException) {
+                // فشل الشبكة - تم حفظه محلياً كإجراء احترازي
+            }
+            override fun onResponse(call: Call, response: Response) {
+                response.close()
+            }
         })
     }
 }

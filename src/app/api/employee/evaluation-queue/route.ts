@@ -8,6 +8,7 @@ async function verifyRequest(request: Request) {
   let se = request.headers.get("x-employee-se") || urlObj.searchParams.get("se") || undefined;
   let exp = request.headers.get("x-employee-exp") || urlObj.searchParams.get("exp") || undefined;
   let sig = request.headers.get("x-employee-sig") || urlObj.searchParams.get("s") || undefined;
+  const staffIdHeader = request.headers.get("x-employee-staff-id") || urlObj.searchParams.get("staff_id");
 
   const authHeader = request.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -26,6 +27,15 @@ async function verifyRequest(request: Request) {
       if (emp) {
         return { ok: true, staffEmployeeId: emp.id, token: emp.portalToken };
       }
+    }
+  }
+
+  if (staffIdHeader) {
+    const emp = await prisma.staffEmployee.findFirst({
+      where: { OR: [{ id: staffIdHeader }, { portalToken: staffIdHeader }] }
+    });
+    if (emp) {
+      return { ok: true, staffEmployeeId: emp.id, token: emp.portalToken };
     }
   }
 
@@ -72,19 +82,17 @@ export async function GET(request: Request) {
       );
     }
 
+    // جلب الطلبات المؤرشفة التي لم يتم إرسال طلب تقييم لها إطلاقاً
     const pendingOrders = await prisma.order.findMany({
       where: {
         status: "archived",
         NOT: {
-          OR: [
-            { adminOrderCode: "RATING_REQUESTED" },
-            { adminOrderCode: { endsWith: "__RATING_REQUESTED" } }
-          ]
+          adminOrderCode: { contains: "RATING_REQUESTED" }
         },
         customerPhone: { not: "" }
       },
       orderBy: { orderNumber: "asc" },
-      take: 25,
+      take: 50,
       include: {
         shop: { select: { name: true } },
         customerRegion: { select: { name: true } },
@@ -96,10 +104,7 @@ export async function GET(request: Request) {
       where: {
         status: "archived",
         NOT: {
-          OR: [
-            { adminOrderCode: "RATING_REQUESTED" },
-            { adminOrderCode: { endsWith: "__RATING_REQUESTED" } }
-          ]
+          adminOrderCode: { contains: "RATING_REQUESTED" }
         },
         customerPhone: { not: "" }
       }
