@@ -15,6 +15,42 @@
         android:layout_height="match_parent"
         android:visibility="gone" />
 
+    <!-- Floating Action Tools Container (يظهر فوق الموقع للموظف) -->
+    <LinearLayout
+        android:id="@+id/layoutEmployeeQuickTools"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- زر فحص تقييمات الزبائن الفوري -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabEvaluationCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="#f59e0b"
+            app:fabCustomSize="46dp"
+            app:tint="#ffffff"
+            android:src="@android:drawable/btn_star_big_on"
+            android:contentDescription="فحص طلبات التقييم" />
+
+        <!-- زر المساعد العائم (لتشغيل الزر العائم فوق التطبيقات) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabFloatingAssistant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#4f46e5"
+            app:fabCustomSize="52dp"
+            app:tint="#ffffff"
+            android:src="@android:drawable/ic_dialog_dialer"
+            android:contentDescription="المساعد العائم" />
+    </LinearLayout>
+
     <!-- Glassmorphic Login Form Container -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/loginLayout"

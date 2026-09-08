@@ -119,6 +119,42 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.aboakbar.modf.PreparationOrderActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:label="طلب تجهيز وتسوق"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.aboakbar.modf.EvaluationAlertActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:exported="false" />
+
+        <service
+            android:name="com.aboakbar.modf.FloatingAssistantService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.aboakbar.modf.EvaluationAlarmReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="com.aboakbar.modf.ACTION_TRIGGER_EVALUATION" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name="com.aboakbar.modf.OrderPollingReceiver"
             android:enabled="true"

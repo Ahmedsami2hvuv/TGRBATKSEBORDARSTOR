@@ -45,6 +45,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSubmit: Button
     private lateinit var progressBar: ProgressBar
 
+    private lateinit var layoutEmployeeQuickTools: View
+    private lateinit var fabFloatingAssistant: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var fabEvaluationCheck: com.google.android.material.floatingactionbutton.FloatingActionButton
+
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
     private val KEY_TOKEN = "admin_token" // يُخزن فيه رابط بوابة الموظف بالكامل للاستمرار
@@ -87,8 +91,27 @@ class MainActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
         btnSubmit = findViewById(R.id.btnSubmit)
         progressBar = findViewById(R.id.progressBar)
+        layoutEmployeeQuickTools = findViewById(R.id.layoutEmployeeQuickTools)
+        fabFloatingAssistant = findViewById(R.id.fabFloatingAssistant)
+        fabEvaluationCheck = findViewById(R.id.fabEvaluationCheck)
+
+        // زر تشغيل المساعد العائم
+        fabFloatingAssistant.setOnClickListener {
+            FloatingAssistantService.start(this)
+        }
+
+        // زر فحص طلبات التقييم المجدولة يدوياً
+        fabEvaluationCheck.setOnClickListener {
+            EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this, isManual = true)
+        }
 
         setupWebView()
+        setupDynamicShortcuts()
+
+        // فحص ما إذا كان التطبيق مفتوحاً عبر اختصار المساعد العائم
+        if (intent?.action == "ACTION_START_FLOATING_ASSISTANT") {
+            FloatingAssistantService.start(this)
+        }
 
         // Submit Button Click
         btnSubmit.setOnClickListener {
@@ -125,6 +148,55 @@ class MainActivity : AppCompatActivity() {
 
         requestAppPermissions()
         setupLongPressMenu()
+    }
+
+    private fun setupDynamicShortcuts() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            try {
+                val shortcutManager = getSystemService(android.content.pm.ShortcutManager::class.java)
+                
+                val shortcutFloating = android.content.pm.ShortcutInfo.Builder(this, "shortcut_floating_assistant")
+                    .setShortLabel("المساعد العائم ⚡")
+                    .setLongLabel("تشغيل المساعد العائم فوق التطبيقات")
+                    .setIcon(android.graphics.drawable.Icon.createWithResource(this, android.R.drawable.ic_dialog_dialer))
+                    .setIntent(Intent(this, MainActivity::class.java).apply {
+                        action = "ACTION_START_FLOATING_ASSISTANT"
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    .build()
+
+                val shortcutPrep = android.content.pm.ShortcutInfo.Builder(this, "shortcut_prep_order")
+                    .setShortLabel("طلب تجهيز 🛒")
+                    .setIcon(android.graphics.drawable.Icon.createWithResource(this, android.R.drawable.ic_input_add))
+                    .setIntent(Intent(this, PreparationOrderActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    .build()
+
+                val shortcutDouble = android.content.pm.ShortcutInfo.Builder(this, "shortcut_double_order")
+                    .setShortLabel("طلب ذو وجهتين ⇄")
+                    .setIcon(android.graphics.drawable.Icon.createWithResource(this, android.R.drawable.ic_menu_directions))
+                    .setIntent(Intent(this, DoubleOrderActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    .build()
+
+                val shortcutDraft = android.content.pm.ShortcutInfo.Builder(this, "shortcut_quick_draft")
+                    .setShortLabel("طلب جديد 📝")
+                    .setIcon(android.graphics.drawable.Icon.createWithResource(this, android.R.drawable.ic_menu_edit))
+                    .setIntent(Intent(this, QuickDraftActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    .build()
+
+                shortcutManager?.dynamicShortcuts = listOf(shortcutFloating, shortcutPrep, shortcutDouble, shortcutDraft)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun requestAppPermissions() {
@@ -489,6 +561,11 @@ class MainActivity : AppCompatActivity() {
             OneSignal.login(staffId)
         }
 
+        // تشغيل مجدول التقييمات التلقائي الذكي للزبائن
+        if (EvaluationSchedulerService.isEnabled(this)) {
+            EvaluationSchedulerService.scheduleNextEvaluation(this, EvaluationSchedulerService.getIntervalMinutes(this))
+        }
+
         showWebViewLayout()
 
         val targetUrl = intent.getStringExtra("target_url") ?: portalUrl
@@ -500,11 +577,13 @@ class MainActivity : AppCompatActivity() {
     private fun showWebViewLayout() {
         loginLayout.visibility = View.GONE
         webView.visibility = View.VISIBLE
+        layoutEmployeeQuickTools.visibility = View.VISIBLE
         mainLayout.background = null
     }
 
     private fun showLoginLayout() {
         webView.visibility = View.GONE
+        layoutEmployeeQuickTools.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
         mainLayout.setBackgroundResource(R.drawable.gradient_bg)
     }

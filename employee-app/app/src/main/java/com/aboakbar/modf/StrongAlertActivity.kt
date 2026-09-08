@@ -280,23 +280,34 @@ class StrongAlertActivity : Activity() {
                 am.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
             }
 
-            // تحديد نغمة إنذار قوية
-            val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-
-            // إعداد وتشغيل مشغل الصوت مع تخطي وضع عدم الإزعاج
+            // إعداد وتشغيل مشغل الصوت مع تخطي وضع عدم الإزعاج باستخدام صافرة الإنذار المدمجة
             val audioAttributes = android.media.AudioAttributes.Builder()
                 .setUsage(android.media.AudioAttributes.USAGE_ALARM)
                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setFlags(64) // 64 تعادل FLAG_BYPASS_INTERRUPTION_POLICY لتخطي وضع عدم الإزعاج
                 .build()
 
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(this@StrongAlertActivity, alertUri)
-                setAudioAttributes(audioAttributes)
-                isLooping = true
-                prepare()
-                start()
+            try {
+                val afd = resources.openRawResourceFd(R.raw.siren_alert)
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+                    setAudioAttributes(audioAttributes)
+                    isLooping = true
+                    prepare()
+                    start()
+                }
+            } catch (e: Exception) {
+                // في حال حدوث أي استثناء احتياطي
+                val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(this@StrongAlertActivity, alertUri)
+                    setAudioAttributes(audioAttributes)
+                    isLooping = true
+                    prepare()
+                    start()
+                }
             }
 
             // إعداد وتشغيل الاهتزاز القوي
