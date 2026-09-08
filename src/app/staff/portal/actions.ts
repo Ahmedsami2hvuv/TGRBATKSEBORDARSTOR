@@ -19,94 +19,80 @@ export async function submitStaffPreparationDraft(
   _prev: StaffPrepState,
   formData: FormData,
 ): Promise<StaffPrepState> {
-  const se = String(formData.get("se") ?? "").trim();
-  const exp = String(formData.get("exp") ?? "").trim();
-  const sig = String(formData.get("s") ?? "").trim();
-  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
-  if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
+  try {
+    const se = String(formData.get("se") ?? "").trim();
+    const exp = String(formData.get("exp") ?? "").trim();
+    const sig = String(formData.get("s") ?? "").trim();
+    const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+    if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
 
-  const staff = await prisma.staffEmployee.findUnique({
-    where: { id: v.staffEmployeeId },
-    select: { id: true, name: true, active: true, portalToken: true },
-  });
-  if (!staff || !staff.active || staff.portalToken !== v.token) {
-    return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
-  }
-
-  // التعديل: استقبال عدة مجهزين كـ مصفوفة (اختياري الآن)
-  const preparerIds = formData.getAll("preparerIds").map(String).map(s => s.trim()).filter(Boolean);
-
-  let titleLine = String(formData.get("titleLine") ?? "").trim();
-  const rawListText = String(formData.get("rawListText") ?? "").trim();
-  const productsCsv = String(formData.get("productsCsv") ?? "").trim();
-  const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
-  let customerPhone = String(formData.get("customerPhone") ?? "").trim();
-  const customerName = String(formData.get("customerName") ?? "").trim();
-  const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
-  const orderTime = String(formData.get("orderTime") ?? "").trim() || "فوري";
-
-  if (!customerPhone && rawListText) {
-    const site = parseSiteOrderMessage(rawListText);
-    if (site && site.items.length > 0) {
-      customerPhone = extractPhoneNumberFromText(rawListText) ?? "";
-    } else {
-      const flex = parseFlexibleOrderLines(rawListText);
-      if (flex) customerPhone = flex.phone;
+    const staff = await prisma.staffEmployee.findUnique({
+      where: { id: v.staffEmployeeId },
+      select: { id: true, name: true, active: true, portalToken: true },
+    });
+    if (!staff || !staff.active || staff.portalToken !== v.token) {
+      return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
     }
-  }
 
-  if (!productsCsv || !customerRegionId) {
-    return { error: "بيانات ناقصة — يرجى اختيار منطقة الزبون والتأكد من وجود المنتجات." };
-  }
+    // التعديل: استقبال عدة مجهزين كـ مصفوفة (اختياري الآن)
+    const preparerIds = formData.getAll("preparerIds").map(String).map(s => s.trim()).filter(Boolean);
 
-  const region = await prisma.region.findUnique({
-    where: { id: customerRegionId },
-    select: { id: true, name: true },
-  });
-  if (!region) return { error: "منطقة الزبون غير صالحة." };
+    let titleLine = String(formData.get("titleLine") ?? "").trim();
+    const rawListText = String(formData.get("rawListText") ?? "").trim();
+    const productsCsv = String(formData.get("productsCsv") ?? "").trim();
+    const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
+    let customerPhone = String(formData.get("customerPhone") ?? "").trim();
+    const customerName = String(formData.get("customerName") ?? "").trim();
+    const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+    const orderTime = String(formData.get("orderTime") ?? "").trim() || "فوري";
 
-  if (!titleLine) {
-    titleLine = region.name || "طلب زبون";
-  }
+    if (!customerPhone && rawListText) {
+      const site = parseSiteOrderMessage(rawListText);
+      if (site && site.items.length > 0) {
+        customerPhone = extractPhoneNumberFromText(rawListText) ?? "";
+      } else {
+        const flex = parseFlexibleOrderLines(rawListText);
+        if (flex) customerPhone = flex.phone;
+      }
+    }
 
-  const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
-  if (!phoneLocal) {
-    return {
-      error:
-        "رقم الزبون غير صالح. يجب أن يبدأ بـ 07 أو 7 وتأكد من عدد الأرقام.",
-    };
-  }
+    if (!productsCsv || !customerRegionId) {
+      return { error: "بيانات ناقصة — يرجى اختيار منطقة الزبون والتأكد من وجود المنتجات." };
+    }
 
-  // منع الإرسال إذا كان الرقم محظوراً عالمياً أو من هذا المحل
-  const [isGlobalBlocked, isShopBlocked] = await Promise.all([
-    prisma.globalBlockedPhone.findUnique({
+    const region = await prisma.region.findUnique({
+      where: { id: customerRegionId },
+      select: { id: true, name: true },
+    });
+    if (!region) return { error: "منطقة الزبون غير صالحة." };
+
+    if (!titleLine) {
+      titleLine = region.name || "طلب زبون";
+    }
+
+    const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
+    if (!phoneLocal) {
+      return {
+        error:
+          "رقم الزبون غير صالح. يجب أن يبدأ بـ 07 أو 7 وتأكد من عدد الأرقام.",
+      };
+    }
+
+    // منع الإرسال إذا كان الرقم محظوراً عالمياً
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
       where: { phone: phoneLocal },
-    }),
-    prisma.shopBlockedPhone.findUnique({
-      where: {
-        shopId_phone: {
-          shopId: staff.shopId,
-          phone: phoneLocal,
-        },
-      },
-    }),
-  ]);
-  if (isGlobalBlocked) {
-    return {
-      error: "عذراً، هذا الرقم محظور عاماً من التوصيل ولا يمكن رفع طلب له.",
-    };
-  }
-  if (isShopBlocked) {
-    return {
-      error: "عذراً، هذا الرقم محظور من رفع الطلبات عبر هذا المحل.",
-    };
-  }
+    });
+    if (isGlobalBlocked) {
+      return {
+        error: "عذراً، هذا الرقم محظور عاماً من التوصيل ولا يمكن رفع طلب له.",
+      };
+    }
 
-  const lines = productsCsv
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (lines.length === 0) return { error: "لا توجد منتجات في القائمة." };
+    const lines = productsCsv
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) return { error: "لا توجد منتجات في القائمة." };
   const products = lines.map((line) => ({
     line,
     buyAlf: null as number | null,
@@ -237,6 +223,10 @@ export async function submitStaffPreparationDraft(
   revalidatePath("/preparer");
   revalidatePath("/staff/portal/submitted");
   return { ok: true, draftId: createdDraftIds[0], preparerName: preparerNames.join(" + ") };
+  } catch (err: any) {
+    console.error("submitStaffPreparationDraft error:", err);
+    return { error: err?.message || "حدث خطأ غير متوقع أثناء معالجة الطلب." };
+  }
 }
 
 export type StaffDoubleOrderState = { error?: string; ok?: boolean; orderId?: string; orderNumber?: number };
@@ -541,85 +531,73 @@ export async function updateStaffPreparationDraft(
   _prev: StaffDraftEditState,
   formData: FormData,
 ): Promise<StaffDraftEditState> {
-  const se = String(formData.get("se") ?? "").trim();
-  const exp = String(formData.get("exp") ?? "").trim();
-  const sig = String(formData.get("s") ?? "").trim();
-  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
-  if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
-
-  const staff = await prisma.staffEmployee.findUnique({
-    where: { id: v.staffEmployeeId },
-    select: { id: true, active: true, portalToken: true },
-  });
-  if (!staff || !staff.active || staff.portalToken !== v.token) {
-    return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
-  }
-
-  const draftId = String(formData.get("draftId") ?? "").trim();
-  if (!draftId) return { error: "معرّف المسودة مفقود." };
-
-  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
-    where: { id: draftId },
-    select: { id: true, status: true, data: true },
-  });
-  if (!draft) return { error: "المسودة غير موجودة." };
-  if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
-    return { error: "لا يمكن تعديل مسودة تم إرسالها أو أرشفتها." };
-  }
-
-  const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
-  const owner = String(meta.fromStaffEmployeeId ?? "").trim();
-  if (!owner || owner !== staff.id) {
-    return { error: "لا صلاحية لتعديل هذه المسودة." };
-  }
-
-  const titleLine = String(formData.get("titleLine") ?? "").trim();
-  const rawListText = String(formData.get("rawListText") ?? "").trim();
-  const productsJsonStr = String(formData.get("productsJson") ?? "").trim();
-  const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
-  const customerPhone = String(formData.get("customerPhone") ?? "").trim();
-  const customerName = String(formData.get("customerName") ?? "").trim();
-  const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
-  const orderTime = String(formData.get("orderTime") ?? "").trim();
-  const newPreparerId = String(formData.get("preparerId") ?? "").trim() || null;
-
-  if (!titleLine || !productsJsonStr || !customerRegionId || !orderTime) {
-    return { error: "بيانات ناقصة — تأكد من عنوان الطلب والمنطقة والمنتجات ووقت الطلب." };
-  }
-
-  let parsedProducts: Array<{ id: string; line: string; preparerId: string | null }> = [];
   try {
-    parsedProducts = JSON.parse(productsJsonStr);
-  } catch {
-    return { error: "خطأ في تنسيق المنتجات." };
-  }
-  
-  parsedProducts = parsedProducts.filter((p) => p.line.trim() !== "");
-  if (parsedProducts.length === 0) return { error: "لا توجد منتجات في القائمة." };
+    const se = String(formData.get("se") ?? "").trim();
+    const exp = String(formData.get("exp") ?? "").trim();
+    const sig = String(formData.get("s") ?? "").trim();
+    const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+    if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
 
-  const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
-  if (!phoneLocal) return { error: "رقم الزبون غير صالح." };
+    const staff = await prisma.staffEmployee.findUnique({
+      where: { id: v.staffEmployeeId },
+      select: { id: true, active: true, portalToken: true },
+    });
+    if (!staff || !staff.active || staff.portalToken !== v.token) {
+      return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
+    }
 
-  // Global and Shop block check
-  const [isGlobalBlocked, isShopBlocked] = await Promise.all([
-    prisma.globalBlockedPhone.findUnique({
+    const draftId = String(formData.get("draftId") ?? "").trim();
+    if (!draftId) return { error: "معرّف المسودة مفقود." };
+
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: draftId },
+      select: { id: true, status: true, data: true },
+    });
+    if (!draft) return { error: "المسودة غير موجودة." };
+    if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
+      return { error: "لا يمكن تعديل مسودة تم إرسالها أو أرشفتها." };
+    }
+
+    const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
+    const owner = String(meta.fromStaffEmployeeId ?? "").trim();
+    if (!owner || owner !== staff.id) {
+      return { error: "لا صلاحية لتعديل هذه المسودة." };
+    }
+
+    const titleLine = String(formData.get("titleLine") ?? "").trim();
+    const rawListText = String(formData.get("rawListText") ?? "").trim();
+    const productsJsonStr = String(formData.get("productsJson") ?? "").trim();
+    const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
+    const customerPhone = String(formData.get("customerPhone") ?? "").trim();
+    const customerName = String(formData.get("customerName") ?? "").trim();
+    const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+    const orderTime = String(formData.get("orderTime") ?? "").trim();
+    const newPreparerId = String(formData.get("preparerId") ?? "").trim() || null;
+
+    if (!titleLine || !productsJsonStr || !customerRegionId || !orderTime) {
+      return { error: "بيانات ناقصة — تأكد من عنوان الطلب والمنطقة والمنتجات ووقت الطلب." };
+    }
+
+    let parsedProducts: Array<{ id: string; line: string; preparerId: string | null }> = [];
+    try {
+      parsedProducts = JSON.parse(productsJsonStr);
+    } catch {
+      return { error: "خطأ في تنسيق المنتجات." };
+    }
+    
+    parsedProducts = parsedProducts.filter((p) => p.line.trim() !== "");
+    if (parsedProducts.length === 0) return { error: "لا توجد منتجات في القائمة." };
+
+    const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
+    if (!phoneLocal) return { error: "رقم الزبون غير صالح." };
+
+    // Global block check
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
       where: { phone: phoneLocal },
-    }),
-    prisma.shopBlockedPhone.findUnique({
-      where: {
-        shopId_phone: {
-          shopId: staff.shopId,
-          phone: phoneLocal,
-        },
-      },
-    }),
-  ]);
-  if (isGlobalBlocked) {
-    return { error: "عذراً، هذا الرقم محظور عاماً من التوصيل ولا يمكن رفع طلب له." };
-  }
-  if (isShopBlocked) {
-    return { error: "عذراً، هذا الرقم محظور من رفع الطلبات عبر هذا المحل." };
-  }
+    });
+    if (isGlobalBlocked) {
+      return { error: "عذراً، هذا الرقم محظور عاماً من التوصيل ولا يمكن رفع طلب له." };
+    }
 
   const region = await prisma.region.findUnique({ where: { id: customerRegionId }, select: { id: true } });
   if (!region) return { error: "منطقة الزبون غير صالحة." };
@@ -730,59 +708,68 @@ export async function updateStaffPreparationDraft(
   revalidatePath(`/staff/portal/submitted/${draft.id}`);
   revalidatePath("/preparer/preparation");
   return { ok: true };
+  } catch (err: any) {
+    console.error("updateStaffPreparationDraft error:", err);
+    return { error: err?.message || "حدث خطأ أثناء تعديل المسودة." };
+  }
 }
 
 export async function cancelStaffPreparationDraft(
   _prev: StaffDraftEditState,
   formData: FormData,
 ): Promise<StaffDraftEditState> {
-  const se = String(formData.get("se") ?? "").trim();
-  const exp = String(formData.get("exp") ?? "").trim();
-  const sig = String(formData.get("s") ?? "").trim();
-  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
-  if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
+  try {
+    const se = String(formData.get("se") ?? "").trim();
+    const exp = String(formData.get("exp") ?? "").trim();
+    const sig = String(formData.get("s") ?? "").trim();
+    const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+    if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
 
-  const staff = await prisma.staffEmployee.findUnique({
-    where: { id: v.staffEmployeeId },
-    select: { id: true, active: true, portalToken: true },
-  });
-  if (!staff || !staff.active || staff.portalToken !== v.token) {
-    return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
+    const staff = await prisma.staffEmployee.findUnique({
+      where: { id: v.staffEmployeeId },
+      select: { id: true, active: true, portalToken: true },
+    });
+    if (!staff || !staff.active || staff.portalToken !== v.token) {
+      return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
+    }
+
+    const draftId = String(formData.get("draftId") ?? "").trim();
+    if (!draftId) return { error: "معرّف المسودة مفقود." };
+
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: draftId },
+      select: { id: true, status: true, data: true, titleLine: true, customerPhone: true },
+    });
+    if (!draft) return { error: "المسودة غير موجودة." };
+
+    // التحقق من الصلاحية
+    const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
+    const owner = String(meta.fromStaffEmployeeId ?? "").trim();
+    if (owner !== staff.id) {
+      return { error: "لا صلاحية لرفض هذه المسودة." };
+    }
+
+    if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
+      return { error: "لا يمكن رفض طلب تم إرساله أو أرشفته بالفعل." };
+    }
+
+    await prisma.companyPreparerShoppingDraft.update({
+      where: { id: draftId },
+      data: { status: PreparerShoppingDraftStatus.archived },
+    });
+
+    // إرسال إشعار للإدارة برفض الطلب
+    void notifyTelegramDraftCanceled(draftId).catch(console.error);
+
+    // تحديث المسارات
+    revalidatePath("/staff/portal/submitted");
+    revalidatePath("/preparer/preparation");
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("cancelStaffPreparationDraft error:", err);
+    return { error: err?.message || "حدث خطأ أثناء إلغاء الطلب." };
   }
-
-  const draftId = String(formData.get("draftId") ?? "").trim();
-  if (!draftId) return { error: "معرّف المسودة مفقود." };
-
-  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
-    where: { id: draftId },
-    select: { id: true, status: true, data: true, titleLine: true, customerPhone: true },
-  });
-  if (!draft) return { error: "المسودة غير موجودة." };
-
-  // التحقق من الصلاحية
-  const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
-  const owner = String(meta.fromStaffEmployeeId ?? "").trim();
-  if (owner !== staff.id) {
-    return { error: "لا صلاحية لرفض هذه المسودة." };
-  }
-
-  if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
-    return { error: "لا يمكن رفض طلب تم إرساله أو أرشفته بالفعل." };
-  }
-
-  await prisma.companyPreparerShoppingDraft.update({
-    where: { id: draftId },
-    data: { status: PreparerShoppingDraftStatus.archived },
-  });
-
-  // إرسال إشعار للإدارة برفض الطلب
-  void notifyTelegramDraftCanceled(draftId).catch(console.error);
-
-  // تحديث المسارات
-  revalidatePath("/staff/portal/submitted");
-  revalidatePath("/preparer/preparation");
-
-  return { ok: true };
 }
 
 async function upsertCustomerByPhone(opts: {
