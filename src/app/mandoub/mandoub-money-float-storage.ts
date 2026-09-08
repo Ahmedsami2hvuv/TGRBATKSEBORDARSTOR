@@ -22,21 +22,21 @@ export function defaultMoneyFloatPositions(): Record<MoneyFloatId, MoneyFloatPos
       moneyPanel: { left: 0, top: 0 },
     };
   }
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const winWidth = window.innerWidth;
+  const winHeight = window.innerHeight;
   const m = 12;
   const stackY = 160;
   const gap = 14;
   return {
     /** أعلى العمود — نفس الموضع لـ «تم الاستلام» ثم «تم التسليم» */
     statusBtn: {
-      left: w - m - BTN_BASE,
-      top: h - m - BTN_BASE * 3 - gap * 2 - stackY,
+      left: winWidth - m - BTN_BASE,
+      top: winHeight - m - BTN_BASE * 3 - gap * 2 - stackY,
     },
-    pickupBtn: { left: w - m - BTN_BASE, top: h - m - BTN_BASE * 2 - gap - stackY },
-    deliveryBtn: { left: w - m - BTN_BASE, top: h - m - BTN_BASE - stackY },
+    pickupBtn: { left: winWidth - m - BTN_BASE, top: winHeight - m - BTN_BASE * 2 - gap - stackY },
+    deliveryBtn: { left: winWidth - m - BTN_BASE, top: winHeight - m - BTN_BASE - stackY },
     moneyPanel: {
-      left: Math.max(m, Math.min(w - m - PANEL_W, (w - PANEL_W) / 2)),
+      left: Math.max(m, Math.min(winWidth - m - PANEL_W, (winWidth - PANEL_W) / 2)),
       top: Math.max(m, 72),
     },
   };
@@ -119,14 +119,14 @@ export function clampMoneyFloatPos(
   btnSize: number,
 ): MoneyFloatPos {
   if (typeof window === "undefined") return { left, top };
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const winWidth = window.innerWidth;
+  const winHeight = window.innerHeight;
   const m = 4;
   const boxW = id === "moneyPanel" ? PANEL_W : btnSize;
   const boxH = id === "moneyPanel" ? PANEL_H : btnSize;
   return {
-    left: Math.max(m, Math.min(left, w - m - boxW)),
-    top: Math.max(m, Math.min(top, h - m - boxH)),
+    left: Math.max(m, Math.min(left, winWidth - m - boxW)),
+    top: Math.max(m, Math.min(top, winHeight - m - boxH)),
   };
 }
 
