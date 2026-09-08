@@ -53,36 +53,57 @@ const QUICK_STATUS_VALUES = [
 
 function AdminPickupFormModal({
   orderId,
+  orderNumber,
+  courierName,
   nextPath,
   expectedAlfHint,
   remainingAlfHint,
-  defaultAdvance = false,
-  formAction,
-  pending,
-  error,
+  onSuccess,
   onClose,
 }: {
   orderId: string;
+  orderNumber: number;
+  courierName?: string | null;
   nextPath: string;
   expectedAlfHint: string;
   remainingAlfHint: string;
-  defaultAdvance?: boolean;
-  formAction: (formData: FormData) => void;
-  pending: boolean;
-  error?: string;
+  onSuccess: (msg: string) => void;
   onClose: () => void;
 }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivering" : "");
+  const [advanceStatus, setAdvanceStatus] = useState("delivering");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const advanceStatusRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const submitModeRef = useRef<HTMLInputElement>(null);
-  const mainSubmitRef = useRef<HTMLButtonElement>(null);
 
   const displayTargetAlf = remainingAlfHint || expectedAlfHint || "";
+
+  async function handleFormSubmit(fd: FormData) {
+    if (pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      const res = await submitAdminPickupMoney({}, fd);
+      if (res.error) {
+        setError(res.error);
+        setPending(false);
+      } else {
+        const msg = courierName
+          ? `تم استلام الطلب وتسجيل الصادر بالنيابة عن المندوب (${courierName}) بنجاح! ⚡`
+          : "تم استلام الطلب وتسجيل الصادر للإدارة بنجاح! ⚡";
+        onSuccess(msg);
+      }
+    } catch (e: any) {
+      setError(e?.message || "حدث خطأ غير متوقع.");
+      setPending(false);
+    }
+  }
 
   return (
     <div className="space-y-3 text-right">
@@ -95,7 +116,7 @@ function AdminPickupFormModal({
 
       <form
         ref={formRef}
-        action={formAction}
+        action={handleFormSubmit}
         className="space-y-3"
       >
         <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
@@ -113,6 +134,7 @@ function AdminPickupFormModal({
               name="amountAlf"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              disabled={pending}
               className={`${moneySaderAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
               placeholder="اكتب السعر"
               inputMode="decimal"
@@ -128,6 +150,7 @@ function AdminPickupFormModal({
 
               <button
                 type="button"
+                disabled={pending}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (amountRef.current) amountRef.current.value = displayTargetAlf;
@@ -136,10 +159,10 @@ function AdminPickupFormModal({
                   setAmount(displayTargetAlf);
                   setAdvanceStatus("delivering");
                   setTimeout(() => {
-                    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                    formRef.current?.requestSubmit();
                   }, 40);
                 }}
-                className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group disabled:opacity-50"
                 title="اضغط لتأكيد وإرسال المبلغ وتغيير الحالة مباشرة"
               >
                 <div className="flex items-baseline justify-center gap-1">
@@ -162,6 +185,7 @@ function AdminPickupFormModal({
             name="mismatchNote"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            disabled={pending}
             rows={2}
             className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:outline-hidden"
             placeholder="اكتب الملاحظة هنا إن كان المبلغ غير مطابق..."
@@ -173,6 +197,7 @@ function AdminPickupFormModal({
             type="checkbox"
             id="advancePickupDeliveringTrackingModal"
             checked={advanceStatus === "delivering"}
+            disabled={pending}
             onChange={(e) => {
               const val = e.target.checked ? "delivering" : "";
               setAdvanceStatus(val);
@@ -185,25 +210,28 @@ function AdminPickupFormModal({
           </label>
         </div>
 
-        {error && <p className="text-xs font-black text-rose-600">{error}</p>}
+        {error && <p className="text-xs font-black text-rose-600 bg-rose-50 p-2 rounded-xl border border-rose-200">{error}</p>}
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+            disabled={pending}
+            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-50"
           >
             إلغاء
           </button>
           
           <button
-            type="submit"
-            formNoValidate
+            type="button"
             disabled={pending}
             onClick={() => {
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
               if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
               setAdvanceStatus("delivering");
+              setTimeout(() => {
+                formRef.current?.requestSubmit();
+              }, 40);
             }}
             className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-xs font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60 cursor-pointer"
             title="تحويل الحالة إلى «قيد التوصيل» دون تسجيل مبلغ صادر"
@@ -212,12 +240,11 @@ function AdminPickupFormModal({
           </button>
 
           <button
-            ref={mainSubmitRef}
             type="submit"
             disabled={pending}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "جاري الحفظ..." : "💾 تأكيد وتسجيل الصادر"}
+            {pending ? "جاري الحفظ... ⏳" : "💾 تأكيد وتسجيل الصادر"}
           </button>
         </div>
       </form>
@@ -227,38 +254,59 @@ function AdminPickupFormModal({
 
 function AdminDeliveryFormModal({
   orderId,
+  orderNumber,
+  courierName,
   nextPath,
   expectedAlfHint,
   remainingAlfHint,
-  defaultAdvance = false,
-  formAction,
-  pending,
-  error,
+  onSuccess,
   onClose,
   prepaidAll = false,
 }: {
   orderId: string;
+  orderNumber: number;
+  courierName?: string | null;
   nextPath: string;
   expectedAlfHint: string;
   remainingAlfHint: string;
-  defaultAdvance?: boolean;
-  formAction: (formData: FormData) => void;
-  pending: boolean;
-  error?: string;
+  onSuccess: (msg: string) => void;
   onClose: () => void;
   prepaidAll?: boolean;
 }) {
   const [amount, setAmount] = useState(prepaidAll ? "0" : "");
   const [note, setNote] = useState(prepaidAll ? "كلشي واصل" : "");
-  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivered" : "");
+  const [advanceStatus, setAdvanceStatus] = useState("delivered");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const advanceStatusRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const submitModeRef = useRef<HTMLInputElement>(null);
-  const mainSubmitRef = useRef<HTMLButtonElement>(null);
 
   const displayTargetAlf = prepaidAll ? "0" : (remainingAlfHint || expectedAlfHint || "");
+
+  async function handleFormSubmit(fd: FormData) {
+    if (pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      const res = await submitAdminDeliveryMoney({}, fd);
+      if (res.error) {
+        setError(res.error);
+        setPending(false);
+      } else {
+        const msg = courierName
+          ? `تم تسليم الطلب واحتساب أرباح التوصيل للمندوب (${courierName}) بنجاح! 🎉`
+          : "تم تسليم الطلب وتسجيل الوارد والأرباح للإدارة بنجاح! 🎉";
+        onSuccess(msg);
+      }
+    } catch (e: any) {
+      setError(e?.message || "حدث خطأ غير متوقع.");
+      setPending(false);
+    }
+  }
 
   return (
     <div className="space-y-3 text-right">
@@ -275,7 +323,7 @@ function AdminDeliveryFormModal({
 
       <form
         ref={formRef}
-        action={formAction}
+        action={handleFormSubmit}
         className="space-y-3"
       >
         <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
@@ -293,6 +341,7 @@ function AdminDeliveryFormModal({
               name="amountAlf"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              disabled={pending}
               className={`${moneyWardAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
               placeholder="اكتب السعر"
               inputMode="decimal"
@@ -308,6 +357,7 @@ function AdminDeliveryFormModal({
 
               <button
                 type="button"
+                disabled={pending}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (amountRef.current) amountRef.current.value = displayTargetAlf;
@@ -316,10 +366,10 @@ function AdminDeliveryFormModal({
                   setAmount(displayTargetAlf);
                   setAdvanceStatus("delivered");
                   setTimeout(() => {
-                    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                    formRef.current?.requestSubmit();
                   }, 40);
                 }}
-                className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group disabled:opacity-50"
                 title="اضغط لتأكيد وإرسال المبلغ وتغيير الحالة مباشرة"
               >
                 <div className="flex items-baseline justify-center gap-1">
@@ -342,6 +392,7 @@ function AdminDeliveryFormModal({
             name="mismatchNote"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            disabled={pending}
             rows={2}
             className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-rose-600 focus:outline-hidden"
             placeholder="اكتب الملاحظة هنا إن كان المبلغ غير مطابق..."
@@ -353,6 +404,7 @@ function AdminDeliveryFormModal({
             type="checkbox"
             id="advanceDeliveryDeliveredTrackingModal"
             checked={advanceStatus === "delivered"}
+            disabled={pending}
             onChange={(e) => {
               const val = e.target.checked ? "delivered" : "";
               setAdvanceStatus(val);
@@ -365,25 +417,28 @@ function AdminDeliveryFormModal({
           </label>
         </div>
 
-        {error && <p className="text-xs font-black text-rose-600">{error}</p>}
+        {error && <p className="text-xs font-black text-rose-600 bg-rose-50 p-2 rounded-xl border border-rose-200">{error}</p>}
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+            disabled={pending}
+            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-50"
           >
             إلغاء
           </button>
 
           <button
-            type="submit"
-            formNoValidate
+            type="button"
             disabled={pending}
             onClick={() => {
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
               if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
               setAdvanceStatus("delivered");
+              setTimeout(() => {
+                formRef.current?.requestSubmit();
+              }, 40);
             }}
             className="rounded-xl border-2 border-rose-400 bg-rose-50 px-4 py-2 text-xs font-black text-rose-950 shadow-sm transition hover:bg-rose-100 disabled:opacity-60 cursor-pointer"
             title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد"
@@ -392,12 +447,11 @@ function AdminDeliveryFormModal({
           </button>
 
           <button
-            ref={mainSubmitRef}
             type="submit"
             disabled={pending}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "جاري الحفظ..." : "💾 تأكيد وتسجيل الوارد"}
+            {pending ? "جاري الحفظ... ⏳" : "💾 تأكيد وتسجيل الوارد"}
           </button>
         </div>
       </form>
@@ -881,7 +935,6 @@ export function OrderTrackingBulkTable({
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
   const showSelectColumn = showQuickSelect;
 
-  const initialCash: MandoubCashState = {};
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkUpdateOrdersStatus,
     {} as BulkOrdersState,
@@ -891,46 +944,13 @@ export function OrderTrackingBulkTable({
   const [adminDeliveryOrder, setAdminDeliveryOrder] = useState<TrackingTableRow | null>(null);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  const [pickupState, pickupAction, pickupPending] = useActionState(
-    submitAdminPickupMoney,
-    initialCash,
-  );
-  const [deliveryState, deliveryAction, deliveryPending] = useActionState(
-    submitAdminDeliveryMoney,
-    initialCash,
-  );
-
-  useEffect(() => {
-    if (pickupState.error) {
-      setToastMsg({ text: pickupState.error, type: "error" });
-    } else if (pickupState.success) {
-      setToastMsg({
-        text: adminPickupOrder?.courierName
-          ? `تم استلام الطلب وتسجيل الصادر بالنيابة عن المندوب (${adminPickupOrder.courierName}) بنجاح! ⚡`
-          : "تم استلام الطلب وتسجيل الصادر للإدارة بنجاح! ⚡",
-        type: "success",
-      });
-      setAdminPickupOrder(null);
-      router.refresh();
-      setTimeout(() => setToastMsg(null), 4000);
-    }
-  }, [pickupState, router, adminPickupOrder]);
-
-  useEffect(() => {
-    if (deliveryState.error) {
-      setToastMsg({ text: deliveryState.error, type: "error" });
-    } else if (deliveryState.success) {
-      setToastMsg({
-        text: adminDeliveryOrder?.courierName
-          ? `تم تسليم الطلب واحتساب أرباح التوصيل للمندوب (${adminDeliveryOrder.courierName}) بنجاح! 🎉`
-          : "تم تسليم الطلب وتسجيل الوارد والأرباح للإدارة بنجاح! 🎉",
-        type: "success",
-      });
-      setAdminDeliveryOrder(null);
-      router.refresh();
-      setTimeout(() => setToastMsg(null), 4000);
-    }
-  }, [deliveryState, router, adminDeliveryOrder]);
+  const handleMoneySuccess = (msg: string) => {
+    setAdminPickupOrder(null);
+    setAdminDeliveryOrder(null);
+    setToastMsg({ text: msg, type: "success" });
+    router.refresh();
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
@@ -1434,6 +1454,8 @@ export function OrderTrackingBulkTable({
 
             <AdminPickupFormModal
               orderId={adminPickupOrder.id}
+              orderNumber={adminPickupOrder.orderNumber}
+              courierName={adminPickupOrder.courierName}
               nextPath="/abo1stor3hlaa2kbr8-47/orders/tracking"
               expectedAlfHint={
                 adminPickupOrder.orderSubtotalDinar != null
@@ -1447,10 +1469,7 @@ export function OrderTrackingBulkTable({
                     )
                   : ""
               }
-              defaultAdvance={true}
-              formAction={pickupAction}
-              pending={pickupPending}
-              error={pickupState.error}
+              onSuccess={handleMoneySuccess}
               onClose={() => setAdminPickupOrder(null)}
             />
           </div>
@@ -1489,6 +1508,8 @@ export function OrderTrackingBulkTable({
 
             <AdminDeliveryFormModal
               orderId={adminDeliveryOrder.id}
+              orderNumber={adminDeliveryOrder.orderNumber}
+              courierName={adminDeliveryOrder.courierName}
               nextPath="/abo1stor3hlaa2kbr8-47/orders/tracking"
               expectedAlfHint={
                 adminDeliveryOrder.totalAmountDinar != null
@@ -1502,10 +1523,7 @@ export function OrderTrackingBulkTable({
                     )
                   : ""
               }
-              defaultAdvance={true}
-              formAction={deliveryAction}
-              pending={deliveryPending}
-              error={deliveryState.error}
+              onSuccess={handleMoneySuccess}
               onClose={() => setAdminDeliveryOrder(null)}
               prepaidAll={
                 adminDeliveryOrder.prepaidAll ||
