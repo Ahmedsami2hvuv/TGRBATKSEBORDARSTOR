@@ -409,9 +409,9 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* رقم الهاتف الظاهر وزر رفض الطلب */}
+                      {/* رقم الهاتف الظاهر وزر رفض الطلب (يختفي عند التسليم أو الرفض أو الأرشفة) */}
                       <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
-                        {onRejectOrder && !isCancelled && (
+                        {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
                             onClick={() => onRejectOrder(o)}
