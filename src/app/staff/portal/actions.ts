@@ -102,12 +102,6 @@ export async function submitStaffPreparationDraft(
     };
   }
 
-  const region = await prisma.region.findUnique({
-    where: { id: customerRegionId },
-    select: { id: true },
-  });
-  if (!region) return { error: "منطقة الزبون غير صالحة." };
-
   const lines = productsCsv
     .split(/\r?\n/)
     .map((l) => l.trim())
