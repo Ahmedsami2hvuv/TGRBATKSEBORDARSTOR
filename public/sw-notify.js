@@ -1,20 +1,19 @@
-/* KSE BORDAR - Service Worker - Stable v3 */
+/* KSE BORDAR - Service Worker - Stable v4 */
 
-// 1. تعريف المستمعين فوراً في بداية الملف لضمان توافق المتصفح
-self.addEventListener("message", (e) => { });
-
-// 2. استيراد مكتبة OneSignal في الخلفية
+// 1. استيراد مكتبة OneSignal في بداية الملف فوراً للتقييم الأولي للـ Worker
 try {
   importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 } catch (e) {
   console.error("SW: OS Import Error", e);
 }
 
-// 3. مستمع الإشعارات - هنا نقوم بإجبار العرض
+// 2. تعريف المستمعين فوراً بعد الاستيراد
+self.addEventListener("message", (e) => { });
+
+// 3. مستمع الإشعارات - إجبار عرض الإشعار بالكامل
 self.addEventListener("push", (event) => {
   console.log("SW: Push received", event);
 
-  // استخراج البيانات بأمان
   let payload = {
     title: "طلب جديد — أبو الأكبر",
     body: "لديك تحديث جديد في النظام، اضغط للمتابعة.",
@@ -24,7 +23,6 @@ self.addEventListener("push", (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
-      // محاولة استخراج محتوى OneSignal إذا وجد
       payload.title = data.title || data.headings?.ar || payload.title;
       payload.body = data.alert || data.contents?.ar || data.body || payload.body;
       payload.url = data.url || (data.custom && data.custom.u) || payload.url;
@@ -33,14 +31,13 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  // أهم خطوة: إظهار الإشعار يدوياً لضمان عدم اختفائه
   const options = {
     body: payload.body,
     icon: "/pwa-icon-192.png",
     badge: "/pwa-icon-192.png",
     vibrate: [500, 110, 500, 110, 450, 110, 200, 110],
     data: { url: payload.url },
-    requireInteraction: true, // يبقى ظاهراً حتى يضغط عليه المندوب
+    requireInteraction: true,
     dir: 'rtl',
     lang: 'ar'
   };

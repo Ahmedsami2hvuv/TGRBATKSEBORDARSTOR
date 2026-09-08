@@ -1,32 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { Toaster } from "sonner";
-
-const EnterSubmitGlobal = dynamic(
-  () => import("@/components/enter-submit-global").then((m) => m.EnterSubmitGlobal),
-  { ssr: false },
-);
-const PwaServiceWorkerRegister = dynamic(
-  () => import("@/components/pwa-service-worker-register").then((m) => m.PwaServiceWorkerRegister),
-  { ssr: false },
-);
-const PwaRoutePreserver = dynamic(
-  () => import("@/components/pwa-route-preserver").then((m) => m.PwaRoutePreserver),
-  { ssr: false },
-);
-
-
-const OneSignalInitializer = dynamic(
-  () => import("@/components/OneSignalInitializer").then((m) => m.OneSignalInitializer),
-  { ssr: false },
-);
-
-const GlobalConfirmDialog = dynamic(
-  () => import("@/components/global-confirm-dialog").then((m) => m.GlobalConfirmDialog),
-  { ssr: false },
-);
+import { EnterSubmitGlobal } from "@/components/enter-submit-global";
+import { PwaServiceWorkerRegister } from "@/components/pwa-service-worker-register";
+import { PwaRoutePreserver } from "@/components/pwa-route-preserver";
+import { OneSignalInitializer } from "@/components/OneSignalInitializer";
+import { GlobalConfirmDialog } from "@/components/global-confirm-dialog";
 
 type ClientRuntimeProps = {
   children: React.ReactNode;
