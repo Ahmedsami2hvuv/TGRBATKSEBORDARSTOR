@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { BulkOrdersState } from "../bulk-actions";
 import { bulkUpdateOrdersStatus } from "../bulk-actions";
@@ -13,7 +13,22 @@ import { mandoubShopNameVividClass } from "@/lib/order-status-style";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
-import { formatDinarAsAlf } from "@/lib/money-alf";
+import { formatDinarAsAlf, dinarDecimalToAlfInputString, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import {
+  submitAdminPickupMoney,
+  submitAdminDeliveryMoney,
+  type MandoubCashState,
+} from "@/app/mandoub/cash-actions";
+import {
+  moneySaderAmountInputClass,
+  moneySaderRemainValueClass,
+  moneySaderSummaryBoxClass,
+  moneySaderTotalValueClass,
+  moneyWardAmountInputClass,
+  moneyWardRemainValueClass,
+  moneyWardSummaryBoxClass,
+  moneyWardTotalValueClass,
+} from "@/lib/money-entry-ui";
 
 const STATUS_UI: Record<string, { ar: string; dot: string }> = {
   pending: { ar: "جديد", dot: "bg-red-500 ring-2 ring-red-200/70" },
@@ -35,6 +50,360 @@ const QUICK_STATUS_VALUES = [
   { value: "cancelled", label: "مرفوض" },
   { value: "archived", label: "مؤرشف" },
 ] as const;
+
+function AdminPickupFormModal({
+  orderId,
+  nextPath,
+  expectedAlfHint,
+  remainingAlfHint,
+  defaultAdvance = false,
+  formAction,
+  pending,
+  error,
+  onClose,
+}: {
+  orderId: string;
+  nextPath: string;
+  expectedAlfHint: string;
+  remainingAlfHint: string;
+  defaultAdvance?: boolean;
+  formAction: (formData: FormData) => void;
+  pending: boolean;
+  error?: string;
+  onClose: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivering" : "");
+  const formRef = useRef<HTMLFormElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const advanceStatusRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+  const submitModeRef = useRef<HTMLInputElement>(null);
+  const mainSubmitRef = useRef<HTMLButtonElement>(null);
+
+  const displayTargetAlf = remainingAlfHint || expectedAlfHint || "";
+
+  return (
+    <div className="space-y-3 text-right">
+      <p className="font-bold text-emerald-950 text-sm">اكتب المبلغ الذي سلّمته للعميل أو انقر على الزر السريع:</p>
+      
+      <div className={moneySaderSummaryBoxClass}>
+        <span>سعر الطلب: <span className={moneySaderTotalValueClass}>{expectedAlfHint || "—"}</span></span>
+        <span>المتبقي للصادر: <span className={moneySaderRemainValueClass}>{remainingAlfHint || "—"}</span></span>
+      </div>
+
+      <form
+        ref={formRef}
+        action={formAction}
+        className="space-y-3"
+      >
+        <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
+        <input type="hidden" name="orderId" value={orderId} />
+        <input type="hidden" name="next" value={nextPath} />
+        <input ref={advanceStatusRef} type="hidden" name="advanceStatus" value={advanceStatus} />
+
+        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع المباشر */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          <div className="w-28 sm:w-32 shrink-0 space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <input
+              ref={amountRef}
+              name="amountAlf"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className={`${moneySaderAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              placeholder="اكتب السعر"
+              inputMode="decimal"
+              enterKeyHint="done"
+            />
+          </div>
+
+          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
+          {displayTargetAlf && (
+            <div className="relative flex-1 flex justify-end min-w-0">
+              <span className="pointer-events-none absolute -top-3 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-2 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (amountRef.current) amountRef.current.value = displayTargetAlf;
+                  if (submitModeRef.current) submitModeRef.current.value = "";
+                  if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
+                  setAmount(displayTargetAlf);
+                  setAdvanceStatus("delivering");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                  }, 40);
+                }}
+                className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                title="اضغط لتأكيد وإرسال المبلغ وتغيير الحالة مباشرة"
+              >
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                    {displayTargetAlf}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                    ألف
+                  </span>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5 pt-1">
+          <label className="text-xs font-black text-slate-800 block">سبب الاختلاف / ملاحظة (إن وجد):</label>
+          <textarea
+            ref={noteRef}
+            name="mismatchNote"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:outline-hidden"
+            placeholder="اكتب الملاحظة هنا إن كان المبلغ غير مطابق..."
+          />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+          <input
+            type="checkbox"
+            id="advancePickupDeliveringTrackingModal"
+            checked={advanceStatus === "delivering"}
+            onChange={(e) => {
+              const val = e.target.checked ? "delivering" : "";
+              setAdvanceStatus(val);
+              if (advanceStatusRef.current) advanceStatusRef.current.value = val;
+            }}
+            className="size-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+          />
+          <label htmlFor="advancePickupDeliveringTrackingModal" className="text-xs font-black text-emerald-950 cursor-pointer select-none">
+            تغيير حالة الطلب تلقائياً إلى «قيد التوصيل» 🛵
+          </label>
+        </div>
+
+        {error && <p className="text-xs font-black text-rose-600">{error}</p>}
+
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+          >
+            إلغاء
+          </button>
+          
+          <button
+            type="submit"
+            formNoValidate
+            disabled={pending}
+            onClick={() => {
+              if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
+              if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
+              setAdvanceStatus("delivering");
+            }}
+            className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-xs font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60 cursor-pointer"
+            title="تحويل الحالة إلى «قيد التوصيل» دون تسجيل مبلغ صادر"
+          >
+            لم أدفع (تغيير الحالة فقط)
+          </button>
+
+          <button
+            ref={mainSubmitRef}
+            type="submit"
+            disabled={pending}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+          >
+            {pending ? "جاري الحفظ..." : "💾 تأكيد وتسجيل الصادر"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AdminDeliveryFormModal({
+  orderId,
+  nextPath,
+  expectedAlfHint,
+  remainingAlfHint,
+  defaultAdvance = false,
+  formAction,
+  pending,
+  error,
+  onClose,
+  prepaidAll = false,
+}: {
+  orderId: string;
+  nextPath: string;
+  expectedAlfHint: string;
+  remainingAlfHint: string;
+  defaultAdvance?: boolean;
+  formAction: (formData: FormData) => void;
+  pending: boolean;
+  error?: string;
+  onClose: () => void;
+  prepaidAll?: boolean;
+}) {
+  const [amount, setAmount] = useState(prepaidAll ? "0" : "");
+  const [note, setNote] = useState(prepaidAll ? "كلشي واصل" : "");
+  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivered" : "");
+  const formRef = useRef<HTMLFormElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const advanceStatusRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+  const submitModeRef = useRef<HTMLInputElement>(null);
+  const mainSubmitRef = useRef<HTMLButtonElement>(null);
+
+  const displayTargetAlf = prepaidAll ? "0" : (remainingAlfHint || expectedAlfHint || "");
+
+  return (
+    <div className="space-y-3 text-right">
+      <p className="font-bold text-red-950 text-sm">
+        {prepaidAll
+          ? "الطلب واصل حسابه مسبقاً — انقر للتأكيد وتحويل الحالة إلى «تم التسليم»"
+          : "اكتب المبلغ المستلم من الزبون أو انقر على الزر السريع:"}
+      </p>
+
+      <div className={moneyWardSummaryBoxClass}>
+        <span>المبلغ الكلي: <span className={moneyWardTotalValueClass}>{prepaidAll ? "كل شي واصل" : expectedAlfHint || "—"}</span></span>
+        <span>المتبقي للوارد: <span className={moneyWardRemainValueClass}>{prepaidAll ? "0" : remainingAlfHint || "—"}</span></span>
+      </div>
+
+      <form
+        ref={formRef}
+        action={formAction}
+        className="space-y-3"
+      >
+        <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
+        <input type="hidden" name="orderId" value={orderId} />
+        <input type="hidden" name="next" value={nextPath} />
+        <input ref={advanceStatusRef} type="hidden" name="advanceStatus" value={advanceStatus} />
+
+        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع المباشر */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          <div className="w-28 sm:w-32 shrink-0 space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <input
+              ref={amountRef}
+              name="amountAlf"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className={`${moneyWardAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              placeholder="اكتب السعر"
+              inputMode="decimal"
+              enterKeyHint="done"
+            />
+          </div>
+
+          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
+          {displayTargetAlf !== "" && (
+            <div className="relative flex-1 flex justify-end min-w-0">
+              <span className="pointer-events-none absolute -top-3 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
+              <span className="pointer-events-none absolute -bottom-2 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (amountRef.current) amountRef.current.value = displayTargetAlf;
+                  if (submitModeRef.current) submitModeRef.current.value = "";
+                  if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
+                  setAmount(displayTargetAlf);
+                  setAdvanceStatus("delivered");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                  }, 40);
+                }}
+                className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                title="اضغط لتأكيد وإرسال المبلغ وتغيير الحالة مباشرة"
+              >
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                    {displayTargetAlf}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                    {prepaidAll ? "واصل" : "ألف"}
+                  </span>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5 pt-1">
+          <label className="text-xs font-black text-slate-800 block">سبب الاختلاف / ملاحظة (إن وجد):</label>
+          <textarea
+            ref={noteRef}
+            name="mismatchNote"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-rose-600 focus:outline-hidden"
+            placeholder="اكتب الملاحظة هنا إن كان المبلغ غير مطابق..."
+          />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/70 p-3">
+          <input
+            type="checkbox"
+            id="advanceDeliveryDeliveredTrackingModal"
+            checked={advanceStatus === "delivered"}
+            onChange={(e) => {
+              const val = e.target.checked ? "delivered" : "";
+              setAdvanceStatus(val);
+              if (advanceStatusRef.current) advanceStatusRef.current.value = val;
+            }}
+            className="size-4 rounded border-rose-400 text-rose-600 focus:ring-rose-500 cursor-pointer"
+          />
+          <label htmlFor="advanceDeliveryDeliveredTrackingModal" className="text-xs font-black text-rose-950 cursor-pointer select-none">
+            تغيير حالة الطلب تلقائياً إلى «تم التسليم» 🎉
+          </label>
+        </div>
+
+        {error && <p className="text-xs font-black text-rose-600">{error}</p>}
+
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+          >
+            إلغاء
+          </button>
+
+          <button
+            type="submit"
+            formNoValidate
+            disabled={pending}
+            onClick={() => {
+              if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
+              if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
+              setAdvanceStatus("delivered");
+            }}
+            className="rounded-xl border-2 border-rose-400 bg-rose-50 px-4 py-2 text-xs font-black text-rose-950 shadow-sm transition hover:bg-rose-100 disabled:opacity-60 cursor-pointer"
+            title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد"
+          >
+            تأكيد تسليم بدون مبلغ
+          </button>
+
+          <button
+            ref={mainSubmitRef}
+            type="submit"
+            disabled={pending}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+          >
+            {pending ? "جاري الحفظ..." : "💾 تأكيد وتسجيل الوارد"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function TrackingCardMoneyBadges({ o }: { o: TrackingTableRow }) {
   const pickup = o.pickupSumDinar ?? null;
@@ -126,6 +495,8 @@ function TrackingCardsView({
   onOpenRow,
   onAssignOrder,
   onRejectOrder,
+  onAdminPickup,
+  onAdminDelivery,
   icons,
   showSelectColumn,
   isSelected,
@@ -136,6 +507,8 @@ function TrackingCardsView({
   onOpenRow: (id: string) => void;
   onAssignOrder: (row: TrackingTableRow) => void;
   onRejectOrder?: (row: TrackingTableRow) => void;
+  onAdminPickup?: (row: TrackingTableRow) => void;
+  onAdminDelivery?: (row: TrackingTableRow) => void;
   icons: GlobalIconsConfig | null;
   showSelectColumn?: boolean;
   isSelected?: (id: string) => boolean;
@@ -382,6 +755,35 @@ function TrackingCardsView({
                             💰
                           </Link>
                         )}
+                        {/* أزرار الاستلام والتسليم الخاصة بالإدارة */}
+                        {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAdminPickup(o);
+                            }}
+                            className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 px-2 py-0.5 text-[11px] sm:text-xs font-black shadow-xs transition-all active:scale-90"
+                            title="استلام الطلب وتسجيل الصادر (إدارة / بالنيابة) ⚡"
+                          >
+                            <span>⚡</span>
+                            <span>استلام</span>
+                          </button>
+                        )}
+                        {onAdminDelivery && isDelivering && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAdminDelivery(o);
+                            }}
+                            className="inline-flex items-center justify-center gap-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 px-2 py-0.5 text-[11px] sm:text-xs font-black shadow-xs transition-all active:scale-90"
+                            title="تسليم الطلب واحتساب الأرباح وتسجيل الوارد (إدارة / بالنيابة) 🫴"
+                          >
+                            <span>🫴</span>
+                            <span>تسليم</span>
+                          </button>
+                        )}
                         {isPrepaid && (
                           <span className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-xs border border-emerald-700" title="كل شي واصل">
                             واصل
@@ -479,10 +881,56 @@ export function OrderTrackingBulkTable({
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
   const showSelectColumn = showQuickSelect;
 
+  const initialCash: MandoubCashState = {};
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkUpdateOrdersStatus,
     {} as BulkOrdersState,
   );
+
+  const [adminPickupOrder, setAdminPickupOrder] = useState<TrackingTableRow | null>(null);
+  const [adminDeliveryOrder, setAdminDeliveryOrder] = useState<TrackingTableRow | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const [pickupState, pickupAction, pickupPending] = useActionState(
+    submitAdminPickupMoney,
+    initialCash,
+  );
+  const [deliveryState, deliveryAction, deliveryPending] = useActionState(
+    submitAdminDeliveryMoney,
+    initialCash,
+  );
+
+  useEffect(() => {
+    if (pickupState.error) {
+      setToastMsg({ text: pickupState.error, type: "error" });
+    } else if (pickupState.success) {
+      setToastMsg({
+        text: adminPickupOrder?.courierName
+          ? `تم استلام الطلب وتسجيل الصادر بالنيابة عن المندوب (${adminPickupOrder.courierName}) بنجاح! ⚡`
+          : "تم استلام الطلب وتسجيل الصادر للإدارة بنجاح! ⚡",
+        type: "success",
+      });
+      setAdminPickupOrder(null);
+      router.refresh();
+      setTimeout(() => setToastMsg(null), 4000);
+    }
+  }, [pickupState, router, adminPickupOrder]);
+
+  useEffect(() => {
+    if (deliveryState.error) {
+      setToastMsg({ text: deliveryState.error, type: "error" });
+    } else if (deliveryState.success) {
+      setToastMsg({
+        text: adminDeliveryOrder?.courierName
+          ? `تم تسليم الطلب واحتساب أرباح التوصيل للمندوب (${adminDeliveryOrder.courierName}) بنجاح! 🎉`
+          : "تم تسليم الطلب وتسجيل الوارد والأرباح للإدارة بنجاح! 🎉",
+        type: "success",
+      });
+      setAdminDeliveryOrder(null);
+      router.refresh();
+      setTimeout(() => setToastMsg(null), 4000);
+    }
+  }, [deliveryState, router, adminDeliveryOrder]);
 
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
@@ -883,6 +1331,8 @@ export function OrderTrackingBulkTable({
           onOpenRow={(id) => router.push(`${SECRET_ADMIN_PATH}/orders/${id}`)}
           onAssignOrder={(r) => setAssignOrder(r)}
           onRejectOrder={(r) => setRejectOrder(r)}
+          onAdminPickup={(r) => setAdminPickupOrder(r)}
+          onAdminDelivery={(r) => setAdminDeliveryOrder(r)}
           icons={icons}
           showSelectColumn={showSelectColumn}
           isSelected={(id) => selected.has(id)}
@@ -930,6 +1380,141 @@ export function OrderTrackingBulkTable({
             );
           }}
         />
+      )}
+
+      {/* التوست التنبيهي لعمليات الإدارة */}
+      {toastMsg && (
+        <div
+          className={`fixed top-5 left-1/2 -translate-x-1/2 z-[150] flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl border-2 text-white font-black text-sm sm:text-base animate-in slide-in-from-top duration-300 ${
+            toastMsg.type === "success"
+              ? "bg-emerald-900 border-emerald-400"
+              : "bg-rose-900 border-rose-400"
+          }`}
+        >
+          <span>{toastMsg.type === "success" ? "✅" : "⚠️"}</span>
+          <span>{toastMsg.text}</span>
+          <button
+            onClick={() => setToastMsg(null)}
+            className="mr-2 text-white/80 hover:text-white font-bold text-lg cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* نافذة استلام الطلب وصادر الإدارة */}
+      {adminPickupOrder && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setAdminPickupOrder(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-2xl ring-2 ring-emerald-500/30 dark:ring-emerald-500/20 max-h-[90vh] overflow-y-auto"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-950 pb-3 mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-emerald-950 dark:text-emerald-300 flex items-center gap-2">
+                  <span>⚡</span>
+                  <span>استلام الطلب وتسجيل الصادر (إدارة / بالنيابة)</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  الطلب #{adminPickupOrder.orderNumber} {adminPickupOrder.courierName ? `— المندوب: ${adminPickupOrder.courierName}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminPickupOrder(null)}
+                className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <AdminPickupFormModal
+              orderId={adminPickupOrder.id}
+              nextPath="/abo1stor3hlaa2kbr8-47/orders/tracking"
+              expectedAlfHint={
+                adminPickupOrder.orderSubtotalDinar != null
+                  ? dinarDecimalToAlfInputString(adminPickupOrder.orderSubtotalDinar)
+                  : ""
+              }
+              remainingAlfHint={
+                adminPickupOrder.orderSubtotalDinar != null
+                  ? dinarDecimalToAlfInputString(
+                      Math.max(0, adminPickupOrder.orderSubtotalDinar - (adminPickupOrder.pickupSumDinar ?? 0)),
+                    )
+                  : ""
+              }
+              defaultAdvance={true}
+              formAction={pickupAction}
+              pending={pickupPending}
+              error={pickupState.error}
+              onClose={() => setAdminPickupOrder(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تسليم الطلب ووارد الإدارة */}
+      {adminDeliveryOrder && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setAdminDeliveryOrder(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-2xl ring-2 ring-rose-500/30 dark:ring-rose-500/20 max-h-[90vh] overflow-y-auto"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-rose-100 dark:border-rose-950 pb-3 mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-rose-950 dark:text-rose-300 flex items-center gap-2">
+                  <span>🫴</span>
+                  <span>تسليم الطلب واحتساب الأرباح (إدارة / بالنيابة)</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  الطلب #{adminDeliveryOrder.orderNumber} {adminDeliveryOrder.courierName ? `— المندوب: ${adminDeliveryOrder.courierName}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminDeliveryOrder(null)}
+                className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <AdminDeliveryFormModal
+              orderId={adminDeliveryOrder.id}
+              nextPath="/abo1stor3hlaa2kbr8-47/orders/tracking"
+              expectedAlfHint={
+                adminDeliveryOrder.totalAmountDinar != null
+                  ? dinarDecimalToAlfInputString(adminDeliveryOrder.totalAmountDinar)
+                  : ""
+              }
+              remainingAlfHint={
+                adminDeliveryOrder.totalAmountDinar != null
+                  ? dinarDecimalToAlfInputString(
+                      Math.max(0, adminDeliveryOrder.totalAmountDinar - (adminDeliveryOrder.deliverySumDinar ?? 0)),
+                    )
+                  : ""
+              }
+              defaultAdvance={true}
+              formAction={deliveryAction}
+              pending={deliveryPending}
+              error={deliveryState.error}
+              onClose={() => setAdminDeliveryOrder(null)}
+              prepaidAll={
+                adminDeliveryOrder.prepaidAll ||
+                adminDeliveryOrder.totalLabel === "كل شي واصل" ||
+                adminDeliveryOrder.totalLabel === "واصل"
+              }
+            />
+          </div>
+        </div>
       )}
 
       {/* نافذة الإسناد السريع للمندوبين */}

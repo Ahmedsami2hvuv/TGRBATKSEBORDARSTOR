@@ -63,6 +63,10 @@ export type TrackingTableRow = {
   shopDoorPhotoUrl?: string | null;
   customerDoorPhotoUrl?: string | null;
   secondCustomerDoorPhotoUrl?: string | null;
+  orderSubtotalDinar?: number | null;
+  totalAmountDinar?: number | null;
+  purchasePriceDinar?: number | null;
+  deliveryPriceDinar?: number | null;
   secondCustomerRegionName?: string | null;
 };
 

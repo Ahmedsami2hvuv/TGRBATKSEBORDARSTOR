@@ -348,6 +348,10 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
           o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
         ),
         secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
+        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
+        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
+        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
+        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
       };
     });
 
