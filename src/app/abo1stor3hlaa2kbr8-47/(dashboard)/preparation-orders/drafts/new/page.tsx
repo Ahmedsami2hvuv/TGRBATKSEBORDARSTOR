@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminNewPreparationDraftPage() {
   const companyPreparers = await prisma.companyPreparer.findMany({
+    where: { active: true, availableForAssignment: true },
     orderBy: { name: "asc" },
     select: { id: true, name: true, active: true, availableForAssignment: true },
   });

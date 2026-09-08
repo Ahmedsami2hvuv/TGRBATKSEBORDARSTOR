@@ -179,7 +179,7 @@ function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
  return u.startsWith("/") ? u : `/${u}`;
 }
 
-export function AdminCreateOrderForm({
+ export function AdminCreateOrderForm({
   shops,
   regions,
   preparers,
@@ -194,7 +194,8 @@ export function AdminCreateOrderForm({
   icons?: GlobalIconsConfig;
   systemShopId?: string;
 }) {
- const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
+  const visiblePreparers = useMemo(() => preparers.filter((p) => p.availableForAssignment !== false), [preparers]);
+  const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
 
  const [submissionMode, setSubmissionMode] = useState<SubmissionMode>("admin_one_face");
  const [shopId, setShopId] = useState("");

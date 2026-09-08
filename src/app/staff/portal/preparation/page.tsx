@@ -56,49 +56,54 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
       where: {
         active: true,
       },
-      select: { id: true, name: true, phone: true },
+      select: { id: true, name: true, phone: true, active: true },
       orderBy: { name: "asc" },
     }),
     getGlobalIcons(),
   ]);
 
-  // مزامنة أي مورد نشط من StoreSupplier غير موجود في CompanyPreparer
-  const preparerIdsSet = new Set(rawPreparers.map((p) => p.id));
-  const missingSuppliers = storeSuppliers.filter((s) => !preparerIdsSet.has(s.id));
-  if (missingSuppliers.length > 0) {
-    for (const sup of missingSuppliers) {
-      try {
-        await prisma.companyPreparer.upsert({
-          where: { id: sup.id },
-          create: {
-            id: sup.id,
-            name: sup.name,
-            phone: sup.phone,
-            active: true,
-            availableForAssignment: true,
-            notes: "[SUPPLIER]",
-          },
-          update: {
-            name: sup.name,
-            phone: sup.phone,
-            active: true,
-            availableForAssignment: true,
-          },
-        });
-        rawPreparers.push({
-          id: sup.id,
-          name: sup.name,
-          notes: "[SUPPLIER]",
-          availableForAssignment: true,
-        });
-      } catch (err) {
-        console.error("Auto sync supplier to company preparer error:", err);
-      }
+  if (!staff || !staff.active || staff.portalToken !== v.token) {
+    return (
+      <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
+        <div className="kse-app-inner mx-auto max-w-md">
+          <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+            <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة التجهيز</p>
+            <p className="mt-2 text-sm text-slate-600">الحساب غير مفعّل أو الرابط غير صالح.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // دمج المجهزين والموردين المتاحين فقط بدون عمليات كتابة متزامنة
+  const combinedList: Array<{ id: string; name: string; available: boolean; isSupplier: boolean }> = [];
+  const addedIds = new Set<string>();
+
+  for (const p of rawPreparers) {
+    if (!addedIds.has(p.id) && p.availableForAssignment !== false) {
+      addedIds.add(p.id);
+      combinedList.push({
+        id: p.id,
+        name: p.name,
+        available: true,
+        isSupplier: Boolean(p.notes?.includes("[SUPPLIER]")),
+      });
     }
   }
 
-  // تصفية نهائية للتأكد من ظهور المتاحين والنشطين فقط بدون المخفيين
-  const activeAvailableOnly = rawPreparers.filter((p) => p.availableForAssignment !== false);
+  for (const s of storeSuppliers) {
+    if (!addedIds.has(s.id) && s.active !== false) {
+      addedIds.add(s.id);
+      combinedList.push({
+        id: s.id,
+        name: s.name,
+        available: true,
+        isSupplier: true,
+      });
+    }
+  }
+
+  combinedList.sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
   // دالة التطهير العميقة لضمان توافق Next.js 15
   function deepSanitize(obj: any): any {
@@ -122,12 +127,7 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
 
   // Serialization fix for Next.js 15
   const sanitizedStaff = deepSanitize(staff);
-  const sanitizedPreparers = deepSanitize(activeAvailableOnly.map((p) => ({
-    id: p.id,
-    name: p.name,
-    available: true,
-    isSupplier: Boolean(p.notes?.includes("[SUPPLIER]")),
-  })));
+  const sanitizedPreparers = deepSanitize(combinedList);
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-16 text-slate-800">

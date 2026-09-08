@@ -378,14 +378,13 @@ export function AdminPreparationClient({
         <div className="mt-6 border-t border-slate-100 pt-4">
             <span className="text-sm font-semibold text-slate-800 mb-2 block">اختر المجهزين (متعدد متوفر) *</span>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {preparers.map((p) => {
+                {preparers.filter((p) => p.available).map((p) => {
                     const isSelected = selectedPreparerIds.includes(p.id);
                     return (
                         <label 
                             key={p.id} 
                             className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition select-none
-                            ${isSelected ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'}
-                            ${!p.available ? 'opacity-50' : ''}`}
+                            ${isSelected ? 'border-sky-500 bg-sky-50 shadow-sm font-bold' : 'border-slate-200 hover:bg-slate-50'}`}
                         >
                             <input 
                                 type="checkbox" 
@@ -394,7 +393,7 @@ export function AdminPreparationClient({
                                 onChange={() => togglePreparer(p.id)}
                             />
                             <span className="text-sm font-medium text-slate-800">
-                                {p.name} {!p.available && "(غير متاح)"}
+                                {p.name}
                             </span>
                         </label>
                     );

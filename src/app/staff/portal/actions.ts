@@ -147,10 +147,42 @@ export async function submitStaffPreparationDraft(
   } else {
     // التعديل: الدوران على جميع المجهزين وإرسال المسودة لكل واحد منهم مع ربطهم
     for (const preparerId of preparerIds) {
-      const preparer = await prisma.companyPreparer.findFirst({
+      let preparer = await prisma.companyPreparer.findFirst({
         where: { id: preparerId, active: true },
         select: { id: true, name: true },
       });
+
+      if (!preparer) {
+        const sup = await prisma.storeSupplier.findFirst({
+          where: { id: preparerId, active: true },
+          select: { id: true, name: true, phone: true },
+        });
+        if (sup) {
+          try {
+            preparer = await prisma.companyPreparer.upsert({
+              where: { id: sup.id },
+              create: {
+                id: sup.id,
+                name: sup.name,
+                phone: sup.phone,
+                active: true,
+                availableForAssignment: true,
+                notes: "[SUPPLIER]",
+              },
+              update: {
+                name: sup.name,
+                phone: sup.phone,
+                active: true,
+                availableForAssignment: true,
+              },
+              select: { id: true, name: true },
+            });
+          } catch (e) {
+            console.error("Auto create company preparer for supplier error:", e);
+          }
+        }
+      }
+
       if (!preparer) continue;
 
       const draft = await prisma.companyPreparerShoppingDraft.create({
