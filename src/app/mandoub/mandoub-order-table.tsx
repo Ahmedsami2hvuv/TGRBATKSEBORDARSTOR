@@ -329,6 +329,7 @@ function MandoubFullBlockCardGrid({
               const isDelivered = o.orderStatus === "delivered";
 
               const selected = isSelected ? isSelected(o.id) : false;
+              const isFramelessHeader = courierSettings?.framelessShopRegionHeader === true;
 
               // تحديد لون بلوك اسم المحل والمنطقة بحسب حالة الطلب
               const headerBlockBg = isAssigned
@@ -461,8 +462,22 @@ function MandoubFullBlockCardGrid({
                       )}
                     </div>
 
-                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق (مرفوع للأعلى وموسع عمودياً باتجاه الأسفل) */}
-                    {isDoubleRouteOrder ? (
+                    {/* المنتصف: اسم المحل إلى المنطقة داخل بلوك ملون أنيق أو نص عريض بدون إطار حسب إعداد المندوب */}
+                    {isFramelessHeader ? (
+                      isDoubleRouteOrder ? (
+                        <div className="flex items-center justify-center gap-1.5 flex-1 min-w-0 px-2 py-1 overflow-hidden whitespace-nowrap text-center font-black text-slate-900 dark:text-white text-xl sm:text-2xl md:text-3xl" title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
+                          <span className="font-extrabold whitespace-nowrap text-slate-900 dark:text-white">{o.regionLine || "المرسل"}</span>
+                          <span className="shrink-0 text-sm sm:text-base text-slate-500 font-bold">إلى</span>
+                          <span className="font-extrabold whitespace-nowrap text-slate-900 dark:text-white">{o.secondCustomerRegionName || "المستلم"}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1.5 flex-1 min-w-0 px-2 py-1 overflow-hidden whitespace-nowrap text-center font-black text-slate-900 dark:text-white text-xl sm:text-2xl md:text-3xl">
+                          <span className="font-extrabold whitespace-nowrap text-slate-900 dark:text-white">{o.shopName}</span>
+                          <span className="shrink-0 text-sm sm:text-base text-slate-500 font-bold">إلى</span>
+                          <span className="font-extrabold whitespace-nowrap text-slate-900 dark:text-white">{o.regionLine}</span>
+                        </div>
+                      )
+                    ) : isDoubleRouteOrder ? (
                       <div className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 -mt-1 px-2.5 sm:px-3 py-3 sm:py-3.5 min-h-[48px] sm:min-h-[52px] rounded-2xl border ${headerBlockBg} shadow-sm overflow-hidden whitespace-nowrap text-center font-black ${dynamicHeaderFont}`} title="طلب وجهتين: منطقة المرسل إلى منطقة المستلم">
                         <span className="font-black whitespace-nowrap text-white">{o.regionLine || "المرسل"}</span>
                         <span className="shrink-0 text-xs sm:text-sm text-white/90 font-bold">إلى</span>
