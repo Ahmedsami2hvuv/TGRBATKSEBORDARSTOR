@@ -17,8 +17,8 @@ import { formatDinarAsAlf } from "@/lib/money-alf";
 
 const STATUS_UI: Record<string, { ar: string; dot: string }> = {
   pending: { ar: "جديد", dot: "bg-red-500 ring-2 ring-red-200/70" },
-  assigned: { ar: "بانتظار المندوب", dot: "bg-amber-400 ring-2 ring-amber-200/80" },
-  delivering: { ar: "عند المندوب", dot: "bg-cyan-500 ring-2 ring-cyan-200/80" },
+  assigned: { ar: "بانتظار المندوب", dot: "bg-red-500 ring-2 ring-red-200/70" },
+  delivering: { ar: "عند المندوب", dot: "bg-amber-500 ring-2 ring-amber-200/80" },
   delivered: { ar: "تم التسليم", dot: "bg-emerald-500 ring-2 ring-emerald-200/80" },
   cancelled: { ar: "مرفوض", dot: "bg-slate-500 ring-2 ring-slate-200/80" },
   archived: { ar: "مؤرشف", dot: "bg-violet-500 ring-2 ring-violet-200/80" },
@@ -201,9 +201,9 @@ function TrackingCardsView({
               const selected = isSelected ? isSelected(o.id) : false;
 
               // تحديد لون بلوك اسم المحل والمنطقة بحسب حالة الطلب
-              const headerBlockBg = isPending
+              const headerBlockBg = isPending || isAssigned
                 ? "bg-gradient-to-r from-red-600 to-rose-700 text-white border-red-500 shadow-sm"
-                : isAssigned || isDelivering
+                : isDelivering
                 ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-400 shadow-sm"
                 : isDelivered
                 ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-500 shadow-sm"
