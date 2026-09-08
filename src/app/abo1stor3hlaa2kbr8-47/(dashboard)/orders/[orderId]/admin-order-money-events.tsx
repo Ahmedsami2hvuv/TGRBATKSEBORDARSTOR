@@ -588,6 +588,7 @@ function AdminPickupFormModal({
   const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivering" : "");
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
+  const advanceStatusRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const submitModeRef = useRef<HTMLInputElement>(null);
   const mainSubmitRef = useRef<HTMLButtonElement>(null);
@@ -611,7 +612,7 @@ function AdminPickupFormModal({
         <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
         <input type="hidden" name="orderId" value={orderId} />
         <input type="hidden" name="next" value={nextPath} />
-        <input type="hidden" name="advanceStatus" value={advanceStatus} />
+        <input ref={advanceStatusRef} type="hidden" name="advanceStatus" value={advanceStatus} />
 
         {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع المباشر */}
         <div className="flex items-center justify-between gap-3 pt-1">
@@ -642,6 +643,7 @@ function AdminPickupFormModal({
                   e.stopPropagation();
                   if (amountRef.current) amountRef.current.value = displayTargetAlf;
                   if (submitModeRef.current) submitModeRef.current.value = "";
+                  if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
                   setAmount(displayTargetAlf);
                   setAdvanceStatus("delivering");
                   setTimeout(() => {
@@ -682,7 +684,11 @@ function AdminPickupFormModal({
             type="checkbox"
             id="advancePickupDeliveringModal"
             checked={advanceStatus === "delivering"}
-            onChange={(e) => setAdvanceStatus(e.target.checked ? "delivering" : "")}
+            onChange={(e) => {
+              const val = e.target.checked ? "delivering" : "";
+              setAdvanceStatus(val);
+              if (advanceStatusRef.current) advanceStatusRef.current.value = val;
+            }}
             className="size-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
           />
           <label htmlFor="advancePickupDeliveringModal" className="text-xs font-black text-emerald-950 cursor-pointer select-none">
@@ -707,6 +713,7 @@ function AdminPickupFormModal({
             disabled={pending}
             onClick={() => {
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
+              if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
               setAdvanceStatus("delivering");
             }}
             className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-xs font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60 cursor-pointer"
@@ -757,6 +764,7 @@ function AdminDeliveryFormModal({
   const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivered" : "");
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
+  const advanceStatusRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const submitModeRef = useRef<HTMLInputElement>(null);
   const mainSubmitRef = useRef<HTMLButtonElement>(null);
@@ -784,7 +792,7 @@ function AdminDeliveryFormModal({
         <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
         <input type="hidden" name="orderId" value={orderId} />
         <input type="hidden" name="next" value={nextPath} />
-        <input type="hidden" name="advanceStatus" value={advanceStatus} />
+        <input ref={advanceStatusRef} type="hidden" name="advanceStatus" value={advanceStatus} />
 
         {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع المباشر */}
         <div className="flex items-center justify-between gap-3 pt-1">
@@ -815,6 +823,7 @@ function AdminDeliveryFormModal({
                   e.stopPropagation();
                   if (amountRef.current) amountRef.current.value = displayTargetAlf;
                   if (submitModeRef.current) submitModeRef.current.value = "";
+                  if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
                   setAmount(displayTargetAlf);
                   setAdvanceStatus("delivered");
                   setTimeout(() => {
@@ -855,7 +864,11 @@ function AdminDeliveryFormModal({
             type="checkbox"
             id="advanceDeliveryDeliveredModal"
             checked={advanceStatus === "delivered"}
-            onChange={(e) => setAdvanceStatus(e.target.checked ? "delivered" : "")}
+            onChange={(e) => {
+              const val = e.target.checked ? "delivered" : "";
+              setAdvanceStatus(val);
+              if (advanceStatusRef.current) advanceStatusRef.current.value = val;
+            }}
             className="size-4 rounded border-rose-400 text-rose-600 focus:ring-rose-500 cursor-pointer"
           />
           <label htmlFor="advanceDeliveryDeliveredModal" className="text-xs font-black text-rose-950 cursor-pointer select-none">
@@ -880,6 +893,7 @@ function AdminDeliveryFormModal({
             disabled={pending}
             onClick={() => {
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
+              if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
               setAdvanceStatus("delivered");
             }}
             className="rounded-xl border-2 border-rose-400 bg-rose-50 px-4 py-2 text-xs font-black text-rose-950 shadow-sm transition hover:bg-rose-100 disabled:opacity-60 cursor-pointer"

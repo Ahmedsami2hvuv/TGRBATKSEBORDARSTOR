@@ -776,112 +776,116 @@ export async function submitAdminPickupMoney(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  if (!(await assertAdmin())) {
-    return { error: "غير مصرّح." };
-  }
-  const orderId = String(formData.get("orderId") ?? "").trim();
-  const nextRaw = String(formData.get("next") ?? "/abo1stor3hlaa2kbr8-47/orders/tracking");
-  const amountRaw = String(formData.get("amountAlf") ?? "").trim();
-  const mismatchNote = String(formData.get("mismatchNote") ?? "").trim();
-  const advanceStatus = String(formData.get("advanceStatus") ?? "").trim();
-  const statusAdvanceOnly = formData.get("statusAdvanceOnly") === "1";
-  const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
+  try {
+    if (!(await assertAdmin())) {
+      return { error: "غير مصرّح." };
+    }
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const nextRaw = String(formData.get("next") ?? "/abo1stor3hlaa2kbr8-47/orders/tracking");
+    const amountRaw = String(formData.get("amountAlf") ?? "").trim();
+    const mismatchNote = String(formData.get("mismatchNote") ?? "").trim();
+    const advanceStatus = String(formData.get("advanceStatus") ?? "").trim();
+    const statusAdvanceOnly = formData.get("statusAdvanceOnly") === "1";
+    const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
 
-  if (!orderId) {
-    return { error: "معرّف الطلب مفقود." };
-  }
+    if (!orderId) {
+      return { error: "معرّف الطلب مفقود." };
+    }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-  });
-  if (!order) {
-    return { error: "الطلب غير موجود." };
-  }
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) {
+      return { error: "الطلب غير موجود." };
+    }
 
-  const doubleStaff = order.routeMode === "double" && order.submissionSource === "staff_portal";
-  const prepJson = order.preparerShoppingJson as any;
-  const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
-  const baseSubtotal = order.purchasePrice ?? order.orderSubtotal;
-  const expected = baseSubtotal != null ? new Decimal(Number(baseSubtotal) - staffProfit) : null;
-  if (expected == null) {
-    return { error: "سعر الشراء أو الطلب غير محدد في النظام." };
-  }
+    const doubleStaff = order.routeMode === "double" && order.submissionSource === "staff_portal";
+    const prepJson = order.preparerShoppingJson as any;
+    const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+    const baseSubtotal = order.purchasePrice ?? order.orderSubtotal;
+    const expected = baseSubtotal != null ? new Decimal(Number(baseSubtotal) - staffProfit) : new Decimal(0);
 
-  const agg = await prisma.orderCourierMoneyEvent.aggregate({
-    where: {
-      orderId,
-      kind: MONEY_KIND_PICKUP,
-      deletedAt: null,
-    },
-    _sum: { amountDinar: true },
-  });
-  const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
+    const agg = await prisma.orderCourierMoneyEvent.aggregate({
+      where: {
+        orderId,
+        kind: MONEY_KIND_PICKUP,
+        deletedAt: null,
+      },
+      _sum: { amountDinar: true },
+    });
+    const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  const pickupStatusOnly =
-    advanceStatus === "delivering" &&
-    order.status === "assigned" &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const pickupStatusOnly =
+      advanceStatus === "delivering" &&
+      (order.status === "assigned" || order.status === "pending") &&
+      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
 
-  if (pickupStatusOnly) {
-    if (!paidSoFar.greaterThan(0)) {
-      /* تحويل دون تسجيل صادر — مسموح */
-    } else if (!dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
+    if (pickupStatusOnly) {
+      if (!paidSoFar.greaterThan(0)) {
+        /* تحويل دون تسجيل صادر — مسموح */
+      } else if (!dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
+        return mismatchNoteRequiredError();
+      }
+      await prisma.$transaction(async (tx) => {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: "delivering" },
+        });
+      });
+      revalidateAdminTrackingForStatusChange();
+      revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+      revalidatePath("/mandoub");
+      revalidatePath(`/mandoub/order/${orderId}`);
+      return { ok: true, success: true };
+    }
+
+    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+    if (!parsed.ok) {
+      return { error: "أدخل المبلغ بشكل صحيح." };
+    }
+    const amountDinar = new Decimal(parsed.value);
+    if (amountDinar.lt(0)) {
+      return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
+    }
+
+    const nextPaid = paidSoFar.plus(amountDinar);
+    const matches = dinarAmountsMatchExpected(nextPaid, expected);
+    if (!matches && !mismatchNote.trim()) {
       return mismatchNoteRequiredError();
     }
+
     await prisma.$transaction(async (tx) => {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "assigned", "delivering");
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: "delivering" },
+      await tx.orderCourierMoneyEvent.create({
+        data: {
+          orderId,
+          courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
+          kind: MONEY_KIND_PICKUP,
+          amountDinar,
+          expectedDinar: expected,
+          matchesExpected: matches,
+          mismatchReason: "",
+          mismatchNote,
+        },
       });
+      if (advanceStatus === "delivering" && (order.status === "assigned" || order.status === "pending")) {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: "delivering" },
+        });
+      }
     });
+
     revalidateAdminTrackingForStatusChange();
     revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath("/mandoub");
+    revalidatePath(`/mandoub/order/${orderId}`);
     return { ok: true, success: true };
+  } catch (err: any) {
+    console.error("[submitAdminPickupMoney Error]:", err);
+    return { error: err?.message || "حدث خطأ غير متوقع أثناء تسجيل الصادر." };
   }
-
-  const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) {
-    return { error: "أدخل المبلغ بشكل صحيح." };
-  }
-  const amountDinar = new Decimal(parsed.value);
-  if (amountDinar.lt(0)) {
-    return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
-  }
-
-  const nextPaid = paidSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextPaid, expected);
-  if (!matches && !mismatchNote.trim()) {
-    return mismatchNoteRequiredError();
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.orderCourierMoneyEvent.create({
-      data: {
-        orderId,
-        courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
-        kind: MONEY_KIND_PICKUP,
-        amountDinar,
-        expectedDinar: expected,
-        matchesExpected: matches,
-        mismatchReason: "",
-        mismatchNote,
-      },
-    });
-    if (advanceStatus === "delivering" && (order.status === "assigned" || order.status === "pending")) {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: "delivering" },
-      });
-    }
-  });
-
-  revalidateAdminTrackingForStatusChange();
-  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
-  revalidatePath("/mandoub");
-  revalidatePath(`/mandoub/order/${orderId}`);
-  return { ok: true, success: true };
 }
 
 /** تسجيل وارد (أخذت من الزبون / تم التسليم) بواسطة الإدارة — إن كان الطلب مسنداً لمندوب يُسجل بالنيابة عنه وإلا للإدارة */
@@ -889,113 +893,128 @@ export async function submitAdminDeliveryMoney(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  if (!(await assertAdmin())) {
-    return { error: "غير مصرّح." };
-  }
-  const orderId = String(formData.get("orderId") ?? "").trim();
-  const nextRaw = String(formData.get("next") ?? "/abo1stor3hlaa2kbr8-47/orders/tracking");
-  const amountRaw = String(formData.get("amountAlf") ?? "").trim();
-  const mismatchNote = String(formData.get("mismatchNote") ?? "").trim();
-  const advanceStatus = String(formData.get("advanceStatus") ?? "").trim();
-  const statusAdvanceOnly = formData.get("statusAdvanceOnly") === "1";
-  const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
+  try {
+    if (!(await assertAdmin())) {
+      return { error: "غير مصرّح." };
+    }
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const nextRaw = String(formData.get("next") ?? "/abo1stor3hlaa2kbr8-47/orders/tracking");
+    const amountRaw = String(formData.get("amountAlf") ?? "").trim();
+    const mismatchNote = String(formData.get("mismatchNote") ?? "").trim();
+    const advanceStatus = String(formData.get("advanceStatus") ?? "").trim();
+    const statusAdvanceOnly = formData.get("statusAdvanceOnly") === "1";
+    const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
 
-  if (!orderId) {
-    return { error: "معرّف الطلب مفقود." };
-  }
+    if (!orderId) {
+      return { error: "معرّف الطلب مفقود." };
+    }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { customer: true },
-  });
-  if (!order) {
-    return { error: "الطلب غير موجود." };
-  }
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: true },
+    });
+    if (!order) {
+      return { error: "الطلب غير موجود." };
+    }
 
-  const expected = order.totalAmount;
-  if (expected == null) {
-    return { error: "السعر الكلي غير محدد في النظام." };
-  }
+    const expected = order.totalAmount ?? new Decimal(0);
 
-  const agg = await prisma.orderCourierMoneyEvent.aggregate({
-    where: {
-      orderId,
-      kind: MONEY_KIND_DELIVERY,
-      deletedAt: null,
-    },
-    _sum: { amountDinar: true },
-  });
-  const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
+    const agg = await prisma.orderCourierMoneyEvent.aggregate({
+      where: {
+        orderId,
+        kind: MONEY_KIND_DELIVERY,
+        deletedAt: null,
+      },
+      _sum: { amountDinar: true },
+    });
+    const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  const deliveryStatusOnly =
-    advanceStatus === "delivered" &&
-    order.status === "delivering" &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const deliveryStatusOnly =
+      advanceStatus === "delivered" &&
+      order.status !== "delivered" &&
+      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
 
-  if (deliveryStatusOnly) {
-    if (!receivedSoFar.greaterThan(0)) {
-      /* تحويل دون تسجيل وارد — مسموح */
-    } else if (!dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
+    if (deliveryStatusOnly) {
+      if (!receivedSoFar.greaterThan(0)) {
+        /* تحويل دون تسجيل وارد — مسموح */
+      } else if (!dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
+        return mismatchNoteRequiredError();
+      }
+      await prisma.$transaction(async (tx) => {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivered");
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: "delivered" },
+        });
+      });
+      try {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(orderId);
+      } catch (hookErr) {
+        console.error("handleOrderDelivered secondary error:", hookErr);
+      }
+      revalidateAdminTrackingForStatusChange();
+      revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+      revalidatePath("/mandoub");
+      revalidatePath(`/mandoub/order/${orderId}`);
+      return { ok: true, success: true };
+    }
+
+    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+    if (!parsed.ok) {
+      return { error: "أدخل المبلغ بشكل صحيح." };
+    }
+    const amountDinar = new Decimal(parsed.value);
+    if (amountDinar.lt(0)) {
+      return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
+    }
+
+    const nextReceived = receivedSoFar.plus(amountDinar);
+    const matches = dinarAmountsMatchExpected(nextReceived, expected);
+    if (!matches && !mismatchNote.trim()) {
       return mismatchNoteRequiredError();
     }
+
     await prisma.$transaction(async (tx) => {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: "delivered" },
+      await tx.orderCourierMoneyEvent.create({
+        data: {
+          orderId,
+          courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
+          kind: MONEY_KIND_DELIVERY,
+          amountDinar,
+          expectedDinar: expected,
+          matchesExpected: matches,
+          mismatchReason: "",
+          mismatchNote,
+        },
       });
-      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-      await handleOrderDelivered(orderId, tx);
-    });
-    revalidateAdminTrackingForStatusChange();
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
-    return { ok: true, success: true };
-  }
 
-  const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) {
-    return { error: "أدخل المبلغ بشكل صحيح." };
-  }
-  const amountDinar = new Decimal(parsed.value);
-  if (amountDinar.lt(0)) {
-    return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
-  }
-
-  const nextReceived = receivedSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextReceived, expected);
-  if (!matches && !mismatchNote.trim()) {
-    return mismatchNoteRequiredError();
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.orderCourierMoneyEvent.create({
-      data: {
-        orderId,
-        courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
-        kind: MONEY_KIND_DELIVERY,
-        amountDinar,
-        expectedDinar: expected,
-        matchesExpected: matches,
-        mismatchReason: "",
-        mismatchNote,
-      },
+      if (advanceStatus === "delivered" && order.status !== "delivered") {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivered");
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: "delivered" },
+        });
+      }
     });
 
     if (advanceStatus === "delivered" && order.status !== "delivered") {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivered");
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: "delivered" },
-      });
-      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-      await handleOrderDelivered(orderId, tx);
+      try {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(orderId);
+      } catch (hookErr) {
+        console.error("handleOrderDelivered secondary error:", hookErr);
+      }
     }
-  });
 
-  revalidateAdminTrackingForStatusChange();
-  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
-  revalidatePath("/mandoub");
-  revalidatePath(`/mandoub/order/${orderId}`);
-  return { ok: true, success: true };
+    revalidateAdminTrackingForStatusChange();
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath("/mandoub");
+    revalidatePath(`/mandoub/order/${orderId}`);
+    return { ok: true, success: true };
+  } catch (err: any) {
+    console.error("[submitAdminDeliveryMoney Error]:", err);
+    return { error: err?.message || "حدث خطأ غير متوقع أثناء تسجيل الوارد." };
+  }
 }
 
