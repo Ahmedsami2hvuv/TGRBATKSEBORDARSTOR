@@ -98,6 +98,8 @@ class MainActivity : AppCompatActivity() {
         // زر تشغيل المساعد العائم
         fabFloatingAssistant.setOnClickListener {
             FloatingAssistantService.start(this)
+            moveTaskToBack(true)
+            Toast.makeText(this, "تم تشغيل المساعد العائم ⚡ (يعمل الآن فوق الواتساب وكافة التطبيقات)", Toast.LENGTH_SHORT).show()
         }
 
         // زر فحص طلبات التقييم المجدولة يدوياً
@@ -111,6 +113,8 @@ class MainActivity : AppCompatActivity() {
         // فحص ما إذا كان التطبيق مفتوحاً عبر اختصار المساعد العائم
         if (intent?.action == "ACTION_START_FLOATING_ASSISTANT") {
             FloatingAssistantService.start(this)
+            finish()
+            return
         }
 
         // Submit Button Click

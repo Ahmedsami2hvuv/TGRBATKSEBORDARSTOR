@@ -170,7 +170,7 @@ class FloatingAssistantService : Service() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
-            WindowManager.LayoutParams.FLAG_DIM_BEHIND or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_DIM_BEHIND or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
@@ -179,6 +179,16 @@ class FloatingAssistantService : Service() {
 
         actionDialogView?.findViewById<View>(R.id.btnCloseFloatingMenu)?.setOnClickListener {
             dismissActionDialog()
+        }
+
+        // إغلاق النافذة إذا تم لمس الخلفية المظللة
+        actionDialogView?.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_OUTSIDE || event.action == MotionEvent.ACTION_DOWN) {
+                dismissActionDialog()
+                true
+            } else {
+                false
+            }
         }
 
         // 1. طلب جديد
@@ -206,6 +216,12 @@ class FloatingAssistantService : Service() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             startActivity(intent)
+        }
+
+        // 4. فحص وإرسال طلب تقييم
+        actionDialogView?.findViewById<View>(R.id.btnOptEvaluationCheck)?.setOnClickListener {
+            dismissActionDialog()
+            EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this, isManual = true)
         }
 
         try {

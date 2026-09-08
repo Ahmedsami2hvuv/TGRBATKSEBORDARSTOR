@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/floatingMenuRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:layout_margin="24dp"
+    android:layout_margin="20dp"
     android:background="@drawable/bg_dialog_rounded"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:elevation="14dp">
+    android:padding="18dp"
+    android:elevation="16dp">
 
     <!-- الهيدر -->
     <LinearLayout
@@ -17,8 +18,8 @@
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="@drawable/button_round_bg"
             android:gravity="center"
             android:text="⚡"
@@ -28,7 +29,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical">
 
             <TextView
@@ -36,33 +37,34 @@
                 android:layout_height="wrap_content"
                 android:text="المساعد العائم السريع"
                 android:textColor="#0f172a"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="اختر نوع العملية التي تريد تنفيذها:"
+                android:text="اختر العملية السريعة:"
                 android:textColor="#64748b"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/btnCloseFloatingMenu"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:background="@drawable/button_round_bg"
             android:gravity="center"
             android:text="✕"
-            android:textColor="#94a3b8"
-            android:textSize="16sp"
+            android:textColor="#64748b"
+            android:textSize="15sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginBottom="14dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
         android:background="#e2e8f0" />
 
     <!-- خيار 1: رفع طلب جديد -->
@@ -75,21 +77,21 @@
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="11dp">
 
         <TextView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="#e0f2fe"
             android:gravity="center"
             android:text="📝"
-            android:textSize="18sp" />
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical">
 
             <TextView
@@ -97,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب جديد (رفع سريع)"
                 android:textColor="#0369a1"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -105,7 +107,7 @@
                 android:layout_height="wrap_content"
                 android:text="رفع طلب عادي منسوخ أو مكتوب"
                 android:textColor="#64748b"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -114,27 +116,27 @@
         android:id="@+id/btnOptDoubleOrder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/input_bg"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="11dp">
 
         <TextView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="#f5f3ff"
             android:gravity="center"
             android:text="⇄"
-            android:textSize="18sp" />
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical">
 
             <TextView
@@ -142,7 +144,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب ذو وجهتين (استلام وتسليم)"
                 android:textColor="#6d28d9"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -150,7 +152,7 @@
                 android:layout_height="wrap_content"
                 android:text="توصيل بين بائع ومشتري أو استرجاع"
                 android:textColor="#64748b"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -159,27 +161,27 @@
         android:id="@+id/btnOptPrepOrder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/input_bg"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="11dp">
 
         <TextView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="#fef3c7"
             android:gravity="center"
             android:text="🛒"
-            android:textSize="18sp" />
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical">
 
             <TextView
@@ -187,7 +189,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب تجهيز (مجهز أو مورد)"
                 android:textColor="#b45309"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -195,16 +197,61 @@
                 android:layout_height="wrap_content"
                 android:text="تسوق وإسناد التجهيز لمجهز/مورد محدد"
                 android:textColor="#64748b"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- خيار 4: فحص وإرسال طلب تقييم -->
+    <LinearLayout
+        android:id="@+id/btnOptEvaluationCheck"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/input_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="11dp">
+
+        <TextView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="#ecfdf5"
+            android:gravity="center"
+            android:text="⭐"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="فحص وإرسال طلب تقييم"
+                android:textColor="#047857"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="جلب الطلب المؤرشف التالي لتقييمه الآن"
+                android:textColor="#64748b"
+                android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:gravity="center"
-        android:text="💡 تلميح: انقر مطولاً على الزر العائم لإخفائه في أي وقت"
+        android:text="💡 اسحب الزر لأي مكان، أو انقر مطولاً لإخفائه"
         android:textColor="#94a3b8"
         android:textSize="11sp" />
 

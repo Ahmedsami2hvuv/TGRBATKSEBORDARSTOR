@@ -97,38 +97,49 @@ class EvaluationAlertActivity : Activity() {
         dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.90).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
 
         val switchEnable = dialog.findViewById<SwitchCompat>(R.id.switchEnableEvaluation)
-        val rgInterval = dialog.findViewById<RadioGroup>(R.id.rgInterval)
+        val etIntervalMinutes = dialog.findViewById<EditText>(R.id.etIntervalMinutes)
+        val btnMinusMinutes = dialog.findViewById<Button>(R.id.btnMinusMinutes)
+        val btnPlusMinutes = dialog.findViewById<Button>(R.id.btnPlusMinutes)
+
+        val chip15 = dialog.findViewById<Button>(R.id.chip15Min)
+        val chip30 = dialog.findViewById<Button>(R.id.chip30Min)
+        val chip60 = dialog.findViewById<Button>(R.id.chip60Min)
+        val chip120 = dialog.findViewById<Button>(R.id.chip120Min)
+
         val btnSave = dialog.findViewById<Button>(R.id.btnSaveInterval)
 
         val currentEnabled = EvaluationSchedulerService.isEnabled(this)
         val currentInterval = EvaluationSchedulerService.getIntervalMinutes(this)
 
         switchEnable.isChecked = currentEnabled
+        etIntervalMinutes.setText(currentInterval.toString())
 
-        when (currentInterval) {
-            15 -> dialog.findViewById<RadioButton>(R.id.rb15Min)?.isChecked = true
-            30 -> dialog.findViewById<RadioButton>(R.id.rb30Min)?.isChecked = true
-            60 -> dialog.findViewById<RadioButton>(R.id.rb60Min)?.isChecked = true
-            120 -> dialog.findViewById<RadioButton>(R.id.rb120Min)?.isChecked = true
-            180 -> dialog.findViewById<RadioButton>(R.id.rb180Min)?.isChecked = true
-            else -> dialog.findViewById<RadioButton>(R.id.rb60Min)?.isChecked = true
+        btnMinusMinutes.setOnClickListener {
+            val current = etIntervalMinutes.text.toString().toIntOrNull() ?: 60
+            val updated = (current - 5).coerceAtLeast(1)
+            etIntervalMinutes.setText(updated.toString())
         }
+
+        btnPlusMinutes.setOnClickListener {
+            val current = etIntervalMinutes.text.toString().toIntOrNull() ?: 60
+            val updated = current + 5
+            etIntervalMinutes.setText(updated.toString())
+        }
+
+        chip15?.setOnClickListener { etIntervalMinutes.setText("15") }
+        chip30?.setOnClickListener { etIntervalMinutes.setText("30") }
+        chip60?.setOnClickListener { etIntervalMinutes.setText("60") }
+        chip120?.setOnClickListener { etIntervalMinutes.setText("120") }
 
         btnSave.setOnClickListener {
             val isEnabled = switchEnable.isChecked
-            var newInterval = 60
-            when (rgInterval.checkedRadioButtonId) {
-                R.id.rb15Min -> newInterval = 15
-                R.id.rb30Min -> newInterval = 30
-                R.id.rb60Min -> newInterval = 60
-                R.id.rb120Min -> newInterval = 120
-                R.id.rb180Min -> newInterval = 180
-            }
+            val inputMinutes = etIntervalMinutes.text.toString().toIntOrNull() ?: 60
+            val finalMinutes = inputMinutes.coerceAtLeast(1)
 
             EvaluationSchedulerService.setEnabled(this, isEnabled)
-            EvaluationSchedulerService.setIntervalMinutes(this, newInterval)
+            EvaluationSchedulerService.setIntervalMinutes(this, finalMinutes)
 
-            Toast.makeText(this, "تم حفظ إعدادات الوقت: كل $newInterval دقيقة", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "تم حفظ إعدادات الوقت: كل $finalMinutes دقيقة", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
