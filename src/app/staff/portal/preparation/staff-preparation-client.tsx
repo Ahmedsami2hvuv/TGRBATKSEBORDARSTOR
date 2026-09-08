@@ -273,32 +273,65 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
             )}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-500 mr-1">اسم الزبون / العنوان القصير *</label>
-            <input name="titleLine" value={titleLine} onChange={e => setTitleLine(e.target.value)} placeholder="مثلاً: محمد - المنصور" className={inputClass} required />
-          </div>
+          <input type="hidden" name="titleLine" value={titleLine || selected?.name || "طلب زبون"} />
+          <input type="hidden" name="customerPhone" value={customerPhone} />
+          <input type="hidden" name="orderTime" value={orderTime || "فوري"} />
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف الزبون *</label>
-            <input name="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="07XXXXXXXXX" className={inputClass} required />
-          </div>
+          {/* معلومات مستخرجة سريعة كملخص فقط */}
+          {customerPhone && (
+            <div className="flex items-center justify-between rounded-xl bg-slate-100/80 px-3.5 py-2 text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span>📱</span>
+                <span>رقم الزبون المستخرج:</span>
+              </span>
+              <span className="font-mono font-black text-slate-800" dir="ltr">{customerPhone}</span>
+            </div>
+          )}
 
+          {/* حقل اختيار وتأكيد منطقة الزبون */}
           <div className="space-y-1 relative">
-             <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة الزبون *</label>
-             <input value={q} onChange={e => {setQ(e.target.value); setSelected(null);}} placeholder="ابحث عن المنطقة..." className={inputClass} required />
+             <label className="text-xs font-black text-slate-800 mr-1 block">
+               منطقة الزبون للتوصيل *
+             </label>
+             <input
+               value={q}
+               onChange={e => {
+                 setQ(e.target.value);
+                 setSelected(null);
+               }}
+               placeholder="اكتب اسم المنطقة للبحث والاختيار..."
+               className={`${inputClass} !py-3 font-bold`}
+               required
+             />
              {hits.length > 0 && !selected && (
-               <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
-                 {hits.map(h => <button key={h.id} type="button" onClick={() => {setSelected(h); setQ(h.name);}} className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50">{h.name} ({formatDinarAsAlfWithUnit(h.deliveryPrice)})</button>)}
+               <div className="absolute z-20 w-full bg-white border border-slate-200 rounded-2xl shadow-2xl mt-1 max-h-48 overflow-y-auto divide-y divide-slate-100 animate-in fade-in">
+                 {hits.map(h => (
+                   <button
+                     key={h.id}
+                     type="button"
+                     onClick={() => {
+                       setSelected(h);
+                       setQ(h.name);
+                     }}
+                     className="w-full text-right p-3 text-xs font-bold hover:bg-sky-50 flex items-center justify-between transition"
+                   >
+                     <span className="font-black text-slate-800">{h.name}</span>
+                     <span className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-1 rounded-lg border border-sky-100">
+                       {formatDinarAsAlfWithUnit(h.deliveryPrice)}
+                     </span>
+                   </button>
+                 ))}
+               </div>
+             )}
+             {selected && (
+               <div className="mt-1.5 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-900">
+                 <span>✅ المنطقة المعتمدة: {selected.name}</span>
+                 <span className="text-[11px] text-emerald-700">توصيل: {formatDinarAsAlfWithUnit(selected.deliveryPrice)}</span>
                </div>
              )}
              {!selected && q.length > 2 && hits.length === 0 && (
-                <p className="mt-1 text-[10px] font-bold text-rose-600">يجب اختيار منطقة من القائمة الظاهرة أثناء البحث.</p>
+                <p className="mt-1 text-[11px] font-bold text-rose-600">لم يتم العثور على منطقة بهذا الاسم. يرجى اختيار منطقة من القائمة.</p>
              )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب *</label>
-            <input name="orderTime" value={orderTime} onChange={e => setOrderTime(e.target.value)} placeholder="فوري، غداً صباحاً، الخ..." className={inputClass} required />
           </div>
 
           <button type="submit" disabled={pending || !selected} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2">

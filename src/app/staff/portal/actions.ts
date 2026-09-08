@@ -36,17 +36,37 @@ export async function submitStaffPreparationDraft(
   // التعديل: استقبال عدة مجهزين كـ مصفوفة (اختياري الآن)
   const preparerIds = formData.getAll("preparerIds").map(String).map(s => s.trim()).filter(Boolean);
 
-  const titleLine = String(formData.get("titleLine") ?? "").trim();
+  let titleLine = String(formData.get("titleLine") ?? "").trim();
   const rawListText = String(formData.get("rawListText") ?? "").trim();
   const productsCsv = String(formData.get("productsCsv") ?? "").trim();
   const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
-  const customerPhone = String(formData.get("customerPhone") ?? "").trim();
+  let customerPhone = String(formData.get("customerPhone") ?? "").trim();
   const customerName = String(formData.get("customerName") ?? "").trim();
   const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
-  const orderTime = String(formData.get("orderTime") ?? "").trim();
+  const orderTime = String(formData.get("orderTime") ?? "").trim() || "فوري";
 
-  if (!titleLine || !productsCsv || !customerRegionId || !orderTime) {
-    return { error: "بيانات ناقصة — تأكد من عنوان الطلب والمنطقة والمنتجات ووقت الطلب." };
+  if (!customerPhone && rawListText) {
+    const site = parseSiteOrderMessage(rawListText);
+    if (site && site.items.length > 0) {
+      customerPhone = extractPhoneNumberFromText(rawListText) ?? "";
+    } else {
+      const flex = parseFlexibleOrderLines(rawListText);
+      if (flex) customerPhone = flex.phone;
+    }
+  }
+
+  if (!productsCsv || !customerRegionId) {
+    return { error: "بيانات ناقصة — يرجى اختيار منطقة الزبون والتأكد من وجود المنتجات." };
+  }
+
+  const region = await prisma.region.findUnique({
+    where: { id: customerRegionId },
+    select: { id: true, name: true },
+  });
+  if (!region) return { error: "منطقة الزبون غير صالحة." };
+
+  if (!titleLine) {
+    titleLine = region.name || "طلب زبون";
   }
 
   const phoneLocal = normalizeIraqMobileLocal11(customerPhone);

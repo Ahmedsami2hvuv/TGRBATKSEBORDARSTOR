@@ -986,6 +986,7 @@ export function MandoubOrderTable({
           onToggleOne={toggleOne}
           isSortingMode={isSortingMode}
           moveRow={moveRow}
+          courierSettings={courierSettings}
         />
       ) : (
         <UnifiedOrderListTable
