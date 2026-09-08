@@ -5,7 +5,10 @@ export async function GET() {
   try {
     const [preparers, suppliers] = await Promise.all([
       prisma.companyPreparer.findMany({
-        where: { active: true },
+        where: {
+          active: true,
+          availableForAssignment: true
+        },
         select: {
           id: true,
           name: true,
@@ -15,7 +18,9 @@ export async function GET() {
         orderBy: { name: "asc" }
       }),
       prisma.storeSupplier.findMany({
-        where: { active: true },
+        where: {
+          active: true
+        },
         select: {
           id: true,
           name: true,

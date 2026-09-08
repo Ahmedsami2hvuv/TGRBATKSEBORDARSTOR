@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const preparers = await prisma.companyPreparer.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        availableForAssignment: true
+      },
       select: {
         id: true,
         name: true,
