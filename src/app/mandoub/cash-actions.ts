@@ -859,7 +859,7 @@ export async function submitAdminPickupMoney(
     await tx.orderCourierMoneyEvent.create({
       data: {
         orderId,
-        courierId: null, // الإدارة حصراً — لا تسجل على أي مندوب
+        courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
         kind: MONEY_KIND_PICKUP,
         amountDinar,
         expectedDinar: expected,
@@ -884,7 +884,7 @@ export async function submitAdminPickupMoney(
   return { ok: true, success: true };
 }
 
-/** تسجيل وارد (أخذت من الزبون) بواسطة الإدارة حصراً — لا تسجل على المندوب أبداً */
+/** تسجيل وارد (أخذت من الزبون / تم التسليم) بواسطة الإدارة — إن كان الطلب مسنداً لمندوب يُسجل بالنيابة عنه وإلا للإدارة */
 export async function submitAdminDeliveryMoney(
   _prev: MandoubCashState,
   formData: FormData,
@@ -971,7 +971,7 @@ export async function submitAdminDeliveryMoney(
     await tx.orderCourierMoneyEvent.create({
       data: {
         orderId,
-        courierId: null, // الإدارة حصراً — لا تسجل على أي مندوب
+        courierId: order.assignedCourierId ?? null, // إن كان مسنداً لمندوب يُسجل باسمه، وإن كان غير مسند يُسجل للإدارة حصراً
         kind: MONEY_KIND_DELIVERY,
         amountDinar,
         expectedDinar: expected,

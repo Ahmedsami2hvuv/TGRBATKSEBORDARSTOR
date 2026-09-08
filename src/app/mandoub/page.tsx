@@ -1077,6 +1077,7 @@ export default async function MandoubPage({ searchParams }: Props) {
                 hideShopInfoOnPickup: courier.hideShopInfoOnPickup !== false,
                 guidedDeliverySteps: courier.guidedDeliverySteps,
                 useFullBlockView: (courier as any).useFullBlockView === true,
+                framelessShopRegionHeader: (courier as any).framelessShopRegionHeader === true,
                 orderViewTheme: courier.orderViewTheme || "default",
               }}
             />

@@ -338,10 +338,15 @@ export function StaffSubmittedDraftEditClient({
                     value={bulkPreparerId}
                     onChange={(e) => bulkAssign(e.target.value)}
                   >
-                    <option value="">تخصيص مجهز للمحدد...</option>
-                    {preparers.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
+                    <option value="">تخصيص مجهز أو مورد للمحدد...</option>
+                    {preparers.map((p) => {
+                      const isSup = p.notes?.includes("[SUPPLIER]");
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {isSup ? `📦 ${p.name} (مورد)` : `🛵 ${p.name} (مجهز)`}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
@@ -371,12 +376,15 @@ export function StaffSubmittedDraftEditClient({
                         className="text-[10px] font-bold bg-sky-50 text-sky-800 border-none rounded-lg px-2 py-1 outline-none cursor-pointer"
                         disabled={!canEdit}
                       >
-                        <option value="">(المجهز الافتراضي)</option>
-                        {preparers.map((prep) => (
-                          <option key={prep.id} value={prep.id}>
-                            {prep.name}
-                          </option>
-                        ))}
+                        <option value="">(الافتراضي)</option>
+                        {preparers.map((prep) => {
+                          const isSup = prep.notes?.includes("[SUPPLIER]");
+                          return (
+                            <option key={prep.id} value={prep.id}>
+                              {isSup ? `📦 ${prep.name} (مورد)` : `🛵 ${prep.name} (مجهز)`}
+                            </option>
+                          );
+                        })}
                       </select>
 
                       <button

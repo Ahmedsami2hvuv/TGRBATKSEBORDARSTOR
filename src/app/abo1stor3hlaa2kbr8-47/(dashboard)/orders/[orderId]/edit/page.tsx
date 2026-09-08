@@ -290,7 +290,14 @@ export default async function EditOrderPage({ params }: Props) {
         />
       </section>
       <AdminOrderMoneyEvents
+        orderId={order.id}
         orderNumber={order.orderNumber}
+        orderStatus={order.status}
+        assignedCourierId={order.assignedCourierId}
+        courierName={couriers.find(c => c.id === order.assignedCourierId)?.name ?? null}
+        orderSubtotalDinar={order.orderSubtotal ? Number(order.orderSubtotal) : null}
+        totalAmountDinar={order.totalAmount ? Number(order.totalAmount) : null}
+        prepaidAll={order.prepaidAll}
         nextPath={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/edit`}
         events={adminMoneyEvents}
       />

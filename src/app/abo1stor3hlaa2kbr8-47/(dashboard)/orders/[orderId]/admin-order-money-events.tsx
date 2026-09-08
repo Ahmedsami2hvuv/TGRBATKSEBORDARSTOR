@@ -53,6 +53,8 @@ export function AdminOrderMoneyEvents({
   orderId,
   orderNumber,
   orderStatus,
+  assignedCourierId,
+  courierName,
   orderSubtotalDinar,
   totalAmountDinar,
   nextPath,
@@ -62,6 +64,8 @@ export function AdminOrderMoneyEvents({
   orderId?: string;
   orderNumber: number;
   orderStatus?: string;
+  assignedCourierId?: string | null;
+  courierName?: string | null;
   orderSubtotalDinar?: number | null;
   totalAmountDinar?: number | null;
   nextPath: string;
@@ -71,6 +75,8 @@ export function AdminOrderMoneyEvents({
   const router = useRouter();
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [pickupAdvanceToDelivering, setPickupAdvanceToDelivering] = useState(false);
+  const [deliveryAdvanceToDelivered, setDeliveryAdvanceToDelivered] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [phraseById, setPhraseById] = useState<Record<string, string>>({});
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -99,29 +105,37 @@ export function AdminOrderMoneyEvents({
   const closePanels = () => {
     setPickupOpen(false);
     setDeliveryOpen(false);
+    setPickupAdvanceToDelivering(false);
+    setDeliveryAdvanceToDelivered(false);
   };
 
   useEffect(() => {
     if (pickupState.error) {
       setToastMsg({ text: pickupState.error, type: "error" });
     } else if (pickupState.success) {
-      setToastMsg({ text: "تم تسجيل الصادر للإدارة بنجاح! ⚡", type: "success" });
+      const msg = assignedCourierId
+        ? `تم استلام الطلب وتسجيل الصادر بالنيابة عن المندوب (${courierName || "المندوب"}) بنجاح! ⚡`
+        : "تم استلام الطلب وتسجيل الصادر للإدارة بنجاح! ⚡";
+      setToastMsg({ text: msg, type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
     }
-  }, [pickupState, router]);
+  }, [pickupState, router, assignedCourierId, courierName]);
 
   useEffect(() => {
     if (deliveryState.error) {
       setToastMsg({ text: deliveryState.error, type: "error" });
     } else if (deliveryState.success) {
-      setToastMsg({ text: "تم تسجيل الوارد للإدارة بنجاح! ⚡", type: "success" });
+      const msg = assignedCourierId
+        ? `تم تسليم الطلب واحتساب أرباح التوصيل للمندوب (${courierName || "المندوب"}) بنجاح! 🎉`
+        : "تم تسليم الطلب وتسجيل الوارد والأرباح للإدارة بنجاح! 🎉";
+      setToastMsg({ text: msg, type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
     }
-  }, [deliveryState, router]);
+  }, [deliveryState, router, assignedCourierId, courierName]);
 
   useEffect(() => {
     if (softState.ok) {
@@ -174,6 +188,10 @@ export function AdminOrderMoneyEvents({
     return totalAmountDinar - deliverySum;
   }, [totalAmountDinar, deliverySum]);
 
+  const canMarkPickedUp = orderStatus === "assigned" || orderStatus === "pending";
+  const canMarkDelivered = orderStatus === "delivering";
+  const isDelivered = orderStatus === "delivered";
+
   return (
     <div className={`${ad.section} space-y-4 relative`} dir="rtl">
       {/* التوست المنبثق */}
@@ -199,55 +217,119 @@ export function AdminOrderMoneyEvents({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 pb-3">
         <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
           <span>📊</span>
-          <span>المعاملات المالية للطلب (تسجيل إدارة)</span>
+          <span>المعاملات المالية للطلب وإجراءات الاستلام والتسليم</span>
         </h2>
-        <span className="text-[11px] sm:text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl">
-          ⚡ تُسجل الحركات من الإدارة مباشرة ولا تحسب على ذمة المندوب
-        </span>
+        
+        {assignedCourierId ? (
+          <span className="text-[11px] sm:text-xs font-black text-sky-900 bg-sky-50 border border-sky-200 px-3 py-1 rounded-xl flex items-center gap-1">
+            <span>🛵</span>
+            <span>مسند للمندوب: <strong>{courierName || "المندوب"}</strong> (تُحسب له الأرباح والحركات بالنيابة)</span>
+          </span>
+        ) : (
+          <span className="text-[11px] sm:text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl flex items-center gap-1">
+            <span>🏢</span>
+            <span>غير مسند لمندوب (تُسجل للإدارة مباشرة وتظهر في دفتر الديون باسم الإدارة)</span>
+          </span>
+        )}
       </div>
 
-      {/* --- أزرار أعطيت وأخذت الكبيرة الخاصة بالإدارة --- */}
+      {/* --- أزرار تم الاستلام وتم التسليم السريعة (نفس المندوب بالضبط) --- */}
       {orderId && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-2">
-          {/* زر أعطيت (صادر) */}
-          <button
-            type="button"
-            onClick={() => {
-              setPickupOpen(true);
-              setDeliveryOpen(false);
-            }}
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
-          >
-            <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
-            <span>أعطيت للعميل (صادر إدارة)</span>
-            {pickupRemaining !== null && (
-              <span className="text-xs font-bold bg-emerald-700/80 px-2 py-0.5 rounded-lg mr-1">
-                المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
-              </span>
-            )}
-          </button>
+        <div className="space-y-3 my-2">
+          {/* زر تم الاستلام (يظهر في حالة بانتظار المندوب أو قيد المعالجة) */}
+          {canMarkPickedUp && (
+            <button
+              type="button"
+              onClick={() => {
+                setPickupAdvanceToDelivering(true);
+                setPickupOpen(true);
+                setDeliveryOpen(false);
+              }}
+              className="w-full flex min-h-[58px] items-center justify-center gap-2.5 rounded-2xl border-2 border-amber-600 bg-amber-400 hover:bg-amber-500 text-amber-950 font-black px-4 shadow-lg hover:shadow-xl active:scale-98 transition-all text-base sm:text-lg cursor-pointer animate-pulse"
+            >
+              <span className="text-2xl">⚡</span>
+              <span>استلام الطلب (تم الاستلام)</span>
+              {assignedCourierId && (
+                <span className="text-xs bg-amber-600/30 px-2.5 py-1 rounded-xl text-amber-950 font-black">
+                  بالنيابة عن: {courierName || "المندوب"}
+                </span>
+              )}
+            </button>
+          )}
 
-          {/* زر أخذت (وارد) */}
-          <button
-            type="button"
-            onClick={() => {
-              setDeliveryOpen(true);
-              setPickupOpen(false);
-            }}
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 font-black text-white shadow-md hover:bg-rose-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
-          >
-            <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
-            <span>أخذت من الزبون (وارد إدارة)</span>
-            {deliveryRemaining !== null && !prepaidAll && (
-              <span className="text-xs font-bold bg-rose-700/80 px-2 py-0.5 rounded-lg mr-1">
-                المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
-              </span>
-            )}
-          </button>
+          {/* زر تم التسليم (يظهر في حالة عند المندوب / قيد التوصيل) */}
+          {canMarkDelivered && (
+            <button
+              type="button"
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(true);
+                setDeliveryOpen(true);
+                setPickupOpen(false);
+              }}
+              className="w-full flex min-h-[58px] items-center justify-center gap-2.5 rounded-2xl border-2 border-red-900 bg-red-600 hover:bg-red-700 text-white font-black px-4 shadow-lg hover:shadow-xl active:scale-98 transition-all text-base sm:text-lg cursor-pointer animate-pulse"
+            >
+              <DynamicIcon iconKey="ui_inbox" config={icons} className="size-6" fallback="🫴" />
+              <span>تسليم الطلب (تم التسليم)</span>
+              {assignedCourierId && (
+                <span className="text-xs bg-red-800/80 px-2.5 py-1 rounded-xl text-white font-black">
+                  واحتساب أرباح {courierName || "المندوب"}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* شارة تم التسليم بالكامل */}
+          {isDelivered && (
+            <div className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-3 text-emerald-950 font-black text-sm sm:text-base">
+              <span className="text-xl">🎉</span>
+              <span>تم تسليم هذا الطلب بنجاح ✅</span>
+            </div>
+          )}
+
+          {/* --- أزرار أعطيت وأخذت لتسجيل المبالغ والصادر والوارد --- */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {/* زر أعطيت (صادر) */}
+            <button
+              type="button"
+              onClick={() => {
+                setPickupAdvanceToDelivering(false);
+                setPickupOpen(true);
+                setDeliveryOpen(false);
+              }}
+              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
+            >
+              <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
+              <span>أعطيت للعميل (صادر)</span>
+              {pickupRemaining !== null && (
+                <span className="text-xs font-bold bg-emerald-700/80 px-2 py-0.5 rounded-lg mr-1">
+                  المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
+                </span>
+              )}
+            </button>
+
+            {/* زر أخذت (وارد) */}
+            <button
+              type="button"
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(false);
+                setDeliveryOpen(true);
+                setPickupOpen(false);
+              }}
+              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 font-black text-white shadow-md hover:bg-rose-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
+            >
+              <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
+              <span>أخذت من الزبون (وارد)</span>
+              {deliveryRemaining !== null && !prepaidAll && (
+                <span className="text-xs font-bold bg-rose-700/80 px-2 py-0.5 rounded-lg mr-1">
+                  المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* --- مودال تسجيل الصادر (أعطيت) --- */}
+      {/* --- مودال تسجيل الصادر (أعطيت / استلام) --- */}
       {pickupOpen && orderId && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl bg-white p-5 sm:p-6 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200 text-right">
@@ -255,9 +337,13 @@ export function AdminOrderMoneyEvents({
               <div>
                 <h4 className="text-lg font-black text-emerald-950 flex items-center gap-2">
                   <span>💸</span>
-                  <span>تسجيل صادر (أعطيت للعميل) — إدارة</span>
+                  <span>
+                    {pickupAdvanceToDelivering ? "⚡ استلام الطلب وتغيير الحالة" : "تسجيل صادر (أعطيت للعميل)"}
+                  </span>
                 </h4>
-                <p className="text-xs font-bold text-slate-500">الطلب #{orderNumber}</p>
+                <p className="text-xs font-bold text-slate-500">
+                  الطلب #{orderNumber} — {assignedCourierId ? `بالنيابة عن: ${courierName || "المندوب"}` : "تسجيل للإدارة"}
+                </p>
               </div>
               <button
                 type="button"
@@ -277,6 +363,7 @@ export function AdminOrderMoneyEvents({
               remainingAlfHint={
                 pickupRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, pickupRemaining)) : ""
               }
+              defaultAdvance={pickupAdvanceToDelivering}
               formAction={pickupAction}
               pending={pickupPending}
               error={pickupState.error}
@@ -286,7 +373,7 @@ export function AdminOrderMoneyEvents({
         </div>
       )}
 
-      {/* --- مودال تسجيل الوارد (أخذت) --- */}
+      {/* --- مودال تسجيل الوارد (أخذت / تسليم) --- */}
       {deliveryOpen && orderId && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl bg-white p-5 sm:p-6 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200 text-right">
@@ -294,9 +381,13 @@ export function AdminOrderMoneyEvents({
               <div>
                 <h4 className="text-lg font-black text-rose-950 flex items-center gap-2">
                   <span>🫴</span>
-                  <span>تسجيل وارد (أخذت من الزبون) — إدارة</span>
+                  <span>
+                    {deliveryAdvanceToDelivered ? "🎉 تسليم الطلب واحتساب الأرباح" : "تسجيل وارد (أخذت من الزبون)"}
+                  </span>
                 </h4>
-                <p className="text-xs font-bold text-slate-500">الطلب #{orderNumber}</p>
+                <p className="text-xs font-bold text-slate-500">
+                  الطلب #{orderNumber} — {assignedCourierId ? `بالنيابة عن: ${courierName || "المندوب"}` : "تسجيل للإدارة"}
+                </p>
               </div>
               <button
                 type="button"
@@ -316,6 +407,7 @@ export function AdminOrderMoneyEvents({
               remainingAlfHint={
                 deliveryRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, deliveryRemaining)) : ""
               }
+              defaultAdvance={deliveryAdvanceToDelivered}
               formAction={deliveryAction}
               pending={deliveryPending}
               error={deliveryState.error}
@@ -500,6 +592,7 @@ function AdminPickupFormModal({
   nextPath,
   expectedAlfHint,
   remainingAlfHint,
+  defaultAdvance = false,
   formAction,
   pending,
   error,
@@ -509,6 +602,7 @@ function AdminPickupFormModal({
   nextPath: string;
   expectedAlfHint: string;
   remainingAlfHint: string;
+  defaultAdvance?: boolean;
   formAction: (formData: FormData) => void;
   pending: boolean;
   error?: string;
@@ -516,7 +610,7 @@ function AdminPickupFormModal({
 }) {
   const [amount, setAmount] = useState(remainingAlfHint || expectedAlfHint || "");
   const [note, setNote] = useState("");
-  const [advanceStatus, setAdvanceStatus] = useState("delivering");
+  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivering" : "");
 
   return (
     <form action={formAction} className="space-y-4 text-right">
@@ -612,6 +706,7 @@ function AdminDeliveryFormModal({
   nextPath,
   expectedAlfHint,
   remainingAlfHint,
+  defaultAdvance = false,
   formAction,
   pending,
   error,
@@ -622,6 +717,7 @@ function AdminDeliveryFormModal({
   nextPath: string;
   expectedAlfHint: string;
   remainingAlfHint: string;
+  defaultAdvance?: boolean;
   formAction: (formData: FormData) => void;
   pending: boolean;
   error?: string;
@@ -630,7 +726,7 @@ function AdminDeliveryFormModal({
 }) {
   const [amount, setAmount] = useState(prepaidAll ? "0" : (remainingAlfHint || expectedAlfHint || ""));
   const [note, setNote] = useState(prepaidAll ? "كلشي واصل" : "");
-  const [advanceStatus, setAdvanceStatus] = useState("delivered");
+  const [advanceStatus, setAdvanceStatus] = useState(defaultAdvance ? "delivered" : "");
 
   return (
     <form action={formAction} className="space-y-4 text-right">

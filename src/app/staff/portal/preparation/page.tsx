@@ -39,7 +39,7 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     );
   }
 
-  const [staff, preparers, icons] = await Promise.all([
+  const [staff, rawPreparers, storeSuppliers, icons] = await Promise.all([
     prisma.staffEmployee.findUnique({
       where: { id: v.staffEmployeeId },
       select: { id: true, name: true, active: true, portalToken: true },
@@ -47,13 +47,52 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     prisma.companyPreparer.findMany({
       where: {
         active: true,
-        notes: { not: { contains: "[SUPPLIER]" } },
       },
-      select: { id: true, name: true, availableForAssignment: true },
+      select: { id: true, name: true, notes: true, availableForAssignment: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.storeSupplier.findMany({
+      where: {
+        active: true,
+      },
+      select: { id: true, name: true, phone: true },
       orderBy: { name: "asc" },
     }),
     getGlobalIcons(),
   ]);
+
+  // مزامنة أي مورد من StoreSupplier غير موجود في CompanyPreparer لضمان إمكانية إسناد الطلب له
+  const preparerIdsSet = new Set(rawPreparers.map((p) => p.id));
+  const missingSuppliers = storeSuppliers.filter((s) => !preparerIdsSet.has(s.id));
+  if (missingSuppliers.length > 0) {
+    for (const sup of missingSuppliers) {
+      try {
+        await prisma.companyPreparer.upsert({
+          where: { id: sup.id },
+          create: {
+            id: sup.id,
+            name: sup.name,
+            phone: sup.phone,
+            active: true,
+            notes: "[SUPPLIER]",
+          },
+          update: {
+            name: sup.name,
+            phone: sup.phone,
+            active: true,
+          },
+        });
+        rawPreparers.push({
+          id: sup.id,
+          name: sup.name,
+          notes: "[SUPPLIER]",
+          availableForAssignment: true,
+        });
+      } catch (err) {
+        console.error("Auto sync supplier to company preparer error:", err);
+      }
+    }
+  }
 
   // دالة التطهير العميقة لضمان توافق Next.js 15
   function deepSanitize(obj: any): any {
@@ -77,10 +116,11 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
 
   // Serialization fix for Next.js 15
   const sanitizedStaff = deepSanitize(staff);
-  const sanitizedPreparers = deepSanitize(preparers.map((p) => ({
+  const sanitizedPreparers = deepSanitize(rawPreparers.map((p) => ({
     id: p.id,
     name: p.name,
     available: p.availableForAssignment,
+    isSupplier: Boolean(p.notes?.includes("[SUPPLIER]")),
   })));
 
   return (

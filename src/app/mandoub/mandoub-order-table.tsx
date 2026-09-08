@@ -265,9 +265,9 @@ function MandoubFullBlockCardGrid({
   icons,
   showSelectColumn,
   isSelected,
-  onToggleOne,
   isSortingMode,
   moveRow,
+  courierSettings,
 }: {
   rows: OrderTableRowData[];
   onOpenRow: (id: string) => void;
@@ -279,6 +279,7 @@ function MandoubFullBlockCardGrid({
   onToggleOne?: (id: string) => void;
   isSortingMode?: boolean;
   moveRow?: (id: string, direction: "up" | "down") => void;
+  courierSettings?: any;
 }) {
   if (!rows.length) {
     return (

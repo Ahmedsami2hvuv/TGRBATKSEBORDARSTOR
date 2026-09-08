@@ -27,6 +27,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
 
   // حالة تحديد المجهزين كـ مصفوفة
   const [selectedPreparerIds, setSelectedPreparerIds] = useState<string[]>([]);
+  const [filterType, setFilterType] = useState<"all" | "preparers" | "suppliers">("all");
 
   const togglePreparer = (id: string) => {
     setSelectedPreparerIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -96,7 +97,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
         <DynamicIcon icon={icons?.ui_success} className="w-6 h-6" fallback={<span>✅</span>} />
         تم الإرسال بنجاح
       </h2>
-      <p className="mt-2 text-sm font-bold text-slate-600">تم توجيه القائمة للمجهزين: <br/><span className="text-emerald-700">{state.preparerName}</span></p>
+      <p className="mt-2 text-sm font-bold text-slate-600">تم توجيه القائمة إلى: <br/><span className="text-emerald-700">{state.preparerName}</span></p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Link href={`/staff/portal?se=${auth.se}&exp=${auth.exp}&s=${auth.s}`} className="inline-flex justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-white font-bold hover:bg-slate-800">
           العودة للرئيسية
@@ -158,45 +159,118 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
 
           {selectedPreparerIds.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
 
-          <h2 className="text-sm font-black text-sky-950">2) مراجعة وإرسال للمجهز</h2>
+          <h2 className="text-sm font-black text-sky-950">2) مراجعة وإرسال للمجهز أو المورد</h2>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-            <span className="text-xs font-black text-slate-800 mb-2 block">إسناد للمجهزين (اختياري)</span>
-            <div className="grid grid-cols-2 gap-2">
-              {preparers.map((p: any) => {
-                const isSelected = selectedPreparerIds.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={!p.available}
-                    onClick={() => togglePreparer(p.id)}
-                    className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all active:scale-95 ${
-                      isSelected
-                        ? 'border-emerald-500 bg-emerald-50 shadow-sm'
-                        : 'border-slate-100 bg-white hover:border-sky-200'
-                    } ${!p.available ? 'opacity-40 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500' : 'bg-slate-100'}`}>
-                      {isSelected ? (
-                        <DynamicIcon
-                          icon={icons?.preparer_delegate}
-                          className="w-6 h-6 brightness-0 invert"
-                          fallback={<span className="text-xl">👤</span>}
-                        />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full bg-slate-300" />
-                      )}
-                    </div>
-                    <span className={`text-xs font-black text-right leading-tight ${isSelected ? 'text-emerald-900' : 'text-slate-600'}`}>
-                      {p.name}
-                      {!p.available && <span className="block text-[9px] font-bold opacity-70">(غير متاح)</span>}
-                    </span>
-                  </button>
-                );
-              })}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800 block">إسناد للمجهزين أو الموردين (اختياري)</span>
+              {selectedPreparerIds.length > 0 && (
+                <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  تم تحديد: {selectedPreparerIds.length}
+                </span>
+              )}
             </div>
-            {selectedPreparerIds.length === 0 && <p className="text-[10px] text-amber-600 font-bold">سيتم إرسال الطلب كـ "غير مسند" ليقوم المسؤول بتوزيعه لاحقاً.</p>}
+
+            {/* أزرار التصفية السريعة بين المجهزين والموردين */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-200/70 text-[11px] font-black">
+              <button
+                type="button"
+                onClick={() => setFilterType("all")}
+                className={`flex-1 py-1.5 rounded-lg transition active:scale-95 text-center ${
+                  filterType === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                الكل ({preparers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType("preparers")}
+                className={`flex-1 py-1.5 rounded-lg transition active:scale-95 text-center ${
+                  filterType === "preparers" ? "bg-white text-emerald-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                🛵 المجهزون ({preparers.filter((p: any) => !p.isSupplier).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType("suppliers")}
+                className={`flex-1 py-1.5 rounded-lg transition active:scale-95 text-center ${
+                  filterType === "suppliers" ? "bg-white text-amber-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                📦 الموردون ({preparers.filter((p: any) => p.isSupplier).length})
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-0.5">
+              {preparers
+                .filter((p: any) => {
+                  if (filterType === "preparers") return !p.isSupplier;
+                  if (filterType === "suppliers") return p.isSupplier;
+                  return true;
+                })
+                .map((p: any) => {
+                  const isSelected = selectedPreparerIds.includes(p.id);
+                  const isSup = p.isSupplier;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      disabled={!p.available}
+                      onClick={() => togglePreparer(p.id)}
+                      className={`flex items-center gap-2 p-2.5 rounded-2xl border-2 transition-all active:scale-95 text-right ${
+                        isSelected
+                          ? isSup
+                            ? 'border-amber-500 bg-amber-50 shadow-sm'
+                            : 'border-emerald-500 bg-emerald-50 shadow-sm'
+                          : 'border-slate-100 bg-white hover:border-sky-200'
+                      } ${!p.available ? 'opacity-40 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isSelected
+                          ? isSup ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
+                          : isSup ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {isSelected ? (
+                          <span className="text-sm font-black">✓</span>
+                        ) : isSup ? (
+                          <span className="text-sm">📦</span>
+                        ) : (
+                          <DynamicIcon
+                            icon={icons?.preparer_delegate}
+                            className="w-4 h-4"
+                            fallback={<span className="text-sm">🛵</span>}
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className={`text-xs font-black block truncate ${
+                          isSelected
+                            ? isSup ? 'text-amber-950' : 'text-emerald-950'
+                            : 'text-slate-800'
+                        }`}>
+                          {p.name}
+                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${
+                            isSup
+                              ? 'bg-amber-100/80 text-amber-800 border border-amber-200'
+                              : 'bg-sky-100/80 text-sky-800 border border-sky-200'
+                          }`}>
+                            {isSup ? 'مورد' : 'مجهز'}
+                          </span>
+                          {!p.available && <span className="text-[9px] font-bold text-rose-500">(غير متاح)</span>}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+            {selectedPreparerIds.length === 0 && (
+              <p className="text-[10px] text-amber-600 font-bold">
+                💡 يمكنك عدم الاختيار وسيتم إرسال الطلب كـ "غير مسند" ليقوم المسؤول بتوزيعه لاحقاً.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -231,7 +305,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
              {pending ? "جاري الإرسال..." : (
                <>
                  <DynamicIcon icon={icons?.ui_success} className="w-5 h-5 brightness-0 invert" fallback={<span>✅</span>} />
-                 {selectedPreparerIds.length === 0 ? "إرسال كطلب غير مسند 📝" : "تحويل الطلب للمجهز الآن"}
+                 {selectedPreparerIds.length === 0 ? "إرسال كطلب غير مسند 📝" : "تحويل الطلب للمجهزين / الموردين الآن 🚀"}
                </>
              )}
           </button>

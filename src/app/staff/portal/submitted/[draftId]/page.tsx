@@ -48,10 +48,9 @@ export default async function StaffSubmittedDraftEditPage({ params, searchParams
       prisma.companyPreparer.findMany({
         where: {
           active: true,
-          notes: { not: { contains: "[SUPPLIER]" } },
         },
-        select: { id: true, name: true, phone: true },
-        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, phone: true, notes: true },
+        orderBy: { name: "asc" },
       })
     ]);
     if (!staff || !staff.active || staff.portalToken !== v.token) {

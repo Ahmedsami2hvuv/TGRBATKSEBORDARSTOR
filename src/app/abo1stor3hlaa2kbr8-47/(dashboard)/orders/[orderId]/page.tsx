@@ -208,6 +208,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       orderId={order.id}
       orderNumber={order.orderNumber} 
       orderStatus={order.status}
+      assignedCourierId={order.assignedCourierId}
+      courierName={order.courier?.name ?? null}
       orderSubtotalDinar={order.orderSubtotal ? Number(order.orderSubtotal) : null}
       totalAmountDinar={order.totalAmount ? Number(order.totalAmount) : null}
       prepaidAll={order.prepaidAll}

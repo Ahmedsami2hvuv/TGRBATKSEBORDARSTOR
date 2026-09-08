@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function updateCourierSetting(
   auth: { c: string; exp: string; s: string },
-  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "showFloatingBar" | "hideShopInfoOnPickup" | "rotate180Photos" | "guidedDeliverySteps" | "useFullBlockView",
+  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "showFloatingBar" | "hideShopInfoOnPickup" | "rotate180Photos" | "guidedDeliverySteps" | "useFullBlockView" | "framelessShopRegionHeader",
   value: boolean
 ) {
   const v = verifyDelegatePortalQuery(auth.c, auth.exp || undefined, auth.s);
@@ -32,6 +32,7 @@ export async function updateCourierSetting(
     "rotate180Photos",
     "guidedDeliverySteps",
     "useFullBlockView",
+    "framelessShopRegionHeader",
   ];
 
   if (!allowedSettings.includes(settingName)) {

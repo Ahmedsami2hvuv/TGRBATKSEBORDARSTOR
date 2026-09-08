@@ -21,6 +21,7 @@ type CourierSettings = {
   rotate180Photos: boolean;
   guidedDeliverySteps: boolean;
   useFullBlockView: boolean;
+  framelessShopRegionHeader?: boolean;
   orderViewTheme?: string;
 };
 
@@ -178,6 +179,12 @@ export default function CourierSettingsClient({
       icon: "📦",
       title: "عرض الطلبات على شكل بلوك كامل بدلاً من جدول أفقي",
       desc: "عرض جميع تفاصيل الطلبية بداخل بطاقة/بلوك واحد متكامل ومباشر دون الحاجة للسحب أفقياً لليسار (متزامن عبر جميع أجهزتك)",
+    },
+    {
+      key: "framelessShopRegionHeader" as const,
+      icon: "✨",
+      title: "إزالة البلوك الملون المحيط باسم المحل والمنطقة وتكبير الخط",
+      desc: "عند تفعيل وضع البلوك الكامل، يتم إزالة البلوك واللون المحيط بأسماء المحلات والمناطق وتكبير حجم الخط ليستغل كامل المساحة بوضوح عالي (متزامن عبر جميع أجهزتك)",
     },
   ];
 

@@ -77,6 +77,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         rotate180Photos: true,
         guidedDeliverySteps: true,
         useFullBlockView: true,
+        framelessShopRegionHeader: true,
         orderViewTheme: true,
       },
     });
@@ -107,6 +108,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       rotate180Photos: courier.rotate180Photos,
       guidedDeliverySteps: courier.guidedDeliverySteps,
       useFullBlockView: (courier as any).useFullBlockView === true,
+      framelessShopRegionHeader: (courier as any).framelessShopRegionHeader === true,
       orderViewTheme: courier.orderViewTheme || "default",
     };
 
