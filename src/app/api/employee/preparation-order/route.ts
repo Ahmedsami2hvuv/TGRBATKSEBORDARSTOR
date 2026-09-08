@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       phone, 
       regionId, 
       orderTime, 
+      targets, // قائمة المجهزين والموردين المحددين [{ id, type, name }]
       targetType,
       targetId,
       targetName
@@ -101,19 +102,24 @@ export async function POST(request: Request) {
 
     const groupId = `GRP-PREP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    let assignedPreparerId: string | null = null;
-    let noteTarget = "";
-
-    if (targetType === "preparer" && targetId) {
-      assignedPreparerId = targetId;
-      noteTarget = targetName ? `المجهز: ${targetName}` : "المجهز المختار";
-    } else if (targetType === "supplier" && targetId) {
-      noteTarget = targetName ? `المورد: ${targetName}` : "المورد المختار";
+    // تجميع المجهزين والموردين المحددين
+    const resolvedTargets: Array<{ id: string; type: string; name: string }> = [];
+    if (Array.isArray(targets) && targets.length > 0) {
+      resolvedTargets.push(...targets);
+    } else if (targetId) {
+      resolvedTargets.push({
+        id: targetId,
+        type: targetType || "preparer",
+        name: targetName || ""
+      });
     }
+
+    const targetNames = resolvedTargets.map(t => (t.type === "supplier" ? `🏬 ${t.name}` : `📦 ${t.name}`)).join(" + ");
+    const primaryPreparer = resolvedTargets.find(t => t.type === "preparer");
 
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
-        preparerId: assignedPreparerId,
+        preparerId: primaryPreparer ? primaryPreparer.id : null,
         status: PreparerShoppingDraftStatus.draft,
         titleLine: title.substring(0, 100),
         rawListText: text,
@@ -124,32 +130,33 @@ export async function POST(request: Request) {
           version: 1,
           products,
           groupId,
-          targetType: targetType || "preparer",
-          targetId: targetId || null,
-          targetName: targetName || "",
+          targets: resolvedTargets,
           fromStaffEmployeeId: staff.id,
           fromStaffEmployeeName: staff.name,
-          notes: noteTarget
+          notes: targetNames.length > 0 ? `المعينون: ${targetNames}` : "غير مسند"
         }
       },
       select: { id: true, draftNumber: true }
     });
 
-    if (assignedPreparerId) {
-      await prisma.companyPreparerPrepNotice.create({
-        data: {
-          preparerId: assignedPreparerId,
-          title: `طلب تجهيز جديد #${draft.draftNumber}`,
-          body: `طلب تجهيز من الموظف ${staff.name}: ${title.substring(0, 50)}`,
-        },
-      });
+    // إرسال الإشعارات لجميع المجهزين المحددين
+    for (const t of resolvedTargets) {
+      if (t.type === "preparer" && t.id) {
+        await prisma.companyPreparerPrepNotice.create({
+          data: {
+            preparerId: t.id,
+            title: `طلب تجهيز جديد #${draft.draftNumber}`,
+            body: `طلب تجهيز من الموظف ${staff.name}: ${title.substring(0, 50)}`,
+          },
+        }).catch(() => {});
 
-      await pushNotifyPreparerNewNotice({
-        preparerId: assignedPreparerId,
-        title: `طلب تجهيز جديد #${draft.draftNumber}`,
-        body: text,
-        draftId: draft.id,
-      }).catch(e => console.error("Web Push failed for prep order:", e));
+        await pushNotifyPreparerNewNotice({
+          preparerId: t.id,
+          title: `طلب تجهيز جديد #${draft.draftNumber}`,
+          body: text,
+          draftId: draft.id,
+        }).catch(e => console.error("Web Push failed for prep order:", e));
+      }
     }
 
     return NextResponse.json({

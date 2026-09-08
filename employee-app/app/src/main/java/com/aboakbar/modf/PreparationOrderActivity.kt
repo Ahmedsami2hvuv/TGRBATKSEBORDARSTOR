@@ -2,24 +2,30 @@ package com.aboakbar.modf
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatCheckBox
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.regex.Pattern
 
 class PreparationOrderActivity : AppCompatActivity() {
 
-    private lateinit var spinnerTarget: Spinner
     private lateinit var etOrderText: EditText
+    private lateinit var btnAnalyzeText: Button
     private lateinit var etCustomerPhone: EditText
     private lateinit var actvRegion: AutoCompleteTextView
     private lateinit var etOrderTime: EditText
+    private lateinit var containerTargetsCheckboxes: LinearLayout
+    private lateinit var pbLoadingTargets: ProgressBar
     private lateinit var progressBar: ProgressBar
     private lateinit var btnCancel: Button
     private lateinit var btnSubmit: Button
@@ -31,24 +37,28 @@ class PreparationOrderActivity : AppCompatActivity() {
     private var targetsList: MutableList<TargetItem> = mutableListOf()
     private var regionsList: MutableList<RegionItem> = mutableListOf()
     private var selectedRegionId: String? = null
+    private val selectedTargetCheckboxes = mutableListOf<Pair<TargetItem, CheckBox>>()
 
-    data class TargetItem(val id: String, val name: String, val type: String, val displayLabel: String) {
-        override fun toString(): String = displayLabel
-    }
-
+    data class TargetItem(val id: String, val name: String, val type: String, val displayLabel: String)
     data class RegionItem(val id: String, val name: String) {
         override fun toString(): String = name
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // جعل النافذة تأخذ الحجم الكامل
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
         setContentView(R.layout.activity_preparation_order)
 
-        spinnerTarget = findViewById(R.id.spinnerTarget)
         etOrderText = findViewById(R.id.etOrderText)
+        btnAnalyzeText = findViewById(R.id.btnAnalyzeText)
         etCustomerPhone = findViewById(R.id.etCustomerPhone)
         actvRegion = findViewById(R.id.actvRegion)
         etOrderTime = findViewById(R.id.etOrderTime)
+        containerTargetsCheckboxes = findViewById(R.id.containerTargetsCheckboxes)
+        pbLoadingTargets = findViewById(R.id.pbLoadingTargets)
         progressBar = findViewById(R.id.progressBarPrep)
         btnCancel = findViewById(R.id.btnCancelPrep)
         btnSubmit = findViewById(R.id.btnSubmitPrep)
@@ -58,7 +68,18 @@ class PreparationOrderActivity : AppCompatActivity() {
             val text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
             if (!text.isNullOrEmpty()) {
                 etOrderText.setText(text)
-                extractPhoneFromText(text)
+                analyzeTextContent(text)
+            }
+        }
+
+        // زر التحليل الذكي
+        btnAnalyzeText.setOnClickListener {
+            val text = etOrderText.text.toString().trim()
+            if (text.isNotEmpty()) {
+                analyzeTextContent(text)
+                Toast.makeText(this, "تم تحليل النص واستخراج الهاتف والمنطقة!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "يرجى كتابة أو لصق النص أولاً", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -69,17 +90,29 @@ class PreparationOrderActivity : AppCompatActivity() {
         fetchRegions()
     }
 
-    private fun extractPhoneFromText(text: String) {
+    private fun analyzeTextContent(text: String) {
         try {
+            // 1. استخراج أرقام الهواتف العراقية (مثل 077... أو 078...)
             val phonePattern = Pattern.compile("(07[3-9]\\d{8})|(7[3-9]\\d{8})")
             val matcher = phonePattern.matcher(text)
             if (matcher.find()) {
                 etCustomerPhone.setText(matcher.group())
             }
+
+            // 2. البحث عن المنطقة في النص ومطابقتها تلقائياً
+            for (region in regionsList) {
+                if (text.contains(region.name, ignoreCase = true)) {
+                    actvRegion.setText(region.name, false)
+                    selectedRegionId = region.id
+                    break
+                }
+            }
         } catch (e: Exception) {}
     }
 
     private fun fetchTargets() {
+        pbLoadingTargets.visibility = View.VISIBLE
+
         val request = Request.Builder()
             .url("$BACKEND_URL/api/employee/suppliers-and-preparers")
             .get()
@@ -88,21 +121,20 @@ class PreparationOrderActivity : AppCompatActivity() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
-                    Toast.makeText(this@PreparationOrderActivity, "تعذر جلب قائمة المجهزين: ${e.message}", Toast.LENGTH_SHORT).show()
+                    pbLoadingTargets.visibility = View.GONE
+                    Toast.makeText(this@PreparationOrderActivity, "تعذر جلب قائمة المجهزين والموردين", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 runOnUiThread {
+                    pbLoadingTargets.visibility = View.GONE
                     if (response.isSuccessful) {
                         try {
                             val json = JSONObject(body)
                             val listArray = json.getJSONArray("list")
                             targetsList.clear()
-                            
-                            // خيار افتراضي: مجهز عام غير محدد
-                            targetsList.add(TargetItem("", "مجهز عام (غير محدد)", "preparer", "📦 مجهز عام (غير محدد)"))
 
                             for (i in 0 until listArray.length()) {
                                 val item = listArray.getJSONObject(i)
@@ -116,9 +148,7 @@ class PreparationOrderActivity : AppCompatActivity() {
                                 )
                             }
 
-                            val adapter = ArrayAdapter(this@PreparationOrderActivity, android.R.layout.simple_spinner_item, targetsList)
-                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                            spinnerTarget.adapter = adapter
+                            buildTargetsCheckboxes()
 
                         } catch (e: Exception) {
                             Toast.makeText(this@PreparationOrderActivity, "خطأ في معالجة قائمة المجهزين", Toast.LENGTH_SHORT).show()
@@ -127,6 +157,67 @@ class PreparationOrderActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    private fun buildTargetsCheckboxes() {
+        containerTargetsCheckboxes.removeAllViews()
+        selectedTargetCheckboxes.clear()
+
+        if (targetsList.isEmpty()) {
+            val tvEmpty = TextView(this).apply {
+                text = "لا يوجد مجهزون أو موردون متاحون حالياً"
+                setTextColor(Color.parseColor("#94a3b8"))
+                textSize = 13f
+                setPadding(10, 10, 10, 10)
+            }
+            containerTargetsCheckboxes.addView(tvEmpty)
+            return
+        }
+
+        for (target in targetsList) {
+            val rowLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
+                setPadding(12, 10, 12, 10)
+                setBackgroundResource(R.drawable.input_bg)
+            }
+
+            val cb = AppCompatCheckBox(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            val tvLabel = TextView(this).apply {
+                text = target.displayLabel
+                setTextColor(if (target.type == "supplier") Color.parseColor("#38bdf8") else Color.parseColor("#fef08a"))
+                textSize = 14f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                ).apply {
+                    marginStart = 12
+                }
+            }
+
+            rowLayout.addView(cb)
+            rowLayout.addView(tvLabel)
+
+            rowLayout.setOnClickListener {
+                cb.isChecked = !cb.isChecked
+            }
+
+            containerTargetsCheckboxes.addView(rowLayout)
+            selectedTargetCheckboxes.add(Pair(target, cb))
+        }
     }
 
     private fun fetchRegions() {
@@ -180,6 +271,16 @@ class PreparationOrderActivity : AppCompatActivity() {
             return
         }
 
+        // جمع المجهزين والموردين الذين تم وضع علامة صح عليهم
+        val checkedTargets = selectedTargetCheckboxes
+            .filter { it.second.isChecked }
+            .map { it.first }
+
+        if (checkedTargets.isEmpty()) {
+            Toast.makeText(this, "يرجى اختيار مجهز أو مورد واحد على الأقل (وضع علامة صح)", Toast.LENGTH_LONG).show()
+            return
+        }
+
         // مطابقة المنطقة إذا تمت كتابتها يدوياً
         val regionText = actvRegion.text.toString().trim()
         if (regionText.isNotEmpty() && selectedRegionId == null) {
@@ -188,11 +289,6 @@ class PreparationOrderActivity : AppCompatActivity() {
                 selectedRegionId = matched.id
             }
         }
-
-        val selectedTarget = spinnerTarget.selectedItem as? TargetItem
-        val targetType = selectedTarget?.type ?: "preparer"
-        val targetId = selectedTarget?.id ?: ""
-        val targetName = selectedTarget?.name ?: ""
 
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val se = prefs.getString("se", "") ?: ""
@@ -206,14 +302,22 @@ class PreparationOrderActivity : AppCompatActivity() {
 
         showLoading(true)
 
+        val targetsJsonArray = JSONArray()
+        for (target in checkedTargets) {
+            val obj = JSONObject().apply {
+                put("id", target.id)
+                put("type", target.type)
+                put("name", target.name)
+            }
+            targetsJsonArray.put(obj)
+        }
+
         val json = JSONObject().apply {
             put("text", text)
             put("phone", phone)
             put("regionId", selectedRegionId)
             put("orderTime", if (orderTime.isEmpty()) "عاجل اليوم" else orderTime)
-            put("targetType", targetType)
-            put("targetId", targetId)
-            put("targetName", targetName)
+            put("targets", targetsJsonArray)
         }
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
@@ -268,10 +372,10 @@ class PreparationOrderActivity : AppCompatActivity() {
         progressBar.visibility = if (show) View.VISIBLE else View.GONE
         btnSubmit.isEnabled = !show
         btnCancel.isEnabled = !show
+        btnAnalyzeText.isEnabled = !show
         etOrderText.isEnabled = !show
         etCustomerPhone.isEnabled = !show
         actvRegion.isEnabled = !show
         etOrderTime.isEnabled = !show
-        spinnerTarget.isEnabled = !show
     }
 }

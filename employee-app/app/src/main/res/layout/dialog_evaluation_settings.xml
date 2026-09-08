@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_margin="20dp"
+    android:background="@drawable/bg_dialog_rounded"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:elevation="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/button_round_bg"
+            android:gravity="center"
+            android:text="⚙️"
+            android:textSize="20sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="إعدادات جدولة إشعار التقييم"
+                android:textColor="#0f172a"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="تحكم بالفاصل الزمني لظهور التنبيه العائم"
+                android:textColor="#64748b"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="14dp"
+        android:background="#e2e8f0" />
+
+    <!-- مفتاح تفعيل/إيقاف الجدولة -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/input_bg"
+        android:gravity="center_vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="تفعيل التنبيه المجدول التلقائي"
+            android:textColor="#0f172a"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchEnableEvaluation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- اختيار الفاصل الزمني -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="الفاصل الزمني بين كل إشعار وآخر:"
+        android:textColor="#1e293b"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rgInterval"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb15Min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ كل 15 دقيقة (إرسال سريع)"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/rb30Min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ كل 30 دقيقة"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/rb60Min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ كل ساعة (60 دقيقة) - مُوصى به لحماية الواتساب"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/rb120Min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ كل ساعتين (120 دقيقة)"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/rb180Min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ كل 3 ساعات"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+    </RadioGroup>
+
+    <!-- زر الحفظ والإغلاق -->
+    <Button
+        android:id="@+id/btnSaveInterval"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="18dp"
+        android:backgroundTint="#4f46e5"
+        android:text="✓ حفظ الإعدادات"
+        android:textColor="#ffffff"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

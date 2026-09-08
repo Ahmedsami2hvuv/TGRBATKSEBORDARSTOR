@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.*
@@ -45,6 +46,10 @@ class DoubleOrderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // جعل النافذة بكامل عرض وارتفاع الشاشة
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
         setContentView(R.layout.activity_double_order)
 
         tvSelectedText = findViewById(R.id.tvSelectedText)
@@ -62,17 +67,16 @@ class DoubleOrderActivity : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         btnSubmit = findViewById(R.id.btnSubmit)
 
-        // إعداد Spinner لنوع الطلب
         val types = arrayOf("توصيل فقط", "تجهيز وتسوق", "توصيل مع استرجاع")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerOrderType.adapter = adapter
 
-        // استقبال النص
         if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
             val text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
             if (!text.isNullOrEmpty()) {
                 selectedText = text
+                tvSelectedText.visibility = View.VISIBLE
                 tvSelectedText.text = selectedText
                 analyzeAndAutoFill(selectedText)
             }
@@ -84,10 +88,8 @@ class DoubleOrderActivity : AppCompatActivity() {
         fetchRegions()
     }
 
-    // محاولة استخراج الأرقام تلقائياً من النص لملء الحقول
     private fun analyzeAndAutoFill(text: String) {
         try {
-            // استخراج أرقام الهواتف العراقية
             val phonePattern = Pattern.compile("(07[3-9]\\d{8})|(7[3-9]\\d{8})")
             val matcher = phonePattern.matcher(text)
             val phones = mutableListOf<String>()
@@ -102,14 +104,11 @@ class DoubleOrderActivity : AppCompatActivity() {
                 }
             }
 
-            // اقتراح القيم الافتراضية للأسعار ووقت الطلب
             etOrderTime.setText("عاجل اليوم")
-            etDeliveryPrice.setText("5000") // توصيل افتراضي
+            etDeliveryPrice.setText("5000")
             etProfit.setText("0")
             etSellerAmount.setText("0")
-        } catch (e: Exception) {
-            // تجاهل أي فشل في الاستخراج التلقائي
-        }
+        } catch (e: Exception) {}
     }
 
     private fun fetchRegions() {
@@ -194,13 +193,11 @@ class DoubleOrderActivity : AppCompatActivity() {
         val deliveryPrice = etDeliveryPrice.text.toString().trim()
         val orderNoteText = etOrderNote.text.toString().trim()
 
-        // التحقق من المدخلات
         if (sellerPhone.isEmpty() || buyerPhone.isEmpty() || orderTime.isEmpty()) {
             Toast.makeText(this, "يرجى ملء الأرقام ووقت الطلب", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // مطابقة المناطق المدخلة للتأكد من اختيارها
         val sellerRegionText = actvSellerRegion.text.toString().trim()
         val matchedSeller = regionsList.find { it.name.equals(sellerRegionText, ignoreCase = true) }
         if (matchedSeller != null) {

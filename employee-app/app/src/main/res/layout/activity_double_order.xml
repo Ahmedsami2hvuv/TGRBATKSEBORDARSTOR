@@ -4,28 +4,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient_bg"
-    android:padding="16dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center">
+        android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- هيدر الشاشة -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="إضافة طلب ذو وجهتين"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
 
+            <TextView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/button_round_bg"
+                android:gravity="center"
+                android:text="⇄"
+                android:textColor="#ffffff"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="إضافة طلب ذو وجهتين"
+                    android:textColor="#ffffff"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="توصيل واستلام بين بائع ومشتري"
+                    android:textColor="@color/sky_200"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- كرت النموذج العريض -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="8dp"
             app:cardBackgroundColor="#1AFFFFFF">
 
@@ -33,20 +65,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <!-- النص المحدد المعروض للمراجعة -->
                 <TextView
                     android:id="@+id/tvSelectedText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="#26000000"
-                    android:padding="8dp"
+                    android:background="#33000000"
+                    android:padding="10dp"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:layout_marginBottom="16dp"
                     android:maxLines="4"
-                    android:scrollbars="vertical"
+                    android:visibility="gone"
                     android:gravity="right" />
 
                 <!-- صف أرقام الهواتف (رقم المرسل بصف رقم المستلم) -->
@@ -54,33 +86,35 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="12dp">
+                    android:layout_marginBottom="14dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginStart="4dp">
+                        android:layout_marginEnd="6dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="رقم المرسل (البائع)"
                             android:textColor="@color/sky_200"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <EditText
                             android:id="@+id/etSellerPhone"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="077..."
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:inputType="phone"
                             android:gravity="right|center_vertical"
-                            android:padding="10dp" />
+                            android:padding="12dp"
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -88,25 +122,28 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginEnd="4dp">
+                        android:layout_marginStart="6dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="رقم المستلم (المشتري)"
                             android:textColor="@color/sky_200"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <EditText
                             android:id="@+id/etBuyerPhone"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="078..."
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:inputType="phone"
                             android:gravity="right|center_vertical"
-                            android:padding="10dp" />
+                            android:padding="12dp"
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -115,32 +152,34 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="12dp">
+                    android:layout_marginBottom="14dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginStart="4dp">
+                        android:layout_marginEnd="6dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="منطقة المرسل"
+                            android:text="منطقة المرسل (البائع)"
                             android:textColor="@color/sky_200"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <AutoCompleteTextView
                             android:id="@+id/actvSellerRegion"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="منطقة البائع..."
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:gravity="right|center_vertical"
-                            android:padding="10dp"
+                            android:padding="12dp"
+                            android:textSize="14sp"
                             android:completionThreshold="1" />
                     </LinearLayout>
 
@@ -149,85 +188,37 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginEnd="4dp">
+                        android:layout_marginStart="6dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="منطقة المستلم"
+                            android:text="منطقة المستلم (المشتري)"
                             android:textColor="@color/sky_200"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <AutoCompleteTextView
                             android:id="@+id/actvBuyerRegion"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="منطقة المشتري..."
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:gravity="right|center_vertical"
-                            android:padding="10dp"
+                            android:padding="12dp"
+                            android:textSize="14sp"
                             android:completionThreshold="1" />
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- المبالغ والأسعار (خانة الشراء بصف خانة البيع والربح والتوصيل) -->
+                <!-- المبالغ والأسعار -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:weightSum="3"
-                    android:layout_marginBottom="12dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginStart="4dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="سعر الشراء"
-                            android:textColor="@color/sky_200"
-                            android:textSize="10sp"
-                            android:gravity="center" />
-                        <EditText
-                            android:id="@+id/etSellerAmount"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:background="@drawable/input_bg"
-                            android:hint="0"
-                            android:textColorHint="#80FFFFFF"
-                            android:textColor="@color/white"
-                            android:inputType="numberDecimal"
-                            android:gravity="center" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginHorizontal="2dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="الربح"
-                            android:textColor="@color/sky_200"
-                            android:textSize="10sp"
-                            android:gravity="center" />
-                        <EditText
-                            android:id="@+id/etProfit"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:background="@drawable/input_bg"
-                            android:hint="0"
-                            android:textColorHint="#80FFFFFF"
-                            android:textColor="@color/white"
-                            android:inputType="numberDecimal"
-                            android:gravity="center" />
-                    </LinearLayout>
+                    android:layout_marginBottom="14dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -238,31 +229,52 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="سعر التوصيل"
+                            android:text="سعر الشراء"
                             android:textColor="@color/sky_200"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:gravity="center" />
                         <EditText
-                            android:id="@+id/etDeliveryPrice"
+                            android:id="@+id/etSellerAmount"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="0"
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:inputType="numberDecimal"
-                            android:gravity="center" />
+                            android:gravity="center"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
-                </LinearLayout>
-
-                <!-- نوع الطلب ووقت الطلب جنب بعض -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="12dp">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginHorizontal="4dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="الربح"
+                            android:textColor="@color/sky_200"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                        <EditText
+                            android:id="@+id/etProfit"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/input_bg"
+                            android:hint="0"
+                            android:textColorHint="#80FFFFFF"
+                            android:textColor="@color/white"
+                            android:inputType="numberDecimal"
+                            android:gravity="center"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -273,14 +285,52 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="نوع الطلب"
+                            android:text="سعر التوصيل"
                             android:textColor="@color/sky_200"
                             android:textSize="12sp"
+                            android:gravity="center" />
+                        <EditText
+                            android:id="@+id/etDeliveryPrice"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/input_bg"
+                            android:hint="0"
+                            android:textColorHint="#80FFFFFF"
+                            android:textColor="@color/white"
+                            android:inputType="numberDecimal"
+                            android:gravity="center"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- نوع الطلب ووقت الطلب -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="6dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="نوع الطلب"
+                            android:textColor="@color/sky_200"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <Spinner
                             android:id="@+id/spinnerOrderType"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg" />
                     </LinearLayout>
 
@@ -289,25 +339,28 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginEnd="4dp">
+                        android:layout_marginStart="6dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="وقت الطلب"
                             android:textColor="@color/sky_200"
-                            android:textSize="12sp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
                             android:gravity="right" />
                         <EditText
                             android:id="@+id/etOrderTime"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/input_bg"
                             android:hint="عاجل اليوم..."
                             android:textColorHint="#80FFFFFF"
                             android:textColor="@color/white"
                             android:inputType="text"
                             android:gravity="right|center_vertical"
-                            android:padding="10dp" />
+                            android:padding="12dp"
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -317,25 +370,28 @@
                     android:layout_height="wrap_content"
                     android:text="ملاحظة الموظف"
                     android:textColor="@color/sky_200"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
                     android:gravity="right" />
                 <EditText
                     android:id="@+id/etOrderNote"
                     android:layout_width="match_parent"
-                    android:layout_height="64dp"
+                    android:layout_height="72dp"
+                    android:layout_marginTop="4dp"
                     android:background="@drawable/input_bg"
                     android:hint="أي ملاحظات إضافية بخصوص الطلب..."
                     android:textColorHint="#80FFFFFF"
                     android:textColor="@color/white"
                     android:inputType="textMultiLine"
                     android:gravity="right|top"
-                    android:padding="10dp"
+                    android:padding="12dp"
+                    android:textSize="14sp"
                     android:layout_marginBottom="16dp" />
 
                 <ProgressBar
                     android:id="@+id/progressBar"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:indeterminate="true"
                     android:indeterminateTint="@color/sky_200"
@@ -351,21 +407,26 @@
 
                     <Button
                         android:id="@+id/btnCancel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="52dp"
                         android:text="إلغاء"
                         android:textColor="@color/white"
                         android:backgroundTint="#FF4444"
-                        android:layout_marginEnd="12dp" />
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="10dp" />
 
                     <Button
                         android:id="@+id/btnSubmit"
                         android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="إرسال الطلب"
-                        android:textColor="@color/white"
-                        android:backgroundTint="@color/sky_200" />
+                        android:layout_weight="1.6"
+                        android:layout_height="52dp"
+                        android:text="🚀 إرسال الطلب"
+                        android:textColor="#0f172a"
+                        android:backgroundTint="@color/sky_200"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
             </LinearLayout>

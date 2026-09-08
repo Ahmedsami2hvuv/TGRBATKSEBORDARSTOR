@@ -4,10 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.view.ViewGroup
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -18,91 +16,76 @@ import java.io.IOException
 class QuickDraftActivity : AppCompatActivity() {
 
     private lateinit var tvSelectedText: TextView
+    private lateinit var etOrderText: EditText
+    private lateinit var actvRegion: AutoCompleteTextView
+    private lateinit var etOrderTime: EditText
     private lateinit var progressBar: ProgressBar
-
-    // Step 1
-    private lateinit var layoutStep1: View
-    private lateinit var chipGroupPreparers: com.google.android.material.chip.ChipGroup
-    private lateinit var btnCancel1: Button
-    private lateinit var btnNext: Button
-
-    // Step 2
-    private lateinit var layoutStep2: View
-    private lateinit var chipGroupRegions: com.google.android.material.chip.ChipGroup
-    private lateinit var autoCompleteRegions: android.widget.AutoCompleteTextView
-    private lateinit var btnBack: Button
+    private lateinit var btnCancel: Button
+    private lateinit var btnSubmit: Button
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
-    private val KEY_TOKEN = "admin_token"
     private val BACKEND_URL = "https://aboakbr.com"
 
     private var selectedText: String = ""
-    private var preparerList: List<Preparer> = emptyList()
-    private var allRegionsList: List<Region> = emptyList()
-    private var suggestedRegionsList: List<Region> = emptyList()
+    private var regionsList: List<Region> = emptyList()
+    private var selectedRegionId: String? = null
 
-    data class Preparer(val id: String, val name: String)
     data class Region(val id: String, val name: String) {
         override fun toString(): String = name
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // جعل النافذة بكامل عرض وارتفاع الشاشة
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
         setContentView(R.layout.activity_quick_draft)
 
         tvSelectedText = findViewById(R.id.tvSelectedText)
+        etOrderText = findViewById(R.id.etOrderText)
+        actvRegion = findViewById(R.id.actvRegion)
+        etOrderTime = findViewById(R.id.etOrderTime)
         progressBar = findViewById(R.id.progressBar)
-
-        layoutStep1 = findViewById(R.id.layoutStep1)
-        chipGroupPreparers = findViewById(R.id.chipGroupPreparers)
-        btnCancel1 = findViewById(R.id.btnCancel1)
-        btnNext = findViewById(R.id.btnNext)
-
-        layoutStep2 = findViewById(R.id.layoutStep2)
-        chipGroupRegions = findViewById(R.id.chipGroupRegions)
-        autoCompleteRegions = findViewById(R.id.autoCompleteRegions)
-        btnBack = findViewById(R.id.btnBack)
+        btnCancel = findViewById(R.id.btnCancel)
+        btnSubmit = findViewById(R.id.btnSubmit)
 
         if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
             val text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
             if (!text.isNullOrEmpty()) {
                 selectedText = text
+                tvSelectedText.visibility = View.VISIBLE
                 tvSelectedText.text = selectedText
-            } else {
-                Toast.makeText(this, "لم يتم استلام أي نص", Toast.LENGTH_SHORT).show()
-                finish()
-                return
+                etOrderText.setText(selectedText)
             }
-        } else {
+        }
+
+        btnCancel.setOnClickListener { finish() }
+        btnSubmit.setOnClickListener { submitQuickDraft() }
+
+        fetchRegions()
+    }
+
+    private fun fetchRegions() {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val se = sharedPreferences.getString("se", null)
+        val exp = sharedPreferences.getString("exp", null)
+        val sig = sharedPreferences.getString("sig", null)
+
+        if (se.isNullOrEmpty() || exp.isNullOrEmpty() || sig.isNullOrEmpty()) {
+            Toast.makeText(this, "يرجى تسجيل الدخول إلى بوابتك أولاً في التطبيق الرئيسي", Toast.LENGTH_LONG).show()
             finish()
             return
         }
 
-        btnCancel1.setOnClickListener { finish() }
-        btnBack.setOnClickListener {
-            layoutStep2.visibility = View.GONE
-            layoutStep1.visibility = View.VISIBLE
-        }
-
-        btnNext.setOnClickListener { submitDraft(false) }
-
-        autoCompleteRegions.addTextChangedListener(object: android.text.TextWatcher {
-            override fun afterTextChanged(s: android.text.Editable?) {
-                populateRegionChips(s?.toString() ?: "")
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        fetchPreparers()
-    }
-
-    private fun fetchPreparers() {
         showLoading(true)
 
         val request = Request.Builder()
-            .url("$BACKEND_URL/api/employee/preparers")
+            .url("$BACKEND_URL/api/employee/regions")
+            .header("x-employee-se", se)
+            .header("x-employee-exp", exp)
+            .header("x-employee-sig", sig)
             .get()
             .build()
 
@@ -110,7 +93,7 @@ class QuickDraftActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showLoading(false)
-                    Toast.makeText(this@QuickDraftActivity, "فشل جلب المجهزين", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@QuickDraftActivity, "فشل جلب المناطق: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -121,115 +104,76 @@ class QuickDraftActivity : AppCompatActivity() {
                     if (response.isSuccessful) {
                         try {
                             val jsonRes = JSONObject(responseBody)
-                            val preparersArray = jsonRes.getJSONArray("preparers")
-                            val list = mutableListOf<Preparer>()
-                            for (i in 0 until preparersArray.length()) {
-                                val item = preparersArray.getJSONObject(i)
-                                list.add(Preparer(item.getString("id"), item.getString("name")))
+                            val regionsArray = jsonRes.getJSONArray("regions")
+                            val list = mutableListOf<Region>()
+                            for (i in 0 until regionsArray.length()) {
+                                val item = regionsArray.getJSONObject(i)
+                                list.add(Region(item.getString("id"), item.getString("name")))
                             }
-                            preparerList = list
-                            populatePreparerChips()
+                            regionsList = list
+                            setupRegionsAutoComplete()
                         } catch (e: Exception) {
-                            Toast.makeText(this@QuickDraftActivity, "خطأ في قراءة البيانات", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@QuickDraftActivity, "خطأ في معالجة المناطق", Toast.LENGTH_SHORT).show()
                         }
-                    } else {
-                        Toast.makeText(this@QuickDraftActivity, "فشل جلب المجهزين", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         })
     }
 
-    private fun populatePreparerChips() {
-        chipGroupPreparers.removeAllViews()
-        val displayMetrics = resources.displayMetrics
-        val horizontalInset = (88 * displayMetrics.density).toInt()
-        val chipSpacing = (8 * displayMetrics.density).toInt()
-        val availableWidth = displayMetrics.widthPixels - horizontalInset
-        val chipWidth = (availableWidth - chipSpacing) / 2
-
-        for (preparer in preparerList) {
-            val chip = com.google.android.material.chip.Chip(this)
-            chip.text = preparer.name
-            chip.tag = preparer.id
-            chip.isCheckable = true
-            chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
-            chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
-            chipGroupPreparers.addView(chip)
+    private fun setupRegionsAutoComplete() {
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, regionsList)
+        actvRegion.setAdapter(adapter)
+        actvRegion.setOnItemClickListener { parent, _, position, _ ->
+            val selected = parent.getItemAtPosition(position) as Region
+            selectedRegionId = selected.id
         }
     }
 
-    private fun submitDraft(isFinalStep: Boolean) {
-        val selectedPreparerIds = mutableListOf<String>()
-        for (i in 0 until chipGroupPreparers.childCount) {
-            val chip = chipGroupPreparers.getChildAt(i) as? com.google.android.material.chip.Chip
-            if (chip != null && chip.isChecked) {
-                selectedPreparerIds.add(chip.tag.toString())
+    private fun submitQuickDraft() {
+        val text = etOrderText.text.toString().trim()
+        val orderTime = etOrderTime.text.toString().trim()
+
+        if (text.isEmpty()) {
+            Toast.makeText(this, "يرجى كتابة أو لصق نص الطلب", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val regionText = actvRegion.text.toString().trim()
+        if (regionText.isNotEmpty() && selectedRegionId == null) {
+            val matched = regionsList.find { it.name.equals(regionText, ignoreCase = true) }
+            if (matched != null) {
+                selectedRegionId = matched.id
             }
         }
 
-        val portalUrl = getSavedPortalUrl()
-
-        val json = JSONObject()
-        json.put("text", selectedText)
-        
-        val preparerArray = org.json.JSONArray()
-        for (id in selectedPreparerIds) {
-            preparerArray.put(id)
-        }
-        json.put("preparerIds", preparerArray)
-
-        if (isFinalStep) {
-            var selectedRegionId: String? = null
-            
-            for (i in 0 until chipGroupRegions.childCount) {
-                val chip = chipGroupRegions.getChildAt(i) as? com.google.android.material.chip.Chip
-                if (chip != null && chip.isChecked) {
-                    selectedRegionId = chip.tag.toString()
-                    break
-                }
-            }
-
-            if (selectedRegionId == null) {
-                val typedName = autoCompleteRegions.text.toString().trim()
-                if (typedName.isNotEmpty()) {
-                    val matched = allRegionsList.find { it.name == typedName }
-                    if (matched != null) {
-                        selectedRegionId = matched.id
-                    }
-                }
-            }
-
-            if (selectedRegionId != null) {
-                json.put("regionId", selectedRegionId)
-            } else {
-                Toast.makeText(this, "يرجى تحديد المنطقة", Toast.LENGTH_SHORT).show()
-                return
-            }
-        }
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val se = sharedPreferences.getString("se", null)
+        val exp = sharedPreferences.getString("exp", null)
+        val sig = sharedPreferences.getString("sig", null)
 
         showLoading(true)
 
-        var targetUrl = "$BACKEND_URL/api/employee/quick-draft"
-        if (!portalUrl.isNullOrEmpty() && portalUrl.contains("?")) {
-            val q = portalUrl.substring(portalUrl.indexOf("?"))
-            targetUrl += q
+        val json = JSONObject().apply {
+            put("text", text)
+            put("regionId", selectedRegionId)
+            put("orderTime", if (orderTime.isEmpty()) "عاجل اليوم" else orderTime)
         }
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val reqBuilder = Request.Builder()
-            .url(targetUrl)
+        val request = Request.Builder()
+            .url("$BACKEND_URL/api/employee/quick-draft")
+            .header("x-employee-se", se ?: "")
+            .header("x-employee-exp", exp ?: "")
+            .header("x-employee-sig", sig ?: "")
             .post(body)
+            .build()
 
-        if (!portalUrl.isNullOrEmpty()) {
-            reqBuilder.header("Authorization", "Bearer $portalUrl")
-        }
-
-        client.newCall(reqBuilder.build()).enqueue(object : Callback {
+        client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showLoading(false)
-                    Toast.makeText(this@QuickDraftActivity, "فشل الإرسال: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@QuickDraftActivity, "فشل الاتصال: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -237,48 +181,16 @@ class QuickDraftActivity : AppCompatActivity() {
                 val responseBody = response.body?.string() ?: ""
                 runOnUiThread {
                     showLoading(false)
-                    try {
-                        val jsonRes = JSONObject(responseBody)
-                        if (response.isSuccessful && jsonRes.optBoolean("success")) {
-                            Toast.makeText(this@QuickDraftActivity, "تم إضافة الطلب بنجاح!", Toast.LENGTH_LONG).show()
-                            finish()
-                        } else if (response.isSuccessful && jsonRes.optBoolean("requireRegion")) {
-                            layoutStep1.visibility = View.GONE
-                            layoutStep2.visibility = View.VISIBLE
-                            
-                            val suggestedArray = jsonRes.optJSONArray("suggestedRegions")
-                            if (suggestedArray != null) {
-                                val list = mutableListOf<Region>()
-                                for (i in 0 until suggestedArray.length()) {
-                                    val item = suggestedArray.getJSONObject(i)
-                                    list.add(Region(item.getString("id"), item.getString("name")))
-                                }
-                                suggestedRegionsList = list
-                            }
-                            
-                            val allArray = jsonRes.optJSONArray("allRegions")
-                            if (allArray != null) {
-                                val list = mutableListOf<Region>()
-                                for (i in 0 until allArray.length()) {
-                                    val item = allArray.getJSONObject(i)
-                                    list.add(Region(item.getString("id"), item.getString("name")))
-                                }
-                                allRegionsList = list
-                            }
-
-                            runOnUiThread {
-                                populateRegionChips(autoCompleteRegions.text.toString())
-                            }
-                            
-                            if (!isFinalStep) {
-                                Toast.makeText(this@QuickDraftActivity, "يرجى تحديد المنطقة بدقة", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            val errorMsg = jsonRes.optString("error", jsonRes.optString("message", "فشل الإرسال."))
-                            Toast.makeText(this@QuickDraftActivity, errorMsg, Toast.LENGTH_SHORT).show()
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@QuickDraftActivity, "تم رفع الطلب بنجاح!", Toast.LENGTH_LONG).show()
+                        finish()
+                    } else {
+                        try {
+                            val res = JSONObject(responseBody)
+                            Toast.makeText(this@QuickDraftActivity, res.optString("error", "فشل الرفع"), Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(this@QuickDraftActivity, "حدث خطأ في الخادم", Toast.LENGTH_SHORT).show()
                         }
-                    } catch (e: Exception) {
-                        Toast.makeText(this@QuickDraftActivity, "خطأ في المعالجة", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -287,51 +199,10 @@ class QuickDraftActivity : AppCompatActivity() {
 
     private fun showLoading(show: Boolean) {
         progressBar.visibility = if (show) View.VISIBLE else View.GONE
-        btnNext.isEnabled = !show
-        btnCancel1.isEnabled = !show
-        btnBack.isEnabled = !show
-        for (i in 0 until chipGroupPreparers.childCount) {
-            chipGroupPreparers.getChildAt(i).isEnabled = !show
-        }
-        for (i in 0 until chipGroupRegions.childCount) {
-            chipGroupRegions.getChildAt(i).isEnabled = !show
-        }
-    }
-
-    private fun populateRegionChips(query: String) {
-        chipGroupRegions.removeAllViews()
-        val displayMetrics = resources.displayMetrics
-        val horizontalInset = (88 * displayMetrics.density).toInt()
-        val chipSpacing = (8 * displayMetrics.density).toInt()
-        val availableWidth = displayMetrics.widthPixels - horizontalInset
-        val chipWidth = (availableWidth - chipSpacing) / 2
-
-        val listToUse = if (query.trim().isEmpty()) {
-            suggestedRegionsList
-        } else {
-            allRegionsList.filter { it.name.contains(query.trim(), ignoreCase = true) }
-        }
-
-        for (region in listToUse) {
-            val chip = com.google.android.material.chip.Chip(this)
-            chip.text = region.name
-            chip.tag = region.id
-            chip.isCheckable = true
-            chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
-            chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
-            
-            chip.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    submitDraft(true)
-                }
-            }
-            
-            chipGroupRegions.addView(chip)
-        }
-    }
-
-    private fun getSavedPortalUrl(): String? {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return sharedPreferences.getString(KEY_TOKEN, null)
+        btnSubmit.isEnabled = !show
+        btnCancel.isEnabled = !show
+        etOrderText.isEnabled = !show
+        actvRegion.isEnabled = !show
+        etOrderTime.isEnabled = !show
     }
 }

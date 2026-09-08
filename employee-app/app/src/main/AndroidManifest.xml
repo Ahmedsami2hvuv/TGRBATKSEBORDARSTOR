@@ -84,7 +84,7 @@
 
         <activity
             android:name="com.aboakbar.modf.QuickDraftActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:theme="@style/Theme.AboAkbarAdmin"
             android:label="رفع طلب"
             android:exported="true">
             <intent-filter>
@@ -96,7 +96,7 @@
 
         <activity
             android:name="com.aboakbar.modf.QuickSellActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:theme="@style/Theme.AboAkbarAdmin"
             android:label="رفع بيعة"
             android:exported="true">
             <intent-filter>
@@ -109,7 +109,7 @@
 
         <activity
             android:name="com.aboakbar.modf.DoubleOrderActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:theme="@style/Theme.AboAkbarAdmin"
             android:label="إضافة طلب ذو وجهتين"
             android:exported="true">
             <intent-filter>
@@ -121,7 +121,7 @@
 
         <activity
             android:name="com.aboakbar.modf.PreparationOrderActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:theme="@style/Theme.AboAkbarAdmin"
             android:label="طلب تجهيز وتسوق"
             android:exported="true">
             <intent-filter>
