@@ -79,7 +79,7 @@
                     android:layout_weight="1"
                     android:text="⭐ تذكير طلبات التقييم"
                     android:textColor="#065f46"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.SwitchCompat
@@ -88,10 +88,42 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
+            <!-- شريط حالة التقييم وعلامة الصح التفاعلية -->
+            <LinearLayout
+                android:id="@+id/layoutEvalToggleCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/button_round_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cbEnableEvaluation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false" />
+
+                <TextView
+                    android:id="@+id/tvEvalStatusBadge"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="✔ التنبيه مشتغل ومفعل"
+                    android:textColor="#065f46"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="10dp"
                 android:text="الفاصل الزمني للتقييم (بالدقائق):"
                 android:textColor="#475569"
                 android:textSize="12sp"
@@ -223,13 +255,45 @@
                     android:layout_weight="1"
                     android:text="💬 تذكير مراسلة وتخزين الزبائن"
                     android:textColor="#0369a1"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/switchEnableOutreach"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <!-- شريط حالة المراسلة وعلامة الصح التفاعلية -->
+            <LinearLayout
+                android:id="@+id/layoutOutreachToggleCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/button_round_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cbEnableOutreach"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false" />
+
+                <TextView
+                    android:id="@+id/tvOutreachStatusBadge"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="✔ التنبيه مشتغل ومفعل"
+                    android:textColor="#0369a1"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <TextView
