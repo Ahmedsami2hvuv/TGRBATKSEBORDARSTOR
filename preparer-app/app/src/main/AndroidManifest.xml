@@ -64,6 +64,9 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
@@ -93,6 +96,20 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.aboakbar.mjhz.FloatingAssistantActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:label="المساعد"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:exported="true" />
+
+        <service
+            android:name="com.aboakbar.mjhz.FloatingAssistantService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
 
 

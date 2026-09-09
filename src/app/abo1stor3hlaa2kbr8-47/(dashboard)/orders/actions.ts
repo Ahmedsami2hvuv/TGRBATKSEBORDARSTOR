@@ -448,6 +448,13 @@ export async function reassignOrderToPreparer(
     isDraft,
   }).catch((e) => console.error("Telegram notify error (reassign):", e));
 
+  // إرسال إشعار لتطبيق المجهز OneSignal
+  void notifyOneSignalPreparerAssignment({
+    preparerId,
+    orderId: id,
+    isDraft,
+  }).catch((e) => console.error("OneSignal notify error (reassign):", e));
+
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${id}`);
   return { ok: true };

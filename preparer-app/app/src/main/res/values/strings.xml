@@ -7,4 +7,6 @@
     <string name="biometric_cancel">إلغاء</string>
     <string name="incorrect_passcode">الرمز السري غير صحيح!</string>
     <string name="loading">جارٍ التحميل...</string>
+    <string name="shortcut_assistant">المساعد</string>
+    <string name="shortcut_assistant_long">المساعد الذكي للمجهز 🪄</string>
 </resources>

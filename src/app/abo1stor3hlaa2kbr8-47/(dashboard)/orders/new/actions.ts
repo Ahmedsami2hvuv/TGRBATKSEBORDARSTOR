@@ -10,8 +10,9 @@ import {
 } from "@/lib/order-image";
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
 import { prisma } from "@/lib/prisma";
-import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
-import { pushNotifyAdminsNewPendingOrder, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
+import { notifyTelegramNewOrder, notifyTelegramPreparerManualAssignment } from "@/lib/telegram-notify";
+import { pushNotifyAdminsNewPendingOrder, pushNotifyCourierNewAssignment, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
+import { notifyOneSignalPreparerAssignment } from "@/lib/onesignal-server";
 import {
   MAX_VOICE_NOTE_BYTES,
   saveVoiceNoteUploaded,
@@ -240,6 +241,28 @@ export async function createAdminOrder(
           body: titleLine,
         },
       });
+
+      // إرسال إشعار لتطبيق المجهز OneSignal
+      void notifyOneSignalPreparerAssignment({
+        preparerId,
+        orderId: draft.id,
+        isDraft: true,
+      }).catch((e) => console.error("OneSignal notify error (create prep):", e));
+
+      // إرسال إشعار تيليجرام
+      void notifyTelegramPreparerManualAssignment({
+        preparerId,
+        orderId: draft.id,
+        isDraft: true,
+      }).catch((e) => console.error("Telegram notify error (create prep):", e));
+
+      // إرسال Web Push
+      void pushNotifyPreparerNewNotice({
+        preparerId,
+        title: titleLine,
+        body: rawListText || titleLine,
+        draftId: draft.id
+      }).catch(() => {});
     }
 
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
