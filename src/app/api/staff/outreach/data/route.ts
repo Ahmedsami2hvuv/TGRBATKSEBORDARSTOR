@@ -201,9 +201,16 @@ export async function POST(req: Request) {
         }
       } catch (e) {}
 
-      // 3. جلب جميع الأرقام المحفوظة في قاعدة البيانات السحابية للموظف
+      // 3. جلب جميع الأرقام المحفوظة في قاعدة البيانات السحابية للموظف (فقط التي حان وقتها بعد 24 ساعة أو بدون موعد مؤجل)
+      const now = new Date();
       const allItems = await prisma.staffOutreachItem.findMany({
-        where: { listId: mainList.id },
+        where: {
+          listId: mainList.id,
+          OR: [
+            { availableAt: null },
+            { availableAt: { lte: now } },
+          ],
+        },
         orderBy: [
           { priority: "desc" },
           { createdAt: "asc" }

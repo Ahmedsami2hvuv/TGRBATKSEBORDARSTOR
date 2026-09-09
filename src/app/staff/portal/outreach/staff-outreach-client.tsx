@@ -168,18 +168,25 @@ export function StaffOutreachClient({
     }
   }, [list, templates]);
 
+  // فحص هل حان موعد ظهور العنصر (أو ليس له موعد مؤجل)
+  const isItemAvailable = (item: OutreachItem) => {
+    if (!item.availableAt) return true;
+    return new Date(item.availableAt).getTime() <= Date.now();
+  };
+
   // حساب الإحصائيات مع إحصائيات التكرار والزبائن السابقين
   const stats = useMemo(() => {
     if (!list || !list.items) {
       return { total: 0, pending: 0, whatsappOpened: 0, completed: 0, remaining: 0, existingCustomers: 0, duplicates: 0 };
     }
-    const total = list.items.length;
-    const pending = list.items.filter((i) => i.status === "pending").length;
-    const whatsappOpened = list.items.filter((i) => i.status === "whatsapp_opened").length;
-    const completed = list.items.filter((i) => i.status === "completed").length;
+    const availableItems = list.items.filter(isItemAvailable);
+    const total = availableItems.length;
+    const pending = availableItems.filter((i) => i.status === "pending").length;
+    const whatsappOpened = availableItems.filter((i) => i.status === "whatsapp_opened").length;
+    const completed = availableItems.filter((i) => i.status === "completed").length;
     const remaining = pending + whatsappOpened;
-    const existingCustomers = list.items.filter((i) => i.isExistingCustomer).length;
-    const duplicates = list.items.filter((i) => i.isDuplicateHistory).length;
+    const existingCustomers = availableItems.filter((i) => i.isExistingCustomer).length;
+    const duplicates = availableItems.filter((i) => i.isDuplicateHistory).length;
     return { total, pending, whatsappOpened, completed, remaining, existingCustomers, duplicates };
   }, [list]);
 
@@ -187,6 +194,7 @@ export function StaffOutreachClient({
   const filteredActiveItems = useMemo(() => {
     if (!list) return [];
     return list.items
+      .filter(isItemAvailable)
       .filter((i) => i.status === "pending" || i.status === "whatsapp_opened")
       .filter((i) => {
         if (!searchQuery.trim()) return true;
@@ -202,6 +210,7 @@ export function StaffOutreachClient({
   const filteredCompletedItems = useMemo(() => {
     if (!list) return [];
     return list.items
+      .filter(isItemAvailable)
       .filter((i) => i.status === "completed")
       .filter((i) => {
         if (!searchQuery.trim()) return true;
