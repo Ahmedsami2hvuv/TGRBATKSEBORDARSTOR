@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, useMemo, useRef } from "react";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DEFAULT_OUTREACH_TEMPLATES } from "./constants";
+import { openUrlFromUserGesture } from "@/lib/whatsapp";
 
 interface OutreachItem {
   id: string;
@@ -330,8 +331,12 @@ export function StaffOutreachClient({
       const cleanTarget = item.phone.replace(/^@/, "").trim();
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanTarget}&text=${encodedMsg}`;
       
-      // فتح الواتساب مباشرة
-      window.location.href = whatsappUrl;
+      // فتح الواتساب عبر تطبيق الأندرويد أو المتصفح
+      if (typeof window !== "undefined" && (window as any).AndroidApp?.openWhatsApp) {
+        (window as any).AndroidApp.openWhatsApp(cleanTarget, template.content);
+      } else {
+        openUrlFromUserGesture(whatsappUrl);
+      }
 
       // تحويله للمكتمل فوراً في الواجهة
       setList((prev) => {
@@ -377,8 +382,12 @@ export function StaffOutreachClient({
         };
       });
 
-      // 3. فتح الواتساب مباشرة
-      window.location.href = whatsappUrl;
+      // 3. فتح الواتساب مباشرة بأمان
+      if (typeof window !== "undefined" && (window as any).AndroidApp?.openWhatsApp) {
+        (window as any).AndroidApp.openWhatsApp(waPhone, template.content);
+      } else {
+        openUrlFromUserGesture(whatsappUrl);
+      }
 
       showToast(`تم فتح الواتساب بنموذج: ${template.title} 💬`);
 
@@ -403,7 +412,11 @@ export function StaffOutreachClient({
       });
 
       // 2. توجيه الموظف لتطبيق الاتصال للحفظ
-      window.location.href = `tel:${item.phone}`;
+      if (typeof window !== "undefined" && (window as any).AndroidApp?.openDialer) {
+        (window as any).AndroidApp.openDialer(item.phone);
+      } else {
+        openUrlFromUserGesture(`tel:${item.phone}`);
+      }
       showToast("تم فتح الاتصال للحفظ وتحويل الرقم إلى المكتمل 🔵");
 
       // 3. الحفظ في السيرفر بالخلفية
@@ -1606,7 +1619,13 @@ export function StaffOutreachClient({
                   const target = isUser
                     ? selectedCompletedItem.phone.replace(/^@/, "").trim()
                     : normalizeWaPhone(selectedCompletedItem.phone);
-                  window.location.href = `https://api.whatsapp.com/send?phone=${target}&text=${encoded}`;
+                  const whatsappUrl = `https://api.whatsapp.com/send?phone=${target}&text=${encoded}`;
+                  
+                  if (typeof window !== "undefined" && (window as any).AndroidApp?.openWhatsApp) {
+                    (window as any).AndroidApp.openWhatsApp(target, tpl.content);
+                  } else {
+                    openUrlFromUserGesture(whatsappUrl);
+                  }
                   showToast("تم فتح محادثة الواتساب 💬");
                 }}
                 className="w-full rounded-2xl bg-emerald-600 py-3 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition flex items-center justify-center gap-2"
@@ -1629,7 +1648,11 @@ export function StaffOutreachClient({
               ) : (
                 <button
                   onClick={() => {
-                    window.location.href = `tel:${selectedCompletedItem.phone}`;
+                    if (typeof window !== "undefined" && (window as any).AndroidApp?.openDialer) {
+                      (window as any).AndroidApp.openDialer(selectedCompletedItem.phone);
+                    } else {
+                      openUrlFromUserGesture(`tel:${selectedCompletedItem.phone}`);
+                    }
                   }}
                   className="w-full rounded-2xl bg-sky-600 py-3 text-xs font-black text-white shadow-md hover:bg-sky-700 active:scale-95 transition flex items-center justify-center gap-2"
                 >
