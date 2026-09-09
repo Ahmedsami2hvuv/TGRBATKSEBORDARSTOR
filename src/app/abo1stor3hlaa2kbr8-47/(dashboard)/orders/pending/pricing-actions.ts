@@ -839,7 +839,13 @@ export async function duplicateOrderOrDraft(
       const nextData = {
         ...originalData,
         groupId: newGroupId,
-        products: originalProducts
+        products: originalProducts.map((p: any) => ({
+          ...p,
+          pricedById: null,
+          pricedBy: null,
+          buyAlf: null,
+          actualBuyAlf: null,
+        }))
       };
 
       const newDraft = await prisma.companyPreparerShoppingDraft.create({
@@ -854,7 +860,7 @@ export async function duplicateOrderOrDraft(
           orderTime: originalDraft.orderTime,
           sentOrderId: null,
           placesCount: originalDraft.placesCount,
-          status: originalDraft.status,
+          status: "draft",
           data: nextData
         }
       });
@@ -864,21 +870,60 @@ export async function duplicateOrderOrDraft(
       const originalOrder = await prisma.order.findUnique({ where: { id: originalId } });
       if (!originalOrder) return { error: "الطلب الأصلي غير موجود." };
 
-      const originalProducts = (originalOrder.preparerShoppingJson as any)?.products || [];
+      let customerId = originalOrder.customerId;
+      if (originalOrder.shopId) {
+        let cust = await prisma.customer.findFirst({
+          where: { shopId: originalOrder.shopId, phone: cleanPhone },
+        });
+        if (!cust) {
+          cust = await prisma.customer.create({
+            data: {
+              shopId: originalOrder.shopId,
+              phone: cleanPhone,
+              name: cleanPhone,
+              customerRegionId: newRegionId,
+            },
+          });
+        }
+        customerId = cust.id;
+      }
+
+      let originalProducts = (originalOrder.preparerShoppingJson as any)?.products || [];
+      if (!Array.isArray(originalProducts) || originalProducts.length === 0) {
+        if (originalOrder.summary && originalOrder.summary.trim()) {
+          originalProducts = [
+            {
+              line: originalOrder.summary.trim(),
+              buyAlf: null,
+              actualBuyAlf: null,
+              sellAlf: originalOrder.orderSubtotal ? Number(originalOrder.orderSubtotal) / 1000 : null,
+              assignedPreparerId: originalOrder.submittedByCompanyPreparerId,
+              pricedById: null,
+              pricedBy: null,
+            }
+          ];
+        }
+      }
+
       const newOrderNumber = (await prisma.order.count()) + 1001;
 
       const newOrder = await prisma.order.create({
         data: {
           orderNumber: newOrderNumber,
+          shopId: originalOrder.shopId,
+          customerId,
           customerPhone: cleanPhone,
           customerRegionId: newRegionId,
           customerLandmark: originalOrder.customerLandmark,
           orderNoteTime: originalOrder.orderNoteTime || "فوري",
           orderType: originalOrder.orderType,
+          status: "pending",
           summary: originalOrder.summary,
           submissionSource: "admin_copy",
           submittedByCompanyPreparerId: originalOrder.submittedByCompanyPreparerId,
           deliveryPrice: region.deliveryPrice,
+          orderSubtotal: originalOrder.orderSubtotal,
+          totalAmount: originalOrder.orderSubtotal ? (region.deliveryPrice ? region.deliveryPrice.plus(originalOrder.orderSubtotal) : originalOrder.orderSubtotal) : null,
           preparerShoppingJson: {
             version: 1,
             products: originalProducts,
@@ -889,7 +934,7 @@ export async function duplicateOrderOrDraft(
       });
       newId = newOrder.id;
 
-      // نسخ مسودات المجهزين المرتبطة بالطلب الحقيقي
+      // نسخ مسودات المجهزين المرتبطة بالطلب وجعلها مسودات جديدة جاهزة للتسعير
       const relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
         where: { sentOrderId: originalId }
       });
@@ -908,7 +953,7 @@ export async function duplicateOrderOrDraft(
             orderTime: d.orderTime,
             sentOrderId: newOrder.id,
             placesCount: d.placesCount,
-            status: d.status,
+            status: "draft",
             data: {
               ...dData,
               groupId: `GRP-${Date.now()}`,

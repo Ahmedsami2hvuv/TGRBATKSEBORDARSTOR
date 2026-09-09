@@ -99,7 +99,20 @@ export async function GET(req: NextRequest) {
     // تنسيق المسودات
     for (const d of drafts) {
       const data = (d.data as any) || {};
-      const allProds = Array.isArray(data.products) ? data.products : [];
+      let allProds = Array.isArray(data.products) ? data.products : [];
+
+      if (allProds.length === 0) {
+        const fallbackText = d.rawListText?.trim() || d.titleLine?.trim() || "مادة المسودة";
+        const lines = fallbackText.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        allProds = (lines.length > 0 ? lines : [fallbackText]).map((line: string) => ({
+          line,
+          buyAlf: null,
+          actualBuyAlf: null,
+          sellAlf: null,
+          assignedPreparerId: preparerId,
+          assignedPreparerName: preparer.name,
+        }));
+      }
 
       const myProds = allProds
         .map((p: any, idx: number) => ({
@@ -136,7 +149,20 @@ export async function GET(req: NextRequest) {
     // تنسيق الطلبات
     for (const o of orders) {
       const json = (o.preparerShoppingJson as any) || {};
-      const allProds = Array.isArray(json.products) ? json.products : [];
+      let allProds = Array.isArray(json.products) ? json.products : [];
+
+      if (allProds.length === 0) {
+        const fallbackText = o.summary?.trim() || `طلب #${o.orderNumber} - ${o.orderType || "تجهيز"}`;
+        const lines = fallbackText.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        allProds = (lines.length > 0 ? lines : [fallbackText]).map((line: string, idx: number) => ({
+          line,
+          buyAlf: o.purchasePrice ? Number(o.purchasePrice) / 1000 : null,
+          actualBuyAlf: null,
+          sellAlf: idx === 0 && o.orderSubtotal ? Number(o.orderSubtotal) / 1000 : null,
+          assignedPreparerId: preparerId,
+          assignedPreparerName: preparer.name,
+        }));
+      }
 
       const myProds = allProds
         .map((p: any, idx: number) => ({
@@ -455,6 +481,30 @@ export async function POST(req: NextRequest) {
       const preparerLabel = preparer.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
       const summaryText = notes.trim() ? (isReverseOrder ? `[طلب عكسي] ${notes.trim()}` : notes.trim()) : (isReverseOrder ? "[طلب عكسي]" : "");
 
+      const orderProducts = notes.trim()
+        ? notes.trim().split("\n").map(l => l.trim()).filter(Boolean).map((line, idx) => ({
+            line,
+            buyAlf: null,
+            actualBuyAlf: null,
+            sellAlf: idx === 0 && subtotalNum > 0 ? subtotalNum : null,
+            pricedBy: null,
+            pricedById: null,
+            assignedPreparerId: preparer.id,
+            assignedPreparerName: preparer.name,
+          }))
+        : [
+            {
+              line: `مادة طلب ${orderType}`,
+              buyAlf: null,
+              actualBuyAlf: null,
+              sellAlf: subtotalNum > 0 ? subtotalNum : null,
+              pricedBy: null,
+              pricedById: null,
+              assignedPreparerId: preparer.id,
+              assignedPreparerName: preparer.name,
+            }
+          ];
+
       const createdOrder = await prisma.order.create({
         data: {
           shopId,
@@ -473,6 +523,12 @@ export async function POST(req: NextRequest) {
           imageUrl,
           orderImageUploadedByName: imageUrl ? preparerLabel : null,
           summary: summaryText,
+          preparerShoppingJson: {
+            version: 1,
+            products: orderProducts,
+            placesCount: 1,
+            noProfit: false,
+          },
         },
       });
 

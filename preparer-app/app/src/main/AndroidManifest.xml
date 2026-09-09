@@ -105,6 +105,12 @@
             android:launchMode="singleInstance"
             android:exported="true" />
 
+        <activity
+            android:name="com.aboakbar.mjhz.FloatingFileChooserActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <service
             android:name="com.aboakbar.mjhz.FloatingAssistantService"
             android:enabled="true"

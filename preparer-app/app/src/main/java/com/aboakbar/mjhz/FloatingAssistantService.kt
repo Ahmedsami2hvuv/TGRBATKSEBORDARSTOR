@@ -23,8 +23,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
+import android.webkit.ValueCallback
+import android.net.Uri
+
 
 class FloatingAssistantService : Service() {
+
+    companion object {
+        var uploadMessageCallback: ValueCallback<Array<Uri>>? = null
+    }
 
     private val TAG = "FloatingAssistant"
     private lateinit var windowManager: WindowManager
@@ -279,6 +286,25 @@ class FloatingAssistantService : Service() {
                     progressBar?.visibility = View.GONE
                 } else {
                     progressBar?.visibility = View.VISIBLE
+                }
+            }
+
+            override fun onShowFileChooser(
+                view: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                uploadMessageCallback?.onReceiveValue(null)
+                uploadMessageCallback = filePathCallback
+                try {
+                    val intent = Intent(this@FloatingAssistantService, FloatingFileChooserActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    return true
+                } catch (e: Exception) {
+                    uploadMessageCallback = null
+                    return false
                 }
             }
         }
