@@ -83,11 +83,37 @@ class OrderForegroundService : Service() {
     }
 
     private fun checkPendingOrders() {
+        // فحص مؤقتات التقييم والمراسلة للموظف
+        try {
+            val now = System.currentTimeMillis()
+
+            // 1. فحص مؤقت التقييم
+            if (EvaluationSchedulerService.isEnabled(this)) {
+                val nextEval = EvaluationSchedulerService.getNextTriggerTime(this)
+                if (nextEval > 0 && now >= nextEval) {
+                    val interval = EvaluationSchedulerService.getIntervalMinutes(this)
+                    EvaluationSchedulerService.scheduleNextEvaluation(this, interval)
+                    EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this, isManual = false)
+                }
+            }
+
+            // 2. فحص مؤقت المراسلة
+            if (OutreachSchedulerService.isEnabled(this)) {
+                val nextOutreach = OutreachSchedulerService.getNextTriggerTime(this)
+                if (nextOutreach > 0 && now >= nextOutreach) {
+                    val interval = OutreachSchedulerService.getIntervalMinutes(this)
+                    OutreachSchedulerService.scheduleNextOutreach(this, interval)
+                    OutreachSchedulerService.fetchAndTriggerOutreachAlert(this, isManual = false)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val token = sharedPreferences.getString(KEY_TOKEN, null)
 
         if (token.isNullOrEmpty()) {
-            stopSelf()
             return
         }
 

@@ -70,7 +70,10 @@ object OutreachSchedulerService {
             }
             val pendingIntent = PendingIntent.getBroadcast(context, 9991, intent, flags)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
@@ -195,17 +198,17 @@ object OutreachSchedulerService {
                                     putExtra("originalInput", originalInput)
                                     putExtra("generatedMessage", generatedMessage)
                                     putExtra("remainingCount", totalPending)
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                                 }
 
-                                // 1. فتح النافذة مباشرة
+                                // 1. فتح النافذة مباشرة فوق التطبيقات
                                 try {
                                     context.startActivity(alertIntent)
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
 
-                                // 2. إصدار إشعار عالي الأولوية
+                                // 2. إصدار إشعار عالي الأولوية مع FullScreenIntent
                                 showOutreachNotification(context, itemId, phone, originalInput, generatedMessage, totalPending, alertIntent)
                             } else {
                                 if (isManual) {
@@ -251,7 +254,7 @@ object OutreachSchedulerService {
                     description = "إشعارات تذكير الموظف بإرسال رسائل التواصل وتخزين الأرقام للزبائن"
                     enableLights(true)
                     enableVibration(true)
-                    vibrationPattern = longArrayOf(0, 300, 200, 300)
+                    vibrationPattern = longArrayOf(0, 400, 200, 400)
                     lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 }
                 notificationManager.createNotificationChannel(channel)
@@ -263,7 +266,8 @@ object OutreachSchedulerService {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
 
-            val pendingIntent = PendingIntent.getActivity(context, 9993, alertIntent, pendingFlags)
+            val reqCode = (System.currentTimeMillis() % 1000000).toInt()
+            val pendingIntent = PendingIntent.getActivity(context, reqCode, alertIntent, pendingFlags)
 
             val displayName = if (originalInput.isNotEmpty() && originalInput != phone) "$originalInput ($phone)" else phone
 
@@ -271,12 +275,14 @@ object OutreachSchedulerService {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("💬 حان موعد مراسلة الزبون")
                 .setContentText("الرقم: $displayName — اضغط للإرسال بالواتساب")
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
                 .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+                .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setFullScreenIntent(pendingIntent, true)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setVibrate(longArrayOf(0, 300, 200, 300))
+                .setVibrate(longArrayOf(0, 400, 200, 400))
                 .addAction(
                     android.R.drawable.ic_menu_send,
                     "💬 إرسال الرسالة الآن",

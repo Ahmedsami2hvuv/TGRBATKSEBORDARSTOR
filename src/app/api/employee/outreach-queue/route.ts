@@ -111,13 +111,22 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. جلب الأرقام غير المكتملة (pending أو whatsapp_opened)
+    const now = new Date();
+
+    // 3. جلب الأرقام غير المكتملة التي حان موعد ظهورها (أو ليس لها موعد محدد) مع تقديم أصحاب الأولوية القصوى
     const pendingItems = await prisma.staffOutreachItem.findMany({
       where: {
         listId: mainList.id,
         status: { in: ["pending", "whatsapp_opened"] },
+        OR: [
+          { availableAt: null },
+          { availableAt: { lte: now } }
+        ]
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [
+        { priority: "desc" },
+        { createdAt: "asc" }
+      ],
       take: 50,
     });
 
@@ -125,6 +134,10 @@ export async function GET(request: Request) {
       where: {
         listId: mainList.id,
         status: { in: ["pending", "whatsapp_opened"] },
+        OR: [
+          { availableAt: null },
+          { availableAt: { lte: now } }
+        ]
       },
     });
 

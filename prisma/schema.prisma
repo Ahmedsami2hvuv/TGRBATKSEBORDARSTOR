@@ -319,6 +319,9 @@ model StaffOutreachItem {
   originalInput   String            @default("")
   status          String            @default("pending") // 'pending' | 'whatsapp_opened' | 'completed'
   templateUsed    String?           @db.Text
+  source          String            @default("manual") // 'manual' | 'evaluation'
+  availableAt     DateTime?
+  priority        Int               @default(0)
   openedAt        DateTime?
   completedAt     DateTime?
   createdAt       DateTime          @default(now())
@@ -327,6 +330,8 @@ model StaffOutreachItem {
 
   @@index([listId, status])
   @@index([phone])
+  @@index([availableAt])
+  @@index([priority])
 }
 
 model StaffOutreachTemplate {

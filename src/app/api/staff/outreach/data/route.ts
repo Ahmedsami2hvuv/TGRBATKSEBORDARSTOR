@@ -204,7 +204,10 @@ export async function POST(req: Request) {
       // 3. جلب جميع الأرقام المحفوظة في قاعدة البيانات السحابية للموظف
       const allItems = await prisma.staffOutreachItem.findMany({
         where: { listId: mainList.id },
-        orderBy: { createdAt: "asc" },
+        orderBy: [
+          { priority: "desc" },
+          { createdAt: "asc" }
+        ],
       });
 
       let enrichedMap: Record<string, any> = {};
@@ -236,6 +239,9 @@ export async function POST(req: Request) {
                 originalInput: i.originalInput,
                 status: i.status as "pending" | "whatsapp_opened" | "completed",
                 templateUsed: i.templateUsed,
+                source: i.source,
+                availableAt: i.availableAt?.toISOString() || null,
+                priority: i.priority,
                 openedAt: i.openedAt?.toISOString() || null,
                 completedAt: i.completedAt?.toISOString() || null,
                 createdAt: i.createdAt.toISOString(),

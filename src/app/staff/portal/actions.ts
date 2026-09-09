@@ -816,13 +816,18 @@ async function upsertCustomerByPhone(opts: {
 
 /**
  * تأشير الطلب وكافة طلبات نفس رقم هاتف الزبون بأنه تم طلب التقييم له وحفظ ذلك في قاعدة البيانات
- * باستخدام حقل adminOrderCode لضمان مشاركتها فورياً بين جميع الأجهزة وتلوينها بالأخضر في كل الأيام
+ * ونقله تلقائياً إلى قائمة مهمة التواصل والتخزين ليظهر بعد 24 ساعة مع الأولوية القصوى
  */
 export async function markOrderRatingRequested(orderId: string): Promise<{ ok?: boolean; error?: string }> {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, customerPhone: true, adminOrderCode: true }
+      select: { 
+        id: true, 
+        customerPhone: true, 
+        adminOrderCode: true,
+        shop: { select: { name: true } }
+      }
     });
     if (!order) return { error: "الطلب غير موجود." };
 
@@ -859,12 +864,77 @@ export async function markOrderRatingRequested(orderId: string): Promise<{ ok?: 
           data: { adminOrderCode: nCode }
         });
       }
+
+      // إضافة الزبون تلقائياً إلى قائمة مهمة مراسلة وتخزين الزبائن ليظهر بعد 24 ساعة بأولوية قصوى
+      try {
+        await addRatedCustomerToOutreachQueue(phone, order.shop?.name);
+      } catch (err) {
+        console.error("Failed to auto-add rated customer to outreach:", err);
+      }
     }
 
     return { ok: true };
   } catch (err: any) {
     console.error("Failed to mark rating requested:", err);
     return { error: err.message };
+  }
+}
+
+async function addRatedCustomerToOutreachQueue(phone: string, shopName?: string) {
+  const defaultStaff = await prisma.staffEmployee.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: "asc" }
+  });
+  if (!defaultStaff) return;
+
+  let mainList = await prisma.staffOutreachList.findFirst({
+    where: { staffEmployeeId: defaultStaff.id },
+    orderBy: { createdAt: "asc" }
+  });
+
+  if (!mainList) {
+    mainList = await prisma.staffOutreachList.create({
+      data: {
+        id: crypto.randomUUID(),
+        staffEmployeeId: defaultStaff.id,
+        title: "قائمة مهام التواصل الرئيسية",
+      }
+    });
+  }
+
+  const availableAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // بعد 24 ساعة
+  const originalInput = shopName ? `${shopName} (تقييم ⭐)` : "تقييم زبون ⭐";
+
+  const existing = await prisma.staffOutreachItem.findFirst({
+    where: {
+      listId: mainList.id,
+      phone: phone,
+    }
+  });
+
+  if (!existing) {
+    await prisma.staffOutreachItem.create({
+      data: {
+        id: crypto.randomUUID(),
+        listId: mainList.id,
+        phone: phone,
+        originalInput,
+        status: "pending",
+        source: "evaluation",
+        availableAt,
+        priority: 10,
+      }
+    });
+  } else if (existing.status !== "completed") {
+    await prisma.staffOutreachItem.update({
+      where: { id: existing.id },
+      data: {
+        priority: 10,
+        source: "evaluation",
+        availableAt,
+        originalInput: existing.originalInput || originalInput,
+      }
+    });
   }
 }
 

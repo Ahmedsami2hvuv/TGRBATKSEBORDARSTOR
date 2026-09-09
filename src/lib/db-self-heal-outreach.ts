@@ -52,12 +52,16 @@ export async function ensureOutreachTablesExist(): Promise<void> {
       );
     `);
 
-    // 4. تعيين DEFAULT gen_random_uuid() للأعمدة في حال تم إنشاؤها مسبقاً بدونه
+    // 4. تعيين DEFAULT gen_random_uuid() للأعمدة وإضافة الأعمدة الجديدة إن لم تكن موجودة
     try {
       await prisma.$executeRawUnsafe(`
         ALTER TABLE "StaffOutreachList" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
         ALTER TABLE "StaffOutreachItem" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
         ALTER TABLE "StaffOutreachTemplate" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
+
+        ALTER TABLE "StaffOutreachItem" ADD COLUMN IF NOT EXISTS "source" TEXT NOT NULL DEFAULT 'manual';
+        ALTER TABLE "StaffOutreachItem" ADD COLUMN IF NOT EXISTS "availableAt" TIMESTAMP(3);
+        ALTER TABLE "StaffOutreachItem" ADD COLUMN IF NOT EXISTS "priority" INTEGER NOT NULL DEFAULT 0;
       `);
     } catch (e) {}
 
@@ -66,6 +70,8 @@ export async function ensureOutreachTablesExist(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "StaffOutreachList_staffEmployeeId_idx" ON "StaffOutreachList"("staffEmployeeId");
       CREATE INDEX IF NOT EXISTS "StaffOutreachItem_listId_status_idx" ON "StaffOutreachItem"("listId", "status");
       CREATE INDEX IF NOT EXISTS "StaffOutreachItem_phone_idx" ON "StaffOutreachItem"("phone");
+      CREATE INDEX IF NOT EXISTS "StaffOutreachItem_availableAt_idx" ON "StaffOutreachItem"("availableAt");
+      CREATE INDEX IF NOT EXISTS "StaffOutreachItem_priority_idx" ON "StaffOutreachItem"("priority");
       CREATE INDEX IF NOT EXISTS "StaffOutreachTemplate_staffEmployeeId_idx" ON "StaffOutreachTemplate"("staffEmployeeId");
     `);
 

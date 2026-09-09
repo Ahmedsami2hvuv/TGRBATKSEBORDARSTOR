@@ -97,9 +97,78 @@ async function handleMarkSent(orderId: string) {
         data: { adminOrderCode: nCode }
       });
     }
+
+    // إضافة الزبون لقائمة مهمة المراسلة والتخزين ليظهر بعد 24 ساعة بأولوية قصوى
+    try {
+      const fullOrder = await prisma.order.findUnique({
+        where: { id: order.id },
+        include: { shop: { select: { name: true } } }
+      });
+      await addRatedCustomerToOutreachQueue(rawPhone, fullOrder?.shop?.name);
+    } catch (e) {
+      console.error("Auto add to outreach queue failed:", e);
+    }
   }
 
   return NextResponse.json({ success: true, message: "تم تأشير الطلب كمُرسل تقييمه بنجاح", adminOrderCode: newCode });
+}
+
+async function addRatedCustomerToOutreachQueue(phone: string, shopName?: string) {
+  const defaultStaff = await prisma.staffEmployee.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: "asc" }
+  });
+  if (!defaultStaff) return;
+
+  let mainList = await prisma.staffOutreachList.findFirst({
+    where: { staffEmployeeId: defaultStaff.id },
+    orderBy: { createdAt: "asc" }
+  });
+
+  if (!mainList) {
+    mainList = await prisma.staffOutreachList.create({
+      data: {
+        id: crypto.randomUUID(),
+        staffEmployeeId: defaultStaff.id,
+        title: "قائمة مهام التواصل الرئيسية",
+      }
+    });
+  }
+
+  const availableAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // بعد 24 ساعة
+  const originalInput = shopName ? `${shopName} (تقييم ⭐)` : "تقييم زبون ⭐";
+
+  const existing = await prisma.staffOutreachItem.findFirst({
+    where: {
+      listId: mainList.id,
+      phone: phone,
+    }
+  });
+
+  if (!existing) {
+    await prisma.staffOutreachItem.create({
+      data: {
+        id: crypto.randomUUID(),
+        listId: mainList.id,
+        phone: phone,
+        originalInput,
+        status: "pending",
+        source: "evaluation",
+        availableAt,
+        priority: 10,
+      }
+    });
+  } else if (existing.status !== "completed") {
+    await prisma.staffOutreachItem.update({
+      where: { id: existing.id },
+      data: {
+        priority: 10,
+        source: "evaluation",
+        availableAt,
+        originalInput: existing.originalInput || originalInput,
+      }
+    });
+  }
 }
 
 export async function POST(request: Request) {

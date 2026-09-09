@@ -72,7 +72,10 @@ object EvaluationSchedulerService {
             }
             val pendingIntent = PendingIntent.getBroadcast(context, 8888, intent, flags)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
@@ -117,7 +120,7 @@ object EvaluationSchedulerService {
     }
 
     /**
-     * فحص وجلب الطلب التالي غير المقيم من السيرفر وإظهار النافذة العائمة
+     * فحص وجلب الطلب المؤرشف التالي غير المقيم من السيرفر وإظهار النافذة العائمة
      */
     fun fetchAndTriggerEvaluationAlert(context: Context, isManual: Boolean = false) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -160,10 +163,10 @@ object EvaluationSchedulerService {
                 if (response.isSuccessful) {
                     try {
                         val json = JSONObject(body)
-                        if (json.getBoolean("success")) {
+                        if (json.optBoolean("success", false)) {
                             val totalPending = json.optInt("totalPendingCount", 0)
                             val queueArray = json.optJSONArray("queue")
-                            val locallyRatedSet = prefs.getStringSet("locally_rated_order_ids", setOf()) ?: setOf()
+                            val locallySentSet = prefs.getStringSet("locally_evaluation_sent_ids", setOf()) ?: setOf()
 
                             var targetItem: JSONObject? = null
 
@@ -171,7 +174,7 @@ object EvaluationSchedulerService {
                                 for (i in 0 until queueArray.length()) {
                                     val item = queueArray.getJSONObject(i)
                                     val id = item.getString("id")
-                                    if (!locallyRatedSet.contains(id)) {
+                                    if (!locallySentSet.contains(id)) {
                                         targetItem = item
                                         break
                                     }
@@ -180,17 +183,19 @@ object EvaluationSchedulerService {
 
                             if (targetItem == null && json.has("nextItem") && !json.isNull("nextItem")) {
                                 val item = json.getJSONObject("nextItem")
-                                if (!locallyRatedSet.contains(item.getString("id"))) {
+                                if (!locallySentSet.contains(item.getString("id"))) {
                                     targetItem = item
                                 }
                             }
 
                             if (targetItem != null) {
                                 val orderId = targetItem.getString("id")
-                                val orderNumber = targetItem.getInt("orderNumber")
-                                val shopName = targetItem.optString("shopName", "—")
-                                val regionName = targetItem.optString("regionName", "—")
+                                val orderNumber = targetItem.optInt("orderNumber", 0)
+                                val shopName = targetItem.optString("shopName", "")
+                                val regionName = targetItem.optString("regionName", "")
                                 val customerPhone = targetItem.optString("customerPhone", "")
+                                val courierName = targetItem.optString("courierName", "")
+                                val totalAmount = targetItem.optString("totalAmount", "")
                                 val generatedMessage = targetItem.optString("generatedMessage", "")
 
                                 val alertIntent = Intent(context, EvaluationAlertActivity::class.java).apply {
@@ -199,24 +204,26 @@ object EvaluationSchedulerService {
                                     putExtra("shopName", shopName)
                                     putExtra("regionName", regionName)
                                     putExtra("customerPhone", customerPhone)
+                                    putExtra("courierName", courierName)
+                                    putExtra("totalAmount", totalAmount)
                                     putExtra("generatedMessage", generatedMessage)
                                     putExtra("remainingCount", totalPending)
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                                 }
 
-                                // 1. محاولة فتح النافذة المنبثقة مباشرة فوق الشاشة
+                                // 1. فتح النافذة مباشرة فوق التطبيقات
                                 try {
                                     context.startActivity(alertIntent)
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
 
-                                // 2. إصدار إشعار عالي الأولوية (Heads-Up Banner) لضمان ظهور التنبيه حتى لو كان التطبيق بالخلفية
+                                // 2. إصدار إشعار عالي الأولوية مع FullScreenIntent
                                 showEvaluationNotification(context, orderId, orderNumber, shopName, regionName, customerPhone, generatedMessage, totalPending, alertIntent)
                             } else {
                                 if (isManual) {
                                     android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                        Toast.makeText(context, "تم إرسال طلب التقييم لجميع الطلبات المؤرشفة بنجاح! لا توجد طلبات معلقة.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "تم إرسال طلب التقييم لكافة الطلبات المؤرشفة بنجاح! لا توجد طلبات معلقة.", Toast.LENGTH_LONG).show()
                                     }
                                 }
                             }
@@ -253,13 +260,13 @@ object EvaluationSchedulerService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
                     channelId,
-                    "تذكيرات تقييم الطلبات",
+                    "تذكيرات طلب التقييم للزبائن",
                     android.app.NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "إشعارات تذكير الموظف بإرسال طلبات التقييم المجدولة للزبائن"
+                    description = "إشعارات تذكير الموظف بإرسال رسائل التقييم للزبائن المؤرشفين"
                     enableLights(true)
                     enableVibration(true)
-                    vibrationPattern = longArrayOf(0, 300, 200, 300)
+                    vibrationPattern = longArrayOf(0, 400, 200, 400)
                     lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 }
                 notificationManager.createNotificationChannel(channel)
@@ -271,25 +278,28 @@ object EvaluationSchedulerService {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
 
-            val pendingIntent = PendingIntent.getActivity(context, 7777, alertIntent, pendingFlags)
+            val reqCode = (System.currentTimeMillis() % 1000000).toInt()
+            val pendingIntent = PendingIntent.getActivity(context, reqCode, alertIntent, pendingFlags)
 
             val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("⭐ حان موعد تقييم طلب #$orderNumber")
-                .setContentText("محل: $shopName | $regionName — اضغط للإرسال بالواتساب")
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .setContentTitle("⭐ حان موعد إرسال رسالة التقييم")
+                .setContentText("طلب #$orderNumber من $shopName ($regionName) — اضغط للإرسال")
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
                 .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+                .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setFullScreenIntent(pendingIntent, true)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setVibrate(longArrayOf(0, 300, 200, 300))
+                .setVibrate(longArrayOf(0, 400, 200, 400))
                 .addAction(
                     android.R.drawable.ic_menu_send,
                     "💬 إرسال التقييم الآن",
                     pendingIntent
                 )
 
-            notificationManager.notify(7777, builder.build())
+            notificationManager.notify(8889, builder.build())
         } catch (e: Exception) {
             e.printStackTrace()
         }

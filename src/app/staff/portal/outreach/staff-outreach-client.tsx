@@ -11,6 +11,9 @@ interface OutreachItem {
   originalInput: string;
   status: "pending" | "whatsapp_opened" | "completed";
   templateUsed: string | null;
+  source?: string;
+  availableAt?: string | null;
+  priority?: number;
   openedAt: string | null;
   completedAt: string | null;
   createdAt: string;
@@ -1018,6 +1021,14 @@ export function StaffOutreachClient({
                             <p className={`text-base font-black tracking-wider ${isGreen ? "text-white" : "text-slate-900"}`} dir="ltr">
                               {item.phone}
                             </p>
+
+                            {/* شارة زبون تقييم بعد 24 ساعة */}
+                            {(item.source === "evaluation" || (item.priority && item.priority >= 10)) && (
+                              <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black text-amber-900 shadow-sm flex items-center gap-1">
+                                <span>⭐</span>
+                                <span>تقييم سابق (أولوية قصوى)</span>
+                              </span>
+                            )}
 
                             {/* شارة اليوزر */}
                             {isUserOnly && (
