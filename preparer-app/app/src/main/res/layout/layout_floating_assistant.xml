@@ -16,20 +16,43 @@
         android:background="#0F172A"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
+        android:layoutDirection="ltr"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp">
 
-        <!-- زر التصغير إلى فقاعة (على أقصى اليسار) -->
+        <!-- 1. على أقصى اليسار: زر الشخطة اللي يخفي القائمة أو يصغرها -->
         <ImageButton
             android:id="@+id/btnMinimize"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_assistant_minimize"
             android:scaleType="centerInside"
             android:contentDescription="تصغير" />
 
-        <!-- عنوان المساعد -->
+        <!-- 2. بصفه: زر التحديث -->
+        <ImageButton
+            android:id="@+id/btnReload"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_assistant_refresh"
+            android:scaleType="centerInside"
+            android:contentDescription="تحديث" />
+
+        <!-- 3. بصفه: زر الإكس -->
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_assistant_close"
+            android:scaleType="centerInside"
+            android:contentDescription="إغلاق" />
+
+        <!-- 4. عنوان المساعد -->
         <TextView
             android:id="@+id/tvAssistantTitle"
             android:layout_width="0dp"
@@ -37,14 +60,15 @@
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:text="مساعد المجهز"
+            android:text="مساعد المجهز الذكي"
             android:textColor="#F8FAFC"
             android:textSize="13sp"
             android:textStyle="bold"
+            android:gravity="center"
             android:singleLine="true"
             android:ellipsize="end" />
 
-        <!-- زر التحكم في الشفافية -->
+        <!-- 5. على أقصى اليمين: زر الشفافية -->
         <ImageButton
             android:id="@+id/btnOpacity"
             android:layout_width="34dp"
@@ -53,28 +77,6 @@
             android:src="@drawable/ic_assistant_opacity"
             android:scaleType="centerInside"
             android:contentDescription="شفافية" />
-
-        <!-- زر إعادة التحميل (تحديث) -->
-        <ImageButton
-            android:id="@+id/btnReload"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="2dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_assistant_refresh"
-            android:scaleType="centerInside"
-            android:contentDescription="تحديث" />
-
-        <!-- زر الإغلاق (X) بجانب زر التحديث مباشرة -->
-        <ImageButton
-            android:id="@+id/btnClose"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="2dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_assistant_close"
-            android:scaleType="centerInside"
-            android:contentDescription="إغلاق" />
     </LinearLayout>
 
     <!-- شريط التحكم في الشفافية (يظهر عند النقر على زر الشفافية) -->

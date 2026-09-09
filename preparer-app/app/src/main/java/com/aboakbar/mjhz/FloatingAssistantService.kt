@@ -171,8 +171,11 @@ class FloatingAssistantService : Service() {
         // 5. تطبيق اسم المجهز إن وجد
         val savedName = prefs.getString(KEY_preparer_NAME, "") ?: ""
         if (savedName.isNotEmpty()) {
-            tvAssistantTitle?.text = "مساعد $savedName"
+            tvAssistantTitle?.text = "مساعد $savedName الذكي"
+        } else {
+            tvAssistantTitle?.text = "مساعد المجهز الذكي"
         }
+
 
         // 6. تضخيم واجهة الفقاعة
         bubbleView = inflater.inflate(R.layout.layout_floating_bubble, null)
@@ -260,7 +263,7 @@ class FloatingAssistantService : Service() {
                     val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     prefs.edit().putString(KEY_preparer_NAME, name.trim()).apply()
                     mainHandler.post {
-                        tvAssistantTitle?.text = "مساعد ${name.trim()}"
+                        tvAssistantTitle?.text = "مساعد ${name.trim()} الذكي"
                     }
                 }
             }
