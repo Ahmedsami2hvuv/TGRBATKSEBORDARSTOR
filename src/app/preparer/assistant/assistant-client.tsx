@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { parseQuantityFromLine } from "@/lib/auto-pricing";
+import { useEffect, useState, useMemo } from "react";
 
 type ProductItem = {
   originalIndex: number;
@@ -42,6 +41,7 @@ type CourierItem = {
 type ShopItem = {
   id: string;
   name: string;
+  regionId?: string | null;
 };
 
 type RegionItem = {
@@ -55,28 +55,48 @@ type Props = {
   initialPreparerId: string;
 };
 
-type ActiveTab = "home" | "pricing" | "assign_courier" | "new_order" | "wallet";
+type ActiveTab = "orders_couriers" | "new_order" | "pricing";
 
 export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
   const [preparerId, setPreparerId] = useState(initialPreparerId || "");
   const [preparer, setPreparer] = useState(initialPreparer);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("home");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("orders_couriers");
 
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [couriers, setCouriers] = useState<CourierItem[]>([]);
   const [shops, setShops] = useState<ShopItem[]>([]);
   const [regions, setRegions] = useState<RegionItem[]>([]);
 
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  const [savingItemIndex, setSavingItemIndex] = useState<number | null>(null);
-  const [savedSuccessIndex, setSavedSuccessIndex] = useState<number | null>(null);
-  const [copyFeedback, setCopyFeedback] = useState(false);
+  // حالات نافذة الإسناد السريع للمندوب
+  const [assignModalOrder, setAssignModalOrder] = useState<OrderItem | null>(null);
+  const [courierSearchQuery, setCourierSearchQuery] = useState("");
 
-  // استرجاع معرف المجهز من التخزين المحلي إن لم يكن ممرراً
+  // حالات رفع طلب جديد
+  const [shopSearchQuery, setShopSearchQuery] = useState("");
+  const [selectedShop, setSelectedShop] = useState<ShopItem | null>(null);
+  const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
+  const [newOrderType, setNewOrderType] = useState("عادي");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newOrderSubtotalAlf, setNewOrderSubtotalAlf] = useState("");
+  const [newOrderTime, setNewOrderTime] = useState("فوري");
+  const [selectedRegionId, setSelectedRegionId] = useState("");
+  const [newDeliveryPriceAlf, setNewDeliveryPriceAlf] = useState("");
+  const [isPrepaidAll, setIsPrepaidAll] = useState(false);
+  const [isReverseOrder, setIsReverseOrder] = useState(false);
+  const [newNotes, setNewNotes] = useState("");
+  const [newImageBase64, setNewImageBase64] = useState<string | null>(null);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  // حالات التسعير
+  const [selectedPricingOrderId, setSelectedPricingOrderId] = useState<string | null>(null);
+  const [pricingInputs, setPricingInputs] = useState<Record<string, { buy: string; actualBuy: string }>>({});
+  const [savingProdKey, setSavingProdKey] = useState<string | null>(null);
+  const [savedProdKey, setSavedProdKey] = useState<string | null>(null);
+
   useEffect(() => {
     if (!preparerId && typeof window !== "undefined") {
       const saved = localStorage.getItem("preparer_id") || "";
@@ -103,12 +123,12 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
         setShops(data.shops || []);
         setRegions(data.regions || []);
         if (data.preparer) setPreparer(data.preparer);
-        if (!selectedOrderId && data.orders?.length > 0) {
-          setSelectedOrderId(data.orders[0].id);
+        if (!selectedPricingOrderId && data.orders?.length > 0) {
+          setSelectedPricingOrderId(data.orders[0].id);
         }
       }
     } catch (err) {
-      setStatusMsg({ text: "تعذر الاتصال بالخادم لجلب الطلبات.", type: "error" });
+      setStatusMsg({ text: "تعذر الاتصال بالخادم لجلب البيانات.", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -120,17 +140,186 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
     }
   }, [preparerId]);
 
-  const selectedOrder = orders.find((o) => o.id === selectedOrderId) || orders[0] || null;
+  // إسناد المندوب للطلب فوراً
+  async function handleAssignCourier(order: OrderItem, courier: CourierItem) {
+    setActionLoading(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/preparer/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "assign_courier",
+          preparerId,
+          orderId: order.id,
+          courierId: courier.id,
+          isDraft: order.isDraft,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMsg({ text: data.message || `تم إسناد الطلب إلى ${courier.name} ✓`, type: "success" });
+        setAssignModalOrder(null);
+        fetchAssistantData();
+      } else {
+        setStatusMsg({ text: data.error || "فشل إسناد المندوب", type: "error" });
+      }
+    } catch (e) {
+      setStatusMsg({ text: "خطأ في الاتصال أثناء الإسناد", type: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
-  async function handleAutoSavePrice(
-    order: OrderItem,
-    prod: ProductItem,
-    buyVal: string,
-    actualBuyVal: string
-  ) {
+  // إجراء "أعطيت"
+  async function handleActionGiven(order: OrderItem) {
+    setActionLoading(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/preparer/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "action_given",
+          preparerId,
+          orderId: order.id,
+          isDraft: order.isDraft,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMsg({ text: data.message || "تم تسجيل (أعطيت للمندوب) بنجاح ✓", type: "success" });
+        fetchAssistantData();
+      } else {
+        setStatusMsg({ text: data.error || "فشل تسجيل الإجراء", type: "error" });
+      }
+    } catch (e) {
+      setStatusMsg({ text: "خطأ في الاتصال بالخادم", type: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  // إجراء "أخذت"
+  async function handleActionTaken(order: OrderItem) {
+    setActionLoading(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/preparer/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "action_taken",
+          preparerId,
+          orderId: order.id,
+          isDraft: order.isDraft,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMsg({ text: data.message || "تم تسجيل (أخذت من المحل) بنجاح ✓", type: "success" });
+        fetchAssistantData();
+      } else {
+        setStatusMsg({ text: data.error || "فشل تسجيل الإجراء", type: "error" });
+      }
+    } catch (e) {
+      setStatusMsg({ text: "خطأ في الاتصال بالخادم", type: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  // اختيار المنطقة عند رفع طلب جديد وحساب سعر التوصيل الافتراضي
+  function handleRegionChange(regId: string) {
+    setSelectedRegionId(regId);
+    const reg = regions.find((r) => r.id === regId);
+    if (reg && reg.deliveryPrice) {
+      const dPrice = typeof reg.deliveryPrice === "object" ? Number(reg.deliveryPrice) : Number(reg.deliveryPrice);
+      if (!isNaN(dPrice) && dPrice > 0) {
+        setNewDeliveryPriceAlf(String(dPrice / 1000));
+      }
+    }
+  }
+
+  // رفع صورة الطلب كـ Base64
+  function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setNewImageBase64(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // رفع الطلب الجديد
+  async function handleCreateOrderSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedShop) {
+      setStatusMsg({ text: "يرجى اختيار المحل أولاً", type: "error" });
+      return;
+    }
+    if (!newCustomerPhone || newCustomerPhone.trim().length < 8) {
+      setStatusMsg({ text: "يرجى إدخال رقم هاتف الزبون بشكل صحيح", type: "error" });
+      return;
+    }
+    if (!selectedRegionId) {
+      setStatusMsg({ text: "يرجى اختيار المنطقة", type: "error" });
+      return;
+    }
+
+    setSubmittingOrder(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/preparer/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_order",
+          preparerId,
+          shopId: selectedShop.id,
+          orderType: newOrderType,
+          customerPhone: newCustomerPhone,
+          orderSubtotalAlf: newOrderSubtotalAlf,
+          orderTime: newOrderTime,
+          regionId: selectedRegionId,
+          deliveryPriceAlf: newDeliveryPriceAlf,
+          prepaidAll: isPrepaidAll,
+          isReverseOrder: isReverseOrder,
+          imageBase64: newImageBase64,
+          notes: newNotes,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMsg({ text: data.message || `تم رفع الطلب بنجاح برقم #${data.orderNumber} ✓`, type: "success" });
+        setSelectedShop(null);
+        setShopSearchQuery("");
+        setNewCustomerPhone("");
+        setNewOrderSubtotalAlf("");
+        setNewOrderTime("فوري");
+        setSelectedRegionId("");
+        setNewDeliveryPriceAlf("");
+        setIsPrepaidAll(false);
+        setIsReverseOrder(false);
+        setNewNotes("");
+        setNewImageBase64(null);
+        fetchAssistantData();
+      } else {
+        setStatusMsg({ text: data.error || "فشل رفع الطلب", type: "error" });
+      }
+    } catch (err) {
+      setStatusMsg({ text: "خطأ في الاتصال أثناء رفع الطلب", type: "error" });
+    } finally {
+      setSubmittingOrder(false);
+    }
+  }
+
+  // حفظ سعر المادة في تبويب التسعير
+  async function handleSaveProductPrice(order: OrderItem, prod: ProductItem, buyVal: string, actualBuyVal: string) {
     if (!buyVal || isNaN(Number(buyVal))) return;
-
-    setSavingItemIndex(prod.originalIndex);
+    const key = `${order.id}-${prod.originalIndex}`;
+    setSavingProdKey(key);
     try {
       const res = await fetch("/api/preparer/assistant", {
         method: "POST",
@@ -147,7 +336,6 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
       });
       const data = await res.json();
       if (data.success) {
-        // تحديث الحالة محلياً فوراً
         setOrders((prev) =>
           prev.map((ord) => {
             if (ord.id !== order.id) return ord;
@@ -166,624 +354,708 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
             };
           })
         );
-        setSavedSuccessIndex(prod.originalIndex);
-        setTimeout(() => setSavedSuccessIndex(null), 2000);
+        setSavedProdKey(key);
+        setTimeout(() => setSavedProdKey(null), 2500);
       }
     } catch (err) {
-      console.error("Auto save failed:", err);
+      console.error("Save price failed:", err);
     } finally {
-      setSavingItemIndex(null);
+      setSavingProdKey(null);
     }
   }
 
-  async function handleAssignCourier(orderId: string, isDraft: boolean, courierId: string) {
-    if (!courierId) return;
-    setActionLoading(true);
-    setStatusMsg(null);
-    try {
-      const res = await fetch("/api/preparer/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "assign_courier",
-          preparerId,
-          orderId,
-          courierId,
-          isDraft,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStatusMsg({ text: data.message || "تم إسناد المندوب بنجاح ✓", type: "success" });
-        fetchAssistantData();
-      } else {
-        setStatusMsg({ text: data.error || "فشل إسناد المندوب", type: "error" });
-      }
-    } catch (e) {
-      setStatusMsg({ text: "خطأ في الاتصال بالخادم", type: "error" });
-    } finally {
-      setActionLoading(false);
-    }
-  }
+  // فلترة المحلات للبحث
+  const filteredShops = useMemo(() => {
+    if (!shopSearchQuery.trim()) return shops.slice(0, 10);
+    const q = shopSearchQuery.toLowerCase().trim();
+    return shops.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 15);
+  }, [shops, shopSearchQuery]);
 
-  async function handleUpdateOrderStatus(orderId: string, newStatus: string) {
-    setActionLoading(true);
-    setStatusMsg(null);
-    try {
-      const res = await fetch("/api/preparer/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update_order_status",
-          preparerId,
-          orderId,
-          newStatus,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStatusMsg({ text: data.message || "تم تحديث الحالة بنجاح ✓", type: "success" });
-        fetchAssistantData();
-      } else {
-        setStatusMsg({ text: data.error || "فشل تحديث الحالة", type: "error" });
-      }
-    } catch (e) {
-      setStatusMsg({ text: "خطأ في الاتصال بالخادم", type: "error" });
-    } finally {
-      setActionLoading(false);
-    }
-  }
+  // فلترة المناديب للبحث
+  const filteredCouriers = useMemo(() => {
+    if (!courierSearchQuery.trim()) return couriers;
+    const q = courierSearchQuery.toLowerCase().trim();
+    return couriers.filter((c) => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)));
+  }, [couriers, courierSearchQuery]);
 
-  function handleCopyOrderText() {
-    if (!selectedOrder) return;
-    const lines = [
-      `طلب #${selectedOrder.orderNumber} - ${selectedOrder.title}`,
-      `المنطقة: ${selectedOrder.regionName}`,
-      `الوقت: ${selectedOrder.orderTime}`,
-      `--- المنتجات ---`,
-      ...selectedOrder.products.map(
-        (p) =>
-          `• ${p.line} ${
-            p.isPriced
-              ? `(شراء: ${p.buyAlf}${p.actualBuyAlf ? ` | خصم: ${p.actualBuyAlf}` : ""})`
-              : "[غير مسعر]"
-          }`
-      ),
-    ];
-    navigator.clipboard.writeText(lines.join("\n"));
-    setCopyFeedback(true);
-    setTimeout(() => setCopyFeedback(false), 2000);
-  }
-
-  if (!preparerId && !preparer) {
-    return (
-      <div className="max-w-md mx-auto p-4 space-y-4 text-center">
-        <div className="text-3xl">🪄</div>
-        <h2 className="text-lg font-black text-amber-400">مساعد المجهز الذكي</h2>
-        <p className="text-xs text-slate-400">الرجاء إدخال معرف المجهز الخاص بك للبدء:</p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="معرف المجهز..."
-            className="flex-1 rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
-            onChange={(e) => setPreparerId(e.target.value.trim())}
-          />
-          <button
-            onClick={() => fetchAssistantData()}
-            className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2 text-sm transition"
-          >
-            دخول
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // الطلب المحدد في شاشة التسعير
+  const selectedPricingOrder = orders.find((o) => o.id === selectedPricingOrderId) || orders[0] || null;
 
   return (
-    <div className="max-w-lg mx-auto space-y-3 pb-16 font-sans select-none" dir="rtl">
-      {/* شريط المساعد العلوي */}
-      <header className="flex items-center justify-between bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl border border-slate-800 shadow-xl">
+    <div className="flex flex-col h-full min-h-[520px] max-w-lg mx-auto bg-neutral-950 text-neutral-100 font-sans select-none overflow-hidden pb-4" dir="rtl">
+      {/* الشريط العلوي */}
+      <header className="flex items-center justify-between px-3 py-2.5 bg-neutral-900/90 border-b border-neutral-800 backdrop-blur-md sticky top-0 z-20">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab("home")}
-            className="h-8 w-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-base shadow-inner hover:bg-amber-500/30 transition"
-            title="الرئيسية"
-          >
-            🪄
-          </button>
-          <div>
-            <h1 className="text-sm font-black text-white">مساعد المجهز الذكي</h1>
-            <p className="text-[10px] font-bold text-amber-400/90">
-              {preparer?.name ? `المجهز: ${preparer.name}` : "لوحة التحكم السريعة"}
-            </p>
-          </div>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-bold tracking-wide text-neutral-200">
+            {preparer ? preparer.name : "المساعد الذكي للمجهز"}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => fetchAssistantData()}
-            disabled={loading}
-            className="rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 text-xs font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50"
-          >
-            <span>🔄</span>
-            <span>{loading ? "جاري..." : "تحديث"}</span>
-          </button>
-        </div>
+        <button
+          onClick={() => fetchAssistantData()}
+          disabled={loading}
+          className="px-2.5 py-1 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+        >
+          <span className={`text-xs ${loading ? "animate-spin" : ""}`}>🔄</span>
+          <span>تحديث</span>
+        </button>
       </header>
 
-      {/* شريط التبويبات السريعة */}
-      <nav className="grid grid-cols-4 gap-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+      {/* شريط التبويبات الرئيسي */}
+      <div className="grid grid-cols-3 p-1.5 bg-neutral-900 border-b border-neutral-800/80 text-xs font-medium gap-1 sticky top-10 z-10">
         <button
-          onClick={() => setActiveTab("home")}
-          className={`py-2 px-1 rounded-xl text-[11px] font-black transition flex flex-col items-center gap-0.5 ${
-            activeTab === "home" ? "bg-amber-500 text-slate-950 shadow-md" : "text-slate-400 hover:bg-slate-800"
+          onClick={() => setActiveTab("orders_couriers")}
+          className={`py-2 px-1 rounded-lg text-center transition flex flex-col items-center gap-1 ${
+            activeTab === "orders_couriers"
+              ? "bg-amber-500/20 text-amber-400 font-bold border border-amber-500/40"
+              : "text-neutral-400 hover:bg-neutral-800/60"
           }`}
         >
-          <span>🏠</span>
-          <span>الخيارات</span>
+          <span className="text-sm">🛵</span>
+          <span>الطلبات والمناديب</span>
         </button>
-        <button
-          onClick={() => setActiveTab("pricing")}
-          className={`py-2 px-1 rounded-xl text-[11px] font-black transition flex flex-col items-center gap-0.5 ${
-            activeTab === "pricing" ? "bg-amber-500 text-slate-950 shadow-md" : "text-slate-400 hover:bg-slate-800"
-          }`}
-        >
-          <span>📦</span>
-          <span>التسعير</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("assign_courier")}
-          className={`py-2 px-1 rounded-xl text-[11px] font-black transition flex flex-col items-center gap-0.5 ${
-            activeTab === "assign_courier" ? "bg-amber-500 text-slate-950 shadow-md" : "text-slate-400 hover:bg-slate-800"
-          }`}
-        >
-          <span>🛵</span>
-          <span>المندوب</span>
-        </button>
+
         <button
           onClick={() => setActiveTab("new_order")}
-          className={`py-2 px-1 rounded-xl text-[11px] font-black transition flex flex-col items-center gap-0.5 ${
-            activeTab === "new_order" ? "bg-amber-500 text-slate-950 shadow-md" : "text-slate-400 hover:bg-slate-800"
+          className={`py-2 px-1 rounded-lg text-center transition flex flex-col items-center gap-1 ${
+            activeTab === "new_order"
+              ? "bg-blue-500/20 text-blue-400 font-bold border border-blue-500/40"
+              : "text-neutral-400 hover:bg-neutral-800/60"
           }`}
         >
-          <span>➕</span>
+          <span className="text-sm">➕</span>
           <span>طلب جديد</span>
         </button>
-      </nav>
 
-      {/* رسائل التنبيه والنجاح */}
-      {statusMsg && (
-        <div
-          className={`p-3 rounded-xl text-xs font-bold text-center border animate-in fade-in ${
-            statusMsg.type === "success"
-              ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
-              : "bg-rose-950/60 border-rose-800 text-rose-300"
+        <button
+          onClick={() => setActiveTab("pricing")}
+          className={`py-2 px-1 rounded-lg text-center transition flex flex-col items-center gap-1 ${
+            activeTab === "pricing"
+              ? "bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40"
+              : "text-neutral-400 hover:bg-neutral-800/60"
           }`}
         >
-          {statusMsg.text}
+          <span className="text-sm">🏷️</span>
+          <span>تسعير المواد</span>
+        </button>
+      </div>
+
+      {/* رسالة التنبيه / النجاح */}
+      {statusMsg && (
+        <div
+          className={`mx-3 mt-2.5 p-2.5 rounded-lg text-xs flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200 ${
+            statusMsg.type === "success"
+              ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"
+              : "bg-rose-950/80 text-rose-300 border border-rose-800/60"
+          }`}
+        >
+          <span>{statusMsg.text}</span>
+          <button
+            onClick={() => setStatusMsg(null)}
+            className="text-neutral-400 hover:text-white px-1 text-xs"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* 1. التبويب الرئيسي: الخيارات الشاملة للمساعد */}
-      {/* ======================================================== */}
-      {activeTab === "home" && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* خيار 1: فتح طلبات التجهيز وتسعير كل منتج */}
-            <button
-              onClick={() => setActiveTab("pricing")}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-indigo-500/30 hover:border-indigo-400 text-right space-y-1.5 transition active:scale-95 shadow-lg group"
-            >
-              <div className="h-9 w-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg font-black group-hover:scale-110 transition">
-                📦
-              </div>
-              <h3 className="text-xs font-black text-white">طلبات التجهيز</h3>
-              <p className="text-[10px] text-slate-400 leading-snug">
-                تسعير كل منتج بسهولة مع الحفظ التلقائي الفوري.
-              </p>
-              <span className="inline-block text-[9px] font-black text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded-md">
-                {orders.length} طلبات متاحة
-              </span>
-            </button>
-
-            {/* خيار 2: فتح طلبات المحلات وإسنادها للمندوب */}
-            <button
-              onClick={() => setActiveTab("assign_courier")}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-amber-950/60 border border-amber-500/30 hover:border-amber-400 text-right space-y-1.5 transition active:scale-95 shadow-lg group"
-            >
-              <div className="h-9 w-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-black group-hover:scale-110 transition">
-                🛵
-              </div>
-              <h3 className="text-xs font-black text-white">إسناد لمندوب</h3>
-              <p className="text-[10px] text-slate-400 leading-snug">
-                إسناد الطلبات لمندوب، وتسجيل حركات التسليم والاستلام.
-              </p>
-              <span className="inline-block text-[9px] font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-md">
-                {couriers.length} مناديب متاحين
-              </span>
-            </button>
-
-            {/* خيار 3: رفع طلب جديد من محل معين */}
-            <button
-              onClick={() => setActiveTab("new_order")}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-950/60 border border-emerald-500/30 hover:border-emerald-400 text-right space-y-1.5 transition active:scale-95 shadow-lg group"
-            >
-              <div className="h-9 w-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-black group-hover:scale-110 transition">
-                ➕
-              </div>
-              <h3 className="text-xs font-black text-white">رفع طلب من محل</h3>
-              <p className="text-[10px] text-slate-400 leading-snug">
-                لصق قائمة وتجهيز طلب سريع من أي محل مرتبط بك.
-              </p>
-              <span className="inline-block text-[9px] font-black text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-md">
-                {shops.length} محلات مرتبطة
-              </span>
-            </button>
-
-            {/* خيار 4: فتح المحفظة والحسابات */}
-            <a
-              href={`/preparer/wallet?p=${encodeURIComponent(preparerId)}`}
-              className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-sky-950/60 border border-sky-500/30 hover:border-sky-400 text-right space-y-1.5 transition active:scale-95 shadow-lg group block"
-            >
-              <div className="h-9 w-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-lg font-black group-hover:scale-110 transition">
-                💰
-              </div>
-              <h3 className="text-xs font-black text-white">المحفظة والديون</h3>
-              <p className="text-[10px] text-slate-400 leading-snug">
-                عرض رصيدك، استحقاقات المشتريات، ودفتر الحسابات.
-              </p>
-              <span className="inline-block text-[9px] font-black text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-md">
-                فتح المحفظة ↗
-              </span>
-            </a>
+      {/* المحتوى حسب التبويب */}
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+        {loading && orders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-neutral-400 text-xs gap-2">
+            <span className="text-2xl animate-spin">⏳</span>
+            <span>جاري تحميل البيانات...</span>
           </div>
+        ) : null}
 
-          {/* روابط سريعة للموقع والتطبيق الكامل */}
-          <div className="p-3 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-2">
-            <span className="text-[11px] font-black text-slate-300 block">روابط الواجهة الكاملة:</span>
-            <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold">
-              <a
-                href={`/preparer/preparation?p=${encodeURIComponent(preparerId)}`}
-                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-              >
-                تجهيز الطلبات الكامل 📋
-              </a>
-              <a
-                href={`/preparer?p=${encodeURIComponent(preparerId)}`}
-                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-              >
-                لوحة المجهز الرئيسية 🏢
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+        {/* 1. تبويب الطلبات والمناديب (إسناد وحركات) */}
+        {activeTab === "orders_couriers" && (
+          <div className="space-y-2.5">
+            {orders.length === 0 && !loading && (
+              <div className="text-center py-12 text-neutral-500 text-xs bg-neutral-900/40 rounded-xl border border-neutral-800">
+                لا توجد طلبات معلقة حالياً.
+              </div>
+            )}
 
-      {/* ======================================================== */}
-      {/* 2. تبويب: تسعير كل منتج في الطلبات المسندة */}
-      {/* ======================================================== */}
-      {activeTab === "pricing" && (
-        <div className="space-y-3">
-          {/* اختيار الطلب المسند */}
-          <section className="space-y-1.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-black text-slate-300">الطلبات المسندة للتسعير ({orders.length}):</span>
-              {selectedOrder && (
-                <button
-                  onClick={handleCopyOrderText}
-                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 transition flex items-center gap-1"
+            {orders.map((order) => {
+              const hasCourier = Boolean(order.courier);
+              const isDelivering = order.status === "delivering";
+
+              return (
+                <div
+                  key={order.id}
+                  className="bg-neutral-900/80 border border-neutral-800 rounded-xl p-3 shadow-sm hover:border-neutral-700 transition"
                 >
-                  <span>{copyFeedback ? "✓ تم النسخ!" : "📋 نسخ القائمة"}</span>
-                </button>
+                  {/* رأس الكرت: رقم الطلب + المندوب + الحالة */}
+                  <div className="flex items-center justify-between pb-2 border-b border-neutral-800/60 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-sm text-amber-400">
+                        #{order.orderNumber}
+                      </span>
+                      {order.isDraft && (
+                        <span className="px-1.5 py-0.5 text-[10px] bg-purple-950 text-purple-300 rounded border border-purple-800/40">
+                          مسودة
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {hasCourier ? (
+                        <span className="text-[11px] bg-blue-950/70 text-blue-300 px-2 py-0.5 rounded-md border border-blue-800/40 flex items-center gap-1">
+                          🛵 {order.courier?.name}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">
+                          غير مسند
+                        </span>
+                      )}
+
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          isDelivering
+                            ? "bg-amber-950 text-amber-300 border border-amber-800/40"
+                            : "bg-neutral-800 text-neutral-400"
+                        }`}
+                      >
+                        {isDelivering ? "جارٍ التوصيل" : order.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* تفاصيل الكرت: المحل - المنطقة - الوقت */}
+                  <div className="grid grid-cols-3 gap-1 text-[11px] text-neutral-300 mb-3 bg-neutral-950/50 p-2 rounded-lg border border-neutral-800/50">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-neutral-500">المحل</span>
+                      <span className="font-medium truncate" title={order.shopName}>
+                        🏬 {order.shopName}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-neutral-500">المنطقة</span>
+                      <span className="font-medium truncate" title={order.regionName}>
+                        📍 {order.regionName}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-neutral-500">الوقت</span>
+                      <span className="font-medium truncate" title={order.orderTime}>
+                        ⏰ {order.orderTime}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* الأزرار الثلاثة المطلوبة */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-1">
+                    {/* زر إسناد */}
+                    <button
+                      onClick={() => {
+                        setAssignModalOrder(order);
+                        setCourierSearchQuery("");
+                      }}
+                      disabled={actionLoading}
+                      className="py-1.5 px-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50"
+                    >
+                      <span>🛵</span>
+                      <span>إسناد</span>
+                    </button>
+
+                    {/* زر أعطيت */}
+                    <button
+                      onClick={() => handleActionGiven(order)}
+                      disabled={actionLoading}
+                      className="py-1.5 px-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50"
+                    >
+                      <span>📦</span>
+                      <span>أعطيت</span>
+                    </button>
+
+                    {/* زر أخذت */}
+                    <button
+                      onClick={() => handleActionTaken(order)}
+                      disabled={actionLoading}
+                      className="py-1.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50"
+                    >
+                      <span>💰</span>
+                      <span>أخذت</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 2. تبويب رفع طلب جديد (مباشر وسلس داخل المساعد) */}
+        {activeTab === "new_order" && (
+          <form onSubmit={handleCreateOrderSubmit} className="space-y-3 bg-neutral-900/60 p-3.5 rounded-xl border border-neutral-800">
+            <h3 className="text-xs font-bold text-blue-400 flex items-center gap-1.5 border-b border-neutral-800 pb-2">
+              <span>➕</span>
+              <span>رفع وتجهيز طلبية جديدة</span>
+            </h3>
+
+            {/* اختيار المحل مع بحث تلقائي ذكي */}
+            <div className="space-y-1 relative">
+              <label className="text-[11px] font-semibold text-neutral-300">
+                اسم المحل <span className="text-rose-400">*</span>
+              </label>
+
+              {selectedShop ? (
+                <div className="flex items-center justify-between bg-neutral-800 border border-blue-500/50 p-2 rounded-lg text-xs text-blue-300">
+                  <span className="font-bold">🏬 {selectedShop.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedShop(null);
+                      setShopSearchQuery("");
+                    }}
+                    className="text-neutral-400 hover:text-white text-xs px-2 py-0.5 bg-neutral-700 rounded"
+                  >
+                    تغيير
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="اكتب أول أحرف من اسم المحل..."
+                    value={shopSearchQuery}
+                    onChange={(e) => {
+                      setShopSearchQuery(e.target.value);
+                      setIsShopDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsShopDropdownOpen(true)}
+                    className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none"
+                  />
+
+                  {isShopDropdownOpen && filteredShops.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl max-h-44 overflow-y-auto z-30 divide-y divide-neutral-800">
+                      {filteredShops.map((shop) => (
+                        <button
+                          key={shop.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedShop(shop);
+                            setIsShopDropdownOpen(false);
+                            if (shop.regionId && !selectedRegionId) {
+                              handleRegionChange(shop.regionId);
+                            }
+                          }}
+                          className="w-full text-right px-3 py-2 text-xs text-neutral-200 hover:bg-blue-600/20 hover:text-blue-300 transition flex items-center justify-between"
+                        >
+                          <span>🏬 {shop.name}</span>
+                          <span className="text-[10px] text-neutral-500">اختر</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
-            {orders.length === 0 && !loading ? (
-              <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs font-bold">
-                🎉 لا توجد طلبات مسندة لك حالياً بحاجة لتجهيز.
+            {/* نوع الطلب */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-neutral-300">نوع الطلب</label>
+              <div className="grid grid-cols-4 gap-1">
+                {["عادي", "فوري", "مجدول", "تجهيز"].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setNewOrderType(type)}
+                    className={`py-1.5 text-xs rounded-lg font-medium transition ${
+                      newOrderType === type
+                        ? "bg-blue-600 text-white font-bold"
+                        : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                {orders.map((ord) => {
-                  const unpricedCount = ord.products.filter((p) => !p.isPriced).length;
-                  const isSelected = selectedOrderId === ord.id;
-                  return (
-                    <button
-                      key={ord.id}
-                      onClick={() => setSelectedOrderId(ord.id)}
-                      className={`shrink-0 flex flex-col items-start p-2.5 rounded-2xl border text-right transition active:scale-95 min-w-[140px] max-w-[180px] ${
-                        isSelected
-                          ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20 text-white"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-mono text-xs font-black text-amber-400">
-                          #{ord.orderNumber}
-                        </span>
-                        {unpricedCount > 0 ? (
-                          <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full">
-                            {unpricedCount} غير مسعر
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded-full">
-                            ✓ مسعر
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs font-bold text-white truncate w-full mt-1">
-                        {ord.regionName}
-                      </span>
-                      <span className="text-[10px] text-slate-400 truncate w-full">
-                        ⏰ {ord.orderTime}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+            </div>
 
-          {/* قائمة المنتجات والتسعير السريع */}
-          {selectedOrder && (
-            <section className="bg-slate-900/80 rounded-2xl border border-slate-800 p-3 space-y-3 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div>
-                  <h2 className="text-xs font-black text-white flex items-center gap-1.5">
-                    <span>📦 منتجات طلب #{selectedOrder.orderNumber}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      ({selectedOrder.products.length} مواد)
-                    </span>
-                  </h2>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    📍 {selectedOrder.regionName} | {selectedOrder.shopName}
-                  </p>
-                </div>
-                <a
-                  href={`/preparer/preparation?p=${encodeURIComponent(preparerId)}`}
-                  className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300"
+            {/* رقم هاتف الزبون */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-neutral-300">
+                رقم هاتف الزبون <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="tel"
+                placeholder="07XXXXXXXXX"
+                value={newCustomerPhone}
+                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none dir-ltr text-right"
+              />
+            </div>
+
+            {/* سعر الطلب / المواد بالآلاف */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-300">سعر المواد (بالآلاف)</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="مثال: 15"
+                  value={newOrderSubtotalAlf}
+                  onChange={(e) => setNewOrderSubtotalAlf(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-300">وقت الطلب</label>
+                <input
+                  type="text"
+                  placeholder="فوري / عصراً..."
+                  value={newOrderTime}
+                  onChange={(e) => setNewOrderTime(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* اختيار المنطقة وتعديل أجرة التوصيل */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-300">
+                  المنطقة <span className="text-rose-400">*</span>
+                </label>
+                <select
+                  value={selectedRegionId}
+                  onChange={(e) => handleRegionChange(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white outline-none"
                 >
-                  فتح في التجهيز ↗
-                </a>
+                  <option value="">اختر المنطقة...</option>
+                  {regions.map((reg) => (
+                    <option key={reg.id} value={reg.id}>
+                      {reg.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="space-y-2.5">
-                {selectedOrder.products.map((prod) => (
-                  <ProductPricingCard
-                    key={`${selectedOrder.id}-${prod.originalIndex}`}
-                    product={prod}
-                    isSaving={savingItemIndex === prod.originalIndex}
-                    isSaved={savedSuccessIndex === prod.originalIndex}
-                    onSave={(buy, act) => handleAutoSavePrice(selectedOrder, prod, buy, act)}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-300">أجرة التوصيل (آلاف)</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="تلقائي"
+                  value={newDeliveryPriceAlf}
+                  onChange={(e) => setNewDeliveryPriceAlf(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* أزرار التبديل: كلشي واصل + طلب عكسي */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <label className="flex items-center gap-2 p-2 bg-neutral-950 border border-neutral-800 rounded-lg cursor-pointer hover:border-neutral-700 transition">
+                <input
+                  type="checkbox"
+                  checked={isPrepaidAll}
+                  onChange={(e) => setIsPrepaidAll(e.target.checked)}
+                  className="w-4 h-4 rounded text-blue-600 bg-neutral-800 border-neutral-700 focus:ring-0"
+                />
+                <span className="text-xs text-neutral-300 font-medium">كلشي واصل</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-2 bg-neutral-950 border border-neutral-800 rounded-lg cursor-pointer hover:border-neutral-700 transition">
+                <input
+                  type="checkbox"
+                  checked={isReverseOrder}
+                  onChange={(e) => setIsReverseOrder(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-600 bg-neutral-800 border-neutral-700 focus:ring-0"
+                />
+                <span className="text-xs text-neutral-300 font-medium">طلب عكسي</span>
+              </label>
+            </div>
+
+            {/* ملاحظات */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-neutral-300">ملاحظات الطلب (اختياري)</label>
+              <textarea
+                rows={2}
+                placeholder="تفاصيل إضافية أو عنوان دقيق..."
+                value={newNotes}
+                onChange={(e) => setNewNotes(e.target.value)}
+                className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none resize-none"
+              />
+            </div>
+
+            {/* إرفاق صورة */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-neutral-300">صورة الطلب / الفاتورة</label>
+              <div className="flex items-center gap-2">
+                <label className="flex-1 cursor-pointer py-2 px-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-300 text-center font-medium transition flex items-center justify-center gap-2">
+                  <span>📷</span>
+                  <span>{newImageBase64 ? "تغيير الصورة" : "التقاط أو رفع صورة"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="hidden"
                   />
-                ))}
+                </label>
+                {newImageBase64 && (
+                  <button
+                    type="button"
+                    onClick={() => setNewImageBase64(null)}
+                    className="py-2 px-2.5 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg text-xs"
+                  >
+                    حذف ✕
+                  </button>
+                )}
               </div>
-            </section>
-          )}
-        </div>
-      )}
+              {newImageBase64 && (
+                <div className="relative w-full h-24 rounded-lg overflow-hidden border border-neutral-700 mt-1">
+                  <img src={newImageBase64} alt="Order preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
 
-      {/* ======================================================== */}
-      {/* 3. تبويب: إسناد الطلبات لمندوب وتحديث الحركات */}
-      {/* ======================================================== */}
-      {activeTab === "assign_courier" && (
-        <div className="space-y-3">
-          <div className="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-3">
-            <h2 className="text-xs font-black text-white">إسناد وتحديث حركات الطلبات للمناديب:</h2>
+            {/* زر رفع الطلب */}
+            <button
+              type="submit"
+              disabled={submittingOrder}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs shadow-lg transition active:scale-98 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {submittingOrder ? (
+                <>
+                  <span className="animate-spin text-sm">⏳</span>
+                  <span>جاري رفع الطلب...</span>
+                </>
+              ) : (
+                <>
+                  <span>🚀</span>
+                  <span>رفع الطلب الآن</span>
+                </>
+              )}
+            </button>
+          </form>
+        )}
 
-            {orders.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">لا توجد طلبات نشطة حالياً.</p>
-            ) : (
+        {/* 3. تبويب تسعير المواد الفوري */}
+        {activeTab === "pricing" && (
+          <div className="space-y-3">
+            {/* اختيار الطلب للتسعير */}
+            {orders.length > 1 && (
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-400">اختر الطلب للتسعير:</label>
+                <select
+                  value={selectedPricingOrderId || ""}
+                  onChange={(e) => setSelectedPricingOrderId(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-xs text-neutral-200 outline-none"
+                >
+                  {orders.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      #{o.orderNumber} - {o.shopName} ({o.products.length} مواد)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {selectedPricingOrder ? (
               <div className="space-y-2.5">
-                {orders.map((ord) => (
-                  <div key={ord.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-black text-amber-400">
-                        طلب #{ord.orderNumber} ({ord.shopName})
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                        الحالة: {ord.status}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-slate-300">
-                      📍 {ord.regionName} | ⏰ {ord.orderTime}
-                    </p>
-
-                    {/* المندوب المسند حالياً */}
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-slate-400 text-[11px]">المندوب الحالي:</span>
-                      <span className="font-bold text-white text-[11px]">
-                        {ord.courier?.name ? `🛵 ${ord.courier.name}` : "لم يتم إسناد مندوب"}
-                      </span>
-                    </div>
-
-                    {/* اختيار المندوب للإسناد */}
-                    <div className="flex gap-1.5 pt-1">
-                      <select
-                        defaultValue={ord.courier?.id || ""}
-                        onChange={(e) => handleAssignCourier(ord.id, ord.isDraft, e.target.value)}
-                        disabled={actionLoading}
-                        className="flex-1 rounded-xl bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400"
-                      >
-                        <option value="">اختر مندوب للإسناد...</option>
-                        {couriers.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} {c.phone ? `(${c.phone})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* أزرار الحركات السريعة */}
-                    {!ord.isDraft && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <button
-                          onClick={() => handleUpdateOrderStatus(ord.id, "delivering")}
-                          disabled={actionLoading}
-                          className="py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black transition disabled:opacity-50"
-                        >
-                          🛵 أعطيت للمندوب
-                        </button>
-                        <button
-                          onClick={() => handleUpdateOrderStatus(ord.id, "processing")}
-                          disabled={actionLoading}
-                          className="py-1.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black transition disabled:opacity-50"
-                        >
-                          📦 استلمت من المحل
-                        </button>
-                      </div>
-                    )}
+                <div className="flex items-center justify-between bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800 text-xs">
+                  <div>
+                    <span className="font-bold text-amber-400">طلب #{selectedPricingOrder.orderNumber}</span>
+                    <span className="text-neutral-400 mr-2">🏬 {selectedPricingOrder.shopName}</span>
                   </div>
-                ))}
+                  <span className="text-neutral-400 text-[11px]">📍 {selectedPricingOrder.regionName}</span>
+                </div>
+
+                {selectedPricingOrder.products.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500 text-xs bg-neutral-900/30 rounded-lg">
+                    لا توجد مواد مسندة لك في هذا الطلب.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {selectedPricingOrder.products.map((prod) => {
+                      const key = `${selectedPricingOrder.id}-${prod.originalIndex}`;
+                      const currentInput = pricingInputs[key] || {
+                        buy: prod.buyAlf != null && prod.buyAlf !== "" ? String(prod.buyAlf) : "",
+                        actualBuy: prod.actualBuyAlf != null && prod.actualBuyAlf !== "" ? String(prod.actualBuyAlf) : "",
+                      };
+                      const isSaving = savingProdKey === key;
+                      const isSaved = savedProdKey === key;
+
+                      return (
+                        <div
+                          key={prod.originalIndex}
+                          className="bg-neutral-900/90 border border-neutral-800 rounded-xl p-3 space-y-2.5 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-semibold text-neutral-100 flex-1 leading-snug">
+                              • {prod.line}
+                            </span>
+                            {isSaved ? (
+                              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded animate-pulse">
+                                تم الحفظ ✓
+                              </span>
+                            ) : prod.isPriced ? (
+                              <span className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">
+                                مسعر
+                              </span>
+                            ) : (
+                              <span className="text-[10px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded border border-amber-800/50">
+                                غير مسعر
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {/* سعر الشراء (سعر السوق/الفاتورة) */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-neutral-400 font-medium">سعر الشراء (الفاتورة)</span>
+                              <input
+                                type="number"
+                                step="any"
+                                placeholder="مثال: 10"
+                                value={currentInput.buy}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setPricingInputs((prev) => ({
+                                    ...prev,
+                                    [key]: { ...currentInput, buy: val },
+                                  }));
+                                }}
+                                onBlur={() => {
+                                  if (currentInput.buy) {
+                                    handleSaveProductPrice(
+                                      selectedPricingOrder,
+                                      prod,
+                                      currentInput.buy,
+                                      currentInput.actualBuy
+                                    );
+                                  }
+                                }}
+                                className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-lg p-2 text-xs text-white font-bold outline-none"
+                              />
+                            </div>
+
+                            {/* سعر المحفظة الفعلي بعد الخصم */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-emerald-400 font-medium">سعر الخصم (للمحفظة)</span>
+                              <input
+                                type="number"
+                                step="any"
+                                placeholder="مثال: 9"
+                                value={currentInput.actualBuy}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setPricingInputs((prev) => ({
+                                    ...prev,
+                                    [key]: { ...currentInput, actualBuy: val },
+                                  }));
+                                }}
+                                onBlur={() => {
+                                  if (currentInput.buy) {
+                                    handleSaveProductPrice(
+                                      selectedPricingOrder,
+                                      prod,
+                                      currentInput.buy,
+                                      currentInput.actualBuy
+                                    );
+                                  }
+                                }}
+                                className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-lg p-2 text-xs text-emerald-300 font-bold outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* سعر البيع للزبون + زر الحفظ */}
+                          <div className="flex items-center justify-between pt-1 border-t border-neutral-800/60 text-xs">
+                            <div className="text-[11px] text-neutral-400">
+                              سعر البيع المقترح:{" "}
+                              <span className="text-amber-400 font-bold">
+                                {prod.sellAlf ? `${prod.sellAlf} ألف` : "—"}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (currentInput.buy) {
+                                  handleSaveProductPrice(
+                                    selectedPricingOrder,
+                                    prod,
+                                    currentInput.buy,
+                                    currentInput.actualBuy
+                                  );
+                                }
+                              }}
+                              disabled={isSaving || !currentInput.buy}
+                              className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-bold transition active:scale-95 disabled:opacity-40"
+                            >
+                              {isSaving ? "جاري الحفظ..." : "حفظ السعر"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-neutral-500 text-xs bg-neutral-900/40 rounded-xl border border-neutral-800">
+                لا توجد طلبات لتسعيرها حالياً.
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* ======================================================== */}
-      {/* 4. تبويب: رفع طلب جديد من محل */}
-      {/* ======================================================== */}
-      {activeTab === "new_order" && (
-        <div className="space-y-3">
-          <div className="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-3">
-            <h2 className="text-xs font-black text-white">رفع طلب جديد من محل:</h2>
-            <p className="text-[10px] text-slate-400">
-              يمكنك رفع طلب جديد وتجهيزه مباشرة من المحلات المخصصة لك:
-            </p>
-
-            <div className="space-y-2">
-              <label className="block text-[10px] font-bold text-slate-300">المحل المجهز منه:</label>
-              <select className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white outline-none focus:border-amber-400">
-                {shops.length === 0 ? (
-                  <option value="">لا توجد محلات مسندة</option>
-                ) : (
-                  shops.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))
-                )}
-              </select>
+      {/* منبثق إسناد المندوب السريع (Modal) */}
+      {assignModalOrder && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-sm rounded-2xl p-4 space-y-3 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
+              <span className="text-xs font-bold text-neutral-200">
+                إسناد طلب #{assignModalOrder.orderNumber} لمندوب
+              </span>
+              <button
+                onClick={() => setAssignModalOrder(null)}
+                className="text-neutral-400 hover:text-white text-xs px-2 py-0.5 bg-neutral-800 rounded"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="pt-2">
-              <a
-                href={`/preparer/order/new?p=${encodeURIComponent(preparerId)}`}
-                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
-              >
-                <span>➕</span>
-                <span>فتح شاشة رفع وتجهيز الطلب الجديد</span>
-              </a>
+            <input
+              type="text"
+              placeholder="ابحث عن اسم المندوب..."
+              value={courierSearchQuery}
+              onChange={(e) => setCourierSearchQuery(e.target.value)}
+              className="w-full bg-neutral-950 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-xs text-white placeholder-neutral-500 outline-none"
+            />
+
+            <div className="max-h-56 overflow-y-auto space-y-1.5 divide-y divide-neutral-800/40">
+              {filteredCouriers.length === 0 ? (
+                <div className="text-center py-6 text-neutral-500 text-xs">لا يوجد مندوب مطابق.</div>
+              ) : (
+                filteredCouriers.map((courier) => (
+                  <button
+                    key={courier.id}
+                    onClick={() => handleAssignCourier(assignModalOrder, courier)}
+                    disabled={actionLoading}
+                    className="w-full text-right p-2 text-xs text-neutral-200 hover:bg-blue-600/20 hover:text-blue-300 rounded-lg transition flex items-center justify-between active:scale-98"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-bold">🛵 {courier.name}</span>
+                      {courier.phone && <span className="text-[10px] text-neutral-400">{courier.phone}</span>}
+                    </div>
+                    <span className="text-[10px] bg-blue-950 text-blue-300 border border-blue-800 px-2 py-0.5 rounded">
+                      إسناد فوري
+                    </span>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function ProductPricingCard({
-  product,
-  isSaving,
-  isSaved,
-  onSave,
-}: {
-  product: ProductItem;
-  isSaving: boolean;
-  isSaved: boolean;
-  onSave: (buyVal: string, actualBuyVal: string) => void;
-}) {
-  const [buyText, setBuyText] = useState(product.buyAlf !== "" ? String(product.buyAlf) : "");
-  const [actText, setActText] = useState(product.actualBuyAlf !== "" ? String(product.actualBuyAlf) : "");
-
-  useEffect(() => {
-    setBuyText(product.buyAlf !== "" ? String(product.buyAlf) : "");
-    setActText(product.actualBuyAlf !== "" ? String(product.actualBuyAlf) : "");
-  }, [product.buyAlf, product.actualBuyAlf]);
-
-  function triggerSave() {
-    if (buyText.trim() !== "" && !isNaN(Number(buyText.trim()))) {
-      onSave(buyText.trim(), actText.trim());
-    }
-  }
-
-  const parsedQty = parseQuantityFromLine(product.line || "");
-
-  return (
-    <div
-      className={`p-3 rounded-xl border transition-all ${
-        product.isPriced
-          ? "bg-slate-950/60 border-emerald-900/60"
-          : "bg-slate-950 border-slate-800 hover:border-slate-700"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <span className="text-xs font-black text-white leading-snug">
-            {product.line}
-          </span>
-          {parsedQty ? (
-            <span className="shrink-0 text-[10px] font-black bg-rose-600/80 text-white px-1.5 py-0.2 rounded">
-              ×{parsedQty}
-            </span>
-          ) : null}
-        </div>
-        <div className="shrink-0 flex items-center gap-1">
-          {isSaving ? (
-            <span className="text-[10px] font-bold text-amber-400 animate-pulse">جاري الحفظ...</span>
-          ) : isSaved ? (
-            <span className="text-[10px] font-black text-emerald-400">تم الحفظ ✓</span>
-          ) : product.isPriced ? (
-            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded">
-              مسعر ✅
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold text-slate-500">غير مسعر</span>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-2.5 grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] font-bold text-slate-400 mb-1">
-            سعر الشراء (للزبون):
-          </label>
-          <input
-            type="text"
-            inputMode="decimal"
-            dir="ltr"
-            placeholder="مثلاً 10"
-            value={buyText}
-            onChange={(e) => setBuyText(e.target.value)}
-            onBlur={triggerSave}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") triggerSave();
-            }}
-            className="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-center font-mono text-sm font-black text-white outline-none focus:border-amber-400 focus:bg-slate-800 transition"
-          />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-bold text-slate-400 mb-1">
-            المدفوع بعد الخصم (محفظة):
-          </label>
-          <input
-            type="text"
-            inputMode="decimal"
-            dir="ltr"
-            placeholder="مثلاً 9 (اختياري)"
-            value={actText}
-            onChange={(e) => setActText(e.target.value)}
-            onBlur={triggerSave}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") triggerSave();
-            }}
-            className="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-center font-mono text-sm font-black text-amber-300 outline-none focus:border-amber-400 focus:bg-slate-800 transition"
-          />
-        </div>
-      </div>
     </div>
   );
 }

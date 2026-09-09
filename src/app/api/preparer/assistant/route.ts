@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
 import { buildCustomerInvoiceText } from "@/lib/preparation-invoice";
-import { notifyTelegramNewOrder, notifyTelegramOrderPrepared } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramNewPreparerShoppingOrder } from "@/lib/telegram-notify";
+import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
+import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
+import { saveOrderImageUploaded } from "@/lib/order-image";
+import { ALF_PER_DINAR } from "@/lib/money-alf";
+import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,7 +31,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "المجهز غير موجود أو غير نشط" }, { status: 404 });
     }
 
-    // 1. جلب المسودات المسندة للمجهز (حالة draft فقط)
+    // 1. جلب المسودات المسندة للمجهز
     const drafts = await prisma.companyPreparerShoppingDraft.findMany({
       where: {
         preparerId,
@@ -35,10 +41,10 @@ export async function GET(req: NextRequest) {
         customerRegion: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 30,
+      take: 40,
     });
 
-    // 2. جلب الطلبات الفعلية المسندة للمجهز أو لمحل مرتبط به
+    // 2. جلب الطلبات الفعلية
     const prepShopLinks = await prisma.preparerShop.findMany({
       where: { preparerId },
       select: { shopId: true },
@@ -57,7 +63,7 @@ export async function GET(req: NextRequest) {
             },
           },
         ],
-        status: { in: ["pending", "assigned", "processing", "draft"] },
+        status: { in: ["pending", "assigned", "processing", "draft", "delivering"] },
       },
       include: {
         shop: { select: { id: true, name: true } },
@@ -65,7 +71,7 @@ export async function GET(req: NextRequest) {
         courier: { select: { id: true, name: true, phone: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 30,
+      take: 40,
     });
 
     // 3. جلب المناديب المتاحين للإسناد
@@ -75,13 +81,11 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    // 4. جلب المحلات المرتبطة بالمجهز
+    // 4. جلب جميع المحلات النشطة لتسهيل البحث والإسناد
     const shops = await prisma.shop.findMany({
-      where: {
-        id: { in: shopIds },
-      },
-      select: { id: true, name: true },
+      select: { id: true, name: true, regionId: true },
       orderBy: { name: "asc" },
+      take: 200,
     });
 
     // 5. جلب المناطق
@@ -122,7 +126,7 @@ export async function GET(req: NextRequest) {
         customerName: d.customerName || "",
         shopName: d.titleLine?.split(" - ")[0] || "مسودة تجهيز",
         status: d.status,
-        courier: null,
+        courier: data.autoCourierName ? { id: data.autoCourierId || "", name: data.autoCourierName, phone: null } : null,
         products: myProds,
         totalProductsCount: allProds.length,
         myProductsCount: myProds.length,
@@ -283,7 +287,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. إجراء إسناد الطلب لمندوب
+    // 2. إجراء إسناد الطلب لمندوب فوراً
     if (action === "assign_courier") {
       const { orderId, courierId, isDraft } = body;
       if (!orderId || !courierId) {
@@ -311,23 +315,177 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: `تم تعيين المندوب: ${courier.name}` });
       } else {
         await transferOrderToCourierInternal(orderId, courierId);
-        return NextResponse.json({ success: true, message: `تم إسناد الطلب للمندوب: ${courier.name}` });
+        return NextResponse.json({ success: true, message: `تم إسناد الطلب للمندوب: ${courier.name} ✓` });
       }
     }
 
-    // 3. إجراء تحديث حالة الطلب السريع (أعطيت للمندوب / استلمت من المحل)
-    if (action === "update_order_status") {
-      const { orderId, newStatus } = body;
-      if (!orderId || !newStatus) {
-        return NextResponse.json({ error: "بيانات الحالة ناقصة" }, { status: 400 });
+    // 3. إجراء "أعطيت" (تسليم الطلب للمندوب وتحديث حالته إلى delivering)
+    if (action === "action_given") {
+      const { orderId, isDraft } = body;
+      if (!orderId) return NextResponse.json({ error: "معرف الطلب مطلوب" }, { status: 400 });
+
+      if (isDraft) {
+        return NextResponse.json({ success: true, message: "تم تسجيل الإجراء للمسودة بنجاح ✓" });
       }
 
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: newStatus },
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
+
+      await prisma.$transaction(async (tx) => {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "delivering",
+            customerPaymentReceivedAt: new Date(),
+          },
+        });
       });
 
-      return NextResponse.json({ success: true, message: `تم تحديث حالة الطلب إلى: ${newStatus}` });
+      return NextResponse.json({ success: true, message: `تم تسجيل (أعطيت للمندوب) بنجاح ✓` });
+    }
+
+    // 4. إجراء "أخذت" (استلام الطلب من المحل أو استلام الحساب)
+    if (action === "action_taken") {
+      const { orderId, isDraft } = body;
+      if (!orderId) return NextResponse.json({ error: "معرف الطلب مطلوب" }, { status: 400 });
+
+      if (isDraft) {
+        return NextResponse.json({ success: true, message: "تم تسجيل الاستلام للمسودة بنجاح ✓" });
+      }
+
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
+
+      await prisma.$transaction(async (tx) => {
+        const newStatus = order.assignedCourierId ? "assigned" : "processing";
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, newStatus as any);
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: newStatus,
+            shopCostPaidAt: new Date(),
+          },
+        });
+      });
+
+      return NextResponse.json({ success: true, message: `تم تسجيل (أخذت من المحل) بنجاح ✓` });
+    }
+
+    // 5. إجراء "رفع طلب جديد مباشر" (create_order)
+    if (action === "create_order") {
+      const {
+        shopId,
+        orderType = "عادي",
+        customerPhone,
+        orderSubtotalAlf,
+        orderTime = "فوري",
+        regionId,
+        deliveryPriceAlf,
+        prepaidAll = false,
+        isReverseOrder = false,
+        imageBase64,
+        notes = "",
+      } = body;
+
+      if (!shopId) return NextResponse.json({ error: "يرجى اختيار المحل" }, { status: 400 });
+      if (!customerPhone || customerPhone.trim().length < 8) {
+        return NextResponse.json({ error: "يرجى إدخال رقم هاتف زبون صحيح" }, { status: 400 });
+      }
+      if (!regionId) return NextResponse.json({ error: "يرجى اختيار المنطقة" }, { status: 400 });
+
+      const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        include: { region: true },
+      });
+      if (!shop) return NextResponse.json({ error: "المحل المحدد غير موجود" }, { status: 404 });
+
+      const region = await prisma.region.findUnique({ where: { id: regionId } });
+      if (!region) return NextResponse.json({ error: "المنطقة المحددة غير موجودة" }, { status: 404 });
+
+      // حساب الأسعار
+      const subtotalNum = parseFloat(String(orderSubtotalAlf || 0).replace(/,/g, "."));
+      const subtotalDinar = new Decimal(isNaN(subtotalNum) ? 0 : subtotalNum).mul(ALF_PER_DINAR);
+
+      let deliveryDinar = Decimal.max(shop.region?.deliveryPrice ?? 0, region.deliveryPrice ?? 0);
+      if (deliveryPriceAlf != null && deliveryPriceAlf !== "") {
+        const manualDelNum = parseFloat(String(deliveryPriceAlf).replace(/,/g, "."));
+        if (!isNaN(manualDelNum) && manualDelNum >= 0) {
+          deliveryDinar = new Decimal(manualDelNum).mul(ALF_PER_DINAR);
+        }
+      }
+
+      const totalDinar = subtotalDinar.plus(deliveryDinar);
+
+      // حفظ الصورة إن وجدت
+      let imageUrl: string | null = null;
+      if (imageBase64 && typeof imageBase64 === "string" && imageBase64.startsWith("data:image/")) {
+        try {
+          const parts = imageBase64.split(";base64,");
+          const mimeMatch = parts[0].match(/:(.*?)$/);
+          const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+          const buffer = Buffer.from(parts[1], "base64");
+          imageUrl = await saveOrderImageUploaded(buffer, { mime });
+        } catch (imgErr) {
+          console.error("Image upload failed in assistant order:", imgErr);
+        }
+      }
+
+      // تجهيز سجل الزبون
+      let customer = await prisma.customer.findFirst({
+        where: { shopId, phone: customerPhone.trim() },
+      });
+
+      if (customer) {
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: { customerRegionId: regionId },
+        });
+      } else {
+        customer = await prisma.customer.create({
+          data: {
+            shopId,
+            phone: customerPhone.trim(),
+            name: "",
+            customerRegionId: regionId,
+          },
+        });
+      }
+
+      const preparerLabel = preparer.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
+      const summaryText = notes.trim() ? (isReverseOrder ? `[طلب عكسي] ${notes.trim()}` : notes.trim()) : (isReverseOrder ? "[طلب عكسي]" : "");
+
+      const createdOrder = await prisma.order.create({
+        data: {
+          shopId,
+          customerId: customer.id,
+          status: "pending",
+          submissionSource: "company_preparer",
+          submittedByCompanyPreparerId: preparer.id,
+          orderType: isReverseOrder ? `عكسي - ${orderType}` : orderType,
+          orderNoteTime: orderTime || "فوري",
+          customerPhone: customerPhone.trim(),
+          customerRegionId: regionId,
+          orderSubtotal: subtotalDinar,
+          deliveryPrice: deliveryDinar,
+          totalAmount: totalDinar,
+          prepaidAll: Boolean(prepaidAll),
+          imageUrl,
+          orderImageUploadedByName: imageUrl ? preparerLabel : null,
+          summary: summaryText,
+        },
+      });
+
+      await syncPhoneProfileFromOrder(createdOrder.id).catch(() => {});
+      void notifyTelegramNewOrder(createdOrder.id);
+      void notifyTelegramNewPreparerShoppingOrder(createdOrder.id);
+      await pushNotifyAdminsNewPendingOrder(createdOrder.orderNumber).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        orderNumber: createdOrder.orderNumber,
+        message: `تم رفع الطلب بنجاح برقم #${createdOrder.orderNumber} ✓`,
+      });
     }
 
     return NextResponse.json({ error: "الإجراء غير معروف" }, { status: 400 });
@@ -336,3 +494,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message || "حدث خطأ أثناء تنفيذ الإجراء" }, { status: 500 });
   }
 }
+
