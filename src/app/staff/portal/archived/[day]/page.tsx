@@ -121,51 +121,57 @@ export default async function StaffArchivedDayPage({
   // تصفية الطلبات ليظهر فقط ما ليس به موقع أو موقعه مرفوع من المندوب
   const filteredRows = rawRows.filter(r => !r.hasCustomerLocation || r.hasCourierUploadedLocation);
 
-  // إزالة التكرار لنفس رقم هاتف الزبون بحيث يظهر الزبون مرة واحدة فقط في هذا اليوم
-  const uniqueRows: typeof filteredRows = [];
-  const seenPhones = new Set<string>();
+  // جلب كافة أرقام الهواتف المقيمة تاريخياً في كامل قاعدة البيانات
+  const allRatedOrders = await prisma.order.findMany({
+    where: {
+      adminOrderCode: { contains: "RATING_REQUESTED" },
+      customerPhone: { not: "" }
+    },
+    select: { customerPhone: true, secondCustomerPhone: true, alternatePhone: true }
+  });
+
+  const ratedLast9Set = new Set<string>();
+  for (const ro of allRatedOrders) {
+    for (const p of [ro.customerPhone, ro.secondCustomerPhone, ro.alternatePhone]) {
+      if (p) {
+        const d = p.replace(/\D/g, "");
+        if (d.length >= 8) {
+          ratedLast9Set.add(d.slice(-9));
+        }
+      }
+    }
+  }
+
+  // فلترة الطلبات: استبعاد أي طلب رقم هاتفه مقيّم مسبقاً تاريخياً، ومنع تكرار نفس الزبون في نفس اليوم
+  const pendingEvaluationRows: typeof filteredRows = [];
+  const seenLast9 = new Set<string>();
 
   for (const row of filteredRows) {
+    // إذا كان الطلب نفسه معلماً بـ RATING_REQUESTED نستبعده فوراً
+    if (row.adminOrderCode.includes("RATING_REQUESTED")) {
+      continue;
+    }
+
     const rawPhone = (row.customerPhone || "").trim();
-    if (rawPhone && rawPhone !== "—") {
-      if (seenPhones.has(rawPhone)) {
-        continue; // تخطي الرقم المكرر
+    const pDigits = rawPhone.replace(/\D/g, "");
+
+    if (pDigits.length >= 8) {
+      const last9 = pDigits.slice(-9);
+
+      // استبعاد أي زبون رقم هاتفه تم تقييمه مسبقاً تاريخياً
+      if (ratedLast9Set.has(last9)) {
+        continue;
       }
-      seenPhones.add(rawPhone);
-    }
-    uniqueRows.push(row);
-  }
 
-  // فحص كافة أرقام الهواتف في قاعدة البيانات لمعرفة ما إذا كان تم طلب تقييم لهذا الزبون في أي يوم سابق
-  const phoneList = Array.from(seenPhones);
-  const globallyRatedPhoneSet = new Set<string>();
-
-  if (phoneList.length > 0) {
-    const ratedOrders = await prisma.order.findMany({
-      where: {
-        customerPhone: { in: phoneList },
-        adminOrderCode: { contains: "RATING_REQUESTED" }
-      },
-      select: { customerPhone: true }
-    });
-    for (const ro of ratedOrders) {
-      if (ro.customerPhone) {
-        globallyRatedPhoneSet.add(ro.customerPhone.trim());
+      // منع التكرار لنفس الزبون
+      if (seenLast9.has(last9)) {
+        continue;
       }
+      seenLast9.add(last9);
     }
-  }
 
-  // تأشير كل صف يحمل رقم زبون مقيّم مسبقاً ليظهر باللون الأخضر تلقائياً
-  const finalRows = uniqueRows.map(r => {
-    const ph = (r.customerPhone || "").trim();
-    const isRated = (ph && ph !== "—" && globallyRatedPhoneSet.has(ph)) || r.adminOrderCode.includes("RATING_REQUESTED");
-    return {
-      ...r,
-      adminOrderCode: isRated
-        ? (r.adminOrderCode.includes("RATING_REQUESTED") ? r.adminOrderCode : `${r.adminOrderCode}__RATING_REQUESTED`)
-        : r.adminOrderCode
-    };
-  });
+    pendingEvaluationRows.push(row);
+  }
 
   return (
     <div className="kse-app-bg min-h-screen px-2 py-6 sm:px-4" dir="rtl">
@@ -173,15 +179,23 @@ export default async function StaffArchivedDayPage({
         <Link href={`/staff/portal/archived?${authQ}`} className="inline-block mb-4 text-sm font-black text-sky-700 underline">← رجوع لأيام الأرشيف</Link>
         
         <header className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">{formatBaghdadDateLabel(day)}</h1>
-          <p className="text-sm font-bold text-slate-500 mt-2 leading-relaxed">
-            اضغط على أي طلب لفتح رابط الواتساب لطلب التقييم مباشرة. الطلبات التي تم النقر عليها <span className="text-emerald-700">سيتغير لون خلفيتها بالكامل إلى اللون الأخضر</span> لكي لا تنسى أين وصلت.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">{formatBaghdadDateLabel(day)}</h1>
+              <p className="text-sm font-bold text-slate-500 mt-2 leading-relaxed">
+                اضغط على أي طلب لفتح رابط الواتساب لطلب التقييم مباشرة. الطلب الذي يتم إرساله <span className="text-emerald-700">يتم إنجازه وتأشيره فوراً</span>.
+              </p>
+            </div>
+            <div className="bg-sky-50 border border-sky-200 text-sky-800 px-4 py-2 rounded-2xl text-center">
+              <span className="block text-xs font-bold text-sky-600">بانتظار التقييم</span>
+              <span className="text-xl font-black">{pendingEvaluationRows.length} طلب</span>
+            </div>
+          </div>
         </header>
 
-        {/* تمرير الأزرار الديناميكية للمكون */}
+        {/* تمرير الأزرار الديناميكية والطلبات غير المقيمة فقط */}
         <StaffArchivedClient
-          rows={deepSanitize(finalRows)}
+          rows={deepSanitize(pendingEvaluationRows)}
           dynamicWaButtons={deepSanitize(waButtons)}
         />
       </div>

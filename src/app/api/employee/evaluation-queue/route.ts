@@ -91,45 +91,81 @@ export async function GET(request: Request) {
       );
     }
 
-    // جلب أرقام الهواتف التي تم طلب تقييم لها في أي وقت في النظام
+    // 1. جلب كافة أرقام الهواتف المقيمة تاريخياً في كامل قاعدة البيانات
     const ratedOrders = await prisma.order.findMany({
       where: {
         adminOrderCode: { contains: "RATING_REQUESTED" },
         customerPhone: { not: "" }
       },
-      select: { customerPhone: true },
-      distinct: ["customerPhone"]
+      select: { customerPhone: true, secondCustomerPhone: true, alternatePhone: true }
     });
-    const ratedPhones = ratedOrders.map(o => o.customerPhone.trim()).filter(Boolean);
 
-    // جلب الطلبات المؤرشفة الأحدث التي لم يتم إرسال طلب تقييم لها ولأرقام هواتف لم تقيّم من قبل
-    const pendingOrders = await prisma.order.findMany({
+    const ratedLast9Set = new Set<string>();
+    for (const ro of ratedOrders) {
+      for (const p of [ro.customerPhone, ro.secondCustomerPhone, ro.alternatePhone]) {
+        if (p) {
+          const d = p.replace(/\D/g, "");
+          if (d.length >= 8) {
+            ratedLast9Set.add(d.slice(-9));
+          }
+        }
+      }
+    }
+
+    // 2. جلب الطلبات المؤرشفة الأحدث
+    const archivedOrders = await prisma.order.findMany({
       where: {
         status: "archived",
-        NOT: [
-          { adminOrderCode: { contains: "RATING_REQUESTED" } },
-          ...(ratedPhones.length > 0 ? [{ customerPhone: { in: ratedPhones } }] : [])
-        ],
+        NOT: {
+          adminOrderCode: { contains: "RATING_REQUESTED" }
+        },
         customerPhone: { not: "" }
       },
       orderBy: { orderNumber: "desc" },
-      take: 100,
+      take: 200,
       include: {
         shop: { select: { name: true } },
         customerRegion: { select: { name: true } },
-        courier: { select: { name: true } }
+        courier: { select: { name: true } },
+        customer: {
+          select: { customerLocationUrl: true }
+        }
       }
     });
 
-    // إزالة التكرار في الطابور بحسب رقم الهاتف
-    const uniquePendingOrders: typeof pendingOrders = [];
-    const seenPhonesInQueue = new Set<string>();
-    for (const o of pendingOrders) {
-      const ph = o.customerPhone.trim();
-      if (!seenPhonesInQueue.has(ph)) {
-        seenPhonesInQueue.add(ph);
-        uniquePendingOrders.push(o);
+    // 3. فلترة صارمة:
+    // أ) استبعاد الطلبات التي رفع الزبون موقعها بنفسه (التقييم فقط لمن ليس لديه موقع أو موقعه رفعه المندوب)
+    // ب) استبعاد أي زبون رقم هاتفه مقيم مسبقاً في قاعدة البيانات
+    // ج) منع تكرار نفس رقم الزبون
+    const uniquePendingOrders: typeof archivedOrders = [];
+    const seenLast9InQueue = new Set<string>();
+
+    for (const o of archivedOrders) {
+      const hasCustomerLoc = !!(o.customerLocationUrl || o.customer?.customerLocationUrl);
+      const hasCourierLoc = Boolean(o.customerLocationSetByCourierAt);
+
+      // إذا كان للزبون موقع ولم يرفعه المندوب، لا يحتاج تقييم
+      if (hasCustomerLoc && !hasCourierLoc) {
+        continue;
       }
+
+      const pDigits = (o.customerPhone || "").replace(/\D/g, "");
+      if (pDigits.length < 8) continue;
+      const last9 = pDigits.slice(-9);
+
+      // إذا كان الرقم مقيماً مسبقاً تاريخياً، نستبعده فوراً
+      if (ratedLast9Set.has(last9)) {
+        continue;
+      }
+
+      // منع التكرار في الطابور
+      if (seenLast9InQueue.has(last9)) {
+        continue;
+      }
+
+      seenLast9InQueue.add(last9);
+      uniquePendingOrders.push(o);
+
       if (uniquePendingOrders.length >= 50) break;
     }
 

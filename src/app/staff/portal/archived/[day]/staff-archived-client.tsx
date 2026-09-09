@@ -54,9 +54,12 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
   }, [rows]);
 
   const filtered = useMemo(() => {
-    if (!q.trim()) return rows;
+    // تصفية الطلبات المعروضة: استبعاد أي طلب تم تأشيره ونقره
+    const activeRows = rows.filter(r => !clickedIds.includes(r.id) && !r.adminOrderCode?.includes("RATING_REQUESTED"));
+    
+    if (!q.trim()) return activeRows;
     const qNorm = normalizeArabicSearchText(q);
-    return rows.filter(r => {
+    return activeRows.filter(r => {
       const combinedText = [
         r.shortId || "",
         r.shopName || "",
@@ -69,11 +72,11 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       ].join(" ");
       return normalizeArabicSearchText(combinedText).includes(qNorm);
     });
-  }, [q, rows]);
+  }, [q, rows, clickedIds]);
 
   // دالة التعامل مع النقر على السطر لفتح الواتساب مباشرة وتأشير الطلب
   const handleOrderClick = async (id: string) => {
-    const order = filtered.find(r => r.id === id);
+    const order = rows.find(r => r.id === id);
     if (!order) return;
 
     const waLinks = generateWaLinksForOrder(order);
@@ -82,23 +85,22 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       const ratingBtn = waLinks.find(btn => btn.label.includes("تقييم")) || waLinks[0];
       window.open(ratingBtn.url, "_blank");
 
+      // تأشير الطلب وجميع طلبات الزبون في الواجهة فوراً ليختفي من القائمة
+      const samePhoneOrderIds = rows
+        .filter(r => r.customerPhone && r.customerPhone.trim() !== "—" && r.customerPhone.trim() === order.customerPhone?.trim())
+        .map(r => r.id);
+
+      setClickedIds(prev => {
+        const next = Array.from(new Set([...prev, order.id, ...samePhoneOrderIds]));
+        if (typeof window !== "undefined") {
+          localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
+        }
+        return next;
+      });
+
       // تأشير الطلب في قاعدة البيانات فوراً لتتم المزامنة بين جميع أجهزة الموظف
       try {
-        const res = await markOrderRatingRequested(order.id);
-        if (res.ok) {
-          // تأشير الطلب وجميع الطلبات التي تحمل نفس رقم الهاتف في الصفحة وحفظها في الذاكرة المحلية
-          const samePhoneOrderIds = rows
-            .filter(r => r.customerPhone && r.customerPhone.trim() !== "—" && r.customerPhone.trim() === order.customerPhone.trim())
-            .map(r => r.id);
-
-          setClickedIds(prev => {
-            const next = Array.from(new Set([...prev, order.id, ...samePhoneOrderIds]));
-            if (typeof window !== "undefined") {
-              localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
-            }
-            return next;
-          });
-        }
+        await markOrderRatingRequested(order.id);
       } catch (err) {
         console.error("Failed to mark order as rated on db:", err);
       }
@@ -165,8 +167,10 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       {/* قائمة المستطيلات النحيفة بدل الجدول */}
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 font-bold bg-white rounded-3xl border border-slate-100">
-            لا توجد طلبات مؤرشفة تطابق بحثك حالياً.
+          <div className="py-12 text-center text-emerald-800 font-bold bg-emerald-50/60 rounded-3xl border border-emerald-200 p-6 space-y-2">
+            <span className="text-3xl block">🎉</span>
+            <p className="text-base font-black text-emerald-900">تم إرسال طلب التقييم لكافة الطلبات بنجاح!</p>
+            <p className="text-xs text-emerald-700">لا توجد أي طلبات مؤرشفة بانتظار التقييم لهذا اليوم.</p>
           </div>
         ) : (
           filtered.map((order) => {
