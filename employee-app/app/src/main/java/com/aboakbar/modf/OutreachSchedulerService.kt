@@ -18,6 +18,8 @@ object OutreachSchedulerService {
     private const val BACKEND_URL = "https://aboakbr.com"
     private val client = OkHttpClient()
 
+    private const val KEY_OUTREACH_NEXT_TRIGGER = "outreach_next_trigger_time"
+
     fun isEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getBoolean(KEY_OUTREACH_ENABLED, false) // غير مفعل افتراضياً حتى يفعله الموظف
@@ -46,8 +48,17 @@ object OutreachSchedulerService {
         }
     }
 
+    fun getNextTriggerTime(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_OUTREACH_NEXT_TRIGGER, 0L)
+    }
+
     fun scheduleNextOutreach(context: Context, minutes: Int) {
         try {
+            val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putLong(KEY_OUTREACH_NEXT_TRIGGER, triggerTime).apply()
+
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
             val intent = Intent(context, OutreachAlarmReceiver::class.java).apply {
                 action = "com.aboakbar.modf.ACTION_TRIGGER_OUTREACH"
@@ -59,16 +70,7 @@ object OutreachSchedulerService {
             }
             val pendingIntent = PendingIntent.getBroadcast(context, 9991, intent, flags)
 
-            val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                val showIntent = Intent(context, OutreachAlertActivity::class.java).apply {
-                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                val showPendingIntent = PendingIntent.getActivity(context, 9992, showIntent, flags)
-                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, showPendingIntent)
-                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)

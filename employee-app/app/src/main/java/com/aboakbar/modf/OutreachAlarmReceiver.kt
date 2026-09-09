@@ -1,6 +1,5 @@
 package com.aboakbar.modf
 
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,25 +7,38 @@ import android.os.PowerManager
 
 class OutreachAlarmReceiver : BroadcastReceiver() {
 
-    @SuppressLint("WakelockTimeout")
-    override fun onReceive(context: Context, intent: Intent) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        val wakeLock = powerManager?.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "AboAkbar:OutreachAlarmWakeLock"
-        )
+    override fun onReceive(context: Context, intent: Intent?) {
+        val action = intent?.action ?: return
 
-        try {
-            wakeLock?.acquire(15 * 1000L) // البقاء مستيقظاً لمدة 15 ثانية كافية لتنفيذ الطلب
-        } catch (e: Exception) {
-            e.printStackTrace()
+        if (action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == "android.intent.action.QUICKBOOT_POWERON") {
+            if (OutreachSchedulerService.isEnabled(context)) {
+                OutreachSchedulerService.scheduleNextOutreach(
+                    context,
+                    OutreachSchedulerService.getIntervalMinutes(context)
+                )
+            }
+            return
         }
 
-        if (OutreachSchedulerService.isEnabled(context)) {
-            OutreachSchedulerService.fetchAndTriggerOutreachAlert(context, isManual = false)
+        if (action == "com.aboakbar.modf.ACTION_TRIGGER_OUTREACH") {
+            if (OutreachSchedulerService.isEnabled(context)) {
+                val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                val wakeLock = powerManager?.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "AboAkbar::OutreachAlarmWakeLock"
+                )
+                wakeLock?.acquire(15000L)
 
-            val interval = OutreachSchedulerService.getIntervalMinutes(context)
-            OutreachSchedulerService.scheduleNextOutreach(context, interval)
+                // إعادة جدولة التنبيه القادم فوراً
+                val interval = OutreachSchedulerService.getIntervalMinutes(context)
+                OutreachSchedulerService.scheduleNextOutreach(context, interval)
+
+                // جلب الزبون التالي وإظهار التنبيه
+                OutreachSchedulerService.fetchAndTriggerOutreachAlert(context, isManual = false)
+            }
         }
     }
 }
+

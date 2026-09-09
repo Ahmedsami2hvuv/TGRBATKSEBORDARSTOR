@@ -6,10 +6,10 @@
     android:layout_margin="12dp"
     android:background="@drawable/bg_dialog_rounded"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:elevation="24dp">
+    android:padding="16dp"
+    android:elevation="16dp">
 
-    <!-- الهيدر -->
+    <!-- الهيدر مع زر ضبط الوقت السريع -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -27,14 +27,14 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="مهمة مراسلة وتخزين أرقام الزبائن"
+                android:text="مهمة مراسلة وتخزين الزبائن"
                 android:textColor="#0f172a"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -43,126 +43,142 @@
                 android:id="@+id/tvOutreachRemainingCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="الزبائن المتبقين في القائمة: 0"
+                android:text="الزبائن المتبقين في القائمة: ..."
                 android:textColor="#0284c7"
                 android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <!-- زر ضبط وتغيير وقت التنبيه -->
+        <Button
+            android:id="@+id/btnChangeOutreachInterval"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:backgroundTint="#e0e7ff"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="⚙️ المؤقت"
+            android:textColor="#4338ca"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginBottom="14dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
         android:background="#e2e8f0" />
 
-    <!-- بطاقة معلومات الزبون -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/input_bg"
-        android:orientation="vertical"
-        android:padding="14dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="بيانات الزبون المطلوب مراسلته:"
-            android:textColor="#64748b"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvOutreachPhone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="077XXXXXXXX"
-            android:textColor="#0f172a"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvOutreachOriginalInput"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text=""
-            android:textColor="#475569"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- نص الرسالة المقترح إرسالها -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="نص الرسالة التي سيتم إرسالها:"
-        android:textColor="#1e293b"
-        android:textSize="12sp"
-        android:textStyle="bold" />
-
+    <!-- المحتوى القابل للتمرير (بيانات الزبون والكليشة) -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:maxHeight="160dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:maxHeight="320dp"
+        android:fillViewport="true">
 
-        <TextView
-            android:id="@+id/tvOutreachMessage"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#f8fafc"
-            android:lineSpacingExtra="3dp"
-            android:padding="12dp"
-            android:text="نص الرسالة..."
-            android:textColor="#334155"
-            android:textSize="13sp" />
+            android:orientation="vertical">
+
+            <!-- بطاقة معلومات الزبون -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/input_bg"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="بيانات الزبون المطلوب مراسلته:"
+                    android:textColor="#64748b"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvOutreachPhone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="📞 077XXXXXXXX"
+                    android:textColor="#0f172a"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvOutreachOriginalInput"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text=""
+                    android:textColor="#475569"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- نص الرسالة المقترح إرسالها -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="نص الرسالة التي سيتم إرسالها بالواتساب:"
+                android:textColor="#1e293b"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvOutreachMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="#f8fafc"
+                android:lineSpacingExtra="3dp"
+                android:padding="12dp"
+                android:text="نص الرسالة..."
+                android:textColor="#334155"
+                android:textSize="13sp" />
+
+        </LinearLayout>
     </ScrollView>
 
-    <!-- زر الإرسال المباشر -->
-    <Button
-        android:id="@+id/btnSendOutreach"
+    <View
         android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginTop="16dp"
-        android:backgroundTint="#059669"
-        android:elevation="4dp"
-        android:text="💬 فتح الواتساب لإرسال الرسالة وتأشير الرقم"
-        android:textColor="#ffffff"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="#e2e8f0" />
 
-    <!-- أزرار التحكم السفلية -->
+    <!-- أزرار الإجراءات السفلية الثابتة دائماً وبحجم واضح وكبير -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/btnSkipOutreach"
             android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="6dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
+            android:layout_marginEnd="8dp"
             android:backgroundTint="#f1f5f9"
             android:text="تخطي / لاحقاً"
             android:textColor="#475569"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/btnChangeOutreachInterval"
+            android:id="@+id/btnSendOutreach"
             android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:backgroundTint="#eff6ff"
-            android:text="⚙️ ضبط الوقت / إيقاف"
-            android:textColor="#2563eb"
-            android:textSize="13sp"
+            android:layout_height="52dp"
+            android:layout_weight="1.8"
+            android:backgroundTint="#059669"
+            android:elevation="4dp"
+            android:text="💬 إرسال بالواتساب"
+            android:textColor="#ffffff"
+            android:textSize="15sp"
             android:textStyle="bold" />
     </LinearLayout>
 

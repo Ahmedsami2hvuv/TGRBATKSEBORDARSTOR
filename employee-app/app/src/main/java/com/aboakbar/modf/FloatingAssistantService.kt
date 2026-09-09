@@ -30,6 +30,38 @@ class FloatingAssistantService : Service() {
     private val longPressHandler = Handler(Looper.getMainLooper())
     private var isLongPressed = false
 
+    private val periodicTimerHandler = Handler(Looper.getMainLooper())
+    private val periodicTimerRunnable = object : Runnable {
+        override fun run() {
+            try {
+                val now = System.currentTimeMillis()
+
+                // 1. فحص مؤقت التقييم
+                if (EvaluationSchedulerService.isEnabled(this@FloatingAssistantService)) {
+                    val nextEval = EvaluationSchedulerService.getNextTriggerTime(this@FloatingAssistantService)
+                    if (nextEval > 0 && now >= nextEval) {
+                        val interval = EvaluationSchedulerService.getIntervalMinutes(this@FloatingAssistantService)
+                        EvaluationSchedulerService.scheduleNextEvaluation(this@FloatingAssistantService, interval)
+                        EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this@FloatingAssistantService, isManual = false)
+                    }
+                }
+
+                // 2. فحص مؤقت المراسلة
+                if (OutreachSchedulerService.isEnabled(this@FloatingAssistantService)) {
+                    val nextOutreach = OutreachSchedulerService.getNextTriggerTime(this@FloatingAssistantService)
+                    if (nextOutreach > 0 && now >= nextOutreach) {
+                        val interval = OutreachSchedulerService.getIntervalMinutes(this@FloatingAssistantService)
+                        OutreachSchedulerService.scheduleNextOutreach(this@FloatingAssistantService, interval)
+                        OutreachSchedulerService.fetchAndTriggerOutreachAlert(this@FloatingAssistantService, isManual = false)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            periodicTimerHandler.postDelayed(this, 15000L) // فحص دوري كل 15 ثانية
+        }
+    }
+
     companion object {
         var isRunning = false
             private set
@@ -57,6 +89,8 @@ class FloatingAssistantService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning = true
+
+        periodicTimerHandler.postDelayed(periodicTimerRunnable, 15000L)
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val inflater = LayoutInflater.from(this)
@@ -252,6 +286,7 @@ class FloatingAssistantService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        periodicTimerHandler.removeCallbacks(periodicTimerRunnable)
         dismissActionDialog()
         if (floatingBubbleView != null) {
             try {
