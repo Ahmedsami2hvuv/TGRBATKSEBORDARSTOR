@@ -452,6 +452,7 @@ export function OrderPricingPanel({
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [buyText, setBuyText] = useState("");
+  const [actualBuyText, setActualBuyText] = useState("");
   const [sellText, setSellText] = useState("");
   const [isAdminFulfilled, setIsAdminFulfilled] = useState(false);
   const [pricingErr, setPricingErr] = useState("");
@@ -635,6 +636,7 @@ ${productsText}`;
       const p = products[editingIndex];
       const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
       setBuyText(priced ? p.buyAlf : "");
+      setActualBuyText(p?.actualBuyAlf != null && p.actualBuyAlf !== "" ? p.actualBuyAlf.toString() : "");
       setSellText(priced ? p.sellAlf : "");
       setIsAdminFulfilled(!!p.isFulfilledByAdmin);
       setPricingErr("");
@@ -724,6 +726,8 @@ ${productsText}`;
   const applyPricingPanel = () => {
     if (editingIndex === null) return;
     let bNum = parseFloat(normalizeNumerals(buyText)) || 0;
+    let actBNum = parseFloat(normalizeNumerals(actualBuyText));
+    let actualBuyAlfValue: string | null = (!isNaN(actBNum) && actBNum >= 0 && actualBuyText.trim() !== "") ? actBNum.toString() : null;
     let sNum = parseFloat(normalizeNumerals(sellText)) || 0;
 
     if (bNum > 0 && sNum <= 0) {
@@ -757,6 +761,7 @@ ${productsText}`;
     next[editingIndex] = {
       ...currentProd,
       buyAlf: isBuyFilled ? bNum.toString() : (currentProd.buyAlf || "0"),
+      actualBuyAlf: actualBuyAlfValue,
       sellAlf: isSellFilled ? sNum.toString() : (currentProd.sellAlf || "0"),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
@@ -803,6 +808,8 @@ ${productsText}`;
     if (editingIndex === null) return;
     const rawBuy = normalizeNumerals(buyText).trim();
     const bNum = parseFloat(rawBuy);
+    let actBNum = parseFloat(normalizeNumerals(actualBuyText));
+    let actualBuyAlfValue: string | null = (!isNaN(actBNum) && actBNum >= 0 && actualBuyText.trim() !== "") ? actBNum.toString() : null;
     if (isNaN(bNum) || bNum < 0 || sellVal < 0 || rawBuy === "") return;
     const next = [...products];
     const currentProd = next[editingIndex];
@@ -828,6 +835,7 @@ ${productsText}`;
     next[editingIndex] = {
       ...currentProd,
       buyAlf: bNum.toString(),
+      actualBuyAlf: actualBuyAlfValue,
       sellAlf: sellVal.toString(),
       isFulfilledByAdmin: isExplicitAdmin,
       assignedPreparerId: finalPrepId,
@@ -1597,12 +1605,17 @@ ${productsText}`;
                       {priced ? (
                         <div className="flex items-center gap-1">
                           {!hideBuyPrice && (
-                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-emerald-500 text-white border border-emerald-400/30">
+                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-emerald-500 text-white border border-emerald-400/30" title="سعر الشراء للزبون">
                               {p.buyAlf}
                             </span>
                           )}
+                          {!hideBuyPrice && p.actualBuyAlf != null && p.actualBuyAlf !== "" && Number(p.actualBuyAlf) !== Number(p.buyAlf) && (
+                            <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-sm bg-amber-500 text-white border border-amber-400/30" title={`سعر الشراء الفعلي المسجل بالمحفظة: ${p.actualBuyAlf}`}>
+                              محفظة: {p.actualBuyAlf}
+                            </span>
+                          )}
                           {!hideSellPrice && (
-                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-indigo-500 text-white border border-indigo-400/30">
+                            <span className="font-mono text-xs sm:text-[13px] font-black px-2 py-0.5 rounded-md shadow-sm bg-indigo-500 text-white border border-indigo-400/30" title="سعر البيع للزبون">
                               {p.sellAlf}
                             </span>
                           )}
@@ -1732,9 +1745,9 @@ ${productsText}`;
                 );
               })()}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-slate-500 mb-1 block text-center">سعر الشراء</label>
+                  <label className="text-[10px] font-black text-slate-500 mb-1 block text-center">سعر الشراء (لحساب الزبون)</label>
                   <input
                     ref={buyInputRef}
                     value={buyText}
@@ -1755,11 +1768,24 @@ ${productsText}`;
                     }}
                     dir="ltr"
                     inputMode="decimal"
+                    placeholder="0.00"
                     className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 text-center font-mono text-lg font-black outline-none focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع</label>
+                  <label className="text-[10px] font-black text-amber-600 dark:text-amber-400 mb-1 block text-center" title="المبلغ الفعلي المدفوع لأبو المحل بعد الخصم لتسجيله في المحفظة">المدفوع للمحل (المحفظة)</label>
+                  <input
+                    value={actualBuyText}
+                    onChange={(e) => setActualBuyText(e.target.value)}
+                    dir="ltr"
+                    inputMode="decimal"
+                    placeholder={buyText ? `${buyText} (تلقائي)` : "0.00"}
+                    className="w-full rounded-2xl border-2 border-amber-100 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/40 py-3 text-center font-mono text-lg font-black text-amber-700 dark:text-amber-300 outline-none focus:border-amber-500 placeholder:text-amber-300/70 dark:placeholder:text-amber-700/50"
+                  />
+                  <p className="text-[9px] text-slate-400 text-center mt-0.5">اتركه فارغاً إذا لم يوجد خصم</p>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع (للزبون)</label>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"

@@ -18,6 +18,7 @@ const inputClass =
 type ProductRow = {
   line: string;
   buyAlf: number | "";
+  actualBuyAlf?: number | "";
   sellAlf: number | "";
   pricedBy?: string | null;
   pricedById?: string | null;
@@ -56,9 +57,11 @@ function parseProducts(raw: unknown): ProductRow[] {
     if (!line) continue;
 
     const bRaw = r.buyAlf;
+    const actBRaw = r.actualBuyAlf;
     const sRaw = r.sellAlf;
 
     const bNum = (bRaw === null || bRaw === undefined || bRaw === "") ? "" : Number(bRaw);
+    const actBNum = (actBRaw === null || actBRaw === undefined || actBRaw === "") ? "" : Number(actBRaw);
     const sNum = (sRaw === null || sRaw === undefined || sRaw === "") ? "" : Number(sRaw);
 
     const itemQty = r.qty ?? r.quantity ?? r.count;
@@ -70,6 +73,7 @@ function parseProducts(raw: unknown): ProductRow[] {
     results.push({
       line,
       buyAlf: (typeof bNum === "number" && Number.isFinite(bNum)) ? bNum : "",
+      actualBuyAlf: (typeof actBNum === "number" && Number.isFinite(actBNum)) ? actBNum : "",
       sellAlf: (typeof sNum === "number" && Number.isFinite(sNum)) ? sNum : "",
       pricedBy: typeof r.pricedBy === "string" ? r.pricedBy : (typeof r.pricedByName === "string" ? r.pricedByName : null),
       pricedById: typeof r.pricedById === "string" ? r.pricedById : null,
@@ -388,11 +392,18 @@ export function PreparerShoppingDraftEditClient({
   useEffect(() => {
     if (selectedPriceIndex !== null) {
       const p = products[selectedPriceIndex];
-      if (p) fetchPriceHistory(p.line);
+      if (p) {
+        fetchPriceHistory(p.line);
+        setActualBuyText(p.actualBuyAlf !== "" && p.actualBuyAlf != null ? String(p.actualBuyAlf) : "");
+        setPricingLinesText(p.buyAlf !== "" ? String(p.buyAlf) : "");
+      }
+    } else {
+      setActualBuyText("");
     }
   }, [selectedPriceIndex, products, fetchPriceHistory]);
   // -----------------------------
-  const[pricingLinesText, setPricingLinesText] = useState("");
+  const [pricingLinesText, setPricingLinesText] = useState("");
+  const [actualBuyText, setActualBuyText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
   const pricingTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -479,6 +490,7 @@ export function PreparerShoppingDraftEditClient({
         products.map((p) => ({
           line: p.line,
           buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+          actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
           sellAlf: p.sellAlf === "" ? null : p.sellAlf,
           pricedBy: p.pricedBy,
           pricedById: p.pricedById,
@@ -685,15 +697,19 @@ export function PreparerShoppingDraftEditClient({
       setPricingErr("تأكد أن السعر رقم صحيح.");
       return;
     }
+    const actBuyNum = actualBuyText.trim() ? parseFloat(actualBuyText.replace(/,/g, ".").trim()) : NaN;
+    const actualBuy = (!isNaN(actBuyNum) && Number.isFinite(actBuyNum) && actBuyNum >= 0) ? actBuyNum : "";
+
     let sell = lines[1] ? parseFloat(lines[1]) : calculateAutoSellPrice(products[selectedPriceIndex]!.line, buy, noProfit);
 
     const nextProducts =[...products];
     const target = nextProducts[selectedPriceIndex];
     if (target) {
-        nextProducts[selectedPriceIndex] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
+        nextProducts[selectedPriceIndex] = { ...target, buyAlf: buy, actualBuyAlf: actualBuy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
         const nextJson = JSON.stringify(nextProducts.map(p => ({
             line: p.line,
             buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+            actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
             sellAlf: p.sellAlf === "" ? null : p.sellAlf,
             pricedBy: p.pricedBy,
             pricedById: p.pricedById,
@@ -712,13 +728,16 @@ export function PreparerShoppingDraftEditClient({
         if (nextVisualItem) {
             setSelectedPriceIndex(nextVisualItem.idx);
             setPricingLinesText("");
+            setActualBuyText("");
         } else {
             setSelectedPriceIndex(null);
             setPricingLinesText("");
+            setActualBuyText("");
         }
     } else {
         setSelectedPriceIndex(null);
         setPricingLinesText("");
+        setActualBuyText("");
     }
   }
 
@@ -727,10 +746,11 @@ export function PreparerShoppingDraftEditClient({
     const nextProducts = [...products];
     const target = nextProducts[selectedPriceIndex];
     if (target) {
-      nextProducts[selectedPriceIndex] = { ...target, buyAlf: "", sellAlf: "", pricedBy: null, pricedById: null };
+      nextProducts[selectedPriceIndex] = { ...target, buyAlf: "", actualBuyAlf: "", sellAlf: "", pricedBy: null, pricedById: null };
       const nextJson = JSON.stringify(nextProducts.map(p => ({
         line: p.line,
         buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+        actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
         sellAlf: p.sellAlf === "" ? null : p.sellAlf,
         pricedBy: p.pricedBy,
         pricedById: p.pricedById,
@@ -742,6 +762,7 @@ export function PreparerShoppingDraftEditClient({
     }
     setSelectedPriceIndex(null);
     setPricingLinesText("");
+    setActualBuyText("");
   }
 
   function handleAutoPriceMeat(idx: number) {
@@ -1063,9 +1084,16 @@ export function PreparerShoppingDraftEditClient({
                           <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shadow-sm">تسعير 🥩</span>
                         )
                       ) : priced ? (
-                        <span className={`font-mono text-xs sm:text-[13px] font-black px-2.5 py-0.5 rounded-md shadow-sm border ${isOthers ? "bg-slate-200 text-slate-500 border-slate-300" : "bg-emerald-500 text-white border-emerald-400/30"}`}>
-                          {p.buyAlf}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`font-mono text-xs sm:text-[13px] font-black px-2.5 py-0.5 rounded-md shadow-sm border ${isOthers ? "bg-slate-200 text-slate-500 border-slate-300" : "bg-emerald-500 text-white border-emerald-400/30"}`}>
+                            {p.buyAlf}
+                          </span>
+                          {p.actualBuyAlf !== "" && p.actualBuyAlf != null && Number(p.actualBuyAlf) !== Number(p.buyAlf) && (
+                            <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-sm bg-amber-500 text-white border border-amber-400/30" title={`محفظة: ${p.actualBuyAlf}`}>
+                              محفظة: {p.actualBuyAlf}
+                            </span>
+                          )}
+                        </div>
                       ) : null}
                     </div>
                   </div>
@@ -1213,17 +1241,40 @@ export function PreparerShoppingDraftEditClient({
                       })()}
                     </div>
 
-                    <div className="relative mb-6">
-                        <textarea
-                          ref={pricingTextareaRef}
-                          value={pricingLinesText}
-                          onChange={(e) => setPricingLinesText(e.target.value)}
-                          className={`${inputClass} text-center font-black text-2xl h-16 pt-3 border-2 border-indigo-100 focus:border-indigo-500`}
-                          placeholder="0.00"
-                          inputMode="decimal"
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
-                        />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ألف د.ع</span>
+                    <div className="space-y-3 mb-6">
+                        <div>
+                          <label className="text-[10px] font-black text-slate-500 mb-1 block">سعر الشراء الأساسي (لحساب الزبون):</label>
+                          <div className="relative">
+                            <textarea
+                              ref={pricingTextareaRef}
+                              value={pricingLinesText}
+                              onChange={(e) => setPricingLinesText(e.target.value)}
+                              className={`${inputClass} text-center font-black text-2xl h-14 pt-2 border-2 border-indigo-100 focus:border-indigo-500`}
+                              placeholder="0.00"
+                              inputMode="decimal"
+                              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
+                            />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ألف د.ع</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-black text-amber-700 mb-1 block" title="إذا حصلت على خصم من أبو المحل، اكتب السعر الفعلي هنا ليُسجل في محفظتك">
+                            المدفوع للمحل بعد الخصم (للمحفظة):
+                          </label>
+                          <div className="relative">
+                            <input
+                              value={actualBuyText}
+                              onChange={(e) => setActualBuyText(e.target.value)}
+                              className={`${inputClass} text-center font-black text-xl h-12 border-2 border-amber-200 bg-amber-50/50 text-amber-800 focus:border-amber-500 placeholder:text-amber-300`}
+                              placeholder={pricingLinesText ? `${pricingLinesText.split('\n')[0]} (تلقائي)` : "0.00"}
+                              inputMode="decimal"
+                              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
+                            />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-500">ألف د.ع</span>
+                          </div>
+                          <p className="text-[9px] text-slate-400 mt-1">اتركه فارغاً إذا لم تحصل على خصم من المحل</p>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-3">

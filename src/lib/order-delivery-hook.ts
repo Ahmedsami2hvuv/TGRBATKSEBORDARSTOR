@@ -315,8 +315,15 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
       const productLines: string[] = [];
 
       for (const p of supplierProducts) {
-        totalBuyAlf += Number(p.buyAlf || 0);
-        productLines.push(`${p.line} (${Number(p.buyAlf || 0).toLocaleString()} ألف)`);
+        const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+          ? Number(p.actualBuyAlf)
+          : Number(p.buyAlf || 0);
+        totalBuyAlf += effectiveCost;
+        if (p.actualBuyAlf != null && Number(p.actualBuyAlf) !== Number(p.buyAlf || 0)) {
+          productLines.push(`${p.line} (${effectiveCost.toLocaleString()} ألف [خصم])`);
+        } else {
+          productLines.push(`${p.line} (${effectiveCost.toLocaleString()} ألف)`);
+        }
       }
 
       const totalBuyDinar = totalBuyAlf * 1000;
@@ -579,8 +586,15 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
         let totalBuyAlf = 0;
         const productLines: string[] = [];
         for (const p of supplierProducts) {
-          totalBuyAlf += Number(p.buyAlf || 0);
-          productLines.push(`${p.line} (${Number(p.buyAlf || 0).toLocaleString()} ألف)`);
+          const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+            ? Number(p.actualBuyAlf)
+            : Number(p.buyAlf || 0);
+          totalBuyAlf += effectiveCost;
+          if (p.actualBuyAlf != null && Number(p.actualBuyAlf) !== Number(p.buyAlf || 0)) {
+            productLines.push(`${p.line} (${effectiveCost.toLocaleString()} ألف [خصم])`);
+          } else {
+            productLines.push(`${p.line} (${effectiveCost.toLocaleString()} ألف)`);
+          }
         }
 
         const totalBuyDinar = totalBuyAlf * 1000;

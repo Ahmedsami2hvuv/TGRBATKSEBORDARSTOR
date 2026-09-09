@@ -139,6 +139,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
         if (buyNum > 0) {
           updated[key] = {
             buy: row.buy,
+            actualBuy: row.actualBuy,
             sell: calculateAutoSellPrice(key, buyNum, newVal).toString()
           };
         }
@@ -147,11 +148,12 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     setPriceRows(updated);
   };
 
-  const [priceRows, setPriceRows] = useState<{ buy: string; sell: string }[]>([]);
+  const [priceRows, setPriceRows] = useState<{ buy: string; actualBuy?: string; sell: string }[]>([]);
   const [placesCount, setPlacesCount] = useState<number | null>(null);
 
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [pricingLinesText, setPricingLinesText] = useState("");
+  const [actualBuyText, setActualBuyText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [bulkAddText, setBulkAddText] = useState("");
@@ -376,6 +378,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     } else {
       setPricingLinesText("");
     }
+    setActualBuyText(row?.actualBuy?.trim() || "");
     setSelectedPriceIndex(i);
   }
 
@@ -394,19 +397,25 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
       setPricingErr("تأكد أن الأرقام صالحة .");
       return;
     }
+    const actualBuyTrimmed = actualBuyText.trim().replace(/,/g, ".");
+    const actualBuyParsed = actualBuyTrimmed ? parseFloat(actualBuyTrimmed) : null;
+    const actualBuyValid = actualBuyParsed != null && Number.isFinite(actualBuyParsed) && actualBuyParsed >= 0 ? actualBuyTrimmed : undefined;
+
     const i = selectedPriceIndex;
     setPriceRows((rows) => {
       const next = [...rows];
-      next[i] = { buy: parsed.buy, sell: parsed.sell };
+      next[i] = { buy: parsed.buy, actualBuy: actualBuyValid, sell: parsed.sell };
       return next;
     });
     setSelectedPriceIndex(null);
     setPricingLinesText("");
+    setActualBuyText("");
   }
 
   function cancelPricingPanel() {
     setSelectedPriceIndex(null);
     setPricingLinesText("");
+    setActualBuyText("");
     setPricingErr(null);
   }
 
@@ -444,7 +453,13 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
         const row = priceRows[i]!;
         const buyAlf = parseFloat(row.buy.replace(/,/g, ".").trim());
         const sellAlf = parseFloat(row.sell.replace(/,/g, ".").trim());
-        return { line, buyAlf, sellAlf };
+        const actualBuyNum = row.actualBuy ? parseFloat(row.actualBuy.replace(/,/g, ".").trim()) : undefined;
+        return {
+          line,
+          buyAlf,
+          actualBuyAlf: Number.isFinite(actualBuyNum) && actualBuyNum! >= 0 ? actualBuyNum : undefined,
+          sellAlf,
+        };
       }),
     };
   }, [titleLine, products, priceRows, allPriced, placesCount, rawListText, noProfit]);
@@ -716,6 +731,11 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                           <span className="font-mono text-sm font-black tabular-nums" dir="ltr">
                              {sellShow}
                           </span>
+                          {priceRows[i]?.actualBuy && Number(priceRows[i]?.actualBuy) !== Number(priceRows[i]?.buy) ? (
+                            <span className="text-[9px] font-black bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded mt-0.5 shadow-sm">
+                              محفظة: {priceRows[i]?.actualBuy}
+                            </span>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5">
@@ -736,9 +756,9 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                         <p className="truncate text-sm font-black">{products[selectedPriceIndex]}</p>
                       </div>
                       <div className="p-5">
-                        <p className="text-center text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                           اكتب سعر الشراء فقط وسيتم حساب سعر البيع تلقائياً.
-                        </p>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                          سعر الشراء الأساسي (لحساب سعر البيع للزبون):
+                        </label>
                         <textarea
                           value={pricingLinesText}
                           onChange={(e) => setPricingLinesText(e.target.value)}
@@ -751,10 +771,26 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                           rows={2}
                           dir="ltr"
                           placeholder="سعر الشراء"
-                          className="mt-3 w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-4 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                          className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-3 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
                           inputMode="decimal"
                           autoFocus
                         />
+                        <div className="mt-3 flex flex-col gap-1">
+                          <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                            المدفوع للمحل بعد الخصم (للمحفظة - اختياري):
+                          </label>
+                          <input
+                            value={actualBuyText}
+                            onChange={(e) => setActualBuyText(e.target.value)}
+                            dir="ltr"
+                            placeholder="مثلاً 9 (اتركه فارغاً إذا لم يوجد خصم)"
+                            className="w-full rounded-xl border border-sky-100 bg-slate-50 px-3 py-2 text-center font-mono text-base font-bold tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                            inputMode="decimal"
+                          />
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                            إذا أعطاك المحل خصماً، اكتب هنا السعر الفعلي الذي دفعته ليتم تسجيله في محفظتك بدقة.
+                          </span>
+                        </div>
                         {pricingErr && (
                           <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>
                         )}

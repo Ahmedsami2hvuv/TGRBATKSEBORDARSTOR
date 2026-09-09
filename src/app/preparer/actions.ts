@@ -414,10 +414,21 @@ export async function submitPreparerShoppingDraft(
     const preparerIds = Array.from(new Set(products.map(p => p.pricedById || currentPreparer?.id).filter(Boolean)));
     const preparerInvoices = preparerIds.map(id => {
         const myProducts = products.filter(p => (p.pricedById || currentPreparer?.id) === id);
-        const myTotalBuy = myProducts.reduce((acc, p) => acc + Number(p.buyAlf || 0), 0);
+        const myTotalBuy = myProducts.reduce((acc, p) => {
+          const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+            ? Number(p.actualBuyAlf)
+            : Number(p.buyAlf || 0);
+          return acc + effectiveCost;
+        }, 0);
         const myTotalSell = myProducts.reduce((acc, p) => acc + Number(p.sellAlf || 0), 0);
         const myChargeBuy = myProducts.reduce(
-          (acc, p) => acc + (isMeatProduct(p.line) ? 0 : Number(p.buyAlf || 0)),
+          (acc, p) => {
+            if (isMeatProduct(p.line)) return acc;
+            const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+              ? Number(p.actualBuyAlf)
+              : Number(p.buyAlf || 0);
+            return acc + effectiveCost;
+          },
           0,
         );
         const myName = myProducts[0]?.pricedBy || currentPreparer?.name || "مجهز";

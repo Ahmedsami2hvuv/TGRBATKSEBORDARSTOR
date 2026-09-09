@@ -19,6 +19,7 @@ const inputClass =
 type ProductRow = {
   line: string;
   buyAlf: number | "";
+  actualBuyAlf?: number | "";
   sellAlf: number | "";
   pricedBy?: string | null;
   pricedById?: string | null;
@@ -46,6 +47,7 @@ type Props = {
     products: {
       line: string;
       buyAlf: number;
+      actualBuyAlf?: number | null;
       sellAlf: number;
       pricedBy?: string | null;
       pricedById?: string | null;
@@ -85,6 +87,7 @@ export function PreparerSiteOrderPrepEditClient({
     initialData.products.map((p) => ({
       line: p.line,
       buyAlf: p.buyAlf === 0 ? "" : p.buyAlf,
+      actualBuyAlf: p.actualBuyAlf != null && p.actualBuyAlf !== 0 ? p.actualBuyAlf : "",
       sellAlf: p.sellAlf === 0 ? "" : p.sellAlf,
       pricedBy: p.pricedBy || null,
       pricedById: p.pricedById || null,
@@ -103,6 +106,7 @@ export function PreparerSiteOrderPrepEditClient({
 
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [pricingLinesText, setPricingLinesText] = useState("");
+  const [actualBuyText, setActualBuyText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
   const [isSorting, setIsSorting] = useState(false);
   const [sortError, setSortError] = useState<string | null>(null);
@@ -227,9 +231,11 @@ export function PreparerSiteOrderPrepEditClient({
       rawListText: initialData.rawListText?.trim() || undefined,
       products: products.map((p) => {
         const buyAlf = parseFloat(String(p.buyAlf).replace(/,/g, ".").trim());
+        const actualBuyNum = p.actualBuyAlf !== "" && p.actualBuyAlf != null ? parseFloat(String(p.actualBuyAlf).replace(/,/g, ".").trim()) : undefined;
         return {
           line: p.line,
           buyAlf,
+          actualBuyAlf: Number.isFinite(actualBuyNum) && actualBuyNum! >= 0 ? actualBuyNum : undefined,
           sellAlf: calculateAutoSellPrice(p.line, buyAlf),
           pricedBy: p.pricedBy || null,
           pricedById: p.pricedById || null,
@@ -265,6 +271,9 @@ export function PreparerSiteOrderPrepEditClient({
       setPricingErr("تأكد أن سعر الشراء رقم صحيح.");
       return;
     }
+    const actualBuyParsed = actualBuyText.trim() ? parseFloat(actualBuyText.replace(/,/g, ".").trim()) : null;
+    const actualBuyNum = actualBuyParsed != null && Number.isFinite(actualBuyParsed) && actualBuyParsed >= 0 ? actualBuyParsed : null;
+
     setProducts((prev) => {
       const next = [...prev];
       const target = next[selectedPriceIndex];
@@ -272,6 +281,7 @@ export function PreparerSiteOrderPrepEditClient({
         next[selectedPriceIndex] = {
           ...target,
           buyAlf: bn,
+          actualBuyAlf: actualBuyNum != null ? actualBuyNum : "",
           sellAlf: calculateAutoSellPrice(target.line, bn),
           pricedBy: preparerName,
           pricedById: preparerId,
@@ -281,6 +291,7 @@ export function PreparerSiteOrderPrepEditClient({
     });
     setSelectedPriceIndex(null);
     setPricingLinesText("");
+    setActualBuyText("");
   }
 
   if (state.ok) {
@@ -366,6 +377,7 @@ export function PreparerSiteOrderPrepEditClient({
                     setSelectedPriceIndex(i);
                     setPricingErr(null);
                     setPricingLinesText(priced ? `${p.buyAlf}` : "");
+                    setActualBuyText(p.actualBuyAlf != null && p.actualBuyAlf !== "" ? `${p.actualBuyAlf}` : "");
                   }}
                   className={`group relative flex min-h-[64px] w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
                     selectedPriceIndex === i
@@ -401,6 +413,11 @@ export function PreparerSiteOrderPrepEditClient({
                     <span className={`font-mono text-sm font-black tabular-nums ${priced && !isOthers ? "text-white" : "text-slate-500 dark:text-slate-400"}`} dir="ltr">
                       {String(p.buyAlf).replace(/,/g, ".") || "⋯"}
                     </span>
+                    {p.actualBuyAlf != null && p.actualBuyAlf !== "" && Number(p.actualBuyAlf) !== Number(p.buyAlf) ? (
+                      <span className="text-[9px] font-black bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded mt-0.5 shadow-sm">
+                        محفظة: {p.actualBuyAlf}
+                      </span>
+                    ) : null}
                     
                     {/* عرض شارات التخصيص للمجهزين والموردين الآخرين */}
                     {isAssignedToOther ? (
@@ -424,9 +441,12 @@ export function PreparerSiteOrderPrepEditClient({
                  <div className="kse-glass-dark m-4 overflow-hidden border border-sky-200 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/90">
                     <div className="bg-sky-600 px-4 py-3 text-white">
                        <p className="text-xs font-bold opacity-80">تعديل سعر:</p>
-                       <p className="truncate text-sm font-black">{products[selectedPriceIndex]}</p>
+                       <p className="truncate text-sm font-black">{products[selectedPriceIndex]?.line}</p>
                     </div>
                     <div className="p-5">
+                       <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                         سعر الشراء الأساسي (لحساب سعر البيع للزبون):
+                       </label>
                        <textarea
                          value={pricingLinesText}
                          onChange={(e) => setPricingLinesText(e.target.value)}
@@ -439,10 +459,26 @@ export function PreparerSiteOrderPrepEditClient({
                          rows={2}
                          dir="ltr"
                          placeholder="سعر الشراء"
-                         className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-4 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                         className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-3 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
                          inputMode="decimal"
                          autoFocus
                        />
+                       <div className="mt-3 flex flex-col gap-1">
+                         <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                           المدفوع للمحل بعد الخصم (للمحفظة - اختياري):
+                         </label>
+                         <input
+                           value={actualBuyText}
+                           onChange={(e) => setActualBuyText(e.target.value)}
+                           dir="ltr"
+                           placeholder="مثلاً 9 (اتركه فارغاً إذا لم يوجد خصم)"
+                           className="w-full rounded-xl border border-sky-100 bg-slate-50 px-3 py-2 text-center font-mono text-base font-bold tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                           inputMode="decimal"
+                         />
+                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                           إذا أعطاك المحل خصماً، اكتب هنا السعر الفعلي الذي دفعته ليتم تسجيله في محفظتك بدقة.
+                         </span>
+                       </div>
                        {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
                        <div className="mt-5 grid grid-cols-2 gap-3">
                           <button

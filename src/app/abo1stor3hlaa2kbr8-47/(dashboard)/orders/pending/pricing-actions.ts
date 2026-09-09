@@ -221,6 +221,9 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     line: String(uiProd.line || "").trim(),
     buyAlf: Number(uiProd.buyAlf || 0),
     sellAlf: Number(uiProd.sellAlf || 0),
+    actualBuyAlf: (uiProd.actualBuyAlf != null && uiProd.actualBuyAlf !== "" && !isNaN(Number(uiProd.actualBuyAlf)))
+      ? Number(uiProd.actualBuyAlf)
+      : null,
     pricedBy: uiProd.pricedBy || null,
     pricedById: uiProd.pricedById || null,
     assignedPreparerId: typeof uiProd.assignedPreparerId === "string" && uiProd.assignedPreparerId.trim() ? uiProd.assignedPreparerId.trim() : null,
@@ -299,6 +302,10 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
   const preparerMap = new Map<string, { preparerId: string | null; preparerName: string; products: any[]; totalBuyAlf: number }>();
   for (const p of enrichedProducts) {
+    const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+      ? Number(p.actualBuyAlf)
+      : Number(p.buyAlf || 0);
+
     if (p.isFulfilledByAdmin) {
       const key = "admin:fulfillment";
       if (!preparerMap.has(key)) {
@@ -311,7 +318,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       }
       const entry = preparerMap.get(key)!;
       entry.products.push(p);
-      entry.totalBuyAlf += p.buyAlf;
+      entry.totalBuyAlf += effectiveCost;
       continue;
     }
 
@@ -333,7 +340,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
     const entry = preparerMap.get(key)!;
     entry.products.push(p);
-    entry.totalBuyAlf += p.buyAlf;
+    entry.totalBuyAlf += effectiveCost;
   }
 
   // --- 6. تحضير الفواتير المنفصلة ---
@@ -666,7 +673,13 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
           : allPreparers.find(p => p.name.trim() === inv.preparerName.trim());
 
         const chargeBuyAlf = inv.products.reduce(
-          (sum: number, p: any) => sum + (isMeatProduct(p.line) || p.isFulfilledByAdmin ? 0 : Number(p.buyAlf || 0)),
+          (sum: number, p: any) => {
+            if (isMeatProduct(p.line) || p.isFulfilledByAdmin) return sum;
+            const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+              ? Number(p.actualBuyAlf)
+              : Number(p.buyAlf || 0);
+            return sum + effectiveCost;
+          },
           0,
         );
 
