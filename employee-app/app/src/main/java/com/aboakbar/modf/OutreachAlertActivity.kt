@@ -52,21 +52,7 @@ class OutreachAlertActivity : Activity() {
         val width = (displayMetrics.widthPixels * 0.95).toInt()
         window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
 
-        itemId = intent.getStringExtra("itemId") ?: ""
-        phone = intent.getStringExtra("phone") ?: ""
-        originalInput = intent.getStringExtra("originalInput") ?: ""
-        generatedMessage = intent.getStringExtra("generatedMessage") ?: ""
-        val remainingCount = intent.getIntExtra("remainingCount", 0)
-
-        findViewById<TextView>(R.id.tvOutreachPhone).text = "📞 $phone"
-        if (originalInput.isNotEmpty() && originalInput != phone) {
-            findViewById<TextView>(R.id.tvOutreachOriginalInput).text = "الاسم/المدخل: $originalInput"
-            findViewById<TextView>(R.id.tvOutreachOriginalInput).visibility = android.view.View.VISIBLE
-        } else {
-            findViewById<TextView>(R.id.tvOutreachOriginalInput).visibility = android.view.View.GONE
-        }
-        findViewById<TextView>(R.id.tvOutreachMessage).text = generatedMessage
-        findViewById<TextView>(R.id.tvOutreachRemainingCount).text = "الزبائن المتبقين في القائمة: $remainingCount"
+        bindViewsFromIntent(intent)
 
         val btnSend = findViewById<Button>(R.id.btnSendOutreach)
         val btnSkip = findViewById<Button>(R.id.btnSkipOutreach)
@@ -85,6 +71,37 @@ class OutreachAlertActivity : Activity() {
         btnChangeInterval.setOnClickListener {
             RemindersSettingsHelper.showCombinedSettingsDialog(this)
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent?.let { bindViewsFromIntent(it) }
+    }
+
+    private fun bindViewsFromIntent(srcIntent: Intent) {
+        itemId = srcIntent.getStringExtra("itemId") ?: ""
+        phone = srcIntent.getStringExtra("phone") ?: ""
+        originalInput = srcIntent.getStringExtra("originalInput") ?: ""
+        generatedMessage = srcIntent.getStringExtra("generatedMessage") ?: ""
+        val remainingCount = srcIntent.getIntExtra("remainingCount", 0)
+
+        val tvPhone = findViewById<TextView>(R.id.tvOutreachPhone)
+        val tvOriginal = findViewById<TextView>(R.id.tvOutreachOriginalInput)
+        val tvMessage = findViewById<TextView>(R.id.tvOutreachMessage)
+        val tvRemaining = findViewById<TextView>(R.id.tvOutreachRemainingCount)
+
+        if (tvPhone != null) tvPhone.text = "📞 $phone"
+        if (tvOriginal != null) {
+            if (originalInput.isNotEmpty() && originalInput != phone) {
+                tvOriginal.text = "الاسم/المدخل: $originalInput"
+                tvOriginal.visibility = android.view.View.VISIBLE
+            } else {
+                tvOriginal.visibility = android.view.View.GONE
+            }
+        }
+        if (tvMessage != null) tvMessage.text = generatedMessage
+        if (tvRemaining != null) tvRemaining.text = "الزبائن المتبقين في القائمة: $remainingCount"
     }
 
     private fun normalizeIraqiPhoneForWhatsApp(raw: String): String {
@@ -111,11 +128,16 @@ class OutreachAlertActivity : Activity() {
             return
         }
 
-        val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(phone)
+        val currentPhone = phone
+        val currentName = originalInput
+        val currentItemId = itemId
+        val currentMsg = generatedMessage
+
+        val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(currentPhone)
 
         // 1. فتح تطبيق الواتساب مباشرة برقم الزبون الدولي والرسالة
         try {
-            val encodedMessage = Uri.encode(generatedMessage)
+            val encodedMessage = Uri.encode(currentMsg)
             val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$waFormattedPhone&text=$encodedMessage")
             val intent = Intent(Intent.ACTION_VIEW, waUri).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -123,7 +145,7 @@ class OutreachAlertActivity : Activity() {
             startActivity(intent)
         } catch (e: Exception) {
             try {
-                val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$waFormattedPhone&text=" + Uri.encode(generatedMessage)))
+                val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$waFormattedPhone&text=" + Uri.encode(currentMsg)))
                 waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(waIntent)
             } catch (ex: Exception) {
@@ -132,10 +154,10 @@ class OutreachAlertActivity : Activity() {
         }
 
         // 2. تأشير الرقم في السيرفر ومحلياً كمكتمل فورياً ليتحول لقائمة المكتمل
-        markOutreachSentOnServer(itemId)
+        markOutreachSentOnServer(currentItemId)
 
-        // 3. جدولة تنبيه فتح تطبيق الاتصال بعد 15 ثانية بالضبط لحفظ الرقم
-        scheduleSaveContactPrompt(this, phone, originalInput, 15)
+        // 3. جدولة تنبيه فتح تطبيق الاتصال بعد 15 ثانية بالضبط لنفس هذا الزبون
+        scheduleSaveContactPrompt(this, currentPhone, currentName, 15)
 
         // 4. جدولة الزبون التالي بعد الفاصل الزمني المحدد
         val interval = OutreachSchedulerService.getIntervalMinutes(this)
@@ -148,16 +170,18 @@ class OutreachAlertActivity : Activity() {
     private fun scheduleSaveContactPrompt(context: Context, targetPhone: String, targetName: String, delaySeconds: Int) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            val reqCode = (System.currentTimeMillis() % 1000000).toInt()
             val intent = Intent(context, SaveContactReceiver::class.java).apply {
                 putExtra("phone", targetPhone)
                 putExtra("contactName", targetName)
+                data = Uri.parse("custom://save_contact/$targetPhone/$reqCode")
             }
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
-            val pendingIntent = PendingIntent.getBroadcast(context, 7712, intent, flags)
+            val pendingIntent = PendingIntent.getBroadcast(context, reqCode, intent, flags)
             val triggerTime = System.currentTimeMillis() + (delaySeconds * 1000L)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

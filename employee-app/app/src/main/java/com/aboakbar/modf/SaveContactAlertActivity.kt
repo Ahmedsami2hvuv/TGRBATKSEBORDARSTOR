@@ -40,26 +40,42 @@ class SaveContactAlertActivity : Activity() {
         val width = (displayMetrics.widthPixels * 0.95).toInt()
         window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
 
-        phone = intent.getStringExtra("phone") ?: ""
-        contactName = intent.getStringExtra("contactName") ?: ""
-
-        val cleanLocalPhone = formatToLocalDialPhone(phone)
-
-        findViewById<TextView>(R.id.tvSaveContactPhone).text = "📞 $cleanLocalPhone"
-        if (contactName.isNotEmpty() && contactName != phone) {
-            findViewById<TextView>(R.id.tvSaveContactName).text = "الاسم/المدخل: $contactName"
-            findViewById<TextView>(R.id.tvSaveContactName).visibility = android.view.View.VISIBLE
-        } else {
-            findViewById<TextView>(R.id.tvSaveContactName).visibility = android.view.View.GONE
-        }
+        bindViewsFromIntent(intent)
 
         findViewById<Button>(R.id.btnOpenDialerToSave).setOnClickListener {
+            val cleanLocalPhone = formatToLocalDialPhone(phone)
             openDialer(cleanLocalPhone)
             finish()
         }
 
         findViewById<Button>(R.id.btnCloseSaveDialog).setOnClickListener {
             finish()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent?.let { bindViewsFromIntent(it) }
+    }
+
+    private fun bindViewsFromIntent(srcIntent: Intent) {
+        phone = srcIntent.getStringExtra("phone") ?: ""
+        contactName = srcIntent.getStringExtra("contactName") ?: ""
+
+        val cleanLocalPhone = formatToLocalDialPhone(phone)
+
+        val tvPhone = findViewById<TextView>(R.id.tvSaveContactPhone)
+        val tvName = findViewById<TextView>(R.id.tvSaveContactName)
+
+        if (tvPhone != null) tvPhone.text = "📞 $cleanLocalPhone"
+        if (tvName != null) {
+            if (contactName.isNotEmpty() && contactName != phone) {
+                tvName.text = "الاسم/المدخل: $contactName"
+                tvName.visibility = android.view.View.VISIBLE
+            } else {
+                tvName.visibility = android.view.View.GONE
+            }
         }
     }
 

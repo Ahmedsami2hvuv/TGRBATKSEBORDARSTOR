@@ -33,10 +33,13 @@ class SaveContactReceiver : BroadcastReceiver() {
             e.printStackTrace()
         }
 
+        val reqCode = (System.currentTimeMillis() % 1000000).toInt()
+
         // 1. فتح نافذة الحفظ المنبثقة
         val alertIntent = Intent(context, SaveContactAlertActivity::class.java).apply {
             putExtra("phone", phone)
             putExtra("contactName", contactName)
+            data = Uri.parse("custom://save_alert/$phone/$reqCode")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -47,14 +50,15 @@ class SaveContactReceiver : BroadcastReceiver() {
         }
 
         // 2. إصدار إشعار عالي الأولوية بضغطة زر لفتح تطبيق الاتصال مباشرة
-        showSaveContactNotification(context, phone, contactName, alertIntent)
+        showSaveContactNotification(context, phone, contactName, alertIntent, reqCode)
     }
 
     private fun showSaveContactNotification(
         context: Context,
         phone: String,
         contactName: String,
-        alertIntent: Intent
+        alertIntent: Intent,
+        reqCode: Int
     ) {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
@@ -81,13 +85,18 @@ class SaveContactReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
 
-            val contentPendingIntent = PendingIntent.getActivity(context, 8881, alertIntent, pendingFlags)
+            val contentPendingIntent = PendingIntent.getActivity(context, reqCode + 1, alertIntent, pendingFlags)
 
             // زر مباشر لفتح تطبيق الاتصال بالرقم
             var cleanPhone = phone.replace("[^0-9]".toRegex(), "")
+            while (cleanPhone.startsWith("00")) cleanPhone = cleanPhone.substring(2)
             if (cleanPhone.startsWith("964")) cleanPhone = "0" + cleanPhone.substring(3)
-            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
-            val dialPendingIntent = PendingIntent.getActivity(context, 8882, dialIntent, pendingFlags)
+            if (cleanPhone.startsWith("7") && cleanPhone.length == 10) cleanPhone = "0$cleanPhone"
+
+            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val dialPendingIntent = PendingIntent.getActivity(context, reqCode + 2, dialIntent, pendingFlags)
 
             val displayName = if (contactName.isNotEmpty() && contactName != phone) "$contactName ($cleanPhone)" else cleanPhone
 
@@ -107,7 +116,7 @@ class SaveContactReceiver : BroadcastReceiver() {
                     dialPendingIntent
                 )
 
-            notificationManager.notify(8880, builder.build())
+            notificationManager.notify(reqCode, builder.build())
         } catch (e: Exception) {
             e.printStackTrace()
         }
