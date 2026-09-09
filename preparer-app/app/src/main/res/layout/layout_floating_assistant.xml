@@ -31,31 +31,34 @@
         <!-- زر إعادة التحميل -->
         <ImageButton
             android:id="@+id/btnReload"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_popup_sync"
-            android:tint="#94A3B8" />
+            android:src="@drawable/ic_assistant_refresh"
+            android:scaleType="centerInside"
+            android:contentDescription="تحديث" />
 
         <!-- زر التصغير إلى فقاعة -->
         <ImageButton
             android:id="@+id/btnMinimize"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_crop"
-            android:tint="#94A3B8" />
+            android:src="@drawable/ic_assistant_minimize"
+            android:scaleType="centerInside"
+            android:contentDescription="تصغير" />
 
         <!-- زر الإغلاق -->
         <ImageButton
             android:id="@+id/btnClose"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="#EF4444" />
+            android:src="@drawable/ic_assistant_close"
+            android:scaleType="centerInside"
+            android:contentDescription="إغلاق" />
     </LinearLayout>
 
     <ProgressBar

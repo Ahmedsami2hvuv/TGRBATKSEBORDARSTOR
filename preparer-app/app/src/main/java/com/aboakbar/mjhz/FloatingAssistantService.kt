@@ -7,17 +7,22 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.view.*
 import android.webkit.*
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.Toast
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
 
 class FloatingAssistantService : Service() {
 
+    private val TAG = "FloatingAssistant"
     private lateinit var windowManager: WindowManager
     private var assistantView: View? = null
     private var bubbleView: View? = null
@@ -37,38 +42,57 @@ class FloatingAssistantService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        startInForeground()
-        initViews()
+        try {
+            windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            startInForeground()
+            initViews()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing FloatingAssistantService", e)
+            Toast.makeText(this, "خطأ في تشغيل المساعد: ${e.message}", Toast.LENGTH_LONG).show()
+            stopSelf()
+        }
     }
 
     private fun startInForeground() {
         val channelId = "floating_assistant_channel"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "مساعد المجهز العائم",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "خدمة المساعد الذكي العائم فوق التطبيقات"
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "مساعد المجهز العائم",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "خدمة المساعد الذكي العائم فوق التطبيقات"
+                }
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.createNotificationChannel(channel)
             }
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+
+            val notification: Notification = NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_stat_onesignal_default)
+                .setContentTitle("🪄 مساعد المجهز نشط")
+                .setContentText("المساعد العائم جاهز لتسعير الطلبات فوراً")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    startForeground(1002, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                } catch (e: Exception) {
+                    startForeground(1002, notification)
+                }
+            } else {
+                startForeground(1002, notification)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Foreground notification error", e)
         }
-
-        val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_stat_onesignal_default)
-            .setContentTitle("🪄 مساعد المجهز نشط")
-            .setContentText("المساعد العائم جاهز لتسعير الطلبات فوراً")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-
-        startForeground(1002, notification)
     }
 
     @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
     private fun initViews() {
-        val inflater = LayoutInflater.from(this)
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_AboAkbarAdmin)
+        val inflater = LayoutInflater.from(themedContext)
 
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -79,18 +103,19 @@ class FloatingAssistantService : Service() {
 
         // 1. إعداد بارامترات النافذة الكاملة
         val displayMetrics = resources.displayMetrics
-        val width = (displayMetrics.widthPixels * 0.92).toInt().coerceAtMost(dpToPx(420))
-        val height = (displayMetrics.heightPixels * 0.65).toInt().coerceAtMost(dpToPx(620))
+        val width = (displayMetrics.widthPixels * 0.94).toInt().coerceAtMost(dpToPx(440))
+        val height = (displayMetrics.heightPixels * 0.70).toInt().coerceAtMost(dpToPx(650))
 
         assistantParams = WindowManager.LayoutParams(
             width,
             height,
             layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = dpToPx(60)
+            y = dpToPx(50)
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         }
 
         // 2. إعداد بارامترات الفقاعة العائمة
@@ -119,36 +144,43 @@ class FloatingAssistantService : Service() {
         bubbleView = inflater.inflate(R.layout.layout_floating_bubble, null)
 
         // إغلاق المساعد
-        btnClose.setOnClickListener {
+        btnClose?.setOnClickListener {
             stopSelf()
         }
 
         // تصغير إلى فقاعة
-        btnMinimize.setOnClickListener {
+        btnMinimize?.setOnClickListener {
             minimizeToBubble()
         }
 
         // إعادة التحميل
-        btnReload.setOnClickListener {
+        btnReload?.setOnClickListener {
             webView?.reload()
         }
 
         // توسيع من الفقاعة
-        bubbleView!!.setOnClickListener {
+        bubbleView?.setOnClickListener {
             expandToAssistant()
         }
 
         // تمكين سحب رأس النافذة
-        setupDragListener(headerLayout, assistantParams, isAssistant = true)
+        headerLayout?.let { setupDragListener(it, assistantParams, isAssistant = true) }
 
         // تمكين سحب الفقاعة
-        setupDragListener(bubbleView!!, bubbleParams, isAssistant = false)
+        bubbleView?.let { setupDragListener(it, bubbleParams, isAssistant = false) }
 
         // إعداد الويب فيو
         setupWebView()
 
         // إضافة النافذة للشاشة
-        windowManager.addView(assistantView, assistantParams)
+        try {
+            windowManager.addView(assistantView, assistantParams)
+            Toast.makeText(this, "🪄 ظهر المساعد العائم", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "WindowManager addView error", e)
+            Toast.makeText(this, "تعذر عرض النافذة العائمة: تأكد من منح إذن الظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
+            stopSelf()
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -157,7 +189,6 @@ class FloatingAssistantService : Service() {
         val settings = wv.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        settings.databaseEnabled = true
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -169,6 +200,10 @@ class FloatingAssistantService : Service() {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                progressBar?.visibility = View.GONE
+            }
+
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                 progressBar?.visibility = View.GONE
             }
         }
@@ -183,7 +218,7 @@ class FloatingAssistantService : Service() {
             }
         }
 
-        // جلب الرابط المخزن للمجهز
+        // جلب الرابط والمعرف المخزن للمجهز
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val savedUrl = prefs.getString(KEY_preparer_URL, "") ?: ""
         val savedId = prefs.getString(KEY_preparer_ID, "") ?: ""
@@ -227,7 +262,11 @@ class FloatingAssistantService : Service() {
                     params.y = initialY + dy
                     val targetView = if (isAssistant) assistantView else bubbleView
                     if (targetView != null && targetView.isAttachedToWindow) {
-                        windowManager.updateViewLayout(targetView, params)
+                        try {
+                            windowManager.updateViewLayout(targetView, params)
+                        } catch (e: Exception) {
+                            // تجاهل
+                        }
                     }
                     true
                 }
@@ -253,7 +292,7 @@ class FloatingAssistantService : Service() {
             }
             isExpanded = false
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error minimizing to bubble", e)
         }
     }
 
@@ -268,7 +307,7 @@ class FloatingAssistantService : Service() {
             }
             isExpanded = true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error expanding to assistant", e)
         }
     }
 
@@ -288,7 +327,7 @@ class FloatingAssistantService : Service() {
             }
             webView?.destroy()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error in onDestroy", e)
         }
     }
 }
