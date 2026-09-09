@@ -16,15 +16,15 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-class EvaluationAlertActivity : Activity() {
+class OutreachAlertActivity : Activity() {
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
     private val BACKEND_URL = "https://aboakbr.com"
 
-    private var orderId: String = ""
-    private var orderNumber: Int = 0
-    private var customerPhone: String = ""
+    private var itemId: String = ""
+    private var phone: String = ""
+    private var originalInput: String = ""
     private var generatedMessage: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,38 +43,40 @@ class EvaluationAlertActivity : Activity() {
             )
         }
 
-        setContentView(R.layout.activity_evaluation_alert)
+        setContentView(R.layout.activity_outreach_alert)
         setFinishOnTouchOutside(false)
 
         val displayMetrics = resources.displayMetrics
         val width = (displayMetrics.widthPixels * 0.95).toInt()
         window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
 
-        orderId = intent.getStringExtra("orderId") ?: ""
-        orderNumber = intent.getIntExtra("orderNumber", 0)
-        val shopName = intent.getStringExtra("shopName") ?: "—"
-        val regionName = intent.getStringExtra("regionName") ?: "—"
-        customerPhone = intent.getStringExtra("customerPhone") ?: ""
+        itemId = intent.getStringExtra("itemId") ?: ""
+        phone = intent.getStringExtra("phone") ?: ""
+        originalInput = intent.getStringExtra("originalInput") ?: ""
         generatedMessage = intent.getStringExtra("generatedMessage") ?: ""
         val remainingCount = intent.getIntExtra("remainingCount", 0)
 
-        findViewById<TextView>(R.id.tvOrderNumber).text = "#$orderNumber"
-        findViewById<TextView>(R.id.tvShopName).text = "المحل: $shopName"
-        findViewById<TextView>(R.id.tvRegionAndPhone).text = "📍 $regionName | 📞 $customerPhone"
-        findViewById<TextView>(R.id.tvGeneratedMessage).text = generatedMessage
-        findViewById<TextView>(R.id.tvRemainingCount).text = "الطلبات المتبقية بانتظار التقييم: $remainingCount"
+        findViewById<TextView>(R.id.tvOutreachPhone).text = "📞 $phone"
+        if (originalInput.isNotEmpty() && originalInput != phone) {
+            findViewById<TextView>(R.id.tvOutreachOriginalInput).text = "الاسم/المدخل: $originalInput"
+            findViewById<TextView>(R.id.tvOutreachOriginalInput).visibility = android.view.View.VISIBLE
+        } else {
+            findViewById<TextView>(R.id.tvOutreachOriginalInput).visibility = android.view.View.GONE
+        }
+        findViewById<TextView>(R.id.tvOutreachMessage).text = generatedMessage
+        findViewById<TextView>(R.id.tvOutreachRemainingCount).text = "الزبائن المتبقين في القائمة: $remainingCount"
 
-        val btnSend = findViewById<Button>(R.id.btnSendEvaluation)
-        val btnSkip = findViewById<Button>(R.id.btnSkipEvaluation)
-        val btnChangeInterval = findViewById<Button>(R.id.btnChangeInterval)
+        val btnSend = findViewById<Button>(R.id.btnSendOutreach)
+        val btnSkip = findViewById<Button>(R.id.btnSkipOutreach)
+        val btnChangeInterval = findViewById<Button>(R.id.btnChangeOutreachInterval)
 
         btnSend.setOnClickListener {
-            sendEvaluationViaWhatsapp()
+            sendOutreachViaWhatsapp()
         }
 
         btnSkip.setOnClickListener {
-            val interval = EvaluationSchedulerService.getIntervalMinutes(this)
-            EvaluationSchedulerService.scheduleNextEvaluation(this, interval)
+            val interval = OutreachSchedulerService.getIntervalMinutes(this)
+            OutreachSchedulerService.scheduleNextOutreach(this, interval)
             finish()
         }
 
@@ -100,14 +102,14 @@ class EvaluationAlertActivity : Activity() {
         return clean
     }
 
-    private fun sendEvaluationViaWhatsapp() {
-        if (customerPhone.isEmpty()) {
+    private fun sendOutreachViaWhatsapp() {
+        if (phone.isEmpty()) {
             Toast.makeText(this, "رقم هاتف الزبون غير متوفر", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(customerPhone)
+        val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(phone)
 
         try {
             val encodedMessage = Uri.encode(generatedMessage)
@@ -126,16 +128,16 @@ class EvaluationAlertActivity : Activity() {
             }
         }
 
-        markOrderRatedOnServer(orderId)
+        markOutreachSentOnServer(itemId)
 
-        val interval = EvaluationSchedulerService.getIntervalMinutes(this)
-        EvaluationSchedulerService.scheduleNextEvaluation(this, interval)
+        val interval = OutreachSchedulerService.getIntervalMinutes(this)
+        OutreachSchedulerService.scheduleNextOutreach(this, interval)
 
-        Toast.makeText(this, "تم فتح الواتساب لإرسال التقييم وتأشير الطلب بنجاح!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تم فتح الواتساب وتأشير الرقم كمكتمل الإرسال بنجاح!", Toast.LENGTH_SHORT).show()
         finish()
     }
 
-    private fun markOrderRatedOnServer(id: String) {
+    private fun markOutreachSentOnServer(id: String) {
         if (id.isEmpty()) return
 
         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -145,17 +147,17 @@ class EvaluationAlertActivity : Activity() {
         val staffId = sharedPreferences.getString("staff_id", "") ?: ""
         val savedPortalUrl = sharedPreferences.getString("admin_token", "") ?: ""
 
-        val locallyRatedSet = sharedPreferences.getStringSet("locally_rated_order_ids", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-        locallyRatedSet.add(id)
-        sharedPreferences.edit().putStringSet("locally_rated_order_ids", locallyRatedSet).apply()
+        val locallySentSet = sharedPreferences.getStringSet("locally_outreach_sent_ids", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        locallySentSet.add(id)
+        sharedPreferences.edit().putStringSet("locally_outreach_sent_ids", locallySentSet).apply()
 
         val json = JSONObject().apply {
-            put("orderId", id)
+            put("itemId", id)
         }
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
 
         val requestBuilder = Request.Builder()
-            .url("$BACKEND_URL/api/employee/evaluation-queue/mark-sent?orderId=$id")
+            .url("$BACKEND_URL/api/employee/outreach-queue/mark-sent?itemId=$id")
             .post(body)
 
         if (se.isNotEmpty()) requestBuilder.header("x-employee-se", se)

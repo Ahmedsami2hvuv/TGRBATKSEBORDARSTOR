@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:layout_margin="20dp"
+    android:layout_margin="16dp"
     android:background="@drawable/bg_dialog_rounded"
     android:orientation="vertical"
-    android:padding="18dp"
+    android:padding="16dp"
     android:elevation="16dp">
 
     <!-- الهيدر -->
@@ -63,8 +63,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
         android:background="#e2e8f0" />
 
     <!-- خيار 1: رفع طلب جديد -->
@@ -77,15 +77,15 @@
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="11dp">
+        android:padding="9dp">
 
         <TextView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="#e0f2fe"
             android:gravity="center"
             android:text="📝"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -99,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب جديد (رفع سريع)"
                 android:textColor="#0369a1"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -116,21 +116,21 @@
         android:id="@+id/btnOptDoubleOrder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/input_bg"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="11dp">
+        android:padding="9dp">
 
         <TextView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="#f5f3ff"
             android:gravity="center"
             android:text="⇄"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -144,7 +144,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب ذو وجهتين (استلام وتسليم)"
                 android:textColor="#6d28d9"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -161,21 +161,21 @@
         android:id="@+id/btnOptPrepOrder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/input_bg"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="11dp">
+        android:padding="9dp">
 
         <TextView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="#fef3c7"
             android:gravity="center"
             android:text="🛒"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -189,7 +189,7 @@
                 android:layout_height="wrap_content"
                 android:text="طلب تجهيز (مجهز أو مورد)"
                 android:textColor="#b45309"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -206,21 +206,21 @@
         android:id="@+id/btnOptEvaluationCheck"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/input_bg"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="11dp">
+        android:padding="9dp">
 
         <TextView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="#ecfdf5"
             android:gravity="center"
             android:text="⭐"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -234,7 +234,7 @@
                 android:layout_height="wrap_content"
                 android:text="فحص وإرسال طلب تقييم"
                 android:textColor="#047857"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -246,13 +246,103 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- خيار 5: فحص وإرسال مراسلة الزبائن وتخزين الأرقام -->
+    <LinearLayout
+        android:id="@+id/btnOptOutreachCheck"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/input_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="9dp">
+
+        <TextView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="#f0fdf4"
+            android:gravity="center"
+            android:text="💬"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="مراسلة وتخزين أرقام الزبائن"
+                android:textColor="#059669"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="جلب الزبون التالي من قائمة التواصل ومراسلته"
+                android:textColor="#64748b"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- خيار 6: إعدادات المؤقتات -->
+    <LinearLayout
+        android:id="@+id/btnOptRemindersSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/input_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="9dp">
+
+        <TextView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="#eef2ff"
+            android:gravity="center"
+            android:text="⏰"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="إعدادات المؤقتات والتنبيهات"
+                android:textColor="#4338ca"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ضبط فترات التنبيه التلقائي للتقييم والمراسلة"
+                android:textColor="#64748b"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:gravity="center"
         android:text="💡 اسحب الزر لأي مكان، أو انقر مطولاً لإخفائه"
         android:textColor="#94a3b8"
-        android:textSize="11sp" />
+        android:textSize="10sp" />
 
 </LinearLayout>

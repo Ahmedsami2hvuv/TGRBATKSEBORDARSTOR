@@ -102,9 +102,14 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "تم تشغيل المساعد العائم ⚡ (يعمل الآن فوق الواتساب وكافة التطبيقات)", Toast.LENGTH_SHORT).show()
         }
 
-        // زر فحص طلبات التقييم المجدولة يدوياً
+        // زر فحص طلبات التقييم المجدولة يدوياً (ونقر مطول لفتح إعدادات المؤقتات)
         fabEvaluationCheck.setOnClickListener {
             EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this, isManual = true)
+        }
+
+        fabEvaluationCheck.setOnLongClickListener {
+            RemindersSettingsHelper.showCombinedSettingsDialog(this)
+            true
         }
 
         setupWebView()
@@ -115,6 +120,11 @@ class MainActivity : AppCompatActivity() {
             FloatingAssistantService.start(this)
             finish()
             return
+        }
+
+        // فحص ما إذا كان التطبيق مفتوحاً لفتح إعدادات المؤقتات
+        if (intent?.action == "com.aboakbar.modf.ACTION_OPEN_REMINDERS_SETTINGS") {
+            RemindersSettingsHelper.showCombinedSettingsDialog(this)
         }
 
         // Submit Button Click
@@ -150,9 +160,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // تشغيل مجدول التقييمات التلقائي فور فتح التطبيق
+        // تشغيل مجدول التقييمات ومجدول مراسلة الزبائن التلقائي فور فتح التطبيق
         if (EvaluationSchedulerService.isEnabled(this)) {
             EvaluationSchedulerService.scheduleNextEvaluation(this, EvaluationSchedulerService.getIntervalMinutes(this))
+        }
+        if (OutreachSchedulerService.isEnabled(this)) {
+            OutreachSchedulerService.scheduleNextOutreach(this, OutreachSchedulerService.getIntervalMinutes(this))
         }
 
         requestAppPermissions()
@@ -635,6 +648,9 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (intent?.action == "com.aboakbar.modf.ACTION_OPEN_REMINDERS_SETTINGS") {
+            RemindersSettingsHelper.showCombinedSettingsDialog(this)
+        }
         val targetUrl = intent?.getStringExtra("target_url")
         if (!targetUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
             webView.loadUrl(targetUrl)

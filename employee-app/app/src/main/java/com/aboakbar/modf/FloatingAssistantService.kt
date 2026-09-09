@@ -42,11 +42,7 @@ class FloatingAssistantService : Service() {
                 }
             }
             val intent = Intent(context, FloatingAssistantService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startService(intent)
         }
 
         fun stop(context: Context) {
@@ -90,8 +86,8 @@ class FloatingAssistantService : Service() {
 
         val longPressRunnable = Runnable {
             isLongPressed = true
-            // اهتزاز خفيف للإشعار بالاختفاء
             val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            @Suppress("DEPRECATION")
             vibrator?.vibrate(60)
             Toast.makeText(this@FloatingAssistantService, "تم إخفاء المساعد العائم", Toast.LENGTH_SHORT).show()
             stopSelf()
@@ -134,7 +130,6 @@ class FloatingAssistantService : Service() {
                     val duration = System.currentTimeMillis() - touchStartTime
 
                     if (!isDragging && !isLongPressed && duration < 600) {
-                        // نقرة عادية: فتح قائمة الخيارات السريعة
                         showActionDialog()
                     }
                     true
@@ -181,7 +176,6 @@ class FloatingAssistantService : Service() {
             dismissActionDialog()
         }
 
-        // إغلاق النافذة إذا تم لمس الخلفية المظللة
         actionDialogView?.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_OUTSIDE || event.action == MotionEvent.ACTION_DOWN) {
                 dismissActionDialog()
@@ -222,6 +216,22 @@ class FloatingAssistantService : Service() {
         actionDialogView?.findViewById<View>(R.id.btnOptEvaluationCheck)?.setOnClickListener {
             dismissActionDialog()
             EvaluationSchedulerService.fetchAndTriggerEvaluationAlert(this, isManual = true)
+        }
+
+        // 5. فحص وإرسال مهمة مراسلة الزبائن
+        actionDialogView?.findViewById<View>(R.id.btnOptOutreachCheck)?.setOnClickListener {
+            dismissActionDialog()
+            OutreachSchedulerService.fetchAndTriggerOutreachAlert(this, isManual = true)
+        }
+
+        // 6. إعدادات المؤقتات والتنبيهات
+        actionDialogView?.findViewById<View>(R.id.btnOptRemindersSettings)?.setOnClickListener {
+            dismissActionDialog()
+            val intent = Intent(this, MainActivity::class.java).apply {
+                action = "com.aboakbar.modf.ACTION_OPEN_REMINDERS_SETTINGS"
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            startActivity(intent)
         }
 
         try {
