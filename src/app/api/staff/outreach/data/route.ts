@@ -261,7 +261,7 @@ export async function POST(req: Request) {
     if (action === "create_list") {
       const extracted = extractPhonesPure(payload?.rawText || "");
       if (extracted.length === 0) {
-        return NextResponse.json({ ok: false, error: "لم يتم العثور على أرقام هواتف أو يوزرات صالحة." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "لم يتم العثور على أرقام هواتف أو يوزرات صالحة. تأكد من كتابة الرقم بشكل صحيح." }, { status: 400 });
       }
 
       // البحث عن القائمة الرئيسية الدائمة للموظف
@@ -303,32 +303,30 @@ export async function POST(req: Request) {
       const uniqueExtracted = Array.from(uniqueExtractedMap.values());
 
       const newItems: typeof uniqueExtracted = [];
-      const duplicateCompleted: Array<{ id: string; phone: string }> = [];
-      const duplicateActive: Array<{ id: string; phone: string }> = [];
+      const duplicateIdsToReactivate: string[] = [];
 
       for (const item of uniqueExtracted) {
         const exist = existingMap.get(item.phone);
         if (!exist) {
           newItems.push(item);
-        } else if (exist.status === "completed") {
-          duplicateCompleted.push({ id: exist.id, phone: item.phone });
         } else {
-          duplicateActive.push({ id: exist.id, phone: item.phone });
+          // إذا كان الرقم موجوداً مسبقاً في القائمة (سواء مكتمل أو قيد العمل)، نعيد تنشيطه فوراً ليصبح جاهزاً للعمل
+          duplicateIdsToReactivate.push(exist.id);
         }
       }
 
-      let reactivatedCount = 0;
-      if (payload?.reactivateCompleted && duplicateCompleted.length > 0) {
-        const completedIds = duplicateCompleted.map((d) => d.id);
+      // إعادة تنشيط الأرقام الموجودة مسبقاً لتكون في قيد العمل
+      if (duplicateIdsToReactivate.length > 0) {
         await prisma.staffOutreachItem.updateMany({
-          where: { id: { in: completedIds } },
+          where: { id: { in: duplicateIdsToReactivate } },
           data: {
             status: "pending",
             openedAt: null,
             completedAt: null,
+            templateUsed: null,
+            createdAt: new Date(),
           },
         });
-        reactivatedCount = duplicateCompleted.length;
       }
 
       // إضافة العناصر الجديدة
@@ -340,26 +338,21 @@ export async function POST(req: Request) {
             phone: item.phone,
             originalInput: item.originalInput,
             status: "pending",
+            createdAt: new Date(),
           })),
         });
       }
 
-      const newUsernames = newItems.filter((i) => i.phone.startsWith("@") || /[a-zA-Z]/.test(i.phone));
-      const newPhones = newItems.filter((i) => !i.phone.startsWith("@") && !/[a-zA-Z]/.test(i.phone));
+      const totalActiveNow = newItems.length + duplicateIdsToReactivate.length;
 
       return NextResponse.json({
         ok: true,
-        message: `تم استخراج ${uniqueExtracted.length} عنصر (${newItems.length} جديد، ${duplicateCompleted.length} مكتمل سابقاً، ${duplicateActive.length} قيد العمل)`,
+        message: `تمت إضافة وتنشيط ${totalActiveNow} رقم في قائمة قيد العمل بنجاح ✅`,
         listId: targetListId,
         summary: {
           totalExtracted: uniqueExtracted.length,
           newCount: newItems.length,
-          newUsernamesCount: newUsernames.length,
-          newPhonesCount: newPhones.length,
-          duplicateCompletedCount: duplicateCompleted.length,
-          duplicateCompletedPhones: duplicateCompleted.map((d) => d.phone),
-          duplicateActiveCount: duplicateActive.length,
-          reactivatedCount,
+          reactivatedCount: duplicateIdsToReactivate.length,
         },
       });
     }

@@ -45,7 +45,7 @@ export function cleanPhoneOrUsername(input: string): string | null {
     }
   }
 
-  // 4. إذا كان رقماً هاتفياً
+  // 4. إذا كان رقماً هاتفياً (إزالة المسافات والرموز)
   let cleanedDigits = text.replace(/[^0-9+]/g, "");
   if (cleanedDigits.startsWith("+")) cleanedDigits = cleanedDigits.substring(1);
   else if (cleanedDigits.startsWith("00")) cleanedDigits = cleanedDigits.substring(2);
@@ -85,14 +85,14 @@ export function extractPhonesPure(rawText: string): { phone: string; originalInp
       seen.add(parsed);
       results.push({ phone: parsed, originalInput: trimmed });
     } else {
-      // البحث عن أي روابط أو أرقام أو يوزرات داخل السطر
-      const matches = trimmed.match(/(?:https?:\/\/wa\.me\/[a-zA-Z0-9_.+@-]+|@[a-zA-Z0-9_.-]{3,35}|07[3-9][0-9]{8}|9647[3-9][0-9]{8}|\+9647[3-9][0-9]{8})/g);
+      // البحث عن أي روابط أو أرقام أو يوزرات داخل السطر (مع دعم المسافات والرموز بين الأرقام)
+      const matches = trimmed.match(/(?:https?:\/\/wa\.me\/[a-zA-Z0-9_.+@-]+|@[a-zA-Z0-9_.-]{3,35}|07[3-9][0-9\s-]{8,12}|9647[3-9][0-9\s-]{8,12}|\+9647[3-9][0-9\s-]{8,12}|07[3-9][0-9]{8}|7[3-9][0-9]{8})/g);
       if (matches) {
         for (const m of matches) {
           const p = cleanPhoneOrUsername(m);
           if (p && !seen.has(p)) {
             seen.add(p);
-            results.push({ phone: p, originalInput: m });
+            results.push({ phone: p, originalInput: m.trim() });
           }
         }
       }

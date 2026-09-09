@@ -583,7 +583,10 @@ export function StaffOutreachClient({
         setRawTextInput("");
         setListTitleInput("");
         setShowAddListModal(false);
-        loadData(false);
+        setActiveTab("active");
+        setSelectedIds(new Set());
+        setSearchQuery("");
+        await loadData(false);
       } else {
         showToast(res.error || "حدث خطأ أثناء الإضافة");
       }
