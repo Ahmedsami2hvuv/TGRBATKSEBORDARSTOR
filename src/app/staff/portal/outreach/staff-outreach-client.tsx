@@ -190,12 +190,24 @@ export function StaffOutreachClient({
     return { total, pending, whatsappOpened, completed, remaining, existingCustomers, duplicates };
   }, [list]);
 
-  // تصفية العناصر
+  // دالة الفرز الصارم المتطابق مع السيرفر وتطبيق الهاتف
+  const sortOutreachItems = (a: OutreachItem, b: OutreachItem) => {
+    const prioA = a.priority ?? 0;
+    const prioB = b.priority ?? 0;
+    if (prioB !== prioA) return prioB - prioA;
+    const timeA = new Date(a.createdAt).getTime();
+    const timeB = new Date(b.createdAt).getTime();
+    if (timeA !== timeB) return timeA - timeB;
+    return a.id.localeCompare(b.id);
+  };
+
+  // تصفية وترتيب العناصر النشطة من الأعلى للأسفل
   const filteredActiveItems = useMemo(() => {
     if (!list) return [];
     return list.items
       .filter(isItemAvailable)
       .filter((i) => i.status === "pending" || i.status === "whatsapp_opened")
+      .sort(sortOutreachItems)
       .filter((i) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.trim().toLowerCase();
@@ -212,6 +224,7 @@ export function StaffOutreachClient({
     return list.items
       .filter(isItemAvailable)
       .filter((i) => i.status === "completed")
+      .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime())
       .filter((i) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.trim().toLowerCase();

@@ -125,9 +125,10 @@ export async function GET(request: Request) {
       },
       orderBy: [
         { priority: "desc" },
-        { createdAt: "asc" }
+        { createdAt: "asc" },
+        { id: "asc" },
       ],
-      take: 50,
+      take: 100,
     });
 
     const totalPendingCount = await prisma.staffOutreachItem.count({

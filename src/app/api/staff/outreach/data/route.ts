@@ -213,7 +213,8 @@ export async function POST(req: Request) {
         },
         orderBy: [
           { priority: "desc" },
-          { createdAt: "asc" }
+          { createdAt: "asc" },
+          { id: "asc" },
         ],
       });
 
@@ -306,7 +307,7 @@ export async function POST(req: Request) {
         existingMap.set(item.phone, { id: item.id, status: item.status });
       }
 
-      // تصفية الأرقام المستخرجة ومطابقتها
+      // تصفية الأرقام المستخرجة ومطابقتها مع الحفاظ على الترتيب المدخل
       const uniqueExtractedMap = new Map<string, { phone: string; originalInput: string }>();
       for (const item of extracted) {
         if (!uniqueExtractedMap.has(item.phone)) {
@@ -323,10 +324,12 @@ export async function POST(req: Request) {
         if (!exist) {
           newItems.push(item);
         } else {
-          // إذا كان الرقم موجوداً مسبقاً في القائمة (سواء مكتمل أو قيد العمل)، نعيد تنشيطه فوراً ليصبح جاهزاً للعمل
+          // إذا كان الرقم موجوداً مسبقاً في القائمة، نعيد تنشيطه
           duplicateIdsToReactivate.push(exist.id);
         }
       }
+
+      const baseTime = Date.now();
 
       // إعادة تنشيط الأرقام الموجودة مسبقاً لتكون في قيد العمل
       if (duplicateIdsToReactivate.length > 0) {
@@ -337,21 +340,20 @@ export async function POST(req: Request) {
             openedAt: null,
             completedAt: null,
             templateUsed: null,
-            createdAt: new Date(),
           },
         });
       }
 
-      // إضافة العناصر الجديدة
+      // إضافة العناصر الجديدة بترتيب زمني تصاعدي دقيق للحفاظ على التسلسل
       if (newItems.length > 0) {
         await prisma.staffOutreachItem.createMany({
-          data: newItems.map((item) => ({
+          data: newItems.map((item, index) => ({
             id: crypto.randomUUID(),
             listId: targetListId,
             phone: item.phone,
             originalInput: item.originalInput,
             status: "pending",
-            createdAt: new Date(),
+            createdAt: new Date(baseTime + index * 10),
           })),
         });
       }
