@@ -229,6 +229,15 @@ export function StaffOutreachClient({
     return activeTemplates[randomIndex];
   };
 
+  const normalizeWaPhone = (p: string) => {
+    let clean = (p || "").replace(/\D/g, "");
+    while (clean.startsWith("00")) clean = clean.substring(2);
+    if (clean.startsWith("964") && clean.length >= 12) return clean;
+    if (clean.startsWith("07") && clean.length === 11) return "964" + clean.substring(1);
+    if (clean.startsWith("7") && clean.length === 10) return "964" + clean;
+    return clean;
+  };
+
   // التعامل مع النقر على رقم أو يوزر في قائمة العمل
   const handleItemClick = async (item: OutreachItem) => {
     if (isSelectMode) {
@@ -243,8 +252,10 @@ export function StaffOutreachClient({
       const template = getRandomTemplate();
       const encodedMsg = encodeURIComponent(template.content);
       const cleanTarget = item.phone.replace(/^@/, "").trim();
-      const whatsappUrl = `https://wa.me/${cleanTarget}?text=${encodedMsg}`;
-      window.open(whatsappUrl, "_blank");
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanTarget}&text=${encodedMsg}`;
+      
+      // فتح الواتساب مباشرة
+      window.location.href = whatsappUrl;
 
       // تحويله للمكتمل فوراً في الواجهة
       setList((prev) => {
@@ -273,6 +284,9 @@ export function StaffOutreachClient({
     if (item.status === "pending") {
       // 1. اختيار رسالة عشوائية
       const template = getRandomTemplate();
+      const waPhone = normalizeWaPhone(item.phone);
+      const encodedMsg = encodeURIComponent(template.content);
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodedMsg}`;
 
       // 2. تحديث الحالة فورياً في الواجهة للون الأخضر
       setList((prev) => {
@@ -287,10 +301,8 @@ export function StaffOutreachClient({
         };
       });
 
-      // 3. فتح الواتساب
-      const encodedMsg = encodeURIComponent(template.content);
-      const whatsappUrl = `https://wa.me/${item.phone}?text=${encodedMsg}`;
-      window.open(whatsappUrl, "_blank");
+      // 3. فتح الواتساب مباشرة
+      window.location.href = whatsappUrl;
 
       showToast(`تم فتح الواتساب بنموذج: ${template.title} 💬`);
 
@@ -1388,8 +1400,11 @@ export function StaffOutreachClient({
                 onClick={() => {
                   const tpl = getRandomTemplate();
                   const encoded = encodeURIComponent(tpl.content);
-                  const cleanTarget = selectedCompletedItem.phone.replace(/^@/, "").trim();
-                  window.open(`https://wa.me/${cleanTarget}?text=${encoded}`, "_blank");
+                  const isUser = selectedCompletedItem.phone.startsWith("@") || /[a-zA-Z]/.test(selectedCompletedItem.phone);
+                  const target = isUser
+                    ? selectedCompletedItem.phone.replace(/^@/, "").trim()
+                    : normalizeWaPhone(selectedCompletedItem.phone);
+                  window.location.href = `https://api.whatsapp.com/send?phone=${target}&text=${encoded}`;
                   showToast("تم فتح محادثة الواتساب 💬");
                 }}
                 className="w-full rounded-2xl bg-emerald-600 py-3 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition flex items-center justify-center gap-2"

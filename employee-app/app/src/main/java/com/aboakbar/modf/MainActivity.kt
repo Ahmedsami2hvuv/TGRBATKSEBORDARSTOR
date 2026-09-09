@@ -324,9 +324,11 @@ class MainActivity : AppCompatActivity() {
                         return false
                     }
                 }
-                if (url.startsWith("whatsapp:") || url.contains("wa.me")) {
+                if (url.startsWith("whatsapp:") || url.contains("wa.me") || url.contains("api.whatsapp.com") || url.contains("whatsapp.com")) {
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
                         startActivity(intent)
                         return true
                     } catch (e: Exception) {
@@ -334,7 +336,9 @@ class MainActivity : AppCompatActivity() {
                             url.replace("whatsapp://send?", "https://api.whatsapp.com/send?")
                         } else url
                         try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl)).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
                             startActivity(intent)
                             return true
                         } catch (ex: Exception) {
