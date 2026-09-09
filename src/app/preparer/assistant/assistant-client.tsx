@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { parseQuantityFromLine } from "@/lib/site-order-parse";
+import { useEffect, useState } from "react";
+import { parseQuantityFromLine } from "@/lib/auto-pricing";
 
 type ProductItem = {
   originalIndex: number;
