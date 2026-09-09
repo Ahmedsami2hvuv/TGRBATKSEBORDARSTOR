@@ -1582,6 +1582,22 @@ export function StaffOutreachClient({
                 </div>
               </div>
 
+              {/* قسم التنبيهات والمؤقت التلقائي في تطبيق الموظف */}
+              <div>
+                <h4 className="text-xs font-black text-slate-500 mb-2">⏰ وضع المؤقت التلقائي وتطبيق الموظف</h4>
+                <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 p-3.5 space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-xl">⚡</span>
+                    <div>
+                      <p className="text-xs font-black text-indigo-950">التذكير والمراسلة التلقائية</p>
+                      <p className="text-[11px] font-bold text-slate-600 mt-0.5 leading-relaxed">
+                        لتلقي إشعارات دورية تلقائية بأرقام الزبائن: افتح <strong>تطبيق الموظف</strong>، وانقر على المساعد العائم ⚡ ثم اختر <strong>&quot;إعدادات المؤقتات والتنبيهات ⏰&quot;</strong> وفعل مؤقت المراسلة واضبط الدقائق بحرية.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* إدارة النماذج */}
               <div>
                 <h4 className="text-xs font-black text-slate-500 mb-2">📑 النماذج الإعلانية</h4>

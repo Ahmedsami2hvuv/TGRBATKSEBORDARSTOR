@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutEmployeeQuickTools: View
     private lateinit var fabFloatingAssistant: com.google.android.material.floatingactionbutton.FloatingActionButton
     private lateinit var fabEvaluationCheck: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var fabOutreachCheck: com.google.android.material.floatingactionbutton.FloatingActionButton
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
@@ -94,12 +95,23 @@ class MainActivity : AppCompatActivity() {
         layoutEmployeeQuickTools = findViewById(R.id.layoutEmployeeQuickTools)
         fabFloatingAssistant = findViewById(R.id.fabFloatingAssistant)
         fabEvaluationCheck = findViewById(R.id.fabEvaluationCheck)
+        fabOutreachCheck = findViewById(R.id.fabOutreachCheck)
 
         // زر تشغيل المساعد العائم
         fabFloatingAssistant.setOnClickListener {
             FloatingAssistantService.start(this)
             moveTaskToBack(true)
             Toast.makeText(this, "تم تشغيل المساعد العائم ⚡ (يعمل الآن فوق الواتساب وكافة التطبيقات)", Toast.LENGTH_SHORT).show()
+        }
+
+        // زر فحص مراسلة وتخزين الزبائن يدوياً (ونقر مطول لفتح إعدادات المؤقتات)
+        fabOutreachCheck.setOnClickListener {
+            OutreachSchedulerService.fetchAndTriggerOutreachAlert(this, isManual = true)
+        }
+
+        fabOutreachCheck.setOnLongClickListener {
+            RemindersSettingsHelper.showCombinedSettingsDialog(this)
+            true
         }
 
         // زر فحص طلبات التقييم المجدولة يدوياً (ونقر مطول لفتح إعدادات المؤقتات)

@@ -288,9 +288,13 @@ class StrongAlertActivity : Activity() {
                 am.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
             }
 
-            // تحديد نغمة إنذار قوية
-            val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            // تحديد صوت صافرة الإنذار المخصص
+            val alertUri: Uri = try {
+                Uri.parse("android.resource://$packageName/${R.raw.siren_alert}")
+            } catch (e: Exception) {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            }
 
             // إعداد وتشغيل مشغل الصوت مع تخطي وضع عدم الإزعاج
             val audioAttributes = android.media.AudioAttributes.Builder()

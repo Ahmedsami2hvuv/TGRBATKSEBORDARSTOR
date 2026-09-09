@@ -27,6 +27,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <!-- زر فحص مراسلة وتخزين الزبائن الفوري -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabOutreachCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="#10b981"
+            app:fabCustomSize="46dp"
+            app:tint="#ffffff"
+            android:src="@android:drawable/ic_dialog_email"
+            android:contentDescription="فحص مراسلة وتخزين الزبائن" />
+
         <!-- زر فحص تقييمات الزبائن الفوري -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabEvaluationCheck"
