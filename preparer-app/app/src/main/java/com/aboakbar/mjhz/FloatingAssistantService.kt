@@ -78,8 +78,8 @@ class FloatingAssistantService : Service() {
 
             val notification: Notification = NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.drawable.ic_stat_onesignal_default)
-                .setContentTitle("🪄 مساعد المجهز نشط")
-                .setContentText("المساعد العائم جاهز لتسعير الطلبات فوراً")
+                .setContentTitle("مساعد المجهز")
+                .setContentText("لوحة التجهيز والطلبات السريعة قيد العمل")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build()
 
@@ -164,7 +164,7 @@ class FloatingAssistantService : Service() {
         // 5. تطبيق اسم المجهز إن وجد
         val savedName = prefs.getString(KEY_preparer_NAME, "") ?: ""
         if (savedName.isNotEmpty()) {
-            tvAssistantTitle?.text = "🪄 مساعد $savedName الذكي"
+            tvAssistantTitle?.text = "مساعد $savedName"
         }
 
         // 6. تضخيم واجهة الفقاعة
@@ -226,7 +226,7 @@ class FloatingAssistantService : Service() {
         // إضافة النافذة للشاشة
         try {
             windowManager.addView(assistantView, assistantParams)
-            Toast.makeText(this, "🪄 ظهر المساعد العائم", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "تم تشغيل المساعد السريع", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "WindowManager addView error", e)
             Toast.makeText(this, "تعذر عرض النافذة العائمة: تأكد من منح إذن الظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
@@ -253,7 +253,7 @@ class FloatingAssistantService : Service() {
                     val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     prefs.edit().putString(KEY_preparer_NAME, name.trim()).apply()
                     mainHandler.post {
-                        tvAssistantTitle?.text = "🪄 مساعد ${name.trim()} الذكي"
+                        tvAssistantTitle?.text = "مساعد ${name.trim()}"
                     }
                 }
             }
