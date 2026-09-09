@@ -104,10 +104,9 @@ export default async function StaffArchivedDayPage({
       createdAt: o.createdAt,
 
       // Unified fast-access fields
-      audioUrl: o.audioUrl,
-      preparerAudioUrl: o.preparerAudioUrl,
-      adminAudioUrl: o.adminAudioUrl,
-      shopLocationUrl: o.shopLocationUrl,
+      audioUrl: o.voiceNoteUrl,
+      adminAudioUrl: o.adminVoiceNoteUrl,
+      shopLocationUrl: o.shop?.locationUrl,
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl,
@@ -121,22 +120,36 @@ export default async function StaffArchivedDayPage({
   // تصفية الطلبات ليظهر فقط ما ليس به موقع أو موقعه مرفوع من المندوب
   const filteredRows = rawRows.filter(r => !r.hasCustomerLocation || r.hasCourierUploadedLocation);
 
-  // جلب كافة أرقام الهواتف المقيمة تاريخياً في كامل قاعدة البيانات
-  const allRatedOrders = await prisma.order.findMany({
-    where: {
-      adminOrderCode: { contains: "RATING_REQUESTED" },
-      customerPhone: { not: "" }
-    },
-    select: { customerPhone: true, secondCustomerPhone: true, alternatePhone: true }
-  });
+  // استخراج أرقام الهواتف الخاصة بطلبات هذا اليوم لفحصها فقط بدلاً من جلب كامل قاعدة البيانات
+  const candidatePhones = Array.from(new Set(
+    filteredRows
+      .map(r => (r.customerPhone || "").replace(/\D/g, ""))
+      .filter(p => p.length >= 8)
+      .map(p => p.slice(-9))
+  ));
 
   const ratedLast9Set = new Set<string>();
-  for (const ro of allRatedOrders) {
-    for (const p of [ro.customerPhone, ro.secondCustomerPhone, ro.alternatePhone]) {
-      if (p) {
-        const d = p.replace(/\D/g, "");
-        if (d.length >= 8) {
-          ratedLast9Set.add(d.slice(-9));
+
+  if (candidatePhones.length > 0) {
+    const ratedOrders = await prisma.order.findMany({
+      where: {
+        adminOrderCode: { contains: "RATING_REQUESTED" },
+        OR: candidatePhones.flatMap(last9 => [
+          { customerPhone: { contains: last9 } },
+          { secondCustomerPhone: { contains: last9 } },
+          { alternatePhone: { contains: last9 } }
+        ])
+      },
+      select: { customerPhone: true, secondCustomerPhone: true, alternatePhone: true }
+    });
+
+    for (const ro of ratedOrders) {
+      for (const p of [ro.customerPhone, ro.secondCustomerPhone, ro.alternatePhone]) {
+        if (p) {
+          const d = p.replace(/\D/g, "");
+          if (d.length >= 8) {
+            ratedLast9Set.add(d.slice(-9));
+          }
         }
       }
     }

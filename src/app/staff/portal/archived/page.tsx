@@ -1,23 +1,10 @@
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { prisma } from "@/lib/prisma";
 import { formatBaghdadDateLabel } from "@/lib/baghdad-archived-day";
 
 export const dynamic = "force-dynamic";
-
-function getBaghdadYmd(date: Date): string {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Baghdad",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = fmt.formatToParts(date);
-  const y = parts.find((p) => p.type === "year")?.value ?? "";
-  const m = parts.find((p) => p.type === "month")?.value ?? "";
-  const d = parts.find((p) => p.type === "day")?.value ?? "";
-  return `${y}-${m}-${d}`;
-}
 
 export default async function StaffArchivedDaysPage({ searchParams }: { searchParams: Promise<any> }) {
   const sp = await searchParams;
@@ -26,98 +13,53 @@ export default async function StaffArchivedDaysPage({ searchParams }: { searchPa
 
   const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
-  // 1. جلب كافة أرقام الهواتف المقيمة تاريخياً في كامل قاعدة البيانات
-  const allRatedOrders = await prisma.order.findMany({
-    where: {
-      adminOrderCode: { contains: "RATING_REQUESTED" },
-      customerPhone: { not: "" }
-    },
-    select: { customerPhone: true, secondCustomerPhone: true, alternatePhone: true }
-  });
+  let activeDays: Array<{ day: string; cnt: number }> = [];
 
-  const ratedLast9Set = new Set<string>();
-  for (const ro of allRatedOrders) {
-    for (const p of [ro.customerPhone, ro.secondCustomerPhone, ro.alternatePhone]) {
-      if (p) {
-        const d = p.replace(/\D/g, "");
-        if (d.length >= 8) {
-          ratedLast9Set.add(d.slice(-9));
-        }
-      }
-    }
+  try {
+    const rows = await prisma.$queryRaw<Array<{ day: string; cnt: bigint }>>(
+      Prisma.sql`
+        SELECT
+          to_char(
+            (o."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad')::date,
+            'YYYY-MM-DD'
+          ) AS day,
+          COUNT(DISTINCT RIGHT(regexp_replace(o."customerPhone", '\D', '', 'g'), 9))::bigint AS cnt
+        FROM "Order" o
+        LEFT JOIN "Customer" c ON o."customerId" = c."id"
+        WHERE o.status = 'archived'
+          AND o."createdAt" IS NOT NULL
+          AND o."customerPhone" IS NOT NULL
+          AND length(regexp_replace(o."customerPhone", '\D', '', 'g')) >= 8
+          AND (o."adminOrderCode" IS NULL OR o."adminOrderCode" NOT LIKE '%RATING_REQUESTED%')
+          AND (
+            (
+              (o."customerLocationUrl" IS NULL OR trim(o."customerLocationUrl") = '')
+              AND (c."customerLocationUrl" IS NULL OR trim(c."customerLocationUrl") = '')
+            )
+            OR o."customerLocationSetByCourierAt" IS NOT NULL
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM "Order" ro
+            WHERE ro."adminOrderCode" LIKE '%RATING_REQUESTED%'
+              AND (
+                (ro."customerPhone" IS NOT NULL AND length(regexp_replace(ro."customerPhone", '\D', '', 'g')) >= 8 AND RIGHT(regexp_replace(ro."customerPhone", '\D', '', 'g'), 9) = RIGHT(regexp_replace(o."customerPhone", '\D', '', 'g'), 9))
+                OR (ro."secondCustomerPhone" IS NOT NULL AND length(regexp_replace(ro."secondCustomerPhone", '\D', '', 'g')) >= 8 AND RIGHT(regexp_replace(ro."secondCustomerPhone", '\D', '', 'g'), 9) = RIGHT(regexp_replace(o."customerPhone", '\D', '', 'g'), 9))
+                OR (ro."alternatePhone" IS NOT NULL AND length(regexp_replace(ro."alternatePhone", '\D', '', 'g')) >= 8 AND RIGHT(regexp_replace(ro."alternatePhone", '\D', '', 'g'), 9) = RIGHT(regexp_replace(o."customerPhone", '\D', '', 'g'), 9))
+              )
+          )
+        GROUP BY 1
+        HAVING COUNT(DISTINCT RIGHT(regexp_replace(o."customerPhone", '\D', '', 'g'), 9)) > 0
+        ORDER BY 1 DESC
+      `,
+    );
+
+    activeDays = rows.map((r) => ({
+      day: r.day,
+      cnt: Number(r.cnt),
+    }));
+  } catch (err) {
+    console.error("Error loading staff archived days:", err);
   }
-
-  // 2. جلب الطلبات المؤرشفة النشطة غير المقيمة
-  const archivedOrders = await prisma.order.findMany({
-    where: {
-      status: "archived",
-      createdAt: { not: null },
-      NOT: {
-        adminOrderCode: { contains: "RATING_REQUESTED" }
-      },
-      customerPhone: { not: "" }
-    },
-    select: {
-      id: true,
-      createdAt: true,
-      customerPhone: true,
-      customerLocationUrl: true,
-      customerLocationSetByCourierAt: true,
-      customer: {
-        select: {
-          customerLocationUrl: true
-        }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
-  // 3. تجميع الأيام وحساب الزبائن المتبقين بدقة (استبعاد المقيمين والمكررين ومن لديهم موقع مرفوع مسبقاً)
-  const dayPendingCountMap = new Map<string, number>();
-  const daySeenPhonesMap = new Map<string, Set<string>>();
-
-  for (const o of archivedOrders) {
-    if (!o.createdAt) continue;
-
-    const hasCustomerLoc = !!(o.customerLocationUrl || o.customer?.customerLocationUrl);
-    const hasCourierLoc = Boolean(o.customerLocationSetByCourierAt);
-
-    // إذا كان للزبون موقع مسبقاً ولم يرفعه المندوب، لا يحتاج تقييم
-    if (hasCustomerLoc && !hasCourierLoc) {
-      continue;
-    }
-
-    const pDigits = (o.customerPhone || "").replace(/\D/g, "");
-    if (pDigits.length < 8) continue;
-    const last9 = pDigits.slice(-9);
-
-    // إذا كان الرقم مقيماً مسبقاً تاريخياً، نستبعده
-    if (ratedLast9Set.has(last9)) {
-      continue;
-    }
-
-    const dayYmd = getBaghdadYmd(new Date(o.createdAt));
-
-    let seenSet = daySeenPhonesMap.get(dayYmd);
-    if (!seenSet) {
-      seenSet = new Set<string>();
-      daySeenPhonesMap.set(dayYmd, seenSet);
-    }
-
-    // منع تكرار نفس رقم الزبون في نفس اليوم
-    if (seenSet.has(last9)) {
-      continue;
-    }
-    seenSet.add(last9);
-
-    dayPendingCountMap.set(dayYmd, (dayPendingCountMap.get(dayYmd) || 0) + 1);
-  }
-
-  // 4. إخفاء أي يوم مكتمل (عدد زبائنه المتبقين = 0) والاحتفاظ فقط بالأيام التي تحتوي على زبائن بانتظار التقييم
-  const activeDays = Array.from(dayPendingCountMap.entries())
-    .filter(([_, cnt]) => cnt > 0)
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([day, cnt]) => ({ day, cnt }));
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 text-slate-800" dir="rtl">
