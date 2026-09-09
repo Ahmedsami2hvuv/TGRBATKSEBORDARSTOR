@@ -61,15 +61,38 @@ object EvaluationSchedulerService {
             }
             val pendingIntent = PendingIntent.getBroadcast(context, 8888, intent, flags)
 
-            val triggerTime = SystemClock.elapsedRealtime() + (minutes * 60 * 1000L)
+            val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val showIntent = Intent(context, EvaluationAlertActivity::class.java).apply {
+                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val showPendingIntent = PendingIntent.getActivity(context, 8889, showIntent, flags)
+                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, showPendingIntent)
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             } else {
-                alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent)
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            try {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                val intent = Intent(context, EvaluationAlarmReceiver::class.java).apply {
+                    action = "com.aboakbar.modf.ACTION_TRIGGER_EVALUATION"
+                }
+                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                val pendingIntent = PendingIntent.getBroadcast(context, 8888, intent, flags)
+                val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
+                alarmManager?.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
         }
     }
 
