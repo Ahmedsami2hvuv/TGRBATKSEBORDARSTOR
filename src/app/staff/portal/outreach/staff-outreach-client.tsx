@@ -36,6 +36,7 @@ interface OutreachList {
   title: string;
   createdAt: string;
   items: OutreachItem[];
+  waitingItems?: OutreachItem[];
 }
 
 export function StaffOutreachClient({
@@ -54,7 +55,7 @@ export function StaffOutreachClient({
   const [list, setList] = useState<OutreachList | null>(null);
   const [templates, setTemplates] = useState<OutreachTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"active" | "completed" | "templates">("active");
+  const [activeTab, setActiveTab] = useState<"active" | "waiting" | "completed" | "templates">("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -236,8 +237,58 @@ export function StaffOutreachClient({
       });
   }, [list, searchQuery]);
 
+  // تصفية الأرقام المنتظرة (قادمة من طلبات التقييم)
+  const filteredWaitingItems = useMemo(() => {
+    if (!list || !list.waitingItems) return [];
+    return list.waitingItems
+      .filter((i) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          i.phone.toLowerCase().includes(q) ||
+          i.originalInput.toLowerCase().includes(q) ||
+          (i.regions && i.regions.some((r) => r.toLowerCase().includes(q)))
+        );
+      });
+  }, [list, searchQuery]);
+
   // العناصر الحالية المعروضة بحسب التبويب النشط
-  const currentTabItems = activeTab === "active" ? filteredActiveItems : filteredCompletedItems;
+  const currentTabItems =
+    activeTab === "active"
+      ? filteredActiveItems
+      : activeTab === "waiting"
+      ? filteredWaitingItems
+      : filteredCompletedItems;
+
+  // دالة حساب الوقت المتبقي بالساعات والدقائق
+  const getRemainingTimeText = (availableAtStr?: string | null) => {
+    if (!availableAtStr) return "متاح الآن";
+    const target = new Date(availableAtStr).getTime();
+    const now = Date.now();
+    const diff = target - now;
+    if (diff <= 0) return "متاح الآن للعمل";
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) {
+      return `متبقي ${hours} ساعة و ${minutes} دقيقة`;
+    }
+    return `متبقي ${minutes} دقيقة فقط`;
+  };
+
+  // إتاحة الرقم المنتظر ونقله لقيد العمل فوراً
+  const handleMakeAvailableNow = async (itemId?: string) => {
+    const res = await callApi("make_available_now", {
+      itemId,
+      listId: list?.id,
+    });
+    if (res.ok) {
+      showToast(itemId ? "تم نقل الرقم لقيد العمل بنجاح ⚡" : "تم نقل جميع الأرقام المنتظرة لقيد العمل ⚡");
+      loadData(false);
+    } else {
+      showToast(res.error || "حدث خطأ أثناء النقل");
+    }
+  };
 
   // اختيار نموذج رسالة عشوائي
   const getRandomTemplate = (): OutreachTemplate => {
@@ -832,8 +883,8 @@ export function StaffOutreachClient({
         </div>
       </div>
 
-      {/* التبويبات الرئيسية المباشرة (قيد العمل والمكتمل) */}
-      <div className="flex rounded-2xl bg-slate-200/70 p-1 font-black text-xs">
+      {/* التبويبات الرئيسية المباشرة (قيد العمل، المنتظرة 24س، المكتمل) */}
+      <div className="flex rounded-2xl bg-slate-200/70 p-1 font-black text-xs gap-1">
         <button
           onClick={() => {
             setActiveTab("active");
@@ -849,6 +900,25 @@ export function StaffOutreachClient({
           {stats.remaining > 0 && (
             <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] text-white">
               {stats.remaining}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab("waiting");
+            setSelectedIds(new Set());
+          }}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition active:scale-95 ${
+            activeTab === "waiting"
+              ? "bg-white text-amber-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>⏳ المنتظرة (24س)</span>
+          {(list?.waitingItems?.length || 0) > 0 && (
+            <span className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] text-white">
+              {list?.waitingItems?.length}
             </span>
           )}
         </button>
@@ -886,7 +956,7 @@ export function StaffOutreachClient({
       </div>
 
       {/* شريط البحث وخيارات التحديد والإفراغ */}
-      {(activeTab === "active" || activeTab === "completed") && (
+      {(activeTab === "active" || activeTab === "completed" || activeTab === "waiting") && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -1119,7 +1189,106 @@ export function StaffOutreachClient({
         </div>
       )}
 
-      {/* محتوى التبويب 2: الأرقام المكتملة */}
+      {/* محتوى التبويب 2: الأرقام المنتظرة (مهلة 24 ساعة للتقييم) */}
+      {activeTab === "waiting" && (
+        <div className="space-y-3">
+          {/* شريط معلومات تنبيهي جذاب */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⏳</span>
+              <div>
+                <p className="font-black">قائمة أرقام التقييمات المنتظرة (فترة 24 ساعة)</p>
+                <p className="text-[11px] font-bold text-amber-800">
+                  تنتقل هذه الأرقام تلقائياً لقائمة (قيد العمل) بأولوية قصوى بمجرد اكتمال 24 ساعة من إرسال التقييم لها.
+                </p>
+              </div>
+            </div>
+            {filteredWaitingItems.length > 0 && (
+              <button
+                onClick={() => handleMakeAvailableNow()}
+                className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3.5 py-2 shadow-sm active:scale-95 transition flex items-center gap-1.5"
+              >
+                <span>⚡</span>
+                <span>نقل الكل لقيد العمل الآن</span>
+              </button>
+            )}
+          </div>
+
+          {filteredWaitingItems.length === 0 ? (
+            <div className="rounded-3xl border-2 border-dashed border-amber-200 bg-white/60 p-8 text-center shadow-sm">
+              <span className="text-4xl">✨</span>
+              <h3 className="mt-3 text-base font-black text-slate-800">لا توجد أرقام تقييم بانتظار الـ 24 ساعة حالياً</h3>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                عند إرسال طلب تقييم لأي زبون جديد، سيظهر هنا فوراً مع عداد الوقت المتبقي حتى انتقاله لقائمة المراسلة.
+              </p>
+            </div>
+          ) : (
+            filteredWaitingItems.map((item, index) => {
+              const remainingText = getRemainingTimeText(item.availableAt);
+
+              return (
+                <div
+                  key={item.id}
+                  className="group relative overflow-hidden rounded-2xl bg-white border border-amber-200 shadow-sm transition hover:shadow-md hover:border-amber-400 p-3 sm:p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xs font-black text-amber-900">
+                        {index + 1}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-black text-slate-900 tracking-wide font-mono" dir="ltr">
+                            {item.phone}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-900">
+                            <span>⭐</span>
+                            <span>تقييم سابق (أولوية قصوى)</span>
+                          </span>
+                        </div>
+
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                          <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            <span>⏳</span>
+                            <span>{remainingText}</span>
+                          </span>
+
+                          {item.regions && item.regions.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                              <span>📍</span>
+                              <span>المنطقة: {item.regions.join("، ")}</span>
+                            </span>
+                          )}
+
+                          {item.ordersCount !== undefined && item.ordersCount > 0 && (
+                            <span className="inline-flex items-center gap-1 text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                              <span>📊</span>
+                              <span>زبون سابق ({item.ordersCount} طلبات)</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-2">
+                      <button
+                        onClick={() => handleMakeAvailableNow(item.id)}
+                        className="rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-xs px-3.5 py-2 shadow-sm transition flex items-center gap-1.5"
+                      >
+                        <span>⚡</span>
+                        <span>نقله للعمل الآن</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* محتوى التبويب 3: الأرقام المكتملة */}
       {activeTab === "completed" && (
         <div className="space-y-2.5">
           {filteredCompletedItems.length === 0 ? (

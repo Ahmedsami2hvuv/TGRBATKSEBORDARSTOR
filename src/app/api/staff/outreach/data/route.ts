@@ -227,6 +227,24 @@ export async function POST(req: Request) {
         );
       }
 
+      // 4. جلب الأرقام المنتظرة التي لم تنتهِ مدة الـ 24 ساعة الخاصة بها (قادمة من طلبات التقييم)
+      const waitingDbItems = await prisma.staffOutreachItem.findMany({
+        where: {
+          listId: mainList.id,
+          availableAt: { gt: now },
+        },
+        orderBy: { availableAt: "asc" },
+      });
+
+      let enrichedWaitingMap: Record<string, any> = {};
+      if (waitingDbItems.length > 0) {
+        enrichedWaitingMap = await enrichItemsWithCustomerData(
+          emp.id,
+          mainList.id,
+          waitingDbItems.map((i) => ({ id: i.id, phone: i.phone }))
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         data: {
@@ -260,6 +278,32 @@ export async function POST(req: Request) {
                 ordersCount: extra.ordersCount,
               };
             }),
+            waitingItems: waitingDbItems.map((i) => {
+              const extra = enrichedWaitingMap[i.id] || {
+                isDuplicateHistory: false,
+                isExistingCustomer: false,
+                regions: [],
+                ordersCount: 0,
+              };
+              return {
+                id: i.id,
+                phone: i.phone,
+                originalInput: i.originalInput,
+                status: i.status as "pending" | "whatsapp_opened" | "completed",
+                templateUsed: i.templateUsed,
+                source: i.source,
+                availableAt: i.availableAt?.toISOString() || null,
+                priority: i.priority,
+                openedAt: i.openedAt?.toISOString() || null,
+                completedAt: i.completedAt?.toISOString() || null,
+                createdAt: i.createdAt.toISOString(),
+                isDuplicateHistory: extra.isDuplicateHistory,
+                duplicateSource: extra.duplicateSource,
+                isExistingCustomer: extra.isExistingCustomer,
+                regions: extra.regions,
+                ordersCount: extra.ordersCount,
+              };
+            }),
           },
           templates: templates.map((t) => ({
             id: t.id,
@@ -269,6 +313,22 @@ export async function POST(req: Request) {
           })),
         },
       });
+    }
+
+    // 1.1 إتاحة رقم منتظر الآن فوراً دون انتظار الـ 24 ساعة
+    if (action === "make_available_now") {
+      if (payload?.itemId) {
+        await prisma.staffOutreachItem.update({
+          where: { id: payload.itemId },
+          data: { availableAt: new Date() },
+        });
+      } else if (payload?.listId) {
+        await prisma.staffOutreachItem.updateMany({
+          where: { listId: payload.listId, availableAt: { gt: new Date() } },
+          data: { availableAt: new Date() },
+        });
+      }
+      return NextResponse.json({ ok: true });
     }
 
     // 2. إنشاء أو دمج أرقام في قاعدة البيانات السحابية الدائمة
