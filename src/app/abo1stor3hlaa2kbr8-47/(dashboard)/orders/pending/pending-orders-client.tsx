@@ -1507,9 +1507,11 @@ ${productsText}`;
               const isMeat = isMeatProduct(p.line);
 
               // حساب كمية المنتج لاستعراضها بوضوح للزبون والمجهز والأدمن
-              const itemQty = p.qty ?? p.quantity;
+              const itemQty = p.qty ?? p.quantity ?? p.count;
               const parsedQty = parseQuantityFromLine(p.line || "");
-              const displayQty = itemQty && Number(itemQty) > 0 ? Number(itemQty) : (parsedQty > 1 ? parsedQty : null);
+              const displayQty = itemQty != null && !isNaN(Number(itemQty)) && Number(itemQty) > 0 
+                ? Number(itemQty) 
+                : (parsedQty > 0 ? parsedQty : 1);
 
               return (
                 <div
@@ -1555,6 +1557,11 @@ ${productsText}`;
                         priced ? "text-white" : "text-slate-800 dark:text-slate-200"
                       }`}>
                         <span>{p.line}</span>
+                        {displayQty > 1 && (
+                          <span className="mr-1.5 inline-block px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-black shadow-sm align-middle">
+                            {displayQty}×
+                          </span>
+                        )}
                       </p>
 
                       {prepName && (
@@ -1574,11 +1581,15 @@ ${productsText}`;
                   <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
                     {/* شارة العدد لطلبات المتجر */}
                     <div>
-                      {isStoreOrder && displayQty ? (
-                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white shadow-sm">
-                          {displayQty}×
+                      {displayQty > 1 ? (
+                        <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white shadow-sm">
+                          العدد: {displayQty}
                         </span>
-                      ) : <span />}
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          1×
+                        </span>
+                      )}
                     </div>
 
                     {/* شارات الأسعار المكبرة بالأسفل */}

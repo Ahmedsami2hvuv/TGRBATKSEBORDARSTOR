@@ -4,6 +4,8 @@ export type PreparerShoppingProductPayload = {
   line: string;
   buyAlf: number;
   sellAlf: number;
+  /** سعر الشراء الفعلي بعد الخصم للمحفظة (إذا حصل المجهز على خصم من المحل) */
+  actualBuyAlf?: number | null;
   /** هل قامت الإدارة بتجهيز هذا المنتج بنفسها؟ (يُستثنى من حسابات المجهز) */
   isAdminPrepared?: boolean;
   /** المجهز المسند إليه هذا المنتج */

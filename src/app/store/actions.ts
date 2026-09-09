@@ -153,16 +153,21 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       const existingProducts = Array.isArray((existingData as any).products) ? (existingData as any).products : [];
       const existingCart = Array.isArray((existingData as any).webStoreCart) ? (existingData as any).webStoreCart : [];
       
-      const newProducts = cart.map((i: any) => ({
-        line: i.name,
-        qty: i.quantity || 1,
-        buyAlf: "",
-        sellAlf: "",
-        isFromStore: true,
-        supplierId: i.supplierId || null,
-        productId: i.productId || i.id,
-        addedBy: i.addedBy || null
-      }));
+      const newProducts = cart.map((i: any) => {
+        const q = Number(i.quantity || 1);
+        return {
+          line: i.name,
+          qty: q,
+          quantity: q,
+          count: q,
+          buyAlf: "",
+          sellAlf: "",
+          isFromStore: true,
+          supplierId: i.supplierId || null,
+          productId: i.productId || i.id,
+          addedBy: i.addedBy || null
+        };
+      });
       
       draft = await prisma.companyPreparerShoppingDraft.update({
         where: { id: existingDraft.id },
@@ -261,16 +266,21 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             vehiclePreference: vehiclePreference,
             data: {
               version: 1,
-              products: cart.map((i: any) => ({
-                line: i.name,
-                qty: i.quantity || 1,
-                buyAlf: "",
-                sellAlf: "",
-                isFromStore: true,
-                supplierId: i.supplierId || null,
-                productId: i.productId || i.id,
-                addedBy: i.addedBy || null
-              })),
+              products: cart.map((i: any) => {
+                const q = Number(i.quantity || 1);
+                return {
+                  line: i.name,
+                  qty: q,
+                  quantity: q,
+                  count: q,
+                  buyAlf: "",
+                  sellAlf: "",
+                  isFromStore: true,
+                  supplierId: i.supplierId || null,
+                  productId: i.productId || i.id,
+                  addedBy: i.addedBy || null
+                };
+              }),
               webStoreCart: cart,
               sharedCartId: sharedCartId,
               orderSubtotalAlf: String(subtotal)

@@ -397,6 +397,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           const rdData = (rd.data as any) || {};
           const products = Array.isArray(rdData.products) ? rdData.products : [];
           products.forEach((p: any) => {
+              const itemQty = p.qty ?? p.quantity ?? p.count ?? 1;
               const existing = mergedProducts.find(m => m.line === p.line);
               const isPriced = p.buyAlf && p.buyAlf !== "0";
               if (existing) {
@@ -405,8 +406,18 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
                       existing.sellAlf = p.sellAlf;
                       existing.pricedBy = rd.preparer?.name || "متجر الويب";
                   }
+                  if (p.qty || p.quantity) {
+                    existing.qty = Math.max(Number(existing.qty || 1), Number(itemQty));
+                    existing.quantity = existing.qty;
+                  }
               } else {
-                  mergedProducts.push({ ...p, pricedBy: isPriced ? (rd.preparer?.name || "متجر الويب") : null });
+                  mergedProducts.push({ 
+                    ...p, 
+                    qty: Number(itemQty),
+                    quantity: Number(itemQty),
+                    count: Number(itemQty),
+                    pricedBy: isPriced ? (rd.preparer?.name || "متجر الويب") : null 
+                  });
               }
           });
       });

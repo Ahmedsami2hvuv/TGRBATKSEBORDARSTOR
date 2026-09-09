@@ -25,6 +25,9 @@ type ProductRow = {
   assignedPreparerName?: string | null;
   productId?: string | null;
   isFromStore?: boolean;
+  qty?: number | null;
+  quantity?: number | null;
+  count?: number | null;
 };
 
 type DraftWithRegion = {
@@ -58,6 +61,12 @@ function parseProducts(raw: unknown): ProductRow[] {
     const bNum = (bRaw === null || bRaw === undefined || bRaw === "") ? "" : Number(bRaw);
     const sNum = (sRaw === null || sRaw === undefined || sRaw === "") ? "" : Number(sRaw);
 
+    const itemQty = r.qty ?? r.quantity ?? r.count;
+    const parsedQty = parseQuantityFromLine(line);
+    const resolvedQty = itemQty != null && !isNaN(Number(itemQty)) && Number(itemQty) > 0 
+      ? Number(itemQty) 
+      : (parsedQty > 0 ? parsedQty : 1);
+
     results.push({
       line,
       buyAlf: (typeof bNum === "number" && Number.isFinite(bNum)) ? bNum : "",
@@ -68,6 +77,9 @@ function parseProducts(raw: unknown): ProductRow[] {
       assignedPreparerName: typeof r.assignedPreparerName === "string" ? r.assignedPreparerName : null,
       productId: typeof r.productId === "string" ? r.productId : (typeof r.id === "string" ? r.id : null),
       isFromStore: !!r.isFromStore,
+      qty: resolvedQty,
+      quantity: resolvedQty,
+      count: resolvedQty,
     });
   }
   return results;
@@ -1004,6 +1016,11 @@ export function PreparerShoppingDraftEditClient({
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs sm:text-[13px] font-black leading-snug break-words ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
                         <span>{p.line}</span>
+                        {displayQty > 1 && (
+                          <span className="mr-1.5 inline-block px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-black shadow-sm align-middle">
+                            {displayQty}×
+                          </span>
+                        )}
                       </p>
 
                       <div className="flex flex-wrap items-center gap-1 mt-1">
@@ -1026,11 +1043,15 @@ export function PreparerShoppingDraftEditClient({
                   <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
                     {/* شارة العدد لطلبات المتجر */}
                     <div>
-                      {isStoreOrder && displayQty ? (
-                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white shadow-sm">
-                          {displayQty}×
+                      {displayQty > 1 ? (
+                        <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white shadow-sm">
+                          العدد: {displayQty}
                         </span>
-                      ) : <span />}
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          1×
+                        </span>
+                      )}
                     </div>
 
                     {/* شارة السعر المكبرة بالأسفل */}
