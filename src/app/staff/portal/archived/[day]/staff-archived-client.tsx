@@ -86,10 +86,13 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       try {
         const res = await markOrderRatingRequested(order.id);
         if (res.ok) {
-          // تأشير الطلب وحفظه في الذاكرة المحلية لتحديث الواجهة فوراً
+          // تأشير الطلب وجميع الطلبات التي تحمل نفس رقم الهاتف في الصفحة وحفظها في الذاكرة المحلية
+          const samePhoneOrderIds = rows
+            .filter(r => r.customerPhone && r.customerPhone.trim() !== "—" && r.customerPhone.trim() === order.customerPhone.trim())
+            .map(r => r.id);
+
           setClickedIds(prev => {
-            if (prev.includes(id)) return prev;
-            const next = [...prev, id];
+            const next = Array.from(new Set([...prev, order.id, ...samePhoneOrderIds]));
             if (typeof window !== "undefined") {
               localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
             }

@@ -815,23 +815,23 @@ async function upsertCustomerByPhone(opts: {
 }
 
 /**
- * تأشير الطلب بأنه تم طلب التقييم له وحفظ ذلك في قاعدة البيانات
- * باستخدام حقل adminOrderCode لضمان مشاركتها فورياً بين جميع الأجهزة
+ * تأشير الطلب وكافة طلبات نفس رقم هاتف الزبون بأنه تم طلب التقييم له وحفظ ذلك في قاعدة البيانات
+ * باستخدام حقل adminOrderCode لضمان مشاركتها فورياً بين جميع الأجهزة وتلوينها بالأخضر في كل الأيام
  */
 export async function markOrderRatingRequested(orderId: string): Promise<{ ok?: boolean; error?: string }> {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { adminOrderCode: true }
+      select: { id: true, customerPhone: true, adminOrderCode: true }
     });
     if (!order) return { error: "الطلب غير موجود." };
 
-    const currentCode = order.adminOrderCode || "";
-    if (currentCode.endsWith("__RATING_REQUESTED") || currentCode === "RATING_REQUESTED") {
-      return { ok: true };
-    }
+    const phone = order.customerPhone?.trim();
 
-    const newCode = currentCode ? `${currentCode}__RATING_REQUESTED` : "RATING_REQUESTED";
+    const currentCode = order.adminOrderCode || "";
+    const newCode = currentCode.length > 0
+      ? (currentCode.includes("RATING_REQUESTED") ? currentCode : `${currentCode}__RATING_REQUESTED`)
+      : "RATING_REQUESTED";
 
     await prisma.order.update({
       where: { id: orderId },
@@ -839,6 +839,27 @@ export async function markOrderRatingRequested(orderId: string): Promise<{ ok?: 
         adminOrderCode: newCode
       }
     });
+
+    // تأشير كافة طلبات هذا الزبون التاريخية في قاعدة البيانات ليتلون بالأخضر في كل الأيام
+    if (phone && phone.length >= 7) {
+      const otherOrders = await prisma.order.findMany({
+        where: {
+          customerPhone: phone,
+          id: { not: orderId },
+          NOT: { adminOrderCode: { contains: "RATING_REQUESTED" } }
+        },
+        select: { id: true, adminOrderCode: true }
+      });
+
+      for (const o of otherOrders) {
+        const cCode = o.adminOrderCode || "";
+        const nCode = cCode.length > 0 ? `${cCode}__RATING_REQUESTED` : "RATING_REQUESTED";
+        await prisma.order.update({
+          where: { id: o.id },
+          data: { adminOrderCode: nCode }
+        });
+      }
+    }
 
     return { ok: true };
   } catch (err: any) {

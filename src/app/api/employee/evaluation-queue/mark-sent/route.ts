@@ -60,26 +60,44 @@ async function handleMarkSent(orderId: string) {
 
   const order = await prisma.order.findUnique({
     where: { id: String(orderId) },
-    select: { id: true, adminOrderCode: true }
+    select: { id: true, customerPhone: true, adminOrderCode: true }
   });
 
   if (!order) {
     return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
   }
 
+  const rawPhone = order.customerPhone?.trim();
   const currentCode = order.adminOrderCode || "";
-  if (currentCode.includes("RATING_REQUESTED")) {
-    return NextResponse.json({ success: true, message: "تم تأشير الطلب مسبقاً" });
-  }
-
   const newCode = currentCode.length > 0 
-    ? `${currentCode}__RATING_REQUESTED`
+    ? (currentCode.includes("RATING_REQUESTED") ? currentCode : `${currentCode}__RATING_REQUESTED`)
     : "RATING_REQUESTED";
 
   await prisma.order.update({
     where: { id: order.id },
     data: { adminOrderCode: newCode }
   });
+
+  // تأشير كافة طلبات هذا الزبون في قاعدة البيانات ليتلون بالأخضر في كل الأيام
+  if (rawPhone && rawPhone.length >= 7) {
+    const otherOrders = await prisma.order.findMany({
+      where: {
+        customerPhone: rawPhone,
+        id: { not: order.id },
+        NOT: { adminOrderCode: { contains: "RATING_REQUESTED" } }
+      },
+      select: { id: true, adminOrderCode: true }
+    });
+
+    for (const o of otherOrders) {
+      const cCode = o.adminOrderCode || "";
+      const nCode = cCode.length > 0 ? `${cCode}__RATING_REQUESTED` : "RATING_REQUESTED";
+      await prisma.order.update({
+        where: { id: o.id },
+        data: { adminOrderCode: nCode }
+      });
+    }
+  }
 
   return NextResponse.json({ success: true, message: "تم تأشير الطلب كمُرسل تقييمه بنجاح", adminOrderCode: newCode });
 }

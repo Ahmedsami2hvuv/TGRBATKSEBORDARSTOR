@@ -72,7 +72,7 @@ export default async function StaffArchivedDayPage({
     }
   });
 
-  const rows = archivedOrders.map(o => {
+  const rawRows = archivedOrders.map(o => {
     const dt = new Date(o.createdAt);
     const dateStr = dt.toLocaleDateString("ar-IQ");
     const timeStr = dt.toLocaleTimeString("ar-IQ", { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -119,7 +119,53 @@ export default async function StaffArchivedDayPage({
   });
 
   // تصفية الطلبات ليظهر فقط ما ليس به موقع أو موقعه مرفوع من المندوب
-  const filteredRows = rows.filter(r => !r.hasCustomerLocation || r.hasCourierUploadedLocation);
+  const filteredRows = rawRows.filter(r => !r.hasCustomerLocation || r.hasCourierUploadedLocation);
+
+  // إزالة التكرار لنفس رقم هاتف الزبون بحيث يظهر الزبون مرة واحدة فقط في هذا اليوم
+  const uniqueRows: typeof filteredRows = [];
+  const seenPhones = new Set<string>();
+
+  for (const row of filteredRows) {
+    const rawPhone = (row.customerPhone || "").trim();
+    if (rawPhone && rawPhone !== "—") {
+      if (seenPhones.has(rawPhone)) {
+        continue; // تخطي الرقم المكرر
+      }
+      seenPhones.add(rawPhone);
+    }
+    uniqueRows.push(row);
+  }
+
+  // فحص كافة أرقام الهواتف في قاعدة البيانات لمعرفة ما إذا كان تم طلب تقييم لهذا الزبون في أي يوم سابق
+  const phoneList = Array.from(seenPhones);
+  const globallyRatedPhoneSet = new Set<string>();
+
+  if (phoneList.length > 0) {
+    const ratedOrders = await prisma.order.findMany({
+      where: {
+        customerPhone: { in: phoneList },
+        adminOrderCode: { contains: "RATING_REQUESTED" }
+      },
+      select: { customerPhone: true }
+    });
+    for (const ro of ratedOrders) {
+      if (ro.customerPhone) {
+        globallyRatedPhoneSet.add(ro.customerPhone.trim());
+      }
+    }
+  }
+
+  // تأشير كل صف يحمل رقم زبون مقيّم مسبقاً ليظهر باللون الأخضر تلقائياً
+  const finalRows = uniqueRows.map(r => {
+    const ph = (r.customerPhone || "").trim();
+    const isRated = (ph && ph !== "—" && globallyRatedPhoneSet.has(ph)) || r.adminOrderCode.includes("RATING_REQUESTED");
+    return {
+      ...r,
+      adminOrderCode: isRated
+        ? (r.adminOrderCode.includes("RATING_REQUESTED") ? r.adminOrderCode : `${r.adminOrderCode}__RATING_REQUESTED`)
+        : r.adminOrderCode
+    };
+  });
 
   return (
     <div className="kse-app-bg min-h-screen px-2 py-6 sm:px-4" dir="rtl">
@@ -135,10 +181,11 @@ export default async function StaffArchivedDayPage({
 
         {/* تمرير الأزرار الديناميكية للمكون */}
         <StaffArchivedClient
-          rows={deepSanitize(filteredRows)}
+          rows={deepSanitize(finalRows)}
           dynamicWaButtons={deepSanitize(waButtons)}
         />
       </div>
     </div>
   );
 }
+
