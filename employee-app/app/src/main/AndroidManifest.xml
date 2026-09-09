@@ -214,6 +214,20 @@
             </intent-filter>
         </receiver>
 
+    
+        <activity
+            android:name="com.aboakbar.modf.SaveContactAlertActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.aboakbar.modf.SaveContactReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

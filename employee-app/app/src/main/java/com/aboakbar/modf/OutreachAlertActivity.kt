@@ -1,6 +1,8 @@
 package com.aboakbar.modf
 
 import android.app.Activity
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -111,6 +113,7 @@ class OutreachAlertActivity : Activity() {
 
         val waFormattedPhone = normalizeIraqiPhoneForWhatsApp(phone)
 
+        // 1. فتح تطبيق الواتساب مباشرة برقم الزبون الدولي والرسالة
         try {
             val encodedMessage = Uri.encode(generatedMessage)
             val waUri = Uri.parse("https://api.whatsapp.com/send?phone=$waFormattedPhone&text=$encodedMessage")
@@ -128,13 +131,43 @@ class OutreachAlertActivity : Activity() {
             }
         }
 
+        // 2. تأشير الرقم في السيرفر ومحلياً كمكتمل فورياً ليتحول لقائمة المكتمل
         markOutreachSentOnServer(itemId)
 
+        // 3. جدولة تنبيه فتح تطبيق الاتصال بعد 15 ثانية بالضبط لحفظ الرقم
+        scheduleSaveContactPrompt(this, phone, originalInput, 15)
+
+        // 4. جدولة الزبون التالي بعد الفاصل الزمني المحدد
         val interval = OutreachSchedulerService.getIntervalMinutes(this)
         OutreachSchedulerService.scheduleNextOutreach(this, interval)
 
-        Toast.makeText(this, "تم فتح الواتساب وتأشير الرقم كمكتمل الإرسال بنجاح!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تم فتح الواتساب وتأشير الزبون كمكتمل! سيظهر تنبيه حفظ الرقم بعد 15 ثانية ⏰", Toast.LENGTH_LONG).show()
         finish()
+    }
+
+    private fun scheduleSaveContactPrompt(context: Context, targetPhone: String, targetName: String, delaySeconds: Int) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            val intent = Intent(context, SaveContactReceiver::class.java).apply {
+                putExtra("phone", targetPhone)
+                putExtra("contactName", targetName)
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(context, 7712, intent, flags)
+            val triggerTime = System.currentTimeMillis() + (delaySeconds * 1000L)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun markOutreachSentOnServer(id: String) {

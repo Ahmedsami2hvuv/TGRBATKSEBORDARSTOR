@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_margin="16dp"
+    android:background="@drawable/bg_dialog_rounded"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:elevation="24dp">
+
+    <!-- الهيدر -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/button_round_bg"
+            android:gravity="center"
+            android:text="📞"
+            android:textSize="22sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="تخزين رقم الزبون في الهاتف"
+                android:textColor="#0f172a"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="المرحلة الثانية: حفظ الرقم في جهات الاتصال"
+                android:textColor="#0284c7"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="#e2e8f0" />
+
+    <!-- بطاقة الرقم -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/input_bg"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الرقم المراد تخزينه:"
+            android:textColor="#64748b"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSaveContactPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="077XXXXXXXX"
+            android:textColor="#0f172a"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSaveContactName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text=""
+            android:textColor="#475569"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="💡 تم إرسال رسالة الواتساب وتأشير الزبون كمكتمل بنجاح. اضغط الزر أدناه لفتح تطبيق الهاتف وخزن الرقم مباشرة."
+        android:textColor="#059669"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <!-- زر فتح تطبيق الاتصال -->
+    <Button
+        android:id="@+id/btnOpenDialerToSave"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#0284c7"
+        android:elevation="4dp"
+        android:text="📞 فتح في تطبيق الاتصال لحفظ الرقم"
+        android:textColor="#ffffff"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <!-- زر إغلاق / تم الحفظ -->
+    <Button
+        android:id="@+id/btnCloseSaveDialog"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#f1f5f9"
+        android:text="تم الحفظ / إغلاق"
+        android:textColor="#475569"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
