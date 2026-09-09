@@ -10,12 +10,16 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import android.view.*
 import android.webkit.*
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
@@ -32,11 +36,15 @@ class FloatingAssistantService : Service() {
 
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
+    private var tvAssistantTitle: TextView? = null
 
     private var isExpanded = true
     private val PREFS_NAME = "AboAkbarpreparerPrefs"
     private val KEY_preparer_URL = "preparer_url"
     private val KEY_preparer_ID = "preparer_id"
+    private val KEY_preparer_NAME = "preparer_name"
+    private val KEY_ASSISTANT_OPACITY = "assistant_opacity"
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -137,10 +145,29 @@ class FloatingAssistantService : Service() {
         val btnClose = assistantView!!.findViewById<ImageButton>(R.id.btnClose)
         val btnMinimize = assistantView!!.findViewById<ImageButton>(R.id.btnMinimize)
         val btnReload = assistantView!!.findViewById<ImageButton>(R.id.btnReload)
+        val btnOpacity = assistantView!!.findViewById<ImageButton>(R.id.btnOpacity)
+        val opacityControlLayout = assistantView!!.findViewById<View>(R.id.opacityControlLayout)
+        val seekBarOpacity = assistantView!!.findViewById<SeekBar>(R.id.seekBarOpacity)
+        val tvOpacityValue = assistantView!!.findViewById<TextView>(R.id.tvOpacityValue)
+        tvAssistantTitle = assistantView!!.findViewById(R.id.tvAssistantTitle)
         webView = assistantView!!.findViewById(R.id.assistantWebView)
         progressBar = assistantView!!.findViewById(R.id.progressBar)
 
-        // 4. تضخيم واجهة الفقاعة
+        // 4. تطبيق الشفافية المحفوظة
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedOpacity = prefs.getInt(KEY_ASSISTANT_OPACITY, 100)
+        val alphaVal = (savedOpacity.coerceAtLeast(20)) / 100f
+        assistantView?.alpha = alphaVal
+        seekBarOpacity?.progress = savedOpacity
+        tvOpacityValue?.text = "$savedOpacity%"
+
+        // 5. تطبيق اسم المجهز إن وجد
+        val savedName = prefs.getString(KEY_preparer_NAME, "") ?: ""
+        if (savedName.isNotEmpty()) {
+            tvAssistantTitle?.text = "🪄 مساعد $savedName الذكي"
+        }
+
+        // 6. تضخيم واجهة الفقاعة
         bubbleView = inflater.inflate(R.layout.layout_floating_bubble, null)
 
         // إغلاق المساعد
@@ -148,7 +175,7 @@ class FloatingAssistantService : Service() {
             stopSelf()
         }
 
-        // تصغير إلى فقاعة
+        // تصغير إلى فقاعة (الزر على اليسار)
         btnMinimize?.setOnClickListener {
             minimizeToBubble()
         }
@@ -157,6 +184,30 @@ class FloatingAssistantService : Service() {
         btnReload?.setOnClickListener {
             webView?.reload()
         }
+
+        // تبديل ظهور شريط الشفافية
+        btnOpacity?.setOnClickListener {
+            if (opacityControlLayout?.visibility == View.VISIBLE) {
+                opacityControlLayout.visibility = View.GONE
+            } else {
+                opacityControlLayout?.visibility = View.VISIBLE
+            }
+        }
+
+        // تغيير نسبة الشفافية عبر الـ SeekBar
+        seekBarOpacity?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val safeProgress = progress.coerceAtLeast(20)
+                assistantView?.alpha = safeProgress / 100f
+                tvOpacityValue?.text = "$safeProgress%"
+                if (fromUser) {
+                    prefs.edit().putInt(KEY_ASSISTANT_OPACITY, safeProgress).apply()
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         // توسيع من الفقاعة
         bubbleView?.setOnClickListener {
@@ -193,6 +244,20 @@ class FloatingAssistantService : Service() {
         settings.loadWithOverviewMode = true
         settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.userAgentString = settings.userAgentString + " PreparerFloatingApp/1.0"
+
+        // جسر جافاسكريبت لاستقبال اسم المجهز وتحديث العنوان تلقائياً
+        wv.addJavascriptInterface(object {
+            @JavascriptInterface
+            fun setPreparerName(name: String?) {
+                if (!name.isNullOrBlank()) {
+                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    prefs.edit().putString(KEY_preparer_NAME, name.trim()).apply()
+                    mainHandler.post {
+                        tvAssistantTitle?.text = "🪄 مساعد ${name.trim()} الذكي"
+                    }
+                }
+            }
+        }, "AndroidAssistant")
 
         wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
@@ -331,3 +396,4 @@ class FloatingAssistantService : Service() {
         }
     }
 }
+

@@ -122,7 +122,14 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
         setCouriers(data.couriers || []);
         setShops(data.shops || []);
         setRegions(data.regions || []);
-        if (data.preparer) setPreparer(data.preparer);
+        if (data.preparer) {
+          setPreparer(data.preparer);
+          try {
+            if (typeof window !== "undefined" && (window as any).AndroidAssistant?.setPreparerName) {
+              (window as any).AndroidAssistant.setPreparerName(data.preparer.name);
+            }
+          } catch (e) {}
+        }
         if (!selectedPricingOrderId && data.orders?.length > 0) {
           setSelectedPricingOrderId(data.orders[0].id);
         }
@@ -133,6 +140,16 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (preparer?.name && typeof window !== "undefined") {
+      try {
+        if ((window as any).AndroidAssistant?.setPreparerName) {
+          (window as any).AndroidAssistant.setPreparerName(preparer.name);
+        }
+      } catch (e) {}
+    }
+  }, [preparer]);
 
   useEffect(() => {
     if (preparerId) {
@@ -383,26 +400,8 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
 
   return (
     <div className="flex flex-col h-full min-h-[520px] max-w-lg mx-auto bg-neutral-950 text-neutral-100 font-sans select-none overflow-hidden pb-4" dir="rtl">
-      {/* الشريط العلوي */}
-      <header className="flex items-center justify-between px-3 py-2.5 bg-neutral-900/90 border-b border-neutral-800 backdrop-blur-md sticky top-0 z-20">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold tracking-wide text-neutral-200">
-            {preparer ? preparer.name : "المساعد الذكي للمجهز"}
-          </span>
-        </div>
-        <button
-          onClick={() => fetchAssistantData()}
-          disabled={loading}
-          className="px-2.5 py-1 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
-        >
-          <span className={`text-xs ${loading ? "animate-spin" : ""}`}>🔄</span>
-          <span>تحديث</span>
-        </button>
-      </header>
-
       {/* شريط التبويبات الرئيسي */}
-      <div className="grid grid-cols-3 p-1.5 bg-neutral-900 border-b border-neutral-800/80 text-xs font-medium gap-1 sticky top-10 z-10">
+      <div className="grid grid-cols-3 p-1.5 bg-neutral-900 border-b border-neutral-800/80 text-xs font-medium gap-1 sticky top-0 z-10">
         <button
           onClick={() => setActiveTab("orders_couriers")}
           className={`py-2 px-1 rounded-lg text-center transition flex flex-col items-center gap-1 ${

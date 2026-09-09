@@ -16,49 +16,106 @@
         android:background="#0F172A"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🪄 مساعد المجهز الذكي"
-            android:textColor="#F59E0B"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- زر إعادة التحميل -->
-        <ImageButton
-            android:id="@+id/btnReload"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_assistant_refresh"
-            android:scaleType="centerInside"
-            android:contentDescription="تحديث" />
-
-        <!-- زر التصغير إلى فقاعة -->
+        <!-- زر التصغير إلى فقاعة (على أقصى اليسار) -->
         <ImageButton
             android:id="@+id/btnMinimize"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_assistant_minimize"
             android:scaleType="centerInside"
             android:contentDescription="تصغير" />
 
-        <!-- زر الإغلاق -->
+        <!-- عنوان المساعد -->
+        <TextView
+            android:id="@+id/tvAssistantTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="🪄 مساعد المجهز الذكي"
+            android:textColor="#F59E0B"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <!-- زر التحكم في الشفافية -->
+        <ImageButton
+            android:id="@+id/btnOpacity"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_assistant_opacity"
+            android:scaleType="centerInside"
+            android:contentDescription="شفافية" />
+
+        <!-- زر إعادة التحميل (تحديث) -->
+        <ImageButton
+            android:id="@+id/btnReload"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="2dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_assistant_refresh"
+            android:scaleType="centerInside"
+            android:contentDescription="تحديث" />
+
+        <!-- زر الإغلاق (X) بجانب زر التحديث مباشرة -->
         <ImageButton
             android:id="@+id/btnClose"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="4dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_assistant_close"
             android:scaleType="centerInside"
             android:contentDescription="إغلاق" />
+    </LinearLayout>
+
+    <!-- شريط التحكم في الشفافية (يظهر عند النقر على زر الشفافية) -->
+    <LinearLayout
+        android:id="@+id/opacityControlLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1E293B"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvOpacityValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100%"
+            android:textColor="#38BDF8"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:minWidth="38dp" />
+
+        <SeekBar
+            android:id="@+id/seekBarOpacity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="100" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الشفافية"
+            android:textColor="#94A3B8"
+            android:textSize="11sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <ProgressBar
@@ -78,3 +135,4 @@
         android:background="#020617" />
 
 </LinearLayout>
+
