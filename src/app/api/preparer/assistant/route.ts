@@ -38,38 +38,49 @@ export async function GET(req: NextRequest) {
     });
     const shopIds = prepShopLinks.map((l) => l.shopId);
 
-    // 2. جلب المسودات التابعة للمجهز أو لمحلاته
+    // 2. جلب المسودات التابعة لهذا المجهز حصراً
     const drafts = await prisma.companyPreparerShoppingDraft.findMany({
       where: {
-        OR: [
-          { preparerId },
-          ...(shopIds.length > 0
-            ? [{ customerPhone: { not: "" } }]
-            : []),
+        AND: [
+          { status: { in: [PreparerShoppingDraftStatus.draft, PreparerShoppingDraftStatus.priced] } },
+          {
+            OR: [
+              { preparerId },
+              {
+                data: {
+                  path: ["products"],
+                  array_contains: [{ assignedPreparerId: preparerId }],
+                },
+              },
+            ],
+          },
         ],
-        status: { in: [PreparerShoppingDraftStatus.draft, PreparerShoppingDraftStatus.priced] },
       },
       include: {
         customerRegion: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 40,
     });
 
-    // 3. جلب الطلبات الفعلية
+    // 3. جلب الطلبات الفعلية التابعة لهذا المجهز أو لمحلاته حصراً
     const orders = await prisma.order.findMany({
       where: {
-        OR: [
-          { submittedByCompanyPreparerId: preparerId },
-          ...(shopIds.length > 0 ? [{ shopId: { in: shopIds } }] : []),
+        AND: [
+          { status: { in: ["pending", "assigned", "processing", "draft", "delivering"] } },
           {
-            preparerShoppingJson: {
-              path: ["products"],
-              array_contains: [{ assignedPreparerId: preparerId }],
-            },
+            OR: [
+              { submittedByCompanyPreparerId: preparerId },
+              ...(shopIds.length > 0 ? [{ shopId: { in: shopIds } }] : []),
+              {
+                preparerShoppingJson: {
+                  path: ["products"],
+                  array_contains: [{ assignedPreparerId: preparerId }],
+                },
+              },
+            ],
           },
         ],
-        status: { in: ["pending", "assigned", "processing", "draft", "delivering"] },
       },
       include: {
         shop: { select: { id: true, name: true } },
@@ -77,7 +88,7 @@ export async function GET(req: NextRequest) {
         courier: { select: { id: true, name: true, phone: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 40,
     });
 
     // 4. جلب المناديب المتاحين للإسناد
@@ -100,8 +111,8 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    // دالة مساعدة متقدمة لاستخراج المواد مهما كان هيكلها أو تسمية حقولها
-    function parseProductList(payload: any, fallbackStr: string, isOwner: boolean) {
+    // دالة مساعدة متقدمة لاستخراج وتصفية المواد للمجهز الحالي بدقة تامة
+    function parseProductList(payload: any, fallbackStr: string, isOrderOwner: boolean) {
       let rawList: any[] = [];
       if (Array.isArray(payload)) {
         rawList = payload;
@@ -174,11 +185,12 @@ export async function GET(req: NextRequest) {
         };
       });
 
-      // إظهار المواد للمجهز
+      // تصفية المواد: فقط المواد المسندة لهذا المجهز أو مواد طلبه غير المخصصة لمجهز آخر
       const my = all.filter((p) => {
-        if (!p.assignedPreparerId || p.assignedPreparerId === "all" || p.assignedPreparerId === "") return true;
-        if (p.assignedPreparerId === preparerId) return true;
-        return isOwner;
+        if (p.assignedPreparerId) {
+          return p.assignedPreparerId === preparerId;
+        }
+        return isOrderOwner;
       });
 
       return { all, my };
@@ -193,7 +205,7 @@ export async function GET(req: NextRequest) {
       const fallback = d.rawListText?.trim() || d.titleLine?.trim() || "مادة المسودة";
       const { all: allProds, my: myProds } = parseProductList(data, fallback, isOwner);
 
-      if (myProds.length > 0 || isOwner) {
+      if (myProds.length > 0) {
         formattedOrders.push({
           id: d.id,
           orderNumber: d.draftNumber || parseInt(d.id.replace(/[^0-9]/g, "").slice(0, 6)) || 1,
@@ -207,9 +219,9 @@ export async function GET(req: NextRequest) {
           shopName: d.titleLine?.split(" - ")[0] || "مسودة تجهيز",
           status: d.status,
           courier: data.autoCourierName ? { id: data.autoCourierId || "", name: data.autoCourierName, phone: null } : null,
-          products: myProds.length > 0 ? myProds : allProds,
+          products: myProds,
           totalProductsCount: allProds.length,
-          myProductsCount: myProds.length > 0 ? myProds.length : allProds.length,
+          myProductsCount: myProds.length,
         });
       }
     }
@@ -220,24 +232,26 @@ export async function GET(req: NextRequest) {
       const fallback = o.summary?.trim() || `طلب #${o.orderNumber} - ${o.orderType || "تجهيز"}`;
       const { all: allProds, my: myProds } = parseProductList(o.preparerShoppingJson, fallback, isOwner);
 
-      formattedOrders.push({
-        id: o.id,
-        orderNumber: o.orderNumber,
-        isDraft: false,
-        title: `طلب #${o.orderNumber}`,
-        regionName: o.customerRegion?.name || "—",
-        regionId: o.customerRegionId || null,
-        orderTime: o.orderNoteTime || "فوري",
-        customerPhone: o.customerPhone || "",
-        customerName: o.customer?.name || "",
-        shopName: o.shop?.name || "طلب توصيل",
-        shopId: o.shopId,
-        status: o.status,
-        courier: o.courier ? { id: o.courier.id, name: o.courier.name, phone: o.courier.phone } : null,
-        products: myProds.length > 0 ? myProds : allProds,
-        totalProductsCount: allProds.length,
-        myProductsCount: myProds.length > 0 ? myProds.length : allProds.length,
-      });
+      if (myProds.length > 0) {
+        formattedOrders.push({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          isDraft: false,
+          title: `طلب #${o.orderNumber}`,
+          regionName: o.customerRegion?.name || "—",
+          regionId: o.customerRegionId || null,
+          orderTime: o.orderNoteTime || "فوري",
+          customerPhone: o.customerPhone || "",
+          customerName: o.customer?.name || "",
+          shopName: o.shop?.name || "طلب توصيل",
+          shopId: o.shopId,
+          status: o.status,
+          courier: o.courier ? { id: o.courier.id, name: o.courier.name, phone: o.courier.phone } : null,
+          products: myProds,
+          totalProductsCount: allProds.length,
+          myProductsCount: myProds.length,
+        });
+      }
     }
 
     return NextResponse.json({

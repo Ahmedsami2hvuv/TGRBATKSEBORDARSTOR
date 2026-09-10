@@ -220,6 +220,7 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
       const data = await res.json();
       if (data.error) {
         setStatusMsg({ text: data.error, type: "error" });
+        setTimeout(() => setStatusMsg(null), 3500);
       } else {
         setOrders(data.orders || []);
         setCouriers(data.couriers || []);
@@ -239,7 +240,10 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
         }
       }
     } catch (err) {
-      setStatusMsg({ text: "تعذر الاتصال بالخادم لجلب البيانات.", type: "error" });
+      if (orders.length === 0) {
+        setStatusMsg({ text: "تعذر الاتصال بالخادم، يرجى التحقق من الإنترنت 🔄", type: "error" });
+        setTimeout(() => setStatusMsg(null), 3500);
+      }
     } finally {
       setLoading(false);
     }
@@ -911,18 +915,18 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-3 py-1">
                 {/* زر النقصان (-) */}
                 <button
                   type="button"
                   onClick={handleDecreaseDelivery}
-                  className="w-10 h-9 bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-white font-bold rounded-lg flex items-center justify-center text-base border border-neutral-700 transition"
+                  className="w-11 h-10 bg-neutral-800 hover:bg-neutral-700 active:scale-90 text-white font-black rounded-xl flex items-center justify-center text-xl border border-neutral-700 transition shadow-sm"
                   title="إنقاص ألف"
                 >
                   −
                 </button>
 
-                {/* حقل العرض والإدخال لرقم الأجرة */}
+                {/* حقل العرض والإدخال لرقم الأجرة مدمج في المنتصف */}
                 <input
                   type="number"
                   step="any"
@@ -935,14 +939,14 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
                       setNewDeliveryPriceAlf(val);
                     }
                   }}
-                  className="flex-1 bg-neutral-900 border border-neutral-700 focus:border-blue-500 rounded-lg p-2 text-sm text-center text-amber-400 font-extrabold outline-none"
+                  className="w-24 h-10 bg-neutral-900 border border-neutral-700 focus:border-blue-500 rounded-xl text-center text-amber-400 font-black text-lg outline-none font-mono"
                 />
 
                 {/* زر الزيادة (+) */}
                 <button
                   type="button"
                   onClick={handleIncreaseDelivery}
-                  className="w-10 h-9 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold rounded-lg flex items-center justify-center text-base border border-blue-500 transition"
+                  className="w-11 h-10 bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-black rounded-xl flex items-center justify-center text-xl border border-blue-500 transition shadow-sm"
                   title="زيادة ألف"
                 >
                   +
@@ -1072,7 +1076,7 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
                           onClick={() => setPricingViewOrderId(ord.id)}
                           className={`p-3 rounded-xl border text-right transition flex flex-col justify-between gap-2 shadow-sm active:scale-95 cursor-pointer hover:border-emerald-500/60 ${
                             isAllPriced
-                              ? "bg-neutral-900/80 border-emerald-900/40"
+                              ? "bg-emerald-950/20 border-emerald-800/60"
                               : "bg-neutral-900/90 border-amber-500/30"
                           }`}
                         >
@@ -1148,44 +1152,48 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
                           key={prod.originalIndex}
                           type="button"
                           onClick={() => handleOpenPricingModal(currentPricingViewOrder, prod)}
-                          className={`p-3 rounded-xl border text-right transition flex flex-col justify-between gap-2 shadow-sm active:scale-95 cursor-pointer hover:border-emerald-500/70 ${
+                          className={`p-3 rounded-xl border text-right transition flex flex-col justify-between gap-2 shadow-sm active:scale-95 cursor-pointer ${
                             prod.isPriced
-                              ? "bg-neutral-900/90 border-emerald-800/40"
-                              : "bg-neutral-900 border-amber-600/40"
+                              ? "bg-emerald-950/30 border-2 border-emerald-500 shadow-md shadow-emerald-950/30 hover:border-emerald-400"
+                              : "bg-neutral-900 border border-neutral-800 hover:border-neutral-700"
                           }`}
                         >
                           {/* اسم المنتج */}
                           <div className="space-y-1">
-                            <div className="text-xs font-bold text-white leading-tight line-clamp-2">
-                              • {prod.line}
+                            <div
+                              className={`text-xs font-bold leading-tight line-clamp-2 ${
+                                prod.isPriced ? "text-emerald-300 font-black" : "text-white"
+                              }`}
+                            >
+                              {prod.isPriced ? "✅ " : "• "}
+                              {prod.line}
                             </div>
                           </div>
 
-                          {/* حالة السعر وتفاصيله */}
-                          <div className="pt-1.5 border-t border-neutral-800/80 space-y-1">
+                          {/* حالة السعر وتفاصيله بدون العبارات المزعجة */}
+                          <div
+                            className={`pt-1.5 border-t space-y-1 ${
+                              prod.isPriced ? "border-emerald-800/60" : "border-neutral-800/80"
+                            }`}
+                          >
                             {prod.isPriced ? (
                               <>
-                                <div className="flex items-center justify-between text-[10px] text-neutral-400">
+                                <div className="flex items-center justify-between text-[10px] text-neutral-300">
                                   <span>شراء:</span>
-                                  <span className="text-neutral-200 font-bold">{prod.buyAlf} ألف</span>
+                                  <span className="text-emerald-300 font-bold">{prod.buyAlf} ألف</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[10px] text-neutral-400">
+                                <div className="flex items-center justify-between text-[10px] text-neutral-300">
                                   <span>بيع:</span>
-                                  <span className="text-amber-400 font-extrabold">{prod.sellAlf} ألف</span>
+                                  <span className="text-amber-300 font-extrabold">{prod.sellAlf} ألف</span>
                                 </div>
-                                <div className="text-[9px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-1 py-0.5 rounded text-center font-bold">
-                                  مسعر ✓ (تعديل)
+                                <div className="text-[9px] bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1 py-0.5 rounded text-center font-bold">
+                                  تم التجهيز والتسعير ✓
                                 </div>
                               </>
                             ) : (
-                              <>
-                                <div className="text-[10px] text-amber-400 font-semibold text-center">
-                                  غير مسعر 🏷️
-                                </div>
-                                <div className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 py-1 rounded text-center font-bold">
-                                  اضغط للتسعير
-                                </div>
-                              </>
+                              <div className="py-2 text-center text-[11px] text-neutral-500 font-medium">
+                                انقر لتحديد السعر
+                              </div>
                             )}
                           </div>
                         </button>
