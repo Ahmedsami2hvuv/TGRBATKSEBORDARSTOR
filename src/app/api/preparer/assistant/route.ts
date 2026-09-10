@@ -31,31 +31,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "المجهز غير موجود أو غير نشط" }, { status: 404 });
     }
 
-    // 1. جلب المسودات المسندة للمجهز
-    const drafts = await prisma.companyPreparerShoppingDraft.findMany({
-      where: {
-        preparerId,
-        status: PreparerShoppingDraftStatus.draft,
-      },
-      include: {
-        customerRegion: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 40,
-    });
-
-    // 2. جلب الطلبات الفعلية
+    // 1. جلب المحلات المسندة للمجهز
     const prepShopLinks = await prisma.preparerShop.findMany({
       where: { preparerId },
       select: { shopId: true },
     });
     const shopIds = prepShopLinks.map((l) => l.shopId);
 
+    // 2. جلب المسودات التابعة للمجهز أو لمحلاته
+    const drafts = await prisma.companyPreparerShoppingDraft.findMany({
+      where: {
+        OR: [
+          { preparerId },
+          ...(shopIds.length > 0
+            ? [{ customerPhone: { not: "" } }]
+            : []),
+        ],
+        status: { in: [PreparerShoppingDraftStatus.draft, PreparerShoppingDraftStatus.priced] },
+      },
+      include: {
+        customerRegion: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    // 3. جلب الطلبات الفعلية
     const orders = await prisma.order.findMany({
       where: {
         OR: [
           { submittedByCompanyPreparerId: preparerId },
-          { shopId: { in: shopIds } },
+          ...(shopIds.length > 0 ? [{ shopId: { in: shopIds } }] : []),
           {
             preparerShoppingJson: {
               path: ["products"],
@@ -71,111 +77,148 @@ export async function GET(req: NextRequest) {
         courier: { select: { id: true, name: true, phone: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 40,
+      take: 50,
     });
 
-    // 3. جلب المناديب المتاحين للإسناد
+    // 4. جلب المناديب المتاحين للإسناد
     const couriers = await prisma.courier.findMany({
       where: courierAssignableWhere,
       select: { id: true, name: true, phone: true },
       orderBy: { name: "asc" },
     });
 
-    // 4. جلب جميع المحلات النشطة لتسهيل البحث والإسناد
+    // 5. جلب جميع المحلات النشطة لتسهيل البحث والإسناد
     const shops = await prisma.shop.findMany({
       select: { id: true, name: true, regionId: true },
       orderBy: { name: "asc" },
-      take: 200,
+      take: 250,
     });
 
-    // 5. جلب المناطق
+    // 6. جلب المناطق
     const regions = await prisma.region.findMany({
       select: { id: true, name: true, deliveryPrice: true },
       orderBy: { name: "asc" },
     });
 
+    // دالة مساعدة متقدمة لاستخراج المواد مهما كان هيكلها أو تسمية حقولها
+    function parseProductList(payload: any, fallbackStr: string, isOwner: boolean) {
+      let rawList: any[] = [];
+      if (Array.isArray(payload)) {
+        rawList = payload;
+      } else if (payload && typeof payload === "object") {
+        if (Array.isArray(payload.products)) rawList = payload.products;
+        else if (Array.isArray(payload.webStoreCart)) rawList = payload.webStoreCart;
+        else if (Array.isArray(payload.items)) rawList = payload.items;
+      } else if (typeof payload === "string") {
+        try {
+          const parsed = JSON.parse(payload);
+          if (Array.isArray(parsed)) rawList = parsed;
+          else if (parsed && typeof parsed === "object") {
+            if (Array.isArray(parsed.products)) rawList = parsed.products;
+            else if (Array.isArray(parsed.webStoreCart)) rawList = parsed.webStoreCart;
+          }
+        } catch (e) {}
+      }
+
+      if (rawList.length === 0 && fallbackStr) {
+        const lines = fallbackStr
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        if (lines.length > 0) {
+          rawList = lines.map((line) => ({ line }));
+        }
+      }
+
+      const all = rawList.map((p: any, idx: number) => {
+        let lineName = "";
+        if (typeof p === "string") {
+          lineName = p.trim();
+        } else if (p && typeof p === "object") {
+          lineName = String(p.line || p.name || p.title || p.productName || p.label || "").trim();
+          const quantity = p.quantity ?? p.qty ?? null;
+          if (quantity && Number(quantity) > 1 && !lineName.includes("x") && !lineName.includes("×")) {
+            lineName = `${lineName} ×${quantity}`;
+          }
+        }
+        if (!lineName) {
+          lineName = `مادة #${idx + 1}`;
+        }
+
+        const itemPrepId = p?.assignedPreparerId || p?.pricedById || p?.supplierId || null;
+        const itemPrepName = p?.assignedPreparerName || p?.pricedBy || p?.supplierName || null;
+
+        const buy = p?.buyAlf != null && p?.buyAlf !== ""
+          ? p.buyAlf
+          : (p?.buyPrice != null && p?.buyPrice !== "" ? Number(p.buyPrice) / 1000 : "");
+
+        const actualBuy = p?.actualBuyAlf != null && p?.actualBuyAlf !== ""
+          ? p.actualBuyAlf
+          : (p?.actualBuyPrice != null && p?.actualBuyPrice !== "" ? Number(p.actualBuyPrice) / 1000 : "");
+
+        const sell = p?.sellAlf != null && p?.sellAlf !== ""
+          ? p.sellAlf
+          : (p?.salePrice != null && p?.salePrice !== ""
+              ? Number(p.salePrice) / 1000
+              : (p?.sellPrice != null && p?.sellPrice !== "" ? Number(p.sellPrice) / 1000 : ""));
+
+        return {
+          originalIndex: idx,
+          line: lineName,
+          buyAlf: buy,
+          actualBuyAlf: actualBuy,
+          sellAlf: sell,
+          assignedPreparerId: itemPrepId ? String(itemPrepId).trim() : null,
+          assignedPreparerName: itemPrepName ? String(itemPrepName).trim() : null,
+          isPriced: Boolean(buy != null && buy !== "" && Number(buy) >= 0),
+        };
+      });
+
+      // إظهار المواد للمجهز
+      const my = all.filter((p) => {
+        if (!p.assignedPreparerId || p.assignedPreparerId === "all" || p.assignedPreparerId === "") return true;
+        if (p.assignedPreparerId === preparerId) return true;
+        return isOwner;
+      });
+
+      return { all, my };
+    }
+
     const formattedOrders: any[] = [];
 
     // تنسيق المسودات
     for (const d of drafts) {
+      const isOwner = Boolean(d.preparerId === preparerId);
       const data = (d.data as any) || {};
-      let allProds = Array.isArray(data.products) ? data.products : [];
+      const fallback = d.rawListText?.trim() || d.titleLine?.trim() || "مادة المسودة";
+      const { all: allProds, my: myProds } = parseProductList(data, fallback, isOwner);
 
-      if (allProds.length === 0) {
-        const fallbackText = d.rawListText?.trim() || d.titleLine?.trim() || "مادة المسودة";
-        const lines = fallbackText.split("\n").map((l: string) => l.trim()).filter(Boolean);
-        allProds = (lines.length > 0 ? lines : [fallbackText]).map((line: string) => ({
-          line,
-          buyAlf: null,
-          actualBuyAlf: null,
-          sellAlf: null,
-          assignedPreparerId: preparerId,
-          assignedPreparerName: preparer.name,
-        }));
+      if (myProds.length > 0 || isOwner) {
+        formattedOrders.push({
+          id: d.id,
+          orderNumber: d.draftNumber || parseInt(d.id.replace(/[^0-9]/g, "").slice(0, 6)) || 1,
+          isDraft: true,
+          title: d.titleLine || "مسودة طلب",
+          regionName: d.customerRegion?.name || "—",
+          regionId: d.customerRegionId || null,
+          orderTime: d.orderTime || "فوري",
+          customerPhone: d.customerPhone || "",
+          customerName: d.customerName || "",
+          shopName: d.titleLine?.split(" - ")[0] || "مسودة تجهيز",
+          status: d.status,
+          courier: data.autoCourierName ? { id: data.autoCourierId || "", name: data.autoCourierName, phone: null } : null,
+          products: myProds.length > 0 ? myProds : allProds,
+          totalProductsCount: allProds.length,
+          myProductsCount: myProds.length > 0 ? myProds.length : allProds.length,
+        });
       }
-
-      const myProds = allProds
-        .map((p: any, idx: number) => ({
-          originalIndex: idx,
-          line: p.line || "",
-          buyAlf: p.buyAlf != null && p.buyAlf !== "" ? p.buyAlf : "",
-          actualBuyAlf: p.actualBuyAlf != null && p.actualBuyAlf !== "" ? p.actualBuyAlf : "",
-          sellAlf: p.sellAlf != null && p.sellAlf !== "" ? p.sellAlf : "",
-          assignedPreparerId: p.assignedPreparerId || null,
-          assignedPreparerName: p.assignedPreparerName || null,
-          isPriced: Boolean(p.buyAlf != null && p.buyAlf !== "" && Number(p.buyAlf) >= 0),
-        }))
-        .filter((p: any) => !p.assignedPreparerId || p.assignedPreparerId === preparerId);
-
-      formattedOrders.push({
-        id: d.id,
-        orderNumber: d.draftNumber || parseInt(d.id.replace(/[^0-9]/g, "").slice(0, 6)) || 1,
-        isDraft: true,
-        title: d.titleLine || "مسودة طلب",
-        regionName: d.customerRegion?.name || "—",
-        regionId: d.customerRegionId || null,
-        orderTime: d.orderTime || "فوري",
-        customerPhone: d.customerPhone || "",
-        customerName: d.customerName || "",
-        shopName: d.titleLine?.split(" - ")[0] || "مسودة تجهيز",
-        status: d.status,
-        courier: data.autoCourierName ? { id: data.autoCourierId || "", name: data.autoCourierName, phone: null } : null,
-        products: myProds,
-        totalProductsCount: allProds.length,
-        myProductsCount: myProds.length,
-      });
     }
 
     // تنسيق الطلبات
     for (const o of orders) {
-      const json = (o.preparerShoppingJson as any) || {};
-      let allProds = Array.isArray(json.products) ? json.products : [];
-
-      if (allProds.length === 0) {
-        const fallbackText = o.summary?.trim() || `طلب #${o.orderNumber} - ${o.orderType || "تجهيز"}`;
-        const lines = fallbackText.split("\n").map((l: string) => l.trim()).filter(Boolean);
-        allProds = (lines.length > 0 ? lines : [fallbackText]).map((line: string, idx: number) => ({
-          line,
-          buyAlf: o.purchasePrice ? Number(o.purchasePrice) / 1000 : null,
-          actualBuyAlf: null,
-          sellAlf: idx === 0 && o.orderSubtotal ? Number(o.orderSubtotal) / 1000 : null,
-          assignedPreparerId: preparerId,
-          assignedPreparerName: preparer.name,
-        }));
-      }
-
-      const myProds = allProds
-        .map((p: any, idx: number) => ({
-          originalIndex: idx,
-          line: p.line || "",
-          buyAlf: p.buyAlf != null && p.buyAlf !== "" ? p.buyAlf : "",
-          actualBuyAlf: p.actualBuyAlf != null && p.actualBuyAlf !== "" ? p.actualBuyAlf : "",
-          sellAlf: p.sellAlf != null && p.sellAlf !== "" ? p.sellAlf : "",
-          assignedPreparerId: p.assignedPreparerId || null,
-          assignedPreparerName: p.assignedPreparerName || null,
-          isPriced: Boolean(p.buyAlf != null && p.buyAlf !== "" && Number(p.buyAlf) >= 0),
-        }))
-        .filter((p: any) => !p.assignedPreparerId || p.assignedPreparerId === preparerId);
+      const isOwner = Boolean(o.submittedByCompanyPreparerId === preparerId || (o.shopId && shopIds.includes(o.shopId)));
+      const fallback = o.summary?.trim() || `طلب #${o.orderNumber} - ${o.orderType || "تجهيز"}`;
+      const { all: allProds, my: myProds } = parseProductList(o.preparerShoppingJson, fallback, isOwner);
 
       formattedOrders.push({
         id: o.id,
@@ -191,9 +234,9 @@ export async function GET(req: NextRequest) {
         shopId: o.shopId,
         status: o.status,
         courier: o.courier ? { id: o.courier.id, name: o.courier.name, phone: o.courier.phone } : null,
-        products: myProds,
+        products: myProds.length > 0 ? myProds : allProds,
         totalProductsCount: allProds.length,
-        myProductsCount: myProds.length,
+        myProductsCount: myProds.length > 0 ? myProds.length : allProds.length,
       });
     }
 
@@ -251,20 +294,31 @@ export async function POST(req: NextRequest) {
         if (!draft) return NextResponse.json({ error: "المسودة غير موجودة" }, { status: 404 });
 
         const draftData = (draft.data as any) || {};
-        const products = Array.isArray(draftData.products) ? [...draftData.products] : [];
-        if (!products[originalIndex]) return NextResponse.json({ error: "المنتج غير موجود" }, { status: 404 });
+        let products = Array.isArray(draftData.products) ? [...draftData.products] : [];
+        if (products.length === 0 && (draft.rawListText || draft.titleLine)) {
+          const fallback = draft.rawListText?.trim() || draft.titleLine?.trim() || "مادة المسودة";
+          products = fallback.split("\n").map((l: string) => ({ line: l.trim() }));
+        }
+
+        if (!products[originalIndex]) {
+          products[originalIndex] = { line: `مادة #${originalIndex + 1}` };
+        }
 
         const target = products[originalIndex];
+        const lineText = target.line || target.name || target.title || `مادة #${originalIndex + 1}`;
         const noProfit = Boolean(draftData.noProfit);
-        const sellNum = calculateAutoSellPrice(target.line, buyNum, noProfit);
+        const sellNum = calculateAutoSellPrice(lineText, buyNum, noProfit);
 
         products[originalIndex] = {
           ...target,
+          line: lineText,
           buyAlf: buyNum,
           actualBuyAlf: actualBuyNum,
           sellAlf: sellNum,
           pricedBy: preparer.name,
           pricedById: preparer.id,
+          assignedPreparerId: preparer.id,
+          assignedPreparerName: preparer.name,
         };
 
         await prisma.companyPreparerShoppingDraft.update({
@@ -283,20 +337,34 @@ export async function POST(req: NextRequest) {
         if (!order) return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
 
         const json = (order.preparerShoppingJson as any) || {};
-        const products = Array.isArray(json.products) ? [...json.products] : [];
-        if (!products[originalIndex]) return NextResponse.json({ error: "المنتج غير موجود" }, { status: 404 });
+        let products = Array.isArray(json.products)
+          ? [...json.products]
+          : (Array.isArray(json.webStoreCart) ? [...json.webStoreCart] : []);
+
+        if (products.length === 0 && order.summary) {
+          const fallback = order.summary.trim();
+          products = fallback.split("\n").map((l: string) => ({ line: l.trim() }));
+        }
+
+        if (!products[originalIndex]) {
+          products[originalIndex] = { line: `مادة #${originalIndex + 1}` };
+        }
 
         const target = products[originalIndex];
+        const lineText = target.line || target.name || target.title || `مادة #${originalIndex + 1}`;
         const noProfit = Boolean(json.noProfit);
-        const sellNum = calculateAutoSellPrice(target.line, buyNum, noProfit);
+        const sellNum = calculateAutoSellPrice(lineText, buyNum, noProfit);
 
         products[originalIndex] = {
           ...target,
+          line: lineText,
           buyAlf: buyNum,
           actualBuyAlf: actualBuyNum,
           sellAlf: sellNum,
           pricedBy: preparer.name,
           pricedById: preparer.id,
+          assignedPreparerId: preparer.id,
+          assignedPreparerName: preparer.name,
         };
 
         await prisma.order.update({

@@ -229,7 +229,8 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
           } catch (e) {}
         }
         if (!selectedPricingOrderId && data.orders?.length > 0) {
-          setSelectedPricingOrderId(data.orders[0].id);
+          const orderWithProds = data.orders.find((o: any) => o.products && o.products.length > 0) || data.orders[0];
+          setSelectedPricingOrderId(orderWithProds.id);
         }
       }
     } catch (err) {
