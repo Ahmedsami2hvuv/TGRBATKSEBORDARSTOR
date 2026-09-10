@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 
 // أيقونات SVG احترافية ونظيفة لواجهات الأعمال والتجهيز
 function IconTruck({ className = "w-4 h-4" }: { className?: string }) {
@@ -189,8 +190,12 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
   const [newImageBase64, setNewImageBase64] = useState<string | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
-  // حالات التسعير
-  const [selectedPricingOrderId, setSelectedPricingOrderId] = useState<string | null>(null);
+  // حالات التسعير الجديدة (عرض شبكة الطلبات + شبكة المواد + نافذة التسعير)
+  const [pricingViewOrderId, setPricingViewOrderId] = useState<string | null>(null);
+  const [pricingModalItem, setPricingModalItem] = useState<{ order: OrderItem; product: ProductItem } | null>(null);
+  const [modalBuyInput, setModalBuyInput] = useState("");
+  const [modalActualBuyInput, setModalActualBuyInput] = useState("");
+  const [modalSavedSuccess, setModalSavedSuccess] = useState(false);
   const [pricingInputs, setPricingInputs] = useState<Record<string, { buy: string; actualBuy: string }>>({});
   const [savingProdKey, setSavingProdKey] = useState<string | null>(null);
   const [savedProdKey, setSavedProdKey] = useState<string | null>(null);
@@ -456,10 +461,26 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
     }
   }
 
-  // حفظ سعر المادة في تبويب التسعير
-  async function handleSaveProductPrice(order: OrderItem, prod: ProductItem, buyVal: string, actualBuyVal: string) {
-    if (!buyVal || isNaN(Number(buyVal))) return;
+  // فتح نافذة التسعير لمادة محددة
+  function handleOpenPricingModal(order: OrderItem, prod: ProductItem) {
     const key = `${order.id}-${prod.originalIndex}`;
+    const current = pricingInputs[key] || {
+      buy: prod.buyAlf != null && prod.buyAlf !== "" ? String(prod.buyAlf) : "",
+      actualBuy: prod.actualBuyAlf != null && prod.actualBuyAlf !== "" ? String(prod.actualBuyAlf) : "",
+    };
+    setModalBuyInput(current.buy);
+    setModalActualBuyInput(current.actualBuy);
+    setModalSavedSuccess(false);
+    setPricingModalItem({ order, product: prod });
+  }
+
+  // حفظ سعر المادة من داخل نافذة التسعير المنبثقة
+  async function handleSavePriceFromModal() {
+    if (!pricingModalItem) return;
+    const { order, product } = pricingModalItem;
+    if (!modalBuyInput || isNaN(Number(modalBuyInput))) return;
+
+    const key = `${order.id}-${product.originalIndex}`;
     setSavingProdKey(key);
     try {
       const res = await fetch("/api/preparer/assistant", {
@@ -470,9 +491,9 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
           preparerId,
           orderId: order.id,
           isDraft: order.isDraft,
-          originalIndex: prod.originalIndex,
-          buyAlf: buyVal,
-          actualBuyAlf: actualBuyVal,
+          originalIndex: product.originalIndex,
+          buyAlf: modalBuyInput,
+          actualBuyAlf: modalActualBuyInput,
         }),
       });
       const data = await res.json();
@@ -483,7 +504,7 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
             return {
               ...ord,
               products: ord.products.map((p) => {
-                if (p.originalIndex !== prod.originalIndex) return p;
+                if (p.originalIndex !== product.originalIndex) return p;
                 return {
                   ...p,
                   buyAlf: data.buyAlf,
@@ -495,8 +516,15 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
             };
           })
         );
-        setSavedProdKey(key);
-        setTimeout(() => setSavedProdKey(null), 2500);
+        setPricingInputs((prev) => ({
+          ...prev,
+          [key]: { buy: modalBuyInput, actualBuy: modalActualBuyInput },
+        }));
+        setModalSavedSuccess(true);
+        setTimeout(() => {
+          setModalSavedSuccess(false);
+          setPricingModalItem(null);
+        }, 900);
       }
     } catch (err) {
       console.error("Save price failed:", err);
@@ -504,6 +532,25 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
       setSavingProdKey(null);
     }
   }
+
+  // حساب سعر البيع المقترح المباشر داخل نافذة التسعير
+  const modalCalculatedSellPrice = useMemo(() => {
+    if (!pricingModalItem || !modalBuyInput || isNaN(Number(modalBuyInput)) || Number(modalBuyInput) <= 0) {
+      return null;
+    }
+    return calculateAutoSellPrice(pricingModalItem.product.line, Number(modalBuyInput));
+  }, [modalBuyInput, pricingModalItem]);
+
+  // قائمة الطلبات المتاحة للتسعير
+  const pricingOrdersList = useMemo(() => {
+    return orders.filter((o) => o.products && o.products.length > 0);
+  }, [orders]);
+
+  // الطلب المختار حالياً لعرض مواده في شاشة التسعير
+  const currentPricingViewOrder = useMemo(() => {
+    if (!pricingViewOrderId) return null;
+    return orders.find((o) => o.id === pricingViewOrderId) || null;
+  }, [orders, pricingViewOrderId]);
 
   // فلترة المحلات للبحث
   const filteredShops = useMemo(() => {
@@ -523,9 +570,6 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
   const completedOrdersList = useMemo(() => {
     return orders.filter((o) => !o.isDraft && o.status !== "draft");
   }, [orders]);
-
-  // الطلب المحدد في شاشة التسعير
-  const selectedPricingOrder = orders.find((o) => o.id === selectedPricingOrderId) || orders[0] || null;
 
   return (
     <div className="flex flex-col h-full min-h-[520px] max-w-lg mx-auto bg-neutral-950 text-neutral-100 font-sans select-none overflow-hidden pb-4" dir="rtl">
@@ -993,177 +1037,280 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
           </form>
         )}
 
-        {/* 3. تبويب تسعير المواد الفوري */}
+        {/* 3. تبويب تسعير المواد الفوري (تصميم الشبكة عمودين مع نافذة التسعير المنبثقة) */}
         {activeTab === "pricing" && (
           <div className="space-y-3">
-            {/* اختيار الطلب للتسعير */}
-            {orders.length > 1 && (
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-400">اختر الطلب للتسعير:</label>
-                <select
-                  value={selectedPricingOrderId || ""}
-                  onChange={(e) => setSelectedPricingOrderId(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-xs text-neutral-200 outline-none"
-                >
-                  {orders.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      #{o.orderNumber} - {o.shopName} ({o.products.length} مواد)
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedPricingOrder ? (
+            {/* الحالة الأولى: لم يتم اختيار طلب بعد -> عرض شبكة الطلبات (كل سطر فيه طلبين) */}
+            {!currentPricingViewOrder ? (
               <div className="space-y-2.5">
-                <div className="flex items-center justify-between bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800 text-xs">
-                  <div>
-                    <span className="font-bold text-amber-400">طلب #{selectedPricingOrder.orderNumber}</span>
-                    <span className="text-neutral-400 mr-2">🏬 {selectedPricingOrder.shopName}</span>
-                  </div>
-                  <span className="text-neutral-400 text-[11px]">📍 {selectedPricingOrder.regionName}</span>
+                <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80">
+                  <span className="text-xs font-bold text-neutral-300 flex items-center gap-1">
+                    <span>🏷️</span>
+                    <span>اختر طلباً لتسعير مواده:</span>
+                  </span>
+                  <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full font-semibold">
+                    {pricingOrdersList.length} طلبات
+                  </span>
                 </div>
 
-                {selectedPricingOrder.products.length === 0 ? (
-                  <div className="text-center py-8 text-neutral-500 text-xs bg-neutral-900/30 rounded-lg">
-                    لا توجد مواد مسندة لك في هذا الطلب.
+                {pricingOrdersList.length === 0 ? (
+                  <div className="text-center py-12 text-neutral-500 text-xs bg-neutral-900/40 rounded-xl border border-neutral-800">
+                    لا توجد طلبات تحتاج للتسعير حالياً.
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
-                    {selectedPricingOrder.products.map((prod) => {
-                      const key = `${selectedPricingOrder.id}-${prod.originalIndex}`;
-                      const currentInput = pricingInputs[key] || {
-                        buy: prod.buyAlf != null && prod.buyAlf !== "" ? String(prod.buyAlf) : "",
-                        actualBuy: prod.actualBuyAlf != null && prod.actualBuyAlf !== "" ? String(prod.actualBuyAlf) : "",
-                      };
-                      const isSaving = savingProdKey === key;
-                      const isSaved = savedProdKey === key;
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {pricingOrdersList.map((ord) => {
+                      const totalCount = ord.products.length;
+                      const pricedCount = ord.products.filter((p) => p.isPriced).length;
+                      const isAllPriced = totalCount > 0 && pricedCount === totalCount;
+                      const unpricedCount = totalCount - pricedCount;
 
                       return (
-                        <div
-                          key={prod.originalIndex}
-                          className="bg-neutral-900/90 border border-neutral-800 rounded-xl p-3 space-y-2.5 shadow-sm"
+                        <button
+                          key={ord.id}
+                          type="button"
+                          onClick={() => setPricingViewOrderId(ord.id)}
+                          className={`p-3 rounded-xl border text-right transition flex flex-col justify-between gap-2 shadow-sm active:scale-95 cursor-pointer hover:border-emerald-500/60 ${
+                            isAllPriced
+                              ? "bg-neutral-900/80 border-emerald-900/40"
+                              : "bg-neutral-900/90 border-amber-500/30"
+                          }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-xs font-semibold text-neutral-100 flex-1 leading-snug">
-                              • {prod.line}
-                            </span>
-                            {isSaved ? (
-                              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded animate-pulse">
-                                تم الحفظ ✓
-                              </span>
-                            ) : prod.isPriced ? (
-                              <span className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">
-                                مسعر
-                              </span>
+                          {/* السطر الأول: اسم المنطقة بارز ومميز */}
+                          <div className="space-y-0.5">
+                            <div className="text-xs font-black text-amber-400 flex items-center gap-1">
+                              <span>📍</span>
+                              <span className="truncate">{ord.regionName || "بدون منطقة"}</span>
+                            </div>
+                            <div className="text-[10px] text-neutral-400 truncate">
+                              طلب #{ord.orderNumber} • 🏬 {ord.shopName}
+                            </div>
+                          </div>
+
+                          {/* السطر الثاني: عدد المنتجات وحالة التسعير */}
+                          <div className="space-y-1 pt-1.5 border-t border-neutral-800/80">
+                            <div className="text-xs font-bold text-neutral-200 flex items-center justify-between">
+                              <span className="text-[11px] text-neutral-400">عدد المواد:</span>
+                              <span className="text-emerald-400 font-extrabold">{totalCount} مواد</span>
+                            </div>
+
+                            {isAllPriced ? (
+                              <div className="text-[9px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-1.5 py-0.5 rounded text-center font-bold">
+                                مسعر بالكامل ✓
+                              </div>
                             ) : (
-                              <span className="text-[10px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded border border-amber-800/50">
-                                غير مسعر
-                              </span>
+                              <div className="text-[9px] bg-amber-950/80 text-amber-300 border border-amber-800/60 px-1.5 py-0.5 rounded text-center font-bold">
+                                غير مسعر ({unpricedCount})
+                              </div>
                             )}
                           </div>
-
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {/* سعر الشراء (سعر السوق/الفاتورة) */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-neutral-400 font-medium">سعر الشراء (الفاتورة)</span>
-                              <input
-                                type="number"
-                                step="any"
-                                placeholder="مثال: 10"
-                                value={currentInput.buy}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setPricingInputs((prev) => ({
-                                    ...prev,
-                                    [key]: { ...currentInput, buy: val },
-                                  }));
-                                }}
-                                onBlur={() => {
-                                  if (currentInput.buy) {
-                                    handleSaveProductPrice(
-                                      selectedPricingOrder,
-                                      prod,
-                                      currentInput.buy,
-                                      currentInput.actualBuy
-                                    );
-                                  }
-                                }}
-                                className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-lg p-2 text-xs text-white font-bold outline-none"
-                              />
-                            </div>
-
-                            {/* سعر المحفظة الفعلي بعد الخصم */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-emerald-400 font-medium">سعر الخصم (للمحفظة)</span>
-                              <input
-                                type="number"
-                                step="any"
-                                placeholder="مثال: 9"
-                                value={currentInput.actualBuy}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setPricingInputs((prev) => ({
-                                    ...prev,
-                                    [key]: { ...currentInput, actualBuy: val },
-                                  }));
-                                }}
-                                onBlur={() => {
-                                  if (currentInput.buy) {
-                                    handleSaveProductPrice(
-                                      selectedPricingOrder,
-                                      prod,
-                                      currentInput.buy,
-                                      currentInput.actualBuy
-                                    );
-                                  }
-                                }}
-                                className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-lg p-2 text-xs text-emerald-300 font-bold outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* سعر البيع للزبون + زر الحفظ */}
-                          <div className="flex items-center justify-between pt-1 border-t border-neutral-800/60 text-xs">
-                            <div className="text-[11px] text-neutral-400">
-                              سعر البيع المقترح:{" "}
-                              <span className="text-amber-400 font-bold">
-                                {prod.sellAlf ? `${prod.sellAlf} ألف` : "—"}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (currentInput.buy) {
-                                  handleSaveProductPrice(
-                                    selectedPricingOrder,
-                                    prod,
-                                    currentInput.buy,
-                                    currentInput.actualBuy
-                                  );
-                                }
-                              }}
-                              disabled={isSaving || !currentInput.buy}
-                              className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-bold transition active:scale-95 disabled:opacity-40"
-                            >
-                              {isSaving ? "جاري الحفظ..." : "حفظ السعر"}
-                            </button>
-                          </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 text-neutral-500 text-xs bg-neutral-900/40 rounded-xl border border-neutral-800">
-                لا توجد طلبات لتسعيرها حالياً.
+              /* الحالة الثانية: تم اختيار طلب -> عرض شبكة منتجات هذا الطلب (كل سطر فيه منتجين) */
+              <div className="space-y-3">
+                {/* شريط رأس الطلب وزر الرجوع */}
+                <div className="flex items-center justify-between bg-neutral-900/90 p-2.5 rounded-xl border border-neutral-800">
+                  <button
+                    type="button"
+                    onClick={() => setPricingViewOrderId(null)}
+                    className="py-1 px-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg text-xs font-bold flex items-center gap-1 transition active:scale-95 border border-neutral-700"
+                  >
+                    <span>⬅</span>
+                    <span>رجوع للطلبات</span>
+                  </button>
+
+                  <div className="text-left flex flex-col items-end">
+                    <span className="text-xs font-bold text-amber-400">
+                      📍 {currentPricingViewOrder.regionName} (#{currentPricingViewOrder.orderNumber})
+                    </span>
+                    <span className="text-[10px] text-neutral-400">
+                      {currentPricingViewOrder.products.filter((p) => p.isPriced).length} من{" "}
+                      {currentPricingViewOrder.products.length} مواد مسعرة
+                    </span>
+                  </div>
+                </div>
+
+                {/* شبكة المنتجات (كل سطر فيه منتجين بجانب بعض) */}
+                {currentPricingViewOrder.products.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500 text-xs bg-neutral-900/30 rounded-xl">
+                    لا توجد مواد مسندة لك في هذا الطلب.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {currentPricingViewOrder.products.map((prod) => {
+                      return (
+                        <button
+                          key={prod.originalIndex}
+                          type="button"
+                          onClick={() => handleOpenPricingModal(currentPricingViewOrder, prod)}
+                          className={`p-3 rounded-xl border text-right transition flex flex-col justify-between gap-2 shadow-sm active:scale-95 cursor-pointer hover:border-emerald-500/70 ${
+                            prod.isPriced
+                              ? "bg-neutral-900/90 border-emerald-800/40"
+                              : "bg-neutral-900 border-amber-600/40"
+                          }`}
+                        >
+                          {/* اسم المنتج */}
+                          <div className="space-y-1">
+                            <div className="text-xs font-bold text-white leading-tight line-clamp-2">
+                              • {prod.line}
+                            </div>
+                          </div>
+
+                          {/* حالة السعر وتفاصيله */}
+                          <div className="pt-1.5 border-t border-neutral-800/80 space-y-1">
+                            {prod.isPriced ? (
+                              <>
+                                <div className="flex items-center justify-between text-[10px] text-neutral-400">
+                                  <span>شراء:</span>
+                                  <span className="text-neutral-200 font-bold">{prod.buyAlf} ألف</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] text-neutral-400">
+                                  <span>بيع:</span>
+                                  <span className="text-amber-400 font-extrabold">{prod.sellAlf} ألف</span>
+                                </div>
+                                <div className="text-[9px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-1 py-0.5 rounded text-center font-bold">
+                                  مسعر ✓ (تعديل)
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-[10px] text-amber-400 font-semibold text-center">
+                                  غير مسعر 🏷️
+                                </div>
+                                <div className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 py-1 rounded text-center font-bold">
+                                  اضغط للتسعير
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* نافذة تسعير المادة المنبثقة (Pricing Modal) */}
+      {pricingModalItem && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3.5 animate-in fade-in duration-150">
+          <div className="bg-neutral-900 border border-neutral-700 w-full max-w-sm rounded-2xl p-4 space-y-3.5 shadow-2xl animate-in zoom-in-95 duration-150 text-right">
+            {/* رأس النافذة */}
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                <span>🏷️</span>
+                <span>تسعير المادة</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPricingModalItem(null)}
+                className="text-neutral-400 hover:text-white text-xs px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* تفاصيل المادة والطلب */}
+            <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800/80 space-y-1.5">
+              <div className="text-xs font-black text-white flex items-start gap-1 leading-snug">
+                <span className="text-emerald-400">•</span>
+                <span>{pricingModalItem.product.line}</span>
+              </div>
+              <div className="text-[10px] text-neutral-400 flex items-center justify-between pt-1 border-t border-neutral-900">
+                <span>📍 {pricingModalItem.order.regionName}</span>
+                <span>طلب #{pricingModalItem.order.orderNumber}</span>
+              </div>
+            </div>
+
+            {/* حقول إدخال السعر */}
+            <div className="space-y-2.5">
+              {/* سعر الشراء (الفاتورة) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-neutral-300">
+                  سعر الشراء (الفاتورة) <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  autoFocus
+                  placeholder="مثال: 10 أو 1.5"
+                  value={modalBuyInput}
+                  onChange={(e) => setModalBuyInput(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-xl p-2.5 text-sm text-white font-bold outline-none font-mono"
+                />
+              </div>
+
+              {/* سعر الخصم للمحفظة */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-emerald-400">
+                  سعر الخصم (للمحفظة) <span className="text-[10px] text-neutral-500 font-normal">(اختياري)</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="مثال: 9"
+                  value={modalActualBuyInput}
+                  onChange={(e) => setModalActualBuyInput(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 rounded-xl p-2.5 text-sm text-emerald-300 font-bold outline-none font-mono"
+                />
+              </div>
+
+              {/* سعر البيع المقترح التلقائي */}
+              <div className="bg-neutral-950/90 p-2.5 rounded-xl border border-neutral-800 flex items-center justify-between text-xs">
+                <span className="text-neutral-400 text-[11px] font-medium">سعر البيع المقترح:</span>
+                <span className="text-amber-400 font-black text-sm">
+                  {modalCalculatedSellPrice != null ? `${modalCalculatedSellPrice} ألف` : "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* رسالة نجاح الحفظ */}
+            {modalSavedSuccess && (
+              <div className="bg-emerald-950/90 border border-emerald-700 text-emerald-300 p-2 rounded-xl text-xs text-center font-bold animate-pulse">
+                تم حفظ وتحديث السعر بنجاح ✓
+              </div>
+            )}
+
+            {/* أزرار الإجراء */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setPricingModalItem(null)}
+                className="py-2.5 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-bold transition active:scale-95"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSavePriceFromModal}
+                disabled={savingProdKey !== null || !modalBuyInput}
+                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1"
+              >
+                {savingProdKey !== null ? (
+                  <>
+                    <span className="animate-spin text-xs">⏳</span>
+                    <span>جاري الحفظ...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>💾</span>
+                    <span>حفظ السعر</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* منبثق إسناد المندوب السريع (Modal) */}
       {assignModalOrder && (
