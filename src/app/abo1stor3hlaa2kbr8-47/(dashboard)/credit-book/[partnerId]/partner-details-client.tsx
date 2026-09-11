@@ -1011,23 +1011,28 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مالية مسجلة لهذا الحساب.</div>
         ) : (
           (() => {
-            // حساب الرصيد التراكمي لكل حركة من الأحدث (الأعلى) إلى الأقدم (الأسفل)
-            // نبدأ بالرصيد الحالي ونعكس العمليات رجوعاً بالزمن
-            let currentRunning = partner.balance || 0;
-            const txsWithRunningBalance = [...partner.transactions].map((tx) => {
-              const balanceAfter = currentRunning;
-              const amt = tx.amount;
-              // نعكس العملية لنحصل على الرصيد قبل هذه المعاملة
+            // حساب الرصيد التراكمي الصحيح لكل حركة زمنياً من الأقدم إلى الأحدث
+            const sortedAsc = [...partner.transactions].sort(
+              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+
+            let running = 0;
+            const balanceMap = new Map<string, number>();
+
+            sortedAsc.forEach((tx) => {
+              const amt = Number(tx.amount || 0);
               if (tx.kind === "gave") {
-                currentRunning -= amt; // كانت إضافة للرصيد، فنطرحها
+                running += amt; // أعطيت = سددنا له / نطلبه
               } else if (tx.kind === "took") {
-                currentRunning += amt; // كانت خصماً من الرصيد، فنجمعها
+                running -= amt; // أخذت = بضاعة أخذناها منه / يطلبنا
               }
-              return {
-                ...tx,
-                runningBalance: balanceAfter
-              };
+              balanceMap.set(tx.id, running);
             });
+
+            const txsWithRunningBalance = partner.transactions.map((tx) => ({
+              ...tx,
+              runningBalance: balanceMap.get(tx.id) ?? 0
+            }));
 
             const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
 
@@ -1123,9 +1128,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                             <span className={`text-[10px] md:text-xs font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl border ${
                               isTransfer 
                                 ? "bg-white/10 text-white border-white/10" 
-                                : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
+                                : tx.runningBalance > 0
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
+                                  : tx.runningBalance < 0
+                                    ? "bg-rose-50 text-rose-800 border-rose-200/80"
+                                    : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
                             }`}>
-                              الرصيد حينها: <span className="tabular-nums font-black">{formatDinarAsAlfWithUnit(tx.runningBalance)}</span>
+                              الرصيد حينها: <span className="tabular-nums font-black">{tx.runningBalance > 0 ? "+" : ""}{tx.runningBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? "(نطلبه)" : tx.runningBalance < 0 ? "(يطلبنا)" : "(مصفّر)"}</span>
                             </span>
 
                             {/* وسم تلقائي في حال كانت حركة من النظام (أيقونة فقط في الهاتف) */}
