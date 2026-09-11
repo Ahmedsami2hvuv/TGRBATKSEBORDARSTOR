@@ -1119,13 +1119,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                               {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
                             </span>
 
-                            {/* الرصيد المتبقي (الباقي) */}
+                            {/* الرصيد المتبقي التراكمي للحساب */}
                             <span className={`text-[10px] md:text-xs font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl border ${
                               isTransfer 
                                 ? "bg-white/10 text-white border-white/10" 
                                 : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
                             }`}>
-                              الباقي <span className="tabular-nums font-black">{formatDinarAsAlfWithUnit(tx.runningBalance)}</span>
+                              الرصيد حينها: <span className="tabular-nums font-black">{formatDinarAsAlfWithUnit(tx.runningBalance)}</span>
                             </span>
 
                             {/* وسم تلقائي في حال كانت حركة من النظام (أيقونة فقط في الهاتف) */}
