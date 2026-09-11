@@ -549,6 +549,7 @@ function TrackingCardsView({
   onOpenRow,
   onAssignOrder,
   onRejectOrder,
+  onRestoreOrder,
   onAdminPickup,
   onAdminDelivery,
   icons,
@@ -561,6 +562,7 @@ function TrackingCardsView({
   onOpenRow: (id: string) => void;
   onAssignOrder: (row: TrackingTableRow) => void;
   onRejectOrder?: (row: TrackingTableRow) => void;
+  onRestoreOrder?: (row: TrackingTableRow) => void;
   onAdminPickup?: (row: TrackingTableRow) => void;
   onAdminDelivery?: (row: TrackingTableRow) => void;
   icons: GlobalIconsConfig | null;
@@ -734,9 +736,17 @@ function TrackingCardsView({
                       )}
 
                       {isCancelled && (
-                        <span className="h-10 px-3 rounded-2xl bg-slate-600 border-2 border-slate-400 text-white font-black text-xs shadow-sm flex items-center justify-center shrink-0">
-                          مرفوض
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onRestoreOrder && onRestoreOrder(o)}
+                          className="flex items-center justify-center gap-1.5 h-10 px-3 sm:px-3.5 rounded-2xl border-2 text-xs font-black shadow-md transition active:scale-90 shrink-0 bg-gradient-to-r from-sky-600 to-cyan-700 hover:from-sky-700 hover:to-cyan-800 border-sky-400 text-white"
+                          title="إرجاع الطلب المرفوض إلى قائمة الطلبات الجديدة 🔄"
+                        >
+                          <span className="text-sm shrink-0">🔄</span>
+                          <span className="truncate text-[11px] sm:text-xs">
+                            إرجاع لجديد
+                          </span>
+                        </button>
                       )}
                     </div>
 
@@ -865,7 +875,7 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* رقم الهاتف الظاهر وزر رفض الطلب (يختفي عند التسليم أو الرفض أو الأرشفة) */}
+                      {/* رقم الهاتف الظاهر وزر رفض الطلب أو زر إرجاع الطلب المرفوض إلى جديد */}
                       <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
                         {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -875,6 +885,16 @@ function TrackingCardsView({
                             title="رفض الطلب ❌"
                           >
                             ❌
+                          </button>
+                        )}
+                        {onRestoreOrder && isCancelled && (
+                          <button
+                            type="button"
+                            onClick={() => onRestoreOrder(o)}
+                            className="flex size-7 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-600 dark:hover:bg-sky-600 text-sky-700 dark:text-sky-300 hover:text-white border border-sky-300 dark:border-sky-800 text-xs font-black shadow-xs transition active:scale-90"
+                            title="إرجاع الطلب المرفوض إلى جديد 🔄"
+                          >
+                            🔄
                           </button>
                         )}
                         {o.customerAlternatePhone && o.customerAlternatePhone !== "—" && (
@@ -956,6 +976,7 @@ export function OrderTrackingBulkTable({
   const [courierId, setCourierId] = useState<string>("");
   const [assignOrder, setAssignOrder] = useState<TrackingTableRow | null>(null);
   const [rejectOrder, setRejectOrder] = useState<TrackingTableRow | null>(null);
+  const [restoreOrder, setRestoreOrder] = useState<TrackingTableRow | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -1351,6 +1372,7 @@ export function OrderTrackingBulkTable({
           onOpenRow={(id) => router.push(`${SECRET_ADMIN_PATH}/orders/${id}`)}
           onAssignOrder={(r) => setAssignOrder(r)}
           onRejectOrder={(r) => setRejectOrder(r)}
+          onRestoreOrder={(r) => setRestoreOrder(r)}
           onAdminPickup={(r) => setAdminPickupOrder(r)}
           onAdminDelivery={(r) => setAdminDeliveryOrder(r)}
           icons={icons}
@@ -1379,8 +1401,24 @@ export function OrderTrackingBulkTable({
           showStatusDotInSelectCol={false}
           renderOrderIdBadge={() => null}
           renderBelowOrderId={(row) => {
-            if (row.orderStatus === "cancelled" || row.orderStatus === "archived") return null;
+            if (row.orderStatus === "archived") return null;
             const originalRow = rows.find((r) => r.id === row.id);
+            if (row.orderStatus === "cancelled") {
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (originalRow) setRestoreOrder(originalRow);
+                  }}
+                  className="flex h-11 px-3 items-center justify-center gap-1 rounded-2xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-300 text-sky-800 shadow-sm transition active:scale-90 text-xs font-black"
+                  title="إرجاع الطلب إلى جديد 🔄"
+                >
+                  <span>🔄</span>
+                  <span>إرجاع</span>
+                </button>
+              );
+            }
             const isAssigned = row.orderStatus !== "pending" || Boolean(row.assignedCourierName && row.assignedCourierName !== "—");
             return (
               <button
@@ -1635,6 +1673,52 @@ export function OrderTrackingBulkTable({
               <button
                 type="button"
                 onClick={() => setRejectOrder(null)}
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-5 py-3 text-sm font-black text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تأكيد إرجاع الطلب المرفوض إلى جديد */}
+      {restoreOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setRestoreOrder(null)}>
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 animate-in zoom-in-95 duration-200 text-center" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-950/60 text-2xl text-sky-600">
+              🔄
+            </div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">هل تريد إرجاع الطلب #{restoreOrder.orderNumber} إلى جديد؟</h3>
+            <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+              {restoreOrder.shopCustomerLabel} إلى {restoreOrder.regionName}
+            </p>
+
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={bulkPending}
+                onClick={async () => {
+                  const fd = new FormData();
+                  fd.append("orderIds", restoreOrder.id);
+                  fd.append("targetStatus", "pending");
+                  setRestoreOrder(null);
+                  const res = await bulkUpdateOrdersStatus({}, fd);
+                  if (res.error) {
+                    alert(res.error);
+                  } else {
+                    setToastMsg({ text: `تم إرجاع الطلب #${restoreOrder.orderNumber} إلى قائمة الطلبات الجديدة بنجاح! 🔄`, type: "success" });
+                    router.refresh();
+                    setTimeout(() => setToastMsg(null), 4000);
+                  }
+                }}
+                className="flex-1 rounded-2xl bg-sky-600 py-3 text-sm font-black text-white shadow-md transition hover:bg-sky-700 active:scale-95 disabled:opacity-50"
+              >
+                نعم، إرجاع إلى جديد 🔄
+              </button>
+              <button
+                type="button"
+                onClick={() => setRestoreOrder(null)}
                 className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-5 py-3 text-sm font-black text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95"
               >
                 إلغاء
