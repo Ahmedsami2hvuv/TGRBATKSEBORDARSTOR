@@ -108,7 +108,6 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
   const orders = await prisma.order.findMany({
     where: { shopId: employee.shop.id },
     orderBy: { createdAt: "desc" },
-    take: 100,
     include: {
       customerRegion: { select: { name: true } },
       moneyEvents: {
