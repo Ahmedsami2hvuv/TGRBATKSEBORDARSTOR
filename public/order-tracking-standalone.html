@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام تتبع الطلبات الفاخر — أبو الأكبر للتوصيل</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #061A12;
+      --bg-card: #0A281E;
+      --gold-primary: #C9A86A;
+      --gold-light: #F5D77F;
+      --gold-dark: #9E7420;
+      --emerald-dark: #05281C;
+      --emerald-main: #0D4A36;
+      --emerald-light: #157347;
+      --text-white: #FFF8F0;
+      --text-dark: #111827;
+      --red-burgundy: #8B0000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      background-image: radial-gradient(circle at 50% 0%, #0D3E2F 0%, #061A12 70%);
+      color: var(--text-white);
+      font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 20px 12px;
+      overflow-x: hidden;
+    }
+
+    /* الحاوية الرئيسية */
+    .app-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ترويسة الصفحة الملكية */
+    .header-panel {
+      background: linear-gradient(135deg, rgba(13, 74, 54, 0.85) 0%, rgba(5, 40, 28, 0.95) 100%);
+      border: 2px solid var(--gold-primary);
+      border-radius: 24px;
+      padding: 18px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(245, 215, 127, 0.3);
+    }
+
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 35% 30%, #FFE599 0%, #D4AF37 60%, #9E7420 100%);
+      border: 2px solid var(--gold-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--gold-light);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      letter-spacing: -0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #D1E7DD;
+      font-weight: 600;
+    }
+
+    /* إحصائيات سريعة */
+    .stats-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stat-badge {
+      background: rgba(4, 33, 22, 0.8);
+      border: 1.5px solid var(--gold-primary);
+      border-radius: 14px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .stat-badge .num {
+      color: var(--gold-light);
+      font-size: 16px;
+      font-mono: true;
+    }
+
+    /* شريط أدوات الفلترة والبحث */
+    .toolbar-panel {
+      background: rgba(10, 40, 30, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(201, 168, 106, 0.4);
+      border-radius: 20px;
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .search-input-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 44px;
+      background: rgba(4, 25, 17, 0.9);
+      border: 1.5px solid var(--gold-primary);
+      border-radius: 12px;
+      padding: 0 42px 0 16px;
+      color: #FFF;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--gold-light);
+      box-shadow: 0 0 10px rgba(245, 215, 127, 0.3);
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--gold-light);
+      pointer-events: none;
+    }
+
+    /* أزرار فلاتر الحالات */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      background: rgba(6, 32, 22, 0.85);
+      border: 1.5px solid rgba(201, 168, 106, 0.4);
+      color: #E2E8F0;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-tab:hover {
+      border-color: var(--gold-light);
+      color: #FFF;
+      transform: translateY(-1px);
+    }
+
+    .filter-tab.active {
+      background: linear-gradient(180deg, #157347 0%, #0D4A36 100%);
+      border-color: var(--gold-light);
+      color: var(--gold-light);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    /* شبكة كروت الطلبات */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 480px) {
+      .orders-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* كارت الطلب الفاخر ذو التصميم الدقيق والمكيش */
+    .order-card-frame {
+      position: relative;
+      width: 100%;
+      min-height: 380px;
+      background-image: url('/images/order-luxury/order-card-frame.webp');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      user-select: none;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.35));
+    }
+
+    .order-card-frame:hover {
+      transform: translateY(-3px);
+      filter: drop-shadow(0 14px 26px rgba(201,168,106,0.25));
+    }
+
+    /* 1. السطر العلوي */
+    .card-header-row {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+    }
+
+    /* بلوك اسم المحل والمنطقة الملون حسب الحالة */
+    .card-shop-banner {
+      flex: 1;
+      min-width: 0;
+      height: 48px;
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      border-radius: 24px;
+    }
+
+    .card-shop-banner span {
+      color: #FFF8F0;
+      font-weight: 900;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    /* كبسولة رقم الطلب يساراً */
+    .card-order-number-box {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-order-number {
+      height: 44px;
+      padding: 0 14px;
+      background-image: url('/images/order-luxury/order-number-bg.webp');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-light);
+      font-family: monospace, 'Cairo';
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      border-radius: 12px;
+    }
+
+    /* الزر المعلق للطلب العكسي */
+    .hanging-reverse-btn {
+      position: absolute;
+      bottom: -10px;
+      right: -8px;
+      width: 32px;
+      height: 32px;
+      background-image: url('/images/order-luxury/icon-reverse.webp');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border-radius: 50%;
+      z-index: 20;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    /* 2. الصف الوسطي */
+    .card-middle-row {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+    }
+
+    /* نوع البضاعة والزبون (يميناً) */
+    .card-goods-box {
+      width: 110px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 900;
+      color: #111827;
+      line-height: 1.25;
+    }
+
+    .card-goods-box .customer-name {
+      display: block;
+      font-size: 11px;
+      color: #4B5563;
+      font-weight: 700;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* دائرة السعر الزمردية المركزية */
+    .card-price-circle {
+      position: relative;
+      width: 88px;
+      height: 88px;
+      background-image: url('/images/order-luxury/price-circle.webp');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+    }
+
+    .card-price-circle span {
+      color: var(--gold-light);
+      font-family: monospace, 'Cairo';
+      font-size: 32px;
+      font-weight: 900;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      line-height: 1;
+    }
+
+    /* وقت التوصيل (يساراً) */
+    .card-time-box {
+      width: 110px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--red-burgundy);
+      line-height: 1.25;
+    }
+
+    .card-time-box .prepaid-label {
+      display: block;
+      font-size: 10px;
+      color: #047857;
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    /* 3. الصف السفلي */
+    .card-bottom-row {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 4px;
+    }
+
+    /* أزرار العمليات الكبيرة يساراً */
+    .action-buttons-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action-lg {
+      width: 44px;
+      height: 44px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      transition: transform 0.15s, filter 0.15s;
+    }
+
+    .btn-action-lg:hover {
+      transform: scale(1.08);
+      filter: brightness(1.1);
+    }
+
+    .btn-action-lg:active {
+      transform: scale(0.95);
+    }
+
+    /* كبسولة هاتف الزبون وحامل الأزرار يميناً */
+    .phone-pill-container {
+      background-image: url('/images/order-luxury/customer-phone-pill.webp');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      border-radius: 25px;
+      padding: 4px 10px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .btn-pill-icon {
+      width: 30px;
+      height: 30px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-pill-icon:hover {
+      transform: scale(1.15);
+    }
+
+    .btn-pill-icon:active {
+      transform: scale(0.92);
+    }
+
+    .phone-number-text {
+      font-family: monospace, 'Cairo';
+      font-size: 13px;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: 0.3px;
+      padding: 0 2px;
+      white-space: nowrap;
+    }
+
+    /* بادجات المبالغ المالية العائمة */
+    .money-badges-floating {
+      position: absolute;
+      top: -10px;
+      left: 30px;
+      z-index: 20;
+      display: flex;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    .money-badge-pill {
+      background: #059669;
+      color: #FFF;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #10B981;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* نافذة منبثقة تفاعلية لعرض تفاصيل الطلب */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(135deg, #0D4A36 0%, #05281C 100%);
+      border: 2px solid var(--gold-primary);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 500px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      transform: scale(0.95);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(201, 168, 106, 0.3);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      color: var(--gold-light);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .modal-close-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 16px;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .modal-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+
+    .modal-row .label {
+      color: #A7F3D0;
+      font-weight: 700;
+    }
+
+    .modal-row .value {
+      color: #FFF;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- 1. ترويسة الصفحة الملكية -->
+    <header class="header-panel">
+      <div class="header-title-box">
+        <div class="header-icon">👑</div>
+        <div>
+          <h1 class="header-title">لوحة تتبع الطلبات الملكية</h1>
+          <p class="header-subtitle">نظام التوصيل الفاخر — إدارة العمليات والطلبات الحية</p>
+        </div>
+      </div>
+
+      <!-- إحصائيات الطلبات -->
+      <div class="stats-bar">
+        <div class="stat-badge">
+          <span>📦 إجمالي الطلبات:</span>
+          <span class="num" id="stat-total">4</span>
+        </div>
+        <div class="stat-badge">
+          <span>⚡ قيد التوصيل:</span>
+          <span class="num" id="stat-delivering" style="color: #FCD34D;">1</span>
+        </div>
+        <div class="stat-badge">
+          <span>✅ تم التسليم:</span>
+          <span class="num" id="stat-delivered" style="color: #6EE7B7;">1</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. شريط البحث والفلترة -->
+    <section class="toolbar-panel">
+      <!-- مربع البحث الحي -->
+      <div class="search-input-box">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="search-input" 
+          class="search-input" 
+          placeholder="ابحث برقم الطلب، اسم المحل، الزبون، أو الهاتف..." 
+          oninput="handleSearch(this.value)"
+        >
+      </div>
+
+      <!-- أزرار فلاتر الحالات -->
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterStatus('all', this)">📋 الكل (<span id="count-all">4</span>)</button>
+        <button class="filter-tab" onclick="filterStatus('pending', this)">🔹 جديد (<span id="count-pending">1</span>)</button>
+        <button class="filter-tab" onclick="filterStatus('assigned', this)">🔻 مسند (<span id="count-assigned">1</span>)</button>
+        <button class="filter-tab" onclick="filterStatus('delivering', this)">⚡ مستلم (<span id="count-delivering">1</span>)</button>
+        <button class="filter-tab" onclick="filterStatus('delivered', this)">✅ مسلّم (<span id="count-delivered">1</span>)</button>
+      </div>
+    </section>
+
+    <!-- 3. شبكة كروت الطلبات الفاخرة -->
+    <main class="orders-grid" id="orders-container">
+      <!-- يتم حقن كروت الطلبات ديناميكياً عبر الجافاسكربت -->
+    </main>
+
+  </div>
+
+  <!-- النافذة المنبثقة لتفاصيل الطلب -->
+  <div class="modal-overlay" id="order-modal" onclick="closeModal(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-order-title">تفاصيل الطلب</h3>
+        <button class="modal-close-btn" onclick="closeModalDirect()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-order-body">
+        <!-- المحتوى -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // بيانات الطلبات النموذجية المحاكية للنظام
+    const ordersData = [
+      {
+        id: "ord-1024",
+        orderNumber: "#1024",
+        shopName: "محل الأناقة والجمال — المنصور 📍",
+        status: "assigned", // مسند (أحمر)
+        price: "25",
+        goodsType: "كبه وسمبوسه",
+        customerName: "أحمد علي التميمي",
+        customerPhone: "07701234567",
+        orderTime: "غداً بـ 10 الصبح ⏰",
+        isPrepaid: true,
+        isReverse: true,
+        hasGps: true,
+        locationUrl: "https://maps.google.com",
+        courierName: "كابتن سجاد",
+        hasPreparerPrice: true
+      },
+      {
+        id: "ord-1025",
+        orderNumber: "#1025",
+        shopName: "مجوهرات الذهب الخليجي — الكرادة 📍",
+        status: "pending", // جديد (أزرق)
+        price: "60",
+        goodsType: "سوار ذهب عيار 21",
+        customerName: "سارة خليل",
+        customerPhone: "07809876543",
+        orderTime: "اليوم عصراً ⏰",
+        isPrepaid: false,
+        isReverse: false,
+        hasGps: true,
+        locationUrl: "https://maps.google.com",
+        courierName: "",
+        hasPreparerPrice: false
+      },
+      {
+        id: "ord-1026",
+        orderNumber: "#1026",
+        shopName: "أطايب بغداد للحلويات — زيونة 📍",
+        status: "delivering", // مستلم قيد التوصيل (أصفر)
+        price: "18",
+        goodsType: "بقلاوة بالفستق 1 كغم",
+        customerName: "محمد الهاشمي",
+        customerPhone: "07501122334",
+        orderTime: "فوري ⚡",
+        isPrepaid: true,
+        isReverse: false,
+        hasGps: false,
+        locationUrl: "",
+        courierName: "كابتن علي",
+        hasPreparerPrice: true
+      },
+      {
+        id: "ord-1027",
+        orderNumber: "#1027",
+        shopName: "عالم الإلكترونيات — شارع الصناعة 📍",
+        status: "delivered", // مسلم (أخضر)
+        price: "45",
+        goodsType: "سماعات بلوتوث برو",
+        customerName: "مصطفى كمال",
+        customerPhone: "07712233445",
+        orderTime: "تم الاستلام 12:30",
+        isPrepaid: false,
+        isReverse: false,
+        hasGps: true,
+        locationUrl: "https://maps.google.com",
+        courierName: "كابتن سجاد",
+        hasPreparerPrice: false
+      }
+    ];
+
+    let currentFilter = "all";
+    let searchQuery = "";
+
+    // صور حالات بلوك اسم المحل
+    function getHeaderBannerImage(status) {
+      switch (status) {
+        case "pending": return "/images/order-luxury/header-new.webp";
+        case "assigned": return "/images/order-luxury/header-assigned.webp";
+        case "delivering": return "/images/order-luxury/header-received.webp";
+        case "delivered": return "/images/order-luxury/header-delivered.webp";
+        default: return "/images/order-luxury/header-assigned.webp";
+      }
+    }
+
+    // ريندر كروت الطلبات
+    function renderOrders() {
+      const container = document.getElementById("orders-container");
+      container.innerHTML = "";
+
+      const filtered = ordersData.filter(o => {
+        const matchesStatus = currentFilter === "all" || o.status === currentFilter;
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch = !q || 
+          o.orderNumber.toLowerCase().includes(q) ||
+          o.shopName.toLowerCase().includes(q) ||
+          o.customerName.toLowerCase().includes(q) ||
+          o.customerPhone.includes(q) ||
+          o.goodsType.toLowerCase().includes(q);
+        return matchesStatus && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align:center; padding: 50px 20px; background: rgba(5,40,28,0.6); border: 2px dashed var(--gold-primary); border-radius: 20px;">
+            <p style="font-size: 18px; font-weight: 800; color: var(--gold-light);">لا توجد طلبات مطابقة للبحث أو الفلتر المختار 🔍</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(o => {
+        const bannerImg = getHeaderBannerImage(o.status);
+
+        const card = document.createElement("div");
+        card.className = "order-card-frame";
+        card.onclick = () => openModal(o);
+
+        card.innerHTML = `
+          <!-- بادج مالي عائم -->
+          <div class="money-badges-floating">
+            <span class="money-badge-pill">صادر: ${o.price} ألف</span>
+          </div>
+
+          <!-- 1. الصف العلوي -->
+          <div class="card-header-row" onclick="event.stopPropagation()">
+            <!-- بلوك اسم المحل والمنطقة الملون حسب الحالة -->
+            <div class="card-shop-banner" style="background-image: url('${bannerImg}');">
+              <span>${o.shopName}</span>
+            </div>
+
+            <!-- كبسولة رقم الطلب يساراً والزر المعلق -->
+            <div class="card-order-number-box">
+              <div class="card-order-number">${o.orderNumber}</div>
+              ${o.isReverse ? '<div class="hanging-reverse-btn" title="طلب عكسي ⤺"></div>' : ''}
+            </div>
+          </div>
+
+          <!-- 2. الصف الوسطي -->
+          <div class="card-middle-row">
+            <!-- نوع البضاعة والزبون (يميناً) -->
+            <div class="card-goods-box">
+              ${o.goodsType}
+              <span class="customer-name">👤 ${o.customerName}</span>
+            </div>
+
+            <!-- دائرة السعر الزمردية المركزية -->
+            <div class="card-price-circle">
+              <span>${o.price}</span>
+            </div>
+
+            <!-- وقت التوصيل (يساراً) -->
+            <div class="card-time-box">
+              ${o.orderTime}
+              ${o.isPrepaid ? '<span class="prepaid-label">(واصل الحساب ✓)</span>' : ''}
+            </div>
+          </div>
+
+          <!-- 3. الصف السفلي -->
+          <div class="card-bottom-row" onclick="event.stopPropagation()">
+            <!-- أزرار العمليات الكبيرة يساراً -->
+            <div class="action-buttons-left">
+              <!-- زر إسناد -->
+              <button 
+                class="btn-action-lg" 
+                style="background-image: url('${o.courierName ? '/images/order-luxury/btn-assign-empty.webp' : '/images/order-luxury/btn-assign.webp'}');"
+                title="${o.courierName ? 'المندوب: ' + o.courierName : 'إسناد الطلب لمندوب'}"
+                onclick="handleAssign('${o.id}')"
+              >
+                ${o.courierName ? `<span style="font-size:9px; max-width:34px; overflow:hidden; text-overflow:ellipsis;">${o.courierName}</span>` : ''}
+              </button>
+
+              <!-- زر استلام / تسليم -->
+              ${o.status === 'assigned' || o.status === 'pending' ? `
+                <button class="btn-action-lg" style="background-image: url('/images/order-luxury/btn-pickup.webp');" onclick="handlePickup('${o.id}')" title="استلام الطلب">
+                  <span>استلام</span>
+                </button>
+              ` : o.status === 'delivering' ? `
+                <button class="btn-action-lg" style="background-image: url('/images/order-luxury/btn-delivery.webp');" onclick="handleDelivery('${o.id}')" title="تسليم الطلب">
+                  <span>تسليم</span>
+                </button>
+              ` : `
+                <div class="btn-action-lg" style="background-image: url('/images/order-luxury/btn-delivery.webp'); opacity:0.8;" title="مسلّم">
+                  <span>مسلّم</span>
+                </div>
+              `}
+            </div>
+
+            <!-- كبسولة هاتف الزبون وحامل الأزرار يميناً -->
+            <div class="phone-pill-container">
+              <!-- زر رفض الطلب -->
+              <button class="btn-pill-icon" style="background-image: url('/images/order-luxury/btn-reject.webp');" onclick="handleReject('${o.id}')" title="رفض الطلب"></button>
+              
+              <!-- زر تعديل الطلب -->
+              <button class="btn-pill-icon" style="background-image: url('/images/order-luxury/btn-edit.webp');" onclick="handleEdit('${o.id}')" title="تعديل الطلب"></button>
+              
+              <!-- زر تعديل أسعار التجهيز -->
+              <button class="btn-pill-icon" style="background-image: url('/images/order-luxury/1789252908710.webp');" onclick="handlePricing('${o.id}')" title="تعديل تفاصيل التجهيز"></button>
+              
+              <!-- زر اللوكيشن -->
+              <a href="${o.hasGps ? o.locationUrl : '#'}" target="${o.hasGps ? '_blank' : '_self'}" class="btn-pill-icon" style="background-image: url('/images/order-luxury/btn-no-location.webp');" title="${o.hasGps ? 'فتح اللوكيشن 📍' : 'بدون لوكيشن ⚠️'}"></a>
+              
+              <!-- رقم هاتف الزبون الحي -->
+              <span class="phone-number-text">${o.customerPhone}</span>
+              
+              <!-- زر اتصال هاتفي -->
+              <a href="tel:${o.customerPhone}" class="btn-pill-icon" style="background-image: url('/images/order-luxury/btn-assign-empty.webp'); font-size:14px;" title="اتصال بالزبون">📞</a>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      updateStats();
+    }
+
+    // تحديث أرقام الإحصائيات
+    function updateStats() {
+      document.getElementById("stat-total").innerText = ordersData.length;
+      document.getElementById("stat-delivering").innerText = ordersData.filter(o => o.status === "delivering").length;
+      document.getElementById("stat-delivered").innerText = ordersData.filter(o => o.status === "delivered").length;
+      
+      document.getElementById("count-all").innerText = ordersData.length;
+      document.getElementById("count-pending").innerText = ordersData.filter(o => o.status === "pending").length;
+      document.getElementById("count-assigned").innerText = ordersData.filter(o => o.status === "assigned").length;
+      document.getElementById("count-delivering").innerText = ordersData.filter(o => o.status === "delivering").length;
+      document.getElementById("count-delivered").innerText = ordersData.filter(o => o.status === "delivered").length;
+    }
+
+    // فلترة الحالة
+    function filterStatus(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderOrders();
+    }
+
+    // البحث الحي
+    function handleSearch(val) {
+      searchQuery = val;
+      renderOrders();
+    }
+
+    // معالجة الأزرار التفاعلية
+    function handleAssign(id) {
+      const order = ordersData.find(o => o.id === id);
+      const courier = prompt("أدخل اسم المندوب للإسناد:", order.courierName || "كابتن سجاد");
+      if (courier !== null) {
+        order.courierName = courier.trim();
+        order.status = "assigned";
+        renderOrders();
+      }
+    }
+
+    function handlePickup(id) {
+      const order = ordersData.find(o => o.id === id);
+      if (confirm(`هل تريد تأكيد استلام الشحنة للطلب ${order.orderNumber}؟`)) {
+        order.status = "delivering";
+        renderOrders();
+      }
+    }
+
+    function handleDelivery(id) {
+      const order = ordersData.find(o => o.id === id);
+      if (confirm(`هل تريد تأكيد تسليم الشحنة للزبون للطلب ${order.orderNumber}؟`)) {
+        order.status = "delivered";
+        renderOrders();
+      }
+    }
+
+    function handleReject(id) {
+      const order = ordersData.find(o => o.id === id);
+      if (confirm(`هل أنت متأكد من رفض الطلب ${order.orderNumber}؟`)) {
+        order.status = "cancelled";
+        alert("تم رفض الطلب بنجاح ❌");
+        renderOrders();
+      }
+    }
+
+    function handleEdit(id) {
+      const order = ordersData.find(o => o.id === id);
+      const newGoods = prompt("تعديل نوع البضاعة:", order.goodsType);
+      if (newGoods !== null) {
+        order.goodsType = newGoods.trim();
+        renderOrders();
+      }
+    }
+
+    function handlePricing(id) {
+      const order = ordersData.find(o => o.id === id);
+      const newPrice = prompt("تعديل السعر (بالألف):", order.price);
+      if (newPrice !== null) {
+        order.price = newPrice.trim();
+        renderOrders();
+      }
+    }
+
+    // النافذة المنبثقة
+    function openModal(o) {
+      document.getElementById("modal-order-title").innerText = `تفاصيل الطلب ${o.orderNumber}`;
+      document.getElementById("modal-order-body").innerHTML = `
+        <div class="modal-row"><span class="label">المحل / المرسل:</span><span class="value">${o.shopName}</span></div>
+        <div class="modal-row"><span class="label">اسم الزبون:</span><span class="value">${o.customerName}</span></div>
+        <div class="modal-row"><span class="label">رقم الهاتف:</span><span class="value">${o.customerPhone}</span></div>
+        <div class="modal-row"><span class="label">نوع البضاعة:</span><span class="value">${o.goodsType}</span></div>
+        <div class="modal-row"><span class="label">السعر الإجمالي:</span><span class="value" style="color:var(--gold-light); font-size:16px;">${o.price} ألف دينار</span></div>
+        <div class="modal-row"><span class="label">حالة الطلب:</span><span class="value">${o.status}</span></div>
+        <div class="modal-row"><span class="label">المندوب المسند:</span><span class="value">${o.courierName || 'غير مسند'}</span></div>
+        <div class="modal-row"><span class="label">وقت الطلب:</span><span class="value">${o.orderTime}</span></div>
+      `;
+      document.getElementById("order-modal").classList.add("active");
+    }
+
+    function closeModal(e) {
+      if (e.target.id === "order-modal") {
+        document.getElementById("order-modal").classList.remove("active");
+      }
+    }
+
+    function closeModalDirect() {
+      document.getElementById("order-modal").classList.remove("active");
+    }
+
+    // التشغيل الأولي
+    window.addEventListener("DOMContentLoaded", () => {
+      renderOrders();
+    });
+  </script>
+</body>
+</html>
