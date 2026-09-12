@@ -479,20 +479,34 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               <span className="text-[11px] font-bold text-amber-100 bg-amber-700/30 px-2 py-1 rounded-lg">← تفاصيل</span>
             </Link>
 
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
-              <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className="flex items-center justify-center rounded-2xl bg-sky-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-sky-950 active:scale-[0.98] text-center whitespace-nowrap">
-                + إضافة طلب من الإدارة
+            <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:gap-3">
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/new`}
+                className="flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs sm:text-sm font-black text-[#0A3D2E] shadow-md border border-[#D8BC7D] transition hover:brightness-105 active:scale-[0.98] text-center whitespace-nowrap"
+                style={{
+                  background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
+                }}
+              >
+                <span>إضافة طلب من الإدارة</span>
+                <span>⚜️</span>
               </Link>
-              <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className="flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] text-center whitespace-nowrap">
-                الطلبات الجديدة
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/pending`}
+                className="flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs sm:text-sm font-black text-white shadow-md border border-[#C9A86A] transition hover:brightness-110 active:scale-[0.98] text-center whitespace-nowrap"
+                style={{
+                  background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
+                }}
+              >
+                <span className="text-[#F5D77F]">✨</span>
+                <span>الطلبات الجديدة</span>
               </Link>
             </div>
           </div>
         </div>
 
-        {/* شريط التبويبات الحديث المريح على الجوال والشاشات المختلفة */}
+        {/* شريط التبويبات الفاخر الملكي (Filter Chips) */}
         <div className="relative">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar sm:flex-wrap">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-1 no-scrollbar sm:flex-wrap">
             {statusTabs.map((t) => {
               const active =
                 t.key === "all" ? statusFilter === "all" : statusFilter === t.key;
@@ -500,15 +514,15 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
                 <Link
                   key={t.key}
                   href={hrefTracking({ status: t.key })}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-black transition-all shadow-xs border ${
                     active
-                      ? "bg-sky-600 text-white shadow-sm shadow-sky-200 ring-1 ring-sky-600"
-                      : "bg-slate-100/80 text-slate-700 hover:bg-slate-200/80 active:bg-slate-300/80"
+                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] shadow-[0_0_12px_rgba(201,168,106,0.35)]"
+                      : "bg-white text-[#0A3D2E] border-[#C9A86A]/70 hover:border-[#C9A86A] hover:bg-[#FFF8F0]"
                   }`}
                 >
                   <span>{t.label}</span>
                   {t.key === "pending" && pendingTabCount > 0 ? (
-                    <span className="inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-black leading-none text-white">
+                    <span className="inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[#C9A86A] text-[#0A3D2E] px-1.5 py-0.5 text-[10px] font-black leading-none">
                       {pendingTabCount > 99 ? "99+" : pendingTabCount}
                     </span>
                   ) : null}
@@ -516,14 +530,14 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               );
             })}
 
-            <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0 hidden sm:block" />
+            <div className="h-4 w-px bg-[#C9A86A]/40 mx-0.5 shrink-0 hidden sm:block" />
 
             <Link
               href={hrefTracking({ status: "checkSader", saderFilter })}
-              className={`flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
                 statusFilter === "checkSader"
-                  ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200 ring-1 ring-emerald-600"
-                  : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 active:bg-emerald-200"
+                  ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
+                  : "bg-white text-[#0A3D2E] border-[#C9A86A]/60 hover:border-[#C9A86A]"
               }`}
             >
               فحص الصادر
@@ -533,20 +547,20 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
                 status: "checkWard",
                 wardFilter,
               })}
-              className={`flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
                 statusFilter === "checkWard"
-                  ? "bg-red-600 text-white shadow-sm shadow-red-200 ring-1 ring-red-600"
-                  : "bg-red-50 text-red-800 hover:bg-red-100 active:bg-red-200"
+                  ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
+                  : "bg-white text-[#0A3D2E] border-[#C9A86A]/60 hover:border-[#C9A86A]"
               }`}
             >
               فحص الوارد
             </Link>
             <Link
               href={hrefTracking({ status: "cancelled" })}
-              className={`flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
                 statusFilter === "cancelled"
-                  ? "bg-rose-700 text-white shadow-sm shadow-rose-200 ring-1 ring-rose-700"
-                  : "bg-rose-50 text-rose-800 hover:bg-rose-100 active:bg-rose-200"
+                  ? "bg-[#7A1F1F] text-white border-[#C9A86A]"
+                  : "bg-white text-[#7A1F1F] border-[#C9A86A]/60 hover:border-[#C9A86A]"
               }`}
             >
               المرفوضة
