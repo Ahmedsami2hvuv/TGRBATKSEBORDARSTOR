@@ -257,6 +257,35 @@ function MandoubCardMoneyBadges({ o }: { o: any }) {
   );
 }
 
+function RoyalScallopedCardBorder() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-visible">
+      <svg
+        className="w-full h-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        fill="none"
+      >
+        {/* المسار الخارجي ذو الزوايا المقعرة الأنيقة */}
+        <path
+          d="M 8 1.5 L 92 1.5 A 6 6 0 0 0 98.5 8 L 98.5 92 A 6 6 0 0 0 92 98.5 L 8 98.5 A 6 6 0 0 0 1.5 92 L 1.5 8 A 6 6 0 0 0 8 1.5 Z"
+          stroke="#C9A86A"
+          strokeWidth="1.2"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* المسار الداخلي الموازي */}
+        <path
+          d="M 9.5 3.5 L 90.5 3.5 A 4 4 0 0 0 96.5 9.5 L 96.5 90.5 A 4 4 0 0 0 90.5 96.5 L 9.5 96.5 A 4 4 0 0 0 3.5 90.5 L 3.5 9.5 A 4 4 0 0 0 9.5 3.5 Z"
+          stroke="#C9A86A"
+          strokeWidth="0.6"
+          strokeOpacity="0.8"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
+  );
+}
+
 function MandoubFullBlockCardGrid({
   rows,
   onOpenRow,
@@ -307,94 +336,97 @@ function MandoubFullBlockCardGrid({
 
   return (
     <div className="space-y-6 pb-12">
-      {groupedByDate.map((group) => (
-        <div key={group.dateKey} className="space-y-3.5">
-          {/* شريط الفاصل الزمني البارز بين الأيام باللون الأخضر الزمردي والذهبي الفاخر */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] border-y-2 border-[#C9A86A] px-4 py-2.5 text-[#FFF8F0] shadow-md flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] text-[#0A3D2E] flex items-center justify-center font-black shadow-xs border border-[#FFF0D0] text-sm">
-                📅
+      {groupedByDate.map((group) => {
+        const dateDayNumber = group.items[0]?.createdAt
+          ? new Date(group.items[0].createdAt).getDate()
+          : 17;
+
+        return (
+          <div key={group.dateKey} className="space-y-3.5">
+            {/* شريط الفاصل الزمني البارز بين الأيام بالزخرفة الدمشقية الأرابيسك */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] border-y border-[#C9A86A] px-4 py-2 text-[#FFF8F0] shadow-md flex items-center justify-between">
+              {/* زخرفة دمشقية يمنى */}
+              <div className="flex items-center gap-1.5 opacity-90">
+                <span className="text-[#F5D77F] text-sm">❧</span>
+                <span className="text-[#C9A86A] text-xs">⚜️</span>
               </div>
-              <span className="text-xs sm:text-sm font-black tracking-wide">
-                {group.dateLabel}
-              </span>
+
+              {/* تاريخ اليوم بالمنتصف */}
+              <div className="text-center font-black text-xs sm:text-sm tracking-wide text-white drop-shadow-sm">
+                {group.dateLabel} <span className="text-[#F5D77F] font-normal">({group.items.length} طلب)</span>
+              </div>
+
+              {/* أيقونة التقويم المذهبة في اليسار */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-b from-[#E67E22] to-[#D35400] text-white flex flex-col items-center justify-center border border-[#FFF0D0] shadow-xs leading-none">
+                  <span className="text-[7px] font-bold opacity-80">📅</span>
+                  <span className="text-[11px] font-black">{dateDayNumber}</span>
+                </div>
+                <span className="text-[#F5D77F] text-sm">☙</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-full bg-[#C9A86A]/20 px-3 py-0.5 text-xs font-black text-[#F5D77F] border border-[#C9A86A]/50">
-                {group.items.length} طلب
-              </span>
-              <span className="text-xs text-[#F5D77F]">⚜️</span>
-            </div>
-          </div>
 
-          {/* قائمة الكروت الملكية التابعة لهذا اليوم للمندوب */}
-          <div className="flex flex-col gap-3.5">
-            {group.items.map((o) => {
-              const isAssigned = o.orderStatus === "assigned";
-              const isDelivering = o.orderStatus === "delivering";
-              const isDelivered = o.orderStatus === "delivered";
+            {/* قائمة الكروت الملكية التابعة لهذا اليوم للمندوب */}
+            <div className="flex flex-col gap-4">
+              {group.items.map((o) => {
+                const isAssigned = o.orderStatus === "assigned";
+                const isDelivering = o.orderStatus === "delivering";
+                const isDelivered = o.orderStatus === "delivered";
 
-              const selected = isSelected ? isSelected(o.id) : false;
+                const selected = isSelected ? isSelected(o.id) : false;
 
-              // حساب المبلغ الكلي الظاهر بدقة واستخراج الرقم فقط للدائرة المركزية
-              const displayTotal = o.totalAmountDinar != null
-                ? `${o.totalAmountDinar} ألف`
-                : (o.priceStr || "—");
+                const displayTotal = o.totalAmountDinar != null
+                  ? `${o.totalAmountDinar} ألف`
+                  : (o.priceStr || "—");
 
-              const numericPrice = displayTotal.replace(/[^\d]/g, "") || displayTotal;
+                const numericPrice = displayTotal.replace(/[^\d]/g, "") || displayTotal;
 
-              // قراءة نوع البضاعة الحقيقي المباشر
-              const displayGoodsType = o.orderType && o.orderType !== "عام" && o.orderType !== "—"
-                ? o.orderType
-                : o.summary && o.summary.trim()
-                ? o.summary
-                : o.orderType || "—";
+                const displayGoodsType = o.orderType && o.orderType !== "عام" && o.orderType !== "—"
+                  ? o.orderType
+                  : o.summary && o.summary.trim()
+                  ? o.summary
+                  : o.orderType || "—";
 
-              const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
+                const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
 
-              const headerTextStr = isDoubleRouteOrder
-                ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
-                : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
+                const headerTextStr = isDoubleRouteOrder
+                  ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
+                  : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
 
-              const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");
+                const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");
 
-              return (
-                <div
-                  key={o.id}
-                  onClick={() => {
-                    if (showSelectColumn && onToggleOne) {
-                      onToggleOne(o.id);
-                    } else {
-                      onOpenRow(o.id);
-                    }
-                  }}
-                  className={`group relative rounded-[22px] p-[2px] bg-gradient-to-b from-[#C9A86A] via-[#E8D5A8] to-[#C9A86A] shadow-[0_4px_20px_rgba(10,61,46,0.08)] hover:shadow-[0_8px_28px_rgba(201,168,106,0.25)] transition-all active:scale-[0.99] cursor-pointer ${
-                    selected ? "ring-3 ring-[#0A3D2E]" : ""
-                  }`}
-                >
-                  {/* جسم البطاقة الداخلي الأبيض العاجي الفاخر */}
-                  <div className="rounded-[20px] bg-white dark:bg-slate-900 p-3.5 relative overflow-hidden flex flex-col justify-between space-y-2.5">
-                    {/* زخارف الزوايا المنحوتة المذهبة (Ornate Bracket Corners) */}
-                    <span className="pointer-events-none absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#C9A86A] rounded-tr-md opacity-80" />
-                    <span className="pointer-events-none absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#C9A86A] rounded-tl-md opacity-80" />
-                    <span className="pointer-events-none absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#C9A86A] rounded-br-md opacity-80" />
-                    <span className="pointer-events-none absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#C9A86A] rounded-bl-md opacity-80" />
+                return (
+                  <div
+                    key={o.id}
+                    onClick={() => {
+                      if (showSelectColumn && onToggleOne) {
+                        onToggleOne(o.id);
+                      } else {
+                        onOpenRow(o.id);
+                      }
+                    }}
+                    className={`group relative rounded-2xl bg-[#FFFDF9] dark:bg-slate-900 p-3.5 sm:p-4 shadow-[0_4px_16px_rgba(201,168,106,0.18)] hover:shadow-[0_8px_24px_rgba(201,168,106,0.28)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3 ${
+                      selected ? "ring-2 ring-[#0A3D2E]" : ""
+                    }`}
+                  >
+                    {/* إطار الزوايا المقعرة المزدوج الفاخر مطابق للصورة */}
+                    <RoyalScallopedCardBorder />
 
                     {/* البادجات المالية العائمة أعلى الكرت */}
-                    <div className="absolute -top-3.5 left-16 z-20 pointer-events-none flex items-center gap-1 shrink-0">
+                    <div className="absolute -top-3 left-14 z-20 pointer-events-none flex items-center gap-1 shrink-0">
                       <MandoubCardMoneyBadges o={o} />
                     </div>
 
-                    {/* 1. السطر العلوي: رقم الطلب # + شارة الوجهة المخملية العنابية في الوسط + شارة الحالة */}
-                    <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    {/* 1. السطر العلوي: رقم الطلب # + شارة الوجهة المخملية العنابية في الوسط + شارة الحالة أو أزرار الترتيب */}
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* أقصى اليمين: رقم الطلب + خانة التحديد السريع / أزرار الترتيب */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
                             checked={selected}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
-                            className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
+                            className="size-4.5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
                         )}
                         {isSortingMode && moveRow && !isDelivered && (
@@ -402,7 +434,7 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "up")}
-                              className="flex size-7 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs"
+                              className="flex size-6.5 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs text-xs"
                               title="تحريك للأعلى"
                             >
                               ▲
@@ -410,59 +442,73 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "down")}
-                              className="flex size-7 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs"
+                              className="flex size-6.5 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs text-xs"
                               title="تحريك للأسفل"
                             >
                               ▼
                             </button>
                           </div>
                         )}
-                        <span className="text-base sm:text-lg font-black text-[#0A3D2E] dark:text-[#F5D77F] tabular-nums tracking-tight font-mono">
+                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight font-mono">
                           #{o.shortId}
                         </span>
                       </div>
 
-                      {/* شارة الوجهة المخملية العنابية في الوسط */}
+                      {/* الوسط: شارة الوجهة المخملية العنابية الفاخرة */}
                       <div
-                        className="flex-1 min-w-0 rounded-full px-3 py-1 text-center font-black text-xs sm:text-[13px] text-white truncate shadow-xs border border-[#C9A86A]/50"
+                        className="flex-1 min-w-0 rounded-full px-2.5 py-1 text-center font-black text-xs sm:text-[13px] text-white truncate shadow-xs border border-[#C9A86A]"
                         style={{
-                          background: "linear-gradient(180deg, #8E2323 0%, #6E1818 100%)",
+                          background: "linear-gradient(180deg, #6B1515 0%, #4A0E0E 100%)",
+                          boxShadow: "0 2px 4px rgba(74,14,14,0.35), inset 0 1px 1px rgba(255,255,255,0.2)",
                         }}
                         title={headerTextStr}
                       >
                         {headerTextStr}
                       </div>
 
-                      {/* شارة حالة الطلب المصغرة على اليسار */}
+                      {/* اليسار: شارة حالة الطلب المصغرة كبسولة فاخرة */}
                       <div className="shrink-0">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black text-white ${
-                          isAssigned ? "bg-red-600" : isDelivering ? "bg-amber-600" : isDelivered ? "bg-emerald-600" : "bg-slate-600"
-                        }`}>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black text-white shadow-xs border border-[#C9A86A]/60 ${
+                            isAssigned
+                              ? "bg-red-600"
+                              : isDelivering
+                              ? "bg-amber-600"
+                              : isDelivered
+                              ? "bg-emerald-600"
+                              : "bg-slate-600"
+                          }`}
+                        >
                           {isAssigned ? "بانتظار المندوب" : isDelivering ? "مستلم" : isDelivered ? "مسلّم" : STATUS_AR[o.orderStatus] ?? o.orderStatus}
                         </span>
                       </div>
                     </div>
 
                     {/* 2. القسم الأوسط: نوع البضاعة يميناً + الدائرة الزمردية المركزية الضخمة + التوقيت يساراً */}
-                    <div className="flex items-center justify-between py-1 px-1">
-                      {/* النص الأيمن (نوع البضاعة / التفاصيل) */}
-                      <div className="text-[13px] sm:text-[14px] font-extrabold text-[#0A3D2E] dark:text-[#F5D77F] text-center w-[90px] sm:w-[105px] leading-snug truncate">
+                    <div className="relative z-10 flex items-center justify-between py-0.5 px-1">
+                      {/* النص الأيمن (نوع البضاعة) */}
+                      <div className="text-sm sm:text-base font-black text-slate-900 dark:text-[#F5D77F] text-center w-[95px] sm:w-[110px] leading-snug truncate">
                         {displayGoodsType}
                         {o.customerName && (
-                          <span className="block text-[10.5px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
+                          <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
                             👤 {o.customerName}
                           </span>
                         )}
                       </div>
 
-                      {/* الدائرة الزمردية المركزية الضخمة برقم السعر الذهبي البارز */}
+                      {/* الدائرة الزمردية المركزية الضخمة برقم السعر الذهبي البارز اللامع */}
                       <div className="relative shrink-0">
-                        <div className="w-[66px] h-[66px] sm:w-[74px] sm:h-[74px] rounded-full bg-gradient-to-b from-[#0F4D3A] to-[#0A3D2E] border-[3px] border-[#C9A86A] flex items-center justify-center shadow-[0_4px_16px_rgba(10,61,46,0.3)] relative">
-                          <div className="absolute inset-1 rounded-full border border-[#FFF0D0]/20 pointer-events-none" />
+                        <div
+                          className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full border-[2.5px] border-[#C9A86A] flex items-center justify-center relative shadow-[0_4px_16px_rgba(10,61,46,0.35)]"
+                          style={{
+                            background: "radial-gradient(circle at 45% 40%, #155E45 0%, #0A3D2E 60%, #05241B 100%)",
+                          }}
+                        >
+                          <div className="absolute inset-1 rounded-full border border-[#F5D77F]/30 pointer-events-none" />
                           <span
-                            className="text-[22px] sm:text-[26px] font-black leading-none select-none font-mono"
+                            className="text-[24px] sm:text-[28px] font-black leading-none select-none font-mono drop-shadow-sm"
                             style={{
-                              background: "linear-gradient(135deg, #FFF0D0 0%, #F5D77F 40%, #C9A86A 80%, #9E7D3B 100%)",
+                              background: "linear-gradient(180deg, #FFF5DF 0%, #F5D77F 50%, #C9A86A 100%)",
                               WebkitBackgroundClip: "text",
                               WebkitTextFillColor: "transparent",
                             }}
@@ -470,34 +516,55 @@ function MandoubFullBlockCardGrid({
                             {numericPrice || "—"}
                           </span>
                         </div>
-                        <span className="absolute -top-1 -right-1 text-[10px] text-[#C9A86A]">✦</span>
-                        <span className="absolute -bottom-1 -left-1 text-[10px] text-[#C9A86A]">✦</span>
+                        <span className="absolute -top-1 -right-1 text-[11px] text-[#F5D77F]">✦</span>
+                        <span className="absolute -bottom-1 -left-1 text-[11px] text-[#F5D77F]">✦</span>
                       </div>
 
-                      {/* النص الأيسر الأحمر العنابي (وقت الطلب أو فوري) */}
-                      <div className="text-[12px] sm:text-[13px] font-black text-[#7A1F1F] dark:text-rose-400 text-center w-[90px] sm:w-[105px] leading-snug">
+                      {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
+                      <div className="text-xs sm:text-[13px] font-black text-[#7A1F1F] dark:text-rose-400 text-center w-[95px] sm:w-[110px] leading-snug">
                         {o.orderNoteTime || o.timeLine || "فوري"}
                         {isPrepaid && (
-                          <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">
+                          <span className="block text-[10px] text-emerald-700 dark:text-emerald-400 font-black mt-0.5">
                             (واصل)
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* 3. سطر رقم هاتف الزبون + أزرار المندوب السريعة المذهبة */}
-                    <div
-                      className="flex items-center justify-between bg-[#FFF8F0] dark:bg-slate-800 rounded-full px-3 py-1.5 border border-[#C9A86A]/40 shadow-2xs"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* اليمين: أزرار الاتصال السريع والواتساب والكاميرا والبصمة الصوتية */}
-                      <div className="flex items-center gap-1 shrink-0">
+                    {/* 3. سطر هاتف الزبون العاجي المذهب + أزرار المندوب السريعة المذهبة */}
+                    <div className="relative z-10 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      {/* كبسولة الهاتف العاجية المذهبة الفاخرة */}
+                      <div
+                        className="flex-1 flex items-center gap-2 rounded-full px-3 py-1 border border-[#C9A86A] shadow-2xs"
+                        style={{
+                          background: "linear-gradient(180deg, #F3E4C8 0%, #DFC99E 100%)",
+                        }}
+                      >
+                        <div
+                          className="w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-xs shrink-0"
+                          style={{
+                            background: "linear-gradient(135deg, #E6BA65 0%, #B88931 100%)",
+                          }}
+                        >
+                          <span className="text-[10px] text-white">📞</span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono font-black text-slate-900 tracking-tight">
+                          {o.customerPhone || o.phoneLine || "—"}
+                        </span>
+                      </div>
+
+                      {/* أزرار المندوب السريعة المذهبة (واتساب، اتصال، كاميرا، بصمة) */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {/* زر اتصال سريع */}
                         {(o.customerPhone || o.phoneLine) && (
                           <a
                             href={`tel:${o.customerPhone || o.phoneLine}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 rounded-full bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] text-[#0A3D2E] flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-110 transition active:scale-90"
+                            className="w-7.5 h-7.5 rounded-full text-[#0A3D2E] flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
+                            style={{
+                              background: "linear-gradient(180deg, #F5D77F 0%, #C9A86A 100%)",
+                              boxShadow: "0 2px 4px rgba(201,168,106,0.35)",
+                            }}
                             title="اتصال هاتفي سريع"
                           >
                             📞
@@ -511,7 +578,11 @@ function MandoubFullBlockCardGrid({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 rounded-full bg-gradient-to-b from-emerald-500 to-green-600 text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-110 transition active:scale-90"
+                            className="w-7.5 h-7.5 rounded-full text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
+                            style={{
+                              background: "linear-gradient(180deg, #2ECC71 0%, #27AE60 100%)",
+                              boxShadow: "0 2px 4px rgba(39,174,96,0.35)",
+                            }}
                             title="مراسلة عبر واتساب"
                           >
                             💬
@@ -525,7 +596,11 @@ function MandoubFullBlockCardGrid({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 rounded-full bg-gradient-to-b from-[#0F4D3A] to-[#0A3D2E] text-[#F5D77F] flex items-center justify-center border border-[#C9A86A] text-xs font-black shadow-xs hover:scale-110 transition active:scale-90"
+                            className="w-7.5 h-7.5 rounded-full text-[#F5D77F] flex items-center justify-center border border-[#C9A86A] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
+                            style={{
+                              background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                              boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                            }}
                             title="عرض صورة الباب"
                           >
                             📷
@@ -541,105 +616,132 @@ function MandoubFullBlockCardGrid({
                               const sound = new Audio(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl);
                               sound.play().catch(() => {});
                             }}
-                            className="w-7 h-7 rounded-full bg-gradient-to-b from-purple-500 to-indigo-600 text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-110 transition active:scale-90"
+                            className="w-7.5 h-7.5 rounded-full text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
+                            style={{
+                              background: "linear-gradient(180deg, #9B59B6 0%, #8E44AD 100%)",
+                              boxShadow: "0 2px 4px rgba(142,68,173,0.35)",
+                            }}
                             title="تشغيل البصمة الصوتية"
                           >
                             🎤
                           </button>
                         )}
                       </div>
-
-                      {/* اليسار: رقم هاتف الزبون */}
-                      <div className="flex items-center gap-1.5 text-xs sm:text-[13px] font-mono font-bold text-[#0A3D2E] dark:text-[#F5D77F]">
-                        {o.alternatePhone && o.alternatePhone !== "—" && (
-                          <span className="text-slate-400">
-                            {o.alternatePhone} /
-                          </span>
-                        )}
-                        <span>{o.customerPhone || o.phoneLine || "—"}</span>
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] flex items-center justify-center shadow-xs">
-                          <span className="text-[10px]">📱</span>
-                        </div>
-                      </div>
                     </div>
 
-                    {/* 4. شريط الأزرار السفلية للمندوب: زر الاستلام/التسليم + إيموجي اللوكيشن فقط + شارة وجهتين */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                      {/* أزرار الاستلام والتسليم للمندوب */}
+                    {/* 4. الشريط السفلي للكرت: أزرار الاستلام والتسليم + وجهتين + بدون لوكيشن */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-end gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                      {/* زر استلام الشحنة ⚡ */}
                       {!isSortingMode && isAssigned && (
                         <button
                           type="button"
                           onClick={() => setPickupOrder(o)}
-                          className="h-[34px] px-4 rounded-full bg-gradient-to-r from-[#8E2323] via-[#7A1F1F] to-[#6E1818] hover:brightness-110 border border-[#C9A86A] text-[#FFF8F0] font-black text-xs shadow-xs transition active:scale-90 flex items-center gap-1.5"
-                          title="استلام الشحنة من المحل"
+                          className="h-[30px] sm:h-[32px] px-3.5 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
+                          style={{
+                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                          }}
+                          title="استلام الشحنة من المحل ⚡"
                         >
                           <span className="text-[#F5D77F]">⚡</span>
-                          <span>استلام الشحنة</span>
+                          <span>استلام</span>
                         </button>
                       )}
 
+                      {/* زر تسليم للزبون 🫴 */}
                       {!isSortingMode && isDelivering && (
                         <button
                           type="button"
                           onClick={() => setDeliveryOrder(o)}
-                          className="h-[34px] px-4 rounded-full bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] hover:brightness-110 border border-[#C9A86A] text-[#F5D77F] font-black text-xs shadow-xs transition active:scale-90 flex items-center gap-1.5"
-                          title="تسليم الشحنة للزبون"
+                          className="h-[30px] sm:h-[32px] px-3.5 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
+                          style={{
+                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                          }}
+                          title="تسليم الشحنة للزبون 🫴"
                         >
                           <span className="text-[#F5D77F]">🫴</span>
-                          <span>تسليم للزبون</span>
+                          <span>تسليم</span>
                         </button>
                       )}
 
                       {!isSortingMode && isDelivered && (
-                        <span className="h-[34px] px-3.5 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-xs flex items-center gap-1">
+                        <span className="h-[30px] sm:h-[32px] px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-xs flex items-center gap-1">
                           <span>✓</span>
                           <span>تم التسليم</span>
                         </span>
                       )}
 
-                      {/* زر / إيموجي اللوكيشن فقط 📍 */}
+                      {/* زر وجهتين ➔ */}
+                      {isDoubleRouteOrder && (
+                        <span
+                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
+                          style={{
+                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                          }}
+                        >
+                          <span>وجهتين</span>
+                          <span className="text-[#F5D77F]">➔</span>
+                        </span>
+                      )}
+
+                      {/* زر بدون لوكيشن / لوكيشن 📍 */}
                       {o.customerLocationUrl ? (
                         <a
                           href={o.customerLocationUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="h-[34px] w-[34px] rounded-full bg-gradient-to-b from-[#8E2323] to-[#6E1818] border border-[#C9A86A] text-white flex items-center justify-center text-sm font-black shadow-xs hover:scale-110 transition active:scale-90"
-                          title="فتح لوكيشن الزبون على الخريطة"
+                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
+                          style={{
+                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                          }}
+                          title="فتح لوكيشن الزبون"
                         >
-                          📍
+                          <span>📍</span>
+                          <span>لوكيشن</span>
                         </a>
                       ) : o.hasCustomerLocation ? (
                         <span
-                          className="h-[34px] w-[34px] rounded-full bg-gradient-to-b from-[#8E2323] to-[#6E1818] border border-[#C9A86A] text-white flex items-center justify-center text-sm font-black shadow-xs"
+                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
+                          style={{
+                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
+                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
+                          }}
                           title="لوكيشن متوفر"
                         >
-                          📍
+                          <span>📍</span>
+                          <span>لوكيشن</span>
                         </span>
                       ) : (
                         <span
-                          className="h-[34px] w-[34px] rounded-full bg-rose-600/20 border border-rose-500 text-rose-600 flex items-center justify-center text-xs font-black animate-pulse"
-                          title="بدون لوكيشن للزبون"
+                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
+                          style={{
+                            background: "linear-gradient(180deg, #6B1515 0%, #4A0E0E 100%)",
+                            boxShadow: "0 2px 4px rgba(74,14,14,0.35)",
+                          }}
+                          title="الزبون لا يملك لوكيشن ⚠️"
                         >
-                          📍
-                        </span>
-                      )}
-
-                      {/* شارة وجهتين */}
-                      {isDoubleRouteOrder && (
-                        <span className="h-[34px] px-3 rounded-full bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A]/50 text-xs font-black flex items-center gap-1 shadow-2xs">
-                          <span>➔</span>
-                          <span>وجهتين</span>
+                          <span>📍</span>
+                          <span>بدون لوكيشن</span>
                         </span>
                       )}
                     </div>
+
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
+
+      {/* شريط عدد الطلبات في هذه الصفحة في الأسفل */}
+      <div className="pt-4 text-center font-black text-sm text-[#0A3D2E]">
+        عدد الطلبات في هذه الصفحة: {rows.length}
+      </div>
     </div>
   );
 }
