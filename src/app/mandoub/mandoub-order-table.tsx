@@ -262,28 +262,265 @@ function RoyalScallopedCardBorder() {
     <div className="pointer-events-none absolute inset-0 z-0 overflow-visible">
       <svg
         className="w-full h-full"
-        viewBox="0 0 100 100"
+        viewBox="0 0 400 200"
         preserveAspectRatio="none"
         fill="none"
       >
-        {/* المسار الخارجي ذو الزوايا المقعرة الأنيقة */}
+        {/* المسار الخارجي ذو الزوايا المقعرة الملكية المنحوتة */}
         <path
-          d="M 8 1.5 L 92 1.5 A 6 6 0 0 0 98.5 8 L 98.5 92 A 6 6 0 0 0 92 98.5 L 8 98.5 A 6 6 0 0 0 1.5 92 L 1.5 8 A 6 6 0 0 0 8 1.5 Z"
+          d="M 28 6 
+             L 372 6 
+             C 378 6, 384 10, 386 16 
+             C 388 22, 388 24, 394 28 
+             L 394 172 
+             C 388 176, 388 178, 386 184 
+             C 384 190, 378 194, 372 194 
+             L 28 194 
+             C 22 194, 16 190, 14 184 
+             C 12 178, 12 176, 6 172 
+             L 6 28 
+             C 12 24, 12 22, 14 16 
+             C 16 10, 22 6, 28 6 Z"
           stroke="#C9A86A"
-          strokeWidth="1.2"
+          strokeWidth="2.2"
           vectorEffect="non-scaling-stroke"
         />
-        {/* المسار الداخلي الموازي */}
+        {/* المسار الداخلي المزدوج المتوازي */}
         <path
-          d="M 9.5 3.5 L 90.5 3.5 A 4 4 0 0 0 96.5 9.5 L 96.5 90.5 A 4 4 0 0 0 90.5 96.5 L 9.5 96.5 A 4 4 0 0 0 3.5 90.5 L 3.5 9.5 A 4 4 0 0 0 9.5 3.5 Z"
-          stroke="#C9A86A"
-          strokeWidth="0.6"
+          d="M 32 12 
+             L 368 12 
+             C 373 12, 378 15, 380 20 
+             C 382 24, 382 26, 388 29 
+             L 388 171 
+             C 382 174, 382 176, 380 180 
+             C 378 185, 373 188, 368 188 
+             L 32 188 
+             C 27 188, 22 185, 20 180 
+             C 18 176, 18 174, 12 171 
+             L 12 29 
+             C 18 26, 18 24, 20 20 
+             C 22 15, 27 12, 32 12 Z"
+          stroke="#D4AF37"
+          strokeWidth="1"
           strokeOpacity="0.8"
           vectorEffect="non-scaling-stroke"
         />
       </svg>
     </div>
   );
+}
+
+function GlassOrbButton3D({
+  children,
+  onClick,
+  title,
+  size = "md",
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+  title?: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizeClasses =
+    size === "sm"
+      ? "w-7.5 h-7.5 text-xs"
+      : size === "lg"
+      ? "w-12 h-12 text-sm"
+      : "w-10 h-10 sm:w-11 sm:h-11 text-xs";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`relative rounded-full shrink-0 flex items-center justify-center font-black select-none transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer overflow-hidden ${sizeClasses} ${className}`}
+      style={{
+        background: "radial-gradient(circle at 40% 30%, #157347 0%, #0D4A36 50%, #042116 100%)",
+        border: "2.5px solid #C9A86A",
+        boxShadow: "0 4px 10px rgba(4,33,22,0.45), inset 0 2px 3px rgba(255,255,255,0.6), inset 0 -3px 5px rgba(0,0,0,0.6)",
+      }}
+    >
+      <div
+        className="pointer-events-none absolute top-0.5 inset-x-1.5 h-[40%] rounded-t-full opacity-75"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
+        }}
+      />
+      <span className="relative z-10 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] flex items-center justify-center">
+        {children}
+      </span>
+    </button>
+  );
+}
+
+function RedGlassOrbButton3D({
+  onClick,
+  title,
+  href,
+}: {
+  onClick?: (e: React.MouseEvent) => void;
+  title?: string;
+  href?: string | null;
+}) {
+  const content = (
+    <>
+      <div
+        className="pointer-events-none absolute top-0.5 inset-x-1 h-[40%] rounded-t-full opacity-80"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 80%, transparent 100%)",
+        }}
+      />
+      <span className="relative z-10 text-white text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] flex items-center justify-center">
+        📍
+      </span>
+    </>
+  );
+
+  const styleObj = {
+    background: "radial-gradient(circle at 38% 28%, #EF4444 0%, #B91C1C 55%, #5B0C0C 100%)",
+    border: "2px solid #C9A86A",
+    boxShadow: "0 3px 8px rgba(91,12,12,0.45), inset 0 2px 2px rgba(255,255,255,0.7), inset 0 -2px 3px rgba(0,0,0,0.6)",
+  };
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title={title || "فتح موقع الزبون 📍"}
+        className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none transition hover:scale-105 active:scale-95 cursor-pointer overflow-hidden"
+        style={styleObj}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      title={title || "بدون لوكيشن"}
+      className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none opacity-80 cursor-default overflow-hidden"
+      style={styleObj}
+    >
+      {content}
+    </div>
+  );
+}
+
+function GoldOrbButton3D({
+  children,
+  onClick,
+  title,
+  href,
+  variant = "gold",
+}: {
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+  title?: string;
+  href?: string;
+  variant?: "gold" | "green" | "purple";
+}) {
+  const bgGrad =
+    variant === "green"
+      ? "radial-gradient(circle at 38% 28%, #2ECC71 0%, #27AE60 55%, #145A32 100%)"
+      : variant === "purple"
+      ? "radial-gradient(circle at 38% 28%, #A855F7 0%, #9333EA 55%, #581C87 100%)"
+      : "radial-gradient(circle at 38% 28%, #FFE599 0%, #E6BA65 45%, #9E7420 100%)";
+
+  const textColor = variant === "gold" ? "text-[#3D2800]" : "text-white";
+
+  const content = (
+    <>
+      <div
+        className="pointer-events-none absolute top-0.5 inset-x-1 h-[40%] rounded-t-full opacity-75"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
+        }}
+      />
+      <span className={`relative z-10 text-[11px] sm:text-xs font-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)] flex items-center justify-center ${textColor}`}>
+        {children}
+      </span>
+    </>
+  );
+
+  const styleObj = {
+    background: bgGrad,
+    border: "1.8px solid #C9A86A",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.25), inset 0 1.5px 2px rgba(255,255,255,0.6), inset 0 -2px 3px rgba(0,0,0,0.4)",
+  };
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title={title}
+        className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none transition hover:scale-105 active:scale-95 cursor-pointer overflow-hidden"
+        style={styleObj}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none transition hover:scale-105 active:scale-95 cursor-pointer overflow-hidden"
+      style={styleObj}
+    >
+      {content}
+    </button>
+  );
+}
+
+function getHeaderBannerStyleMandoub(orderStatus: string) {
+  switch (orderStatus) {
+    case "pending":
+      // الأزرق الفاتح / السماوي الفاخر للطلب الجديد
+      return {
+        background: "linear-gradient(180deg, #0284C7 0%, #0369A1 50%, #075985 100%)",
+        boxShadow: "0 3px 8px rgba(7,89,133,0.4), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)",
+      };
+    case "assigned":
+      // الأحمر / العنابي المخملي للطلب المسند
+      return {
+        background: "linear-gradient(180deg, #7F1D1D 0%, #5B0C0C 50%, #380808 100%)",
+        boxShadow: "0 3px 8px rgba(56,8,8,0.4), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3)",
+      };
+    case "delivering":
+      // الأصفر / الكهرماني الذهبي للطلب المستلم
+      return {
+        background: "linear-gradient(180deg, #D97706 0%, #B45309 50%, #78350F 100%)",
+        boxShadow: "0 3px 8px rgba(120,53,15,0.4), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)",
+      };
+    case "delivered":
+      // الأزرق النيلي الملكي الداكن للطلب المسلم
+      return {
+        background: "linear-gradient(180deg, #1E3A8A 0%, #172554 100%)",
+        boxShadow: "0 3px 8px rgba(23,37,84,0.4), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3)",
+      };
+    case "cancelled":
+      // رمادي داكن فخم للمرفوض
+      return {
+        background: "linear-gradient(180deg, #475569 0%, #1E293B 100%)",
+        boxShadow: "0 3px 8px rgba(30,41,59,0.4), inset 0 1px 2px rgba(255,255,255,0.2)",
+      };
+    default:
+      return {
+        background: "linear-gradient(180deg, #7F1D1D 0%, #5B0C0C 50%, #380808 100%)",
+        boxShadow: "0 3px 8px rgba(56,8,8,0.4), inset 0 1px 2px rgba(255,255,255,0.3)",
+      };
+  }
 }
 
 function MandoubFullBlockCardGrid({
@@ -369,6 +606,7 @@ function MandoubFullBlockCardGrid({
             {/* قائمة الكروت الملكية التابعة لهذا اليوم للمندوب */}
             <div className="flex flex-col gap-4">
               {group.items.map((o) => {
+                const isPending = o.orderStatus === "pending";
                 const isAssigned = o.orderStatus === "assigned";
                 const isDelivering = o.orderStatus === "delivering";
                 const isDelivered = o.orderStatus === "delivered";
@@ -394,6 +632,10 @@ function MandoubFullBlockCardGrid({
                   : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
 
                 const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");
+                const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
+                const hasGps = Boolean(o.customerLocationUrl || o.hasCustomerLocation);
+
+                const bannerStyle = getHeaderBannerStyleMandoub(o.orderStatus);
 
                 return (
                   <div
@@ -405,11 +647,11 @@ function MandoubFullBlockCardGrid({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-2xl bg-[#FFFDF9] dark:bg-slate-900 p-3.5 sm:p-4 shadow-[0_4px_16px_rgba(201,168,106,0.18)] hover:shadow-[0_8px_24px_rgba(201,168,106,0.28)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3 ${
+                    className={`group relative rounded-[26px] bg-[#FFFFFF] dark:bg-slate-900 p-4 sm:p-5 shadow-[0_6px_20px_rgba(201,168,106,0.22)] hover:shadow-[0_10px_28px_rgba(201,168,106,0.32)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3.5 border border-[#C9A86A]/40 ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                   >
-                    {/* إطار الزوايا المقعرة المزدوج الفاخر مطابق للصورة */}
+                    {/* إطار الزوايا المقعرة المزدوج الفاخر مطابق للصورة 100% */}
                     <RoyalScallopedCardBorder />
 
                     {/* البادجات المالية العائمة أعلى الكرت */}
@@ -417,10 +659,21 @@ function MandoubFullBlockCardGrid({
                       <MandoubCardMoneyBadges o={o} />
                     </div>
 
-                    {/* 1. السطر العلوي: رقم الطلب # + شارة الوجهة المخملية العنابية في الوسط + شارة الحالة أو أزرار الترتيب */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* أقصى اليمين: رقم الطلب + خانة التحديد السريع / أزرار الترتيب */}
-                      <div className="flex items-center gap-1 shrink-0">
+                    {/* 1. السطر العلوي: رقم الطلب + الزر المعلق (عكسي) + بلوك اسم المحل / الوجهة الملون حسب الحالة + شارة الحالة أو الترتيب */}
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                      {/* اليمين: بلوك اسم المحل / الوجهة الملون حسب الحالة */}
+                      <div
+                        className="flex-1 min-w-0 rounded-full py-1.5 px-3 text-center font-black text-xs sm:text-[14px] text-white truncate border-2 border-[#C9A86A]"
+                        style={bannerStyle}
+                        title={headerTextStr}
+                      >
+                        <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[#FFF8F0]">
+                          {headerTextStr}
+                        </span>
+                      </div>
+
+                      {/* اليسار: كبسولة رقم الطلب الهندسية + الزر المعلق للطلب العكسي */}
+                      <div className="relative shrink-0 flex items-center gap-1.5">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -429,6 +682,7 @@ function MandoubFullBlockCardGrid({
                             className="size-4.5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
                         )}
+
                         {isSortingMode && moveRow && !isDelivered && (
                           <div className="flex items-center gap-1">
                             <button
@@ -449,43 +703,65 @@ function MandoubFullBlockCardGrid({
                             </button>
                           </div>
                         )}
-                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight font-mono">
-                          #{o.shortId}
-                        </span>
-                      </div>
 
-                      {/* الوسط: شارة الوجهة المخملية العنابية الفاخرة */}
-                      <div
-                        className="flex-1 min-w-0 rounded-full px-2.5 py-1 text-center font-black text-xs sm:text-[13px] text-white truncate shadow-xs border border-[#C9A86A]"
-                        style={{
-                          background: "linear-gradient(180deg, #6B1515 0%, #4A0E0E 100%)",
-                          boxShadow: "0 2px 4px rgba(74,14,14,0.35), inset 0 1px 1px rgba(255,255,255,0.2)",
-                        }}
-                        title={headerTextStr}
-                      >
-                        {headerTextStr}
-                      </div>
+                        <div className="relative">
+                          {/* كبسولة رقم الطلب الهندسية المشطوفة */}
+                          <div
+                            className="h-8 px-3 rounded-xl flex items-center justify-center font-black font-mono text-sm sm:text-base border-2 border-[#C9A86A] shadow-sm select-none"
+                            style={{
+                              background: "radial-gradient(circle at 50% 30%, #0D4A36 0%, #05281C 100%)",
+                              color: "#F5D77F",
+                              boxShadow: "0 2px 6px rgba(5,40,28,0.4), inset 0 1px 2px rgba(255,255,255,0.3)",
+                            }}
+                          >
+                            {o.shortId}
+                          </div>
 
-                      {/* اليسار: شارة حالة الطلب المصغرة كبسولة فاخرة */}
-                      <div className="shrink-0">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black text-white shadow-xs border border-[#C9A86A]/60 ${
-                            isAssigned
-                              ? "bg-red-600"
-                              : isDelivering
-                              ? "bg-amber-600"
-                              : isDelivered
-                              ? "bg-emerald-600"
-                              : "bg-slate-600"
-                          }`}
-                        >
-                          {isAssigned ? "بانتظار المندوب" : isDelivering ? "مستلم" : isDelivered ? "مسلّم" : STATUS_AR[o.orderStatus] ?? o.orderStatus}
-                        </span>
+                          {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
+                          {isReverse && (
+                            <div
+                              className="absolute -bottom-3 -right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md select-none overflow-hidden"
+                              style={{
+                                background: "radial-gradient(circle at 40% 30%, #157347 0%, #0D4A36 50%, #042116 100%)",
+                                border: "2px solid #C9A86A",
+                                boxShadow: "0 3px 6px rgba(0,0,0,0.4), inset 0 1.5px 2px rgba(255,255,255,0.6)",
+                              }}
+                              title="طلب عكسي 📦⤺"
+                            >
+                              <div
+                                className="pointer-events-none absolute top-0.5 inset-x-1 h-[40%] rounded-t-full opacity-80"
+                                style={{
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
+                                }}
+                              />
+                              <span className="relative z-10 text-white text-[11px] font-black leading-none drop-shadow-sm">
+                                ⤺📦
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* شارة حالة الطلب المصغرة كبسولة فاخرة */}
+                        <div className="shrink-0">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black text-white shadow-xs border border-[#C9A86A]/60 ${
+                              isAssigned
+                                ? "bg-red-600"
+                                : isDelivering
+                                ? "bg-amber-600"
+                                : isDelivered
+                                ? "bg-emerald-600"
+                                : "bg-slate-600"
+                            }`}
+                          >
+                            {isAssigned ? "بانتظار المندوب" : isDelivering ? "مستلم" : isDelivered ? "مسلّم" : STATUS_AR[o.orderStatus] ?? o.orderStatus}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + الدائرة الزمردية المركزية الضخمة + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between py-0.5 px-1">
+                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + الدائرة الزمردية المركزية الضخمة (3D) + التوقيت يساراً */}
+                    <div className="relative z-10 flex items-center justify-between py-1 px-1">
                       {/* النص الأيمن (نوع البضاعة) */}
                       <div className="text-sm sm:text-base font-black text-slate-900 dark:text-[#F5D77F] text-center w-[95px] sm:w-[110px] leading-snug truncate">
                         {displayGoodsType}
@@ -496,32 +772,37 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* الدائرة الزمردية المركزية الضخمة برقم السعر الذهبي البارز اللامع */}
-                      <div className="relative shrink-0">
+                      {/* الدائرة الزمردية المركزية الضخمة ثلاثية الأبعاد برقم السعر الذهبي البارز اللامع */}
+                      <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full border-[2.5px] border-[#C9A86A] flex items-center justify-center relative shadow-[0_4px_16px_rgba(10,61,46,0.35)]"
+                          className="w-[74px] h-[74px] sm:w-[82px] sm:h-[82px] rounded-full flex items-center justify-center relative select-none"
                           style={{
-                            background: "radial-gradient(circle at 45% 40%, #155E45 0%, #0A3D2E 60%, #05241B 100%)",
+                            background: "radial-gradient(circle at 38% 30%, #157347 0%, #0D4A36 45%, #05281C 80%, #021710 100%)",
+                            border: "3px solid #C9A86A",
+                            boxShadow: "0 6px 16px rgba(2,23,16,0.4), inset 0 3px 4px rgba(255,255,255,0.6), inset 0 -4px 6px rgba(0,0,0,0.7)",
                           }}
                         >
+                          {/* لمعة زجاجية ثلاثية الأبعاد علوية */}
+                          <div
+                            className="pointer-events-none absolute top-1 inset-x-2.5 h-[42%] rounded-t-full opacity-70"
+                            style={{
+                              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
+                            }}
+                          />
                           <div className="absolute inset-1 rounded-full border border-[#F5D77F]/30 pointer-events-none" />
                           <span
-                            className="text-[24px] sm:text-[28px] font-black leading-none select-none font-mono drop-shadow-sm"
+                            className="text-[26px] sm:text-[32px] font-black leading-none font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
                             style={{
-                              background: "linear-gradient(180deg, #FFF5DF 0%, #F5D77F 50%, #C9A86A 100%)",
-                              WebkitBackgroundClip: "text",
-                              WebkitTextFillColor: "transparent",
+                              color: "#F5D77F",
                             }}
                           >
                             {numericPrice || "—"}
                           </span>
                         </div>
-                        <span className="absolute -top-1 -right-1 text-[11px] text-[#F5D77F]">✦</span>
-                        <span className="absolute -bottom-1 -left-1 text-[11px] text-[#F5D77F]">✦</span>
                       </div>
 
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
-                      <div className="text-xs sm:text-[13px] font-black text-[#7A1F1F] dark:text-rose-400 text-center w-[95px] sm:w-[110px] leading-snug">
+                      <div className="text-xs sm:text-[13px] font-black text-[#8B1A1A] dark:text-rose-400 text-center w-[95px] sm:w-[110px] leading-snug">
                         {o.orderNoteTime || o.timeLine || "فوري"}
                         {isPrepaid && (
                           <span className="block text-[10px] text-emerald-700 dark:text-emerald-400 font-black mt-0.5">
@@ -531,203 +812,126 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 3. سطر هاتف الزبون العاجي المذهب + أزرار المندوب السريعة المذهبة */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {/* كبسولة الهاتف العاجية المذهبة الفاخرة */}
-                      <div
-                        className="flex-1 flex items-center gap-2 rounded-full px-3 py-1 border border-[#C9A86A] shadow-2xs"
-                        style={{
-                          background: "linear-gradient(180deg, #F3E4C8 0%, #DFC99E 100%)",
-                        }}
-                      >
-                        <div
-                          className="w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-xs shrink-0"
-                          style={{
-                            background: "linear-gradient(135deg, #E6BA65 0%, #B88931 100%)",
-                          }}
-                        >
-                          <span className="text-[10px] text-white">📞</span>
-                        </div>
-                        <span className="text-xs sm:text-sm font-mono font-black text-slate-900 tracking-tight">
-                          {o.customerPhone || o.phoneLine || "—"}
-                        </span>
+                    {/* 3. القسم السفلي للكرت: الأزرار الزمردية ثلاثية الأبعاد يساراً + كبسولة الهاتف المجمعة يميناً */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليسرى: الأزرار الزمردية ثلاثية الأبعاد (استلام / تسليم / وجهتين) */}
+                      <div className="flex items-center gap-2">
+                        {/* زر وجهتين 📦➔ */}
+                        {isDoubleRouteOrder && (
+                          <GlassOrbButton3D title="طلب وجهتين" size="md">
+                            <span className="text-sm">📦➔</span>
+                          </GlassOrbButton3D>
+                        )}
+
+                        {/* زر استلام ⚡ */}
+                        {!isSortingMode && isAssigned && (
+                          <GlassOrbButton3D
+                            onClick={() => setPickupOrder(o)}
+                            title="استلام الشحنة من المحل ⚡"
+                            size="md"
+                            className="px-2.5 w-auto h-9 min-w-[54px]"
+                          >
+                            <span className="text-xs font-black text-white">استلام</span>
+                          </GlassOrbButton3D>
+                        )}
+
+                        {/* زر تسليم 🫴 */}
+                        {!isSortingMode && isDelivering && (
+                          <GlassOrbButton3D
+                            onClick={() => setDeliveryOrder(o)}
+                            title="تسليم الشحنة للزبون 🫴"
+                            size="md"
+                            className="px-2.5 w-auto h-9 min-w-[54px]"
+                          >
+                            <span className="text-xs font-black text-white">تسليم</span>
+                          </GlassOrbButton3D>
+                        )}
+
+                        {!isSortingMode && isDelivered && (
+                          <span className="h-9 px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-xs flex items-center gap-1">
+                            <span>✓</span>
+                            <span>مسلّم</span>
+                          </span>
+                        )}
                       </div>
 
-                      {/* أزرار المندوب السريعة المذهبة (واتساب، اتصال، كاميرا، بصمة) */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* زر اتصال سريع */}
-                        {(o.customerPhone || o.phoneLine) && (
-                          <a
-                            href={`tel:${o.customerPhone || o.phoneLine}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7.5 h-7.5 rounded-full text-[#0A3D2E] flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
+                      {/* الجهة اليمنى: كبسولة الهاتف العاجية المجمعة الفاخرة */}
+                      <div
+                        className="flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-3 py-1 border border-[#C9A86A] shadow-2xs"
+                        style={{
+                          background: "linear-gradient(180deg, #F8EFE2 0%, #EBDBC1 100%)",
+                          boxShadow: "0 2px 5px rgba(201,168,106,0.25), inset 0 1px 1px rgba(255,255,255,0.8)",
+                        }}
+                      >
+                        {/* أيقونة ورقم الهاتف */}
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className="w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
                             style={{
-                              background: "linear-gradient(180deg, #F5D77F 0%, #C9A86A 100%)",
-                              boxShadow: "0 2px 4px rgba(201,168,106,0.35)",
+                              background: "radial-gradient(circle at 35% 30%, #FFE599 0%, #D4AF37 60%, #9E7420 100%)",
+                              border: "1px solid #C9A86A",
                             }}
+                          >
+                            <span className="text-[10px] text-[#3D2800]">📞</span>
+                          </div>
+                          <span className="text-xs sm:text-sm font-mono font-black text-slate-900 tracking-tight select-all">
+                            {o.customerPhone || o.phoneLine || "—"}
+                          </span>
+                        </div>
+
+                        {/* زر اللوكيشن الدائري الأحمر الزجاجي 3D */}
+                        <RedGlassOrbButton3D
+                          href={hasGps ? o.customerLocationUrl || "#" : null}
+                          title={hasGps ? "فتح موقع الزبون 📍" : "بدون لوكيشن ⚠️"}
+                        />
+
+                        {/* زر اتصال هاتفي سريع */}
+                        {(o.customerPhone || o.phoneLine) && (
+                          <GoldOrbButton3D
+                            href={`tel:${o.customerPhone || o.phoneLine}`}
                             title="اتصال هاتفي سريع"
+                            variant="gold"
                           >
                             📞
-                          </a>
+                          </GoldOrbButton3D>
                         )}
 
                         {/* زر واتساب سريع */}
                         {(o.customerPhone || o.phoneLine) && (
-                          <a
+                          <GoldOrbButton3D
                             href={`https://wa.me/${(o.customerPhone || o.phoneLine).replace(/[^0-9]/g, "").replace(/^0/, "964")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7.5 h-7.5 rounded-full text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
-                            style={{
-                              background: "linear-gradient(180deg, #2ECC71 0%, #27AE60 100%)",
-                              boxShadow: "0 2px 4px rgba(39,174,96,0.35)",
-                            }}
                             title="مراسلة عبر واتساب"
+                            variant="green"
                           >
                             💬
-                          </a>
+                          </GoldOrbButton3D>
                         )}
 
                         {/* زر صورة الباب إن وجد */}
                         {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl) && (
-                          <a
+                          <GoldOrbButton3D
                             href={o.customerDoorPhotoUrl || o.shopDoorPhotoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7.5 h-7.5 rounded-full text-[#F5D77F] flex items-center justify-center border border-[#C9A86A] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
-                            style={{
-                              background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                              boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                            }}
                             title="عرض صورة الباب"
+                            variant="gold"
                           >
                             📷
-                          </a>
+                          </GoldOrbButton3D>
                         )}
 
                         {/* زر البصمة الصوتية إن وجد */}
                         {(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl) && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                          <GoldOrbButton3D
+                            onClick={() => {
                               const sound = new Audio(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl);
                               sound.play().catch(() => {});
                             }}
-                            className="w-7.5 h-7.5 rounded-full text-white flex items-center justify-center border border-[#FFF0D0] text-xs font-black shadow-xs hover:scale-105 active:scale-95 transition"
-                            style={{
-                              background: "linear-gradient(180deg, #9B59B6 0%, #8E44AD 100%)",
-                              boxShadow: "0 2px 4px rgba(142,68,173,0.35)",
-                            }}
                             title="تشغيل البصمة الصوتية"
+                            variant="purple"
                           >
                             🎤
-                          </button>
+                          </GoldOrbButton3D>
                         )}
                       </div>
-                    </div>
-
-                    {/* 4. الشريط السفلي للكرت: أزرار الاستلام والتسليم + وجهتين + بدون لوكيشن */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-end gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                      {/* زر استلام الشحنة ⚡ */}
-                      {!isSortingMode && isAssigned && (
-                        <button
-                          type="button"
-                          onClick={() => setPickupOrder(o)}
-                          className="h-[30px] sm:h-[32px] px-3.5 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
-                          style={{
-                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                          }}
-                          title="استلام الشحنة من المحل ⚡"
-                        >
-                          <span className="text-[#F5D77F]">⚡</span>
-                          <span>استلام</span>
-                        </button>
-                      )}
-
-                      {/* زر تسليم للزبون 🫴 */}
-                      {!isSortingMode && isDelivering && (
-                        <button
-                          type="button"
-                          onClick={() => setDeliveryOrder(o)}
-                          className="h-[30px] sm:h-[32px] px-3.5 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
-                          style={{
-                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                          }}
-                          title="تسليم الشحنة للزبون 🫴"
-                        >
-                          <span className="text-[#F5D77F]">🫴</span>
-                          <span>تسليم</span>
-                        </button>
-                      )}
-
-                      {!isSortingMode && isDelivered && (
-                        <span className="h-[30px] sm:h-[32px] px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-xs flex items-center gap-1">
-                          <span>✓</span>
-                          <span>تم التسليم</span>
-                        </span>
-                      )}
-
-                      {/* زر وجهتين ➔ */}
-                      {isDoubleRouteOrder && (
-                        <span
-                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
-                          style={{
-                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                          }}
-                        >
-                          <span>وجهتين</span>
-                          <span className="text-[#F5D77F]">➔</span>
-                        </span>
-                      )}
-
-                      {/* زر بدون لوكيشن / لوكيشن 📍 */}
-                      {o.customerLocationUrl ? (
-                        <a
-                          href={o.customerLocationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
-                          style={{
-                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                          }}
-                          title="فتح لوكيشن الزبون"
-                        >
-                          <span>📍</span>
-                          <span>لوكيشن</span>
-                        </a>
-                      ) : o.hasCustomerLocation ? (
-                        <span
-                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
-                          style={{
-                            background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                            boxShadow: "0 2px 4px rgba(6,40,29,0.35)",
-                          }}
-                          title="لوكيشن متوفر"
-                        >
-                          <span>📍</span>
-                          <span>لوكيشن</span>
-                        </span>
-                      ) : (
-                        <span
-                          className="h-[30px] sm:h-[32px] px-3 rounded-full text-white text-xs font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs"
-                          style={{
-                            background: "linear-gradient(180deg, #6B1515 0%, #4A0E0E 100%)",
-                            boxShadow: "0 2px 4px rgba(74,14,14,0.35)",
-                          }}
-                          title="الزبون لا يملك لوكيشن ⚠️"
-                        >
-                          <span>📍</span>
-                          <span>بدون لوكيشن</span>
-                        </span>
-                      )}
                     </div>
 
                   </div>
