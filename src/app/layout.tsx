@@ -86,6 +86,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             --chosen-font: ${displayFont}, Inter, system-ui, -apple-system, sans-serif;
           }
         `}} />
+        <link
+          rel="preload"
+          href="/images/order-luxury/order-card-frame.webp"
+          as="image"
+          type="image/webp"
+        />
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>

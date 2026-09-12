@@ -769,43 +769,22 @@ function GoldOrbButton3D({
   );
 }
 
-function getHeaderBannerStyle(orderStatus: string) {
+function getHeaderBannerWebp(orderStatus: string) {
   switch (orderStatus) {
     case "pending":
-      // الأزرق الفاتح / السماوي الفاخر للطلب الجديد
-      return {
-        background: "linear-gradient(180deg, #0284C7 0%, #0369A1 50%, #075985 100%)",
-        boxShadow: "0 3px 8px rgba(7,89,133,0.4), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)",
-      };
+      // الأزرق الفاتح للطلب الجديد
+      return "/images/order-luxury/header-new.webp";
     case "assigned":
-      // الأحمر / العنابي المخملي للطلب المسند
-      return {
-        background: "linear-gradient(180deg, #7F1D1D 0%, #5B0C0C 50%, #380808 100%)",
-        boxShadow: "0 3px 8px rgba(56,8,8,0.4), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3)",
-      };
+      // الأحمر للمسند للمندوب
+      return "/images/order-luxury/header-assigned.webp";
     case "delivering":
-      // الأصفر / الكهرماني الذهبي للطلب المستلم
-      return {
-        background: "linear-gradient(180deg, #D97706 0%, #B45309 50%, #78350F 100%)",
-        boxShadow: "0 3px 8px rgba(120,53,15,0.4), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)",
-      };
+      // الأصفر للمستلم من قبل المندوب
+      return "/images/order-luxury/header-received.webp";
     case "delivered":
-      // الأزرق النيلي الملكي الداكن للطلب المسلم
-      return {
-        background: "linear-gradient(180deg, #1E3A8A 0%, #172554 100%)",
-        boxShadow: "0 3px 8px rgba(23,37,84,0.4), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3)",
-      };
-    case "cancelled":
-      // رمادي داكن فخم للمرفوض
-      return {
-        background: "linear-gradient(180deg, #475569 0%, #1E293B 100%)",
-        boxShadow: "0 3px 8px rgba(30,41,59,0.4), inset 0 1px 2px rgba(255,255,255,0.2)",
-      };
+      // الأخضر / الأزرق النيلي للمسلم
+      return "/images/order-luxury/header-delivered.webp";
     default:
-      return {
-        background: "linear-gradient(180deg, #7F1D1D 0%, #5B0C0C 50%, #380808 100%)",
-        boxShadow: "0 3px 8px rgba(56,8,8,0.4), inset 0 1px 2px rgba(255,255,255,0.3)",
-      };
+      return "/images/order-luxury/header-assigned.webp";
   }
 }
 
@@ -898,7 +877,7 @@ function TrackingCardsView({
               </div>
             </div>
 
-            {/* قائمة الكروت الملكية التابعة لهذا اليوم */}
+            {/* قائمة الكروت الملكية التابعة لهذا اليوم مع ملفات WEBP المكيشة */}
             <div className={gridColsClass}>
               {group.items.map((o) => {
                 const isPending = o.orderStatus === "pending";
@@ -942,7 +921,7 @@ function TrackingCardsView({
                       : false)
                 );
 
-                const bannerStyle = getHeaderBannerStyle(o.orderStatus);
+                const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
 
                 return (
                   <div
@@ -954,13 +933,13 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[26px] bg-[#FFFFFF] p-4 sm:p-5 shadow-[0_6px_20px_rgba(201,168,106,0.22)] hover:shadow-[0_10px_28px_rgba(201,168,106,0.32)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3.5 border border-[#C9A86A]/40 ${
+                    className={`group relative rounded-[28px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_30px_rgba(201,168,106,0.3)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3.5 bg-white bg-no-repeat bg-[length:100%_100%] ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
+                    style={{
+                      backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
+                    }}
                   >
-                    {/* إطار الزوايا المقعرة المزدوج الفاخر مطابق للصورة 100% */}
-                    <RoyalScallopedCardBorder />
-
                     {/* البادجات المالية العائمة أعلى الكرت */}
                     <div className="absolute -top-3 left-14 z-20 pointer-events-none flex items-center gap-1 shrink-0">
                       <TrackingCardMoneyBadges o={o} />
@@ -968,18 +947,20 @@ function TrackingCardsView({
 
                     {/* 1. السطر العلوي: رقم الطلب + الزر المعلق (عكسي) + بلوك اسم المحل / الوجهة الملون حسب الحالة + زر إسناد للمندوب */}
                     <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل / الوجهة الملون حسب الحالة */}
+                      {/* اليمين: بلوك اسم المحل / الوجهة بصورة WEBP مكيشة موحدة والنص فوقها */}
                       <div
-                        className="flex-1 min-w-0 rounded-full py-1.5 px-3 text-center font-black text-xs sm:text-[14px] text-white truncate border-2 border-[#C9A86A]"
-                        style={bannerStyle}
+                        className="flex-1 min-w-0 h-10 sm:h-11 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        style={{
+                          backgroundImage: `url('${headerWebpBg}')`,
+                        }}
                         title={headerTextStr}
                       >
-                        <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[#FFF8F0]">
+                        <span className="font-black text-xs sm:text-[14px] text-white truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           {headerTextStr}
                         </span>
                       </div>
 
-                      {/* اليسار: كبسولة رقم الطلب الهندسية + الزر المعلق للطلب العكسي */}
+                      {/* اليسار: كبسولة رقم الطلب + الزر المعلق للطلب العكسي */}
                       <div className="relative shrink-0 flex items-center gap-1.5">
                         {showSelectColumn && (
                           <input
@@ -991,13 +972,13 @@ function TrackingCardsView({
                         )}
 
                         <div className="relative">
-                          {/* كبسولة رقم الطلب الهندسية المشطوفة */}
+                          {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
                           <div
-                            className="h-8 px-3 rounded-xl flex items-center justify-center font-black font-mono text-sm sm:text-base border-2 border-[#C9A86A] shadow-sm select-none"
+                            className="h-9 px-3.5 rounded-xl flex items-center justify-center font-black font-mono text-sm sm:text-base select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
                             style={{
-                              background: "radial-gradient(circle at 50% 30%, #0D4A36 0%, #05281C 100%)",
+                              backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
-                              boxShadow: "0 2px 6px rgba(5,40,28,0.4), inset 0 1px 2px rgba(255,255,255,0.3)",
+                              textShadow: "0 1px 3px rgba(0,0,0,0.7)",
                             }}
                           >
                             {o.orderNumber}
@@ -1006,24 +987,12 @@ function TrackingCardsView({
                           {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
                           {isReverse && (
                             <div
-                              className="absolute -bottom-3 -right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md select-none overflow-hidden"
+                              className="absolute -bottom-3 -right-2 z-20 w-7.5 h-7.5 rounded-full flex items-center justify-center shadow-md select-none bg-no-repeat bg-contain"
                               style={{
-                                background: "radial-gradient(circle at 40% 30%, #157347 0%, #0D4A36 50%, #042116 100%)",
-                                border: "2px solid #C9A86A",
-                                boxShadow: "0 3px 6px rgba(0,0,0,0.4), inset 0 1.5px 2px rgba(255,255,255,0.6)",
+                                backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
                               }}
                               title="طلب عكسي 📦⤺"
-                            >
-                              <div
-                                className="pointer-events-none absolute top-0.5 inset-x-1 h-[40%] rounded-t-full opacity-80"
-                                style={{
-                                  background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
-                                }}
-                              />
-                              <span className="relative z-10 text-white text-[11px] font-black leading-none drop-shadow-sm">
-                                ⤺📦
-                              </span>
-                            </div>
+                            />
                           )}
                         </div>
 
@@ -1032,15 +1001,15 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="h-8 px-2.5 rounded-full text-[11px] font-black flex items-center gap-1 border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition shrink-0"
+                            className="h-9 px-3 rounded-full text-[11px] font-black flex items-center justify-center gap-1 text-white shadow-xs hover:brightness-110 active:scale-95 transition shrink-0 bg-no-repeat bg-[length:100%_100%]"
                             style={{
-                              background: "linear-gradient(180deg, #0D4A36 0%, #06281D 100%)",
-                              boxShadow: "0 2px 4px rgba(6,40,29,0.35), inset 0 1px 1px rgba(255,255,255,0.2)",
+                              backgroundImage: hasAssignedCourier
+                                ? "url('/images/order-luxury/btn-assign-empty.webp')"
+                                : "url('/images/order-luxury/btn-assign.webp')",
                             }}
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
-                            <span className="text-xs">🚚</span>
-                            <span className="text-[#FFF8F0] max-w-[70px] truncate">
+                            <span className="text-[#FFF8F0] max-w-[75px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                               {hasAssignedCourier ? o.courierName : "إسناد"}
                             </span>
                           </button>
@@ -1048,7 +1017,7 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + الدائرة الزمردية المركزية الضخمة (3D) + التوقيت يساراً */}
+                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + دائرة السعر المكيشة الضخمة (WEBP) + التوقيت يساراً */}
                     <div className="relative z-10 flex items-center justify-between py-1 px-1">
                       {/* النص الأيمن (نوع البضاعة) */}
                       <div className="text-sm sm:text-base font-black text-slate-900 text-center w-[95px] sm:w-[110px] leading-snug truncate">
@@ -1060,26 +1029,16 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الدائرة الزمردية المركزية الضخمة ثلاثية الأبعاد برقم السعر الذهبي البارز اللامع */}
+                      {/* دائرة السعر المركزية المكيشة برقم السعر الذهبي فوقها كنص */}
                       <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className="w-[74px] h-[74px] sm:w-[82px] sm:h-[82px] rounded-full flex items-center justify-center relative select-none"
+                          className="w-[78px] h-[78px] sm:w-[86px] sm:h-[86px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-[0_6px_16px_rgba(0,0,0,0.3)]"
                           style={{
-                            background: "radial-gradient(circle at 38% 30%, #157347 0%, #0D4A36 45%, #05281C 80%, #021710 100%)",
-                            border: "3px solid #C9A86A",
-                            boxShadow: "0 6px 16px rgba(2,23,16,0.4), inset 0 3px 4px rgba(255,255,255,0.6), inset 0 -4px 6px rgba(0,0,0,0.7)",
+                            backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
                         >
-                          {/* لمعة زجاجية ثلاثية الأبعاد علوية */}
-                          <div
-                            className="pointer-events-none absolute top-1 inset-x-2.5 h-[42%] rounded-t-full opacity-70"
-                            style={{
-                              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.1) 80%, transparent 100%)",
-                            }}
-                          />
-                          <div className="absolute inset-1 rounded-full border border-[#F5D77F]/30 pointer-events-none" />
                           <span
-                            className="text-[26px] sm:text-[32px] font-black leading-none font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                            className="text-[28px] sm:text-[34px] font-black leading-none font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                             style={{
                               color: "#F5D77F",
                             }}
@@ -1100,9 +1059,9 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: الأزرار الزمردية ثلاثية الأبعاد يساراً + كبسولة الهاتف المجمعة يميناً */}
+                    {/* 3. القسم السفلي للكرت: الأزرار الزمردية يساراً + كبسولة هاتف الزبون وحامل الأزرار يميناً */}
                     <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                      {/* الجهة اليسرى: الأزرار الزمردية ثلاثية الأبعاد (استلام / تسليم / وجهتين) */}
+                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين بصور WEBP مكيشة */}
                       <div className="flex items-center gap-2">
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (
@@ -1113,58 +1072,64 @@ function TrackingCardsView({
 
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                          <GlassOrbButton3D
+                          <button
+                            type="button"
                             onClick={() => onAdminPickup(o)}
+                            className="h-10 px-3.5 rounded-full text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-[length:100%_100%]"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
+                            }}
                             title="استلام الطلب وتسجيل الصادر ⚡"
-                            size="md"
-                            className="px-2.5 w-auto h-9 min-w-[54px]"
                           >
-                            <span className="text-xs font-black text-white">استلام</span>
-                          </GlassOrbButton3D>
+                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">استلام</span>
+                          </button>
                         )}
 
                         {/* زر تسليم 🫴 */}
                         {onAdminDelivery && isDelivering && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                          <GlassOrbButton3D
+                          <button
+                            type="button"
                             onClick={() => onAdminDelivery(o)}
+                            className="h-10 px-3.5 rounded-full text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-[length:100%_100%]"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
+                            }}
                             title="تسليم الطلب وتسجيل الوارد 🫴"
-                            size="md"
-                            className="px-2.5 w-auto h-9 min-w-[54px]"
                           >
-                            <span className="text-xs font-black text-white">تسليم</span>
-                          </GlassOrbButton3D>
+                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">تسليم</span>
+                          </button>
                         )}
                       </div>
 
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية المجمعة الفاخرة */}
+                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص */}
                       <div
-                        className="flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-3 py-1 border border-[#C9A86A] shadow-2xs"
+                        className="flex items-center gap-1.5 sm:gap-2 rounded-full px-3 py-1.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                         style={{
-                          background: "linear-gradient(180deg, #F8EFE2 0%, #EBDBC1 100%)",
-                          boxShadow: "0 2px 5px rgba(201,168,106,0.25), inset 0 1px 1px rgba(255,255,255,0.8)",
+                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
                       >
-                        {/* أيقونة ورقم الهاتف */}
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className="w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                            style={{
-                              background: "radial-gradient(circle at 35% 30%, #FFE599 0%, #D4AF37 60%, #9E7420 100%)",
-                              border: "1px solid #C9A86A",
-                            }}
-                          >
-                            <span className="text-[10px] text-[#3D2800]">📞</span>
-                          </div>
+                        {/* رقم هاتف الزبون كنص حي فوق الصورة */}
+                        <div className="flex items-center gap-1.5 pr-1">
                           <span className="text-xs sm:text-sm font-mono font-black text-slate-900 tracking-tight select-all">
                             {o.customerPhone || "—"}
                           </span>
                         </div>
 
-                        {/* زر اللوكيشن الدائري الأحمر الزجاجي 3D */}
-                        <RedGlassOrbButton3D
-                          href={hasGps ? o.customerLocationUrl || "#" : null}
-                          title={hasGps ? "فتح موقع الزبون 📍" : "بدون لوكيشن ⚠️"}
-                        />
+                        {/* زر اللوكيشن 📍 */}
+                        {hasGps ? (
+                          <RedGlassOrbButton3D
+                            href={o.customerLocationUrl || "#"}
+                            title="فتح موقع الزبون 📍"
+                          />
+                        ) : (
+                          <div
+                            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+                            }}
+                            title="الزبون لا يملك لوكيشن ⚠️"
+                          />
+                        )}
 
                         {/* زر تعديل أسعار التجهيز 💰 */}
                         {hasPreparerPricing && (
@@ -1178,32 +1143,38 @@ function TrackingCardsView({
                         )}
 
                         {/* زر تعديل الطلب ✏️ */}
-                        <GoldOrbButton3D
+                        <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-105 active:scale-95 transition"
+                          style={{
+                            backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
+                          }}
                           title="تعديل الطلب ✏️"
-                          variant="gold"
-                        >
-                          ✏️
-                        </GoldOrbButton3D>
+                        />
 
                         {/* زر الرفض / الإرجاع ❌ */}
                         {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                          <GoldOrbButton3D
+                          <button
+                            type="button"
                             onClick={() => onRejectOrder(o)}
+                            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-105 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
+                            }}
                             title="رفض الطلب ❌"
-                            variant="cancel"
-                          >
-                            ✕
-                          </GoldOrbButton3D>
+                          />
                         )}
                         {onRestoreOrder && isCancelled && (
-                          <GoldOrbButton3D
+                          <button
+                            type="button"
                             onClick={() => onRestoreOrder(o)}
+                            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-105 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
+                            }}
                             title="إرجاع الطلب المرفوض إلى جديد 🔄"
-                            variant="restore"
-                          >
-                            🔄
-                          </GoldOrbButton3D>
+                          />
                         )}
                       </div>
                     </div>
@@ -1215,6 +1186,8 @@ function TrackingCardsView({
           </div>
         );
       })}
+
+
 
       {/* شريط عدد الطلبات في هذه الصفحة في الأسفل كما في الصورة */}
       <div className="pt-4 text-center font-black text-sm text-[#0A3D2E]">
