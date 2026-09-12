@@ -1121,10 +1121,10 @@ export function OrderTrackingBulkTable({
                   return !v;
                 })
               }
-              className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-black transition shadow-xs ${
+              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-black transition active:scale-95 shadow-xs ${
                 showQuickSelect
                   ? "bg-[#0A3D2E] border-[#C9A86A] text-[#F5D77F]"
-                  : "border-[#C9A86A]/70 bg-white text-[#0A3D2E] hover:border-[#C9A86A]"
+                  : "border-[#C9A86A]/70 bg-white text-[#0A3D2E] hover:border-[#C9A86A] hover:bg-[#FFF8F0]"
               }`}
             >
               <span>⚡ تحديد سريع</span>
@@ -1224,17 +1224,21 @@ export function OrderTrackingBulkTable({
       </div>
 
       {showQuickSelect && visibleIds.length > 0 && (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-          <p className="mb-2 text-xs font-bold text-slate-700">
-            اختر حالة و/أو مندوباً ثم اضغط «تحديد المطابقين»
-          </p>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-600">
+        <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-gradient-to-b from-[#FFFDF9] to-[#FFF8F0] p-2.5 sm:p-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-xs text-[#C9A86A]">⚜️</span>
+            <p className="text-[11px] sm:text-xs font-black text-[#0A3D2E]">
+              اختر حالة و/أو مندوباً ثم اضغط «تحديد المطابقين»:
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-end gap-1.5 sm:gap-2">
+            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
               الحالة الحالية
               <select
                 value={quickStatus}
                 onChange={(e) => setQuickStatus(e.target.value)}
-                className="min-h-[40px] rounded-xl border border-sky-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none"
+                className="h-8 sm:h-8.5 rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A] focus:ring-1 focus:ring-[#C9A86A]"
               >
                 {QUICK_STATUS_VALUES.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1243,12 +1247,13 @@ export function OrderTrackingBulkTable({
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-600">
+
+            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
               المندوب المسند
               <select
                 value={quickCourier}
                 onChange={(e) => setQuickCourier(e.target.value)}
-                className="min-h-[40px] min-w-[10rem] rounded-xl border border-sky-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none"
+                className="h-8 sm:h-8.5 min-w-[7.5rem] sm:min-w-[8.5rem] rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A] focus:ring-1 focus:ring-[#C9A86A]"
               >
                 <option value="any">أي مندوب</option>
                 {couriers.map((c) => (
@@ -1258,38 +1263,47 @@ export function OrderTrackingBulkTable({
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              onClick={selectMatchingQuickFilters}
-              className="min-h-[40px] rounded-xl bg-sky-700 px-3.5 py-2 text-sm font-bold text-white shadow-sm hover:bg-sky-800 active:scale-95"
-            >
-              تحديد المطابقين
-            </button>
-            <button
-              type="button"
-              onClick={selectAllVisible}
-              className="min-h-[40px] rounded-xl border border-sky-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-800 hover:bg-sky-50 active:scale-95"
-            >
-              تحديد الكل الظاهر
-            </button>
-            <button
-              type="button"
-              onClick={clearSelection}
-              className="min-h-[40px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 active:scale-95"
-            >
-              إفراغ التحديد
-            </button>
+
+            {/* أزرار الإجراء السريع بتصميم ملكي مصغر ومدمج */}
+            <div className="flex items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={selectMatchingQuickFilters}
+                className="h-8 sm:h-8.5 rounded-xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-3 py-1 text-xs font-black text-[#F5D77F] border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
+                title="تحديد الطلبات المطابقة للفلاتر"
+              >
+                ✨ تحديد المطابقين
+              </button>
+
+              <button
+                type="button"
+                onClick={selectAllVisible}
+                className="h-8 sm:h-8.5 rounded-xl border border-[#C9A86A]/70 bg-white px-2.5 py-1 text-xs font-black text-[#0A3D2E] hover:bg-[#FFF8F0] shadow-2xs active:scale-95 transition"
+                title="تحديد كل الطلبات الظاهرة"
+              >
+                تحديد الكل
+              </button>
+
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="h-8 sm:h-8.5 rounded-xl border border-rose-200 bg-white px-2 py-1 text-xs font-black text-rose-700 hover:bg-rose-50 shadow-2xs active:scale-95 transition"
+                title="إفراغ التحديد الحالي"
+              >
+                إفراغ
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {selectedCount ? (
-        <div className="fixed bottom-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 w-auto max-w-[calc(100vw-2rem)] md:max-w-5xl rounded-3xl border-2 border-sky-300 bg-white/95 backdrop-blur-md px-4 py-3.5 shadow-[0_15px_40px_rgba(14,165,233,0.22)] animate-in fade-in slide-in-from-bottom-8 duration-300" dir="rtl">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-center justify-between lg:justify-start gap-3 border-b lg:border-b-0 pb-2 lg:pb-0 border-slate-100">
+        <div className="fixed bottom-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 w-auto max-w-[calc(100vw-2rem)] md:max-w-5xl rounded-3xl border-2 border-[#C9A86A] bg-gradient-to-b from-white/95 to-[#FFF8F0]/95 backdrop-blur-md px-4 py-3 shadow-[0_15px_40px_rgba(10,61,46,0.18)] animate-in fade-in slide-in-from-bottom-8 duration-300" dir="rtl">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center justify-between lg:justify-start gap-3 border-b lg:border-b-0 pb-2 lg:pb-0 border-[#C9A86A]/20">
               <div>
-                <p className="text-sm font-black text-slate-800">
-                  تم اختيار <span className="text-lg font-extrabold text-sky-700">{selectedCount}</span> طلبية
+                <p className="text-xs sm:text-sm font-black text-[#0A3D2E]">
+                  تم اختيار <span className="text-base sm:text-lg font-black text-[#C9A86A]">{selectedCount}</span> طلبية
                 </p>
                 {bulkState.error ? (
                   <p className="mt-0.5 text-xs font-bold text-rose-600">
@@ -1297,31 +1311,31 @@ export function OrderTrackingBulkTable({
                   </p>
                 ) : null}
                 {bulkPending ? (
-                  <p className="mt-0.5 text-[11px] font-bold text-sky-850 animate-pulse">جارٍ حفظ التعديلات… ⏳</p>
+                  <p className="mt-0.5 text-[11px] font-bold text-[#0A3D2E] animate-pulse">جارٍ حفظ التعديلات… ⏳</p>
                 ) : null}
               </div>
               <button
                 type="button"
                 onClick={clearSelection}
-                className="lg:hidden flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-sm font-bold"
+                className="lg:hidden flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-xs font-bold"
                 title="إلغاء التحديد"
               >
                 ✕
               </button>
             </div>
 
-            <form action={bulkAction} className="flex flex-wrap items-end justify-center lg:justify-end gap-2.5">
+            <form action={bulkAction} className="flex flex-wrap items-end justify-center lg:justify-end gap-2">
               {selectedIdsArr.map((id) => (
                 <input key={id} type="hidden" name="orderIds" value={id} />
               ))}
 
-              <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-500">
+              <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
                 الحالة الجديدة
                 <select
                   name="targetStatus"
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value)}
-                  className="h-10 rounded-xl border border-sky-200 bg-white px-2.5 py-1 text-xs font-black text-slate-850 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  className="h-8.5 rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A]"
                 >
                   <option value="pending">قيد الانتظار (جديد)</option>
                   <option value="assigned">مسند للمندوب</option>
@@ -1333,13 +1347,13 @@ export function OrderTrackingBulkTable({
               </label>
 
               {needsCourier ? (
-                <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-500">
+                <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
                   المندوب المسند
                   <select
                     name="courierId"
                     value={courierId}
                     onChange={(e) => setCourierId(e.target.value)}
-                    className="h-10 min-w-[9.5rem] rounded-xl border border-sky-200 bg-white px-2.5 py-1 text-xs font-black text-slate-850 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    className="h-8.5 min-w-[8rem] rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A]"
                   >
                     <option value="">اختر مندوب للطلب…</option>
                     {couriers.map((c) => (
@@ -1354,16 +1368,16 @@ export function OrderTrackingBulkTable({
               )}
 
               {needsCourier && (
-                <div className="flex h-10 items-center gap-2 bg-sky-50 px-3 rounded-xl border border-sky-200">
-                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4.5 w-4.5 rounded border-sky-400 text-sky-600 focus:ring-sky-400" />
-                  <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-sky-950 cursor-pointer select-none">استلام مباشر ⚡</label>
+                <div className="flex h-8.5 items-center gap-1.5 bg-[#FFF8F0] px-2.5 rounded-xl border border-[#C9A86A]/50">
+                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4 w-4 rounded border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A]" />
+                  <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-[#0A3D2E] cursor-pointer select-none">استلام مباشر ⚡</label>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={bulkPending || (needsCourier && !courierId)}
-                className="h-10 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 text-xs font-black text-white shadow-md shadow-sky-200/80 ring-1 ring-sky-400/30 transition hover:from-sky-700 hover:to-cyan-700 active:scale-95 disabled:opacity-50"
+                className="h-8.5 rounded-xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-4 text-xs font-black text-[#F5D77F] border border-[#C9A86A] shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition"
               >
                 تطبيق الإجراء
               </button>
@@ -1371,7 +1385,7 @@ export function OrderTrackingBulkTable({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="hidden lg:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition"
+                className="hidden lg:flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition text-xs font-bold"
                 title="إلغاء التحديد وإفراغ القائمة"
               >
                 ✕
