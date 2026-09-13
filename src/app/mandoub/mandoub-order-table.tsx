@@ -636,22 +636,22 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-3 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل (سميك وممتلئ وغير ممتد زيادة عن اللزوم) */}
+                    <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                      {/* اليمين: بلوك اسم المحل (مزاح لليسار قليلاً ومسحوب عمودياً لزيادة سُمكه وفخامته) */}
                       <div
-                        className="flex-1 min-w-0 max-w-[68%] sm:max-w-[70%] h-11 sm:h-12 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        className="flex-1 min-w-0 max-w-[65%] sm:max-w-[68%] h-13 sm:h-14 rounded-full flex items-center justify-center px-4.5 mr-1.5 sm:mr-2.5 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
                         title={headerTextStr}
                       >
-                        <span className="font-black text-xs sm:text-[14px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        <span className="font-black text-xs sm:text-[15px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                           {headerTextStr}
                         </span>
                       </div>
 
-                      {/* اليسار: كبسولة رقم الطلب مسحوبة للداخل ومتناسقة تماماً مع الإطار */}
-                      <div className="relative shrink-0 flex items-center gap-1.5">
+                      {/* اليسار: كبسولة رقم الطلب مسحوبة لليمين باتجاه الداخل لتستقر داخل الإطار تماماً */}
+                      <div className="relative shrink-0 flex items-center gap-1.5 ml-2.5 sm:ml-3.5">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -685,7 +685,7 @@ function MandoubFullBlockCardGrid({
                         <div className="relative">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
                           <div
-                            className="h-8.5 sm:h-9.5 px-3 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
+                            className="h-9 sm:h-10 px-3.5 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
