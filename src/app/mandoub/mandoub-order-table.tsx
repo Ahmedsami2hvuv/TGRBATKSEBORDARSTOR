@@ -622,40 +622,40 @@ function MandoubFullBlockCardGrid({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[28px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_30px_rgba(201,168,106,0.3)] transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between space-y-3.5 bg-white bg-no-repeat bg-[length:100%_100%] ${
+                    className={`group relative rounded-[20px] p-2.5 sm:p-3 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2 bg-white bg-no-repeat bg-[length:100%_100%] ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "380px",
+                      minHeight: "220px",
                     }}
                   >
                     {/* البادجات المالية العائمة أعلى الكرت */}
-                    <div className="absolute -top-3 left-14 z-20 pointer-events-none flex items-center gap-1 shrink-0">
+                    <div className="absolute -top-2.5 left-8 z-20 pointer-events-none flex items-center gap-1 shrink-0">
                       <MandoubCardMoneyBadges o={o} />
                     </div>
 
                     {/* 1. السطر العلوي: رقم الطلب يساراً + الزر المعلق + بلوك اسم المحل / الوجهة يميناً */}
-                    <div className="relative z-10 flex items-center justify-between gap-3 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* اليمين: بلوك اسم المحل / الوجهة */}
                       <div
-                        className="flex-1 min-w-0 h-11 sm:h-12 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        className="flex-1 min-w-0 h-8 sm:h-9 rounded-full flex items-center justify-center px-3 bg-no-repeat bg-[length:100%_100%] select-none shadow-2xs"
                         style={bannerStyle}
                         title={headerTextStr}
                       >
-                        <span className="font-black text-sm sm:text-[15px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        <span className="font-black text-xs sm:text-[13px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           {headerTextStr}
                         </span>
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب + التحديد أو الترتيب */}
-                      <div className="relative shrink-0 flex items-center gap-1.5">
+                      <div className="relative shrink-0 flex items-center gap-1">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
                             checked={selected}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
-                            className="size-4.5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
+                            className="size-4 rounded border border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
                         )}
 
@@ -664,7 +664,7 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "up")}
-                              className="flex size-6.5 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs text-xs"
+                              className="flex size-5.5 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-[10px]"
                               title="تحريك للأعلى"
                             >
                               ▲
@@ -672,7 +672,7 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "down")}
-                              className="flex size-6.5 items-center justify-center rounded-lg bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-xs text-xs"
+                              className="flex size-5.5 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-[10px]"
                               title="تحريك للأسفل"
                             >
                               ▼
@@ -683,11 +683,11 @@ function MandoubFullBlockCardGrid({
                         <div className="relative">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
                           <div
-                            className="h-10 sm:h-11 px-3.5 rounded-xl flex items-center justify-center font-black font-mono text-sm sm:text-base select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
+                            className="h-7 sm:h-8 px-2.5 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
-                              textShadow: "0 1px 3px rgba(0,0,0,0.7)",
+                              textShadow: "0 1px 2px rgba(0,0,0,0.7)",
                             }}
                           >
                             {o.shortId}
@@ -696,7 +696,7 @@ function MandoubFullBlockCardGrid({
                           {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
                           {isReverse && (
                             <div
-                              className="absolute -bottom-3 -right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center shadow-md select-none bg-no-repeat bg-contain"
+                              className="absolute -bottom-2 -right-1.5 z-20 w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-xs select-none bg-no-repeat bg-contain"
                               style={{
                                 backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
                               }}
@@ -708,7 +708,7 @@ function MandoubFullBlockCardGrid({
                         {/* شارة حالة الطلب المصغرة */}
                         <div className="shrink-0">
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black text-white shadow-xs border border-[#C9A86A]/60 ${
+                            className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black text-white shadow-2xs border border-[#C9A86A]/60 ${
                               isAssigned
                                 ? "bg-red-600"
                                 : isDelivering
@@ -724,13 +724,13 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة والزبون يميناً + دائرة السعر المكيشة الضخمة (WEBP) + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between py-2 px-1">
+                    {/* 2. القسم الأوسط: نوع البضاعة والزبون يميناً + دائرة السعر المكيشة (WEBP) + التوقيت يساراً */}
+                    <div className="relative z-10 flex items-center justify-between py-1 px-1">
                       {/* النص الأيمن (نوع البضاعة والزبون) */}
-                      <div className="text-sm sm:text-base font-black text-slate-900 dark:text-[#F5D77F] text-center w-[100px] sm:w-[130px] leading-snug truncate">
+                      <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-center w-[85px] sm:w-[110px] leading-snug truncate">
                         {displayGoodsType}
                         {o.customerName && (
-                          <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
+                          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
                             👤 {o.customerName}
                           </span>
                         )}
@@ -739,13 +739,13 @@ function MandoubFullBlockCardGrid({
                       {/* دائرة السعر المركزية المكيشة برقم السعر الذهبي فوقها كنص */}
                       <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-[0_6px_16px_rgba(0,0,0,0.3)]"
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
                         >
                           <span
-                            className="text-[30px] sm:text-[38px] font-black leading-none font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                            className="text-xl sm:text-2xl font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
                             style={{
                               color: "#F5D77F",
                             }}
@@ -756,26 +756,26 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
-                      <div className="text-xs sm:text-[14px] font-black text-[#8B0000] dark:text-rose-400 text-center w-[100px] sm:w-[130px] leading-snug">
+                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-400 text-center w-[85px] sm:w-[110px] leading-snug">
                         {o.orderNoteTime || o.timeLine || "فوري"}
                         {isPrepaid && (
-                          <span className="block text-[10px] text-emerald-700 dark:text-emerald-400 font-black mt-0.5">
+                          <span className="block text-[9px] text-emerald-700 dark:text-emerald-400 font-black mt-0.5">
                             (واصل)
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: الأزرار الكبيرة يساراً + كبسولة هاتف الزبون وحامل الأزرار يميناً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                    {/* 3. القسم السفلي للكرت: الأزرار يساراً + كبسولة هاتف الزبون وحامل الأزرار يميناً */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full text-[11px] font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
+                            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full text-[9px] font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -790,7 +790,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full text-[11px] font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
+                            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full text-[9px] font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -801,7 +801,7 @@ function MandoubFullBlockCardGrid({
                         )}
 
                         {!isSortingMode && isDelivered && (
-                          <span className="h-9 px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-xs flex items-center gap-1">
+                          <span className="h-7.5 px-2.5 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-[10px] shadow-2xs flex items-center gap-1">
                             <span>✓</span>
                             <span>مسلّم</span>
                           </span>
@@ -809,18 +809,18 @@ function MandoubFullBlockCardGrid({
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRouteOrder && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="md">
-                            <span className="text-sm">📦➔</span>
+                          <GlassOrbButton3D title="طلب وجهتين" size="sm">
+                            <span className="text-xs">📦➔</span>
                           </GlassOrbButton3D>
                         )}
                       </div>
 
                       {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص */}
                       <div
-                        className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 py-1 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
+                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                          minHeight: "44px",
+                          minHeight: "34px",
                         }}
                       >
                         {/* زر اللوكيشن 📍 */}
@@ -831,7 +831,7 @@ function MandoubFullBlockCardGrid({
                           />
                         ) : (
                           <div
-                            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
                             }}
@@ -876,8 +876,8 @@ function MandoubFullBlockCardGrid({
                         )}
 
                         {/* رقم هاتف الزبون كنص حي فوق الصورة */}
-                        <div className="flex items-center px-1">
-                          <span className="text-xs sm:text-sm font-mono font-black text-slate-900 tracking-tight select-all">
+                        <div className="flex items-center px-0.5">
+                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
                             {o.customerPhone || o.phoneLine || "—"}
                           </span>
                         </div>
