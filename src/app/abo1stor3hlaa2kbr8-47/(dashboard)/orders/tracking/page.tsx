@@ -320,6 +320,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
         summary: o.summary,
         preparerShoppingJson: o.preparerShoppingJson,
+        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
+        submissionSource: o.submissionSource,
         wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
         saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
         noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,

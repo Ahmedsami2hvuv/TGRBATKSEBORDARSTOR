@@ -909,16 +909,29 @@ function TrackingCardsView({
                 const hasAssignedCourier = Boolean(o.courierName && o.courierName !== "—" && o.courierName.trim() !== "");
 
                 const isPrepaid = Boolean(o.prepaidAll || o.totalLabel === "كل شي واصل" || o.totalLabel === "واصل");
+                const isAllPaid = Boolean(
+                  o.prepaidAll ||
+                  o.totalLabel === "كل شي واصل" ||
+                  o.totalLabel === "واصل" ||
+                  o.totalLabel?.includes("واصل") ||
+                  displayTotal === "كل شي واصل" ||
+                  displayTotal === "واصل" ||
+                  displayTotal?.includes("واصل")
+                );
                 const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
                 const hasGps = Boolean(o.hasCourierUploadedLocation || o.customerLocationUrl || !o.missingCustomerLocation);
                 const isDoubleRoute = Boolean(o.routeModeLabel === "وجهتين");
-                const hasPreparerPricing = Boolean(
-                  o.preparerShoppingJson &&
+                const isFromPreparer = Boolean(
+                  o.submittedByCompanyPreparerId ||
+                  o.submissionSource === "company_preparer" ||
+                  o.orderType?.includes("تجهيز") ||
+                  o.orderType?.includes("تسوق") ||
+                  (o.preparerShoppingJson &&
                     (typeof o.preparerShoppingJson === "object"
                       ? Object.keys(o.preparerShoppingJson).length > 0
                       : typeof o.preparerShoppingJson === "string"
                       ? (o.preparerShoppingJson as string).trim().length > 2
-                      : false)
+                      : false))
                 );
 
                 const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
@@ -954,15 +967,21 @@ function TrackingCardsView({
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
-                        title={headerTextStr}
                       >
-                        <span className="font-black text-[11px] sm:text-[13px] md:text-[14px] text-[#FFF8F0] truncate max-w-full text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] px-1">
+                        <span
+                          className="font-black text-sm sm:text-base leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
+                          style={{
+                            color: "#FFFFFF",
+                            textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                          }}
+                          title={headerTextStr}
+                        >
                           {headerTextStr}
                         </span>
                       </div>
 
-                      {/* اليسار: كبسولة رقم الطلب مسحوبة لليمين باتجاه الداخل لتستقر داخل الإطار تماماً */}
-                      <div className="relative shrink-0 flex items-center gap-1.5 ml-1.5 sm:ml-2">
+                      {/* اليسار: كبسولة رقم الطلب المكيشة + مربع الاختيار في أقصى اليسار */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -1014,14 +1033,31 @@ function TrackingCardsView({
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
                         >
-                          <span
-                            className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
-                            style={{
-                              color: "#F5D77F",
-                            }}
-                          >
-                            {numericPrice || "—"}
-                          </span>
+                          {isAllPaid ? (
+                            <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                              <span
+                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                كلشي
+                              </span>
+                              <span
+                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                واصل
+                              </span>
+                            </div>
+                          ) : (
+                            <span
+                              className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
+                              style={{
+                                color: "#F5D77F",
+                              }}
+                            >
+                              {numericPrice || "—"}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1080,16 +1116,18 @@ function TrackingCardsView({
                           />
                         )}
 
-                        {/* 4. زر تعديل أسعار التجهيز 💰 */}
-                        <Link
-                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
-                          }}
-                          title="تعديل تفاصيل وأسعار التجهيز 💰"
-                        />
+                        {/* 4. زر تعديل أسعار التجهيز 💰 (يظهر فقط لطلبات التجهيز) */}
+                        {isFromPreparer && (
+                          <Link
+                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
+                            }}
+                            title="تعديل تفاصيل وأسعار التجهيز 💰"
+                          />
+                        )}
 
                         {/* 5. زر تعديل الطلب ✏️ */}
                         <Link

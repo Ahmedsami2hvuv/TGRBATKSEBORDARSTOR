@@ -607,6 +607,15 @@ function MandoubFullBlockCardGrid({
                   : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
 
                 const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");
+                const isAllPaid = Boolean(
+                  o.prepaidAll ||
+                  displayTotal === "كل شي واصل" ||
+                  displayTotal === "واصل" ||
+                  displayTotal?.includes("واصل") ||
+                  o.priceStr === "كل شي واصل" ||
+                  o.priceStr === "واصل" ||
+                  o.priceStr?.includes("واصل")
+                );
                 const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
                 const hasGps = Boolean(o.customerLocationUrl || o.hasCustomerLocation);
 
@@ -741,14 +750,31 @@ function MandoubFullBlockCardGrid({
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
                         >
-                          <span
-                            className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
-                            style={{
-                              color: "#F5D77F",
-                            }}
-                          >
-                            {numericPrice || "—"}
-                          </span>
+                          {isAllPaid ? (
+                            <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                              <span
+                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                كلشي
+                              </span>
+                              <span
+                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                واصل
+                              </span>
+                            </div>
+                          ) : (
+                            <span
+                              className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
+                              style={{
+                                color: "#F5D77F",
+                              }}
+                            >
+                              {numericPrice || "—"}
+                            </span>
+                          )}
                         </div>
                       </div>
 

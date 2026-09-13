@@ -34,6 +34,8 @@ export type TrackingTableRow = {
   missingCustomerLocation: boolean;
   hasCourierUploadedLocation: boolean;
   preparerShoppingJson?: any;
+  submittedByCompanyPreparerId?: string | null;
+  submissionSource?: string | null;
   summary: string;
   /** مجموع الصادر (دفع للعميل) بالدينار — لعرضه "من الخارج" */
   pickupSumDinar?: number | null;
