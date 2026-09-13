@@ -773,10 +773,9 @@ function MandoubFullBlockCardGrid({
                     <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-4 sm:-mt-5 pt-0" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
-                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
+                        className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                          minHeight: "34px",
                         }}
                       >
                         {/* 1. زر اتصال هاتفي سريع (أقصى اليمين) */}
