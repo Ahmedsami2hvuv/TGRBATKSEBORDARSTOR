@@ -23,126 +23,19 @@ function navItemActive(pathname: string, href: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);
 }
 
-const TILE_COLORS: Record<string, {
-  active: string;
-  inactive: string;
-}> = {
-  home: {
-    active: "bg-sky-100/90 dark:bg-sky-950/60 border border-sky-400 dark:border-sky-400 text-sky-900 dark:text-sky-100 shadow-[0_0_12px_rgba(14,165,233,0.3)]",
-    inactive: "bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-900/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100/90 dark:hover:bg-sky-950/40 hover:border-sky-300 dark:hover:border-sky-800 hover:text-sky-850 dark:hover:text-sky-200"
-  },
-  store: {
-    active: "bg-blue-100/90 dark:bg-blue-950/60 border border-blue-400 dark:border-blue-400 text-blue-900 dark:text-blue-100 shadow-[0_0_12px_rgba(59,130,246,0.3)]",
-    inactive: "bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100/90 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-850 dark:hover:text-blue-200"
-  },
-  "admin-create-order": {
-    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
-    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
-  },
-  "new-orders": {
-    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
-    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
-  },
-  "order-tracking": {
-    active: "bg-purple-100/90 dark:bg-purple-950/60 border border-purple-400 dark:border-purple-400 text-purple-900 dark:text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.3)]",
-    inactive: "bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100/90 dark:hover:bg-purple-950/40 hover:border-purple-300 dark:hover:border-purple-800 hover:text-purple-850 dark:hover:text-purple-200"
-  },
-  shops: {
-    active: "bg-emerald-100/90 dark:bg-emerald-950/60 border border-emerald-400 dark:border-emerald-400 text-emerald-900 dark:text-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.3)]",
-    inactive: "bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/90 dark:hover:bg-emerald-950/40 hover:border-emerald-300 dark:hover:border-emerald-800 hover:text-emerald-850 dark:hover:text-emerald-200"
-  },
-  couriers: {
-    active: "bg-pink-100/90 dark:bg-pink-950/60 border border-pink-400 dark:border-pink-400 text-pink-900 dark:text-pink-100 shadow-[0_0_12px_rgba(236,72,153,0.3)]",
-    inactive: "bg-pink-50/60 dark:bg-pink-950/20 border border-pink-200/60 dark:border-pink-900/40 text-pink-700 dark:text-pink-300 hover:bg-pink-100/90 dark:hover:bg-pink-950/40 hover:border-pink-300 dark:hover:border-pink-800 hover:text-pink-850 dark:hover:text-pink-200"
-  },
-  preparers: {
-    active: "bg-teal-100/90 dark:bg-teal-950/60 border border-teal-400 dark:border-teal-400 text-teal-900 dark:text-teal-100 shadow-[0_0_12px_rgba(20,184,166,0.3)]",
-    inactive: "bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200/60 dark:border-teal-900/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100/90 dark:hover:bg-teal-950/40 hover:border-teal-300 dark:hover:border-teal-800 hover:text-teal-850 dark:hover:text-teal-200"
-  },
-  employees: {
-    active: "bg-violet-100/90 dark:bg-violet-950/60 border border-violet-400 dark:border-violet-400 text-violet-900 dark:text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.3)]",
-    inactive: "bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100/90 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-800 hover:text-violet-850 dark:hover:text-violet-200"
-  },
-  suppliers: {
-    active: "bg-rose-100/90 dark:bg-rose-950/60 border border-rose-400 dark:border-rose-400 text-rose-900 dark:text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.3)]",
-    inactive: "bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100/90 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-850 dark:hover:text-rose-200"
-  },
-  reports: {
-    active: "bg-lime-100/90 dark:bg-lime-950/60 border border-lime-400 dark:border-lime-400 text-lime-900 dark:text-lime-100 shadow-[0_0_12px_rgba(132,204,22,0.3)]",
-    inactive: "bg-lime-50/60 dark:bg-lime-950/20 border border-lime-200/60 dark:border-lime-900/40 text-lime-700 dark:text-lime-300 hover:bg-lime-100/90 dark:hover:bg-lime-950/40 hover:border-lime-300 dark:hover:border-lime-800 hover:text-lime-850 dark:hover:text-lime-200"
-  },
-  "credit-book": {
-    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
-    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
-  },
-  customers: {
-    active: "bg-fuchsia-100/90 dark:bg-fuchsia-950/60 border border-fuchsia-400 dark:border-fuchsia-400 text-fuchsia-900 dark:text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.3)]",
-    inactive: "bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100/90 dark:hover:bg-fuchsia-950/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-800 hover:text-fuchsia-850 dark:hover:text-fuchsia-200"
-  },
-  "archived-orders": {
-    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
-    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
-  },
-  "rejected-orders": {
-    active: "bg-red-100/90 dark:bg-red-950/60 border border-red-400 dark:border-red-400 text-red-900 dark:text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.3)]",
-    inactive: "bg-red-50/60 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-100/90 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-800 hover:text-red-850 dark:hover:text-red-200"
-  },
-  "legacy-kse-profiles-batch": {
-    active: "bg-yellow-100/90 dark:bg-yellow-950/60 border border-yellow-400 dark:border-yellow-400 text-yellow-900 dark:text-yellow-100 shadow-[0_0_12px_rgba(234,179,8,0.3)]",
-    inactive: "bg-yellow-50/60 dark:bg-yellow-950/20 border border-yellow-200/60 dark:border-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100/90 dark:hover:bg-yellow-950/40 hover:border-yellow-300 dark:hover:border-yellow-800 hover:text-yellow-850 dark:hover:text-yellow-200"
-  },
-  "new-customer-profile": {
-    active: "bg-cyan-100/90 dark:bg-cyan-950/60 border border-cyan-400 dark:border-cyan-400 text-cyan-900 dark:text-cyan-100 shadow-[0_0_12px_rgba(6,182,212,0.3)]",
-    inactive: "bg-cyan-50/60 dark:bg-cyan-950/20 border border-cyan-200/60 dark:border-cyan-900/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100/90 dark:hover:bg-cyan-950/40 hover:border-cyan-300 dark:hover:border-cyan-800 hover:text-cyan-850 dark:hover:text-cyan-200"
-  },
-  "wa-buttons": {
-    active: "bg-green-100/90 dark:bg-green-950/60 border border-green-400 dark:border-green-400 text-green-900 dark:text-green-100 shadow-[0_0_12px_rgba(34,197,94,0.3)]",
-    inactive: "bg-green-50/60 dark:bg-green-950/20 border border-green-200/60 dark:border-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-950/40 hover:border-green-300 dark:hover:border-green-800 hover:text-green-850 dark:hover:text-green-200"
-  },
-  "courier-map": {
-    active: "bg-sky-100/90 dark:bg-sky-950/60 border border-sky-400 dark:border-sky-400 text-sky-900 dark:text-sky-100 shadow-[0_0_12px_rgba(14,165,233,0.3)]",
-    inactive: "bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-900/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100/90 dark:hover:bg-sky-950/40 hover:border-sky-300 dark:hover:border-sky-800 hover:text-sky-850 dark:hover:text-sky-200"
-  },
-  regions: {
-    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
-    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
-  },
-  "super-search": {
-    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
-    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
-  },
-  "prep-notices": {
-    active: "bg-orange-100/90 dark:bg-orange-950/60 border border-orange-400 dark:border-orange-400 text-orange-900 dark:text-orange-100 shadow-[0_0_12px_rgba(249,115,22,0.3)]",
-    inactive: "bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40 text-orange-700 dark:text-orange-300 hover:bg-orange-100/90 dark:hover:bg-orange-950/40 hover:border-orange-300 dark:hover:border-orange-800 hover:text-orange-850 dark:hover:text-orange-200"
-  },
-  "ai-settings": {
-    active: "bg-fuchsia-100/90 dark:bg-fuchsia-950/60 border border-fuchsia-400 dark:border-fuchsia-400 text-fuchsia-900 dark:text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.3)]",
-    inactive: "bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100/90 dark:hover:bg-fuchsia-950/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-800 hover:text-fuchsia-850 dark:hover:text-fuchsia-200"
-  },
-  "notification-settings": {
-    active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
-    inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
-  },
-  settings: {
-    active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
-    inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
-  }
-};
-
 function getTileClasses(slug: string, active: boolean, isCompact: boolean, buttonShape: "square" | "rectangle"): string {
   const isSquare = buttonShape === "square" && !isCompact;
   const base = `inline-flex ${
-    isSquare ? "flex-col justify-center items-center gap-1.5 p-2 text-center" : "items-center gap-2 px-2.5"
+    isSquare ? "flex-col justify-center items-center gap-1.5 p-2 text-center" : "items-center gap-2 px-3"
   } ${
     isCompact ? "gap-0 px-2 justify-center" : ""
-  } rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full h-full`;
+  } rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full h-full`;
 
-  const colors = TILE_COLORS[slug] || {
-    active: "bg-purple-100/90 dark:bg-[#1e102a]/60 border border-purple-400 dark:border-[#e028ff] text-purple-900 dark:text-purple-150 shadow-[0_0_12px_rgba(224,40,255,0.3)]",
-    inactive: "bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100/90 dark:hover:bg-purple-950/40 hover:border-purple-300 dark:hover:border-purple-800 hover:text-purple-800 dark:hover:text-purple-200"
-  };
+  if (active) {
+    return `${base} bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-[0_4px_16px_rgba(10,61,46,0.3)] ring-1 ring-[#F5D77F]/30 font-black`;
+  }
 
-  return `${base} ${active ? colors.active : colors.inactive}`;
+  return `${base} bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] dark:hover:bg-[#12362a] shadow-2xs font-bold`;
 }
 
 export function AdminShell({
@@ -535,18 +428,18 @@ export function AdminShell({
         id="navToggleButton"
         type="button"
         onClick={() => setNavOpen((o) => !o)}
-        className="fixed start-4 top-4 z-[170] flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-[#09090b] px-2 text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
+        className="fixed start-4 top-3.5 z-[170] flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-3 text-[#F5D77F] shadow-md shadow-[#0A3D2E]/30 hover:brightness-110 active:scale-95 transition"
         title={navOpen ? "إخفاء القائمة" : "إظهار القائمة"}
       >
         <span className="sr-only">{navOpen ? "إخفاء القائمة" : "إظهار القائمة"}</span>
         <span className="text-sm font-black">{navOpen ? "✕" : "☰"}</span>
-        <span className="hidden md:inline text-xs font-bold">{navOpen ? "إخفاء" : "القائمة"}</span>
+        <span className="hidden md:inline text-xs font-black">{navOpen ? "إخفاء" : "القائمة"}</span>
       </button>
 
       {/* Mobile overlay backdrop (closes on click) */}
       {!isLg && navOpen ? (
         <div
-          className="fixed inset-0 z-[115] bg-slate-950/40 backdrop-blur-sm lg:hidden touch-none"
+          className="fixed inset-0 z-[115] bg-black/60 backdrop-blur-sm lg:hidden touch-none"
           onClick={() => setNavOpen(false)}
         />
       ) : null}
@@ -555,44 +448,62 @@ export function AdminShell({
       <aside
         ref={sidebarRef}
         className={`
-          fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
-          shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
+          fixed z-[160] flex flex-col border-e-2 border-[#C9A86A]/60
+          shadow-[4px_0_35px_rgba(10,61,46,0.25)] dark:shadow-[4px_0_35px_rgba(0,0,0,0.85)]
           ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
           top-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
-          bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md
+          bg-gradient-to-b from-[#FFFFFF] via-[#FFFDF9] to-[#FFF8F0] dark:from-[#081b14] dark:via-[#06140f] dark:to-[#040e0a]
         `}
         style={{ 
           width: navWidth
         }}
       >
-        <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
-          <div className="flex items-center gap-2 ms-28">
-            <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
-              <span className="text-black font-black text-xs">AK</span>
+        {/* رأس القائمة الملكي */}
+        <div className="flex h-16 w-full items-center justify-between px-4 border-b-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-white shrink-0 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 rounded-2xl bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] p-0.5 shadow-md shadow-[#0A3D2E]/30 items-center justify-center border border-[#F5D77F]">
+              <div className="size-full rounded-[14px] bg-[#0A3D2E] flex items-center justify-center text-[#F5D77F] font-black text-xs">
+                AK
+              </div>
             </div>
-            <span className="text-xs font-black text-slate-600 dark:text-slate-400">
-              أبو الأكبر للتوصيل
-            </span>
+            <div>
+              <span className="text-xs sm:text-sm font-black text-[#F5D77F] block leading-tight">
+                أبو الأكبر للتوصيل
+              </span>
+              <span className="text-[10px] font-bold text-emerald-200/80 block">
+                لوحة التحكم الإدارية ⚜️
+              </span>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setNavOpen(false)}
+            className="flex size-8 items-center justify-center rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] transition active:scale-90 text-sm font-black shadow-xs lg:hidden"
+            title="إغلاق القائمة"
+          >
+            ✕
+          </button>
         </div>
+
         <style dangerouslySetInnerHTML={{ __html: `
           .admin-sidebar-scroll::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
           }
           .admin-sidebar-scroll::-webkit-scrollbar-track {
             background: transparent;
           }
           .admin-sidebar-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(156, 163, 175, 0.5);
+            background-color: rgba(201, 168, 106, 0.4);
             border-radius: 20px;
           }
-          .dark .admin-sidebar-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(75, 85, 99, 0.5);
+          .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(201, 168, 106, 0.7);
           }
         `}} />
-        <nav className="admin-sidebar-scroll flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4">
+        <nav className="admin-sidebar-scroll flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-3.5">
           <div className={`grid w-full gap-2 content-start ${
             isCompact 
               ? "grid-cols-1" 
@@ -607,27 +518,32 @@ export function AdminShell({
               prefetch={false}
               title="الرئيسية"
               onClick={handleLinkClick}
-              className={getTileClasses("home", navItemActive(pathname, SECRET_ADMIN_PATH), isCompact, sidebarConfig.buttonShape)}
+              className={`inline-flex items-center gap-2 px-3 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full ${
+                navItemActive(pathname, SECRET_ADMIN_PATH)
+                  ? "bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md shadow-[#0A3D2E]/20 ring-1 ring-[#F5D77F]/30 font-black"
+                  : "bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] shadow-2xs font-bold"
+              }`}
               style={{
-                height: isCompact 
-                  ? 36 * itemScale 
-                  : sidebarConfig.buttonShape === "square" 
-                    ? undefined 
-                    : 36 * itemScale,
-                aspectRatio: !isCompact && sidebarConfig.buttonShape === "square" ? "1/1" : undefined,
-                fontSize: (!isCompact && sidebarConfig.buttonShape === "square" ? 10 : 12) * itemScale
+                height: 38 * itemScale,
+                fontSize: 12 * itemScale
               }}
             >
-              <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
-                <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
+              <span className="shrink-0 text-base" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
+                <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-5 h-5" />
               </span>
-              {isCompact ? null : <span className="leading-snug font-medium block whitespace-nowrap">الرئيسية</span>}
+              {isCompact ? null : <span className="leading-snug font-black block whitespace-nowrap">الرئيسية</span>}
             </Link>
+
             {isCompact ? null : (
-              <p className="col-span-full mt-2 px-1 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">
-                الأقسام
-              </p>
+              <div className="col-span-full mt-2 mb-1 flex items-center gap-2 px-1">
+                <span className="text-xs text-[#C9A86A]">⚜️</span>
+                <span className="text-[11px] font-black tracking-wider text-[#0A3D2E] dark:text-[#F5D77F]">
+                  الأقسام والخدمات
+                </span>
+                <div className="flex-1 h-px bg-[#C9A86A]/30" />
+              </div>
             )}
+
             {filteredTiles.map((tile) => {
               const href = tileHref(tile);
               const active = navItemActive(pathname, href);
@@ -642,52 +558,54 @@ export function AdminShell({
                   className={getTileClasses(tile.slug, active, isCompact, sidebarConfig.buttonShape)}
                   style={{
                     height: isCompact 
-                      ? 36 * itemScale 
+                      ? 38 * itemScale 
                       : sidebarConfig.buttonShape === "square" 
                         ? undefined 
-                        : 36 * itemScale,
+                        : 38 * itemScale,
                     aspectRatio: !isCompact && sidebarConfig.buttonShape === "square" ? "1/1" : undefined,
                     fontSize: (!isCompact && sidebarConfig.buttonShape === "square" ? 10 : 12) * itemScale
                   }}
                 >
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
-                    <DynamicIcon iconKey={tile.iconKey} config={icons} fallback={tile.slug === "credit-book" ? "📘" : "📁"} className="w-6 h-6" />
+                    <DynamicIcon iconKey={tile.iconKey} config={icons} fallback={tile.slug === "credit-book" ? "📘" : "📁"} className="w-5 h-5" />
                     {showPendingBadge ? (
-                      <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
+                      <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[#F5D77F] border border-[#C9A86A] px-1 py-0.2 text-[10px] font-black leading-none text-[#0A3D2E] shadow-sm">
                         {pendingCount > 99 ? "99+" : pendingCount}
                       </span>
                     ) : null}
                   </span>
                   {isCompact ? null : (
-                    <span className="leading-snug font-medium block whitespace-nowrap">{tile.label}</span>
+                    <span className="leading-snug font-black block whitespace-nowrap">{tile.label}</span>
                   )}
                 </Link>
               );
             })}
           </div>
         </nav>
-        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-2 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950/50 gap-2">
-          {/* أزرار التكبير والتصغير */}
-          <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#09090b] p-1 rounded-xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm h-10">
+
+        {/* تذييل القائمة الجانبية الملكي */}
+        <div className="border-t-2 border-[#C9A86A]/30 p-2.5 flex items-center justify-between shrink-0 bg-[#FFF8F0] dark:bg-[#06140f] gap-2">
+          {/* أزرار التكبير والتصغير الملكية */}
+          <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#0a2018] p-1 rounded-2xl border border-[#C9A86A]/50 shadow-2xs h-10">
             <div className="flex-1" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
-              className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors shrink-0"
+              className="size-8 flex items-center justify-center rounded-xl hover:bg-rose-50 text-[#0A3D2E] dark:text-[#F5D77F] hover:text-rose-600 transition-colors shrink-0 font-black text-lg active:scale-90"
               title="تصغير"
             >
-              <span className="text-xl font-bold leading-none">−</span>
+              −
             </button>
-            <span className="text-[11px] font-black text-[#00f3ff] min-w-[40px] text-center shrink-0">
+            <span className="text-xs font-black text-[#0A3D2E] dark:text-[#F5D77F] min-w-[42px] text-center shrink-0">
               {Math.round(itemScale * 100)}%
             </span>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
-              className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-[#00f3ff]/10 text-slate-500 hover:text-[#00f3ff] transition-colors shrink-0"
+              onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(3, prev + 0.05)); }}
+              className="size-8 flex items-center justify-center rounded-xl hover:bg-emerald-50 text-[#0A3D2E] dark:text-[#F5D77F] hover:text-emerald-600 transition-colors shrink-0 font-black text-lg active:scale-90"
               title="تكبير"
             >
-              <span className="text-xl font-bold leading-none">+</span>
+              +
             </button>
             <div className="flex-1" />
           </div>
@@ -696,11 +614,9 @@ export function AdminShell({
             <button
               type="submit"
               title="تسجيل الخروج"
-              className="w-10 h-10 flex items-center justify-center rounded-xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-colors"
+              className="flex size-10 items-center justify-center rounded-2xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-400 transition-all active:scale-95 shadow-2xs"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-              </svg>
+              <span className="text-lg">🚪</span>
             </button>
           </form>
         </div>
