@@ -1036,9 +1036,9 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار مرفوعة تحت بلوك السعر + أزرار الإسناد والاستلام يساراً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3.5 sm:-mt-4.5 pt-0" onClick={(e) => e.stopPropagation()}>
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار مرفوعة تحت دائرة السعر مباشرة */}
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً مطابق تماماً للصورة */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3 sm:-mt-4 pt-0" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
                         className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                         style={{
@@ -1046,7 +1046,7 @@ function TrackingCardsView({
                           minHeight: "34px",
                         }}
                       >
-                        {/* زر اتصال هاتفي سريع */}
+                        {/* 1. زر الاتصال 📞 (أقصى اليمين) */}
                         {o.customerPhone && (
                           <GoldOrbButton3D
                             href={`tel:${o.customerPhone}`}
@@ -1057,14 +1057,30 @@ function TrackingCardsView({
                           </GoldOrbButton3D>
                         )}
 
-                        {/* رقم هاتف الزبون كنص حي فوق الصورة */}
+                        {/* 2. رقم هاتف الزبون */}
                         <div className="flex items-center px-0.5">
                           <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
                             {o.customerPhone || "—"}
                           </span>
                         </div>
 
-                        {/* زر تعديل أسعار التجهيز 💰 */}
+                        {/* 3. زر اللوكيشن 📍 */}
+                        {hasGps ? (
+                          <RedGlassOrbButton3D
+                            href={o.customerLocationUrl || "#"}
+                            title="فتح موقع الزبون 📍"
+                          />
+                        ) : (
+                          <div
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+                            }}
+                            title="الزبون لا يملك لوكيشن ⚠️"
+                          />
+                        )}
+
+                        {/* 4. زر تعديل أسعار التجهيز 💰 */}
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
                           onClick={(e) => e.stopPropagation()}
@@ -1075,7 +1091,7 @@ function TrackingCardsView({
                           title="تعديل تفاصيل وأسعار التجهيز 💰"
                         />
 
-                        {/* زر تعديل الطلب ✏️ */}
+                        {/* 5. زر تعديل الطلب ✏️ */}
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                           onClick={(e) => e.stopPropagation()}
@@ -1086,7 +1102,7 @@ function TrackingCardsView({
                           title="تعديل الطلب ✏️"
                         />
 
-                        {/* زر الرفض / الإرجاع ❌ */}
+                        {/* 6. زر الرفض / الإرجاع ❌ (أقصى اليسار) */}
                         {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
@@ -1111,29 +1127,8 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الإسناد والاستلام والتسليم (كبيرة وبارزة ومرفوعة للأعلى بجانب بعضها) */}
-                      <div className="flex items-center gap-2 -mt-3.5 sm:-mt-4.5">
-                        {/* زر إسناد الطلب */}
-                        {!isCancelled && (
-                          <button
-                            type="button"
-                            onClick={() => onAssignOrder(o)}
-                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black flex items-center justify-center text-white shadow-xs hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
-                            style={{
-                              backgroundImage: hasAssignedCourier
-                                ? "url('/images/order-luxury/btn-assign-empty.webp')"
-                                : "url('/images/order-luxury/btn-assign.webp')",
-                            }}
-                            title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
-                          >
-                            {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[10px] sm:text-[11px] max-w-[40px] sm:max-w-[48px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                                {o.courierName}
-                              </span>
-                            )}
-                          </button>
-                        )}
-
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد */}
+                      <div className="flex items-center gap-2">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -1158,6 +1153,27 @@ function TrackingCardsView({
                             }}
                             title="تسليم الطلب وتسجيل الوارد 🫴"
                           />
+                        )}
+
+                        {/* زر إسناد الطلب */}
+                        {!isCancelled && (
+                          <button
+                            type="button"
+                            onClick={() => onAssignOrder(o)}
+                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black flex items-center justify-center text-white shadow-xs hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            style={{
+                              backgroundImage: hasAssignedCourier
+                                ? "url('/images/order-luxury/btn-assign-empty.webp')"
+                                : "url('/images/order-luxury/btn-assign.webp')",
+                            }}
+                            title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
+                          >
+                            {hasAssignedCourier && (
+                              <span className="text-[#FFF8F0] text-[10px] sm:text-[11px] max-w-[40px] sm:max-w-[48px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                                {o.courierName}
+                              </span>
+                            )}
+                          </button>
                         )}
 
                         {/* زر وجهتين 📦➔ */}

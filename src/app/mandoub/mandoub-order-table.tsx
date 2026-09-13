@@ -763,9 +763,9 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار مرفوعة تحت بلوك السعر + أزرار الاستلام والتسليم يساراً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3.5 sm:-mt-4.5 pt-0" onClick={(e) => e.stopPropagation()}>
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار مرفوعة تحت دائرة السعر مباشرة */}
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والتسليم يساراً مطابق تماماً للصورة */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3 sm:-mt-4 pt-0" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
                         className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                         style={{
@@ -773,7 +773,7 @@ function MandoubFullBlockCardGrid({
                           minHeight: "34px",
                         }}
                       >
-                        {/* 1. زر اتصال هاتفي سريع */}
+                        {/* 1. زر اتصال هاتفي سريع (أقصى اليمين) */}
                         {(o.customerPhone || o.phoneLine) && (
                           <GoldOrbButton3D
                             href={`tel:${o.customerPhone || o.phoneLine}`}
@@ -784,14 +784,30 @@ function MandoubFullBlockCardGrid({
                           </GoldOrbButton3D>
                         )}
 
-                        {/* 2. رقم هاتف الزبون كنص حي فوق الصورة */}
+                        {/* 2. رقم هاتف الزبون */}
                         <div className="flex items-center px-0.5">
                           <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
                             {o.customerPhone || o.phoneLine || "—"}
                           </span>
                         </div>
 
-                        {/* 3. زر مراسلة عبر واتساب */}
+                        {/* 3. زر اللوكيشن 📍 */}
+                        {hasGps ? (
+                          <RedGlassOrbButton3D
+                            href={o.customerLocationUrl || "#"}
+                            title="فتح موقع الزبون 📍"
+                          />
+                        ) : (
+                          <div
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+                            }}
+                            title="الزبون لا يملك لوكيشن ⚠️"
+                          />
+                        )}
+
+                        {/* 4. زر مراسلة عبر واتساب */}
                         {(o.customerPhone || o.phoneLine) && (
                           <GoldOrbButton3D
                             href={`https://wa.me/${(o.customerPhone || o.phoneLine).replace(/[^0-9]/g, "").replace(/^0/, "964")}`}
@@ -802,7 +818,7 @@ function MandoubFullBlockCardGrid({
                           </GoldOrbButton3D>
                         )}
 
-                        {/* 4. زر البصمة الصوتية إن وجد */}
+                        {/* 5. زر البصمة الصوتية إن وجد */}
                         {(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl) && (
                           <GoldOrbButton3D
                             onClick={() => {
@@ -816,7 +832,7 @@ function MandoubFullBlockCardGrid({
                           </GoldOrbButton3D>
                         )}
 
-                        {/* 5. زر صورة الباب إن وجد */}
+                        {/* 6. زر صورة الباب إن وجد */}
                         {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl) && (
                           <GoldOrbButton3D
                             href={o.customerDoorPhotoUrl || o.shopDoorPhotoUrl}
@@ -828,8 +844,8 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين (كبيرة وبارزة ومرفوعة للأعلى بجانب بعضها) */}
-                      <div className="flex items-center gap-2 -mt-3.5 sm:-mt-4.5">
+                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين */}
+                      <div className="flex items-center gap-2">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button
