@@ -1094,29 +1094,33 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً مطابق تماماً للصورة */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1 sm:gap-2 -mt-4 sm:-mt-5 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً في سطر واحد بدون التفاف */}
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
-                        className="flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-3.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-10 sm:h-11.5"
+                        className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10.5 shrink min-w-0"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
                       >
                         {/* 1. زر الاتصال 📞 (أقصى اليمين) */}
                         {o.customerPhone && (
-                          <GoldOrbButton3D
+                          <a
                             href={`tel:${o.customerPhone}`}
-                            title="اتصال هاتفي سريع"
-                            variant="gold"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black text-[#3D2800] bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
+                            }}
+                            title={`اتصال بالزبون: ${o.customerPhone}`}
                           >
                             📞
-                          </GoldOrbButton3D>
+                          </a>
                         )}
 
                         {/* 2. رقم هاتف الزبون */}
-                        <div className="flex items-center px-0.5">
-                          <span className="text-[12px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
+                        <div className="flex items-center px-0.5 min-w-0 truncate">
+                          <span className="text-[10.5px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all truncate">
                             {o.customerPhone || "—"}
                           </span>
                         </div>
@@ -1129,7 +1133,7 @@ function TrackingCardsView({
                           />
                         ) : (
                           <div
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
                             }}
@@ -1142,7 +1146,7 @@ function TrackingCardsView({
                           <Link
                             href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
                             style={{
                               backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
                             }}
@@ -1154,7 +1158,7 @@ function TrackingCardsView({
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                          className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
                           style={{
                             backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
                           }}
@@ -1166,7 +1170,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onRejectOrder(o)}
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
                             }}
@@ -1177,7 +1181,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onRestoreOrder(o)}
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
                             }}
@@ -1186,14 +1190,14 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مكبرة ومسحوبة لليسار */}
-                      <div className="flex items-center gap-2 sm:gap-2.5 -translate-y-3 sm:-translate-y-4 -translate-x-2 sm:-translate-x-3.5 shrink-0">
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم في نفس السطر */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 -translate-x-0.5 sm:-translate-x-1 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
                             onClick={() => onAdminPickup(o)}
-                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -1206,7 +1210,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAdminDelivery(o)}
-                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -1219,7 +1223,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1228,7 +1232,7 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-xs sm:text-sm max-w-[62px] sm:max-w-[74px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
+                              <span className="text-[#FFF8F0] text-[10px] sm:text-xs max-w-[48px] sm:max-w-[58px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
                                 {o.courierName}
                               </span>
                             )}
