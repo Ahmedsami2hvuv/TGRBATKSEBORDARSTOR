@@ -637,9 +637,9 @@ function MandoubFullBlockCardGrid({
 
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل (مزاح لليسار قليلاً ومسحوب عمودياً لزيادة سُمكه وفخامته) */}
+                      {/* اليمين: بلوك اسم المحل (عريض وممتد عمودياً ومقصوص بدقة على حوافه الفعلية) */}
                       <div
-                        className="flex-1 min-w-0 max-w-[65%] sm:max-w-[68%] h-13 sm:h-14 rounded-full flex items-center justify-center px-4.5 mr-1.5 sm:mr-2.5 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-5 sm:px-6 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
@@ -651,7 +651,7 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب مسحوبة لليمين باتجاه الداخل لتستقر داخل الإطار تماماً */}
-                      <div className="relative shrink-0 flex items-center gap-1.5 ml-2.5 sm:ml-3.5">
+                      <div className="relative shrink-0 flex items-center gap-1.5 ml-1.5 sm:ml-2">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
