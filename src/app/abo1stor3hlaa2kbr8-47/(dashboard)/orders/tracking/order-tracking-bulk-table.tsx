@@ -1041,9 +1041,9 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار يميناً + أزرار الإسناد والاستلام يساراً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-1 sm:-mt-1.5 pt-0" onClick={(e) => e.stopPropagation()}>
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص (معكوسة الترتيب) */}
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار مرفوعة تحت بلوك السعر + أزرار الإسناد والاستلام يساراً */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3.5 sm:-mt-4.5 pt-0" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار مرفوعة تحت دائرة السعر مباشرة */}
                       <div
                         className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
                         style={{
@@ -1068,22 +1068,6 @@ function TrackingCardsView({
                             {o.customerPhone || "—"}
                           </span>
                         </div>
-
-                        {/* زر اللوكيشن 📍 */}
-                        {hasGps ? (
-                          <RedGlassOrbButton3D
-                            href={o.customerLocationUrl || "#"}
-                            title="فتح موقع الزبون 📍"
-                          />
-                        ) : (
-                          <div
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
-                            }}
-                            title="الزبون لا يملك لوكيشن ⚠️"
-                          />
-                        )}
 
                         {/* زر تعديل أسعار التجهيز 💰 */}
                         <Link
