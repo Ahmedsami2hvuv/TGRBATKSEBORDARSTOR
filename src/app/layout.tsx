@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   icons: { icon: "/icon.png", apple: "/apple-icon.png" },
   appleWebApp: { capable: true, title: "أبو الأكبر للتوصيل", statusBarStyle: "default" },
+  // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.4
 };
 
 export const viewport: Viewport = { themeColor: "#0ea5e9" };
