@@ -572,7 +572,12 @@ function MandoubFullBlockCardGrid({
                   ? `${o.totalAmountDinar} ألف`
                   : (o.priceStr || "—");
 
-                const numericPrice = displayTotal.replace(/[^\d]/g, "") || displayTotal;
+                const numericPrice = displayTotal
+                  .replace(/ألف|دينار|الف/g, "")
+                  .replace(/,/g, ".")
+                  .replace(/[^\d.]/g, "")
+                  .replace(/\.$/, "")
+                  .trim() || displayTotal;
 
                 const displayGoodsType = o.orderType && o.orderType !== "عام" && o.orderType !== "—"
                   ? o.orderType
@@ -749,7 +754,13 @@ function MandoubFullBlockCardGrid({
                             </div>
                           ) : (
                             <span
-                              className="text-[26px] sm:text-[32px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
+                              className={`${
+                                numericPrice.length >= 5
+                                  ? "text-[17px] sm:text-[20px]"
+                                  : numericPrice.length >= 4
+                                  ? "text-[20px] sm:text-[24px]"
+                                  : "text-[26px] sm:text-[32px]"
+                              } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight`}
                               style={{
                                 color: "#F5D77F",
                               }}
