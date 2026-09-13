@@ -948,15 +948,15 @@ function TrackingCardsView({
 
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل (عريض وممتد عمودياً ومقصوص بدقة على حوافه الفعلية) */}
+                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل قليلاً للأسفل ومحمي من خروج النص) */}
                       <div
-                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-5 sm:px-6 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-6 sm:px-8 mr-3 sm:mr-4 mt-1 sm:mt-1.5 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs overflow-hidden"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
                         title={headerTextStr}
                       >
-                        <span className="font-black text-xs sm:text-[15px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                        <span className="font-black text-[11px] sm:text-[13px] md:text-[14px] text-[#FFF8F0] truncate max-w-full text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] px-1">
                           {headerTextStr}
                         </span>
                       </div>
