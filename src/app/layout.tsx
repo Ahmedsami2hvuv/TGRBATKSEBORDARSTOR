@@ -87,11 +87,69 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             --chosen-font: ${displayFont}, Inter, system-ui, -apple-system, sans-serif;
           }
         `}} />
-        <link
-          rel="preload"
-          href="/images/order-luxury/order-card-frame.webp"
-          as="image"
-          type="image/webp"
+        {/* التحميل المسبق والتكييش الدائم لكافة عناصر وأزرار كروت الطلبات الفاخرة لضمان فتح فوري دون وميض في الـ APK */}
+        <link rel="preload" href="/images/order-luxury/order-card-frame.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/order-number-bg.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/price-circle.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/customer-phone-pill.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-new.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-assigned.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-received.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-delivered.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/badge-sader.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/badge-ward.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/badge-preparer-sader.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/badge-preparer-ward.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-pickup.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-delivery.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-assign.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-assign-empty.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-open-location.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-no-location.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-edit.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-reject.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-restore.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/icon-reverse.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/1789252908710.webp" as="image" type="image/webp" />
+
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var luxuryImages = [
+                    '/images/order-luxury/order-card-frame.webp',
+                    '/images/order-luxury/order-number-bg.webp',
+                    '/images/order-luxury/price-circle.webp',
+                    '/images/order-luxury/customer-phone-pill.webp',
+                    '/images/order-luxury/header-new.webp',
+                    '/images/order-luxury/header-assigned.webp',
+                    '/images/order-luxury/header-received.webp',
+                    '/images/order-luxury/header-delivered.webp',
+                    '/images/order-luxury/badge-sader.webp',
+                    '/images/order-luxury/badge-ward.webp',
+                    '/images/order-luxury/badge-preparer-sader.webp',
+                    '/images/order-luxury/badge-preparer-ward.webp',
+                    '/images/order-luxury/btn-pickup.webp',
+                    '/images/order-luxury/btn-delivery.webp',
+                    '/images/order-luxury/btn-assign.webp',
+                    '/images/order-luxury/btn-assign-empty.webp',
+                    '/images/order-luxury/btn-open-location.webp',
+                    '/images/order-luxury/btn-no-location.webp',
+                    '/images/order-luxury/btn-edit.webp',
+                    '/images/order-luxury/btn-reject.webp',
+                    '/images/order-luxury/btn-restore.webp',
+                    '/images/order-luxury/icon-reverse.webp',
+                    '/images/order-luxury/1789252908710.webp'
+                  ];
+                  luxuryImages.forEach(function(src) {
+                    var img = new Image();
+                    img.src = src;
+                  });
+                } catch(e) {}
+              })();
+            `,
+          }}
         />
       </head>
       <body className="min-h-full flex flex-col">
