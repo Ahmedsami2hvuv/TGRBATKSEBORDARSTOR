@@ -61,15 +61,25 @@ function contactLine(phone: string): string {
 /** بيانات JSON للتسعير/المتجر — قد تكون نصاً غير صالح أو شكلاً غير متوقع بعد التخزين */
 function parsePreparerShoppingJson(raw: unknown): Record<string, unknown> | null {
   if (raw == null) return null;
-  if (Array.isArray(raw)) return { products: raw } as Record<string, unknown>;
-  if (typeof raw === "object") return raw as Record<string, unknown>;
+  if (Array.isArray(raw)) return raw.length > 0 ? ({ products: raw } as Record<string, unknown>) : null;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.products)) return obj.products.length > 0 ? obj : null;
+    if (Array.isArray(obj.items)) return obj.items.length > 0 ? obj : null;
+    return Object.keys(obj).length > 0 ? obj : null;
+  }
   if (typeof raw === "string") {
     const t = raw.trim();
-    if (!t) return null;
+    if (!t || t === "{}" || t === "[]" || t === "null" || t.length <= 2) return null;
     try {
       const v = JSON.parse(t) as unknown;
-      if (Array.isArray(v)) return { products: v } as Record<string, unknown>;
-      if (typeof v === "object" && v !== null) return v as Record<string, unknown>;
+      if (Array.isArray(v)) return v.length > 0 ? ({ products: v } as Record<string, unknown>) : null;
+      if (typeof v === "object" && v !== null) {
+        const obj = v as Record<string, unknown>;
+        if (Array.isArray(obj.products)) return obj.products.length > 0 ? obj : null;
+        if (Array.isArray(obj.items)) return obj.items.length > 0 ? obj : null;
+        return Object.keys(obj).length > 0 ? obj : null;
+      }
       return null;
     } catch {
       return null;

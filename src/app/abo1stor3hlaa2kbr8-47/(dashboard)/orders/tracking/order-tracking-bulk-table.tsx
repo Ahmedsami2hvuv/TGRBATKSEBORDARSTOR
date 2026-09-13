@@ -41,6 +41,35 @@ const STATUS_UI: Record<string, { ar: string; dot: string }> = {
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+function hasValidPreparerShoppingList(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (Array.isArray(raw)) return raw.length > 0;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.products)) return obj.products.length > 0;
+    if (Array.isArray(obj.items)) return obj.items.length > 0;
+    return Object.keys(obj).length > 0;
+  }
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t || t === "{}" || t === "[]" || t === "null" || t.length <= 2) return false;
+    try {
+      const v = JSON.parse(t) as unknown;
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === "object" && v !== null) {
+        const obj = v as Record<string, unknown>;
+        if (Array.isArray(obj.products)) return obj.products.length > 0;
+        if (Array.isArray(obj.items)) return obj.items.length > 0;
+        return Object.keys(obj).length > 0;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 const QUICK_STATUS_VALUES = [
   { value: "all", label: "أي حالة" },
   { value: "pending", label: "جديد" },
@@ -911,18 +940,7 @@ function TrackingCardsView({
                 const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
                 const hasGps = Boolean(o.hasCourierUploadedLocation || o.customerLocationUrl || !o.missingCustomerLocation);
                 const isDoubleRoute = Boolean(o.routeModeLabel === "وجهتين");
-                const isFromPreparer = Boolean(
-                  o.submittedByCompanyPreparerId ||
-                  o.submissionSource === "company_preparer" ||
-                  o.orderType?.includes("تجهيز") ||
-                  o.orderType?.includes("تسوق") ||
-                  (o.preparerShoppingJson &&
-                    (typeof o.preparerShoppingJson === "object"
-                      ? Object.keys(o.preparerShoppingJson).length > 0
-                      : typeof o.preparerShoppingJson === "string"
-                      ? (o.preparerShoppingJson as string).trim().length > 2
-                      : false))
-                );
+                const isFromPreparer = hasValidPreparerShoppingList(o.preparerShoppingJson);
 
                 const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
 
