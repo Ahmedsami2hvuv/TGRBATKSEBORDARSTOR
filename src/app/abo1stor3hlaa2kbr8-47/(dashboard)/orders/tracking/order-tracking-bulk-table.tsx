@@ -933,24 +933,24 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] p-2.5 sm:p-3 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2 bg-transparent bg-no-repeat bg-[length:100%_100%] ${
+                    className={`group relative rounded-[20px] px-5 sm:px-6 pt-4 pb-3.5 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2.5 bg-transparent bg-no-repeat bg-[length:100%_100%] ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "200px",
+                      minHeight: "220px",
                     }}
                   >
                     {/* البادجات المالية العائمة أعلى الكرت */}
-                    <div className="absolute -top-2.5 left-8 z-20 pointer-events-none flex items-center gap-1 shrink-0">
+                    <div className="absolute -top-2.5 left-10 z-20 pointer-events-none flex items-center gap-1 shrink-0">
                       <TrackingCardMoneyBadges o={o} />
                     </div>
 
-                    {/* 1. السطر العلوي: رقم الطلب يساراً + الزر المعلق + بلوك اسم المحل / الوجهة يميناً */}
-                    <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full pt-1 sm:pt-1.5" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل والمنطقة (أعرض ومسحوب للأسفل) */}
+                    {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
+                    <div className="relative z-10 flex items-center justify-between gap-3 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                      {/* اليمين: بلوك اسم المحل (سميك وممتلئ وغير ممتد زيادة عن اللزوم) */}
                       <div
-                        className="flex-1 min-w-0 h-9 sm:h-10 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
+                        className="flex-1 min-w-0 max-w-[68%] sm:max-w-[70%] h-11 sm:h-12 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
@@ -961,8 +961,8 @@ function TrackingCardsView({
                         </span>
                       </div>
 
-                      {/* اليسار: كبسولة رقم الطلب + التحديد */}
-                      <div className="relative shrink-0 flex items-center gap-1">
+                      {/* اليسار: كبسولة رقم الطلب مسحوبة للداخل ومتناسقة تماماً مع الإطار */}
+                      <div className="relative shrink-0 flex items-center gap-1.5">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -975,7 +975,7 @@ function TrackingCardsView({
                         <div className="relative">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
                           <div
-                            className="h-7 sm:h-8 px-2.5 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-2xs bg-no-repeat bg-[length:100%_100%]"
+                            className="h-8.5 sm:h-9.5 px-3 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
@@ -988,7 +988,7 @@ function TrackingCardsView({
                           {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
                           {isReverse && (
                             <div
-                              className="absolute -bottom-2 -right-1.5 z-20 w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-xs select-none bg-no-repeat bg-contain"
+                              className="absolute -bottom-2 -right-1.5 z-20 w-6 h-6 rounded-full flex items-center justify-center shadow-xs select-none bg-no-repeat bg-contain"
                               style={{
                                 backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
                               }}
