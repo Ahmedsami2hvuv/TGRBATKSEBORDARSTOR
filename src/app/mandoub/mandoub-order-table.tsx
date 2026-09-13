@@ -801,27 +801,16 @@ function MandoubFullBlockCardGrid({
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
                       >
-                        {/* 1. زر الاتصال 📞 (أقصى اليمين) */}
+                        {/* 1. زر الاتصال 📞 (أقصى اليمين - يغطي دائرة الهاتف المذهبة المدمجة بالكبسولة) */}
                         {o.customerPhone || o.phoneLine ? (
                           <a
                             href={`tel:${o.customerPhone || o.phoneLine}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black text-[#3D2800] bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
-                            }}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
                             title={`اتصال بالزبون: ${o.customerPhone || o.phoneLine}`}
-                          >
-                            📞
-                          </a>
+                          />
                         ) : (
-                          <GoldOrbButton3D
-                            href={`tel:${o.customerPhone || o.phoneLine}`}
-                            title="اتصال هاتفي سريع"
-                            variant="gold"
-                          >
-                            📞
-                          </GoldOrbButton3D>
+                          <div className="w-6 h-6 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 -mr-0.5 opacity-50" />
                         )}
 
                         {/* 2. رقم هاتف الزبون */}
@@ -884,8 +873,8 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين متناسقة الحجم في نفس السطر */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 -translate-x-0.5 sm:-translate-x-1 shrink-0">
+                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين متناسقة الحجم ومسحوبة لليمين */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 translate-x-2 sm:translate-x-3 shrink-0">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button

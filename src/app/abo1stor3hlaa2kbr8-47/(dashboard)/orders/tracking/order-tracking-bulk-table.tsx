@@ -1107,19 +1107,16 @@ function TrackingCardsView({
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
                       >
-                        {/* 1. زر الاتصال 📞 (أقصى اليمين) */}
-                        {o.customerPhone && (
+                        {/* 1. زر الاتصال 📞 (أقصى اليمين - يغطي دائرة الهاتف المذهبة المدمجة بالكبسولة) */}
+                        {o.customerPhone ? (
                           <a
                             href={`tel:${o.customerPhone}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black text-[#3D2800] bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
-                            }}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
                             title={`اتصال بالزبون: ${o.customerPhone}`}
-                          >
-                            📞
-                          </a>
+                          />
+                        ) : (
+                          <div className="w-6 h-6 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 -mr-0.5 opacity-50" />
                         )}
 
                         {/* 2. رقم هاتف الزبون */}
@@ -1194,8 +1191,8 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم في نفس السطر */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 -translate-x-0.5 sm:-translate-x-1 shrink-0">
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم ومسحوبة لليمين */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 translate-x-2 sm:translate-x-3 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -1222,12 +1219,12 @@ function TrackingCardsView({
                           />
                         )}
 
-                        {/* زر إسناد الطلب */}
+                        {/* زر إسناد الطلب مسحوب لليمين */}
                         {!isCancelled && (
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer translate-x-1 sm:translate-x-1.5"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
