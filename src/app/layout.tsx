@@ -111,6 +111,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/btn-restore.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/icon-reverse.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/1789252908710.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-chat.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-door.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/modal-luxury-frame.webp" as="image" type="image/webp" />
 
         <script
           dangerouslySetInnerHTML={{
@@ -140,7 +143,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/btn-reject.webp',
                     '/images/order-luxury/btn-restore.webp',
                     '/images/order-luxury/icon-reverse.webp',
-                    '/images/order-luxury/1789252908710.webp'
+                    '/images/order-luxury/1789252908710.webp',
+                    '/images/order-luxury/btn-chat.webp',
+                    '/images/order-luxury/btn-door.webp',
+                    '/images/order-luxury/modal-luxury-frame.webp'
                   ];
                   luxuryImages.forEach(function(src) {
                     var img = new Image();

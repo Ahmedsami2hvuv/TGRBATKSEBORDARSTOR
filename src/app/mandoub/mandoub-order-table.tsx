@@ -27,6 +27,7 @@ import { MandoubModalContainer } from "./mandoub-modal-container";
 import { formatBaghdadDateTime, formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { MandoubActionMenuModal } from "./mandoub-action-menu-modal";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -507,6 +508,212 @@ function MandoubFullBlockCardGrid({
   moveRow?: (id: string, direction: "up" | "down") => void;
   courierSettings?: any;
 }) {
+  const [actionModalState, setActionModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle?: string;
+    type: "call" | "chat" | "location" | "door";
+    options: any[];
+    previewImageUrl?: string | null;
+  }>({
+    isOpen: false,
+    title: "",
+    type: "chat",
+    options: [],
+    previewImageUrl: null,
+  });
+
+  const handleOpenActionModal = (o: OrderTableRowData, type: "call" | "chat" | "location" | "door") => {
+    const custPhone = o.customerPhone || o.phoneLine || "";
+    const shopPh = o.shopPhone || "";
+    const secPhone = o.secondCustomerPhone || o.alternatePhone || "";
+
+    const custLoc = o.customerLocationUrl || "";
+    const shopLoc = o.shopLocationUrl || "";
+    const secLoc = o.secondCustomerLocationUrl || "";
+
+    const custDoor = o.customerDoorPhotoUrl || "";
+    const shopDoor = o.shopDoorPhotoUrl || "";
+    const secDoor = o.secondCustomerDoorPhotoUrl || "";
+
+    if (type === "chat") {
+      const options: any[] = [];
+      if (custPhone) {
+        options.push({
+          title: "مراسلة الزبون عبر واتساب",
+          subtitle: custPhone,
+          icon: "💬",
+          badge: "الزبون",
+          colorVariant: "emerald",
+          actionUrl: `https://wa.me/${custPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
+        });
+      }
+      if (shopPh) {
+        options.push({
+          title: `مراسلة العميل (${o.shopName || "المحل"})`,
+          subtitle: shopPh,
+          icon: "🏪",
+          badge: "العميل",
+          colorVariant: "amber",
+          actionUrl: `https://wa.me/${shopPh.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
+        });
+      }
+      if (secPhone) {
+        options.push({
+          title: "مراسلة الزبون الثاني",
+          subtitle: secPhone,
+          icon: "💬",
+          badge: "الزبون الثاني",
+          colorVariant: "emerald",
+          actionUrl: `https://wa.me/${secPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
+        });
+      }
+      if (options.length === 0 && custPhone) {
+        window.open(`https://wa.me/${custPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`, "_blank");
+        return;
+      }
+      setActionModalState({
+        isOpen: true,
+        title: "اختر جهة المراسلة عبر واتساب",
+        subtitle: `طلب رقم: ${o.shortId} - ${o.shopName || ""}`,
+        type: "chat",
+        options,
+      });
+    } else if (type === "call") {
+      const options: any[] = [];
+      if (custPhone) {
+        options.push({
+          title: "اتصال هاتفي بالزبون",
+          subtitle: custPhone,
+          icon: "📞",
+          badge: "الزبون",
+          colorVariant: "emerald",
+          actionUrl: `tel:${custPhone}`,
+        });
+      }
+      if (shopPh) {
+        options.push({
+          title: `اتصال بالعميل (${o.shopName || "المحل"})`,
+          subtitle: shopPh,
+          icon: "🏪",
+          badge: "العميل",
+          colorVariant: "amber",
+          actionUrl: `tel:${shopPh}`,
+        });
+      }
+      if (secPhone) {
+        options.push({
+          title: "اتصال بالزبون الثاني",
+          subtitle: secPhone,
+          icon: "📞",
+          badge: "الزبون الثاني",
+          colorVariant: "emerald",
+          actionUrl: `tel:${secPhone}`,
+        });
+      }
+      if (options.length <= 1 && custPhone) {
+        window.location.href = `tel:${custPhone}`;
+        return;
+      }
+      setActionModalState({
+        isOpen: true,
+        title: "اختر جهة الاتصال الهاتفي",
+        subtitle: `طلب رقم: ${o.shortId} - ${o.shopName || ""}`,
+        type: "call",
+        options,
+      });
+    } else if (type === "location") {
+      const options: any[] = [];
+      if (custLoc) {
+        options.push({
+          title: "موقع الزبون على الخريطة",
+          subtitle: o.regionLine || "المنطقة",
+          icon: "📍",
+          badge: "الزبون",
+          colorVariant: "emerald",
+          actionUrl: custLoc,
+        });
+      }
+      if (shopLoc) {
+        options.push({
+          title: `موقع العميل (${o.shopName || "المحل"})`,
+          subtitle: o.shopRegionName || "موقع المحل",
+          icon: "🏪",
+          badge: "العميل",
+          colorVariant: "amber",
+          actionUrl: shopLoc,
+        });
+      }
+      if (secLoc) {
+        options.push({
+          title: "موقع الزبون الثاني",
+          subtitle: o.secondCustomerRegionName || "الوجهة الثانية",
+          icon: "📍",
+          badge: "الزبون الثاني",
+          colorVariant: "emerald",
+          actionUrl: secLoc,
+        });
+      }
+      if (options.length === 1) {
+        window.open(options[0].actionUrl, "_blank");
+        return;
+      }
+      setActionModalState({
+        isOpen: true,
+        title: "اختر الموقع المطلوب على الخريطة",
+        subtitle: `طلب رقم: ${o.shortId} - ${o.shopName || ""}`,
+        type: "location",
+        options,
+      });
+    } else if (type === "door") {
+      const options: any[] = [];
+      if (custDoor) {
+        options.push({
+          title: "عرض صورة باب الزبون",
+          subtitle: o.regionLine || "باب المنزل",
+          icon: "🚪",
+          badge: "الزبون",
+          colorVariant: "emerald",
+          onClick: () => {
+            setActionModalState((prev) => ({ ...prev, previewImageUrl: custDoor }));
+          },
+        });
+      }
+      if (shopDoor) {
+        options.push({
+          title: `عرض صورة باب العميل (${o.shopName || "المحل"})`,
+          subtitle: "باب المحل",
+          icon: "🏪",
+          badge: "العميل",
+          colorVariant: "amber",
+          onClick: () => {
+            setActionModalState((prev) => ({ ...prev, previewImageUrl: shopDoor }));
+          },
+        });
+      }
+      if (secDoor) {
+        options.push({
+          title: "عرض صورة باب الزبون الثاني",
+          subtitle: o.secondCustomerRegionName || "الوجهة الثانية",
+          icon: "🚪",
+          badge: "الزبون الثاني",
+          colorVariant: "emerald",
+          onClick: () => {
+            setActionModalState((prev) => ({ ...prev, previewImageUrl: secDoor }));
+          },
+        });
+      }
+      setActionModalState({
+        isOpen: true,
+        title: "اختر صورة الباب المطلوبة",
+        subtitle: `طلب رقم: ${o.shortId} - ${o.shopName || ""}`,
+        type: "door",
+        options,
+        previewImageUrl: options.length === 1 ? (custDoor || shopDoor || secDoor) : null,
+      });
+    }
+  };
+
   if (!rows.length) {
     return (
       <div className="py-12 text-center text-[#0A3D2E] font-bold bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-[#C9A86A]/40 shadow-sm text-sm sm:text-base">
@@ -781,7 +988,17 @@ function MandoubFullBlockCardGrid({
                         }}
                       >
                         {/* 1. زر الاتصال 📞 (أقصى اليمين - يغطي دائرة الهاتف المذهبة المدمجة بالكبسولة) */}
-                        {o.customerPhone || o.phoneLine ? (
+                        {o.shopPhone || o.secondCustomerPhone ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "call");
+                            }}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
+                            title="خيارات الاتصال الهاتفي 📞"
+                          />
+                        ) : o.customerPhone || o.phoneLine ? (
                           <a
                             href={`tel:${o.customerPhone || o.phoneLine}`}
                             onClick={(e) => e.stopPropagation()}
@@ -800,7 +1017,20 @@ function MandoubFullBlockCardGrid({
                         </div>
 
                         {/* 3. زر اللوكيشن 📍 */}
-                        {hasGps ? (
+                        {((o.customerLocationUrl && o.shopLocationUrl) || o.secondCustomerLocationUrl) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "location");
+                            }}
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
+                            }}
+                            title="خيارات الموقع على الخريطة 📍"
+                          />
+                        ) : hasGps ? (
                           <RedGlassOrbButton3D
                             href={o.customerLocationUrl || "#"}
                             title="فتح موقع الزبون 📍"
@@ -815,18 +1045,39 @@ function MandoubFullBlockCardGrid({
                           />
                         )}
 
-                        {/* 4. زر مراسلة عبر واتساب */}
-                        {(o.customerPhone || o.phoneLine) && (
-                          <GoldOrbButton3D
-                            href={`https://wa.me/${(o.customerPhone || o.phoneLine).replace(/[^0-9]/g, "").replace(/^0/, "964")}`}
-                            title="مراسلة عبر واتساب"
-                            variant="green"
-                          >
-                            💬
-                          </GoldOrbButton3D>
+                        {/* 4. زر مراسلة عبر واتساب الفاخر 💬 */}
+                        {(o.customerPhone || o.phoneLine || o.shopPhone || o.secondCustomerPhone) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "chat");
+                            }}
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-chat.webp')",
+                            }}
+                            title="خيارات المراسلة عبر واتساب 💬"
+                          />
                         )}
 
-                        {/* 5. زر البصمة الصوتية إن وجد */}
+                        {/* 5. زر صورة الباب الفاخر 🚪 */}
+                        {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl || o.secondCustomerDoorPhotoUrl) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "door");
+                            }}
+                            className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-door.webp')",
+                            }}
+                            title="عرض صور الأبواب 🚪"
+                          />
+                        )}
+
+                        {/* 6. زر البصمة الصوتية إن وجد 🎤 */}
                         {(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl) && (
                           <GoldOrbButton3D
                             onClick={() => {
@@ -837,17 +1088,6 @@ function MandoubFullBlockCardGrid({
                             variant="purple"
                           >
                             🎤
-                          </GoldOrbButton3D>
-                        )}
-
-                        {/* 6. زر صورة الباب إن وجد */}
-                        {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl) && (
-                          <GoldOrbButton3D
-                            href={o.customerDoorPhotoUrl || o.shopDoorPhotoUrl}
-                            title="عرض صورة الباب"
-                            variant="gold"
-                          >
-                            📷
                           </GoldOrbButton3D>
                         )}
                       </div>
@@ -896,6 +1136,18 @@ function MandoubFullBlockCardGrid({
           </div>
         );
       })}
+
+      {/* النافذة المنبثقة العائمة الفاخرة لخيارات الاتصال والمراسلة واللوكيشن والأبواب */}
+      <MandoubActionMenuModal
+        isOpen={actionModalState.isOpen}
+        onClose={() => setActionModalState((prev) => ({ ...prev, isOpen: false, previewImageUrl: null }))}
+        title={actionModalState.title}
+        subtitle={actionModalState.subtitle}
+        type={actionModalState.type}
+        options={actionModalState.options}
+        previewImageUrl={actionModalState.previewImageUrl}
+      />
+
       {/* شريط عدد الطلبات في هذه الصفحة في الأسفل */}
       <div className="pt-4 text-center font-black text-sm text-[#0A3D2E]">
         عدد الطلبات في هذه الصفحة: {rows.length}
