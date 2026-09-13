@@ -844,15 +844,19 @@ function MandoubFullBlockCardGrid({
                           </span>
                         </div>
 
-                        {/* أيقونة الطلب العكسي مسحوبة لليمين وملتصقة ببلوك اسم المحل بدقة بعيداً عن رقم الطلب */}
+                        {/* أيقونة زر الطلب العكسي المفرغة من الخلفية بدقة تامة */}
                         {isReverse && (
                           <div
-                            className="absolute -bottom-1 right-4 sm:right-6 z-20 w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-full flex items-center justify-center select-none bg-center bg-contain bg-no-repeat drop-shadow-md transition-transform hover:scale-110 cursor-pointer"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
-                            }}
+                            className="absolute -bottom-2 right-4 sm:right-6 z-20 select-none transition-transform hover:scale-110 cursor-pointer pointer-events-auto"
                             title="طلب عكسي 📦⤺"
-                          />
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src="/images/order-luxury/icon-reverse.webp"
+                              alt="طلب عكسي"
+                              className="w-8 h-8 sm:w-9.5 sm:h-9.5 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                            />
+                          </div>
                         )}
                       </div>
 
