@@ -640,7 +640,9 @@ function MandoubFullBlockCardGrid({
                       {/* اليمين: بلوك اسم المحل (سميك وممتلئ وغير ممتد زيادة عن اللزوم) */}
                       <div
                         className="flex-1 min-w-0 max-w-[68%] sm:max-w-[70%] h-11 sm:h-12 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
-                        style={bannerStyle}
+                        style={{
+                          backgroundImage: `url('${headerWebpBg}')`,
+                        }}
                         title={headerTextStr}
                       >
                         <span className="font-black text-xs sm:text-[14px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
