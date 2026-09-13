@@ -468,51 +468,41 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
   const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
 
+  let text = "";
+  let tooltip = "";
+
   if (showPickup) {
-    return (
-      <span
-        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-emerald-700 bg-emerald-600 text-white shrink-0 select-none"
-        title={`صادر المندوب: ${formatDinarAsAlf(pickup)}`}
-      >
-        {formatDinarAsAlf(pickup)}
-      </span>
-    );
+    text = formatDinarAsAlf(pickup);
+    tooltip = `صادر المندوب: ${text}`;
+  } else if (showPreparerPickup) {
+    text = formatDinarAsAlf(preparerPickup);
+    tooltip = `صادر المجهز: ${text}`;
+  } else if (showAdminPickup) {
+    text = formatDinarAsAlf(adminPickup);
+    tooltip = `صادر الإدارة: ${text}`;
+  } else if (o.saderMismatchType === "deficit") {
+    text = "نقص";
+    tooltip = "نقص بالصادر";
+  } else if (o.saderMismatchType === "excess") {
+    text = "زيادة";
+    tooltip = "زيادة بالصادر";
   }
-  if (showPreparerPickup) {
-    return (
-      <span
-        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-amber-600 bg-amber-500 text-white shrink-0 select-none"
-        title={`صادر المجهز: ${formatDinarAsAlf(preparerPickup)}`}
-      >
-        {formatDinarAsAlf(preparerPickup)}
+
+  if (!text) return null;
+
+  return (
+    <div
+      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      style={{
+        backgroundImage: "url('/images/order-luxury/badge-sader.webp')",
+      }}
+      title={tooltip}
+    >
+      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+        {text}
       </span>
-    );
-  }
-  if (showAdminPickup) {
-    return (
-      <span
-        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-blue-700 bg-blue-600 text-white shrink-0 select-none"
-        title={`صادر الإدارة: ${formatDinarAsAlf(adminPickup)}`}
-      >
-        {formatDinarAsAlf(adminPickup)}
-      </span>
-    );
-  }
-  if (o.saderMismatchType === "deficit") {
-    return (
-      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-amber-800 bg-amber-700 text-white shrink-0 select-none" title="نقص بالصادر">
-        نقص صادر
-      </span>
-    );
-  }
-  if (o.saderMismatchType === "excess") {
-    return (
-      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-emerald-900 bg-emerald-800 text-white shrink-0 select-none" title="زيادة بالصادر">
-        زيادة صادر
-      </span>
-    );
-  }
-  return null;
+    </div>
+  );
 }
 
 function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
@@ -522,48 +512,41 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
   const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
   const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
 
+  let text = "";
+  let tooltip = "";
+
   if (showDelivery) {
-    return (
-      <span
-        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-rose-700 bg-rose-600 text-white shrink-0 select-none"
-        title={`وارد المندوب: ${formatDinarAsAlf(delivery)}`}
-      >
-        {formatDinarAsAlf(delivery)}
-      </span>
-    );
+    text = formatDinarAsAlf(delivery);
+    tooltip = `وارد المندوب: ${text}`;
+  } else if (showPreparerDelivery) {
+    text = formatDinarAsAlf(preparerDelivery);
+    tooltip = `وارد المجهز: ${text}`;
+  } else if (o.wardMismatchType === "deficit") {
+    text = "نقص";
+    tooltip = "نقص بالوارد";
+  } else if (o.wardMismatchType === "excess") {
+    text = "زيادة";
+    tooltip = "زيادة بالوارد";
+  } else if (o.noWardRecorded && o.orderStatus === "delivered") {
+    text = "بدون";
+    tooltip = "بدون وارد مسجل";
   }
-  if (showPreparerDelivery) {
-    return (
-      <span
-        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-purple-700 bg-purple-600 text-white shrink-0 select-none"
-        title={`وارد المجهز: ${formatDinarAsAlf(preparerDelivery)}`}
-      >
-        {formatDinarAsAlf(preparerDelivery)}
+
+  if (!text) return null;
+
+  return (
+    <div
+      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      style={{
+        backgroundImage: "url('/images/order-luxury/badge-ward.webp')",
+      }}
+      title={tooltip}
+    >
+      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+        {text}
       </span>
-    );
-  }
-  if (o.wardMismatchType === "deficit") {
-    return (
-      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-red-800 bg-red-700 text-white shrink-0 select-none" title="نقص بالوارد">
-        نقص وارد
-      </span>
-    );
-  }
-  if (o.wardMismatchType === "excess") {
-    return (
-      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-emerald-900 bg-emerald-800 text-white shrink-0 select-none" title="زيادة بالوارد">
-        زيادة وارد
-      </span>
-    );
-  }
-  if (o.noWardRecorded && o.orderStatus === "delivered") {
-    return (
-      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-slate-800 bg-slate-700 text-white shrink-0 select-none" title="بدون وارد">
-        بدون وارد
-      </span>
-    );
-  }
-  return null;
+    </div>
+  );
 }
 
 function RoyalScallopedCardBorder() {
