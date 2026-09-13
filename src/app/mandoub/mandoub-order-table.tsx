@@ -26,6 +26,7 @@ import { MandoubWalletClient } from "./mandoub-wallet-client";
 import { MandoubModalContainer } from "./mandoub-modal-container";
 import { formatBaghdadDateTime, formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
+import { isReversePickupOrderType } from "@/lib/order-type-flags";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
