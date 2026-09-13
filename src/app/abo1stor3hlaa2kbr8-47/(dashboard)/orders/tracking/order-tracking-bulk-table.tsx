@@ -1090,11 +1090,6 @@ function TrackingCardsView({
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
                       <div className="text-[11px] sm:text-xs font-black text-[#8B0000] text-center flex-1 min-w-0 max-w-[95px] sm:max-w-[125px] leading-snug">
                         {o.orderNoteTime || "فوري"}
-                        {isPrepaid && (
-                          <span className="block text-[9px] text-emerald-700 font-black mt-0.5">
-                            (واصل)
-                          </span>
-                        )}
                       </div>
                     </div>
 
