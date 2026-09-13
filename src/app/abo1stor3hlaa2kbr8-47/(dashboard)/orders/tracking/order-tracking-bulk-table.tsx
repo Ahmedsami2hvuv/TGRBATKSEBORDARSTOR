@@ -12,6 +12,7 @@ import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { mandoubShopNameVividClass } from "@/lib/order-status-style";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { formatDinarAsAlf, dinarDecimalToAlfInputString, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import {
@@ -1932,72 +1933,33 @@ export function OrderTrackingBulkTable({
         </div>
       )}
 
-      {/* نافذة الإسناد السريع للمندوبين */}
+      {/* نافذة الإسناد السريع للمندوبين بتصميم ملكي فاخر */}
       {assignOrder && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="mt-8 w-full max-w-md animate-in slide-in-from-top-4 rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800" dir="rtl">
-            <div className="mb-4 flex items-center justify-between border-b pb-3">
-              <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">إسناد لمندوب</h3>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">الطلب #{assignOrder.orderNumber}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAssignOrder(null)}
-                className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="max-h-[60vh] overflow-y-auto pt-1 space-y-3">
-              <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
-                <input type="checkbox" id="direct-receipt-tracking-modal" className="h-5 w-5 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-400" />
-                <label htmlFor="direct-receipt-tracking-modal" className="text-sm font-black text-emerald-950 dark:text-emerald-300 cursor-pointer select-none">
-                  استلام مباشر للمندوب (تخطي الموافقة) ⚡
-                </label>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {couriers.map((c) => {
-                  const isCurrent = assignOrder.assignedCourierId === c.id || (assignOrder.courierName && assignOrder.courierName === c.name);
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      disabled={bulkPending}
-                      onClick={async () => {
-                        const direct = (document.getElementById('direct-receipt-tracking-modal') as HTMLInputElement)?.checked;
-                        const fd = new FormData();
-                        fd.append("orderIds", assignOrder.id);
-                        fd.append("targetStatus", direct ? "delivering" : "assigned");
-                        fd.append("courierId", c.id);
-                        if (direct) fd.append("directReceipt", "on");
-                        setAssignOrder(null);
-                        const res = await bulkUpdateOrdersStatus({}, fd);
-                        if (res.error) alert(res.error);
-                        else router.refresh();
-                      }}
-                      className={`w-full rounded-2xl border-2 px-3.5 py-3 text-right text-sm sm:text-base font-bold transition active:scale-[0.98] disabled:opacity-60 ${
-                        isCurrent
-                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 ring-2 ring-emerald-400"
-                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white hover:border-emerald-500 hover:bg-emerald-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-black truncate">{c.name}</span>
-                        {isCurrent && <span className="text-emerald-600 font-bold text-xs">✓</span>}
-                      </div>
-                      {isCurrent && (
-                        <span className="block text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">مسند حالياً</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <LuxuryAssignCourierModal
+          orderId={assignOrder.id}
+          orderNumber={assignOrder.orderNumber}
+          currentCourierId={assignOrder.assignedCourierId}
+          currentCourierName={assignOrder.courierName}
+          couriers={couriers}
+          isPending={bulkPending}
+          onAssign={async (courierId, directReceipt) => {
+            const fd = new FormData();
+            fd.append("orderIds", assignOrder.id);
+            if (courierId) {
+              fd.append("targetStatus", directReceipt ? "delivering" : "assigned");
+              fd.append("courierId", courierId);
+              if (directReceipt) fd.append("directReceipt", "on");
+            } else {
+              fd.append("targetStatus", "pending");
+              fd.append("courierId", "");
+            }
+            setAssignOrder(null);
+            const res = await bulkUpdateOrdersStatus({}, fd);
+            if (res.error) alert(res.error);
+            else router.refresh();
+          }}
+          onClose={() => setAssignOrder(null)}
+        />
       )}
 
       {/* نافذة تأكيد رفض الطلب السريع */}
