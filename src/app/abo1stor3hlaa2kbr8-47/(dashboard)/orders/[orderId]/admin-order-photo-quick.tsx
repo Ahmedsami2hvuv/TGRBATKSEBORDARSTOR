@@ -121,21 +121,26 @@ export function AdminOrderPhotoQuick({
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
+          className="group relative transition-transform active:scale-90 flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer disabled:opacity-60"
           onClick={() => {
             cameraFileRef.current?.click();
           }}
+          title="التقاط صورة بالكاميرا"
         >
-          <span>📷</span>
-          <span>{pending ? "جارٍ الرفع..." : "كاميرا"}</span>
+          <img
+            src="/images/order-luxury/btn-door.webp"
+            alt="كاميرا"
+            className="h-9 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition"
+          />
         </button>
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-xl border border-[#C9A86A]/70 bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#FFF8F0] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
+          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           onClick={() => {
             galleryFileRef.current?.click();
           }}
+          title="رفع من المعرض"
         >
           <span>🖼️</span>
           <span>{pending ? "جارٍ الرفع..." : "معرض"}</span>

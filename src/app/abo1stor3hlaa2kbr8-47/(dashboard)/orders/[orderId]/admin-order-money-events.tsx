@@ -266,43 +266,55 @@ export function AdminOrderMoneyEvents({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {/* زر أعطيت (صادر) */}
-            <button
-              type="button"
-              onClick={() => {
-                setPickupAdvanceToDelivering(false);
-                setPickupOpen(true);
-                setDeliveryOpen(false);
-              }}
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-4 font-black text-[#F5D77F] shadow-xl hover:scale-[1.01] active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
-            >
-              <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
-              <span>أعطيت للعميل (صادر)</span>
+            {/* زر أعطيت (صادر) بصورة نانو بنانا */}
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setPickupAdvanceToDelivering(false);
+                  setPickupOpen(true);
+                  setDeliveryOpen(false);
+                }}
+                className="group relative transition-transform active:scale-95 flex items-center justify-center cursor-pointer p-0 border-0 bg-transparent w-full"
+                title="أعطيت للعميل (صادر)"
+              >
+                <img
+                  src="/images/order-luxury/زر استلام.webp"
+                  alt="أعطيت للعميل (صادر)"
+                  className="h-14 sm:h-16 w-auto max-w-[280px] object-contain drop-shadow-xl group-hover:scale-105 transition"
+                />
+              </button>
               {pickupRemaining !== null && (
-                <span className="text-xs font-bold bg-[#06281D]/90 text-[#F5D77F] border border-[#C9A86A]/50 px-2.5 py-0.5 rounded-xl mr-1">
-                  المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
+                <span className="text-xs font-bold bg-[#06281D]/90 text-[#F5D77F] border border-[#C9A86A]/50 px-3 py-0.5 rounded-xl shadow-inner">
+                  المتبقي للصادر: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
                 </span>
               )}
-            </button>
+            </div>
 
-            {/* زر أخذت (وارد) */}
-            <button
-              type="button"
-              onClick={() => {
-                setDeliveryAdvanceToDelivered(false);
-                setDeliveryOpen(true);
-                setPickupOpen(false);
-              }}
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-[#C9A86A] bg-gradient-to-r from-[#5C1D24] to-[#7F1D1D] px-4 font-black text-[#F5D77F] shadow-xl hover:scale-[1.01] active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
-            >
-              <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
-              <span>أخذت من الزبون (وارد)</span>
+            {/* زر أخذت (وارد) بصورة نانو بنانا */}
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeliveryAdvanceToDelivered(false);
+                  setDeliveryOpen(true);
+                  setPickupOpen(false);
+                }}
+                className="group relative transition-transform active:scale-95 flex items-center justify-center cursor-pointer p-0 border-0 bg-transparent w-full"
+                title="أخذت من الزبون (وارد)"
+              >
+                <img
+                  src="/images/order-luxury/زر تسليم.webp"
+                  alt="أخذت من الزبون (وارد)"
+                  className="h-14 sm:h-16 w-auto max-w-[280px] object-contain drop-shadow-xl group-hover:scale-105 transition"
+                />
+              </button>
               {deliveryRemaining !== null && !prepaidAll && (
-                <span className="text-xs font-bold bg-[#3B0764]/80 text-[#F5D77F] border border-[#C9A86A]/50 px-2.5 py-0.5 rounded-xl mr-1">
-                  المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
+                <span className="text-xs font-bold bg-[#3B0764]/80 text-[#F5D77F] border border-[#C9A86A]/50 px-3 py-0.5 rounded-xl shadow-inner">
+                  المتبقي للوارد: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
                 </span>
               )}
-            </button>
+            </div>
           </div>
         </div>
       )}

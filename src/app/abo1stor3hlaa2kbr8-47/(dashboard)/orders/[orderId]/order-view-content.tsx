@@ -292,53 +292,71 @@ export function OrderViewContent({
         {/* --- بطاقة ترويسة الطلبية الملكية الإسلامية المذهبة --- */}
         <div className="mb-5 rounded-[24px] border-2 border-[#C9A86A]/80 bg-[#0A241C]/95 p-3.5 sm:p-5 shadow-2xl backdrop-blur-md relative overflow-hidden">
           
-          {/* سطر الأزرار العلوية الأربعة: إغلاق - تعديل - تغيير المندوب - بصمة المدير */}
-          <div className="mb-4 grid grid-cols-4 gap-1.5 sm:gap-2.5">
+          {/* سطر الأزرار العلوية الأربعة: إغلاق - تعديل - تغيير المندوب - بصمة المدير (صور ملكية ثلاثية الأبعاد) */}
+          <div className="mb-4 grid grid-cols-4 gap-2 sm:gap-3 items-center justify-items-center">
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-              className="inline-flex items-center justify-center gap-1 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] hover:scale-105 active:scale-95 px-1.5 py-2.5 text-xs font-black text-[#F5D77F] shadow-md transition-all min-h-[42px] text-center"
+              className="relative group transition-transform active:scale-90 flex items-center justify-center w-full"
+              title="إغلاق والرجوع"
             >
-              <span>⬅️</span>
-              <span>إغلاق</span>
+              <img
+                src="/images/order-luxury/btn-admin-close.webp"
+                alt="إغلاق"
+                className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
+              />
             </Link>
 
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="inline-flex items-center justify-center gap-1 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#1B4D3E] to-[#2D6A4F] hover:scale-105 active:scale-95 px-1.5 py-2.5 text-xs font-black text-[#F5D77F] shadow-md transition-all min-h-[42px] text-center"
+              className="relative group transition-transform active:scale-90 flex items-center justify-center w-full"
+              title="تعديل الطلب"
             >
-              <span>📝</span>
-              <span>تعديل</span>
+              <img
+                src="/images/order-luxury/زر تعديل الطلب.webp"
+                alt="تعديل"
+                className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
+              />
             </Link>
 
             {order.status !== "cancelled" && order.status !== "archived" ? (
               <button
                 type="button"
                 onClick={() => setShowAssignCourierModal(true)}
-                className="inline-flex items-center justify-center gap-1 rounded-xl border border-[#FFF0D0] bg-gradient-to-r from-[#E67E22] to-[#D35400] hover:scale-105 active:scale-95 px-1.5 py-2.5 text-xs font-black text-white shadow-md transition-all cursor-pointer min-h-[42px] text-center"
+                className="relative group transition-transform active:scale-90 flex items-center justify-center w-full cursor-pointer"
+                title="إسناد / تغيير المندوب"
               >
-                <span>📦</span>
-                <span className="truncate">المندوب</span>
+                <img
+                  src="/images/order-luxury/زر اسناد الطلب.webp"
+                  alt="المندوب"
+                  className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
+                />
               </button>
             ) : (
               <div />
             )}
 
-            <AdminVoiceNoteSection
-              variant="button"
-              orderId={order.id}
-              defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
-            />
+            <div className="relative group transition-transform active:scale-90 flex items-center justify-center w-full">
+              <AdminVoiceNoteSection
+                variant="button"
+                orderId={order.id}
+                defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
+              />
+            </div>
           </div>
 
           {/* سطر زر تعديل التسعير التكميلي إن وجد */}
           {parsedShoppingJson !== null && (
-            <div className="mb-3.5">
+            <div className="mb-3.5 flex justify-center">
               <Link
                 href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] hover:scale-101 active:scale-95 px-4 py-2 text-xs font-black text-[#F5D77F] shadow-md transition-all"
+                className="relative group transition-transform active:scale-95 inline-flex items-center justify-center p-1"
+                title="تعديل تفاصيل وأسعار التجهيز"
               >
-                <span>💰</span>
-                <span>تعديل تفاصيل وأسعار التجهيز</span>
+                <img
+                  src="/images/order-luxury/btn-admin-pricing.webp"
+                  alt="تعديل التسعير"
+                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                />
               </Link>
             </div>
           )}
@@ -520,40 +538,56 @@ export function OrderViewContent({
                   )}
                 </div>
 
-                <div className="pt-2 space-y-2.5 w-full">
+                <div className="pt-2 space-y-3 w-full">
                   {order.shopLocationUrl?.trim() ? (
                     <a
                       href={order.shopLocationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex min-h-[44px] sm:min-h-[48px] w-full items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-4 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-[1.01] active:scale-95 transition-all gap-2 shadow-lg cursor-pointer"
+                      className="group relative transition-transform active:scale-95 flex items-center justify-center w-full"
+                      title="موقع المحل على الخريطة"
                     >
-                      <span>📍</span>
-                      <span>موقع المحل على الخريطة ↗</span>
+                      <img
+                        src="/images/order-luxury/btn-open-location.webp"
+                        alt="موقع المحل على الخريطة"
+                        className="h-11 sm:h-12 w-full max-w-[280px] object-contain drop-shadow-lg group-hover:scale-105 transition"
+                      />
                     </a>
                   ) : (
-                    <div className="w-full p-2 bg-[#06281D]/80 border border-[#C9A86A]/40 rounded-xl text-center text-xs font-bold text-amber-300">
-                      ⚠️ لا يوجد موقع جغرافي للمحل
+                    <div className="flex justify-center w-full">
+                      <img
+                        src="/images/order-luxury/btn-no-location.webp"
+                        alt="لا يوجد موقع جغرافي للمحل"
+                        className="h-10 sm:h-11 w-auto object-contain opacity-80"
+                      />
                     </div>
                   )}
 
                   {submitterPhone && (
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-3 w-full justify-center pt-1">
                       <a
                         href={telHref(submitterPhone)}
-                        className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                        className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                        title="اتصال هاتفي بالمسؤول"
                       >
-                        <span>📞</span>
-                        <span>اتصال</span>
+                        <img
+                          src="/images/order-luxury/btn-admin-call.webp"
+                          alt="اتصال"
+                          className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                        />
                       </a>
                       <a
                         href={whatsappMeUrl(submitterPhone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#1B4D3E] to-[#2D6A4F] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                        className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                        title="مراسلة واتساب"
                       >
-                        <span>💬</span>
-                        <span>واتس</span>
+                        <img
+                          src="/images/order-luxury/btn-admin-whatsapp.webp"
+                          alt="واتس"
+                          className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                        />
                       </a>
                     </div>
                   )}
@@ -752,24 +786,32 @@ export function OrderViewContent({
                         <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
                       )}
 
-                      {/* أزرار الاتصال والواتساب السريعة للزبون */}
+                      {/* أزرار الاتصال والواتساب السريعة للزبون بصور نانو بنانا */}
                       {order.customerPhone && (
-                        <div className="flex items-center gap-2 w-full mt-1">
+                        <div className="flex items-center gap-3 w-full justify-center pt-1">
                           <a
                             href={telHref(order.customerPhone)}
-                            className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                            title="اتصال هاتفي بالزبون"
                           >
-                            <span>📞</span>
-                            <span>اتصال</span>
+                            <img
+                              src="/images/order-luxury/btn-admin-call.webp"
+                              alt="اتصال"
+                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                            />
                           </a>
                           <a
                             href={whatsappMeUrl(order.customerPhone)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#1B4D3E] to-[#2D6A4F] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                            title="مراسلة واتساب"
                           >
-                            <span>💬</span>
-                            <span>واتس</span>
+                            <img
+                              src="/images/order-luxury/btn-admin-whatsapp.webp"
+                              alt="واتس"
+                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                            />
                           </a>
                         </div>
                       )}
@@ -891,9 +933,14 @@ export function OrderViewContent({
                             href={order.secondCustomerLocationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-4 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-[1.01] active:scale-95 transition-all gap-1.5 shadow-lg cursor-pointer"
+                            className="group relative transition-transform active:scale-95 flex items-center justify-center w-full"
+                            title="موقع المستلم على الخريطة"
                           >
-                            <span>📍 موقع المستلم ↗</span>
+                            <img
+                              src="/images/order-luxury/btn-open-location.webp"
+                              alt="موقع المستلم على الخريطة"
+                              className="h-11 sm:h-12 w-full max-w-[280px] object-contain drop-shadow-lg group-hover:scale-105 transition"
+                            />
                           </a>
                           <WaLocationCustomButtons
                             userRole="admin"
@@ -956,24 +1003,32 @@ export function OrderViewContent({
                         isSecondDestination={true}
                       />
 
-                      {/* أزرار الاتصال والواتساب السريعة للمستلم */}
+                      {/* أزرار الاتصال والواتساب السريعة للمستلم بصور نانو بنانا */}
                       {(order.secondCustomerPhone || order.customerPhone) && (
-                        <div className="flex items-center gap-2 w-full mt-2">
+                        <div className="flex items-center gap-3 w-full justify-center pt-2">
                           <a
                             href={telHref(order.secondCustomerPhone || order.customerPhone)}
-                            className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                            title="اتصال هاتفي بالمستلم"
                           >
-                            <span>📞</span>
-                            <span>اتصال</span>
+                            <img
+                              src="/images/order-luxury/btn-admin-call.webp"
+                              alt="اتصال"
+                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                            />
                           </a>
                           <a
                             href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#1B4D3E] to-[#2D6A4F] px-2 py-1.5 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all gap-1.5 shadow-md cursor-pointer"
+                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
+                            title="مراسلة واتساب"
                           >
-                            <span>💬</span>
-                            <span>واتس</span>
+                            <img
+                              src="/images/order-luxury/btn-admin-whatsapp.webp"
+                              alt="واتس"
+                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                            />
                           </a>
                         </div>
                       )}
