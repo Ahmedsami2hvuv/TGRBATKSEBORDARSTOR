@@ -969,22 +969,35 @@ function TrackingCardsView({
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
-                      <div
-                        className="flex-1 min-w-0 max-w-[75%] sm:max-w-[78%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
-                        style={{
-                          backgroundImage: `url('${headerWebpBg}')`,
-                        }}
-                      >
-                        <span
-                          className="font-black text-sm sm:text-base leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
+                      <div className="relative flex-1 min-w-0 max-w-[75%] sm:max-w-[78%]">
+                        <div
+                          className="w-full h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
-                            color: "#FFFFFF",
-                            textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                            backgroundImage: `url('${headerWebpBg}')`,
                           }}
-                          title={headerTextStr}
                         >
-                          {headerTextStr}
-                        </span>
+                          <span
+                            className="font-black text-sm sm:text-base leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
+                            style={{
+                              color: "#FFFFFF",
+                              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                            }}
+                            title={headerTextStr}
+                          >
+                            {headerTextStr}
+                          </span>
+                        </div>
+
+                        {/* أيقونة الطلب العكسي ملتصقة بحافة بلوك اسم المحل ومسحوبة لليمين */}
+                        {isReverse && (
+                          <div
+                            className="absolute -bottom-1 left-2 sm:left-4 z-20 w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center select-none bg-no-repeat bg-contain"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
+                            }}
+                            title="طلب عكسي 📦⤺"
+                          />
+                        )}
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب المكيشة + مربع الاختيار في أقصى اليسار */}
@@ -1012,17 +1025,6 @@ function TrackingCardsView({
                               {o.orderNumber}
                             </span>
                           </div>
-
-                          {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
-                          {isReverse && (
-                            <div
-                              className="absolute -bottom-2.5 -right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center select-none bg-no-repeat bg-contain"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
-                              }}
-                              title="طلب عكسي 📦⤺"
-                            />
-                          )}
                         </div>
                       </div>
                     </div>
