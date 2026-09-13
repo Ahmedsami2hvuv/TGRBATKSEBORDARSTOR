@@ -660,13 +660,13 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب مسحوبة لليمين باتجاه الداخل لتستقر داخل الإطار تماماً */}
-                      <div className="relative shrink-0 flex items-center gap-1.5 ml-1.5 sm:ml-2">
+                      <div className="relative shrink-0 flex items-center gap-2 ml-1.5 sm:ml-2 -mt-0.5 sm:-mt-1">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
                             checked={selected}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
-                            className="size-4 rounded border border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
+                            className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
                         )}
 
@@ -675,7 +675,7 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "up")}
-                              className="flex size-5.5 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-[10px]"
+                              className="flex size-6 sm:size-7 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-xs"
                               title="تحريك للأعلى"
                             >
                               ▲
@@ -683,7 +683,7 @@ function MandoubFullBlockCardGrid({
                             <button
                               type="button"
                               onClick={() => moveRow(o.id, "down")}
-                              className="flex size-5.5 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-[10px]"
+                              className="flex size-6 sm:size-7 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition shadow-2xs text-xs"
                               title="تحريك للأسفل"
                             >
                               ▼
@@ -694,7 +694,7 @@ function MandoubFullBlockCardGrid({
                         <div className="relative">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
                           <div
-                            className="h-9 sm:h-10 px-3.5 rounded-lg flex items-center justify-center font-black font-mono text-xs sm:text-sm select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
+                            className="h-10 sm:h-11 px-4 rounded-lg flex items-center justify-center font-black font-mono text-sm sm:text-base select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
@@ -707,7 +707,7 @@ function MandoubFullBlockCardGrid({
                           {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
                           {isReverse && (
                             <div
-                              className="absolute -bottom-2 -right-1.5 z-20 w-6 h-6 rounded-full flex items-center justify-center shadow-xs select-none bg-no-repeat bg-contain"
+                              className="absolute -bottom-2.5 -right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-xs select-none bg-no-repeat bg-contain"
                               style={{
                                 backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
                               }}
@@ -719,7 +719,7 @@ function MandoubFullBlockCardGrid({
                         {/* شارة حالة الطلب المصغرة */}
                         <div className="shrink-0">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black text-white shadow-2xs border border-[#C9A86A]/60 ${
+                            className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black text-white shadow-2xs border border-[#C9A86A]/60 ${
                               isAssigned
                                 ? "bg-red-600"
                                 : isDelivering
@@ -736,7 +736,7 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 2. القسم الأوسط: نوع البضاعة يميناً + دائرة السعر المكيشة (WEBP) مكبرة ومرفوعة أسفل البلوك المزخرف + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between -mt-2 sm:-mt-2.5 py-0 px-1">
+                    <div className="relative z-10 flex items-center justify-between -mt-3 sm:-mt-3.5 py-0 px-1">
                       {/* النص الأيمن (نوع البضاعة فقط بدون اسم الزبون) */}
                       <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-center w-[85px] sm:w-[110px] leading-snug truncate">
                         {displayGoodsType}
@@ -745,7 +745,7 @@ function MandoubFullBlockCardGrid({
                       {/* دائرة السعر المركزية مكبرة ومرفوعة للأعلى مباشرة تحت بلوك اسم المحل */}
                       <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className="w-16.5 h-16.5 sm:w-19 sm:h-19 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
+                          className="w-18.5 h-18.5 sm:w-21 sm:h-21 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
@@ -753,13 +753,13 @@ function MandoubFullBlockCardGrid({
                           {isAllPaid ? (
                             <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
                               <span
-                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[14px] sm:text-[16px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 كلشي
                               </span>
                               <span
-                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 واصل
@@ -767,7 +767,7 @@ function MandoubFullBlockCardGrid({
                             </div>
                           ) : (
                             <span
-                              className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
+                              className="text-[26px] sm:text-[32px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
                               style={{
                                 color: "#F5D77F",
                               }}
@@ -790,7 +790,7 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والتسليم يساراً مطابق تماماً للصورة */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-3 sm:-mt-4 pt-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-4 sm:-mt-5 pt-0" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
                         className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
@@ -871,13 +871,13 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -890,7 +890,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -899,7 +899,7 @@ function MandoubFullBlockCardGrid({
                         )}
 
                         {!isSortingMode && isDelivered && (
-                          <span className="h-9 sm:h-10 px-3.5 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-2xs flex items-center gap-1">
+                          <span className="h-10 sm:h-11 px-4 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs sm:text-sm shadow-2xs flex items-center gap-1">
                             <span>✓</span>
                             <span>مسلّم</span>
                           </span>
