@@ -989,10 +989,10 @@ function TrackingCardsView({
                           </span>
                         </div>
 
-                        {/* أيقونة الطلب العكسي ملتصقة بحافة بلوك اسم المحل ومسحوبة لليمين */}
+                        {/* أيقونة الطلب العكسي مسحوبة لليمين وملتصقة ببلوك اسم المحل بدقة بعيداً عن رقم الطلب */}
                         {isReverse && (
                           <div
-                            className="absolute -bottom-1 left-2 sm:left-4 z-20 w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center select-none bg-no-repeat bg-contain"
+                            className="absolute -bottom-1 right-4 sm:right-6 z-20 w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-full flex items-center justify-center select-none bg-center bg-contain bg-no-repeat drop-shadow-md transition-transform hover:scale-110 cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/icon-reverse.webp')",
                             }}
