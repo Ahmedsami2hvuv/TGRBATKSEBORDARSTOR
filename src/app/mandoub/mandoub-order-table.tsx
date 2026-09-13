@@ -726,28 +726,23 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة والزبون يميناً + دائرة السعر المكيشة (WEBP) + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between py-1 px-1">
-                      {/* النص الأيمن (نوع البضاعة والزبون) */}
+                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + دائرة السعر المكيشة (WEBP) مكبرة ومرفوعة أسفل البلوك المزخرف + التوقيت يساراً */}
+                    <div className="relative z-10 flex items-center justify-between -mt-2 sm:-mt-2.5 py-0 px-1">
+                      {/* النص الأيمن (نوع البضاعة فقط بدون اسم الزبون) */}
                       <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-center w-[85px] sm:w-[110px] leading-snug truncate">
                         {displayGoodsType}
-                        {o.customerName && (
-                          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
-                            👤 {o.customerName}
-                          </span>
-                        )}
                       </div>
 
-                      {/* دائرة السعر المركزية المكيشة برقم السعر الذهبي فوقها كنص */}
+                      {/* دائرة السعر المركزية مكبرة ومرفوعة للأعلى مباشرة تحت بلوك اسم المحل */}
                       <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
+                          className="w-16.5 h-16.5 sm:w-19 sm:h-19 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
                         >
                           <span
-                            className="text-xl sm:text-2xl font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+                            className="text-2xl sm:text-[28px] font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
                             style={{
                               color: "#F5D77F",
                             }}
