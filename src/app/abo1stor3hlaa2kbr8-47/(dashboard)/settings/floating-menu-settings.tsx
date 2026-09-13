@@ -208,9 +208,30 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
       </div>
 
       <div className="space-y-4">
+        {/* بطاقة زر الذكاء الاصطناعي الثابت */}
+        <div className="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200/80 rounded-2xl flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center text-white text-base shadow-sm shrink-0">
+              ✨
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
+                المساعد الذكي (الذكاء الاصطناعي)
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">زر ثابت دائم</span>
+              </h4>
+              <p className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                مدمج وثابت تلقائياً كأول زر في القائمة الدائرية العائمة لتنفيذ الأوامر الصوتية والنصية.
+              </p>
+            </div>
+          </div>
+          <div className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl shrink-0">
+            مفعل دائماً ✓
+          </div>
+        </div>
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-            الأقسام والروابط
+            الأقسام والروابط المخصصة
             {!loading && <span className="text-[10px] text-emerald-500 font-bold bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse">● مزامنة تلقائية</span>}
           </h3>
           <button

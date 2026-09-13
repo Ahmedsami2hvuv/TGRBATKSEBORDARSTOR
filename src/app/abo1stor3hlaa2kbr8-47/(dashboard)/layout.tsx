@@ -6,8 +6,6 @@ export const dynamic = "force-dynamic";
 import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
 import { getSidebarConfig } from "@/lib/sidebar-settings-server";
 import { PullToRefresh } from "@/components/pull-to-refresh";
-import { AdminFloatingAiWidget } from "@/components/admin-floating-ai-widget";
-
 export default async function AdminDashboardLayout({
   children,
 }: {
@@ -21,9 +19,6 @@ export default async function AdminDashboardLayout({
       <AdminShell pendingInitialCount={0} isAccountant={isAccountant} initialSidebarConfig={sidebarConfig}>
         {children}
       </AdminShell>
-
-      {/* الزر العائم الذكي للمساعد الصوتي والإداري يظهر في جميع صفحات الإدارة */}
-      <AdminFloatingAiWidget />
     </>
   );
 }

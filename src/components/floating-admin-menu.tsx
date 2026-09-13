@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { AdminAiChatModal } from "@/components/admin-ai-chat-modal";
 
 interface CustomLink {
   id: string;
@@ -14,6 +15,7 @@ interface CustomCategory {
   color: string;
   icon: string;
   links: CustomLink[];
+  isAi?: boolean;
 }
 
 const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#64748b"];
@@ -27,6 +29,7 @@ export function FloatingAdminMenu() {
   const [menuScale, setMenuScale] = useState(1);
   const [menuFontSize, setMenuFontSize] = useState(8);
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
 
   const dragStartPos = useRef({ x: 0, y: 0 });
   const positionRef = useRef({ x: 50, y: 300 });
@@ -153,19 +156,27 @@ export function FloatingAdminMenu() {
       const elements = document.elementsFromPoint(clientX, clientY);
       let url = null;
       let catId = null;
+      let isAiAction = false;
       for (const el of elements) {
+        if (el.getAttribute('data-action') === 'open_ai_assistant') isAiAction = true;
         if (el.getAttribute('data-url')) url = el.getAttribute('data-url');
         if (el.getAttribute('data-category-id')) catId = el.getAttribute('data-category-id');
       }
 
       if (isHovered) {
-        if (url) {
+        if (isAiAction) {
+          setIsAiOpen(true);
+          setIsHovered(false);
+          setHoveredCategory(null);
+        } else if (url) {
           window.open(url, "_blank");
           setIsHovered(false);
+          setHoveredCategory(null);
         } else if (catId) {
           setHoveredCategory(catId);
         } else {
           setIsHovered(false); // إغلاق عند النقر في أي مكان آخر داخل القائمة
+          setHoveredCategory(null);
         }
       } else {
         setIsHovered(true); // فتح القائمة بنقرة بسيطة
@@ -237,10 +248,23 @@ export function FloatingAdminMenu() {
     };
   }, [onMove, onEnd]);
 
+  // دمج زر الذكاء الاصطناعي الثابت كأول زر في القائمة الدائرية
+  const menuItems: CustomCategory[] = [
+    {
+      id: "fixed_ai_assistant",
+      name: "المساعد الذكي",
+      icon: "✨",
+      color: "#6366f1",
+      isAi: true,
+      links: []
+    },
+    ...categories
+  ];
+
   const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const totalAngle = 260;
   const startAngle = isLeft ? 50 : 250;
-  const count = categories.length;
+  const count = menuItems.length;
   const step = count > 0 ? totalAngle / count : 0;
 
   return (
@@ -249,7 +273,10 @@ export function FloatingAdminMenu() {
       {isHovered && (
         <div
           className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm transition-opacity pointer-events-auto"
-          onClick={() => setIsHovered(false)}
+          onClick={() => {
+            setIsHovered(false);
+            setHoveredCategory(null);
+          }}
         />
       )}
 
@@ -285,13 +312,39 @@ export function FloatingAdminMenu() {
             style={{ transform: `scale(${menuScale})`, zIndex: 10 }}
           >
             <svg width="400" height="400" viewBox="-200 -200 400 400" className="overflow-visible drop-shadow-2xl">
-              {categories.map((cat, i) => {
+              <defs>
+                <linearGradient id="aiMenuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="50%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#8b5cf6" />
+                </linearGradient>
+              </defs>
+
+              {menuItems.map((cat, i) => {
                 const sA = startAngle + (i * step) + 2;
                 const eA = sA + step - 4;
                 const midA = (sA + eA) / 2;
                 const midRad = (midA - 90) * Math.PI / 180;
                 const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
                 const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
+
+                if (cat.isAi) {
+                  return (
+                    <g key={cat.id} data-action="open_ai_assistant" className="cursor-pointer group">
+                      <path
+                        d={getArcPath(sA, eA, innerRadius, outerRadius)}
+                        fill="url(#aiMenuGrad)"
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                        className="transition-all duration-200 hover:brightness-125 filter drop-shadow"
+                        data-action="open_ai_assistant"
+                      />
+                      <text x={tx} y={ty} fill="white" fontSize={menuFontSize} fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none drop-shadow">
+                        ✨ {cat.name.substring(0, 10)}
+                      </text>
+                    </g>
+                  );
+                }
 
                 return (
                   <g key={cat.id} data-category-id={cat.id} className="cursor-pointer group">
@@ -352,6 +405,13 @@ export function FloatingAdminMenu() {
           </div>
         </div>
       </div>
+
+      {/* نافذة محادثة المساعد الذكي والصوتي المتكاملة */}
+      <AdminAiChatModal
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+        initialPosition={position}
+      />
     </>
   );
 }
