@@ -459,89 +459,111 @@ function AdminDeliveryFormModal({
   );
 }
 
-function TrackingCardMoneyBadges({ o }: { o: TrackingTableRow }) {
+function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   const pickup = o.pickupSumDinar ?? null;
   const preparerPickup = o.preparerPickupSumDinar ?? null;
   const adminPickup = o.adminPickupSumDinar ?? null;
-  const delivery = o.deliverySumDinar ?? null;
-  const preparerDelivery = o.preparerDeliverySumDinar ?? null;
 
   const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
   const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
   const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
+
+  if (showPickup) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-emerald-700 bg-emerald-600 text-white shrink-0 select-none"
+        title={`صادر المندوب: ${formatDinarAsAlf(pickup)}`}
+      >
+        {formatDinarAsAlf(pickup)}
+      </span>
+    );
+  }
+  if (showPreparerPickup) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-amber-600 bg-amber-500 text-white shrink-0 select-none"
+        title={`صادر المجهز: ${formatDinarAsAlf(preparerPickup)}`}
+      >
+        {formatDinarAsAlf(preparerPickup)}
+      </span>
+    );
+  }
+  if (showAdminPickup) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-blue-700 bg-blue-600 text-white shrink-0 select-none"
+        title={`صادر الإدارة: ${formatDinarAsAlf(adminPickup)}`}
+      >
+        {formatDinarAsAlf(adminPickup)}
+      </span>
+    );
+  }
+  if (o.saderMismatchType === "deficit") {
+    return (
+      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-amber-800 bg-amber-700 text-white shrink-0 select-none" title="نقص بالصادر">
+        نقص صادر
+      </span>
+    );
+  }
+  if (o.saderMismatchType === "excess") {
+    return (
+      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-emerald-900 bg-emerald-800 text-white shrink-0 select-none" title="زيادة بالصادر">
+        زيادة صادر
+      </span>
+    );
+  }
+  return null;
+}
+
+function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
+  const delivery = o.deliverySumDinar ?? null;
+  const preparerDelivery = o.preparerDeliverySumDinar ?? null;
+
   const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
   const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
 
-  const hasAnyBadge =
-    showPickup ||
-    showPreparerPickup ||
-    showAdminPickup ||
-    showDelivery ||
-    showPreparerDelivery ||
-    o.wardMismatchType ||
-    o.saderMismatchType ||
-    (o.noWardRecorded && o.orderStatus === "delivered");
-
-  if (!hasAnyBadge) return null;
-
-  const pillBase =
-    "inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-black leading-none tabular-nums shadow-xs border shrink-0";
-
-  return (
-    <div className="flex items-center gap-1 flex-wrap shrink-0" onClick={(e) => e.stopPropagation()}>
-      {showPickup && (
-        <span className={`${pillBase} bg-emerald-600 text-white border-emerald-700`} title="صادر المندوب">
-          {formatDinarAsAlf(pickup)}
-        </span>
-      )}
-      {showPreparerPickup && (
-        <span className={`${pillBase} bg-amber-500 text-white border-amber-600`} title="صادر المجهز">
-          {formatDinarAsAlf(preparerPickup)}
-        </span>
-      )}
-      {showAdminPickup && (
-        <span className={`${pillBase} bg-blue-600 text-white border-blue-700`} title="صادر الإدارة">
-          {formatDinarAsAlf(adminPickup)}
-        </span>
-      )}
-      {showDelivery && (
-        <span className={`${pillBase} bg-rose-600 text-white border-rose-700`} title="وارد المندوب">
-          {formatDinarAsAlf(delivery)}
-        </span>
-      )}
-      {showPreparerDelivery && (
-        <span className={`${pillBase} bg-purple-600 text-white border-purple-700`} title="وارد المجهز">
-          {formatDinarAsAlf(preparerDelivery)}
-        </span>
-      )}
-
-      {o.wardMismatchType === "deficit" && (
-        <span className={`${pillBase} bg-red-700 text-white border-red-800`} title="نقص بالوارد">
-          نقص بالوارد
-        </span>
-      )}
-      {o.saderMismatchType === "deficit" && (
-        <span className={`${pillBase} bg-amber-700 text-white border-amber-800`} title="نقص بالصادر">
-          نقص بالصادر
-        </span>
-      )}
-      {o.wardMismatchType === "excess" && (
-        <span className={`${pillBase} bg-emerald-800 text-white border-emerald-900`} title="زيادة بالوارد">
-          زيادة بالوارد
-        </span>
-      )}
-      {o.saderMismatchType === "excess" && (
-        <span className={`${pillBase} bg-emerald-800 text-white border-emerald-900`} title="زيادة بالصادر">
-          زيادة بالصادر
-        </span>
-      )}
-      {o.noWardRecorded && o.orderStatus === "delivered" && (
-        <span className={`${pillBase} bg-slate-700 text-white border-slate-800`} title="بدون وارد">
-          بدون وارد
-        </span>
-      )}
-    </div>
-  );
+  if (showDelivery) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-rose-700 bg-rose-600 text-white shrink-0 select-none"
+        title={`وارد المندوب: ${formatDinarAsAlf(delivery)}`}
+      >
+        {formatDinarAsAlf(delivery)}
+      </span>
+    );
+  }
+  if (showPreparerDelivery) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] sm:text-xs font-black font-mono leading-none shadow-xs border border-purple-700 bg-purple-600 text-white shrink-0 select-none"
+        title={`وارد المجهز: ${formatDinarAsAlf(preparerDelivery)}`}
+      >
+        {formatDinarAsAlf(preparerDelivery)}
+      </span>
+    );
+  }
+  if (o.wardMismatchType === "deficit") {
+    return (
+      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-red-800 bg-red-700 text-white shrink-0 select-none" title="نقص بالوارد">
+        نقص وارد
+      </span>
+    );
+  }
+  if (o.wardMismatchType === "excess") {
+    return (
+      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-emerald-900 bg-emerald-800 text-white shrink-0 select-none" title="زيادة بالوارد">
+        زيادة وارد
+      </span>
+    );
+  }
+  if (o.noWardRecorded && o.orderStatus === "delivered") {
+    return (
+      <span className="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-black leading-none shadow-xs border border-slate-800 bg-slate-700 text-white shrink-0 select-none" title="بدون وارد">
+        بدون وارد
+      </span>
+    );
+  }
+  return null;
 }
 
 function RoyalScallopedCardBorder() {
@@ -939,11 +961,6 @@ function TrackingCardsView({
                       minHeight: "220px",
                     }}
                   >
-                    {/* البادجات المالية العائمة أعلى الكرت */}
-                    <div className="absolute -top-2.5 left-10 z-20 pointer-events-none flex items-center gap-1 shrink-0">
-                      <TrackingCardMoneyBadges o={o} />
-                    </div>
-
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل قليلاً للأسفل ومحمي من خروج النص) */}
@@ -1005,57 +1022,66 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + دائرة السعر المكيشة (WEBP) مكبرة ومرفوعة أسفل البلوك المزخرف + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between -mt-3 sm:-mt-3.5 py-0 px-1">
+                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + بلوك الصادر والوارد بجانبي دائرة السعر + التوقيت يساراً */}
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 -mt-3 sm:-mt-3.5 py-0 px-1">
                       {/* النص الأيمن (نوع البضاعة فقط بدون اسم الزبون) */}
-                      <div className="text-xs sm:text-sm font-black text-slate-900 text-center w-[85px] sm:w-[110px] leading-snug truncate">
+                      <div className="text-xs sm:text-sm font-black text-slate-900 text-center flex-1 min-w-0 max-w-[85px] sm:max-w-[105px] leading-snug truncate">
                         {displayGoodsType}
                       </div>
 
-                      {/* دائرة السعر المركزية مكبرة ومرفوعة للأعلى مباشرة تحت بلوك اسم المحل */}
-                      <div className="relative shrink-0 flex items-center justify-center">
-                        <div
-                          className="w-18.5 h-18.5 sm:w-21 sm:h-21 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/price-circle.webp')",
-                          }}
-                        >
-                          {isAllPaid ? (
-                            <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                      {/* كتلة السعر في المنتصف مع بلوك الصادر على اليمين وبلوك الوارد على اليسار */}
+                      <div className="flex items-center justify-center gap-1 sm:gap-1.5 shrink-0">
+                        {/* بلوك الصادر (يمين دائرة السعر) */}
+                        <OrderSaderSideBadge o={o} />
+
+                        {/* دائرة السعر المركزية */}
+                        <div className="relative shrink-0 flex items-center justify-center">
+                          <div
+                            className="w-18.5 h-18.5 sm:w-21 sm:h-21 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shadow-sm"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/price-circle.webp')",
+                            }}
+                          >
+                            {isAllPaid ? (
+                              <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                                <span
+                                  className="text-[14px] sm:text-[16px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                  style={{ color: "#F5D77F" }}
+                                >
+                                  كلشي
+                                </span>
+                                <span
+                                  className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                  style={{ color: "#F5D77F" }}
+                                >
+                                  واصل
+                                </span>
+                              </div>
+                            ) : (
                               <span
-                                className="text-[14px] sm:text-[16px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                style={{ color: "#F5D77F" }}
+                                className={`${
+                                  numericPrice.length >= 5
+                                    ? "text-[17px] sm:text-[20px]"
+                                    : numericPrice.length >= 4
+                                    ? "text-[20px] sm:text-[24px]"
+                                    : "text-[26px] sm:text-[32px]"
+                                } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight`}
+                                style={{
+                                  color: "#F5D77F",
+                                }}
                               >
-                                كلشي
+                                {numericPrice || "—"}
                               </span>
-                              <span
-                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                style={{ color: "#F5D77F" }}
-                              >
-                                واصل
-                              </span>
-                            </div>
-                          ) : (
-                            <span
-                              className={`${
-                                numericPrice.length >= 5
-                                  ? "text-[17px] sm:text-[20px]"
-                                  : numericPrice.length >= 4
-                                  ? "text-[20px] sm:text-[24px]"
-                                  : "text-[26px] sm:text-[32px]"
-                              } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight`}
-                              style={{
-                                color: "#F5D77F",
-                              }}
-                            >
-                              {numericPrice || "—"}
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </div>
+
+                        {/* بلوك الوارد (يسار دائرة السعر) */}
+                        <OrderWardSideBadge o={o} />
                       </div>
 
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
-                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] text-center w-[85px] sm:w-[110px] leading-snug">
+                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] text-center flex-1 min-w-0 max-w-[85px] sm:max-w-[105px] leading-snug">
                         {o.orderNoteTime || "فوري"}
                         {isPrepaid && (
                           <span className="block text-[9px] text-emerald-700 font-black mt-0.5">
