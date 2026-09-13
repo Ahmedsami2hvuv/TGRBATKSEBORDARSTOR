@@ -850,14 +850,14 @@ function MandoubFullBlockCardGrid({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين */}
-                      <div className="flex items-center gap-2.5">
+                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين مرفوعة للأعلى بقوة */}
+                      <div className="flex items-center gap-2 sm:gap-2.5 -translate-y-3 sm:-translate-y-4 shrink-0">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white shadow-md hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -870,7 +870,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white shadow-md hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}

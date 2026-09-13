@@ -1145,14 +1145,14 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مكبرة ومرفوعة للأعلى */}
-                      <div className="flex items-center gap-2.5">
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مكبرة ومرفوعة للأعلى بقوة */}
+                      <div className="flex items-center gap-2 sm:gap-2.5 -translate-y-3 sm:-translate-y-4 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
                             onClick={() => onAdminPickup(o)}
-                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white shadow-md hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -1165,7 +1165,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAdminDelivery(o)}
-                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black text-white shadow-sm hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white shadow-md hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -1178,7 +1178,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="w-13.5 h-13.5 sm:w-16 sm:h-16 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white shadow-sm hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white shadow-md hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1187,7 +1187,7 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[11px] sm:text-[13px] max-w-[50px] sm:max-w-[62px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                              <span className="text-[#FFF8F0] text-xs sm:text-sm max-w-[56px] sm:max-w-[68px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                                 {o.courierName}
                               </span>
                             )}
