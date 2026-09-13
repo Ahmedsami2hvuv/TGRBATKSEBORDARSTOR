@@ -23,6 +23,7 @@ import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { OrderTrackingSearch } from "./order-tracking-search";
+import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
 import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -453,206 +454,161 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
 
     return (
-      <div className="space-y-4" dir="rtl">
-        <p className={ad.muted}>
-          <Link href={SECRET_ADMIN_PATH} className={ad.link}>
-            ← الرئيسية
-          </Link>
-        </p>
-        <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className={ad.h1}>
-              {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
-            </h1>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-            <Link 
-              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 px-4 py-2.5 text-white shadow-sm shadow-amber-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
+        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
+        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
+          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={SECRET_ADMIN_PATH}
+              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
+              title="العودة للرئيسية"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">💰</span>
-                <div>
-                  <p className="text-[10px] font-bold text-amber-100 uppercase">أرباح اليوم الصافية</p>
-                  <p className="text-sm font-black">{formatDinarAsAlfWithUnit(todayTotalProfit)}</p>
-                </div>
-              </div>
-              <span className="text-[11px] font-bold text-amber-100 bg-amber-700/30 px-2 py-1 rounded-lg">← تفاصيل</span>
+              ←
             </Link>
-
-            <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:gap-3">
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/new`}
-                className="flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs sm:text-sm font-black text-[#0A3D2E] shadow-md border border-[#D8BC7D] transition hover:brightness-105 active:scale-[0.98] text-center whitespace-nowrap"
-                style={{
-                  background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
-                }}
-              >
-                <span>إضافة طلب من الإدارة</span>
-                <span>⚜️</span>
-              </Link>
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/pending`}
-                className="flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs sm:text-sm font-black text-white shadow-md border border-[#C9A86A] transition hover:brightness-110 active:scale-[0.98] text-center whitespace-nowrap"
-                style={{
-                  background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
-                }}
-              >
-                <span className="text-[#F5D77F]">✨</span>
-                <span>الطلبات الجديدة</span>
-              </Link>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
+                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+              </h1>
+              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
+                {safeTableRows.length}
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* شريط التبويبات الفاخر الملكي (Filter Chips) */}
-        <div className="relative">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-1 no-scrollbar sm:flex-wrap">
-            {statusTabs.map((t) => {
-              const active =
-                t.key === "all" ? statusFilter === "all" : statusFilter === t.key;
-              return (
-                <Link
-                  key={t.key}
-                  href={hrefTracking({ status: t.key })}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-black transition-all shadow-xs border ${
-                    active
-                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] shadow-[0_0_12px_rgba(201,168,106,0.35)]"
-                      : "bg-white text-[#0A3D2E] border-[#C9A86A]/70 hover:border-[#C9A86A] hover:bg-[#FFF8F0]"
-                  }`}
-                >
-                  <span>{t.label}</span>
-                  {t.key === "pending" && pendingTabCount > 0 ? (
-                    <span className="inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[#C9A86A] text-[#0A3D2E] px-1.5 py-0.5 text-[10px] font-black leading-none">
-                      {pendingTabCount > 99 ? "99+" : pendingTabCount}
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
-
-            <div className="h-4 w-px bg-[#C9A86A]/40 mx-0.5 shrink-0 hidden sm:block" />
-
+          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* كبسولة أرباح اليوم الصافية المدمجة */}
             <Link
-              href={hrefTracking({ status: "checkSader", saderFilter })}
-              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
-                statusFilter === "checkSader"
-                  ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                  : "bg-white text-[#0A3D2E] border-[#C9A86A]/60 hover:border-[#C9A86A]"
-              }`}
+              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
+              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
             >
-              فحص الصادر
+              <span className="text-xs">💰</span>
+              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
+                {formatDinarAsAlfWithUnit(todayTotalProfit)}
+              </span>
             </Link>
+
+            {/* زر إضافة طلب من الإدارة */}
             <Link
-              href={hrefTracking({
-                status: "checkWard",
-                wardFilter,
-              })}
-              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
-                statusFilter === "checkWard"
-                  ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                  : "bg-white text-[#0A3D2E] border-[#C9A86A]/60 hover:border-[#C9A86A]"
-              }`}
+              href={`${SECRET_ADMIN_PATH}/orders/new`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
+              }}
+              title="إضافة طلب من الإدارة"
             >
-              فحص الوارد
+              <span>➕</span>
+              <span className="hidden xs:inline">إضافة طلب</span>
             </Link>
+
+            {/* زر الطلبات الجديدة */}
             <Link
-              href={hrefTracking({ status: "cancelled" })}
-              className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-black transition-all border shadow-xs ${
-                statusFilter === "cancelled"
-                  ? "bg-[#7A1F1F] text-white border-[#C9A86A]"
-                  : "bg-white text-[#7A1F1F] border-[#C9A86A]/60 hover:border-[#C9A86A]"
-              }`}
+              href={`${SECRET_ADMIN_PATH}/orders/pending`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
+              }}
+              title="الطلبات الجديدة المعلقة"
             >
-              المرفوضة
+              <span className="text-[#F5D77F]">✨</span>
+              <span className="hidden xs:inline">جديدة</span>
+              {pendingTabCount > 0 ? (
+                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
+                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
+                </span>
+              ) : null}
             </Link>
           </div>
         </div>
 
+        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
+        <div className="flex items-center gap-2">
+          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
+          <OrderTrackingFilterDropdown
+            currentStatus={statusFilter}
+            pendingCount={pendingTabCount}
+            wardFilter={wardFilter}
+            saderFilter={saderFilter}
+            searchQuery={q}
+          />
+
+          {/* حقل البحث الفوري */}
+          <Suspense
+            fallback={
+              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
+            }
+          >
+            <OrderTrackingSearch
+              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
+              initialQ={q}
+              statusFilter={statusFilter}
+              wardFilter={wardFilter}
+              saderFilter={saderFilter}
+            />
+          </Suspense>
+        </div>
+
+        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
         {statusFilter === "checkSader" ? (
-          <div className="space-y-2">
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2 text-sm text-emerald-950">
-              <strong>فحص الصادر:</strong> طلبات حيث المبلغ المدفوع للمحل يختلف عن سعر البضاعة.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">فلتر:</span>
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
+            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
+            <div className="flex items-center gap-1.5">
               <Link
                 href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
                   saderFilter === "lower"
-                    ? "bg-emerald-600 text-white ring-2 ring-emerald-400"
-                    : "border border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
                 }`}
               >
-                المبلغ أقل من سعر البضاعة
+                أقل من البضاعة
               </Link>
               <Link
                 href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
                   saderFilter === "higher"
-                    ? "bg-emerald-600 text-white ring-2 ring-emerald-400"
-                    : "border border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
                 }`}
               >
-                المبلغ أعلى من سعر البضاعة
+                أعلى من البضاعة
               </Link>
             </div>
           </div>
         ) : null}
+
+        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
         {statusFilter === "checkWard" ? (
-          <div className="space-y-2">
-            <p className="rounded-xl border border-red-200 bg-red-50/90 px-3 py-2 text-sm text-red-950">
-              <strong>فحص الوارد:</strong> طلبات مسلّمة حيث المبلغ المستلم من الزبون يختلف عن المجموع الكلي.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">فلتر:</span>
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
+            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
+            <div className="flex items-center gap-1.5">
               <Link
                 href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
                   wardFilter === "lower"
-                    ? "bg-red-600 text-white ring-2 ring-red-400"
-                    : "border border-red-200 bg-white text-red-900 hover:bg-red-50"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
                 }`}
               >
-                المبلغ أقل من المتوقع
+                أقل من المتوقع
               </Link>
               <Link
                 href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
                   wardFilter === "higher"
-                    ? "bg-red-600 text-white ring-2 ring-red-400"
-                    : "border border-red-200 bg-white text-red-900 hover:bg-red-50"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
                 }`}
               >
-                المبلغ أعلى من المتوقع
+                أعلى من المتوقع
               </Link>
             </div>
           </div>
         ) : null}
 
-        <div className="space-y-3">
-          <div>
-            <Suspense
-              fallback={
-                <div className="h-10 animate-pulse rounded-xl bg-sky-100" aria-hidden />
-              }
-            >
-              <OrderTrackingSearch
-                key={`${statusFilter}-${wardFilter}-${saderFilter}`}
-                initialQ={q}
-                statusFilter={statusFilter}
-                wardFilter={wardFilter}
-              />
-            </Suspense>
-          </div>
-
-          <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
-          <p className={ad.orderListCountFooter}>
-            عدد الطلبات في هذه الصفحة:{" "}
-            <span className="font-bold text-sky-900">{safeTableRows.length}</span>
-          </p>
-        </div>
+        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
       </div>
     );
   } catch (err: any) {

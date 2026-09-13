@@ -1438,10 +1438,10 @@ export function OrderTrackingBulkTable({
   }, [bulkState.ok]);
 
   return (
-    <div className="space-y-3.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
         {visibleIds.length > 0 ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() =>
@@ -1450,7 +1450,7 @@ export function OrderTrackingBulkTable({
                   return !v;
                 })
               }
-              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-black transition active:scale-95 shadow-xs ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 shadow-2xs ${
                 showQuickSelect
                   ? "bg-[#0A3D2E] border-[#C9A86A] text-[#F5D77F]"
                   : "border-[#C9A86A]/70 bg-white text-[#0A3D2E] hover:border-[#C9A86A] hover:bg-[#FFF8F0]"
@@ -1465,7 +1465,7 @@ export function OrderTrackingBulkTable({
         ) : <div />}
 
         {/* أزرار التبديل بين عرض الكروت وعرض الجدول مع قائمة منسدلة لاختيار 1 2 3 */}
-        <div className="flex items-center gap-1.5 rounded-full bg-white p-1 border border-[#C9A86A]/70 shadow-xs">
+        <div className="flex items-center gap-1 rounded-full bg-white p-0.5 border border-[#C9A86A]/70 shadow-2xs">
           {/* زر البطاقات مع القائمة المنسدلة */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
@@ -1478,26 +1478,26 @@ export function OrderTrackingBulkTable({
                   setShowCardsMenu((v) => !v);
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-black transition active:scale-95 ${
+              className={`flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 ${
                 viewMode === "cards"
-                  ? "bg-[#0A3D2E] text-[#F5D77F] shadow-xs border border-[#C9A86A]"
+                  ? "bg-[#0A3D2E] text-[#F5D77F] shadow-2xs border border-[#C9A86A]"
                   : "text-[#0A3D2E] hover:bg-[#FFF8F0]"
               }`}
               title="عرض البطاقات (انقر لاختيار 1 أو 2 أو 3 طلبات بالسطر)"
             >
               <span>📱</span>
               <span>البطاقات</span>
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] text-[#0A3D2E] text-[10px] font-black">
+              <span className="inline-flex size-3.5 sm:size-4 items-center justify-center rounded-full bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] text-[#0A3D2E] text-[9px] sm:text-[10px] font-black">
                 {cardColumns}
               </span>
-              <span className="text-[9px] text-[#C9A86A]">
+              <span className="text-[8px] text-[#C9A86A]">
                 {showCardsMenu ? "▲" : "▼"}
               </span>
             </button>
 
             {/* القائمة المنسدلة لاختيار عدد الأعمدة 1 2 3 */}
             {showCardsMenu && (
-              <div className="absolute top-full right-0 mt-2 z-30 w-40 rounded-2xl bg-white p-2 shadow-2xl border-2 border-[#C9A86A] animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute top-full right-0 mt-1.5 z-30 w-40 rounded-2xl bg-white p-1.5 shadow-2xl border-2 border-[#C9A86A] animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-2 py-1 text-[10px] font-black text-[#0A3D2E] border-b border-[#C9A86A]/30 mb-1">
                   الطلبات بالسطر:
                 </div>
@@ -1540,9 +1540,9 @@ export function OrderTrackingBulkTable({
               setViewMode("table");
               setShowCardsMenu(false);
             }}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-black transition active:scale-95 ${
+            className={`flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 ${
               viewMode === "table"
-                ? "bg-[#0A3D2E] text-[#F5D77F] shadow-xs border border-[#C9A86A]"
+                ? "bg-[#0A3D2E] text-[#F5D77F] shadow-2xs border border-[#C9A86A]"
                 : "text-[#0A3D2E] hover:bg-[#FFF8F0]"
             }`}
           >
