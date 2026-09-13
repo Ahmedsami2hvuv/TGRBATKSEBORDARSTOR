@@ -972,7 +972,7 @@ function TrackingCardsView({
                       {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
                       <div className="relative flex-1 min-w-0 max-w-[75%] sm:max-w-[78%]">
                         <div
-                          className="w-full h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                          className="w-full h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-1 sm:mt-1.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
                             backgroundImage: `url('${headerWebpBg}')`,
                           }}
@@ -1034,68 +1034,70 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: نوع البضاعة يميناً + بلوك الصادر والوارد بجانبي دائرة السعر + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-3.5 py-0 px-0.5 sm:px-1 w-full">
+                    {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع وضع الصادر والوارد بجانبيها دون التأثير على مركزيتها */}
+                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-3.5 py-0 px-1 sm:px-2 w-full min-h-[75px] sm:min-h-[85px]">
                       {/* النص الأيمن (نوع البضاعة فقط بدون اسم الزبون) */}
-                      <div className="text-xs sm:text-sm font-black text-slate-900 text-center flex-1 min-w-0 max-w-[95px] sm:max-w-[125px] leading-snug truncate">
+                      <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-right flex-1 min-w-0 max-w-[30%] leading-snug truncate pr-1">
                         {displayGoodsType}
                       </div>
 
-                      {/* كتلة السعر في المنتصف مع بلوك الصادر على اليمين وبلوك الوارد على اليسار */}
-                      <div className="flex items-center justify-center gap-1 sm:gap-1.5 shrink-0">
-                        {/* بلوك الصادر (يمين دائرة السعر) */}
-                        <OrderSaderSideBadge o={o} />
-
-                        {/* دائرة السعر المركزية */}
-                        <div className="relative shrink-0 flex items-center justify-center">
-                          <div
-                            className="w-18.5 h-18.5 sm:w-21 sm:h-21 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/price-circle.webp')",
-                            }}
-                          >
-                            {isAllPaid ? (
-                              <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
-                                <span
-                                  className="text-[14px] sm:text-[16px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                  style={{ color: "#F5D77F" }}
-                                >
-                                  كلشي
-                                </span>
-                                <span
-                                  className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                  style={{ color: "#F5D77F" }}
-                                >
-                                  واصل
-                                </span>
-                              </div>
-                            ) : (
-                              <span
-                                className={`${
-                                  numericPrice.length >= 5
-                                    ? "text-[19px] sm:text-[22px]"
-                                    : numericPrice.length >= 4
-                                    ? "text-[23px] sm:text-[27px]"
-                                    : numericPrice.length === 3
-                                    ? "text-[29px] sm:text-[34px]"
-                                    : "text-[36px] sm:text-[42px]"
-                                } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
-                                style={{
-                                  color: "#F5D77F",
-                                }}
-                              >
-                                {numericPrice || "—"}
-                              </span>
-                            )}
-                          </div>
+                      {/* حاوية السعر المركزية المثبتة 100% في منتصف الكرت دائماً */}
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+                        {/* بلوك الصادر (مثبت على يمين دائرة السعر دون زحزحتها) */}
+                        <div className="absolute right-full mr-1 sm:mr-1.5 pointer-events-auto shrink-0">
+                          <OrderSaderSideBadge o={o} />
                         </div>
 
-                        {/* بلوك الوارد (يسار دائرة السعر) */}
-                        <OrderWardSideBadge o={o} />
+                        {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
+                        <div
+                          className="w-18.5 h-18.5 sm:w-21 sm:h-21 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
+                          style={{
+                            backgroundImage: "url('/images/order-luxury/price-circle.webp')",
+                          }}
+                        >
+                          {isAllPaid ? (
+                            <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                              <span
+                                className="text-[14px] sm:text-[16px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                كلشي
+                              </span>
+                              <span
+                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                style={{ color: "#F5D77F" }}
+                              >
+                                واصل
+                              </span>
+                            </div>
+                          ) : (
+                            <span
+                              className={`${
+                                numericPrice.length >= 5
+                                  ? "text-[19px] sm:text-[22px]"
+                                  : numericPrice.length >= 4
+                                  ? "text-[23px] sm:text-[27px]"
+                                  : numericPrice.length === 3
+                                  ? "text-[29px] sm:text-[34px]"
+                                  : "text-[36px] sm:text-[42px]"
+                              } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
+                              style={{
+                                color: "#F5D77F",
+                              }}
+                            >
+                              {numericPrice || "—"}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* بلوك الوارد (مثبت على يسار دائرة السعر دون زحزحتها) */}
+                        <div className="absolute left-full ml-1 sm:ml-1.5 pointer-events-auto shrink-0">
+                          <OrderWardSideBadge o={o} />
+                        </div>
                       </div>
 
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
-                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] text-center flex-1 min-w-0 max-w-[95px] sm:max-w-[125px] leading-snug">
+                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-400 text-left flex-1 min-w-0 max-w-[30%] leading-snug pl-1">
                         {o.orderNoteTime || "فوري"}
                       </div>
                     </div>
