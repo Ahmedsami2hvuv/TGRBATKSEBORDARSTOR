@@ -107,7 +107,7 @@ export function AdminCustomerLocationQuick({
           disabled={pending || locating}
           onClick={requestLocation}
           aria-busy={pending || locating}
-          className="flex-1 min-w-[120px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-2.5 py-2 text-xs font-black text-white shadow-md transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
+          className="flex-1 min-w-[120px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-2.5 py-2 text-xs font-black text-[#F5D77F] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-wait disabled:opacity-70 cursor-pointer"
         >
           <IconMapPin />
           <span>{locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}</span>
@@ -120,10 +120,10 @@ export function AdminCustomerLocationQuick({
             setShowPaste(!showPaste);
             setClientError("");
           }}
-          className={`flex-1 min-w-[110px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 px-2.5 py-2 text-xs font-black shadow-md transition disabled:opacity-70 ${
+          className={`flex-1 min-w-[110px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] px-2.5 py-2 text-xs font-black shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer ${
             showPaste 
-              ? "border-sky-300 bg-gradient-to-br from-sky-600 to-indigo-700 text-white" 
-              : "border-sky-200 bg-gradient-to-br from-sky-500 to-indigo-600 text-white hover:from-sky-600 hover:to-indigo-700"
+              ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F]" 
+              : "bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#FFF8F0]"
           }`}
         >
           <IconLink />
@@ -145,7 +145,7 @@ export function AdminCustomerLocationQuick({
       </div>
 
       {showPaste && (
-        <form action={pasteAction} className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-white/5 space-y-2 animate-in slide-in-from-top-1 duration-200">
+        <form action={pasteAction} className="mt-2 p-3 bg-[#06281D]/90 rounded-2xl border-2 border-[#C9A86A]/70 space-y-2 animate-in slide-in-from-top-1 duration-200 shadow-xl">
           <input type="hidden" name="target" value={target} />
           <div className="flex gap-2">
             <input
@@ -154,13 +154,13 @@ export function AdminCustomerLocationQuick({
               value={pastedUrl}
               onChange={(e) => setPastedUrl(e.target.value)}
               placeholder="الصق رابط لوكيشن قوقل ماب هنا..."
-              className="flex-1 min-h-[38px] rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 text-xs font-medium outline-none focus:border-indigo-500 font-mono transition-all text-right [direction:ltr]"
+              className="flex-1 min-h-[40px] rounded-xl border border-[#C9A86A]/60 bg-[#0A1A18] text-[#F5D77F] px-3 text-xs font-bold outline-none focus:border-[#F5D77F] font-mono transition-all text-right [direction:ltr]"
               required
             />
             <button
               type="submit"
               disabled={pending}
-              className="px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow transition disabled:opacity-40"
+              className="px-5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
             >
               {pastePending ? "حفظ..." : "حفظ"}
             </button>
@@ -168,8 +168,8 @@ export function AdminCustomerLocationQuick({
         </form>
       )}
 
-      {error ? <p className="text-xs font-bold text-rose-600 text-right">{error}</p> : null}
-      {ok ? <p className="text-xs font-bold text-emerald-700 text-right">تم تحديث لوكيشن الزبون بنجاح</p> : null}
+      {error ? <p className="text-xs font-black text-rose-400 bg-rose-950/60 p-1.5 rounded-lg border border-rose-500/40 text-center">{error}</p> : null}
+      {ok ? <p className="text-xs font-black text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-500/40 text-center">تم تحديث لوكيشن الزبون بنجاح</p> : null}
     </div>
   );
 }

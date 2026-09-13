@@ -121,22 +121,24 @@ export function AdminOrderPhotoQuick({
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-200 disabled:opacity-60 cursor-pointer active:scale-95"
+          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           onClick={() => {
             cameraFileRef.current?.click();
           }}
         >
-          {pending ? "جارٍ الرفع..." : "كاميرا"}
+          <span>📷</span>
+          <span>{pending ? "جارٍ الرفع..." : "كاميرا"}</span>
         </button>
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-60 cursor-pointer active:scale-95"
+          className="rounded-xl border border-[#C9A86A]/70 bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#FFF8F0] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           onClick={() => {
             galleryFileRef.current?.click();
           }}
         >
-          {pending ? "جارٍ الرفع..." : "معرض"}
+          <span>🖼️</span>
+          <span>{pending ? "جارٍ الرفع..." : "معرض"}</span>
         </button>
 
         {kind === "shop" && hasImage && (
@@ -144,14 +146,15 @@ export function AdminOrderPhotoQuick({
             type="button"
             disabled={pending || deleting || reverting}
             onClick={() => void handleRevert()}
-            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-60 cursor-pointer active:scale-95"
+            className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           >
-            {reverting ? "جارٍ الرجوع..." : "الرجوع للأصل"}
+            <span>🔄</span>
+            <span>{reverting ? "جارٍ الرجوع..." : "الرجوع للأصل"}</span>
           </button>
         )}
       </div>
-      {state.error ? <p className="text-xs font-medium text-rose-600">{state.error}</p> : null}
-      {state.ok ? <p className="text-xs font-medium text-emerald-700">{okText}</p> : null}
+      {state.error ? <p className="text-xs font-black text-rose-400 bg-rose-950/60 p-1.5 rounded-lg border border-rose-500/40 text-center">{state.error}</p> : null}
+      {state.ok ? <p className="text-xs font-black text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-500/40 text-center">{okText}</p> : null}
     </div>
   );
 }

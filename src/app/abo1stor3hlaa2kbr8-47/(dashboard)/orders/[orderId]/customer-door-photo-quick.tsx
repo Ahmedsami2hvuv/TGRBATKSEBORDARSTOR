@@ -99,30 +99,32 @@ export function CustomerDoorPhotoQuick({
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-200 disabled:opacity-60 cursor-pointer active:scale-95"
+          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           onClick={() => {
             cameraFileRef.current?.click();
           }}
         >
-          {pending ? "جارٍ الرفع..." : "كاميرا"}
+          <span>🚪📷</span>
+          <span>{pending ? "جارٍ الرفع..." : "كاميرا"}</span>
         </button>
         <button
           type="button"
           disabled={pending || deleting}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-60 cursor-pointer active:scale-95"
+          className="rounded-xl border border-[#C9A86A]/70 bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#FFF8F0] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
           onClick={() => {
             galleryFileRef.current?.click();
           }}
         >
-          {pending ? "جارٍ الرفع..." : "معرض"}
+          <span>🖼️</span>
+          <span>{pending ? "جارٍ الرفع..." : "معرض"}</span>
         </button>
       </div>
       {pending ? (
-        <p className="text-xs font-bold text-sky-800">جارٍ رفع الصورة…</p>
+        <p className="text-xs font-bold text-[#F5D77F] bg-[#0A3D2E]/80 p-1.5 rounded-lg border border-[#C9A86A]/40 text-center animate-pulse">جارٍ رفع صورة الباب…</p>
       ) : state.error ? (
-        <p className="text-xs font-medium text-rose-600">{state.error}</p>
+        <p className="text-xs font-black text-rose-400 bg-rose-950/60 p-1.5 rounded-lg border border-rose-500/40 text-center">{state.error}</p>
       ) : state.ok ? (
-        <p className="text-xs font-medium text-emerald-700">تم تحديث صورة الباب</p>
+        <p className="text-xs font-black text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-500/40 text-center">تم تحديث صورة الباب بنجاح</p>
       ) : null}
     </div>
   );

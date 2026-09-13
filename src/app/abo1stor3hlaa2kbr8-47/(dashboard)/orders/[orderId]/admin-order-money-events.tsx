@@ -195,7 +195,9 @@ export function AdminOrderMoneyEvents({
   const isDelivered = orderStatus === "delivered";
 
   return (
-    <div className={`${ad.section} space-y-4 relative`} dir="rtl">
+    <div className="relative overflow-hidden rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md space-y-4" dir="rtl">
+      <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+
       {/* التوست المنبثق */}
       {toastMsg && (
         <div
@@ -216,7 +218,7 @@ export function AdminOrderMoneyEvents({
         </div>
       )}
 
-      {/* --- الزر الدائري العائم القابل للسحب والتحريك (نفس المندوب مع منع الرفريش) --- */}
+      {/* --- الزر الدائري العائم القابل للسحب والتحريك --- */}
       {orderId && (canMarkPickedUp || canMarkDelivered) && (
         <AdminFloatingStatusFab
           mode={canMarkPickedUp ? "pickedUp" : "delivered"}
@@ -234,19 +236,19 @@ export function AdminOrderMoneyEvents({
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 pb-3">
-        <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-3">
+        <h2 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
           <span>📊</span>
           <span>المعاملات المالية للطلب وإجراءات الاستلام والتسليم</span>
         </h2>
         
         {assignedCourierId ? (
-          <span className="text-[11px] sm:text-xs font-black text-sky-900 bg-sky-50 border border-sky-200 px-3 py-1 rounded-xl flex items-center gap-1">
+          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] bg-[#0F4D3A] border border-[#C9A86A]/60 px-3 py-1 rounded-xl flex items-center gap-1 shadow-inner">
             <span>🛵</span>
             <span>مسند للمندوب: <strong>{courierName || "المندوب"}</strong> (تُحسب له الأرباح والحركات بالنيابة)</span>
           </span>
         ) : (
-          <span className="text-[11px] sm:text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl flex items-center gap-1">
+          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] bg-[#06281D] border border-[#C9A86A]/60 px-3 py-1 rounded-xl flex items-center gap-1 shadow-inner">
             <span>🏢</span>
             <span>غير مسند لمندوب (تُسجل للإدارة مباشرة وتظهر في دفتر الديون باسم الإدارة)</span>
           </span>
@@ -255,9 +257,9 @@ export function AdminOrderMoneyEvents({
 
       {/* --- أزرار أعطيت وأخذت لتسجيل المبالغ والصادر والوارد --- */}
       {orderId && (
-        <div className="space-y-3 my-2">
+        <div className="relative z-10 space-y-3 my-2">
           {isDelivered && (
-            <div className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-3 text-emerald-950 font-black text-sm sm:text-base">
+            <div className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#1B4D3E] p-3 text-[#F5D77F] font-black text-sm sm:text-base shadow-xl">
               <span className="text-xl">🎉</span>
               <span>تم تسليم هذا الطلب بنجاح ✅</span>
             </div>
@@ -272,12 +274,12 @@ export function AdminOrderMoneyEvents({
                 setPickupOpen(true);
                 setDeliveryOpen(false);
               }}
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
+              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-4 font-black text-[#F5D77F] shadow-xl hover:scale-[1.01] active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
             >
               <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
               <span>أعطيت للعميل (صادر)</span>
               {pickupRemaining !== null && (
-                <span className="text-xs font-bold bg-emerald-700/80 px-2 py-0.5 rounded-lg mr-1">
+                <span className="text-xs font-bold bg-[#06281D]/90 text-[#F5D77F] border border-[#C9A86A]/50 px-2.5 py-0.5 rounded-xl mr-1">
                   المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
                 </span>
               )}
@@ -291,12 +293,12 @@ export function AdminOrderMoneyEvents({
                 setDeliveryOpen(true);
                 setPickupOpen(false);
               }}
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 font-black text-white shadow-md hover:bg-rose-700 active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
+              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-[#C9A86A] bg-gradient-to-r from-[#5C1D24] to-[#7F1D1D] px-4 font-black text-[#F5D77F] shadow-xl hover:scale-[1.01] active:scale-95 transition-all text-sm sm:text-base cursor-pointer"
             >
               <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
               <span>أخذت من الزبون (وارد)</span>
               {deliveryRemaining !== null && !prepaidAll && (
-                <span className="text-xs font-bold bg-rose-700/80 px-2 py-0.5 rounded-lg mr-1">
+                <span className="text-xs font-bold bg-[#3B0764]/80 text-[#F5D77F] border border-[#C9A86A]/50 px-2.5 py-0.5 rounded-xl mr-1">
                   المتبقي: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
                 </span>
               )}
@@ -307,89 +309,95 @@ export function AdminOrderMoneyEvents({
 
       {/* --- مودال تسجيل الصادر (أعطيت / استلام) --- */}
       {pickupOpen && orderId && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-5 sm:p-6 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200 text-right">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-5 sm:p-6 shadow-2xl ring-1 ring-[#F5D77F]/30 animate-in zoom-in-95 duration-200 text-right relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+            <div className="relative z-10 mb-4 flex items-center justify-between border-b border-[#C9A86A]/30 pb-3">
               <div>
-                <h4 className="text-lg font-black text-emerald-950 flex items-center gap-2">
+                <h4 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
                   <span>💸</span>
                   <span>
                     {pickupAdvanceToDelivering ? "⚡ استلام الطلب وتغيير الحالة" : "تسجيل صادر (أعطيت للعميل)"}
                   </span>
                 </h4>
-                <p className="text-xs font-bold text-slate-500">
+                <p className="text-xs font-bold text-emerald-200">
                   الطلب #{orderNumber} — {assignedCourierId ? `بالنيابة عن: ${courierName || "المندوب"}` : "تسجيل للإدارة"}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closePanels}
-                className="h-9 w-9 rounded-full bg-slate-100 text-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="h-9 w-9 rounded-xl border border-[#C9A86A] bg-[#0F4D3A] text-lg font-bold text-[#F5D77F] hover:bg-[#164E3D] transition-colors cursor-pointer flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
-            <AdminPickupFormModal
-              orderId={orderId}
-              nextPath={nextPath}
-              expectedAlfHint={
-                orderSubtotalDinar != null ? dinarDecimalToAlfInputString(orderSubtotalDinar) : ""
-              }
-              remainingAlfHint={
-                pickupRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, pickupRemaining)) : ""
-              }
-              defaultAdvance={pickupAdvanceToDelivering}
-              formAction={pickupAction}
-              pending={pickupPending}
-              error={pickupState.error}
-              onClose={closePanels}
-            />
+            <div className="relative z-10">
+              <AdminPickupFormModal
+                orderId={orderId}
+                nextPath={nextPath}
+                expectedAlfHint={
+                  orderSubtotalDinar != null ? dinarDecimalToAlfInputString(orderSubtotalDinar) : ""
+                }
+                remainingAlfHint={
+                  pickupRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, pickupRemaining)) : ""
+                }
+                defaultAdvance={pickupAdvanceToDelivering}
+                formAction={pickupAction}
+                pending={pickupPending}
+                error={pickupState.error}
+                onClose={closePanels}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* --- مودال تسجيل الوارد (أخذت / تسليم) --- */}
       {deliveryOpen && orderId && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-5 sm:p-6 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-200 text-right">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-5 sm:p-6 shadow-2xl ring-1 ring-[#F5D77F]/30 animate-in zoom-in-95 duration-200 text-right relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+            <div className="relative z-10 mb-4 flex items-center justify-between border-b border-[#C9A86A]/30 pb-3">
               <div>
-                <h4 className="text-lg font-black text-rose-950 flex items-center gap-2">
+                <h4 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
                   <span>🫴</span>
                   <span>
                     {deliveryAdvanceToDelivered ? "🎉 تسليم الطلب واحتساب الأرباح" : "تسجيل وارد (أخذت من الزبون)"}
                   </span>
                 </h4>
-                <p className="text-xs font-bold text-slate-500">
+                <p className="text-xs font-bold text-emerald-200">
                   الطلب #{orderNumber} — {assignedCourierId ? `بالنيابة عن: ${courierName || "المندوب"}` : "تسجيل للإدارة"}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closePanels}
-                className="h-9 w-9 rounded-full bg-slate-100 text-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="h-9 w-9 rounded-xl border border-[#C9A86A] bg-[#0F4D3A] text-lg font-bold text-[#F5D77F] hover:bg-[#164E3D] transition-colors cursor-pointer flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
-            <AdminDeliveryFormModal
-              orderId={orderId}
-              nextPath={nextPath}
-              expectedAlfHint={
-                totalAmountDinar != null ? dinarDecimalToAlfInputString(totalAmountDinar) : ""
-              }
-              remainingAlfHint={
-                deliveryRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, deliveryRemaining)) : ""
-              }
-              defaultAdvance={deliveryAdvanceToDelivered}
-              formAction={deliveryAction}
-              pending={deliveryPending}
-              error={deliveryState.error}
-              onClose={closePanels}
-              prepaidAll={prepaidAll}
-            />
+            <div className="relative z-10">
+              <AdminDeliveryFormModal
+                orderId={orderId}
+                nextPath={nextPath}
+                expectedAlfHint={
+                  totalAmountDinar != null ? dinarDecimalToAlfInputString(totalAmountDinar) : ""
+                }
+                remainingAlfHint={
+                  deliveryRemaining != null ? dinarDecimalToAlfInputString(Math.max(0, deliveryRemaining)) : ""
+                }
+                defaultAdvance={deliveryAdvanceToDelivered}
+                formAction={deliveryAction}
+                pending={deliveryPending}
+                error={deliveryState.error}
+                onClose={closePanels}
+                prepaidAll={prepaidAll}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -416,12 +424,12 @@ export function AdminOrderMoneyEvents({
             return (
               <li
                 key={ev.id}
-                className={`rounded-2xl border-2 p-3.5 text-sm transition-all ${
+                className={`relative overflow-hidden rounded-2xl border-2 p-3.5 text-sm transition-all shadow-md ${
                   deleted
-                    ? "border-slate-200 bg-slate-100/80 text-slate-600 line-through decoration-slate-400"
+                    ? "border-slate-700 bg-[#06281D]/40 text-slate-400 line-through"
                     : ev.kind === MONEY_KIND_PICKUP
-                      ? "border-emerald-300 bg-emerald-50/90 text-emerald-950 shadow-xs"
-                      : "border-rose-300 bg-rose-50/90 text-red-950 shadow-xs"
+                      ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#0A3D2E] text-white"
+                      : "border-[#C9A86A] bg-gradient-to-r from-[#5C1D24] to-[#3B0764]/80 text-white"
                 }`}
               >
                 <div className="space-y-3">
@@ -429,36 +437,36 @@ export function AdminOrderMoneyEvents({
                     <div className="min-w-0 flex-1 space-y-1.5 leading-relaxed text-right">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`font-black text-xs px-2.5 py-0.5 rounded-lg text-white ${
-                            ev.kind === MONEY_KIND_PICKUP ? "bg-emerald-600" : "bg-rose-600"
+                          className={`font-black text-xs px-2.5 py-0.5 rounded-lg text-white border border-white/20 ${
+                            ev.kind === MONEY_KIND_PICKUP ? "bg-emerald-700" : "bg-rose-700"
                           }`}
                         >
                           {dirLabel}
                         </span>
-                        <span className="font-black text-slate-900 text-sm">
+                        <span className="font-black text-[#F5D77F] text-sm">
                           {isRecordedByAdmin ? "🏢 الإدارة" : ev.performedByDisplayName || "المندوب"}
                         </span>
                         <span
-                          className="text-xs font-mono font-bold text-slate-600 inline-flex items-center gap-1.5 bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg shadow-2xs"
+                          className="text-xs font-mono font-bold text-emerald-200 inline-flex items-center gap-1.5 bg-[#06281D]/80 border border-[#C9A86A]/40 px-2 py-0.5 rounded-lg shadow-inner"
                           dir="ltr"
                         >
                           <span className="tabular-nums">{timeInfo.dateStr}</span>
-                          <span className="text-slate-300 font-normal">|</span>
+                          <span className="text-[#C9A86A] font-normal">|</span>
                           <span className="tabular-nums">{timeInfo.timeStr}</span>
                         </span>
                       </div>
 
                       <p className="text-sm flex flex-wrap items-baseline gap-3">
-                        <span className="font-bold text-slate-800">
+                        <span className="font-bold text-white">
                           المسجّل:{" "}
-                          <span className="font-mono font-black tabular-nums text-slate-900 text-base">
+                          <span className="font-mono font-black tabular-nums text-[#F5D77F] text-base">
                             {formatDinarAsAlfWithUnit(ev.amountDinar)}
                           </span>
                         </span>
                         {ev.expectedDinar != null && (
-                          <span className="font-bold text-slate-600">
+                          <span className="font-bold text-emerald-200/80">
                             المتوقع:{" "}
-                            <span className="font-mono font-bold tabular-nums">
+                            <span className="font-mono font-bold tabular-nums text-white">
                               {formatDinarAsAlfWithUnit(ev.expectedDinar)}
                             </span>
                           </span>
@@ -466,20 +474,20 @@ export function AdminOrderMoneyEvents({
                       </p>
 
                       {noteLine !== "—" && (
-                        <p className="text-xs font-bold text-slate-700">
-                          <span className="text-slate-500">ملاحظة: </span>
+                        <p className="text-xs font-bold text-[#F5D77F]/90">
+                          <span className="text-[#F5D77F]/60">ملاحظة: </span>
                           <span className="whitespace-pre-wrap break-words">{noteLine}</span>
                         </p>
                       )}
 
                       {ev.recordedByCompanyPreparerId ? (
-                        <p className="text-xs font-black text-violet-800">
+                        <p className="text-xs font-black text-amber-300">
                           📦 سُجّلت من لوحة المجهز
                         </p>
                       ) : null}
 
                       {deleted ? (
-                        <p className="text-xs font-bold text-rose-700">
+                        <p className="text-xs font-bold text-rose-300">
                           {ev.deletedReason === "status_revert" ? (
                             <>⚠️ أُلغيت تلقائياً عند تغيير حالة الطلب</>
                           ) : (
@@ -496,7 +504,7 @@ export function AdminOrderMoneyEvents({
                         <button
                           type="submit"
                           disabled={softPending}
-                          className="inline-flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-rose-300 bg-white hover:bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-800 shadow-xs transition-colors cursor-pointer"
+                          className="inline-flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-rose-400 bg-rose-950/80 hover:bg-rose-900 px-3 py-1.5 text-xs font-black text-rose-200 shadow-sm transition-colors cursor-pointer"
                           onClick={(e) => {
                             if (
                               !window.confirm(
@@ -515,12 +523,12 @@ export function AdminOrderMoneyEvents({
                   </div>
 
                   {/* الحذف النهائي من قاعدة البيانات */}
-                  <div className="border-t border-slate-200/80 pt-2.5">
+                  <div className="border-t border-[#C9A86A]/30 pt-2.5">
                     <form action={hardAction} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
                       <input type="hidden" name="eventId" value={ev.id} />
                       <input type="hidden" name="nextPath" value={nextPath} />
-                      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-bold text-slate-700 text-right">
-                        <span>حذف نهائي (اكتب: <code className="rounded bg-rose-100 px-1 text-rose-900 font-mono">{ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE}</code>):</span>
+                      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-bold text-emerald-200 text-right">
+                        <span>حذف نهائي (اكتب: <code className="rounded bg-rose-950 px-1.5 text-rose-200 border border-rose-500 font-mono">{ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE}</code>):</span>
                         <input
                           type="text"
                           name="confirmPhrase"
@@ -532,14 +540,14 @@ export function AdminOrderMoneyEvents({
                             }))
                           }
                           autoComplete="off"
-                          className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs text-slate-900 focus:border-rose-600 focus:outline-hidden"
+                          className="rounded-xl border border-[#C9A86A]/50 bg-[#06281D] px-2.5 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-hidden"
                           placeholder={ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE}
                         />
                       </label>
                       <button
                         type="submit"
                         disabled={hardPending || !canSubmitHard}
-                        className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-rose-900 px-3.5 py-1.5 text-xs font-black text-white shadow-xs hover:bg-rose-950 transition-colors disabled:opacity-40 cursor-pointer"
+                        className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-rose-800 border border-rose-500 px-3.5 py-1.5 text-xs font-black text-white shadow-md hover:bg-rose-900 transition-colors disabled:opacity-40 cursor-pointer"
                         onClick={(e) => {
                           if (
                             !window.confirm("تأكيد أول: سيتم حذف هذه المعاملة نهائياً من كل السجلات والتقارير.") ||
@@ -1072,15 +1080,15 @@ function AdminFloatingStatusFab({
     >
       <button
         type="button"
-        className={`flex size-14 sm:size-16 items-center justify-center rounded-full shadow-2xl transition-transform active:scale-90 font-black border-2 ${
+        className={`relative flex size-14 sm:size-16 items-center justify-center rounded-full shadow-2xl transition-transform active:scale-90 font-black border-2 border-[#C9A86A] overflow-hidden ${
           isPickedUp
-            ? "bg-amber-400 hover:bg-amber-500 border-amber-700 text-amber-950 text-xs sm:text-sm animate-pulse"
-            : "bg-red-600 hover:bg-red-700 border-red-900 text-white text-xs sm:text-sm animate-pulse"
+            ? "bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] shadow-[#F5D77F]/30 animate-pulse"
+            : "bg-gradient-to-br from-[#991B1B] to-[#7F1D1D] text-[#F5D77F] shadow-[#991B1B]/40 animate-pulse"
         }`}
         title={isPickedUp ? "استلام الطلب ⚡" : "تسليم الطلب 🫴"}
       >
-        <span className="leading-tight text-center whitespace-pre-line drop-shadow-sm font-black">
-          {isPickedUp ? "استلام" : "تسليم"}
+        <span className="leading-tight text-center whitespace-pre-line drop-shadow-md font-black text-xs sm:text-sm">
+          {isPickedUp ? "استلام ⚡" : "تسليم 🫴"}
         </span>
       </button>
     </div>
