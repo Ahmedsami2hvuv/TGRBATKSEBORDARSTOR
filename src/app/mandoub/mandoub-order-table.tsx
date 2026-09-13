@@ -806,7 +806,7 @@ function MandoubFullBlockCardGrid({
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full">
                       {/* اليمين: بلوك اسم المحل (مرفوع للأعلى قليلاً ومتوسط الكرت بدقة) */}
                       <div className="relative flex-1 min-w-0 max-w-[75%] sm:max-w-[78%]">
                         <div
@@ -842,16 +842,20 @@ function MandoubFullBlockCardGrid({
                           <input
                             type="checkbox"
                             checked={selected}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
                             className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
                         )}
 
                         {isSortingMode && moveRow && !isDelivered && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              onClick={() => moveRow(o.id, "up")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveRow(o.id, "up");
+                              }}
                               className="flex size-6 sm:size-7 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition text-xs"
                               title="تحريك للأعلى"
                             >
@@ -859,7 +863,10 @@ function MandoubFullBlockCardGrid({
                             </button>
                             <button
                               type="button"
-                              onClick={() => moveRow(o.id, "down")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveRow(o.id, "down");
+                              }}
                               className="flex size-6 sm:size-7 items-center justify-center rounded-md bg-[#FFF8F0] dark:bg-slate-800 text-[#0A3D2E] dark:text-[#F5D77F] border border-[#C9A86A] hover:bg-[#0A3D2E] hover:text-[#F5D77F] font-bold transition text-xs"
                               title="تحريك للأسفل"
                             >
@@ -955,14 +962,17 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: أزرار الاستلام والتسليم يميناً (مكبرة) + كبسولة هاتف وأزرار الزبون يساراً */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full">
                       {/* الجهة اليمنى: أزرار الاستلام والتسليم مكبرة ومسحوبة لليمين */}
                       <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 mr-1 sm:mr-2 shrink-0">
                         {/* زر استلام ⚡ (مكبر) */}
                         {!isSortingMode && isAssigned && (
                           <button
                             type="button"
-                            onClick={() => setPickupOrder(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPickupOrder(o);
+                            }}
                             className="w-15 h-15 sm:w-17 sm:h-17 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-md"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
@@ -975,7 +985,10 @@ function MandoubFullBlockCardGrid({
                         {!isSortingMode && isDelivering && (
                           <button
                             type="button"
-                            onClick={() => setDeliveryOrder(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeliveryOrder(o);
+                            }}
                             className="w-15 h-15 sm:w-17 sm:h-17 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-md"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
@@ -986,9 +999,11 @@ function MandoubFullBlockCardGrid({
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRouteOrder && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="lg">
-                            <span className="text-sm">📦➔</span>
-                          </GlassOrbButton3D>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <GlassOrbButton3D title="طلب وجهتين" size="lg">
+                              <span className="text-sm">📦➔</span>
+                            </GlassOrbButton3D>
+                          </div>
                         )}
                       </div>
 

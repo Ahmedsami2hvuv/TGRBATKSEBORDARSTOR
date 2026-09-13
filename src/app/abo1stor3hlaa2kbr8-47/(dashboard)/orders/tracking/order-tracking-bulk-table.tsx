@@ -968,7 +968,7 @@ function TrackingCardsView({
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full">
                       {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
                       <div className="relative flex-1 min-w-0 max-w-[75%] sm:max-w-[78%]">
                         <div
@@ -1011,6 +1011,7 @@ function TrackingCardsView({
                           <input
                             type="checkbox"
                             checked={selected}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
                             className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
                           />
@@ -1103,7 +1104,7 @@ function TrackingCardsView({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً في سطر واحد بدون التفاف */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full">
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
                         className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10.5 shrink min-w-0"
@@ -1174,7 +1175,10 @@ function TrackingCardsView({
                         {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
-                            onClick={() => onRejectOrder(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRejectOrder(o);
+                            }}
                             className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
@@ -1185,7 +1189,10 @@ function TrackingCardsView({
                         {onRestoreOrder && isCancelled && (
                           <button
                             type="button"
-                            onClick={() => onRestoreOrder(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRestoreOrder(o);
+                            }}
                             className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
@@ -1201,7 +1208,10 @@ function TrackingCardsView({
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
-                            onClick={() => onAdminPickup(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAdminPickup(o);
+                            }}
                             className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
@@ -1214,7 +1224,10 @@ function TrackingCardsView({
                         {onAdminDelivery && isDelivering && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
-                            onClick={() => onAdminDelivery(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAdminDelivery(o);
+                            }}
                             className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
@@ -1227,7 +1240,10 @@ function TrackingCardsView({
                         {!isCancelled && (
                           <button
                             type="button"
-                            onClick={() => onAssignOrder(o)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAssignOrder(o);
+                            }}
                             className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer translate-x-1 sm:translate-x-1.5"
                             style={{
                               backgroundImage: hasAssignedCourier
@@ -1246,9 +1262,11 @@ function TrackingCardsView({
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="lg">
-                            <span className="text-sm">📦➔</span>
-                          </GlassOrbButton3D>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <GlassOrbButton3D title="طلب وجهتين" size="lg">
+                              <span className="text-sm">📦➔</span>
+                            </GlassOrbButton3D>
+                          </div>
                         )}
                       </div>
                     </div>
