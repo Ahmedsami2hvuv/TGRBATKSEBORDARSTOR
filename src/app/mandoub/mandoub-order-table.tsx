@@ -831,10 +831,10 @@ function MandoubFullBlockCardGrid({
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
+                      {/* اليمين: بلوك اسم المحل (مرفوع للأعلى قليلاً ومتوسط الكرت بدقة) */}
                       <div className="relative flex-1 min-w-0 max-w-[75%] sm:max-w-[78%]">
                         <div
-                          className="w-full h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                          className="w-full h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-1 sm:mt-1.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
                             backgroundImage: `url('${headerWebpBg}')`,
                           }}
@@ -972,16 +972,52 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والتسليم يساراً في سطر واحد بدون التفاف */}
+                    {/* 3. القسم السفلي للكرت: أزرار الاستلام والتسليم يميناً (مكبرة) + كبسولة هاتف وأزرار الزبون يساراً */}
                     <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-4 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
+                      {/* الجهة اليمنى: أزرار الاستلام والتسليم مكبرة ومسحوبة لليمين */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 mr-1 sm:mr-2 shrink-0">
+                        {/* زر استلام ⚡ (مكبر) */}
+                        {!isSortingMode && isAssigned && (
+                          <button
+                            type="button"
+                            onClick={() => setPickupOrder(o)}
+                            className="w-15 h-15 sm:w-17 sm:h-17 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-md"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
+                            }}
+                            title="استلام الشحنة من المحل ⚡"
+                          />
+                        )}
+
+                        {/* زر تسليم 🫴 (مكبر) */}
+                        {!isSortingMode && isDelivering && (
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryOrder(o)}
+                            className="w-15 h-15 sm:w-17 sm:h-17 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-md"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
+                            }}
+                            title="تسليم الشحنة للزبون 🫴"
+                          />
+                        )}
+
+                        {/* زر وجهتين 📦➔ */}
+                        {isDoubleRouteOrder && (
+                          <GlassOrbButton3D title="طلب وجهتين" size="lg">
+                            <span className="text-sm">📦➔</span>
+                          </GlassOrbButton3D>
+                        )}
+                      </div>
+
+                      {/* الجهة اليسرى: كبسولة هاتف الزبون وحاملة الأزرار */}
                       <div
-                        className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10.5 shrink min-w-0"
+                        className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10.5 shrink min-w-0 -translate-y-0.5"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
                       >
-                        {/* 1. زر الاتصال 📞 (أقصى اليمين - يغطي دائرة الهاتف المذهبة المدمجة بالكبسولة) */}
+                        {/* 1. زر الاتصال 📞 */}
                         {o.shopPhone || o.secondCustomerPhone ? (
                           <button
                             type="button"
@@ -1083,42 +1119,6 @@ function MandoubFullBlockCardGrid({
                           >
                             🎤
                           </GoldOrbButton3D>
-                        )}
-                      </div>
-
-                      {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين متناسقة الحجم ومسحوبة لليمين */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 -translate-y-1 sm:-translate-y-2 translate-x-2 sm:translate-x-3 shrink-0">
-                        {/* زر استلام ⚡ */}
-                        {!isSortingMode && isAssigned && (
-                          <button
-                            type="button"
-                            onClick={() => setPickupOrder(o)}
-                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
-                            }}
-                            title="استلام الشحنة من المحل ⚡"
-                          />
-                        )}
-
-                        {/* زر تسليم 🫴 */}
-                        {!isSortingMode && isDelivering && (
-                          <button
-                            type="button"
-                            onClick={() => setDeliveryOrder(o)}
-                            className="w-12.5 h-12.5 sm:w-15 sm:h-15 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
-                            }}
-                            title="تسليم الشحنة للزبون 🫴"
-                          />
-                        )}
-
-                        {/* زر وجهتين 📦➔ */}
-                        {isDoubleRouteOrder && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="lg">
-                            <span className="text-sm">📦➔</span>
-                          </GlassOrbButton3D>
                         )}
                       </div>
                     </div>
