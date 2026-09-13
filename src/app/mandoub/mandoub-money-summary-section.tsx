@@ -29,88 +29,84 @@ export async function MandoubMoneySummarySection({
   return (
     <section
       aria-label="ملخص الأموال الملكي"
-      className="mb-2.5 rounded-2xl p-1.5 sm:p-2.5 select-none"
+      className="mb-2.5 px-0.5 select-none"
       dir="rtl"
     >
       <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 w-full">
         {/* 1. بطاقة الصادر (الزمردية الملكية المذهبة) */}
         <Link
           href={hrefWalletLedger("sader")}
-          className="relative flex flex-col items-center justify-between rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 text-center shadow-md border-2 border-[#C9A86A]/70 hover:border-[#F5D77F] transition-all active:scale-95 bg-no-repeat bg-[length:100%_100%] overflow-hidden group min-h-[64px] sm:min-h-[82px]"
+          className="relative flex flex-col items-center justify-between rounded-2xl py-2 px-1 text-center border-2 border-[#C9A86A] bg-gradient-to-b from-[#0F4D3A] via-[#0A3D2E] to-[#062016] text-white shadow-[0_4px_15px_rgba(10,61,46,0.35)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer min-h-[66px] sm:min-h-[76px]"
           style={{
-            backgroundImage: "url('/images/order-luxury/card-sader.webp')",
-            boxShadow: "0 4px 15px rgba(10,61,46,0.4), inset 0 0 12px rgba(201,168,106,0.25)",
+            boxShadow: "0 4px 15px rgba(10,61,46,0.35), inset 0 0 10px rgba(201,168,106,0.15)",
           }}
           title="الصادر: ما سلّمته للعميل عند تم الاستلام"
         >
-          <div className="flex items-center gap-1 z-10">
-            <span className="text-xs sm:text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">🌿</span>
-            <span className="text-[10px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] tracking-tight">
+          <div className="flex items-center gap-1">
+            <span className="text-xs sm:text-sm">🌿</span>
+            <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               الصادر
             </span>
           </div>
-          <span className="z-10 mt-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
+          <span className="my-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
             {formatDinarAsAlfWithUnit(sumPickupOutDinar)}
           </span>
-          <span className="text-[8px] sm:text-[9px] font-bold text-[#A7F3D0] opacity-80 z-10">
-            سجل الصادر ←
+          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#A7F3D0]/80 leading-none">
+            كشف الصادر
           </span>
         </Link>
 
-        {/* 2. بطاقة الوارد (الياقوتية الملكية المذهبة) */}
+        {/* 2. بطاقة الوارد (الياقوتية العنابية المذهبة) */}
         <Link
           href={hrefWalletLedger("ward")}
-          className="relative flex flex-col items-center justify-between rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 text-center shadow-md border-2 border-[#C9A86A]/70 hover:border-[#F5D77F] transition-all active:scale-95 bg-no-repeat bg-[length:100%_100%] overflow-hidden group min-h-[64px] sm:min-h-[82px]"
+          className="relative flex flex-col items-center justify-between rounded-2xl py-2 px-1 text-center border-2 border-[#C9A86A] bg-gradient-to-b from-[#5B1010] via-[#4A0D0D] to-[#2D0606] text-white shadow-[0_4px_15px_rgba(91,16,16,0.35)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer min-h-[66px] sm:min-h-[76px]"
           style={{
-            backgroundImage: "url('/images/order-luxury/card-ward.webp')",
-            boxShadow: "0 4px 15px rgba(159,18,57,0.4), inset 0 0 12px rgba(201,168,106,0.25)",
+            boxShadow: "0 4px 15px rgba(91,16,16,0.35), inset 0 0 10px rgba(201,168,106,0.15)",
           }}
           title="الوارد: ما استلمته من الزبون عند تم التسليم"
         >
-          <div className="flex items-center gap-1 z-10">
-            <span className="text-xs sm:text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">💎</span>
-            <span className="text-[10px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] tracking-tight">
+          <div className="flex items-center gap-1">
+            <span className="text-xs sm:text-sm">💎</span>
+            <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               الوارد
             </span>
           </div>
-          <span className="z-10 mt-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
+          <span className="my-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
             {formatDinarAsAlfWithUnit(sumDeliveryInDinar)}
           </span>
-          <span className="text-[8px] sm:text-[9px] font-bold text-[#FECDD3] opacity-80 z-10">
-            سجل الوارد ←
+          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#FECDD3]/80 leading-none">
+            كشف الوارد
           </span>
         </Link>
 
         {/* 3. بطاقة المتبقي (الياقوت الأزرق الملكي المذهب) */}
         <Link
           href={hrefWalletLedger("all")}
-          className="relative flex flex-col items-center justify-between rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 text-center shadow-md border-2 border-[#C9A86A]/70 hover:border-[#F5D77F] transition-all active:scale-95 bg-no-repeat bg-[length:100%_100%] overflow-hidden group min-h-[64px] sm:min-h-[82px]"
+          className="relative flex flex-col items-center justify-between rounded-2xl py-2 px-1 text-center border-2 border-[#C9A86A] bg-gradient-to-b from-[#0F2D4D] via-[#0A223D] to-[#061526] text-white shadow-[0_4px_15px_rgba(15,45,77,0.35)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer min-h-[66px] sm:min-h-[76px]"
           style={{
-            backgroundImage: "url('/images/order-luxury/card-remaining.webp')",
-            boxShadow: "0 4px 15px rgba(30,58,138,0.4), inset 0 0 12px rgba(201,168,106,0.25)",
+            boxShadow: "0 4px 15px rgba(15,45,77,0.35), inset 0 0 10px rgba(201,168,106,0.15)",
           }}
           title="المتبقي: صافي الأموال بعد خصم الصادر من الوارد"
         >
-          <div className="flex items-center gap-1 z-10">
-            <span className="text-xs sm:text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">⚖️</span>
-            <span className="text-[10px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] tracking-tight">
+          <div className="flex items-center gap-1">
+            <span className="text-xs sm:text-sm">⚖️</span>
+            <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               المتبقي
             </span>
           </div>
-          <span className="z-10 mt-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
+          <span className="my-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
             {formatDinarAsAlfWithUnit(remainingNetDinar)}
           </span>
-          <span className="text-[8px] sm:text-[9px] font-bold text-[#BFDBFE] opacity-80 z-10">
-            المحفظة ←
+          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#BFDBFE]/80 leading-none">
+            سجل المحفظة
           </span>
         </Link>
 
-        {/* 4. بطاقة الأرباح (الذهبية الملكية المضيئة) */}
+        {/* 4. بطاقة الأرباح (الذهبية الكهرمانية اللامعة) */}
         <div
-          className="relative flex flex-col items-center justify-between rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 text-center shadow-md border-2 border-[#F5D77F] transition-all bg-no-repeat bg-[length:100%_100%] overflow-hidden min-h-[64px] sm:min-h-[82px]"
+          className="relative flex flex-col items-center justify-between rounded-2xl py-2 px-1 text-center border-2 border-[#F5D77F] bg-gradient-to-b from-[#784A0D] via-[#5C3708] to-[#362004] text-white shadow-[0_4px_15px_rgba(120,74,13,0.35)] min-h-[66px] sm:min-h-[76px]"
           style={{
-            backgroundImage: "url('/images/order-luxury/card-earnings.webp')",
-            boxShadow: "0 4px 15px rgba(180,83,9,0.4), inset 0 0 15px rgba(245,215,127,0.35)",
+            boxShadow: "0 4px 15px rgba(120,74,13,0.35), inset 0 0 12px rgba(245,215,127,0.25)",
           }}
           title={
             courierVehicleType === "bike"
@@ -118,16 +114,16 @@ export async function MandoubMoneySummarySection({
               : "أرباح التوصيل (ثلثي كلفة التوصيل لكل طلب مُسلَّم)"
           }
         >
-          <div className="flex items-center gap-1 z-10">
-            <span className="text-xs sm:text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">👑</span>
-            <span className="text-[10px] sm:text-xs font-black text-[#0A1A18] drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] tracking-tight">
+          <div className="flex items-center gap-1">
+            <span className="text-xs sm:text-sm">👑</span>
+            <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               أرباحي
             </span>
           </div>
-          <span className="z-10 mt-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-[#0A1A18] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+          <span className="my-0.5 block text-xs sm:text-sm md:text-base font-black font-mono tabular-nums leading-none text-[#F5D77F] drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
             {formatDinarAsAlfWithUnit(sumEarningsDinar)}
           </span>
-          <span className="text-[8px] sm:text-[9px] font-black text-[#5B3E06] z-10">
+          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#FDE68A]/80 leading-none">
             أرباح التوصيل
           </span>
         </div>
