@@ -1116,14 +1116,14 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الإسناد والاستلام والتسليم */}
-                      <div className="flex items-center gap-1.5">
+                      {/* الجهة اليسرى: أزرار الإسناد والاستلام والتسليم (كبيرة وبارزة ومرفوعة للأعلى بجانب بعضها) */}
+                      <div className="flex items-center gap-2 -mt-1 sm:-mt-1.5">
                         {/* زر إسناد الطلب */}
                         {!isCancelled && (
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full text-[9px] font-black flex items-center justify-center text-white shadow-2xs hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain"
+                            className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-full text-[10px] sm:text-xs font-black flex items-center justify-center text-white shadow-xs hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1132,7 +1132,7 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[8px] max-w-[28px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                              <span className="text-[#FFF8F0] text-[9px] sm:text-[10px] max-w-[34px] sm:max-w-[40px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                                 {o.courierName}
                               </span>
                             )}
@@ -1144,14 +1144,12 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAdminPickup(o)}
-                            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full text-[9px] font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
+                            className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
                             title="استلام الطلب وتسجيل الصادر ⚡"
-                          >
-                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">استلام</span>
-                          </button>
+                          />
                         )}
 
                         {/* زر تسليم 🫴 */}
@@ -1159,19 +1157,17 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAdminDelivery(o)}
-                            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full text-[9px] font-black text-white shadow-2xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain"
+                            className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
                             title="تسليم الطلب وتسجيل الوارد 🫴"
-                          >
-                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">تسليم</span>
-                          </button>
+                          />
                         )}
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="sm">
+                          <GlassOrbButton3D title="طلب وجهتين" size="md">
                             <span className="text-xs">📦➔</span>
                           </GlassOrbButton3D>
                         )}
