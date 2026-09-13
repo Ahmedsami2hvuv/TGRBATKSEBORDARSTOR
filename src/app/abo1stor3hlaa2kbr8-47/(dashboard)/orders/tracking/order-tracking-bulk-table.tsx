@@ -1078,7 +1078,7 @@ function TrackingCardsView({
                     <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-4 sm:-mt-5 pt-0" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
-                        className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10"
+                        className="flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-10 sm:h-11.5"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
@@ -1109,7 +1109,7 @@ function TrackingCardsView({
                           />
                         ) : (
                           <div
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
                             }}
@@ -1122,7 +1122,7 @@ function TrackingCardsView({
                           <Link
                             href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
                             style={{
                               backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
                             }}
@@ -1134,7 +1134,7 @@ function TrackingCardsView({
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                          className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
                           style={{
                             backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
                           }}
@@ -1146,7 +1146,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onRejectOrder(o)}
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
                             }}
@@ -1157,7 +1157,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onRestoreOrder(o)}
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
                             }}
@@ -1166,14 +1166,14 @@ function TrackingCardsView({
                         )}
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مكبرة ومرفوعة للأعلى بقوة */}
-                      <div className="flex items-center gap-2 sm:gap-2.5 -translate-y-3 sm:-translate-y-4 shrink-0">
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مكبرة ومسحوبة لليسار */}
+                      <div className="flex items-center gap-2 sm:gap-2.5 -translate-y-3 sm:-translate-y-4 -translate-x-2 sm:-translate-x-3.5 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
                             onClick={() => onAdminPickup(o)}
-                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -1186,7 +1186,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAdminDelivery(o)}
-                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -1199,7 +1199,7 @@ function TrackingCardsView({
                           <button
                             type="button"
                             onClick={() => onAssignOrder(o)}
-                            className="w-15 h-15 sm:w-17.5 sm:h-17.5 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer mr-1.5 sm:mr-2.5"
+                            className="w-16.5 h-16.5 sm:w-19.5 sm:h-19.5 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1208,7 +1208,7 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-xs sm:text-sm max-w-[56px] sm:max-w-[68px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                              <span className="text-[#FFF8F0] text-xs sm:text-sm max-w-[62px] sm:max-w-[74px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
                                 {o.courierName}
                               </span>
                             )}
