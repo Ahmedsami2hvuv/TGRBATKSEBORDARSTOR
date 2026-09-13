@@ -701,23 +701,6 @@ function MandoubFullBlockCardGrid({
                             />
                           )}
                         </div>
-
-                        {/* شارة حالة الطلب المصغرة */}
-                        <div className="shrink-0">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black text-white border border-[#C9A86A]/60 ${
-                              isAssigned
-                                ? "bg-red-600"
-                                : isDelivering
-                                ? "bg-amber-600"
-                                : isDelivered
-                                ? "bg-emerald-600"
-                                : "bg-slate-600"
-                            }`}
-                          >
-                            {isAssigned ? "بانتظار المندوب" : isDelivering ? "مستلم" : isDelivered ? "مسلّم" : STATUS_AR[o.orderStatus] ?? o.orderStatus}
-                          </span>
-                        </div>
                       </div>
                     </div>
 
@@ -899,13 +882,6 @@ function MandoubFullBlockCardGrid({
                             }}
                             title="تسليم الشحنة للزبون 🫴"
                           />
-                        )}
-
-                        {!isSortingMode && isDelivered && (
-                          <span className="h-9 sm:h-10 px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-1">
-                            <span>✓</span>
-                            <span>مسلّم</span>
-                          </span>
                         )}
 
                         {/* زر وجهتين 📦➔ */}
