@@ -933,12 +933,12 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] p-2.5 sm:p-3 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2 bg-white bg-no-repeat bg-[length:100%_100%] ${
+                    className={`group relative rounded-[20px] p-2.5 sm:p-3 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2 bg-transparent bg-no-repeat bg-[length:100%_100%] ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "220px",
+                      minHeight: "200px",
                     }}
                   >
                     {/* البادجات المالية العائمة أعلى الكرت */}
