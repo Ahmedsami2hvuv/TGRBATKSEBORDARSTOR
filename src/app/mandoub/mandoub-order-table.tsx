@@ -616,7 +616,7 @@ function MandoubFullBlockCardGrid({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] px-5 sm:px-6 pt-4 pb-3.5 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2.5 bg-transparent bg-no-repeat bg-[length:100%_100%] ${
+                    className={`group relative rounded-[20px] px-2.5 sm:px-6 pt-3.5 pb-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2 bg-transparent bg-no-repeat bg-[length:100%_100%] w-full ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
@@ -625,22 +625,22 @@ function MandoubFullBlockCardGrid({
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
                       <div
-                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-6 sm:px-8 mr-3 sm:mr-4 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                        className="flex-1 min-w-0 max-w-[75%] sm:max-w-[78%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-4 sm:px-8 mr-1 sm:mr-3 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
                         title={headerTextStr}
                       >
-                        <span className="font-black text-[11px] sm:text-[13px] md:text-[14px] text-[#FFF8F0] truncate max-w-full text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] px-1">
+                        <span className="font-black text-[12px] sm:text-[13px] md:text-[15px] text-[#FFF8F0] truncate max-w-full text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] px-1">
                           {headerTextStr}
                         </span>
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب مسحوبة لليمين باتجاه الداخل لتستقر داخل الإطار تماماً */}
-                      <div className="relative shrink-0 flex items-center gap-2 ml-1.5 sm:ml-2 -mt-0.5 sm:-mt-1">
+                      <div className="relative shrink-0 flex items-center gap-1.5 sm:gap-2 ml-0.5 sm:ml-2 -mt-0.5 sm:-mt-1">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -718,9 +718,9 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 2. القسم الأوسط: نوع البضاعة يميناً + بلوك الصادر والوارد بجانبي دائرة السعر + التوقيت يساراً */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 -mt-3 sm:-mt-3.5 py-0 px-1">
+                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 -mt-3 sm:-mt-3.5 py-0 px-0.5 sm:px-1 w-full">
                       {/* النص الأيمن (نوع البضاعة فقط بدون اسم الزبون) */}
-                      <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-center flex-1 min-w-0 max-w-[85px] sm:max-w-[105px] leading-snug truncate">
+                      <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F5D77F] text-center flex-1 min-w-0 max-w-[95px] sm:max-w-[125px] leading-snug truncate">
                         {displayGoodsType}
                       </div>
 
@@ -778,7 +778,7 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* النص الأيسر الأحمر العنابي (وقت الطلب) */}
-                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-400 text-center flex-1 min-w-0 max-w-[85px] sm:max-w-[105px] leading-snug">
+                      <div className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-400 text-center flex-1 min-w-0 max-w-[95px] sm:max-w-[125px] leading-snug">
                         {o.orderNoteTime || o.timeLine || "فوري"}
                         {isPrepaid && (
                           <span className="block text-[9px] text-emerald-700 dark:text-emerald-400 font-black mt-0.5">
@@ -789,10 +789,10 @@ function MandoubFullBlockCardGrid({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والتسليم يساراً مطابق تماماً للصورة */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-4 sm:-mt-5 pt-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1 sm:gap-2 -mt-4 sm:-mt-5 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
-                        className="flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-10 sm:h-11.5"
+                        className="flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-3.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-10 sm:h-11.5"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
@@ -822,7 +822,7 @@ function MandoubFullBlockCardGrid({
 
                         {/* 2. رقم هاتف الزبون */}
                         <div className="flex items-center px-0.5">
-                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
+                          <span className="text-[12px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
                             {o.customerPhone || o.phoneLine || "—"}
                           </span>
                         </div>

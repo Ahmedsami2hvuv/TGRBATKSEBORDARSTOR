@@ -1027,7 +1027,7 @@ export default async function MandoubPage({ searchParams }: Props) {
 
     return (
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
-        <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
+        <div className="kse-app-inner mx-auto max-w-6xl px-1 py-1 pb-24 sm:px-4 sm:py-4 sm:text-lg">
           <PortalAuthCookieSetter auth={baseAuth} />
           {/* تم نقل الهيدر إلى المكون العميل MandoubOrdersSection تفاعلياً */}
 
@@ -1062,7 +1062,7 @@ export default async function MandoubPage({ searchParams }: Props) {
             </div>
           )}
 
-          <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm">
+          <section className="overflow-hidden border-0 sm:border border-sky-200 rounded-2xl bg-transparent sm:bg-white/80 shadow-none sm:shadow-sm">
             <MandoubOrdersSection
               allRows={safeTableRows}
               searchFields={safeSearchFields}
