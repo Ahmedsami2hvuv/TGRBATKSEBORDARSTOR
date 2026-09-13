@@ -364,26 +364,6 @@ function RedGlassOrbButton3D({
   title?: string;
   href?: string | null;
 }) {
-  const content = (
-    <>
-      <div
-        className="pointer-events-none absolute top-0.5 inset-x-1 h-[40%] rounded-t-full opacity-80"
-        style={{
-          background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 80%, transparent 100%)",
-        }}
-      />
-      <span className="relative z-10 text-white text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] flex items-center justify-center">
-        📍
-      </span>
-    </>
-  );
-
-  const styleObj = {
-    background: "radial-gradient(circle at 38% 28%, #EF4444 0%, #B91C1C 55%, #5B0C0C 100%)",
-    border: "2px solid #C9A86A",
-    boxShadow: "0 3px 8px rgba(91,12,12,0.45), inset 0 2px 2px rgba(255,255,255,0.7), inset 0 -2px 3px rgba(0,0,0,0.6)",
-  };
-
   if (href) {
     return (
       <a
@@ -392,11 +372,11 @@ function RedGlassOrbButton3D({
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
         title={title || "فتح موقع الزبون 📍"}
-        className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none transition hover:scale-105 active:scale-95 cursor-pointer overflow-hidden"
-        style={styleObj}
-      >
-        {content}
-      </a>
+        className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+        style={{
+          backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
+        }}
+      />
     );
   }
 
@@ -404,11 +384,11 @@ function RedGlassOrbButton3D({
     <div
       onClick={onClick}
       title={title || "بدون لوكيشن"}
-      className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full shrink-0 flex items-center justify-center select-none opacity-80 cursor-default overflow-hidden"
-      style={styleObj}
-    >
-      {content}
-    </div>
+      className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 opacity-80 cursor-default"
+      style={{
+        backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+      }}
+    />
   );
 }
 
