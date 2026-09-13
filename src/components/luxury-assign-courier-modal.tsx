@@ -79,8 +79,12 @@ export function LuxuryAssignCourierModal({
 
           <button
             type="button"
-            onClick={onClose}
-            className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] transition active:scale-90 text-sm font-black shadow-xs"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] transition active:scale-90 text-sm font-black shadow-md cursor-pointer z-50"
             title="إغلاق"
           >
             ✕

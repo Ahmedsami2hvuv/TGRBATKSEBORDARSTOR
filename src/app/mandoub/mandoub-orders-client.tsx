@@ -93,8 +93,13 @@ export function MandoubOrdersSection({
 
   return (
     <>
-      <header className="kse-glass-dark mb-3 flex flex-nowrap items-center justify-between gap-1.5 border border-sky-200/90 px-2 sm:px-3 py-2 shadow-sm rounded-2xl overflow-x-auto no-scrollbar">
-        <div className="flex flex-nowrap items-center gap-1 sm:gap-2 shrink-0">
+      {/* شريط التحكم العلوي الملكي الفاخر للمندوب بنانو بنانا */}
+      <header
+        className="mb-3 flex flex-nowrap items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] shadow-[0_4px_20px_rgba(10,61,46,0.35)] select-none text-white"
+        dir="rtl"
+      >
+        {/* الجانب الأيمن: أزرار التحكم الفاخرة والقائمة */}
+        <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2 shrink-0">
           <MandoubSettingsDropdown
             auth={auth}
             availableForAssignment={availableForAssignment}
@@ -106,10 +111,10 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setShowQuickSelect((v) => !v)}
-              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer ${
                 showQuickSelect
-                  ? "bg-red-600 border-red-700 text-white shadow-inner animate-pulse"
-                  : "bg-red-50 border-red-200 text-red-900 hover:bg-red-100"
+                  ? "bg-rose-600 border-[#F5D77F] text-white shadow-inner animate-pulse"
+                  : "bg-[#132A26] border-[#C9A86A]/60 text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#1E3E39]"
               }`}
               title="تحديد سريع"
             >
@@ -121,10 +126,10 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setIsSortingMode((v) => !v)}
-              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer ${
                 isSortingMode
-                  ? "bg-indigo-600 border-indigo-700 text-white shadow-inner"
-                  : "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100"
+                  ? "bg-amber-600 border-[#F5D77F] text-white shadow-inner animate-pulse"
+                  : "bg-[#132A26] border-[#C9A86A]/60 text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#1E3E39]"
               }`}
               title="ترتيب المسار"
             >
@@ -136,10 +141,10 @@ export function MandoubOrdersSection({
             <button
               type="button"
               onClick={() => setShowSearch((v) => !v)}
-              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer ${
                 showSearch
-                  ? "bg-sky-600 border-sky-700 text-white shadow-inner"
-                  : "bg-sky-50 border-sky-200 text-sky-900 hover:bg-sky-100"
+                  ? "bg-[#C9A86A] border-white text-[#0A1A18] shadow-inner font-black"
+                  : "bg-[#132A26] border-[#C9A86A]/60 text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#1E3E39]"
               }`}
               title="البحث"
             >
@@ -150,25 +155,30 @@ export function MandoubOrdersSection({
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-900 transition-all hover:scale-105 hover:bg-sky-100 active:scale-95"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border-2 border-[#C9A86A]/60 bg-[#132A26] text-[#F5D77F] transition-all hover:scale-105 hover:border-[#C9A86A] hover:bg-[#1E3E39] active:scale-95 shadow-md cursor-pointer"
             title="تحديث الصفحة"
           >
-            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600" fallback="🔄" />
+            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-4 h-4 sm:w-5 sm:h-5" fallback="🔄" />
           </button>
 
-          <div className="flex h-9 sm:h-10 shrink-0 items-center gap-1 px-2 sm:px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl text-xs sm:text-sm font-black text-slate-800 dark:text-[#00f3ff]">
-            <DynamicIcon iconKey="ui_user" config={icons} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 shrink-0" fallback="👤" />
-            <span className="truncate max-w-[80px] sm:max-w-[120px]">{courierName}</span>
+          {/* كبسولة اسم المندوب الملكية */}
+          <div className="flex h-9 sm:h-10 shrink-0 items-center gap-1.5 px-2.5 sm:px-3 bg-[#0A1A18]/80 border-2 border-[#C9A86A]/60 rounded-xl text-xs sm:text-sm font-black text-[#F5D77F] shadow-inner">
+            <span className="text-[#C9A86A]">👤</span>
+            <span className="truncate max-w-[80px] sm:max-w-[120px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+              {courierName}
+            </span>
           </div>
         </div>
 
+        {/* الجانب الأيسر: زر المحفظة الملكي المذهب */}
         <div className="flex shrink-0 items-center gap-1.5 ms-auto">
           <FullscreenWalletLauncher
             href={`/mandoub/wallet?${baseQuery.toString()}`}
-            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-2 sm:px-2.5 text-center text-xs sm:text-sm font-black text-white shadow-sm hover:bg-violet-700 min-w-[50px] sm:min-w-[60px]"
+            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-[#F5D77F] bg-gradient-to-r from-[#D97706] to-[#B45309] px-2.5 sm:px-3 text-center text-xs sm:text-sm font-black text-white shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer min-w-[65px] sm:min-w-[85px]"
             title="محفظة المندوب"
           >
-            <span className="text-xs sm:text-sm font-black text-white" dir="ltr">
+            <span className="text-sm">💰</span>
+            <span className="text-xs sm:text-sm font-black text-[#FFFDF0] font-mono drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" dir="ltr">
               {cashInHandStr}
             </span>
           </FullscreenWalletLauncher>

@@ -103,8 +103,12 @@ export function PhoneActionModal({
         {/* زر الإلغاء */}
         <button
           type="button"
-          onClick={onClose}
-          className="w-full rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
+          className="w-full rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition cursor-pointer active:scale-95"
         >
           إلغاء ✖
         </button>

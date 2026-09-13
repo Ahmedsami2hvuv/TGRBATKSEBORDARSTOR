@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 export type ModalActionType = "call" | "chat" | "location" | "door";
 
@@ -37,6 +38,91 @@ export function MandoubActionMenuModal({
   previewImageUrl,
   onClosePreviewImage,
 }: MandoubActionMenuModalProps) {
+  const [activePreviewImage, setActivePreviewImage] = useState<{
+    url: string;
+    title: string;
+  } | null>(previewImageUrl ? { url: previewImageUrl, title: title || "صورة الباب" } : null);
+
+  if (!isOpen && !activePreviewImage) return null;
+
+  // في حال كان عارض الصورة المكبرة نشطاً
+  if (activePreviewImage) {
+    const resolvedSrc = resolvePublicAssetSrc(activePreviewImage.url);
+    const viewerContent = (
+      <div
+        className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+        dir="rtl"
+        onClick={() => {
+          setActivePreviewImage(null);
+          if (onClosePreviewImage) onClosePreviewImage();
+        }}
+      >
+        <div
+          className="relative w-full max-w-lg rounded-[28px] overflow-hidden border-2 border-[#C9A86A] bg-[#0A1A18] text-white shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* شريط رأس عارض الصور الملكي */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#C9A86A]/40 bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A]">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🚪</span>
+              <span className="text-sm sm:text-base font-black text-[#F5D77F] truncate">
+                {activePreviewImage.title}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActivePreviewImage(null);
+                if (onClosePreviewImage) onClosePreviewImage();
+              }}
+              className="w-8 h-8 rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] flex items-center justify-center font-black text-sm transition active:scale-90 cursor-pointer shadow-md"
+              title="إغلاق"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* حاوي الصورة المكبرة */}
+          <div className="p-3 bg-black/60 flex-1 overflow-auto flex items-center justify-center min-h-[220px]">
+            {resolvedSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={resolvedSrc}
+                alt={activePreviewImage.title}
+                className="max-w-full max-h-[65vh] object-contain rounded-xl shadow-2xl border border-[#C9A86A]/30"
+              />
+            ) : (
+              <div className="text-center py-12 text-slate-400 font-bold text-sm">
+                لم يتم العثور على ملف الصورة أو الرابط غير صالح
+              </div>
+            )}
+          </div>
+
+          {/* زر سفلي لإغلاق المعاينة */}
+          <div className="p-3 border-t border-[#C9A86A]/30 bg-[#0A1A18] flex justify-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActivePreviewImage(null);
+                if (onClosePreviewImage) onClosePreviewImage();
+              }}
+              className="w-full py-2.5 rounded-xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-sm transition hover:scale-[1.01] active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>✕</span>
+              <span>إغلاق المعاينة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+    if (typeof document === "undefined") return null;
+    return createPortal(viewerContent, document.body);
+  }
+
   if (!isOpen) return null;
 
   const modalContent = (
@@ -46,23 +132,31 @@ export function MandoubActionMenuModal({
       dir="rtl"
     >
       <div
-        className="relative w-full max-w-sm rounded-[24px] p-5 sm:p-6 shadow-2xl border-2 border-[#C9A86A] bg-[#0A1A18] text-white flex flex-col gap-4 select-none animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-sm rounded-[28px] p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.95)] border-2 border-[#C9A86A] bg-[#0A1A18] text-white flex flex-col gap-4 select-none animate-in zoom-in-95 duration-200"
         style={{
-          boxShadow: "0 20px 50px rgba(0,0,0,0.85), inset 0 0 35px rgba(201,168,106,0.18)",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.95), inset 0 0 35px rgba(201,168,106,0.18)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* زر الإغلاق ✕ في الأعلى */}
+        {/* زر الإغلاق ✕ في الأعلى يعمل 100% بنقرة واحدة */}
         <button
           type="button"
-          onClick={onClose}
-          className="absolute top-3.5 left-3.5 w-8 h-8 rounded-full bg-[#132A26] border border-[#C9A86A]/40 text-[#F5D77F] hover:bg-[#C9A86A] hover:text-[#0A1A18] flex items-center justify-center font-black text-sm transition active:scale-90"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-3.5 left-3.5 z-50 w-8 h-8 rounded-full bg-[#132A26] border border-[#C9A86A] text-[#F5D77F] hover:bg-[#C9A86A] hover:text-[#0A1A18] flex items-center justify-center font-black text-sm transition active:scale-90 cursor-pointer shadow-md"
+          title="إغلاق النافذة"
         >
           ✕
         </button>
 
-        {/* رأس النافذة المنبثقة */}
+        {/* رأس النافذة المنبثقة الفاخر */}
         <div className="text-center pt-1 pb-1">
+          <div className="inline-flex items-center justify-center size-10 rounded-2xl bg-gradient-to-br from-[#164E3D] to-[#0A1A18] border border-[#C9A86A]/60 text-xl mb-1.5 shadow-md">
+            {type === "chat" ? "💬" : type === "call" ? "📞" : type === "location" ? "📍" : "🚪"}
+          </div>
           <h3 className="text-base sm:text-lg font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {title}
           </h3>
@@ -73,17 +167,17 @@ export function MandoubActionMenuModal({
           )}
         </div>
 
-        {/* قائمة الخيارات التفاعلية */}
+        {/* قائمة الخيارات التفاعلية المذهبة بنانو بنانا */}
         <div className="flex flex-col gap-2.5">
           {options.map((opt, idx) => {
             const btnContent = (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-2xl shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center justify-between w-full relative z-10 px-1 py-0.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-2xl shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
                     {opt.icon}
                   </span>
                   <div className="flex flex-col text-right min-w-0">
-                    <span className="text-sm font-black text-white leading-snug truncate">
+                    <span className="text-xs sm:text-sm font-black text-white leading-snug truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                       {opt.title}
                     </span>
                     {opt.subtitle && (
@@ -94,22 +188,23 @@ export function MandoubActionMenuModal({
                   </div>
                 </div>
                 {opt.badge && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#C9A86A]/20 text-[#F5D77F] border border-[#C9A86A]/40 shrink-0">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#0A1A18]/80 text-[#F5D77F] border border-[#C9A86A]/70 shrink-0 shadow-sm">
                     {opt.badge}
                   </span>
                 )}
               </div>
             );
 
-            const baseStyle =
-              "w-full rounded-xl p-3 sm:p-3.5 border transition flex items-center justify-between cursor-pointer active:scale-98 shadow-md ";
-            
-            let colorStyle = "bg-gradient-to-r from-[#132A26] to-[#1E3E39] border-[#C9A86A]/40 hover:border-[#C9A86A] text-white ";
-            if (opt.colorVariant === "emerald") {
-              colorStyle = "bg-gradient-to-r from-[#0E382B] to-[#164E3D] border-[#10B981]/50 hover:border-[#10B981] ";
-            } else if (opt.colorVariant === "amber") {
-              colorStyle = "bg-gradient-to-r from-[#38260E] to-[#4E3516] border-[#F59E0B]/50 hover:border-[#F59E0B] ";
+            // استخدام خلفيات الأزرار المذهبة بنانو بنانا
+            let bgImage = "url('/images/order-luxury/btn-luxury-option.webp')";
+            if (opt.colorVariant === "amber") {
+              bgImage = "url('/images/order-luxury/btn-luxury-option-amber.webp')";
+            } else if (opt.colorVariant === "blue") {
+              bgImage = "url('/images/order-luxury/btn-luxury-option-blue.webp')";
             }
+
+            const baseBtnStyle =
+              "relative w-full rounded-2xl p-2.5 sm:p-3 border-2 border-[#C9A86A]/70 flex items-center justify-between cursor-pointer active:scale-98 shadow-lg transition-transform hover:scale-[1.01] bg-no-repeat bg-[length:100%_100%] overflow-hidden ";
 
             if (opt.actionUrl) {
               return (
@@ -122,7 +217,8 @@ export function MandoubActionMenuModal({
                     if (opt.onClick) opt.onClick();
                     onClose();
                   }}
-                  className={baseStyle + colorStyle}
+                  className={baseBtnStyle}
+                  style={{ backgroundImage: bgImage }}
                 >
                   {btnContent}
                 </a>
@@ -133,11 +229,19 @@ export function MandoubActionMenuModal({
               <button
                 key={idx}
                 type="button"
-                onClick={() => {
-                  if (opt.onClick) opt.onClick();
-                  onClose();
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (opt.imageUrl) {
+                    setActivePreviewImage({ url: opt.imageUrl, title: opt.title });
+                  } else if (opt.onClick) {
+                    opt.onClick();
+                  } else {
+                    onClose();
+                  }
                 }}
-                className={baseStyle + colorStyle}
+                className={baseBtnStyle}
+                style={{ backgroundImage: bgImage }}
               >
                 {btnContent}
               </button>
@@ -145,15 +249,9 @@ export function MandoubActionMenuModal({
           })}
         </div>
 
-        {/* في حال معاينة صورة الباب */}
-        {previewImageUrl && (
-          <div className="mt-2 rounded-xl overflow-hidden border border-[#C9A86A] bg-black relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewImageUrl}
-              alt="صورة الباب"
-              className="w-full max-h-64 object-contain mx-auto"
-            />
+        {options.length === 0 && (
+          <div className="text-center py-6 text-slate-400 font-bold text-xs bg-[#132A26] rounded-2xl border border-[#C9A86A]/30">
+            لا توجد خيارات متاحة لهذا الطلب
           </div>
         )}
       </div>

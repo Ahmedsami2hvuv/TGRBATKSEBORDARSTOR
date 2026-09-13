@@ -23,6 +23,7 @@ import { computeMandoubAdminTotalAllTimeDinar } from "@/lib/mandoub-wallet-carry
 import { mandoubOrderDetailInclude, mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
 import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 import {
   mandoubShopNameVividClass,
   orderStatusBadgeClassPrepaid,
@@ -929,10 +930,10 @@ export default async function MandoubPage({ searchParams }: Props) {
       shopLocationUrl: o.shop.locationUrl,
       customerLocationUrl: mergedCustomerLocation,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl || sProfile?.locationUrl || "",
-      shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl || "",
-      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl || sProfile?.photoUrl || "",
-      imageUrl: o.imageUrl,
+      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl) || "",
+      customerDoorPhotoUrl: resolvePublicAssetSrc(o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl) || "",
+      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(o.secondCustomerDoorPhotoUrl || sProfile?.photoUrl) || "",
+      imageUrl: resolvePublicAssetSrc(o.imageUrl) || "",
       routeMode: o.routeMode as any,
       submissionSource: o.submissionSource,
 

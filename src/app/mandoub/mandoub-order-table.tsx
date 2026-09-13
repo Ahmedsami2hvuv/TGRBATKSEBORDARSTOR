@@ -674,9 +674,7 @@ function MandoubFullBlockCardGrid({
           icon: "🚪",
           badge: "الزبون",
           colorVariant: "emerald",
-          onClick: () => {
-            setActionModalState((prev) => ({ ...prev, previewImageUrl: custDoor }));
-          },
+          imageUrl: custDoor,
         });
       }
       if (shopDoor) {
@@ -686,9 +684,7 @@ function MandoubFullBlockCardGrid({
           icon: "🏪",
           badge: "العميل",
           colorVariant: "amber",
-          onClick: () => {
-            setActionModalState((prev) => ({ ...prev, previewImageUrl: shopDoor }));
-          },
+          imageUrl: shopDoor,
         });
       }
       if (secDoor) {
@@ -698,9 +694,7 @@ function MandoubFullBlockCardGrid({
           icon: "🚪",
           badge: "الزبون الثاني",
           colorVariant: "emerald",
-          onClick: () => {
-            setActionModalState((prev) => ({ ...prev, previewImageUrl: secDoor }));
-          },
+          imageUrl: secDoor,
         });
       }
       setActionModalState({
