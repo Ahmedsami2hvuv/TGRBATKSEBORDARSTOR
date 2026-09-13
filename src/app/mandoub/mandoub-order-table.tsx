@@ -178,6 +178,7 @@ function MandoubSaderSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
+  let isPreparer = false;
 
   if (showPickup) {
     text = formatDinarAsAlf(pickup);
@@ -185,6 +186,7 @@ function MandoubSaderSideBadge({ o }: { o: any }) {
   } else if (showPreparerPickup) {
     text = formatDinarAsAlf(preparerPickup);
     tooltip = `صادر المجهز: ${text}`;
+    isPreparer = true;
   } else if (showAdminPickup) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
@@ -202,7 +204,7 @@ function MandoubSaderSideBadge({ o }: { o: any }) {
     <div
       className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
       style={{
-        backgroundImage: "url('/images/order-luxury/badge-sader.webp')",
+        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-sader.webp" : "/images/order-luxury/badge-sader.webp"}')`,
       }}
       title={tooltip}
     >
@@ -222,6 +224,7 @@ function MandoubWardSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
+  let isPreparer = false;
 
   if (showDelivery) {
     text = formatDinarAsAlf(delivery);
@@ -229,6 +232,7 @@ function MandoubWardSideBadge({ o }: { o: any }) {
   } else if (showPreparerDelivery) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
+    isPreparer = true;
   } else if (o.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
@@ -246,7 +250,7 @@ function MandoubWardSideBadge({ o }: { o: any }) {
     <div
       className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
       style={{
-        backgroundImage: "url('/images/order-luxury/badge-ward.webp')",
+        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-ward.webp" : "/images/order-luxury/badge-ward.webp"}')`,
       }}
       title={tooltip}
     >
