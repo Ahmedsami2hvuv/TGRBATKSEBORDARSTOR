@@ -625,9 +625,9 @@ function MandoubFullBlockCardGrid({
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل قليلاً للأسفل ومحمي من خروج النص) */}
+                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
                       <div
-                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-6 sm:px-8 mr-3 sm:mr-4 mt-1 sm:mt-1.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                        className="flex-1 min-w-0 max-w-[72%] sm:max-w-[74%] h-12.5 sm:h-13.5 rounded-full flex items-center justify-center px-6 sm:px-8 mr-3 sm:mr-4 mt-3 sm:mt-3.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
@@ -755,11 +755,13 @@ function MandoubFullBlockCardGrid({
                               <span
                                 className={`${
                                   numericPrice.length >= 5
-                                    ? "text-[17px] sm:text-[20px]"
+                                    ? "text-[19px] sm:text-[22px]"
                                     : numericPrice.length >= 4
-                                    ? "text-[20px] sm:text-[24px]"
-                                    : "text-[26px] sm:text-[32px]"
-                                } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight`}
+                                    ? "text-[23px] sm:text-[27px]"
+                                    : numericPrice.length === 3
+                                    ? "text-[29px] sm:text-[34px]"
+                                    : "text-[36px] sm:text-[42px]"
+                                } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
                                 style={{
                                   color: "#F5D77F",
                                 }}
