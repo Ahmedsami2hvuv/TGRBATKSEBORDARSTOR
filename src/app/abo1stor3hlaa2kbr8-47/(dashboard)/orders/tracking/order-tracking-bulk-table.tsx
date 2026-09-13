@@ -1041,8 +1041,97 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: الأزرار يساراً + كبسولة هاتف الزبون وحامل الأزرار يميناً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار يميناً + أزرار الإسناد والاستلام يساراً */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-1 sm:-mt-1.5 pt-0" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص (معكوسة الترتيب) */}
+                      <div
+                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
+                        style={{
+                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
+                          minHeight: "34px",
+                        }}
+                      >
+                        {/* زر اتصال هاتفي سريع */}
+                        {o.customerPhone && (
+                          <GoldOrbButton3D
+                            href={`tel:${o.customerPhone}`}
+                            title="اتصال هاتفي سريع"
+                            variant="gold"
+                          >
+                            📞
+                          </GoldOrbButton3D>
+                        )}
+
+                        {/* رقم هاتف الزبون كنص حي فوق الصورة */}
+                        <div className="flex items-center px-0.5">
+                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
+                            {o.customerPhone || "—"}
+                          </span>
+                        </div>
+
+                        {/* زر اللوكيشن 📍 */}
+                        {hasGps ? (
+                          <RedGlassOrbButton3D
+                            href={o.customerLocationUrl || "#"}
+                            title="فتح موقع الزبون 📍"
+                          />
+                        ) : (
+                          <div
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+                            }}
+                            title="الزبون لا يملك لوكيشن ⚠️"
+                          />
+                        )}
+
+                        {/* زر تعديل أسعار التجهيز 💰 */}
+                        <Link
+                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                          style={{
+                            backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
+                          }}
+                          title="تعديل تفاصيل وأسعار التجهيز 💰"
+                        />
+
+                        {/* زر تعديل الطلب ✏️ */}
+                        <Link
+                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                          style={{
+                            backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
+                          }}
+                          title="تعديل الطلب ✏️"
+                        />
+
+                        {/* زر الرفض / الإرجاع ❌ */}
+                        {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={() => onRejectOrder(o)}
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
+                            }}
+                            title="رفض الطلب ❌"
+                          />
+                        )}
+                        {onRestoreOrder && isCancelled && (
+                          <button
+                            type="button"
+                            onClick={() => onRestoreOrder(o)}
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
+                            }}
+                            title="إرجاع الطلب المرفوض إلى جديد 🔄"
+                          />
+                        )}
+                      </div>
+
                       {/* الجهة اليسرى: أزرار الإسناد والاستلام والتسليم */}
                       <div className="flex items-center gap-1.5">
                         {/* زر إسناد الطلب */}
@@ -1101,95 +1190,6 @@ function TrackingCardsView({
                           <GlassOrbButton3D title="طلب وجهتين" size="sm">
                             <span className="text-xs">📦➔</span>
                           </GlassOrbButton3D>
-                        )}
-                      </div>
-
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص */}
-                      <div
-                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
-                        style={{
-                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                          minHeight: "34px",
-                        }}
-                      >
-                        {/* زر الرفض / الإرجاع ❌ */}
-                        {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                          <button
-                            type="button"
-                            onClick={() => onRejectOrder(o)}
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
-                            }}
-                            title="رفض الطلب ❌"
-                          />
-                        )}
-                        {onRestoreOrder && isCancelled && (
-                          <button
-                            type="button"
-                            onClick={() => onRestoreOrder(o)}
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
-                            }}
-                            title="إرجاع الطلب المرفوض إلى جديد 🔄"
-                          />
-                        )}
-
-                        {/* زر تعديل الطلب ✏️ */}
-                        <Link
-                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
-                          }}
-                          title="تعديل الطلب ✏️"
-                        />
-
-                        {/* زر تعديل أسعار التجهيز 💰 */}
-                        <Link
-                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
-                          }}
-                          title="تعديل تفاصيل وأسعار التجهيز 💰"
-                        />
-
-                        {/* زر اللوكيشن 📍 */}
-                        {hasGps ? (
-                          <RedGlassOrbButton3D
-                            href={o.customerLocationUrl || "#"}
-                            title="فتح موقع الزبون 📍"
-                          />
-                        ) : (
-                          <div
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
-                            }}
-                            title="الزبون لا يملك لوكيشن ⚠️"
-                          />
-                        )}
-
-                        {/* رقم هاتف الزبون كنص حي فوق الصورة */}
-                        <div className="flex items-center px-0.5">
-                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
-                            {o.customerPhone || "—"}
-                          </span>
-                        </div>
-
-                        {/* زر اتصال هاتفي سريع */}
-                        {o.customerPhone && (
-                          <GoldOrbButton3D
-                            href={`tel:${o.customerPhone}`}
-                            title="اتصال هاتفي سريع"
-                            variant="gold"
-                          >
-                            📞
-                          </GoldOrbButton3D>
                         )}
                       </div>
                     </div>

@@ -766,8 +766,87 @@ function MandoubFullBlockCardGrid({
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: الأزرار يساراً + كبسولة هاتف الزبون وحامل الأزرار يميناً */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون وحامل الأزرار يميناً + أزرار الاستلام والتسليم يساراً */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-1.5 -mt-1 sm:-mt-1.5 pt-0" onClick={(e) => e.stopPropagation()}>
+                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص (معكوسة الترتيب) */}
+                      <div
+                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
+                        style={{
+                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
+                          minHeight: "34px",
+                        }}
+                      >
+                        {/* 1. زر اتصال هاتفي سريع */}
+                        {(o.customerPhone || o.phoneLine) && (
+                          <GoldOrbButton3D
+                            href={`tel:${o.customerPhone || o.phoneLine}`}
+                            title="اتصال هاتفي سريع"
+                            variant="gold"
+                          >
+                            📞
+                          </GoldOrbButton3D>
+                        )}
+
+                        {/* 2. رقم هاتف الزبون كنص حي فوق الصورة */}
+                        <div className="flex items-center px-0.5">
+                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
+                            {o.customerPhone || o.phoneLine || "—"}
+                          </span>
+                        </div>
+
+                        {/* 3. زر مراسلة عبر واتساب */}
+                        {(o.customerPhone || o.phoneLine) && (
+                          <GoldOrbButton3D
+                            href={`https://wa.me/${(o.customerPhone || o.phoneLine).replace(/[^0-9]/g, "").replace(/^0/, "964")}`}
+                            title="مراسلة عبر واتساب"
+                            variant="green"
+                          >
+                            💬
+                          </GoldOrbButton3D>
+                        )}
+
+                        {/* 4. زر البصمة الصوتية إن وجد */}
+                        {(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl) && (
+                          <GoldOrbButton3D
+                            onClick={() => {
+                              const sound = new Audio(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl);
+                              sound.play().catch(() => {});
+                            }}
+                            title="تشغيل البصمة الصوتية"
+                            variant="purple"
+                          >
+                            🎤
+                          </GoldOrbButton3D>
+                        )}
+
+                        {/* 5. زر صورة الباب إن وجد */}
+                        {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl) && (
+                          <GoldOrbButton3D
+                            href={o.customerDoorPhotoUrl || o.shopDoorPhotoUrl}
+                            title="عرض صورة الباب"
+                            variant="gold"
+                          >
+                            📷
+                          </GoldOrbButton3D>
+                        )}
+
+                        {/* 6. زر اللوكيشن 📍 */}
+                        {hasGps ? (
+                          <RedGlassOrbButton3D
+                            href={o.customerLocationUrl || "#"}
+                            title="فتح موقع الزبون 📍"
+                          />
+                        ) : (
+                          <div
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            style={{
+                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+                            }}
+                            title="الزبون لا يملك لوكيشن ⚠️"
+                          />
+                        )}
+                      </div>
+
                       {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين */}
                       <div className="flex items-center gap-1.5">
                         {/* زر استلام ⚡ */}
@@ -812,85 +891,6 @@ function MandoubFullBlockCardGrid({
                           <GlassOrbButton3D title="طلب وجهتين" size="sm">
                             <span className="text-xs">📦➔</span>
                           </GlassOrbButton3D>
-                        )}
-                      </div>
-
-                      {/* الجهة اليمنى: كبسولة الهاتف العاجية الحاملة للأزرار بخلفية WEBP واحدة مكيشة ورقم الهاتف كنص */}
-                      <div
-                        className="flex items-center gap-1 rounded-full px-2 py-0.5 shadow-2xs bg-no-repeat bg-[length:100%_100%]"
-                        style={{
-                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                          minHeight: "34px",
-                        }}
-                      >
-                        {/* زر اللوكيشن 📍 */}
-                        {hasGps ? (
-                          <RedGlassOrbButton3D
-                            href={o.customerLocationUrl || "#"}
-                            title="فتح موقع الزبون 📍"
-                          />
-                        ) : (
-                          <div
-                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
-                            }}
-                            title="الزبون لا يملك لوكيشن ⚠️"
-                          />
-                        )}
-
-                        {/* زر صورة الباب إن وجد */}
-                        {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl) && (
-                          <GoldOrbButton3D
-                            href={o.customerDoorPhotoUrl || o.shopDoorPhotoUrl}
-                            title="عرض صورة الباب"
-                            variant="gold"
-                          >
-                            📷
-                          </GoldOrbButton3D>
-                        )}
-
-                        {/* زر البصمة الصوتية إن وجد */}
-                        {(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl) && (
-                          <GoldOrbButton3D
-                            onClick={() => {
-                              const sound = new Audio(o.audioUrl || o.preparerAudioUrl || o.adminAudioUrl);
-                              sound.play().catch(() => {});
-                            }}
-                            title="تشغيل البصمة الصوتية"
-                            variant="purple"
-                          >
-                            🎤
-                          </GoldOrbButton3D>
-                        )}
-
-                        {/* زر مراسلة عبر واتساب */}
-                        {(o.customerPhone || o.phoneLine) && (
-                          <GoldOrbButton3D
-                            href={`https://wa.me/${(o.customerPhone || o.phoneLine).replace(/[^0-9]/g, "").replace(/^0/, "964")}`}
-                            title="مراسلة عبر واتساب"
-                            variant="green"
-                          >
-                            💬
-                          </GoldOrbButton3D>
-                        )}
-
-                        {/* رقم هاتف الزبون كنص حي فوق الصورة */}
-                        <div className="flex items-center px-0.5">
-                          <span className="text-[11px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all">
-                            {o.customerPhone || o.phoneLine || "—"}
-                          </span>
-                        </div>
-
-                        {/* زر اتصال هاتفي سريع */}
-                        {(o.customerPhone || o.phoneLine) && (
-                          <GoldOrbButton3D
-                            href={`tel:${o.customerPhone || o.phoneLine}`}
-                            title="اتصال هاتفي سريع"
-                            variant="gold"
-                          >
-                            📞
-                          </GoldOrbButton3D>
                         )}
                       </div>
                     </div>
