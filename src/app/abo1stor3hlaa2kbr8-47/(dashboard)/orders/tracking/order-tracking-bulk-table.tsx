@@ -947,16 +947,16 @@ function TrackingCardsView({
                     </div>
 
                     {/* 1. السطر العلوي: رقم الطلب يساراً + الزر المعلق + بلوك اسم المحل / الوجهة يميناً */}
-                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
-                      {/* اليمين: بلوك اسم المحل والمنطقة */}
+                    <div className="relative z-10 flex items-center justify-between gap-2.5 min-w-0 w-full pt-1 sm:pt-1.5" onClick={(e) => e.stopPropagation()}>
+                      {/* اليمين: بلوك اسم المحل والمنطقة (أعرض ومسحوب للأسفل) */}
                       <div
-                        className="flex-1 min-w-0 h-8 sm:h-9 rounded-full flex items-center justify-center px-3 bg-no-repeat bg-[length:100%_100%] select-none shadow-2xs"
+                        className="flex-1 min-w-0 h-9 sm:h-10 rounded-full flex items-center justify-center px-4 bg-no-repeat bg-[length:100%_100%] select-none shadow-xs"
                         style={{
                           backgroundImage: `url('${headerWebpBg}')`,
                         }}
                         title={headerTextStr}
                       >
-                        <span className="font-black text-xs sm:text-[13px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        <span className="font-black text-xs sm:text-[14px] text-[#FFF8F0] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           {headerTextStr}
                         </span>
                       </div>
