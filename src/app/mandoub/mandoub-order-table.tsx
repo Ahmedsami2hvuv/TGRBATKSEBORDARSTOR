@@ -671,17 +671,19 @@ function MandoubFullBlockCardGrid({
                           </div>
                         )}
 
-                        <div className="relative">
-                          {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص فوقها */}
+                        <div className="relative shrink-0">
+                          {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص متمركز وكبير في قلبها */}
                           <div
-                            className="h-10 sm:h-11 px-4 rounded-lg flex items-center justify-center font-black font-mono text-sm sm:text-base select-none shadow-xs bg-no-repeat bg-[length:100%_100%]"
+                            className="min-w-[82px] sm:min-w-[98px] h-11 sm:h-12.5 px-2.5 rounded-lg flex items-center justify-center text-center font-black font-mono text-lg sm:text-xl md:text-2xl tracking-wider select-none shadow-xs bg-no-repeat bg-[length:100%_100%] leading-none"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
-                              textShadow: "0 1px 2px rgba(0,0,0,0.7)",
+                              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
                             }}
                           >
-                            {o.shortId}
+                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pt-0.5">
+                              {o.shortId}
+                            </span>
                           </div>
 
                           {/* الزر المعلق للطلب العكسي تحت كبسولة رقم الطلب */}
