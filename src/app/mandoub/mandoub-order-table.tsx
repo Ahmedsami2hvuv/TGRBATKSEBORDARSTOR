@@ -540,10 +540,8 @@ function MandoubFullBlockCardGrid({
       const options: any[] = [];
       if (custPhone) {
         options.push({
-          title: "مراسلة الزبون عبر واتساب",
-          subtitle: custPhone,
+          title: "مراسلة الزبون",
           icon: "💬",
-          badge: "الزبون",
           colorVariant: "emerald",
           actionUrl: `https://wa.me/${custPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
         });
@@ -551,9 +549,7 @@ function MandoubFullBlockCardGrid({
       if (shopPh) {
         options.push({
           title: `مراسلة العميل (${o.shopName || "المحل"})`,
-          subtitle: shopPh,
           icon: "🏪",
-          badge: "العميل",
           colorVariant: "amber",
           actionUrl: `https://wa.me/${shopPh.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
         });
@@ -561,9 +557,7 @@ function MandoubFullBlockCardGrid({
       if (secPhone) {
         options.push({
           title: "مراسلة الزبون الثاني",
-          subtitle: secPhone,
           icon: "💬",
-          badge: "الزبون الثاني",
           colorVariant: "emerald",
           actionUrl: `https://wa.me/${secPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
         });
@@ -583,10 +577,8 @@ function MandoubFullBlockCardGrid({
       const options: any[] = [];
       if (custPhone) {
         options.push({
-          title: "اتصال هاتفي بالزبون",
-          subtitle: custPhone,
+          title: "اتصال بالزبون",
           icon: "📞",
-          badge: "الزبون",
           colorVariant: "emerald",
           actionUrl: `tel:${custPhone}`,
         });
@@ -594,9 +586,7 @@ function MandoubFullBlockCardGrid({
       if (shopPh) {
         options.push({
           title: `اتصال بالعميل (${o.shopName || "المحل"})`,
-          subtitle: shopPh,
           icon: "🏪",
-          badge: "العميل",
           colorVariant: "amber",
           actionUrl: `tel:${shopPh}`,
         });
@@ -604,9 +594,7 @@ function MandoubFullBlockCardGrid({
       if (secPhone) {
         options.push({
           title: "اتصال بالزبون الثاني",
-          subtitle: secPhone,
           icon: "📞",
-          badge: "الزبون الثاني",
           colorVariant: "emerald",
           actionUrl: `tel:${secPhone}`,
         });
@@ -626,10 +614,8 @@ function MandoubFullBlockCardGrid({
       const options: any[] = [];
       if (custLoc) {
         options.push({
-          title: "موقع الزبون على الخريطة",
-          subtitle: o.regionLine || "المنطقة",
+          title: "موقع الزبون",
           icon: "📍",
-          badge: "الزبون",
           colorVariant: "emerald",
           actionUrl: custLoc,
         });
@@ -637,9 +623,7 @@ function MandoubFullBlockCardGrid({
       if (shopLoc) {
         options.push({
           title: `موقع العميل (${o.shopName || "المحل"})`,
-          subtitle: o.shopRegionName || "موقع المحل",
           icon: "🏪",
-          badge: "العميل",
           colorVariant: "amber",
           actionUrl: shopLoc,
         });
@@ -647,9 +631,7 @@ function MandoubFullBlockCardGrid({
       if (secLoc) {
         options.push({
           title: "موقع الزبون الثاني",
-          subtitle: o.secondCustomerRegionName || "الوجهة الثانية",
           icon: "📍",
-          badge: "الزبون الثاني",
           colorVariant: "emerald",
           actionUrl: secLoc,
         });
@@ -669,30 +651,24 @@ function MandoubFullBlockCardGrid({
       const options: any[] = [];
       if (custDoor) {
         options.push({
-          title: "عرض صورة باب الزبون",
-          subtitle: o.regionLine || "باب المنزل",
+          title: "باب الزبون",
           icon: "🚪",
-          badge: "الزبون",
           colorVariant: "emerald",
           imageUrl: custDoor,
         });
       }
       if (shopDoor) {
         options.push({
-          title: `عرض صورة باب العميل (${o.shopName || "المحل"})`,
-          subtitle: "باب المحل",
+          title: `باب العميل (${o.shopName || "المحل"})`,
           icon: "🏪",
-          badge: "العميل",
           colorVariant: "amber",
           imageUrl: shopDoor,
         });
       }
       if (secDoor) {
         options.push({
-          title: "عرض صورة باب الزبون الثاني",
-          subtitle: o.secondCustomerRegionName || "الوجهة الثانية",
+          title: "باب الزبون الثاني",
           icon: "🚪",
-          badge: "الزبون الثاني",
           colorVariant: "emerald",
           imageUrl: secDoor,
         });

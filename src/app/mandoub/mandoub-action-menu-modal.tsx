@@ -152,9 +152,9 @@ export function MandoubActionMenuModal({
           ✕
         </button>
 
-        {/* رأس النافذة المنبثقة الفاخر */}
+        {/* رأس النافذة المنبثقة الفاخر بدون أي إطار محيط بالأيقونة */}
         <div className="text-center pt-1 pb-1">
-          <div className="inline-flex items-center justify-center size-10 rounded-2xl bg-gradient-to-br from-[#164E3D] to-[#0A1A18] border border-[#C9A86A]/60 text-xl mb-1.5 shadow-md">
+          <div className="text-3xl sm:text-4xl mb-1 flex items-center justify-center drop-shadow-md select-none">
             {type === "chat" ? "💬" : type === "call" ? "📞" : type === "location" ? "📍" : "🚪"}
           </div>
           <h3 className="text-base sm:text-lg font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
@@ -167,35 +167,21 @@ export function MandoubActionMenuModal({
           )}
         </div>
 
-        {/* قائمة الخيارات التفاعلية المذهبة بنانو بنانا */}
+        {/* قائمة الخيارات التفاعلية المذهبة بنانو بنانا بسطر واحد ونصوص متمركزة */}
         <div className="flex flex-col gap-2.5">
           {options.map((opt, idx) => {
             const btnContent = (
-              <div className="flex items-center justify-between w-full relative z-10 px-1 py-0.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-2xl shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
-                    {opt.icon}
-                  </span>
-                  <div className="flex flex-col text-right min-w-0">
-                    <span className="text-xs sm:text-sm font-black text-white leading-snug truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                      {opt.title}
-                    </span>
-                    {opt.subtitle && (
-                      <span className="text-[11px] font-mono font-bold text-[#F5D77F] truncate">
-                        {opt.subtitle}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {opt.badge && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#0A1A18]/80 text-[#F5D77F] border border-[#C9A86A]/70 shrink-0 shadow-sm">
-                    {opt.badge}
-                  </span>
-                )}
+              <div className="flex items-center justify-center gap-2.5 w-full relative z-10 py-1.5 px-4 text-center">
+                <span className="text-xl sm:text-2xl shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                  {opt.icon}
+                </span>
+                <span className="text-sm sm:text-base font-black text-white leading-normal truncate drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
+                  {opt.title}
+                </span>
               </div>
             );
 
-            // استخدام خلفيات الأزرار المذهبة بنانو بنانا
+            // استخدام خلفيات الأزرار المذهبة بنانو بنانا بدون إطارات CSS مشوهة
             let bgImage = "url('/images/order-luxury/btn-luxury-option.webp')";
             if (opt.colorVariant === "amber") {
               bgImage = "url('/images/order-luxury/btn-luxury-option-amber.webp')";
@@ -204,7 +190,7 @@ export function MandoubActionMenuModal({
             }
 
             const baseBtnStyle =
-              "relative w-full rounded-2xl p-2.5 sm:p-3 border-2 border-[#C9A86A]/70 flex items-center justify-between cursor-pointer active:scale-98 shadow-lg transition-transform hover:scale-[1.01] bg-no-repeat bg-[length:100%_100%] overflow-hidden ";
+              "relative w-full rounded-2xl min-h-[52px] sm:min-h-[58px] p-2 flex items-center justify-center cursor-pointer active:scale-98 shadow-lg transition-transform hover:scale-[1.01] bg-no-repeat bg-[length:100%_100%] overflow-hidden ";
 
             if (opt.actionUrl) {
               return (
