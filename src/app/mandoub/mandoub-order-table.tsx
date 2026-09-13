@@ -834,13 +834,13 @@ function MandoubFullBlockCardGrid({
                       </div>
 
                       {/* الجهة اليسرى: أزرار الاستلام والتسليم والوجهتين (كبيرة وبارزة ومرفوعة للأعلى بجانب بعضها) */}
-                      <div className="flex items-center gap-2 -mt-1 sm:-mt-1.5">
+                      <div className="flex items-center gap-2 -mt-3.5 sm:-mt-4.5">
                         {/* زر استلام ⚡ */}
                         {!isSortingMode && isAssigned && (
                           <button
                             type="button"
                             onClick={() => setPickupOrder(o)}
-                            className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -853,7 +853,7 @@ function MandoubFullBlockCardGrid({
                           <button
                             type="button"
                             onClick={() => setDeliveryOrder(o)}
-                            className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full text-[10px] sm:text-xs font-black text-white shadow-xs hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -862,7 +862,7 @@ function MandoubFullBlockCardGrid({
                         )}
 
                         {!isSortingMode && isDelivered && (
-                          <span className="h-8.5 sm:h-9.5 px-3 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-2xs flex items-center gap-1">
+                          <span className="h-9 sm:h-10 px-3.5 rounded-full bg-emerald-700 border border-emerald-500 text-white font-black text-xs shadow-2xs flex items-center gap-1">
                             <span>✓</span>
                             <span>مسلّم</span>
                           </span>
@@ -870,8 +870,8 @@ function MandoubFullBlockCardGrid({
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRouteOrder && (
-                          <GlassOrbButton3D title="طلب وجهتين" size="md">
-                            <span className="text-xs">📦➔</span>
+                          <GlassOrbButton3D title="طلب وجهتين" size="lg">
+                            <span className="text-sm">📦➔</span>
                           </GlassOrbButton3D>
                         )}
                       </div>
