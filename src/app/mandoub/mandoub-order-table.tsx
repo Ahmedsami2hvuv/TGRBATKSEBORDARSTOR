@@ -740,7 +740,7 @@ function MandoubFullBlockCardGrid({
             </div>
 
             {/* قائمة الكروت الملكية التابعة لهذا اليوم للمندوب مع ملفات WEBP المكيشة */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-w-lg mx-auto w-full">
               {group.items.map((o) => {
                 const isPending = o.orderStatus === "pending";
                 const isAssigned = o.orderStatus === "assigned";

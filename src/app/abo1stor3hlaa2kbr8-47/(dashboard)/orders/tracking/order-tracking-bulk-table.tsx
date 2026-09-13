@@ -844,10 +844,10 @@ function TrackingCardsView({
 
   const gridColsClass =
     columns === 1
-      ? "grid grid-cols-1 gap-4"
+      ? "grid grid-cols-1 gap-4 max-w-lg mx-auto"
       : columns === 2
-      ? "grid grid-cols-1 md:grid-cols-2 gap-4"
-      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4";
+      ? "grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto"
+      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-7xl mx-auto";
 
   // تجميع الطلبات حسب اليوم بالتاريخ البغدادي الدقيق
   const groupedByDate: { dateKey: string; dateLabel: string; items: TrackingTableRow[] }[] = [];
