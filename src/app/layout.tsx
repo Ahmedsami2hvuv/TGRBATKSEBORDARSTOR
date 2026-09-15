@@ -96,10 +96,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/header-assigned.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/header-received.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/header-delivered.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/badge-sader-vertical.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/badge-ward-vertical.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/badge-preparer-sader-vertical.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/badge-preparer-ward-vertical.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-sader.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-ward.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-preparer-sader.webp" as="image" type="image/webp" />
@@ -133,10 +129,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/header-assigned.webp',
                     '/images/order-luxury/header-received.webp',
                     '/images/order-luxury/header-delivered.webp',
-                    '/images/order-luxury/badge-sader-vertical.webp',
-                    '/images/order-luxury/badge-ward-vertical.webp',
-                    '/images/order-luxury/badge-preparer-sader-vertical.webp',
-                    '/images/order-luxury/badge-preparer-ward-vertical.webp',
                     '/images/order-luxury/badge-sader.webp',
                     '/images/order-luxury/badge-ward.webp',
                     '/images/order-luxury/badge-preparer-sader.webp',
