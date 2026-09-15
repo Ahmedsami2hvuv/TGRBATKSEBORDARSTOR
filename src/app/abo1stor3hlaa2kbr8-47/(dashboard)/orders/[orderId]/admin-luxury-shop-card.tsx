@@ -126,7 +126,7 @@ export function AdminLuxuryShopCard({
       />
 
       {/* زر طي وتوسيع الكارت الفاخر */}
-      <div className="flex items-center justify-between px-2 mb-1.5">
+      <div className="flex items-center justify-between px-2 mb-1">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -136,8 +136,8 @@ export function AdminLuxuryShopCard({
         </button>
 
         {pending && (
-          <span className="text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1">
-            <span>⏳</span> جاري رفع وتحديث الصورة...
+          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1">
+            <span>⏳</span> جاري رفع الصورة...
           </span>
         )}
       </div>
@@ -145,83 +145,83 @@ export function AdminLuxuryShopCard({
       {/* الهيكل الرئيسي لكارت العميل بالإطار الملكي الفاخر */}
       {isExpanded && (
         <div
-          className="relative w-full rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all"
+          className="relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3 sm:p-5 md:p-6 transition-all"
           style={{
             backgroundImage: "url('/images/order-luxury/shop-card/shop-card-frame.webp')",
-            minHeight: "310px",
           }}
         >
-          {/* محتوى الكارت مقسم إلى نصفين: يمين (المعلومات) ويسار (صورة المحل) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5 items-stretch min-w-0">
-            {/* 1. الجانب الأيمن: كبسولة العنوان + بيانات المحل + زر الموقع */}
-            <div className="flex flex-col justify-between gap-2.5 min-w-0">
+          {/* محتوى الكارت: عمودين متجاورين دائماً (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6 items-start min-w-0">
+            
+            {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات المحل + موقع المحل + أزرار التواصل ================= */}
+            <div className="flex flex-col justify-between gap-1.5 sm:gap-2.5 min-w-0">
               {/* الرأس: كبسولة المحل (المرسل) */}
               <div className="flex justify-start">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/order-luxury/shop-card/header-shop-info.webp"
                   alt="المحل (المرسل)"
-                  className="h-9 sm:h-11 md:h-12 w-auto object-contain drop-shadow-md select-none"
+                  className="h-7 sm:h-9 md:h-11 w-auto object-contain drop-shadow-md select-none"
                 />
               </div>
 
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
-              <div className="space-y-2 sm:space-y-2.5 py-1 px-1">
+              <div className="space-y-1.5 sm:space-y-2 py-0.5">
                 {/* سطر 1: اسم المحل */}
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-shop-name.webp"
                     alt="اسم المحل"
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-black text-[11px] sm:text-xs md:text-sm text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.name || "المحل"}
                   </span>
                 </div>
 
                 {/* سطر 2: اسم العميل / المسؤول */}
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-customer-name.webp"
                     alt="اسم العميل"
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-black text-xs sm:text-sm text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-black text-[11px] sm:text-xs md:text-sm text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {submitterName || "—"}
                   </span>
                 </div>
 
                 {/* سطر 3: اسم المنطقة */}
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-region.webp"
                     alt="منطقة المحل"
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-bold text-xs sm:text-sm text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-bold text-[11px] sm:text-xs md:text-sm text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.region?.name || "—"}
                   </span>
                 </div>
 
                 {/* سطر 4: رقم الهاتف */}
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-phone.webp"
                     alt="رقم الهاتف"
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-mono font-black text-[11px] sm:text-xs md:text-sm text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {cleanPhone || "—"}
                   </span>
                 </div>
               </div>
 
               {/* زر موقع المحل على الخريطة */}
-              <div className="pt-1">
+              <div className="pt-0.5">
                 {hasLocation ? (
                   <a
                     href={order.shopLocationUrl}
@@ -234,7 +234,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-shop-location.webp"
                       alt="موقع المحل"
-                      className="h-8 sm:h-9.5 md:h-10.5 w-auto object-contain drop-shadow-lg"
+                      className="h-6 sm:h-8 md:h-9 w-auto object-contain drop-shadow-lg"
                     />
                   </a>
                 ) : (
@@ -246,30 +246,85 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-shop-location.webp"
                       alt="موقع المحل غير متوفر"
-                      className="h-8 sm:h-9.5 md:h-10.5 w-auto object-contain grayscale"
+                      className="h-6 sm:h-8 md:h-9 w-auto object-contain grayscale"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* أزرار التواصل (اتصال + واتساب) تحت البيانات في الجانب الأيمن */}
+              <div className="flex items-center gap-1 sm:gap-2 pt-1 flex-wrap">
+                {/* 1. زر اتصال 📞 */}
+                {cleanPhone ? (
+                  <a
+                    href={telHref(cleanPhone)}
+                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    title={`اتصال هاتفي: ${cleanPhone}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-call.webp"
+                      alt="اتصال"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                    />
+                  </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-call.webp"
+                      alt="اتصال"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain grayscale"
+                    />
+                  </div>
+                )}
+
+                {/* 2. زر واتس اب 💬 */}
+                {cleanPhone ? (
+                  <a
+                    href={whatsappMeUrl(cleanPhone)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    title="مراسلة عبر واتساب"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-whatsapp.webp"
+                      alt="واتس اب"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                    />
+                  </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-whatsapp.webp"
+                      alt="واتس اب"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain grayscale"
                     />
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 2. الجانب الأيسر: كبسولة العنوان + مساحة صورة المحل */}
-            <div className="flex flex-col justify-between items-center sm:items-start gap-2.5 min-w-0">
+            {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل + مساحة الصورة بالأعلى + أزرار (كاميرا ومعرض) تحتها ================= */}
+            <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
               {/* الرأس: كبسولة صورة المحل */}
-              <div className="flex justify-start w-full">
+              <div className="flex justify-center w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/order-luxury/shop-card/header-shop-photo.webp"
                   alt="صورة المحل"
-                  className="h-9 sm:h-11 md:h-12 w-auto object-contain drop-shadow-md select-none"
+                  className="h-7 sm:h-9 md:h-11 w-auto object-contain drop-shadow-md select-none"
                 />
               </div>
 
               {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
-              <div className="w-full flex flex-col items-center justify-center">
+              <div className="w-full flex flex-col items-center justify-center my-auto">
                 {imgShopDoor ? (
-                  <div className="w-full max-w-[280px] sm:max-w-[320px] flex flex-col items-center gap-1">
-                    <div className="w-full aspect-[4/3] sm:aspect-[16/10] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group">
+                  <div className="w-full max-w-[140px] sm:max-w-[200px] md:max-w-[240px] flex flex-col items-center gap-1">
+                    <div className="w-full aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={imgShopDoor}
@@ -279,9 +334,9 @@ export function AdminLuxuryShopCard({
                       />
                       <div
                         onClick={() => setPreviewImageUrl(imgShopDoor)}
-                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-xs cursor-zoom-in"
+                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-[10px] sm:text-xs cursor-zoom-in"
                       >
-                        🔍 انقر للتكبير
+                        🔍 تكبير
                       </div>
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() && (
@@ -291,132 +346,79 @@ export function AdminLuxuryShopCard({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-[4/3] sm:aspect-[16/10] flex items-center justify-center">
+                  <div className="w-full max-w-[130px] sm:max-w-[180px] md:max-w-[210px] flex items-center justify-center py-1">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/images/order-luxury/shop-card/placeholder-no-photo.webp"
                       alt="لا توجد صورة"
-                      className="h-full max-h-[140px] sm:max-h-[160px] w-auto object-contain drop-shadow-lg opacity-90 select-none"
+                      className="w-full h-auto max-h-[85px] sm:max-h-[120px] md:max-h-[140px] object-contain drop-shadow-lg opacity-95 select-none"
                     />
                   </div>
                 )}
 
                 {/* أزرار الحذف والاسترجاع الإدارية إن وجدت صورة */}
                 {imgShopDoor && !isSystemAdminOrder && (
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-0.5">
                     <button
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
+                      className="text-[9px] sm:text-[11px] font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
                     >
-                      {deleting ? "جاري المسح..." : "🗑️ مسح الصورة"}
+                      {deleting ? "جاري المسح..." : "🗑️ مسح"}
                     </button>
                     {order.shopPhotoUrl && (
                       <button
                         type="button"
                         onClick={handleRevert}
                         disabled={reverting}
-                        className="text-[10px] sm:text-xs font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
+                        className="text-[9px] sm:text-[11px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
                       >
-                        {reverting ? "جاري الاسترجاع..." : "🔄 استرجاع الأصلية"}
+                        {reverting ? "جاري الاسترجاع..." : "🔄 استرجاع"}
                       </button>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* أزرار رفع الصورة (كاميرا + معرض) مباشرة تحت صورة المحل في الجانب الأيسر */}
+              {!isSystemAdminOrder && (
+                <div className="flex items-center justify-center gap-1 sm:gap-2 pt-1 w-full flex-wrap">
+                  {/* 3. زر كاميرا 📷 */}
+                  <button
+                    type="button"
+                    onClick={() => cameraFileRef.current?.click()}
+                    disabled={pending}
+                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    title="التقاط صورة المحل بالكاميرا"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-camera.webp"
+                      alt="كاميرا"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                    />
+                  </button>
+
+                  {/* 4. زر معرض 🖼️ */}
+                  <button
+                    type="button"
+                    onClick={() => galleryFileRef.current?.click()}
+                    disabled={pending}
+                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    title="اختيار صورة المحل من المعرض"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/order-luxury/shop-card/btn-gallery.webp"
+                      alt="معرض"
+                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                    />
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* 3. الشريط السفلي للأزرار التفاعلية الأربعة بنانو بنانا الفاخرة */}
-          <div className="mt-4 sm:mt-5 pt-3 border-t border-[#C9A86A]/40 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3">
-            {/* 1. زر اتصال 📞 (يمين) */}
-            {cleanPhone ? (
-              <a
-                href={telHref(cleanPhone)}
-                className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                title={`اتصال هاتفي: ${cleanPhone}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-call.webp"
-                  alt="اتصال"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                />
-              </a>
-            ) : (
-              <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-call.webp"
-                  alt="اتصال"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain grayscale"
-                />
-              </div>
-            )}
-
-            {/* 2. زر واتس اب 💬 */}
-            {cleanPhone ? (
-              <a
-                href={whatsappMeUrl(cleanPhone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                title="مراسلة عبر واتساب"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-whatsapp.webp"
-                  alt="واتس اب"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                />
-              </a>
-            ) : (
-              <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-whatsapp.webp"
-                  alt="واتس اب"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain grayscale"
-                />
-              </div>
-            )}
-
-            {/* 3. زر كاميرا 📷 */}
-            {!isSystemAdminOrder && (
-              <button
-                type="button"
-                onClick={() => cameraFileRef.current?.click()}
-                disabled={pending}
-                className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                title="التقاط صورة المحل بالكاميرا"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-camera.webp"
-                  alt="كاميرا"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                />
-              </button>
-            )}
-
-            {/* 4. زر معرض 🖼️ (يسار) */}
-            {!isSystemAdminOrder && (
-              <button
-                type="button"
-                onClick={() => galleryFileRef.current?.click()}
-                disabled={pending}
-                className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                title="اختيار صورة المحل من المعرض"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/order-luxury/shop-card/btn-gallery.webp"
-                  alt="معرض"
-                  className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                />
-              </button>
-            )}
           </div>
         </div>
       )}
