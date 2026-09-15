@@ -984,1002 +984,917 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       </div>
 
       {/* ========================================================================= */}
-      {/* تخطيط الاستوديو المتجاوب (لوحة المعاينة الثابتة + لوحة الإعدادات المتحركة) */}
+      {/* 1. وضع التعديل الفردي المخصص (لوحة المعاينة مثبتة في الأعلى 100% والإعدادات بالأسفل) */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ========================================================================= */}
-        {/* 1. قسم المعاينة الحية المباشرة للكارت (Interactive Live Preview Studio) */}
-        {/* ========================================================================= */}
-        <div
-          className={`lg:col-span-5 xl:col-span-5 transition-all ${
-            isStickyPreview ? "sticky top-2 z-20" : "relative"
-          }`}
-        >
-          <div className="bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-[24px] p-3.5 sm:p-5 shadow-2xl space-y-3 backdrop-blur-md">
-            <div className="flex flex-col gap-2.5 border-b border-[#C9A86A]/40 pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-lg sm:text-xl shrink-0">👁️</span>
-                  <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] flex items-center gap-1.5 truncate">
-                      <span>معاينة حية مباشرة</span>
-                      {isStickyPreview && (
-                        <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] border border-amber-400/40 shrink-0">
-                          📌 ثابتة
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-[10px] text-emerald-200 truncate">
-                      ثابتة في مكانها أثناء تمرير الإعدادات بالأسفل
-                    </p>
-                  </div>
-                </div>
+      {selectedElementId && currentSelectedDef ? (
+        <div className="space-y-4">
+          {/* لوحة المعاينة الحية وشريط التحكم المثبتان دائماً في أعلى الشاشة */}
+          <div className="sticky top-0 z-40 bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-b-[24px] p-3 sm:p-4 shadow-2xl backdrop-blur-md space-y-3">
+            {/* شريط أدوات الانتقال والرجوع والحفظ الفوري */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2">
+              <button
+                type="button"
+                onClick={() => setSelectedElementId(null)}
+                className="px-3.5 py-1.5 bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black hover:bg-[#0F4D3A] transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <span>◀</span> عودة لكافة عناصر الكارت
+              </button>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* زر تثبيت/إلغاء تثبيت المعاينة */}
-                  <button
-                    type="button"
-                    onClick={() => setIsStickyPreview((v) => !v)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-black border transition flex items-center gap-1 cursor-pointer ${
-                      isStickyPreview
-                        ? "bg-[#C9A86A] text-[#06281D] border-[#F5D77F] shadow"
-                        : "bg-[#0A3D2E] text-white/80 border-[#C9A86A]/50 hover:text-white"
-                    }`}
-                    title={isStickyPreview ? "إلغاء التثبيت" : "تثبيت المعاينة في الأعلى"}
-                  >
-                    <span>{isStickyPreview ? "📌 مثبتة" : "🔓 عادية"}</span>
-                  </button>
-
-                  {/* زر طي/توسيع للموبايل */}
-                  <button
-                    type="button"
-                    onClick={() => setIsCompactPreview((v) => !v)}
-                    className="lg:hidden px-2.5 py-1 rounded-xl text-xs font-black bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A]/50 hover:bg-[#0F4D3A] transition cursor-pointer"
-                    title="طي أو توسيع المعاينة"
-                  >
-                    {isCompactPreview ? "🔽 إظهار" : "🔼 تصغير"}
-                  </button>
+              <div className="text-center min-w-0 px-1">
+                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] truncate flex items-center justify-center gap-1.5">
+                  <span>✏️</span> {currentSelectedDef.title}
+                </h3>
+                <div className="flex items-center justify-center gap-2 mt-0.5">
+                  {saveStatus === "saving" && (
+                    <span className="text-[10px] text-amber-300 font-bold animate-pulse">🔄 جاري الحفظ تلقائياً...</span>
+                  )}
+                  {saveStatus === "saved" && (
+                    <span className="text-[10px] text-emerald-300 font-bold">✅ تم الحفظ تلقائياً</span>
+                  )}
+                  {saveStatus === "error" && (
+                    <span className="text-[10px] text-rose-300 font-bold">❌ فشل الحفظ</span>
+                  )}
                 </div>
               </div>
 
-              {/* أزرار ضبط شاشة المعاينة والزووم */}
-              {!isCompactPreview && (
-                <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
-                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-[11px] font-bold">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode("mobile")}
-                      className={`px-2 py-0.5 rounded-lg transition ${
-                        previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
-                      }`}
-                    >
-                      📱 جوال
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode("desktop")}
-                      className={`px-2 py-0.5 rounded-lg transition ${
-                        previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
-                      }`}
-                    >
-                      💻 كمبيوتر
-                    </button>
-                  </div>
-
-                  {/* زووم المعاينة */}
-                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-[10px] font-bold">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewZoom(0.7)}
-                      className={`px-1.5 py-0.5 rounded-lg transition ${
-                        previewZoom === 0.7 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                      }`}
-                    >
-                      70%
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewZoom(0.85)}
-                      className={`px-1.5 py-0.5 rounded-lg transition ${
-                        previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                      }`}
-                    >
-                      85%
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewZoom(1)}
-                      className={`px-1.5 py-0.5 rounded-lg transition ${
-                        previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                      }`}
-                    >
-                      100%
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* حاوية المعاينة مع تطبيق getCardContainerStyle الشامل */}
-            {!isCompactPreview && (
-              <div className="flex items-center justify-center p-2 bg-black/50 rounded-2xl border border-[#C9A86A]/20 overflow-x-auto overflow-y-auto max-h-[38vh] sm:max-h-[48vh] lg:max-h-[calc(100vh-12rem)]">
-                <div
-                  className="transition-all duration-150 origin-top"
-                  style={{
-                    width: previewMode === "mobile" ? "420px" : "100%",
-                    maxWidth: "100%",
-                    transform: `scale(${previewZoom})`,
-                  }}
+              {/* أزرار السابق والتالي */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  disabled={!prevElement}
+                  onClick={() => prevElement && setSelectedElementId(prevElement.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-black border transition ${
+                    prevElement
+                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                      : "opacity-30 bg-black/20 text-white/30 border-transparent cursor-not-allowed"
+                  }`}
+                  title="العنصر السابق"
                 >
-                  {/* 1. كارت المحل في المعاينة */}
-                  {activeTab === "shop_card" && (
-              <div
-                onClick={() => !selectedElementId && setSelectedElementId("shop_frame")}
-                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
-                  selectedElementId === "shop_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
-                }`}
-                style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
-              >
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
-                  {/* الجانب الأيمن */}
-                  <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_headerShopInfo");
-                      }}
-                      className={`cursor-pointer rounded-xl transition-all ${
-                        selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(shopCustom?.headerShopInfo)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
-                        alt="المحل"
-                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      {/* 1. سطر اسم المحل */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_iconShopName");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
-                            alt="اسم المحل"
-                            style={getElementStyle(shopCustom?.iconShopName)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_textShopName");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(shopCustom?.textShopName)}
-                            className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            أزياء الأمير الملكي
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 2. سطر اسم العميل / المسؤول */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_iconCustomerName");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                            alt="اسم العميل"
-                            style={getElementStyle(shopCustom?.iconCustomerName)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_textCustomerName");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(shopCustom?.textCustomerName)}
-                            className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            أحمد سامي (المدير)
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 3. سطر المنطقة */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_iconRegion");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                            alt="المنطقة"
-                            style={getElementStyle(shopCustom?.iconRegion)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_textRegion");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(shopCustom?.textRegion)}
-                            className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            بغداد — الكرادة
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 4. سطر الهاتف */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_iconPhone");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                            alt="الهاتف"
-                            style={getElementStyle(shopCustom?.iconPhone)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("shop_textPhone");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(shopCustom?.textPhone)}
-                            className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            07701234567
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_btnShopLocation");
-                      }}
-                      className={`pt-0.5 cursor-pointer transition-all ${
-                        selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(shopCustom?.btnShopLocation)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
-                        alt="موقع المحل"
-                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_btnCall");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.btnCall)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                          alt="اتصال"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_btnWhatsapp");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.btnWhatsapp)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                          alt="واتس اب"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* الجانب الأيسر */}
-                  <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_headerShopPhoto");
-                      }}
-                      className={`flex justify-center w-full cursor-pointer transition-all ${
-                        selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(shopCustom?.headerShopPhoto)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                        alt="صورة المحل"
-                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
-                      />
-                    </div>
-
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_placeholderNoPhoto");
-                      }}
-                      className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
-                        selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(shopCustom?.placeholderNoPhoto)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                        alt="لا توجد صورة"
-                        className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_btnCamera");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.btnCamera)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
-                          alt="كاميرا"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_btnGallery");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.btnGallery)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
-                          alt="معرض"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  ◀ السابق
+                </button>
+                <button
+                  type="button"
+                  disabled={!nextElement}
+                  onClick={() => nextElement && setSelectedElementId(nextElement.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-black border transition ${
+                    nextElement
+                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                      : "opacity-30 bg-black/20 text-white/30 border-transparent cursor-not-allowed"
+                  }`}
+                  title="العنصر التالي"
+                >
+                  التالي ▶
+                </button>
               </div>
-            )}
-
-            {/* 2. كارت الزبون في المعاينة */}
-            {activeTab === "customer_card" && (
-              <div
-                onClick={() => !selectedElementId && setSelectedElementId("cust_frame")}
-                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
-                  selectedElementId === "cust_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
-                }`}
-                style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
-              >
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
-                  {/* الجانب الأيمن */}
-                  <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_headerCustomerInfo");
-                      }}
-                      className={`cursor-pointer rounded-xl transition-all ${
-                        selectedElementId === "cust_headerCustomerInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(custCustom?.headerCustomerInfo)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.headerCustomerInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
-                        alt="الزبون"
-                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      {/* 1. سطر اسم الزبون */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_iconCustomerName");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                            alt="اسم الزبون"
-                            style={getElementStyle(custCustom?.iconCustomerName)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_textCustomerName");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "cust_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(custCustom?.textCustomerName)}
-                            className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            مريم علي (الزبون)
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 2. سطر المنطقة */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_iconRegion");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                            alt="المنطقة"
-                            style={getElementStyle(custCustom?.iconRegion)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_textRegion");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "cust_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(custCustom?.textRegion)}
-                            className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            بغداد — المنصور
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 3. سطر الهاتف */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_iconPhone");
-                          }}
-                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
-                            selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                            alt="الهاتف"
-                            style={getElementStyle(custCustom?.iconPhone)}
-                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                          />
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedElementId("cust_textPhone");
-                          }}
-                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
-                            selectedElementId === "cust_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
-                          }`}
-                        >
-                          <span
-                            style={getElementStyle(custCustom?.textPhone)}
-                            className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                          >
-                            07809876543
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_btnLocation");
-                      }}
-                      className={`pt-0.5 cursor-pointer transition-all ${
-                        selectedElementId === "cust_btnLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(custCustom?.btnLocation)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
-                        alt="موقع الزبون"
-                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_btnCall");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.btnCall)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                          alt="اتصال"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_btnWhatsapp");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.btnWhatsapp)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                          alt="واتس اب"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* الجانب الأيسر */}
-                  <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_headerDoorPhoto");
-                      }}
-                      className={`flex justify-center w-full cursor-pointer transition-all ${
-                        selectedElementId === "cust_headerDoorPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(custCustom?.headerDoorPhoto)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.headerDoorPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                        alt="صورة باب الزبون"
-                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
-                      />
-                    </div>
-
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_placeholderNoPhoto");
-                      }}
-                      className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
-                        selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                      }`}
-                      style={getElementStyle(custCustom?.placeholderNoPhoto)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                        alt="لا توجد صورة باب"
-                        className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_btnCamera");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.btnCamera)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
-                          alt="كاميرا"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_btnGallery");
-                        }}
-                        className={`cursor-pointer transition-all ${
-                          selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.btnGallery)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
-                          alt="معرض"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3. أزرار الواتساب في المعاينة */}
-            {activeTab === "wa_buttons" && (
-              <div className="p-4 bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-2xl shadow-xl flex flex-wrap items-center gap-3 justify-center">
-                {waButtons.map((btn) => {
-                  const btnCustom = config.waButtonsConfig?.[btn.id];
-                  const previewImg = btnCustom?.imageUrl;
-                  const isSelected = selectedElementId === `wa_${btn.id}`;
-                  return (
-                    <div
-                      key={btn.id}
-                      onClick={() => setSelectedElementId(`wa_${btn.id}`)}
-                      style={getElementStyle(btnCustom)}
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-all ${
-                        isSelected ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105" : "hover:opacity-90"
-                      }`}
-                    >
-                      {previewImg ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewImg} alt={btn.label} className="w-5 h-5 object-contain shrink-0" />
-                      ) : (
-                        <span>💬</span>
-                      )}
-                      <span>{btn.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-
-  {/* ========================================================================= */}
-  {/* 2. قسم الإعدادات وأدوات التحكم (المفتش المخصص / قائمة العناصر) */}
-  {/* ========================================================================= */}
-  <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-    {selectedElementId && currentSelectedDef ? (
-        <div className="space-y-4 bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          
-          {/* شريط أدوات الانتقال والرجوع */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#C9A86A]/30 pb-3">
-            <button
-              type="button"
-              onClick={() => setSelectedElementId(null)}
-              className="px-4 py-2 bg-[#06281D] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black hover:bg-[#0F4D3A] transition flex items-center gap-1.5 cursor-pointer shadow-md"
-            >
-              <span>◀</span> عودة لكافة عناصر الكارت
-            </button>
-
-            <div className="text-center">
-              <h3 className="text-sm sm:text-base font-black text-[#F5D77F]">
-                ✏️ {currentSelectedDef.title}
-              </h3>
-              <p className="text-[11px] text-emerald-200">{currentSelectedDef.description}</p>
             </div>
 
-            {/* أزرار السابق والتالي */}
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={!prevElement}
-                onClick={() => prevElement && setSelectedElementId(prevElement.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black border transition ${
-                  prevElement
-                    ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
-                    : "opacity-40 bg-black/20 text-white/40 border-transparent cursor-not-allowed"
-                }`}
-                title="العنصر السابق"
+            {/* بطاقة المعاينة الحية المباشرة (ثابتة في مكانها) */}
+            <div className="flex items-center justify-center p-2 bg-black/60 rounded-2xl border border-[#C9A86A]/30 overflow-x-auto overflow-y-auto max-h-[30vh] sm:max-h-[36vh]">
+              <div
+                className="transition-all duration-150 origin-top"
+                style={{
+                  width: previewMode === "mobile" ? "420px" : "100%",
+                  maxWidth: "100%",
+                  transform: `scale(${previewZoom})`,
+                }}
               >
-                ◀ السابق
-              </button>
-              <button
-                type="button"
-                disabled={!nextElement}
-                onClick={() => nextElement && setSelectedElementId(nextElement.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black border transition ${
-                  nextElement
-                    ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
-                    : "opacity-40 bg-black/20 text-white/40 border-transparent cursor-not-allowed"
-                }`}
-                title="العنصر التالي"
-              >
-                التالي ▶
-              </button>
+                {/* 1. كارت المحل في المعاينة */}
+                {activeTab === "shop_card" && (
+                  <div
+                    className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
+                      selectedElementId === "shop_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
+                    }`}
+                    style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
+                  >
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
+                      {/* الجانب الأيمن */}
+                      <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
+                        <div
+                          className={`cursor-pointer rounded-xl transition-all ${
+                            selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(shopCustom?.headerShopInfo)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
+                            alt="المحل"
+                            className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
+                          {/* 1. سطر اسم المحل */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
+                                alt="اسم المحل"
+                                style={getElementStyle(shopCustom?.iconShopName)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(shopCustom?.textShopName)}
+                                className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                أزياء الأمير الملكي
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 2. سطر اسم العميل / المسؤول */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                                alt="اسم العميل"
+                                style={getElementStyle(shopCustom?.iconCustomerName)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(shopCustom?.textCustomerName)}
+                                className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                أحمد سامي (المدير)
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 3. سطر المنطقة */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                                alt="المنطقة"
+                                style={getElementStyle(shopCustom?.iconRegion)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(shopCustom?.textRegion)}
+                                className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                بغداد — الكرادة
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 4. سطر الهاتف */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                                alt="الهاتف"
+                                style={getElementStyle(shopCustom?.iconPhone)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(shopCustom?.textPhone)}
+                                className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                07701234567
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`pt-0.5 cursor-pointer transition-all ${
+                            selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(shopCustom?.btnShopLocation)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                            alt="موقع المحل"
+                            className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(shopCustom?.btnCall)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                              alt="اتصال"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(shopCustom?.btnWhatsapp)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                              alt="واتس اب"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* الجانب الأيسر */}
+                      <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+                        <div
+                          className={`flex justify-center w-full cursor-pointer transition-all ${
+                            selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(shopCustom?.headerShopPhoto)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
+                            alt="صورة المحل"
+                            className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
+                          />
+                        </div>
+
+                        <div
+                          className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                            selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(shopCustom?.placeholderNoPhoto)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                            alt="لا توجد صورة"
+                            className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(shopCustom?.btnCamera)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                              alt="كاميرا"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(shopCustom?.btnGallery)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                              alt="معرض"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. كارت الزبون في المعاينة */}
+                {activeTab === "customer_card" && (
+                  <div
+                    className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
+                      selectedElementId === "cust_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
+                    }`}
+                    style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
+                  >
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
+                      {/* الجانب الأيمن */}
+                      <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
+                        <div
+                          className={`cursor-pointer rounded-xl transition-all ${
+                            selectedElementId === "cust_headerCustomerInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(custCustom?.headerCustomerInfo)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.headerCustomerInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
+                            alt="الزبون"
+                            className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
+                          {/* 1. سطر اسم الزبون */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                                alt="اسم الزبون"
+                                style={getElementStyle(custCustom?.iconCustomerName)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "cust_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(custCustom?.textCustomerName)}
+                                className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                مريم علي (الزبون)
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 2. سطر المنطقة */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                                alt="المنطقة"
+                                style={getElementStyle(custCustom?.iconRegion)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "cust_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(custCustom?.textRegion)}
+                                className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                بغداد — المنصور
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 3. سطر الهاتف */}
+                          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                            <div
+                              className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                                selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                                alt="الهاتف"
+                                style={getElementStyle(custCustom?.iconPhone)}
+                                className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                              />
+                            </div>
+                            <div
+                              className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                                selectedElementId === "cust_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                              }`}
+                            >
+                              <span
+                                style={getElementStyle(custCustom?.textPhone)}
+                                className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                              >
+                                07809876543
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`pt-0.5 cursor-pointer transition-all ${
+                            selectedElementId === "cust_btnLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(custCustom?.btnLocation)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                            alt="موقع الزبون"
+                            className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(custCustom?.btnCall)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                              alt="اتصال"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(custCustom?.btnWhatsapp)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                              alt="واتس اب"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* الجانب الأيسر */}
+                      <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+                        <div
+                          className={`flex justify-center w-full cursor-pointer transition-all ${
+                            selectedElementId === "cust_headerDoorPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(custCustom?.headerDoorPhoto)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.headerDoorPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
+                            alt="صورة باب الزبون"
+                            className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md"
+                          />
+                        </div>
+
+                        <div
+                          className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                            selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                          }`}
+                          style={getElementStyle(custCustom?.placeholderNoPhoto)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                            alt="لا توجد صورة باب"
+                            className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(custCustom?.btnCamera)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                              alt="كاميرا"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                          <div
+                            className={`cursor-pointer transition-all ${
+                              selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                            }`}
+                            style={getElementStyle(custCustom?.btnGallery)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                              alt="معرض"
+                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. أزرار الواتساب في المعاينة */}
+                {activeTab === "wa_buttons" && (
+                  <div className="p-4 bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-2xl shadow-xl flex flex-wrap items-center gap-3 justify-center">
+                    {waButtons.map((btn) => {
+                      const btnCustom = config.waButtonsConfig?.[btn.id];
+                      const previewImg = btnCustom?.imageUrl;
+                      const isSelected = selectedElementId === `wa_${btn.id}`;
+                      return (
+                        <div
+                          key={btn.id}
+                          onClick={() => setSelectedElementId(`wa_${btn.id}`)}
+                          style={getElementStyle(btnCustom)}
+                          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-all ${
+                            isSelected ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105" : "hover:opacity-90"
+                          }`}
+                        >
+                          {previewImg ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={previewImg} alt={btn.label} className="w-5 h-5 object-contain shrink-0" />
+                          ) : (
+                            <span>💬</span>
+                          )}
+                          <span>{btn.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* شريط الزووم ونوع الشاشة */}
+            <div className="flex items-center justify-between px-1 text-[11px] text-emerald-200 flex-wrap gap-2">
+              <span className="font-bold flex items-center gap-1">
+                <span>📌</span> المعاينة الحية ثابتة في الأعلى ولا تتحرك عند تمرير الإعدادات
+              </span>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("mobile")}
+                    className={`px-2 py-0.5 rounded transition ${previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                  >
+                    📱 جوال
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("desktop")}
+                    className={`px-2 py-0.5 rounded transition ${previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                  >
+                    💻 كمبيوتر
+                  </button>
+                </div>
+
+                <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(0.7)}
+                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 0.7 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                  >
+                    70%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(0.85)}
+                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                  >
+                    85%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(1)}
+                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                  >
+                    100%
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* لوحة تحكم الإطار ككل أو الزر العادي */}
-          {currentSelectedDef.isFrame ? (
-            <DedicatedFrameInspector
-              category={activeTab === "shop_card" ? "shopCard" : "customerCard"}
-              frameConfig={activeTab === "shop_card" ? config.shopCard?.frameConfig : config.customerCard?.frameConfig}
-              defaultBg={activeTab === "shop_card" ? shopFrameBg : custFrameBg}
-              onChange={(field, val) =>
-                updateFrameConfig(activeTab === "shop_card" ? "shopCard" : "customerCard", field, val)
-              }
-              onUploadImg={() => {
-                triggerImageUpload((url) => {
-                  setConfig((prev) =>
-                    activeTab === "shop_card"
-                      ? {
-                          ...prev,
-                          shopCard: {
-                            ...prev.shopCard,
-                            frameBgUrl: url,
-                            frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
-                          },
-                        }
-                      : {
-                          ...prev,
-                          customerCard: {
-                            ...prev.customerCard,
-                            frameBgUrl: url,
-                            frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
-                          },
-                        }
-                  );
-                });
-              }}
-            />
-          ) : (
-            <DedicatedElementInspector
-              elementDef={currentSelectedDef}
-              config={currentSelectedConfig}
-              onChange={(field, val) => {
-                setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
-              }}
-              onUploadImg={() => {
-                triggerImageUpload((url) => {
-                  setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
-                });
-              }}
-            />
-          )}
+          {/* لوحة السلايدرات والإعدادات بالأسفل - قابلة للتمرير بحرية تامة */}
+          <div className="bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            {currentSelectedDef.isFrame ? (
+              <DedicatedFrameInspector
+                category={activeTab === "shop_card" ? "shopCard" : "customerCard"}
+                frameConfig={activeTab === "shop_card" ? config.shopCard?.frameConfig : config.customerCard?.frameConfig}
+                defaultBg={activeTab === "shop_card" ? shopFrameBg : custFrameBg}
+                onChange={(field, val) =>
+                  updateFrameConfig(activeTab === "shop_card" ? "shopCard" : "customerCard", field, val)
+                }
+                onUploadImg={() => {
+                  triggerImageUpload((url) => {
+                    setConfig((prev) =>
+                      activeTab === "shop_card"
+                        ? {
+                            ...prev,
+                            shopCard: {
+                              ...prev.shopCard,
+                              frameBgUrl: url,
+                              frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
+                            },
+                          }
+                        : {
+                            ...prev,
+                            customerCard: {
+                              ...prev.customerCard,
+                              frameBgUrl: url,
+                              frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
+                            },
+                          }
+                    );
+                  });
+                }}
+              />
+            ) : (
+              <DedicatedElementInspector
+                elementDef={currentSelectedDef}
+                config={currentSelectedConfig}
+                onChange={(field, val) => {
+                  setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
+                }}
+                onUploadImg={() => {
+                  triggerImageUpload((url) => {
+                    setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
+                  });
+                }}
+              />
+            )}
+          </div>
         </div>
       ) : (
         /* ========================================================================= */
-        /* 3. قائمة استعراض عناصر الكارت (Master Grid of Elements) */
+        /* 2. وضع استعراض كافة عناصر الكارت */
         /* ========================================================================= */
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#F5D77F]">
-              📑 اختر العنصر أو الإطار لتعديل أبعاده وتدويره في صفحة مخصصة:
-            </h3>
-            <span className="text-xs text-emerald-200 font-bold">
-              {currentTabElements.length} عنصر قابل للتخصيص
-            </span>
+        <div className="space-y-6">
+          {/* الرأس الملكي للصفحة مع مؤشر الحفظ التلقائي */}
+          <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-4 sm:p-5 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
+            <div>
+              <h1 className="text-base sm:text-xl font-black text-[#F5D77F] flex items-center gap-2">
+                <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
+              </h1>
+              <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
+                التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {saveStatus === "saving" && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-xl text-xs font-black animate-pulse">
+                  <span className="animate-spin">🔄</span> جاري الحفظ تلقائياً...
+                </div>
+              )}
+              {saveStatus === "saved" && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-black shadow-sm">
+                  <span>✅</span> تم الحفظ تلقائياً
+                </div>
+              )}
+              {saveStatus === "error" && (
+                <button
+                  type="button"
+                  onClick={() => void performSave(config)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700/40 border border-rose-400 text-rose-300 rounded-xl text-xs font-black cursor-pointer hover:bg-rose-700/60"
+                >
+                  <span>❌</span> فشل الحفظ - انقر لإعادة المحاولة
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => void performSave(config)}
+                className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black border border-[#C9A86A] hover:scale-105 active:scale-95 transition cursor-pointer"
+              >
+                💾 حفظ يدوي
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {currentTabElements.map((elem) => {
-              if (elem.isFrame) {
-                const currentFrameCfg =
-                  elem.category === "shop_card"
-                    ? config.shopCard?.frameConfig
-                    : config.customerCard?.frameConfig;
-                const currentBg =
-                  currentFrameCfg?.bgUrl ||
-                  (elem.category === "shop_card" ? shopFrameBg : custFrameBg);
+          {uploadingKey && (
+            <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 text-center text-xs font-bold text-amber-300 animate-pulse">
+              ⏳ جاري قص الفراغات والشفافية المحيطة تلقائياً ✂️، وضغط وتحويل الصورة إلى صيغة WEBP ورفعها للسيرفر...
+            </div>
+          )}
+
+          {/* التبويبات الرئيسية */}
+          <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("shop_card");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "shop_card"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
+            >
+              🏬 كارت المحل (المرسل)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("customer_card");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "customer_card"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
+            >
+              👤 كارت الزبون (المستلم)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("wa_buttons");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "wa_buttons"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
+            >
+              💬 أزرار الواتساب المخصصة
+            </button>
+          </div>
+
+          {/* قائمة استعراض عناصر الكارت */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-[#F5D77F]">
+                📑 اختر العنصر أو الإطار لتعديل أبعاده وتدويره في صفحة مخصصة:
+              </h3>
+              <span className="text-xs text-emerald-200 font-bold">
+                {currentTabElements.length} عنصر قابل للتخصيص
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {currentTabElements.map((elem) => {
+                if (elem.isFrame) {
+                  const currentFrameCfg =
+                    elem.category === "shop_card"
+                      ? config.shopCard?.frameConfig
+                      : config.customerCard?.frameConfig;
+                  const currentBg =
+                    currentFrameCfg?.bgUrl ||
+                    (elem.category === "shop_card" ? shopFrameBg : custFrameBg);
+
+                  return (
+                    <div
+                      key={elem.id}
+                      onClick={() => setSelectedElementId(elem.id)}
+                      className="sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl p-4 shadow-xl hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-14 rounded-xl border-2 border-[#C9A86A] bg-black/60 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={currentBg}
+                            alt="الإطار"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+
+                        <div>
+                          <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-2">
+                            <span>📐</span> {elem.title}
+                          </h4>
+                          <p className="text-xs text-emerald-100 mt-0.5 font-bold">
+                            {elem.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-lg hover:scale-105 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <span>⚙️</span> تخصيص أبعاد وطول وعرض الإطار
+                      </button>
+                    </div>
+                  );
+                }
+
+                const elemConfig = elem.getConfig(config);
+                const currentImg = elemConfig?.imageUrl || elem.defaultImg;
+                const hasCustomImg = Boolean(elemConfig?.imageUrl);
+                const isRotated = elemConfig?.rotate && elemConfig.rotate !== 0;
+                const isScaled = elemConfig?.scale && elemConfig.scale !== 1;
 
                 return (
                   <div
                     key={elem.id}
                     onClick={() => setSelectedElementId(elem.id)}
-                    className="sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl p-4 shadow-xl hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                    className="bg-[#0A3D2E]/90 border border-[#C9A86A]/50 rounded-2xl p-4 shadow-lg hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between gap-3 group"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-16 h-14 rounded-xl border-2 border-[#C9A86A] bg-black/60 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={currentBg}
-                          alt="الإطار"
-                          className="max-h-full max-w-full object-contain"
-                        />
+                    <div className="flex items-start gap-3">
+                      <div className="w-14 h-14 rounded-xl border border-[#C9A86A]/60 bg-black/50 flex items-center justify-center overflow-hidden shrink-0 p-1 relative">
+                        {elem.isText ? (
+                          <div className="text-center p-1 overflow-hidden">
+                            <span
+                              style={getElementStyle(elemConfig)}
+                              className="text-[11px] font-black text-[#F5D77F] drop-shadow-sm inline-block line-clamp-2"
+                            >
+                              {elem.previewTextSample || "نص"}
+                            </span>
+                          </div>
+                        ) : currentImg ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={currentImg}
+                            alt={elem.title}
+                            style={getElementStyle(elemConfig)}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-white/50">أصلي</span>
+                        )}
                       </div>
 
-                      <div>
-                        <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-2">
-                          <span>📐</span> {elem.title}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] truncate group-hover:text-amber-300">
+                          {elem.title}
                         </h4>
-                        <p className="text-xs text-emerald-100 mt-0.5 font-bold">
+                        <p className="text-[10px] text-emerald-200 line-clamp-2 mt-0.5">
                           {elem.description}
                         </p>
+
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[9px] font-bold">
+                          {hasCustomImg && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              صورة مخصصة 🖼️
+                            </span>
+                          )}
+                          {isRotated && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              تدوير {elemConfig?.rotate}° 🔄
+                            </span>
+                          )}
+                          {isScaled && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                              تكبير {Math.round((elemConfig?.scale ?? 1) * 100)}% 🔍
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <button
                       type="button"
-                      className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-lg hover:scale-105 transition flex items-center gap-1.5 shrink-0"
+                      className="w-full py-2 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black group-hover:from-amber-500 group-hover:to-[#C9A86A] group-hover:text-[#06281D] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
-                      <span>⚙️</span> تخصيص أبعاد وطول وعرض الإطار
+                      <span>✏️</span> فتح صفحة التعديل والتدوير
                     </button>
                   </div>
                 );
-              }
-
-              const elemConfig = elem.getConfig(config);
-              const currentImg = elemConfig?.imageUrl || elem.defaultImg;
-              const hasCustomImg = Boolean(elemConfig?.imageUrl);
-              const isRotated = elemConfig?.rotate && elemConfig.rotate !== 0;
-              const isScaled = elemConfig?.scale && elemConfig.scale !== 1;
-
-              return (
-                <div
-                  key={elem.id}
-                  onClick={() => setSelectedElementId(elem.id)}
-                  className="bg-[#0A3D2E]/90 border border-[#C9A86A]/50 rounded-2xl p-4 shadow-lg hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between gap-3 group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-xl border border-[#C9A86A]/60 bg-black/50 flex items-center justify-center overflow-hidden shrink-0 p-1 relative">
-                      {elem.isText ? (
-                        <div className="text-center p-1 overflow-hidden">
-                          <span
-                            style={getElementStyle(elemConfig)}
-                            className="text-[11px] font-black text-[#F5D77F] drop-shadow-sm inline-block line-clamp-2"
-                          >
-                            {elem.previewTextSample || "نص"}
-                          </span>
-                        </div>
-                      ) : currentImg ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={currentImg}
-                          alt={elem.title}
-                          style={getElementStyle(elemConfig)}
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-white/50">أصلي</span>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] truncate group-hover:text-amber-300">
-                        {elem.title}
-                      </h4>
-                      <p className="text-[10px] text-emerald-200 line-clamp-2 mt-0.5">
-                        {elem.description}
-                      </p>
-
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[9px] font-bold">
-                        {hasCustomImg && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                            صورة مخصصة 🖼️
-                          </span>
-                        )}
-                        {isRotated && (
-                          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                            تدوير {elemConfig?.rotate}° 🔄
-                          </span>
-                        )}
-                        {isScaled && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                            تكبير {Math.round((elemConfig?.scale ?? 1) * 100)}% 🔍
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="w-full py-2 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black group-hover:from-amber-500 group-hover:to-[#C9A86A] group-hover:text-[#06281D] transition flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    <span>✏️</span> فتح صفحة التعديل والتدوير
-                  </button>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
 }
