@@ -126,17 +126,17 @@ export function AdminLuxuryShopCard({
       />
 
       {/* زر طي وتوسيع الكارت الفاخر */}
-      <div className="flex items-center justify-between px-2 mb-1">
+      <div className="flex items-center justify-between px-2 mb-1.5">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border border-[#C9A86A] text-[11px] sm:text-xs font-black text-[#F5D77F] px-3 py-1 rounded-xl shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border border-[#C9A86A] text-xs sm:text-sm font-black text-[#F5D77F] px-3.5 py-1.5 rounded-xl shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
         >
           <span>{isExpanded ? "▲ طي كارت المحل" : "▼ تفاصيل كارت المحل (المرسل)"}</span>
         </button>
 
         {pending && (
-          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1">
+          <span className="text-xs sm:text-sm font-black text-[#F5D77F] animate-pulse flex items-center gap-1">
             <span>⏳</span> جاري رفع الصورة...
           </span>
         )}
@@ -145,76 +145,76 @@ export function AdminLuxuryShopCard({
       {/* الهيكل الرئيسي لكارت العميل بالإطار الملكي الفاخر */}
       {isExpanded && (
         <div
-          className="relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3 sm:p-5 md:p-6 transition-all"
+          className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-7 transition-all"
           style={{
             backgroundImage: "url('/images/order-luxury/shop-card/shop-card-frame.webp')",
           }}
         >
           {/* محتوى الكارت: عمودين متجاورين دائماً (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6 items-start min-w-0">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 items-stretch min-w-0">
             
             {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات المحل + موقع المحل + أزرار التواصل ================= */}
-            <div className="flex flex-col justify-between gap-1.5 sm:gap-2.5 min-w-0">
+            <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
               {/* الرأس: كبسولة المحل (المرسل) */}
               <div className="flex justify-start">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/order-luxury/shop-card/header-shop-info.webp"
                   alt="المحل (المرسل)"
-                  className="h-7 sm:h-9 md:h-11 w-auto object-contain drop-shadow-md select-none"
+                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none"
                 />
               </div>
 
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
-              <div className="space-y-1.5 sm:space-y-2 py-0.5">
+              <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                 {/* سطر 1: اسم المحل */}
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-shop-name.webp"
                     alt="اسم المحل"
-                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-black text-[11px] sm:text-xs md:text-sm text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.name || "المحل"}
                   </span>
                 </div>
 
                 {/* سطر 2: اسم العميل / المسؤول */}
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-customer-name.webp"
                     alt="اسم العميل"
-                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-black text-[11px] sm:text-xs md:text-sm text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {submitterName || "—"}
                   </span>
                 </div>
 
                 {/* سطر 3: اسم المنطقة */}
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-region.webp"
                     alt="منطقة المحل"
-                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-bold text-[11px] sm:text-xs md:text-sm text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.region?.name || "—"}
                   </span>
                 </div>
 
                 {/* سطر 4: رقم الهاتف */}
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/order-luxury/shop-card/icon-phone.webp"
                     alt="رقم الهاتف"
-                    className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 object-contain shrink-0 drop-shadow-sm"
                   />
-                  <span className="font-mono font-black text-[11px] sm:text-xs md:text-sm text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {cleanPhone || "—"}
                   </span>
                 </div>
@@ -234,7 +234,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-shop-location.webp"
                       alt="موقع المحل"
-                      className="h-6 sm:h-8 md:h-9 w-auto object-contain drop-shadow-lg"
+                      className="h-7 sm:h-9 md:h-10.5 w-auto object-contain drop-shadow-lg"
                     />
                   </a>
                 ) : (
@@ -246,14 +246,14 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-shop-location.webp"
                       alt="موقع المحل غير متوفر"
-                      className="h-6 sm:h-8 md:h-9 w-auto object-contain grayscale"
+                      className="h-7 sm:h-9 md:h-10.5 w-auto object-contain grayscale"
                     />
                   </div>
                 )}
               </div>
 
               {/* أزرار التواصل (اتصال + واتساب) تحت البيانات في الجانب الأيمن */}
-              <div className="flex items-center gap-1 sm:gap-2 pt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1">
                 {/* 1. زر اتصال 📞 */}
                 {cleanPhone ? (
                   <a
@@ -265,7 +265,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-call.webp"
                       alt="اتصال"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain drop-shadow-xl"
                     />
                   </a>
                 ) : (
@@ -274,7 +274,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-call.webp"
                       alt="اتصال"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain grayscale"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain grayscale"
                     />
                   </div>
                 )}
@@ -292,7 +292,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-whatsapp.webp"
                       alt="واتس اب"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain drop-shadow-xl"
                     />
                   </a>
                 ) : (
@@ -301,7 +301,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-whatsapp.webp"
                       alt="واتس اب"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain grayscale"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain grayscale"
                     />
                   </div>
                 )}
@@ -309,21 +309,21 @@ export function AdminLuxuryShopCard({
             </div>
 
             {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل + مساحة الصورة بالأعلى + أزرار (كاميرا ومعرض) تحتها ================= */}
-            <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
+            <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
               {/* الرأس: كبسولة صورة المحل */}
               <div className="flex justify-center w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/order-luxury/shop-card/header-shop-photo.webp"
                   alt="صورة المحل"
-                  className="h-7 sm:h-9 md:h-11 w-auto object-contain drop-shadow-md select-none"
+                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none"
                 />
               </div>
 
-              {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
+              {/* مساحة عرض صورة باب المحل أو الـ Placeholder بحجم كبير ومتناسق */}
               <div className="w-full flex flex-col items-center justify-center my-auto">
                 {imgShopDoor ? (
-                  <div className="w-full max-w-[140px] sm:max-w-[200px] md:max-w-[240px] flex flex-col items-center gap-1">
+                  <div className="w-full max-w-[170px] sm:max-w-[230px] md:max-w-[270px] flex flex-col items-center gap-1">
                     <div className="w-full aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -334,7 +334,7 @@ export function AdminLuxuryShopCard({
                       />
                       <div
                         onClick={() => setPreviewImageUrl(imgShopDoor)}
-                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-[10px] sm:text-xs cursor-zoom-in"
+                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-xs cursor-zoom-in"
                       >
                         🔍 تكبير
                       </div>
@@ -346,12 +346,12 @@ export function AdminLuxuryShopCard({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full max-w-[130px] sm:max-w-[180px] md:max-w-[210px] flex items-center justify-center py-1">
+                  <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[250px] flex items-center justify-center py-0.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/images/order-luxury/shop-card/placeholder-no-photo.webp"
                       alt="لا توجد صورة"
-                      className="w-full h-auto max-h-[85px] sm:max-h-[120px] md:max-h-[140px] object-contain drop-shadow-lg opacity-95 select-none"
+                      className="w-full h-auto max-h-[110px] sm:max-h-[145px] md:max-h-[170px] object-contain drop-shadow-lg opacity-95 select-none"
                     />
                   </div>
                 )}
@@ -363,7 +363,7 @@ export function AdminLuxuryShopCard({
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="text-[9px] sm:text-[11px] font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
+                      className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
                     >
                       {deleting ? "جاري المسح..." : "🗑️ مسح"}
                     </button>
@@ -372,7 +372,7 @@ export function AdminLuxuryShopCard({
                         type="button"
                         onClick={handleRevert}
                         disabled={reverting}
-                        className="text-[9px] sm:text-[11px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
+                        className="text-[10px] sm:text-xs font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
                       >
                         {reverting ? "جاري الاسترجاع..." : "🔄 استرجاع"}
                       </button>
@@ -381,9 +381,9 @@ export function AdminLuxuryShopCard({
                 )}
               </div>
 
-              {/* أزرار رفع الصورة (كاميرا + معرض) مباشرة تحت صورة المحل في الجانب الأيسر */}
+              {/* أزرار رفع الصورة (كاميرا + معرض) مباشرة تحت صورة المحل في الجانب الأيسر بنفس حجم زري الاتصال والواتساب */}
               {!isSystemAdminOrder && (
-                <div className="flex items-center justify-center gap-1 sm:gap-2 pt-1 w-full flex-wrap">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full">
                   {/* 3. زر كاميرا 📷 */}
                   <button
                     type="button"
@@ -396,7 +396,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-camera.webp"
                       alt="كاميرا"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain drop-shadow-xl"
                     />
                   </button>
 
@@ -412,7 +412,7 @@ export function AdminLuxuryShopCard({
                     <img
                       src="/images/order-luxury/shop-card/btn-gallery.webp"
                       alt="معرض"
-                      className="h-6.5 sm:h-8.5 md:h-9.5 w-auto object-contain drop-shadow-xl"
+                      className="h-7.5 sm:h-9.5 md:h-11 w-auto object-contain drop-shadow-xl"
                     />
                   </button>
                 </div>
@@ -425,3 +425,4 @@ export function AdminLuxuryShopCard({
     </div>
   );
 }
+
