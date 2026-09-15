@@ -1,15 +1,61 @@
 import { prisma } from "./prisma";
+import type React from "react";
 
 export type CustomElementConfig = {
   imageUrl?: string;
-  scale?: number;       // معامل التكبير/التصغير (1 = 100%)
-  width?: number;       // عرض مخصص بالبكسل أو النسبة
-  height?: number;      // ارتفاع مخصص بالبكسل
-  offsetX?: number;     // إزاحة أفقية (بالموجب = يمين، بالسالب = يسار)
-  offsetY?: number;     // إزاحة رأسية (بالموجب = أسفل، بالسالب = أعلى)
-  hidden?: boolean;     // إخفاء العنصر
+  scale?: number;          // معامل التكبير/التصغير العام (1 = 100%)
+  scaleX?: number;         // معامل التكبير/التصغير الأفقي (العرض)
+  scaleY?: number;         // معامل التكبير/التصغير العمودي (الارتفاع)
+  width?: number;          // عرض مخصص بالبكسل
+  height?: number;         // ارتفاع مخصص بالبكسل
+  offsetX?: number;        // إزاحة أفقية (الموجب = يمين، السالب = يسار)
+  offsetY?: number;        // إزاحة رأسية (الموجب = أسفل، السالب = أعلى)
+  transformOrigin?: string;// نقطة ارتكاز التكبير (center, right, left, top, bottom, etc.)
+  hidden?: boolean;        // إخفاء العنصر
   visibility?: "all" | "admin" | "admin_mandoub" | "admin_mandoub_preparer"; // نطاق الظهور
 };
+
+export function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties {
+  if (!cfg) return {};
+  const style: React.CSSProperties = {};
+  const transforms: string[] = [];
+
+  const baseScale = cfg.scale ?? 1;
+  const sX = (cfg.scaleX ?? 1) * baseScale;
+  const sY = (cfg.scaleY ?? 1) * baseScale;
+
+  if (sX !== 1 || sY !== 1) {
+    transforms.push(`scale(${sX}, ${sY})`);
+  }
+
+  if (cfg.offsetX !== undefined && cfg.offsetX !== 0) {
+    transforms.push(`translateX(${cfg.offsetX}px)`);
+  }
+  if (cfg.offsetY !== undefined && cfg.offsetY !== 0) {
+    transforms.push(`translateY(${cfg.offsetY}px)`);
+  }
+
+  if (transforms.length > 0) {
+    style.transform = transforms.join(" ");
+  }
+
+  if (cfg.transformOrigin) {
+    style.transformOrigin = cfg.transformOrigin;
+  }
+
+  if (cfg.width) {
+    style.width = `${cfg.width}px`;
+  }
+  if (cfg.height) {
+    style.height = `${cfg.height}px`;
+  }
+
+  if (cfg.hidden) {
+    style.display = "none";
+  }
+
+  return style;
+}
 
 export type OrderCardDesignerConfig = {
   // كارت المحل (المرسل)

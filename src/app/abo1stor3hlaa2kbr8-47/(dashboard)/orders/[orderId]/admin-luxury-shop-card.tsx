@@ -14,9 +14,10 @@ import {
   assignFileToInput,
 } from "@/lib/client-image-compress";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
-import type {
-  OrderCardDesignerConfig,
-  CustomElementConfig,
+import {
+  type OrderCardDesignerConfig,
+  type CustomElementConfig,
+  getElementStyle,
 } from "@/lib/order-card-customizer";
 
 const initial: CustomerDoorPhotoState = {};
@@ -25,31 +26,6 @@ function contactLine(phone: string): string {
   const t = (phone || "").trim();
   if (!t || t === "—" || t === "undefined") return "";
   return t;
-}
-
-function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties {
-  if (!cfg) return {};
-  const style: React.CSSProperties = {};
-  const transforms: string[] = [];
-  if (cfg.scale !== undefined && cfg.scale !== 1) {
-    transforms.push(`scale(${cfg.scale})`);
-  }
-  if (cfg.offsetX !== undefined && cfg.offsetX !== 0) {
-    transforms.push(`translateX(${cfg.offsetX}px)`);
-  }
-  if (cfg.offsetY !== undefined && cfg.offsetY !== 0) {
-    transforms.push(`translateY(${cfg.offsetY}px)`);
-  }
-  if (transforms.length > 0) {
-    style.transform = transforms.join(" ");
-  }
-  if (cfg.width) {
-    style.width = `${cfg.width}px`;
-  }
-  if (cfg.height) {
-    style.height = `${cfg.height}px`;
-  }
-  return style;
 }
 
 export function AdminLuxuryShopCard({
