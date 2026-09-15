@@ -179,37 +179,49 @@ function MandoubSaderSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
+  let bgImage = "/images/order-luxury/badge-sader-vertical.webp";
 
   if (showPickup) {
     text = formatDinarAsAlf(pickup);
     tooltip = `صادر المندوب: ${text}`;
+    bgImage = "/images/order-luxury/badge-sader-vertical.webp";
   } else if (showPreparerPickup) {
     text = formatDinarAsAlf(preparerPickup);
     tooltip = `صادر المجهز: ${text}`;
-    isPreparer = true;
+    bgImage = "/images/order-luxury/badge-preparer-sader-vertical.webp";
   } else if (showAdminPickup) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
+    bgImage = "/images/order-luxury/badge-sader-vertical.webp";
   } else if (o.saderMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالصادر";
+    bgImage = "/images/order-luxury/badge-ward-vertical.webp";
   } else if (o.saderMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالصادر";
+    bgImage = "/images/order-luxury/badge-preparer-sader-vertical.webp";
   }
 
   if (!text) return null;
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      className="w-8 h-12.5 sm:w-9.5 sm:h-14.5 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0 drop-shadow-md"
       style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-sader.webp" : "/images/order-luxury/badge-sader.webp"}')`,
+        backgroundImage: `url('${bgImage}')`,
       }}
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span
+        className={`${
+          text.length >= 5
+            ? "text-[9px] sm:text-[10px]"
+            : text.length >= 4
+            ? "text-[10px] sm:text-[11.5px]"
+            : "text-[11px] sm:text-[13px]"
+        } font-black font-mono leading-none tracking-tight text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center`}
+      >
         {text}
       </span>
     </div>
@@ -225,37 +237,49 @@ function MandoubWardSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
+  let bgImage = "/images/order-luxury/badge-ward-vertical.webp";
 
   if (showDelivery) {
     text = formatDinarAsAlf(delivery);
     tooltip = `وارد المندوب: ${text}`;
+    bgImage = "/images/order-luxury/badge-ward-vertical.webp";
   } else if (showPreparerDelivery) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
-    isPreparer = true;
+    bgImage = "/images/order-luxury/badge-preparer-ward-vertical.webp";
   } else if (o.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
+    bgImage = "/images/order-luxury/badge-ward-vertical.webp";
   } else if (o.wardMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالوارد";
+    bgImage = "/images/order-luxury/badge-preparer-sader-vertical.webp";
   } else if (o.noWardRecorded && o.orderStatus === "delivered") {
     text = "بدون";
     tooltip = "بدون وارد مسجل";
+    bgImage = "/images/order-luxury/badge-ward-vertical.webp";
   }
 
   if (!text) return null;
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      className="w-8 h-12.5 sm:w-9.5 sm:h-14.5 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0 drop-shadow-md"
       style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-ward.webp" : "/images/order-luxury/badge-ward.webp"}')`,
+        backgroundImage: `url('${bgImage}')`,
       }}
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span
+        className={`${
+          text.length >= 5
+            ? "text-[9px] sm:text-[10px]"
+            : text.length >= 4
+            ? "text-[10px] sm:text-[11.5px]"
+            : "text-[11px] sm:text-[13px]"
+        } font-black font-mono leading-none tracking-tight text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center`}
+      >
         {text}
       </span>
     </div>
@@ -906,14 +930,14 @@ function MandoubFullBlockCardGrid({
 
                       {/* حاوية السعر المركزية المثبتة 100% في منتصف الكرت دائماً */}
                       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-                        {/* بلوك الصادر (مثبت على يمين دائرة السعر دون زحزحتها) */}
-                        <div className="absolute right-full mr-1 sm:mr-1.5 pointer-events-auto shrink-0">
+                        {/* بلوك الصادر الطولي (ملاصق تماماً لحافة دائرة السعر اليمنى) */}
+                        <div className="absolute right-full -mr-1.5 sm:-mr-2 pointer-events-auto shrink-0 z-20">
                           <MandoubSaderSideBadge o={o} />
                         </div>
 
                         {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
                         <div
-                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
+                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto z-10 drop-shadow-md"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
@@ -953,8 +977,8 @@ function MandoubFullBlockCardGrid({
                           )}
                         </div>
 
-                        {/* بلوك الوارد (مثبت على يسار دائرة السعر دون زحزحتها) */}
-                        <div className="absolute left-full ml-1 sm:ml-1.5 pointer-events-auto shrink-0">
+                        {/* بلوك الوارد الطولي (ملاصق تماماً لحافة دائرة السعر اليسرى) */}
+                        <div className="absolute left-full -ml-1.5 sm:-ml-2 pointer-events-auto shrink-0 z-20">
                           <MandoubWardSideBadge o={o} />
                         </div>
                       </div>
