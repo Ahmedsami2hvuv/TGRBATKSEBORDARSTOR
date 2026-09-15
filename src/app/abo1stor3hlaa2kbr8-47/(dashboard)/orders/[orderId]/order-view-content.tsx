@@ -39,6 +39,7 @@ import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -489,136 +490,16 @@ export function OrderViewContent({
           </div>
         )}
         
-        {/* --- بطاقة المحل (المرسل) - بالتصميم الملكي الإسلامي الفاخر --- */}
+        {/* --- بطاقة المحل (المرسل) - بالتصميم الملكي الإسلامي الفاخر المصمم بالكامل من صور نانو بنانا --- */}
         {!isDoubleRoute && (
-          <div className="bg-[#0A241C]/95 backdrop-blur-md rounded-[24px] border-2 border-[#C9A86A] shadow-xl p-4 sm:p-5 relative overflow-hidden transition-all duration-300">
-            <div className="flex items-center justify-between border-b border-[#C9A86A]/40 pb-2.5 mb-3.5">
-              <div className="flex-1">
-                <button
-                  type="button"
-                  onClick={() => setIsShopCardExpanded(!isShopCardExpanded)}
-                  className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border border-[#C9A86A] text-[11px] font-black text-[#F5D77F] px-3 py-1.5 rounded-xl shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                >
-                  <span>{isShopCardExpanded ? "⬆️ طي تفاصيل المحل" : "🔽 تفاصيل المحل (المرسل)"}</span>
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black text-[#F5D77F] drop-shadow-sm">
-                  المحل (المرسل)
-                </h3>
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#0F4D3A] to-[#06281D] border border-[#C9A86A] flex items-center justify-center text-lg shadow-sm">
-                  🏢
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-row gap-4 items-start justify-between">
-              <div className="flex-1 space-y-2.5 text-right">
-                <div className="space-y-2 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-[#F5D77F]" title="اسم المحل">🏢</span>
-                    <span className="font-black text-white text-sm sm:text-base">{order.shop?.name || "المحل"}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-[#F5D77F]" title="العميل / المسؤول">👤</span>
-                    <span className="font-black text-emerald-300">{submitterName}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-[#F5D77F]" title="منطقة المحل">📍</span>
-                    <span className="font-bold text-[#FFF8F0]">{order.shop?.region?.name || "—"}</span>
-                  </div>
-
-                  {submitterPhone && (
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-[#F5D77F]" title="هاتف المسؤول">📞</span>
-                      <span className="font-mono font-black text-[#F5D77F] text-sm tracking-wider">{contactLine(submitterPhone)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2 space-y-3 w-full">
-                  {order.shopLocationUrl?.trim() ? (
-                    <a
-                      href={order.shopLocationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group relative transition-transform active:scale-95 flex items-center justify-center w-full"
-                      title="موقع المحل على الخريطة"
-                    >
-                      <img
-                        src="/images/order-luxury/btn-open-location.webp"
-                        alt="موقع المحل على الخريطة"
-                        className="h-11 sm:h-12 w-full max-w-[280px] object-contain drop-shadow-lg group-hover:scale-105 transition"
-                      />
-                    </a>
-                  ) : (
-                    <div className="flex justify-center w-full">
-                      <img
-                        src="/images/order-luxury/btn-no-location.webp"
-                        alt="لا يوجد موقع جغرافي للمحل"
-                        className="h-10 sm:h-11 w-auto object-contain opacity-80"
-                      />
-                    </div>
-                  )}
-
-                  {submitterPhone && (
-                    <div className="flex items-center gap-3 w-full justify-center pt-1">
-                      <a
-                        href={telHref(submitterPhone)}
-                        className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                        title="اتصال هاتفي بالمسؤول"
-                      >
-                        <img
-                          src="/images/order-luxury/btn-admin-call.webp"
-                          alt="اتصال"
-                          className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                        />
-                      </a>
-                      <a
-                        href={whatsappMeUrl(submitterPhone)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                        title="مراسلة واتساب"
-                      >
-                        <img
-                          src="/images/order-luxury/btn-admin-whatsapp.webp"
-                          alt="واتس"
-                          className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                        />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* صورة المحل / الباب مع إطار مذهب فاخر */}
-              <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                <span className="text-xs font-black text-[#F5D77F]">صورة المحل</span>
-                {imgShopDoor ? (
-                  <div className="w-full flex flex-col items-center gap-1">
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
-                      <img src={imgShopDoor} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgShopDoor)} />
-                    </div>
-                    {order.shopDoorPhotoUploadedByName?.trim() ? (
-                      <div className="mt-0.5"><ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} /></div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
-                    لا توجد صورة
-                  </div>
-                )}
-                {!isSystemAdminOrder && (
-                  <div className="w-full">
-                    <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <AdminLuxuryShopCard
+            order={order}
+            submitterName={submitterName}
+            submitterPhone={submitterPhone}
+            imgShopDoor={imgShopDoor}
+            setPreviewImageUrl={setPreviewImageUrl}
+            isSystemAdminOrder={isSystemAdminOrder}
+          />
         )}
 
         {/* --- بطاقة الزبون (المستلم) أو المرسل (الوجهة الأولى) --- */}

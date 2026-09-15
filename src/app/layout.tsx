@@ -114,6 +114,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/btn-chat.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-door.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/modal-luxury-frame.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/shop-card-frame.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/header-shop-info.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/header-shop-photo.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/icon-shop-name.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/icon-customer-name.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/icon-region.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/icon-phone.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/btn-shop-location.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/placeholder-no-photo.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/btn-call.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/btn-whatsapp.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/btn-camera.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/shop-card/btn-gallery.webp" as="image" type="image/webp" />
 
         <script
           dangerouslySetInnerHTML={{
@@ -146,7 +159,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/1789252908710.webp',
                     '/images/order-luxury/btn-chat.webp',
                     '/images/order-luxury/btn-door.webp',
-                    '/images/order-luxury/modal-luxury-frame.webp'
+                    '/images/order-luxury/modal-luxury-frame.webp',
+                    '/images/order-luxury/shop-card/shop-card-frame.webp',
+                    '/images/order-luxury/shop-card/header-shop-info.webp',
+                    '/images/order-luxury/shop-card/header-shop-photo.webp',
+                    '/images/order-luxury/shop-card/icon-shop-name.webp',
+                    '/images/order-luxury/shop-card/icon-customer-name.webp',
+                    '/images/order-luxury/shop-card/icon-region.webp',
+                    '/images/order-luxury/shop-card/icon-phone.webp',
+                    '/images/order-luxury/shop-card/btn-shop-location.webp',
+                    '/images/order-luxury/shop-card/placeholder-no-photo.webp',
+                    '/images/order-luxury/shop-card/btn-call.webp',
+                    '/images/order-luxury/shop-card/btn-whatsapp.webp',
+                    '/images/order-luxury/shop-card/btn-camera.webp',
+                    '/images/order-luxury/shop-card/btn-gallery.webp'
                   ];
                   luxuryImages.forEach(function(src) {
                     var img = new Image();
