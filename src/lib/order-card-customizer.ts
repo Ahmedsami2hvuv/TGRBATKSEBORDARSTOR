@@ -62,10 +62,71 @@ export function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties 
   return style;
 }
 
+export type CustomFrameConfig = {
+  bgUrl?: string;
+  scale?: number;          // معامل تكبير الكارت ككل (1 = 100%)
+  scaleX?: number;         // تمديد عرض الكارت (تعريض أو ضغط)
+  scaleY?: number;         // تمديد طول الكارت (تطويل أو تقصير)
+  maxWidth?: number;       // العرض الأقصى بالبكسل
+  minHeight?: number;      // الارتفاع الأدنى بالبكسل
+  paddingX?: number;       // هوامش داخلية أفقية بالبكسل
+  paddingY?: number;       // هوامش داخلية رأسية بالبكسل
+  borderRadius?: number;   // تدوير زوايا الكارت بالبكسل
+  rotate?: number;         // زاوية تدوير الكارت
+};
+
+export function getCardContainerStyle(
+  frameCfg?: CustomFrameConfig,
+  defaultBg: string = "/images/order-luxury/shop-card/shop-card-frame.webp"
+): React.CSSProperties {
+  const bg = frameCfg?.bgUrl || defaultBg;
+  const style: React.CSSProperties = {
+    backgroundImage: bg ? `url('${bg}')` : undefined,
+  };
+
+  if (!frameCfg) return style;
+
+  const transforms: string[] = [];
+  const baseScale = frameCfg.scale ?? 1;
+  const sX = (frameCfg.scaleX ?? 1) * baseScale;
+  const sY = (frameCfg.scaleY ?? 1) * baseScale;
+
+  if (sX !== 1 || sY !== 1) {
+    transforms.push(`scale(${sX}, ${sY})`);
+  }
+  if (frameCfg.rotate !== undefined && frameCfg.rotate !== 0) {
+    transforms.push(`rotate(${frameCfg.rotate}deg)`);
+  }
+  if (transforms.length > 0) {
+    style.transform = transforms.join(" ");
+  }
+
+  if (frameCfg.maxWidth) {
+    style.maxWidth = `${frameCfg.maxWidth}px`;
+  }
+  if (frameCfg.minHeight) {
+    style.minHeight = `${frameCfg.minHeight}px`;
+  }
+  if (frameCfg.paddingX !== undefined) {
+    style.paddingLeft = `${frameCfg.paddingX}px`;
+    style.paddingRight = `${frameCfg.paddingX}px`;
+  }
+  if (frameCfg.paddingY !== undefined) {
+    style.paddingTop = `${frameCfg.paddingY}px`;
+    style.paddingBottom = `${frameCfg.paddingY}px`;
+  }
+  if (frameCfg.borderRadius !== undefined) {
+    style.borderRadius = `${frameCfg.borderRadius}px`;
+  }
+
+  return style;
+}
+
 export type OrderCardDesignerConfig = {
   // كارت المحل (المرسل)
   shopCard: {
     frameBgUrl?: string;
+    frameConfig?: CustomFrameConfig;
     headerShopInfo?: CustomElementConfig;
     headerShopPhoto?: CustomElementConfig;
     iconShopName?: CustomElementConfig;
@@ -84,6 +145,7 @@ export type OrderCardDesignerConfig = {
   // كارت الزبون (المستلم)
   customerCard: {
     frameBgUrl?: string;
+    frameConfig?: CustomFrameConfig;
     headerCustomerInfo?: CustomElementConfig;
     headerDoorPhoto?: CustomElementConfig;
     iconCustomerName?: CustomElementConfig;

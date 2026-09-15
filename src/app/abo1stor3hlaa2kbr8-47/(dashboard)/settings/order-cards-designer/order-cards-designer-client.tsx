@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   OrderCardDesignerConfig,
   CustomElementConfig,
+  CustomFrameConfig,
   getElementStyle,
+  getCardContainerStyle,
 } from "@/lib/order-card-customizer";
 import { updateOrderCardsDesignerAction } from "./actions";
 
@@ -22,6 +24,7 @@ type ElementDefinition = {
   category: TabType;
   defaultImg: string;
   description: string;
+  isFrame?: boolean;
   getConfig: (cfg: OrderCardDesignerConfig) => CustomElementConfig | undefined;
   updateConfig: (
     prev: OrderCardDesignerConfig,
@@ -127,8 +130,47 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     }
   };
 
+  // تعديل خصائص الإطار ككل
+  const updateFrameConfig = (
+    category: "shopCard" | "customerCard",
+    field: keyof CustomFrameConfig,
+    value: any
+  ) => {
+    setConfig((prev) => {
+      const currentFrame = prev[category]?.frameConfig || {};
+      return {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          frameConfig: {
+            ...currentFrame,
+            [field]: value,
+          },
+        },
+      };
+    });
+  };
+
   // تعريف عناصر كارت المحل
   const shopElements: ElementDefinition[] = [
+    {
+      id: "shop_frame",
+      title: "🖼️ خلفية وإطار كارت المحل (تطويل، تقصير، تعريض، وضغط الكارت)",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/shop-card-frame.webp",
+      description: "التحكم في أبعاد وخلفية كارت المحل ككل، تطويل الكارت أو تقصيره، تعريضه أو ضغطه",
+      isFrame: true,
+      getConfig: () => undefined,
+      updateConfig: (prev) => prev,
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          frameBgUrl: url,
+          frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
+        },
+      }),
+    },
     {
       id: "shop_headerShopInfo",
       title: "كبسولة عنوان المحل (المرسل)",
@@ -397,6 +439,24 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
   // تعريف عناصر كارت الزبون
   const customerElements: ElementDefinition[] = [
+    {
+      id: "cust_frame",
+      title: "🖼️ خلفية وإطار كارت الزبون (تطويل، تقصير، تعريض، وضغط الكارت)",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/shop-card-frame.webp",
+      description: "التحكم في أبعاد وخلفية كارت الزبون ككل، تطويل الكارت أو تقصيره، تعريضه أو ضغطه",
+      isFrame: true,
+      getConfig: () => undefined,
+      updateConfig: (prev) => prev,
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          frameBgUrl: url,
+          frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
+        },
+      }),
+    },
     {
       id: "cust_headerCustomerInfo",
       title: "كبسولة عنوان الزبون (المستلم)",
@@ -706,7 +766,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
           </h1>
           <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
-            صفحة تحكم وتعديل متخصصة لكل زر ✏️، تدوير حر للأزرار 🔄، تكبير وحجم بجميع الاتجاهات، ومعاينة مباشرة فورية 👁️.
+            التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
           </p>
         </div>
 
@@ -747,7 +807,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         </div>
       )}
 
-      {/* التبويبات الرئيسية (تظهر فقط عند عدم فتح شاشة زر منفرد أو يمكن التنقل منها) */}
+      {/* التبويبات الرئيسية */}
       <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
         <button
           type="button"
@@ -807,7 +867,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 {activeTab === "wa_buttons" && "معاينة حية مباشرة: أزرار الواتساب المخصصة"}
               </h3>
               <p className="text-[10px] sm:text-xs text-emerald-200">
-                انقر على أي زر في المعاينة لتعديله، أو استخدم لوحة التخصيص بالأسفل.
+                انقر على أي زر أو على إطار الكارت لتعديل أبعاده وخلفيته مباشرة.
               </p>
             </div>
           </div>
@@ -868,7 +928,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           </div>
         </div>
 
-        {/* حاوية المعاينة مع ضبط العرض والتكبير */}
+        {/* حاوية المعاينة مع تطبيق getCardContainerStyle الشامل */}
         <div className="flex items-center justify-center p-2 sm:p-4 bg-black/40 rounded-2xl border border-[#C9A86A]/20 overflow-x-auto min-h-[320px]">
           <div
             className="transition-all duration-150 origin-top"
@@ -881,16 +941,20 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             {/* 1. كارت المحل في المعاينة */}
             {activeTab === "shop_card" && (
               <div
-                className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all"
-                style={{
-                  backgroundImage: `url('${shopFrameBg}')`,
-                }}
+                onClick={() => !selectedElementId && setSelectedElementId("shop_frame")}
+                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
+                  selectedElementId === "shop_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
+                }`}
+                style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
               >
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
                   {/* الجانب الأيمن */}
                   <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
                     <div
-                      onClick={() => setSelectedElementId("shop_headerShopInfo")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("shop_headerShopInfo");
+                      }}
                       className={`cursor-pointer rounded-xl transition-all ${
                         selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
                       }`}
@@ -906,7 +970,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                       <div
-                        onClick={() => setSelectedElementId("shop_iconShopName")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_iconShopName");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -924,7 +991,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
 
                       <div
-                        onClick={() => setSelectedElementId("shop_iconCustomerName")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_iconCustomerName");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -942,7 +1012,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
 
                       <div
-                        onClick={() => setSelectedElementId("shop_iconRegion")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_iconRegion");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -960,7 +1033,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
 
                       <div
-                        onClick={() => setSelectedElementId("shop_iconPhone")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_iconPhone");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -979,7 +1055,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div
-                      onClick={() => setSelectedElementId("shop_btnShopLocation")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("shop_btnShopLocation");
+                      }}
                       className={`pt-0.5 cursor-pointer transition-all ${
                         selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -995,7 +1074,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
                       <div
-                        onClick={() => setSelectedElementId("shop_btnCall")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_btnCall");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1009,7 +1091,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         />
                       </div>
                       <div
-                        onClick={() => setSelectedElementId("shop_btnWhatsapp")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_btnWhatsapp");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1028,7 +1113,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   {/* الجانب الأيسر */}
                   <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
                     <div
-                      onClick={() => setSelectedElementId("shop_headerShopPhoto")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("shop_headerShopPhoto");
+                      }}
                       className={`flex justify-center w-full cursor-pointer transition-all ${
                         selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -1043,7 +1131,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div
-                      onClick={() => setSelectedElementId("shop_placeholderNoPhoto")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("shop_placeholderNoPhoto");
+                      }}
                       className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
                         selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -1059,7 +1150,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
                       <div
-                        onClick={() => setSelectedElementId("shop_btnCamera")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_btnCamera");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1073,7 +1167,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         />
                       </div>
                       <div
-                        onClick={() => setSelectedElementId("shop_btnGallery")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("shop_btnGallery");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1095,16 +1192,20 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             {/* 2. كارت الزبون في المعاينة */}
             {activeTab === "customer_card" && (
               <div
-                className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all"
-                style={{
-                  backgroundImage: `url('${custFrameBg}')`,
-                }}
+                onClick={() => !selectedElementId && setSelectedElementId("cust_frame")}
+                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
+                  selectedElementId === "cust_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : ""
+                }`}
+                style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
               >
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
                   {/* الجانب الأيمن */}
                   <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
                     <div
-                      onClick={() => setSelectedElementId("cust_headerCustomerInfo")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("cust_headerCustomerInfo");
+                      }}
                       className={`cursor-pointer rounded-xl transition-all ${
                         selectedElementId === "cust_headerCustomerInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
                       }`}
@@ -1120,7 +1221,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                       <div
-                        onClick={() => setSelectedElementId("cust_iconCustomerName")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_iconCustomerName");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -1138,7 +1242,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
 
                       <div
-                        onClick={() => setSelectedElementId("cust_iconRegion")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_iconRegion");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -1156,7 +1263,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
 
                       <div
-                        onClick={() => setSelectedElementId("cust_iconPhone")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_iconPhone");
+                        }}
                         className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
                           selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
                         }`}
@@ -1175,7 +1285,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div
-                      onClick={() => setSelectedElementId("cust_btnLocation")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("cust_btnLocation");
+                      }}
                       className={`pt-0.5 cursor-pointer transition-all ${
                         selectedElementId === "cust_btnLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -1191,7 +1304,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
                       <div
-                        onClick={() => setSelectedElementId("cust_btnCall")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_btnCall");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1205,7 +1321,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         />
                       </div>
                       <div
-                        onClick={() => setSelectedElementId("cust_btnWhatsapp")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_btnWhatsapp");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1224,7 +1343,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   {/* الجانب الأيسر */}
                   <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
                     <div
-                      onClick={() => setSelectedElementId("cust_headerDoorPhoto")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("cust_headerDoorPhoto");
+                      }}
                       className={`flex justify-center w-full cursor-pointer transition-all ${
                         selectedElementId === "cust_headerDoorPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -1239,7 +1361,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div
-                      onClick={() => setSelectedElementId("cust_placeholderNoPhoto")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedElementId("cust_placeholderNoPhoto");
+                      }}
                       className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
                         selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                       }`}
@@ -1255,7 +1380,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
                       <div
-                        onClick={() => setSelectedElementId("cust_btnCamera")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_btnCamera");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1269,7 +1397,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         />
                       </div>
                       <div
-                        onClick={() => setSelectedElementId("cust_btnGallery")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("cust_btnGallery");
+                        }}
                         className={`cursor-pointer transition-all ${
                           selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                         }`}
@@ -1321,7 +1452,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. شاشة التعديل الفردية المخصصة للزر المحدد (Dedicated Single Inspector) */}
+      {/* 2. شاشة التعديل الفردية المخصصة (Dedicated Inspector) */}
       {/* ========================================================================= */}
       {selectedElementId && currentSelectedDef ? (
         <div className="space-y-4 bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -1338,7 +1469,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
             <div className="text-center">
               <h3 className="text-sm sm:text-base font-black text-[#F5D77F]">
-                ✏️ تعديل: {currentSelectedDef.title}
+                ✏️ {currentSelectedDef.title}
               </h3>
               <p className="text-[11px] text-emerald-200">{currentSelectedDef.description}</p>
             </div>
@@ -1374,19 +1505,53 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           </div>
 
-          {/* لوحة التحكم الفائقة للزر المحدد */}
-          <DedicatedElementInspector
-            elementDef={currentSelectedDef}
-            config={currentSelectedConfig}
-            onChange={(field, val) => {
-              setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
-            }}
-            onUploadImg={() => {
-              triggerImageUpload((url) => {
-                setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
-              });
-            }}
-          />
+          {/* لوحة تحكم الإطار ككل أو الزر العادي */}
+          {currentSelectedDef.isFrame ? (
+            <DedicatedFrameInspector
+              category={activeTab === "shop_card" ? "shopCard" : "customerCard"}
+              frameConfig={activeTab === "shop_card" ? config.shopCard?.frameConfig : config.customerCard?.frameConfig}
+              defaultBg={activeTab === "shop_card" ? shopFrameBg : custFrameBg}
+              onChange={(field, val) =>
+                updateFrameConfig(activeTab === "shop_card" ? "shopCard" : "customerCard", field, val)
+              }
+              onUploadImg={() => {
+                triggerImageUpload((url) => {
+                  setConfig((prev) =>
+                    activeTab === "shop_card"
+                      ? {
+                          ...prev,
+                          shopCard: {
+                            ...prev.shopCard,
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        }
+                      : {
+                          ...prev,
+                          customerCard: {
+                            ...prev.customerCard,
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        }
+                  );
+                });
+              }}
+            />
+          ) : (
+            <DedicatedElementInspector
+              elementDef={currentSelectedDef}
+              config={currentSelectedConfig}
+              onChange={(field, val) => {
+                setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
+              }}
+              onUploadImg={() => {
+                triggerImageUpload((url) => {
+                  setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
+                });
+              }}
+            />
+          )}
         </div>
       ) : (
         /* ========================================================================= */
@@ -1395,44 +1560,60 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-[#F5D77F]">
-              📑 اختر الزر أو العنصر لتعديله وتدويره في صفحة مخصصة:
+              📑 اختر العنصر أو الإطار لتعديل أبعاده وتدويره في صفحة مخصصة:
             </h3>
             <span className="text-xs text-emerald-200 font-bold">
-              {currentTabElements.length} عناصر قابلة للتخصيص
+              {currentTabElements.length} عنصر قابل للتخصيص
             </span>
           </div>
 
-          {/* زر تغيير إطار الكارت إذا كان كارت المحل أو كارت الزبون */}
-          {(activeTab === "shop_card" || activeTab === "customer_card") && (
-            <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
-              <div>
-                <h4 className="font-black text-sm text-[#F5D77F]">
-                  خلفية إطار الكارت ({activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون"})
-                </h4>
-                <p className="text-xs text-emerald-200">تغيير الصورة الخلفية للإطار الملكي المحيط بالكارت</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    triggerImageUpload((url) => {
-                      setConfig((prev) =>
-                        activeTab === "shop_card"
-                          ? { ...prev, shopCard: { ...prev.shopCard, frameBgUrl: url } }
-                          : { ...prev, customerCard: { ...prev.customerCard, frameBgUrl: url } }
-                      );
-                    })
-                  }
-                  className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-bold hover:scale-105 transition cursor-pointer"
-                >
-                  📤 تغيير صورة الإطار (WEBP)
-                </button>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {currentTabElements.map((elem) => {
+              if (elem.isFrame) {
+                const currentFrameCfg =
+                  elem.category === "shop_card"
+                    ? config.shopCard?.frameConfig
+                    : config.customerCard?.frameConfig;
+                const currentBg =
+                  currentFrameCfg?.bgUrl ||
+                  (elem.category === "shop_card" ? shopFrameBg : custFrameBg);
+
+                return (
+                  <div
+                    key={elem.id}
+                    onClick={() => setSelectedElementId(elem.id)}
+                    className="sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl p-4 shadow-xl hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-16 h-14 rounded-xl border-2 border-[#C9A86A] bg-black/60 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={currentBg}
+                          alt="الإطار"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-2">
+                          <span>📐</span> {elem.title}
+                        </h4>
+                        <p className="text-xs text-emerald-100 mt-0.5 font-bold">
+                          {elem.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-lg hover:scale-105 transition flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>⚙️</span> تخصيص أبعاد وطول وعرض الإطار
+                    </button>
+                  </div>
+                );
+              }
+
               const elemConfig = elem.getConfig(config);
               const currentImg = elemConfig?.imageUrl || elem.defaultImg;
               const hasCustomImg = Boolean(elemConfig?.imageUrl);
@@ -1500,6 +1681,355 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// لوحة التحكم المخصصة لإطار وخلفية الكارت ككل (تطويل، تقصير، تعريض، وضغط)
+function DedicatedFrameInspector({
+  category,
+  frameConfig,
+  defaultBg,
+  onChange,
+  onUploadImg,
+}: {
+  category: "shopCard" | "customerCard";
+  frameConfig?: CustomFrameConfig;
+  defaultBg: string;
+  onChange: (field: keyof CustomFrameConfig, val: any) => void;
+  onUploadImg: () => void;
+}) {
+  const currentBg = frameConfig?.bgUrl || defaultBg;
+  const currentScale = frameConfig?.scale ?? 1;
+  const currentScaleX = frameConfig?.scaleX ?? 1;
+  const currentScaleY = frameConfig?.scaleY ?? 1;
+  const currentMaxWidth = frameConfig?.maxWidth ?? 896; // max-w-4xl الافتراضي 896px
+  const currentMinHeight = frameConfig?.minHeight ?? 240;
+  const currentPaddingX = frameConfig?.paddingX ?? 24;
+  const currentPaddingY = frameConfig?.paddingY ?? 24;
+  const currentRadius = frameConfig?.borderRadius ?? 24;
+
+  return (
+    <div className="space-y-5">
+      {/* صندوق معاينة وتغيير صورة الإطار */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-28 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentBg}
+              alt="صورة الإطار"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+
+          <div>
+            <h4 className="font-black text-sm text-[#F5D77F]">
+              خلفية إطار الكارت ({category === "shopCard" ? "كارت المحل" : "كارت الزبون"})
+            </h4>
+            <p className="text-xs text-emerald-200 mt-0.5">
+              الصورة المحيطة بالإطار الملكي الفاخر
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={onUploadImg}
+            className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
+          >
+            📤 رفع صورة إطار مخصصة (WEBP)
+          </button>
+          {frameConfig?.bgUrl && (
+            <button
+              type="button"
+              onClick={() => onChange("bgUrl", "")}
+              className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+            >
+              استعادة الافتراضي
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* نماذج أبعاد جاهزة بنقرة زر */}
+      <div className="bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 space-y-2">
+        <label className="text-xs text-[#F5D77F] font-black block">
+          ⚡ نماذج أبعاد سريعة بنقرة واحدة:
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-bold">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("scale", 1);
+              onChange("scaleX", 1);
+              onChange("scaleY", 1);
+              onChange("maxWidth", 896);
+              onChange("minHeight", 240);
+              onChange("paddingX", 24);
+              onChange("paddingY", 24);
+            }}
+            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-amber-300"
+          >
+            👑 الأبعاد الافتراضية
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("scaleX", 1.15);
+              onChange("scaleY", 0.95);
+              onChange("maxWidth", 980);
+              onChange("paddingX", 28);
+            }}
+            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
+          >
+            ↔️ كارت عريض
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("scaleX", 0.95);
+              onChange("scaleY", 1.2);
+              onChange("minHeight", 340);
+              onChange("paddingY", 32);
+            }}
+            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
+          >
+            ↕️ كارت طويل
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("scale", 0.9);
+              onChange("scaleX", 0.9);
+              onChange("scaleY", 0.9);
+              onChange("maxWidth", 750);
+              onChange("paddingX", 16);
+              onChange("paddingY", 16);
+            }}
+            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
+          >
+            📦 كارت مضغوط
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("scaleX", 1.2);
+              onChange("scaleY", 0.85);
+              onChange("maxWidth", 1020);
+            }}
+            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
+          >
+            📐 عريض وقصير
+          </button>
+        </div>
+      </div>
+
+      {/* لوحات التحكم الدقيقة بأبعاد وطول وعرض الكارت ككل */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* ================= 1. تطويل وتقصير الكارت (الارتفاع الرأسي) ================= */}
+        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
+          <h4 className="text-xs font-black text-[#F5D77F] flex items-center gap-1.5 border-b border-[#C9A86A]/20 pb-2">
+            <span>↕️</span> تطويل وتقصير الكارت (الارتفاع الرأسي):
+          </h4>
+
+          {/* تمديد الارتفاع Scale Y */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">تمديد طول الكارت (Scale Y):</span>
+              <span className="font-mono text-emerald-300 font-bold">
+                {Math.round(currentScaleY * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              dir="ltr"
+              min="0.5"
+              max="2.5"
+              step="0.05"
+              value={currentScaleY}
+              onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
+              className="w-full accent-[#C9A86A] cursor-pointer"
+            />
+          </div>
+
+          {/* الحد الأدنى للارتفاع Min-Height */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">الارتفاع الأدنى (Min Height بالبكسل):</span>
+              <span className="font-mono text-emerald-300 font-bold">{currentMinHeight}px</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onChange("minHeight", Math.max(150, currentMinHeight - 15))}
+                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
+              >
+                -15px
+              </button>
+              <input
+                type="range"
+                dir="ltr"
+                min="150"
+                max="800"
+                step="10"
+                value={currentMinHeight}
+                onChange={(e) => onChange("minHeight", parseInt(e.target.value))}
+                className="flex-1 accent-[#C9A86A] cursor-pointer"
+              />
+              <button
+                type="button"
+                onClick={() => onChange("minHeight", Math.min(800, currentMinHeight + 15))}
+                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
+              >
+                +15px
+              </button>
+            </div>
+          </div>
+
+          {/* هوامش أعلى وأسفل Padding Y */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">مسافة أعلى وأسفل (Padding Y):</span>
+              <span className="font-mono text-emerald-300 font-bold">{currentPaddingY}px</span>
+            </div>
+            <input
+              type="range"
+              dir="ltr"
+              min="0"
+              max="60"
+              step="2"
+              value={currentPaddingY}
+              onChange={(e) => onChange("paddingY", parseInt(e.target.value))}
+              className="w-full accent-[#C9A86A] cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* ================= 2. تعريض وضغط الكارت (العرض الأفقي) ================= */}
+        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
+          <h4 className="text-xs font-black text-[#F5D77F] flex items-center gap-1.5 border-b border-[#C9A86A]/20 pb-2">
+            <span>↔️</span> تعريض وضغط الكارت (العرض الأفقي):
+          </h4>
+
+          {/* تمديد العرض Scale X */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">تمديد عرض الكارت (Scale X):</span>
+              <span className="font-mono text-emerald-300 font-bold">
+                {Math.round(currentScaleX * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              dir="ltr"
+              min="0.5"
+              max="2.5"
+              step="0.05"
+              value={currentScaleX}
+              onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
+              className="w-full accent-[#C9A86A] cursor-pointer"
+            />
+          </div>
+
+          {/* العرض الأقصى Max-Width */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">العرض الأقصى للكارت (Max Width):</span>
+              <span className="font-mono text-emerald-300 font-bold">{currentMaxWidth}px</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onChange("maxWidth", Math.max(320, currentMaxWidth - 25))}
+                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
+              >
+                -25px
+              </button>
+              <input
+                type="range"
+                dir="ltr"
+                min="320"
+                max="1200"
+                step="20"
+                value={currentMaxWidth}
+                onChange={(e) => onChange("maxWidth", parseInt(e.target.value))}
+                className="flex-1 accent-[#C9A86A] cursor-pointer"
+              />
+              <button
+                type="button"
+                onClick={() => onChange("maxWidth", Math.min(1200, currentMaxWidth + 25))}
+                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
+              >
+                +25px
+              </button>
+            </div>
+          </div>
+
+          {/* هوامش يمين ويسار Padding X */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-amber-200 font-bold">مسافة يمين ويسار (Padding X):</span>
+              <span className="font-mono text-emerald-300 font-bold">{currentPaddingX}px</span>
+            </div>
+            <input
+              type="range"
+              dir="ltr"
+              min="0"
+              max="60"
+              step="2"
+              value={currentPaddingX}
+              onChange={(e) => onChange("paddingX", parseInt(e.target.value))}
+              className="w-full accent-[#C9A86A] cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* ================= 3. تدوير زوايا الكارت والتكبير الكلي ================= */}
+        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 md:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* تدوير الزوايا Border Radius */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-amber-200 font-bold">تدوير زوايا الكارت (Border Radius):</span>
+                <span className="font-mono text-emerald-300 font-bold">{currentRadius}px</span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0"
+                max="50"
+                step="2"
+                value={currentRadius}
+                onChange={(e) => onChange("borderRadius", parseInt(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer"
+              />
+            </div>
+
+            {/* التكبير الكلي التناسبي */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-amber-200 font-bold">التكبير الكلي للكارت ككل:</span>
+                <span className="font-mono text-emerald-300 font-bold">
+                  {Math.round(currentScale * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0.5"
+                max="2"
+                step="0.05"
+                value={currentScale}
+                onChange={(e) => onChange("scale", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

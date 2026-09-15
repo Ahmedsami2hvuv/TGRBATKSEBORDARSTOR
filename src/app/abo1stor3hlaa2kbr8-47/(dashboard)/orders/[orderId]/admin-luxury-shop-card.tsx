@@ -17,7 +17,9 @@ import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import {
   type OrderCardDesignerConfig,
   type CustomElementConfig,
+  type CustomFrameConfig,
   getElementStyle,
+  getCardContainerStyle,
 } from "@/lib/order-card-customizer";
 
 const initial: CustomerDoorPhotoState = {};
@@ -155,10 +157,8 @@ export function AdminLuxuryShopCard({
       {/* الهيكل الرئيسي لكارت العميل بالإطار الملكي الفاخر */}
       {isExpanded && (
         <div
-          className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all"
-          style={{
-            backgroundImage: `url('${frameBg}')`,
-          }}
+          className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto"
+          style={getCardContainerStyle(shopCustom?.frameConfig, frameBg)}
         >
           {/* محتوى الكارت: عمودين متجاورين دائماً (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
           <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
