@@ -815,24 +815,19 @@ export async function submitAdminPickupMoney(
     });
     const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-    const pickupStatusOnly =
-      advanceStatus === "delivering" &&
-      (order.status === "assigned" || order.status === "pending") &&
-      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const isStatusOnly = statusAdvanceOnly || submitMode === "statusOnlyNoAmount" || (!amountRaw && advanceStatus === "delivering");
 
-    if (pickupStatusOnly) {
-      if (!paidSoFar.greaterThan(0)) {
-        /* تحويل دون تسجيل صادر — مسموح */
-      } else if (!dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
-        return mismatchNoteRequiredError();
-      }
-      await prisma.$transaction(async (tx) => {
-        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: "delivering" },
+    if (isStatusOnly) {
+      if (order.status !== "delivering") {
+        await prisma.$transaction(async (tx) => {
+          await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
+          await tx.order.update({
+            where: { id: orderId },
+            data: { status: "delivering" },
+          });
         });
-      });
+        void notifyStaffOrderPickedUp(orderId).catch(() => {});
+      }
       revalidateAdminTrackingForStatusChange();
       revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
       revalidatePath("/mandoub");
@@ -851,9 +846,6 @@ export async function submitAdminPickupMoney(
 
     const nextPaid = paidSoFar.plus(amountDinar);
     const matches = dinarAmountsMatchExpected(nextPaid, expected);
-    if (!matches && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
-    }
 
     await prisma.$transaction(async (tx) => {
       await tx.orderCourierMoneyEvent.create({
@@ -868,7 +860,7 @@ export async function submitAdminPickupMoney(
           mismatchNote,
         },
       });
-      if (advanceStatus === "delivering" && (order.status === "assigned" || order.status === "pending")) {
+      if (advanceStatus === "delivering" && order.status !== "delivering") {
         await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivering");
         await tx.order.update({
           where: { id: orderId },
@@ -876,6 +868,10 @@ export async function submitAdminPickupMoney(
         });
       }
     });
+
+    if (advanceStatus === "delivering" && order.status !== "delivering") {
+      void notifyStaffOrderPickedUp(orderId).catch(() => {});
+    }
 
     revalidateAdminTrackingForStatusChange();
     revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
@@ -929,29 +925,24 @@ export async function submitAdminDeliveryMoney(
     });
     const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-    const deliveryStatusOnly =
-      advanceStatus === "delivered" &&
-      order.status !== "delivered" &&
-      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const isStatusOnly = statusAdvanceOnly || submitMode === "statusOnlyNoAmount" || (!amountRaw && advanceStatus === "delivered");
 
-    if (deliveryStatusOnly) {
-      if (!receivedSoFar.greaterThan(0)) {
-        /* تحويل دون تسجيل وارد — مسموح */
-      } else if (!dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
-        return mismatchNoteRequiredError();
-      }
-      await prisma.$transaction(async (tx) => {
-        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivered");
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: "delivered" },
+    if (isStatusOnly) {
+      if (order.status !== "delivered") {
+        await prisma.$transaction(async (tx) => {
+          await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status, "delivered");
+          await tx.order.update({
+            where: { id: orderId },
+            data: { status: "delivered" },
+          });
         });
-      });
-      try {
-        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-        await handleOrderDelivered(orderId);
-      } catch (hookErr) {
-        console.error("handleOrderDelivered secondary error:", hookErr);
+        try {
+          const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+          await handleOrderDelivered(orderId);
+        } catch (hookErr) {
+          console.error("handleOrderDelivered secondary error:", hookErr);
+        }
+        void notifyStaffOrderDelivered(orderId).catch(() => {});
       }
       revalidateAdminTrackingForStatusChange();
       revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
@@ -971,9 +962,6 @@ export async function submitAdminDeliveryMoney(
 
     const nextReceived = receivedSoFar.plus(amountDinar);
     const matches = dinarAmountsMatchExpected(nextReceived, expected);
-    if (!matches && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
-    }
 
     await prisma.$transaction(async (tx) => {
       await tx.orderCourierMoneyEvent.create({
@@ -1005,6 +993,7 @@ export async function submitAdminDeliveryMoney(
       } catch (hookErr) {
         console.error("handleOrderDelivered secondary error:", hookErr);
       }
+      void notifyStaffOrderDelivered(orderId).catch(() => {});
     }
 
     revalidateAdminTrackingForStatusChange();

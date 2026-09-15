@@ -730,9 +730,13 @@ function AdminPickupFormModal({
           
           <button
             type="submit"
+            name="mandoubMoneySubmitMode"
+            value="statusOnlyNoAmount"
             formNoValidate
             disabled={pending}
             onClick={() => {
+              if (amountRef.current) amountRef.current.value = "";
+              setAmount("");
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
               if (advanceStatusRef.current) advanceStatusRef.current.value = "delivering";
               setAdvanceStatus("delivering");
@@ -910,9 +914,13 @@ function AdminDeliveryFormModal({
 
           <button
             type="submit"
+            name="mandoubMoneySubmitMode"
+            value="statusOnlyNoAmount"
             formNoValidate
             disabled={pending}
             onClick={() => {
+              if (amountRef.current) amountRef.current.value = "";
+              setAmount("");
               if (submitModeRef.current) submitModeRef.current.value = "statusOnlyNoAmount";
               if (advanceStatusRef.current) advanceStatusRef.current.value = "delivered";
               setAdvanceStatus("delivered");
