@@ -1651,20 +1651,21 @@ ${productsText}`;
           />
         </div>
       )}
-      {/* نافذة التسعير المنبثقة الذكية للمدير */}
+      {/* نافذة التسعير المنبثقة الذكية للمدير (مدمجة ومختصرة) */}
       {editingIndex !== null && isMounted && createPortal(
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
           <div className="absolute inset-0" onClick={cancelPricingPanel} />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200">
-            <div className="bg-sky-600 p-3 sm:p-4 text-white flex items-center justify-between gap-3">
-               <div className="flex items-center gap-1.5 shrink-0" dir="ltr">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            {/* الهيدر المدمج */}
+            <div className="bg-sky-600 px-3 py-2.5 sm:px-4 sm:py-3 text-white flex items-center justify-between gap-2 shrink-0">
+               <div className="flex items-center gap-1 shrink-0" dir="ltr">
                   <button
                     type="button"
                     onClick={() => {
                       const prevIdx = getPrevIndex(editingIndex);
                       setEditingIndex(prevIdx);
                     }}
-                    className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90"
+                    className="h-7 w-7 rounded-lg bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90 text-xs"
                     title="المنتج السابق"
                   >
                     ◀
@@ -1675,44 +1676,45 @@ ${productsText}`;
                       const nextIdx = getNextIndex(editingIndex);
                       setEditingIndex(nextIdx);
                     }}
-                    className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90"
+                    className="h-7 w-7 rounded-lg bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90 text-xs"
                     title="المنتج التالي"
                   >
                     ▶
                   </button>
                </div>
                <div className="min-w-0 flex-1 text-right">
-                  <p className="text-[9px] font-black opacity-80">تسعير المنتج ({editingIndex + 1} من {products.length}):</p>
+                  <p className="text-[9px] font-black opacity-80">تسعير ({editingIndex + 1} من {products.length}):</p>
                   <p className="truncate text-xs sm:text-sm font-black">{products[editingIndex]?.line}</p>
                </div>
-               <div className="flex items-center gap-1.5 shrink-0">
+               <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsAdminFulfilled(!isAdminFulfilled)}
-                    className={`h-8 px-2 rounded-xl text-[10px] font-black flex items-center gap-1 transition-all ${
+                    className={`h-7 px-2 rounded-lg text-[9px] font-black flex items-center gap-1 transition-all ${
                       isAdminFulfilled
                         ? "bg-amber-500 text-white shadow-inner animate-pulse ring-1 ring-amber-400"
                         : "bg-white/10 hover:bg-white/20 text-white"
                     }`}
                     title="تجهيز المادة من الإدارة وتجاوز الموردين"
                   >
-                    🏛️ {isAdminFulfilled ? "تجهيز إدارة: نعم" : "تجهيز إدارة"}
+                    🏛️ {isAdminFulfilled ? "إدارة: نعم" : "تجهيز إدارة"}
                   </button>
-                  <button type="button" onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0">✕</button>
+                  <button type="button" onClick={cancelPricingPanel} className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0 text-xs">✕</button>
                </div>
             </div>
 
-            <div className="p-6 text-right">
-              <div className="mb-4">
-                <label className="text-[10px] font-black text-slate-500 mb-1 block">تعديل اسم المنتج (اختياري)</label>
+            {/* جسم النافذة المدمج */}
+            <div className="p-3.5 sm:p-4 text-right overflow-y-auto custom-scrollbar">
+              {/* تعديل اسم المنتج سطر نحيف ومدمج */}
+              <div className="mb-2">
                 <input
                   type="text"
                   value={products[editingIndex]?.line}
                   onChange={(e) => updateProduct(editingIndex, "line", e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm font-bold outline-none"
+                  placeholder="تعديل اسم المنتج..."
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold outline-none focus:border-sky-500 focus:bg-white transition"
                 />
               </div>
-
 
               {/* اقتراحات الكسور الذكية للمدير (بناءً على الشراء) */}
               {(() => {
@@ -1724,7 +1726,7 @@ ${productsText}`;
                 const fractions = [0, 0.25, 0.5, 0.75];
 
                 return (
-                  <div className="grid grid-cols-4 gap-1.5 mb-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="grid grid-cols-4 gap-1 mb-2 animate-in slide-in-from-top-2 duration-300">
                     {fractions.map(frac => {
                       const total = parseFloat((base + frac).toFixed(2));
                       return (
@@ -1735,7 +1737,7 @@ ${productsText}`;
                             setBuyText(total.toString());
                             setSellText(calculateAutoSellPrice(products[editingIndex].line, total, noProfit).toString());
                           }}
-                          className="py-2 rounded-xl text-xs font-black bg-indigo-600 text-white active:scale-95 transition-all"
+                          className="py-1 rounded-lg text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 transition-all shadow-sm"
                         >
                           {total}
                         </button>
@@ -1745,9 +1747,10 @@ ${productsText}`;
                 );
               })()}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* بلوك سعر الشراء وبلوك الخصم جنباً إلى جنب في صف واحد */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <div>
-                  <label className="text-[10px] font-black text-slate-500 mb-1 block text-center">سعر الشراء (لحساب الزبون)</label>
+                  <label className="text-[10px] font-black text-slate-600 dark:text-slate-400 mb-0.5 block text-center">سعر الشراء (للزبون)</label>
                   <input
                     ref={buyInputRef}
                     value={buyText}
@@ -1769,71 +1772,73 @@ ${productsText}`;
                     dir="ltr"
                     inputMode="decimal"
                     placeholder="0.00"
-                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 text-center font-mono text-lg font-black outline-none focus:border-sky-500"
+                    className="w-full h-11 rounded-xl border-2 border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 text-center font-mono text-base font-black outline-none focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-amber-600 dark:text-amber-400 mb-1 block text-center" title="المبلغ الفعلي المدفوع لأبو المحل بعد الخصم لتسجيله في المحفظة">المدفوع للمحل (المحفظة)</label>
+                  <label className="text-[10px] font-black text-amber-600 dark:text-amber-400 mb-0.5 block text-center truncate" title="المبلغ الفعلي المدفوع لأبو المحل بعد الخصم">المدفوع للمحل (الخصم)</label>
                   <input
                     value={actualBuyText}
                     onChange={(e) => setActualBuyText(e.target.value)}
                     dir="ltr"
                     inputMode="decimal"
-                    placeholder={buyText ? `${buyText} (تلقائي)` : "0.00"}
-                    className="w-full rounded-2xl border-2 border-amber-100 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/40 py-3 text-center font-mono text-lg font-black text-amber-700 dark:text-amber-300 outline-none focus:border-amber-500 placeholder:text-amber-300/70 dark:placeholder:text-amber-700/50"
+                    placeholder={buyText ? `${buyText}` : "0.00"}
+                    className="w-full h-11 rounded-xl border-2 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/40 text-center font-mono text-base font-black text-amber-700 dark:text-amber-300 outline-none focus:border-amber-500 placeholder:text-amber-400/60"
                   />
-                  <p className="text-[9px] text-slate-400 text-center mt-0.5">اتركه فارغاً إذا لم يوجد خصم</p>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع (للزبون)</label>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
-                        const nextSell = Math.max(0, currentSell - 0.25);
-                        setSellText(nextSell.toString());
-                      }}
-                      className="h-12 w-8 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 text-sm font-black flex items-center justify-center border border-rose-200/50 transition active:scale-95 shrink-0"
-                    >
-                      -
-                    </button>
-                    <input
-                      ref={sellInputRef}
-                      value={sellText}
-                      onChange={(e) => setSellText(e.target.value)}
-                      onKeyDown={(e) => {
-                         if (e.key === 'Enter') {
-                            e.preventDefault();
-                            applyPricingPanel();
-                         }
-                      }}
-                      dir="ltr"
-                      inputMode="decimal"
-                      className="w-full flex-1 rounded-2xl border-2 border-sky-100 bg-sky-50 dark:bg-slate-800 dark:border-slate-700 py-3 text-center font-mono text-lg font-black outline-none focus:border-sky-500 text-slate-800 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
-                        setSellText((currentSell + 0.25).toString());
-                      }}
-                      className="h-12 w-8 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 text-sm font-black flex items-center justify-center border border-emerald-200/50 transition active:scale-95 shrink-0"
-                    >
-                      +
-                    </button>
-                  </div>
                 </div>
               </div>
 
-              {/* أزرار الإجراءات الثلاثة تحت مربعي التسعير مباشرة */}
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              {/* بلوك سعر البيع مدمج مع أزرار الزيادة والنقصان */}
+              <div className="mb-2.5">
+                <label className="text-[10px] font-black text-sky-600 dark:text-sky-400 mb-0.5 block text-center">سعر البيع (للزبون)</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
+                      const nextSell = Math.max(0, currentSell - 0.25);
+                      setSellText(nextSell.toString());
+                    }}
+                    className="h-11 w-9 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 text-base font-black flex items-center justify-center border border-rose-200/50 transition active:scale-95 shrink-0"
+                  >
+                    -
+                  </button>
+                  <input
+                    ref={sellInputRef}
+                    value={sellText}
+                    onChange={(e) => setSellText(e.target.value)}
+                    onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                          e.preventDefault();
+                          applyPricingPanel();
+                       }
+                    }}
+                    dir="ltr"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="w-full flex-1 h-11 rounded-xl border-2 border-sky-100 bg-sky-50 dark:bg-slate-800 dark:border-slate-700 text-center font-mono text-base font-black outline-none focus:border-sky-500 text-slate-800 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
+                      setSellText((currentSell + 0.25).toString());
+                    }}
+                    className="h-11 w-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 text-base font-black flex items-center justify-center border border-emerald-200/50 transition active:scale-95 shrink-0"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* أزرار الإجراءات الثلاثة في صف مدمج */}
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
                     applyPricingPanel();
                   }}
-                  className="rounded-2xl bg-emerald-600 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-700 h-9.5 py-2 text-xs font-black text-white shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
                   حفظ ⬅️
                 </button>
@@ -1843,7 +1848,7 @@ ${productsText}`;
                     applyPricingPanel();
                     cancelPricingPanel();
                   }}
-                  className="rounded-2xl bg-sky-600 py-2.5 text-xs sm:text-sm font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
+                  className="rounded-xl bg-sky-600 hover:bg-sky-700 h-9.5 py-2 text-xs font-black text-white shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
                   حفظ ✅
                 </button>
@@ -1853,15 +1858,15 @@ ${productsText}`;
                     resetProductPricing(editingIndex);
                     cancelPricingPanel();
                   }}
-                  className="rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 py-2.5 text-xs sm:text-sm font-black active:scale-95 transition-all flex items-center justify-center gap-1"
+                  className="rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 h-9.5 py-2 text-xs font-black active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
                   مسح 💵
                 </button>
               </div>
 
-              {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
+              {pricingErr && <p className="mt-1.5 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
 
-              {/* خيارات البيع المقترحة بالأسفل */}
+              {/* خيارات البيع المقترحة بالأسفل مدمجة في صف أفقي */}
               {(() => {
                 const details = findStoreProductDetails(products[editingIndex]?.line, storeProducts);
                 const rawBuy = normalizeNumerals(buyText).trim();
@@ -1871,9 +1876,9 @@ ${productsText}`;
                 if (!isBuyValid && !details) return null;
                 
                 return (
-                  <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-3">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع:</label>
-                    <div className="flex flex-wrap gap-1.5 justify-start">
+                  <div className="mt-2.5 border-t border-slate-100 dark:border-white/5 pt-2">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 shrink-0">خيارات سريعة:</span>
                       {/* زر سعر المتجر (لافندر) */}
                       {details && details.salePrice > 0 && (
                         <button
@@ -1881,8 +1886,8 @@ ${productsText}`;
                           onClick={() => {
                             setSellText(details.salePrice.toString());
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-violet-100 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 text-violet-700 font-mono text-xs font-black border border-violet-200 dark:border-violet-900 transition active:scale-95 shadow-sm"
-                          title="سعر البيع الأصلي في المتجر (تعديل سعر البيع فقط)"
+                          className="px-2 py-1 rounded-lg bg-violet-100 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 text-violet-700 font-mono text-[11px] font-black border border-violet-200 dark:border-violet-900 transition active:scale-95 shadow-sm shrink-0"
+                          title="سعر البيع الأصلي في المتجر"
                         >
                           {details.salePrice}
                         </button>
@@ -1893,7 +1898,7 @@ ${productsText}`;
                         <button
                           type="button"
                           onClick={() => applyPriceDirectly(buyNum)}
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95"
+                          className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-[11px] font-black border border-slate-200 dark:border-slate-700 transition active:scale-95 shrink-0"
                         >
                           بدون ربح: {buyNum}
                         </button>
@@ -1905,7 +1910,7 @@ ${productsText}`;
                           key={price}
                           type="button"
                           onClick={() => applyPriceDirectly(price)}
-                          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
+                          className="px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95 shrink-0"
                         >
                           {price}
                         </button>
