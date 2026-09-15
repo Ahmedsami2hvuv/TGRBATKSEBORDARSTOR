@@ -6,11 +6,12 @@ export type CustomElementConfig = {
   scale?: number;          // معامل التكبير/التصغير العام (1 = 100%)
   scaleX?: number;         // معامل التكبير/التصغير الأفقي (العرض)
   scaleY?: number;         // معامل التكبير/التصغير العمودي (الارتفاع)
+  rotate?: number;         // زاوية التدوير بالدرجات (0 إلى 360)
   width?: number;          // عرض مخصص بالبكسل
   height?: number;         // ارتفاع مخصص بالبكسل
   offsetX?: number;        // إزاحة أفقية (الموجب = يمين، السالب = يسار)
   offsetY?: number;        // إزاحة رأسية (الموجب = أسفل، السالب = أعلى)
-  transformOrigin?: string;// نقطة ارتكاز التكبير (center, right, left, top, bottom, etc.)
+  transformOrigin?: string;// نقطة ارتكاز التكبير والتدوير (center, right, left, top, bottom, etc.)
   hidden?: boolean;        // إخفاء العنصر
   visibility?: "all" | "admin" | "admin_mandoub" | "admin_mandoub_preparer"; // نطاق الظهور
 };
@@ -26,6 +27,10 @@ export function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties 
 
   if (sX !== 1 || sY !== 1) {
     transforms.push(`scale(${sX}, ${sY})`);
+  }
+
+  if (cfg.rotate !== undefined && cfg.rotate !== 0) {
+    transforms.push(`rotate(${cfg.rotate}deg)`);
   }
 
   if (cfg.offsetX !== undefined && cfg.offsetX !== 0) {

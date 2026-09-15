@@ -16,10 +16,26 @@ type Props = {
 
 type TabType = "shop_card" | "customer_card" | "wa_buttons";
 
+type ElementDefinition = {
+  id: string;
+  title: string;
+  category: TabType;
+  defaultImg: string;
+  description: string;
+  getConfig: (cfg: OrderCardDesignerConfig) => CustomElementConfig | undefined;
+  updateConfig: (
+    prev: OrderCardDesignerConfig,
+    field: keyof CustomElementConfig,
+    val: any
+  ) => OrderCardDesignerConfig;
+  setImageUrl: (prev: OrderCardDesignerConfig, url: string) => OrderCardDesignerConfig;
+};
+
 export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("shop_card");
   const [config, setConfig] = useState<OrderCardDesignerConfig>(initialConfig);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("saved");
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
@@ -64,7 +80,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
     debounceTimerRef.current = setTimeout(() => {
       void performSave(config);
-    }, 450); // 450 ميلي ثانية بعد توقف المستخدم عن السحب
+    }, 450); // 450ms بعد توقف المستخدم عن التعديل
 
     return () => {
       if (debounceTimerRef.current) {
@@ -73,7 +89,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     };
   }, [config, performSave]);
 
-  // دالة رفع الصور والتحويل التلقائي لـ WEBP مع الحفظ التلقائي
+  // دالة رفع الصور والتحويل التلقائي لـ WEBP
   const triggerImageUpload = (onUploaded: (url: string) => void) => {
     uploadCallbackRef.current = onUploaded;
     fileInputRef.current?.click();
@@ -111,68 +127,561 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     }
   };
 
-  // دوال تعديل إعدادات كارت المحل
-  const updateShopElement = (
-    key: keyof OrderCardDesignerConfig["shopCard"],
-    field: keyof CustomElementConfig,
-    value: any
-  ) => {
-    setConfig((prev) => {
-      const currentElem = (prev.shopCard[key] as CustomElementConfig) || {};
-      return {
+  // تعريف عناصر كارت المحل
+  const shopElements: ElementDefinition[] = [
+    {
+      id: "shop_headerShopInfo",
+      title: "كبسولة عنوان المحل (المرسل)",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-info.webp",
+      description: "الشريط العلوي للجانب الأيمن الذي يحتوي عنوان المحل المرسل",
+      getConfig: (c) => c.shopCard?.headerShopInfo,
+      updateConfig: (prev, f, v) => ({
         ...prev,
         shopCard: {
           ...prev.shopCard,
-          [key]: {
-            ...currentElem,
-            [field]: value,
-          },
+          headerShopInfo: { ...(prev.shopCard?.headerShopInfo || {}), [f]: v },
         },
-      };
-    });
-  };
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          headerShopInfo: { ...(prev.shopCard?.headerShopInfo || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_headerShopPhoto",
+      title: "كبسولة عنوان صورة المحل",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-photo.webp",
+      description: "الشريط العلوي للجانب الأيسر فوق صورة باب المحل",
+      getConfig: (c) => c.shopCard?.headerShopPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          headerShopPhoto: { ...(prev.shopCard?.headerShopPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          headerShopPhoto: { ...(prev.shopCard?.headerShopPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_iconShopName",
+      title: "أيقونة اسم المحل",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-shop-name.webp",
+      description: "الأيقونة المجسمة لسطر اسم المحل التجاري",
+      getConfig: (c) => c.shopCard?.iconShopName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconShopName: { ...(prev.shopCard?.iconShopName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconShopName: { ...(prev.shopCard?.iconShopName || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_iconCustomerName",
+      title: "أيقونة اسم العميل / المسؤول",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-customer-name.webp",
+      description: "الأيقونة المجسمة لسطر اسم صاحب المحل أو المسؤول",
+      getConfig: (c) => c.shopCard?.iconCustomerName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconCustomerName: { ...(prev.shopCard?.iconCustomerName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconCustomerName: { ...(prev.shopCard?.iconCustomerName || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_iconRegion",
+      title: "أيقونة منطقة المحل",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-region.webp",
+      description: "الأيقونة المجسمة لسطر المنطقة الجغرافية للمحل",
+      getConfig: (c) => c.shopCard?.iconRegion,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconRegion: { ...(prev.shopCard?.iconRegion || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconRegion: { ...(prev.shopCard?.iconRegion || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_iconPhone",
+      title: "أيقونة هاتف المحل",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-phone.webp",
+      description: "الأيقونة المجسمة لسطر رقم هاتف المحل",
+      getConfig: (c) => c.shopCard?.iconPhone,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconPhone: { ...(prev.shopCard?.iconPhone || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          iconPhone: { ...(prev.shopCard?.iconPhone || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnShopLocation",
+      title: "زر موقع المحل على الخريطة",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-shop-location.webp",
+      description: "زر فتح موقع المحل الجغرافي على خرائط غوغل",
+      getConfig: (c) => c.shopCard?.btnShopLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnShopLocation: { ...(prev.shopCard?.btnShopLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnShopLocation: { ...(prev.shopCard?.btnShopLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_placeholderNoPhoto",
+      title: "أيقونة لا توجد صورة باب",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/placeholder-no-photo.webp",
+      description: "الشعار المعروض في حالة عدم رفع صورة لباب المحل",
+      getConfig: (c) => c.shopCard?.placeholderNoPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          placeholderNoPhoto: { ...(prev.shopCard?.placeholderNoPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          placeholderNoPhoto: { ...(prev.shopCard?.placeholderNoPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnCall",
+      title: "زر الاتصال الهاتفي 📞",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-call.webp",
+      description: "زر إجراء مكالمة هاتفية سريعة مع المحل",
+      getConfig: (c) => c.shopCard?.btnCall,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnCall: { ...(prev.shopCard?.btnCall || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnCall: { ...(prev.shopCard?.btnCall || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnWhatsapp",
+      title: "زر مراسلة واتساب 💬",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-whatsapp.webp",
+      description: "زر فتح محادثة واتساب فورية مع المحل",
+      getConfig: (c) => c.shopCard?.btnWhatsapp,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnWhatsapp: { ...(prev.shopCard?.btnWhatsapp || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnWhatsapp: { ...(prev.shopCard?.btnWhatsapp || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnCamera",
+      title: "زر التقاط الكاميرا 📷",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-camera.webp",
+      description: "زر فتح كاميرا الهاتف لتصوير باب المحل",
+      getConfig: (c) => c.shopCard?.btnCamera,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnCamera: { ...(prev.shopCard?.btnCamera || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnCamera: { ...(prev.shopCard?.btnCamera || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnGallery",
+      title: "زر اختيار من المعرض 🖼️",
+      category: "shop_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-gallery.webp",
+      description: "زر اختيار صورة لباب المحل من ألبوم الصور",
+      getConfig: (c) => c.shopCard?.btnGallery,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnGallery: { ...(prev.shopCard?.btnGallery || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnGallery: { ...(prev.shopCard?.btnGallery || {}), imageUrl: url },
+        },
+      }),
+    },
+  ];
 
-  // دوال تعديل إعدادات كارت الزبون
-  const updateCustomerElement = (
-    key: keyof OrderCardDesignerConfig["customerCard"],
-    field: keyof CustomElementConfig,
-    value: any
-  ) => {
-    setConfig((prev) => {
-      const currentElem = (prev.customerCard[key] as CustomElementConfig) || {};
-      return {
+  // تعريف عناصر كارت الزبون
+  const customerElements: ElementDefinition[] = [
+    {
+      id: "cust_headerCustomerInfo",
+      title: "كبسولة عنوان الزبون (المستلم)",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-info.webp",
+      description: "الشريط العلوي للجانب الأيمن الخاص ببيانات الزبون",
+      getConfig: (c) => c.customerCard?.headerCustomerInfo,
+      updateConfig: (prev, f, v) => ({
         ...prev,
         customerCard: {
           ...prev.customerCard,
-          [key]: {
-            ...currentElem,
-            [field]: value,
-          },
+          headerCustomerInfo: { ...(prev.customerCard?.headerCustomerInfo || {}), [f]: v },
         },
-      };
-    });
-  };
-
-  // دوال تعديل أزرار الواتساب
-  const updateWaButtonConfig = (
-    btnId: string,
-    field: keyof CustomElementConfig,
-    value: any
-  ) => {
-    setConfig((prev) => {
-      const current = prev.waButtonsConfig?.[btnId] || {};
-      return {
+      }),
+      setImageUrl: (prev, url) => ({
         ...prev,
-        waButtonsConfig: {
-          ...prev.waButtonsConfig,
-          [btnId]: {
-            ...current,
-            [field]: value,
-          },
+        customerCard: {
+          ...prev.customerCard,
+          headerCustomerInfo: { ...(prev.customerCard?.headerCustomerInfo || {}), imageUrl: url },
         },
-      };
-    });
-  };
+      }),
+    },
+    {
+      id: "cust_headerDoorPhoto",
+      title: "كبسولة عنوان صورة باب الزبون",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-photo.webp",
+      description: "الشريط العلوي فوق صورة باب منزل أو عمارة الزبون",
+      getConfig: (c) => c.customerCard?.headerDoorPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          headerDoorPhoto: { ...(prev.customerCard?.headerDoorPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          headerDoorPhoto: { ...(prev.customerCard?.headerDoorPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_iconCustomerName",
+      title: "أيقونة اسم الزبون",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-customer-name.webp",
+      description: "الأيقونة المجسمة لسطر اسم الزبون المستلم",
+      getConfig: (c) => c.customerCard?.iconCustomerName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconCustomerName: { ...(prev.customerCard?.iconCustomerName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconCustomerName: { ...(prev.customerCard?.iconCustomerName || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_iconRegion",
+      title: "أيقونة منطقة الزبون",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-region.webp",
+      description: "الأيقونة المجسمة لسطر منطقة وسكن الزبون",
+      getConfig: (c) => c.customerCard?.iconRegion,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconRegion: { ...(prev.customerCard?.iconRegion || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconRegion: { ...(prev.customerCard?.iconRegion || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_iconPhone",
+      title: "أيقونة هاتف الزبون",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/icon-phone.webp",
+      description: "الأيقونة المجسمة لسطر رقم هاتف الزبون",
+      getConfig: (c) => c.customerCard?.iconPhone,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconPhone: { ...(prev.customerCard?.iconPhone || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          iconPhone: { ...(prev.customerCard?.iconPhone || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnLocation",
+      title: "زر موقع الزبون (اللوكيشن)",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-shop-location.webp",
+      description: "زر فتح موقع الزبون على الخريطة",
+      getConfig: (c) => c.customerCard?.btnLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnLocation: { ...(prev.customerCard?.btnLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnLocation: { ...(prev.customerCard?.btnLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_placeholderNoPhoto",
+      title: "أيقونة لا توجد صورة باب",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/placeholder-no-photo.webp",
+      description: "الشعار المعروض في حالة عدم توفر صورة لباب الزبون",
+      getConfig: (c) => c.customerCard?.placeholderNoPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          placeholderNoPhoto: { ...(prev.customerCard?.placeholderNoPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          placeholderNoPhoto: { ...(prev.customerCard?.placeholderNoPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnCall",
+      title: "زر الاتصال بهاتف الزبون 📞",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-call.webp",
+      description: "زر الاتصال المباشر بهاتف الزبون",
+      getConfig: (c) => c.customerCard?.btnCall,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnCall: { ...(prev.customerCard?.btnCall || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnCall: { ...(prev.customerCard?.btnCall || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnWhatsapp",
+      title: "زر مراسلة الزبون واتساب 💬",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-whatsapp.webp",
+      description: "زر فتح شات واتساب فوري مع الزبون",
+      getConfig: (c) => c.customerCard?.btnWhatsapp,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnWhatsapp: { ...(prev.customerCard?.btnWhatsapp || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnWhatsapp: { ...(prev.customerCard?.btnWhatsapp || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnCamera",
+      title: "زر تصوير باب الزبون بالكاميرا 📷",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-camera.webp",
+      description: "زر تشغيل الكاميرا لتصوير باب الزبون",
+      getConfig: (c) => c.customerCard?.btnCamera,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnCamera: { ...(prev.customerCard?.btnCamera || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnCamera: { ...(prev.customerCard?.btnCamera || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnGallery",
+      title: "زر اختيار صورة باب الزبون من المعرض 🖼️",
+      category: "customer_card",
+      defaultImg: "/images/order-luxury/shop-card/btn-gallery.webp",
+      description: "زر اختيار صورة لباب الزبون من ألبوم الصور",
+      getConfig: (c) => c.customerCard?.btnGallery,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnGallery: { ...(prev.customerCard?.btnGallery || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnGallery: { ...(prev.customerCard?.btnGallery || {}), imageUrl: url },
+        },
+      }),
+    },
+  ];
+
+  // تعريف عناصر أزرار الواتساب
+  const waElements: ElementDefinition[] = waButtons.map((btn) => ({
+    id: `wa_${btn.id}`,
+    title: `زر واتساب: ${btn.label}`,
+    category: "wa_buttons",
+    defaultImg: "",
+    description: `زر واتساب مخصص بقالب: ${btn.label}`,
+    getConfig: (c) => c.waButtonsConfig?.[btn.id],
+    updateConfig: (prev, f, v) => ({
+      ...prev,
+      waButtonsConfig: {
+        ...prev.waButtonsConfig,
+        [btn.id]: { ...(prev.waButtonsConfig?.[btn.id] || {}), [f]: v },
+      },
+    }),
+    setImageUrl: (prev, url) => ({
+      ...prev,
+      waButtonsConfig: {
+        ...prev.waButtonsConfig,
+        [btn.id]: { ...(prev.waButtonsConfig?.[btn.id] || {}), imageUrl: url },
+      },
+    }),
+  }));
+
+  const allElements = [...shopElements, ...customerElements, ...waElements];
+  const currentTabElements =
+    activeTab === "shop_card"
+      ? shopElements
+      : activeTab === "customer_card"
+      ? customerElements
+      : waElements;
+
+  const currentSelectedDef = allElements.find((e) => e.id === selectedElementId);
+  const currentSelectedConfig = currentSelectedDef?.getConfig(config);
+
+  const currentIndex = currentTabElements.findIndex((e) => e.id === selectedElementId);
+  const prevElement = currentIndex > 0 ? currentTabElements[currentIndex - 1] : null;
+  const nextElement =
+    currentIndex >= 0 && currentIndex < currentTabElements.length - 1
+      ? currentTabElements[currentIndex + 1]
+      : null;
 
   const shopCustom = config.shopCard;
   const custCustom = config.customerCard;
@@ -197,7 +706,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
           </h1>
           <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
-            معاينة حية ومباشرة لحظة بلحظة 👁️، قص الفراغات والشفافية المحيطة تلقائياً ✂️، وحفظ فوري بالسيرفر 💾.
+            صفحة تحكم وتعديل متخصصة لكل زر ✏️، تدوير حر للأزرار 🔄، تكبير وحجم بجميع الاتجاهات، ومعاينة مباشرة فورية 👁️.
           </p>
         </div>
 
@@ -238,11 +747,14 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         </div>
       )}
 
-      {/* التبويبات الرئيسية */}
+      {/* التبويبات الرئيسية (تظهر فقط عند عدم فتح شاشة زر منفرد أو يمكن التنقل منها) */}
       <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
         <button
           type="button"
-          onClick={() => setActiveTab("shop_card")}
+          onClick={() => {
+            setActiveTab("shop_card");
+            setSelectedElementId(null);
+          }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "shop_card"
               ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
@@ -253,7 +765,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("customer_card")}
+          onClick={() => {
+            setActiveTab("customer_card");
+            setSelectedElementId(null);
+          }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "customer_card"
               ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
@@ -264,7 +779,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("wa_buttons")}
+          onClick={() => {
+            setActiveTab("wa_buttons");
+            setSelectedElementId(null);
+          }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "wa_buttons"
               ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
@@ -276,12 +794,12 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       </div>
 
       {/* ========================================================================= */}
-      {/* قسم المعاينة الحية التفاعلية الثابتة (Interactive Live Preview Studio) */}
+      {/* 1. قسم المعاينة الحية المباشرة للكارت (Interactive Live Preview Studio) */}
       {/* ========================================================================= */}
       <div className="bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#C9A86A]/40 pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📱</span>
+            <span className="text-xl">👁️</span>
             <div>
               <h3 className="text-sm sm:text-base font-black text-[#F5D77F]">
                 {activeTab === "shop_card" && "معاينة حية مباشرة: كارت المحل (المرسل)"}
@@ -289,7 +807,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 {activeTab === "wa_buttons" && "معاينة حية مباشرة: أزرار الواتساب المخصصة"}
               </h3>
               <p className="text-[10px] sm:text-xs text-emerald-200">
-                هذا هو الشكل النهائي الدقيق الذي يظهر للمستخدم في صفحة الطلبية، يتحدث فورياً مع كل حركة أو تكبير.
+                انقر على أي زر في المعاينة لتعديله، أو استخدم لوحة التخصيص بالأسفل.
               </p>
             </div>
           </div>
@@ -304,7 +822,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
                 }`}
               >
-                📱 جوال (390px)
+                📱 جوال
               </button>
               <button
                 type="button"
@@ -313,7 +831,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
                 }`}
               >
-                💻 كمبيوتر (عرض كامل)
+                💻 كمبيوتر
               </button>
             </div>
 
@@ -369,9 +887,15 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 }}
               >
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
-                  {/* الجانب الأيمن: البيانات والتواصل */}
+                  {/* الجانب الأيمن */}
                   <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-                    <div className="flex justify-start" style={getElementStyle(shopCustom?.headerShopInfo)}>
+                    <div
+                      onClick={() => setSelectedElementId("shop_headerShopInfo")}
+                      className={`cursor-pointer rounded-xl transition-all ${
+                        selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(shopCustom?.headerShopInfo)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
@@ -381,7 +905,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconShopName)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_iconShopName")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.iconShopName)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
@@ -393,7 +923,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconCustomerName)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_iconCustomerName")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.iconCustomerName)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
@@ -405,7 +941,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconRegion)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_iconRegion")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.iconRegion)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
@@ -417,7 +959,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconPhone)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_iconPhone")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.iconPhone)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
@@ -430,38 +978,62 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
                     </div>
 
-                    <div className="pt-0.5" style={getElementStyle(shopCustom?.btnShopLocation)}>
+                    <div
+                      onClick={() => setSelectedElementId("shop_btnShopLocation")}
+                      className={`pt-0.5 cursor-pointer transition-all ${
+                        selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(shopCustom?.btnShopLocation)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
                         alt="موقع المحل"
-                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg cursor-pointer"
+                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
                       />
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
-                      <div style={getElementStyle(shopCustom?.btnCall)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_btnCall")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnCall)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                           alt="اتصال"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
-                      <div style={getElementStyle(shopCustom?.btnWhatsapp)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_btnWhatsapp")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnWhatsapp)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                           alt="واتس اب"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* الجانب الأيسر: صورة المحل وأزرار الرفع */}
+                  {/* الجانب الأيسر */}
                   <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-                    <div className="flex justify-center w-full" style={getElementStyle(shopCustom?.headerShopPhoto)}>
+                    <div
+                      onClick={() => setSelectedElementId("shop_headerShopPhoto")}
+                      className={`flex justify-center w-full cursor-pointer transition-all ${
+                        selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(shopCustom?.headerShopPhoto)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
@@ -470,7 +1042,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       />
                     </div>
 
-                    <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5" style={getElementStyle(shopCustom?.placeholderNoPhoto)}>
+                    <div
+                      onClick={() => setSelectedElementId("shop_placeholderNoPhoto")}
+                      className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                        selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(shopCustom?.placeholderNoPhoto)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
@@ -480,20 +1058,32 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
-                      <div style={getElementStyle(shopCustom?.btnCamera)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_btnCamera")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnCamera)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                           alt="كاميرا"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
-                      <div style={getElementStyle(shopCustom?.btnGallery)}>
+                      <div
+                        onClick={() => setSelectedElementId("shop_btnGallery")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnGallery)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                           alt="معرض"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
                     </div>
@@ -511,9 +1101,15 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 }}
               >
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
-                  {/* الجانب الأيمن: بيانات الزبون والتواصل */}
+                  {/* الجانب الأيمن */}
                   <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-                    <div className="flex justify-start" style={getElementStyle(custCustom?.headerCustomerInfo)}>
+                    <div
+                      onClick={() => setSelectedElementId("cust_headerCustomerInfo")}
+                      className={`cursor-pointer rounded-xl transition-all ${
+                        selectedElementId === "cust_headerCustomerInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(custCustom?.headerCustomerInfo)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={custCustom?.headerCustomerInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
@@ -523,7 +1119,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(custCustom?.iconCustomerName)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_iconCustomerName")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.iconCustomerName)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
@@ -535,7 +1137,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(custCustom?.iconRegion)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_iconRegion")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.iconRegion)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
@@ -547,7 +1155,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(custCustom?.iconPhone)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_iconPhone")}
+                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
+                          selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.iconPhone)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
@@ -560,38 +1174,62 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       </div>
                     </div>
 
-                    <div className="pt-0.5" style={getElementStyle(custCustom?.btnLocation)}>
+                    <div
+                      onClick={() => setSelectedElementId("cust_btnLocation")}
+                      className={`pt-0.5 cursor-pointer transition-all ${
+                        selectedElementId === "cust_btnLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(custCustom?.btnLocation)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
                         alt="موقع الزبون"
-                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg cursor-pointer"
+                        className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
                       />
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
-                      <div style={getElementStyle(custCustom?.btnCall)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_btnCall")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.btnCall)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                           alt="اتصال"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
-                      <div style={getElementStyle(custCustom?.btnWhatsapp)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_btnWhatsapp")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.btnWhatsapp)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                           alt="واتس اب"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* الجانب الأيسر: صورة باب الزبون وأزرار الكاميرا */}
+                  {/* الجانب الأيسر */}
                   <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-                    <div className="flex justify-center w-full" style={getElementStyle(custCustom?.headerDoorPhoto)}>
+                    <div
+                      onClick={() => setSelectedElementId("cust_headerDoorPhoto")}
+                      className={`flex justify-center w-full cursor-pointer transition-all ${
+                        selectedElementId === "cust_headerDoorPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(custCustom?.headerDoorPhoto)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={custCustom?.headerDoorPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
@@ -600,7 +1238,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       />
                     </div>
 
-                    <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5" style={getElementStyle(custCustom?.placeholderNoPhoto)}>
+                    <div
+                      onClick={() => setSelectedElementId("cust_placeholderNoPhoto")}
+                      className={`w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                        selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                      }`}
+                      style={getElementStyle(custCustom?.placeholderNoPhoto)}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
@@ -610,20 +1254,32 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
-                      <div style={getElementStyle(custCustom?.btnCamera)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_btnCamera")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.btnCamera)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                           alt="كاميرا"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
-                      <div style={getElementStyle(custCustom?.btnGallery)}>
+                      <div
+                        onClick={() => setSelectedElementId("cust_btnGallery")}
+                        className={`cursor-pointer transition-all ${
+                          selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
+                        }`}
+                        style={getElementStyle(custCustom?.btnGallery)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                           alt="معرض"
-                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl cursor-pointer"
+                          className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
                         />
                       </div>
                     </div>
@@ -638,11 +1294,15 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 {waButtons.map((btn) => {
                   const btnCustom = config.waButtonsConfig?.[btn.id];
                   const previewImg = btnCustom?.imageUrl;
+                  const isSelected = selectedElementId === `wa_${btn.id}`;
                   return (
                     <div
                       key={btn.id}
+                      onClick={() => setSelectedElementId(`wa_${btn.id}`)}
                       style={getElementStyle(btnCustom)}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-transform"
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-all ${
+                        isSelected ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105" : "hover:opacity-90"
+                      }`}
                     >
                       {previewImg ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -661,286 +1321,180 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. لوحة تحكم كارت المحل (المرسل) */}
+      {/* 2. شاشة التعديل الفردية المخصصة للزر المحدد (Dedicated Single Inspector) */}
       {/* ========================================================================= */}
-      {activeTab === "shop_card" && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-black text-[#F5D77F]">⚙️ لوحة تخصيص عناصر وأزرار كارت المحل:</h3>
+      {selectedElementId && currentSelectedDef ? (
+        <div className="space-y-4 bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* شريط أدوات الانتقال والرجوع */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#C9A86A]/30 pb-3">
+            <button
+              type="button"
+              onClick={() => setSelectedElementId(null)}
+              className="px-4 py-2 bg-[#06281D] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black hover:bg-[#0F4D3A] transition flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              <span>◀</span> عودة لكافة عناصر الكارت
+            </button>
 
-          {/* خلفية الإطار الملكي */}
-          <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
-            <div>
-              <h4 className="font-black text-sm text-[#F5D77F]">خلفية إطار كارت المحل (الإطار الملكي)</h4>
-              <p className="text-xs text-emerald-200">تغيير الصورة الخلفية للإطار المحيط بكارت المحل</p>
+            <div className="text-center">
+              <h3 className="text-sm sm:text-base font-black text-[#F5D77F]">
+                ✏️ تعديل: {currentSelectedDef.title}
+              </h3>
+              <p className="text-[11px] text-emerald-200">{currentSelectedDef.description}</p>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* أزرار السابق والتالي */}
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() =>
-                  triggerImageUpload((url) => {
-                    setConfig((prev) => ({
-                      ...prev,
-                      shopCard: { ...prev.shopCard, frameBgUrl: url },
-                    }));
-                  })
-                }
-                className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-bold hover:scale-105 transition cursor-pointer"
+                disabled={!prevElement}
+                onClick={() => prevElement && setSelectedElementId(prevElement.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black border transition ${
+                  prevElement
+                    ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                    : "opacity-40 bg-black/20 text-white/40 border-transparent cursor-not-allowed"
+                }`}
+                title="العنصر السابق"
               >
-                📤 تغيير صورة الإطار (WEBP)
+                ◀ السابق
               </button>
-              {shopCustom?.frameBgUrl && (
+              <button
+                type="button"
+                disabled={!nextElement}
+                onClick={() => nextElement && setSelectedElementId(nextElement.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black border transition ${
+                  nextElement
+                    ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                    : "opacity-40 bg-black/20 text-white/40 border-transparent cursor-not-allowed"
+                }`}
+                title="العنصر التالي"
+              >
+                التالي ▶
+              </button>
+            </div>
+          </div>
+
+          {/* لوحة التحكم الفائقة للزر المحدد */}
+          <DedicatedElementInspector
+            elementDef={currentSelectedDef}
+            config={currentSelectedConfig}
+            onChange={(field, val) => {
+              setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
+            }}
+            onUploadImg={() => {
+              triggerImageUpload((url) => {
+                setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
+              });
+            }}
+          />
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* 3. قائمة استعراض عناصر الكارت (Master Grid of Elements) */
+        /* ========================================================================= */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#F5D77F]">
+              📑 اختر الزر أو العنصر لتعديله وتدويره في صفحة مخصصة:
+            </h3>
+            <span className="text-xs text-emerald-200 font-bold">
+              {currentTabElements.length} عناصر قابلة للتخصيص
+            </span>
+          </div>
+
+          {/* زر تغيير إطار الكارت إذا كان كارت المحل أو كارت الزبون */}
+          {(activeTab === "shop_card" || activeTab === "customer_card") && (
+            <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">
+                  خلفية إطار الكارت ({activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون"})
+                </h4>
+                <p className="text-xs text-emerald-200">تغيير الصورة الخلفية للإطار الملكي المحيط بالكارت</p>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      shopCard: { ...prev.shopCard, frameBgUrl: "" },
-                    }))
+                    triggerImageUpload((url) => {
+                      setConfig((prev) =>
+                        activeTab === "shop_card"
+                          ? { ...prev, shopCard: { ...prev.shopCard, frameBgUrl: url } }
+                          : { ...prev, customerCard: { ...prev.customerCard, frameBgUrl: url } }
+                      );
+                    })
                   }
-                  className="text-xs text-rose-300 hover:text-rose-200 underline cursor-pointer"
+                  className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-bold hover:scale-105 transition cursor-pointer"
                 >
-                  استعادة الافتراضي
+                  📤 تغيير صورة الإطار (WEBP)
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* شبكة التحكم بباقي الأزرار والعناصر */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ElementControlCard
-              title="كبسولة عنوان المحل (المرسل)"
-              defaultImg="/images/order-luxury/shop-card/header-shop-info.webp"
-              config={shopCustom?.headerShopInfo}
-              onChange={(field, val) => updateShopElement("headerShopInfo", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("headerShopInfo", "imageUrl", url))}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {currentTabElements.map((elem) => {
+              const elemConfig = elem.getConfig(config);
+              const currentImg = elemConfig?.imageUrl || elem.defaultImg;
+              const hasCustomImg = Boolean(elemConfig?.imageUrl);
+              const isRotated = elemConfig?.rotate && elemConfig.rotate !== 0;
+              const isScaled = elemConfig?.scale && elemConfig.scale !== 1;
 
-            <ElementControlCard
-              title="كبسولة عنوان صورة المحل"
-              defaultImg="/images/order-luxury/shop-card/header-shop-photo.webp"
-              config={shopCustom?.headerShopPhoto}
-              onChange={(field, val) => updateShopElement("headerShopPhoto", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("headerShopPhoto", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة اسم المحل"
-              defaultImg="/images/order-luxury/shop-card/icon-shop-name.webp"
-              config={shopCustom?.iconShopName}
-              onChange={(field, val) => updateShopElement("iconShopName", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("iconShopName", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة اسم العميل / المسؤول"
-              defaultImg="/images/order-luxury/shop-card/icon-customer-name.webp"
-              config={shopCustom?.iconCustomerName}
-              onChange={(field, val) => updateShopElement("iconCustomerName", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("iconCustomerName", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة منطقة المحل"
-              defaultImg="/images/order-luxury/shop-card/icon-region.webp"
-              config={shopCustom?.iconRegion}
-              onChange={(field, val) => updateShopElement("iconRegion", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("iconRegion", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة هاتف المحل"
-              defaultImg="/images/order-luxury/shop-card/icon-phone.webp"
-              config={shopCustom?.iconPhone}
-              onChange={(field, val) => updateShopElement("iconPhone", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("iconPhone", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر موقع المحل على الخريطة"
-              defaultImg="/images/order-luxury/shop-card/btn-shop-location.webp"
-              config={shopCustom?.btnShopLocation}
-              onChange={(field, val) => updateShopElement("btnShopLocation", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("btnShopLocation", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة لا توجد صورة باب"
-              defaultImg="/images/order-luxury/shop-card/placeholder-no-photo.webp"
-              config={shopCustom?.placeholderNoPhoto}
-              onChange={(field, val) => updateShopElement("placeholderNoPhoto", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("placeholderNoPhoto", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر الاتصال الهاتفي 📞"
-              defaultImg="/images/order-luxury/shop-card/btn-call.webp"
-              config={shopCustom?.btnCall}
-              onChange={(field, val) => updateShopElement("btnCall", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("btnCall", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر مراسلة واتساب 💬"
-              defaultImg="/images/order-luxury/shop-card/btn-whatsapp.webp"
-              config={shopCustom?.btnWhatsapp}
-              onChange={(field, val) => updateShopElement("btnWhatsapp", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("btnWhatsapp", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر التقاط الكاميرا 📷"
-              defaultImg="/images/order-luxury/shop-card/btn-camera.webp"
-              config={shopCustom?.btnCamera}
-              onChange={(field, val) => updateShopElement("btnCamera", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("btnCamera", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر اختيار من المعرض 🖼️"
-              defaultImg="/images/order-luxury/shop-card/btn-gallery.webp"
-              config={shopCustom?.btnGallery}
-              onChange={(field, val) => updateShopElement("btnGallery", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateShopElement("btnGallery", "imageUrl", url))}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. لوحة تحكم كارت الزبون (المستلم) */}
-      {/* ========================================================================= */}
-      {activeTab === "customer_card" && (
-        <div className="space-y-4">
-          <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
-            <div>
-              <h4 className="font-black text-sm text-[#F5D77F]">خلفية إطار كارت الزبون</h4>
-              <p className="text-xs text-emerald-200">تخصيص صورة خلفية إطار كارت الزبون (المستلم)</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  triggerImageUpload((url) => {
-                    setConfig((prev) => ({
-                      ...prev,
-                      customerCard: { ...prev.customerCard, frameBgUrl: url },
-                    }));
-                  })
-                }
-                className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-bold hover:scale-105 transition cursor-pointer"
-              >
-                📤 رفع خلفية الإطار (WEBP)
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ElementControlCard
-              title="كبسولة عنوان الزبون (المستلم)"
-              defaultImg="/images/order-luxury/shop-card/header-shop-info.webp"
-              config={config.customerCard?.headerCustomerInfo}
-              onChange={(field, val) => updateCustomerElement("headerCustomerInfo", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("headerCustomerInfo", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="كبسولة عنوان صورة باب الزبون"
-              defaultImg="/images/order-luxury/shop-card/header-shop-photo.webp"
-              config={config.customerCard?.headerDoorPhoto}
-              onChange={(field, val) => updateCustomerElement("headerDoorPhoto", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("headerDoorPhoto", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة اسم الزبون"
-              defaultImg="/images/order-luxury/shop-card/icon-customer-name.webp"
-              config={config.customerCard?.iconCustomerName}
-              onChange={(field, val) => updateCustomerElement("iconCustomerName", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("iconCustomerName", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة منطقة الزبون"
-              defaultImg="/images/order-luxury/shop-card/icon-region.webp"
-              config={config.customerCard?.iconRegion}
-              onChange={(field, val) => updateCustomerElement("iconRegion", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("iconRegion", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="أيقونة هاتف الزبون"
-              defaultImg="/images/order-luxury/shop-card/icon-phone.webp"
-              config={config.customerCard?.iconPhone}
-              onChange={(field, val) => updateCustomerElement("iconPhone", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("iconPhone", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر موقع الزبون (اللوكيشن)"
-              defaultImg="/images/order-luxury/shop-card/btn-shop-location.webp"
-              config={config.customerCard?.btnLocation}
-              onChange={(field, val) => updateCustomerElement("btnLocation", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("btnLocation", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر الاتصال بهاتف الزبون 📞"
-              defaultImg="/images/order-luxury/shop-card/btn-call.webp"
-              config={config.customerCard?.btnCall}
-              onChange={(field, val) => updateCustomerElement("btnCall", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("btnCall", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر مراسلة الزبون واتساب 💬"
-              defaultImg="/images/order-luxury/shop-card/btn-whatsapp.webp"
-              config={config.customerCard?.btnWhatsapp}
-              onChange={(field, val) => updateCustomerElement("btnWhatsapp", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("btnWhatsapp", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر كاميرا تصوير باب الزبون 📷"
-              defaultImg="/images/order-luxury/shop-card/btn-camera.webp"
-              config={config.customerCard?.btnCamera}
-              onChange={(field, val) => updateCustomerElement("btnCamera", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("btnCamera", "imageUrl", url))}
-            />
-
-            <ElementControlCard
-              title="زر اختيار صورة باب الزبون من المعرض 🖼️"
-              defaultImg="/images/order-luxury/shop-card/btn-gallery.webp"
-              config={config.customerCard?.btnGallery}
-              onChange={(field, val) => updateCustomerElement("btnGallery", field, val)}
-              onUploadImg={() => triggerImageUpload((url) => updateCustomerElement("btnGallery", "imageUrl", url))}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 3. لوحة تحكم أزرار الواتساب المخصصة */}
-      {/* ========================================================================= */}
-      {activeTab === "wa_buttons" && (
-        <div className="space-y-4">
-          <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl">
-            <h4 className="font-black text-sm text-[#F5D77F]">تخصيص شكل وصور أزرار الواتساب المخصصة</h4>
-            <p className="text-xs text-emerald-200 mt-1">
-              يمكنك رفع صورة مخصصة لكل زر واتساب وتحويلها تلقائياً إلى WEBP وتحديد أبعادها وإزاحتها ونطاق ظهورها.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {waButtons.map((btn) => {
-              const btnCustom = config.waButtonsConfig?.[btn.id] || {};
               return (
-                <ElementControlCard
-                  key={btn.id}
-                  title={`زر واتساب: ${btn.label}`}
-                  config={btnCustom}
-                  onChange={(field, val) => updateWaButtonConfig(btn.id, field, val)}
-                  onUploadImg={() => triggerImageUpload((url) => updateWaButtonConfig(btn.id, "imageUrl", url))}
-                />
+                <div
+                  key={elem.id}
+                  onClick={() => setSelectedElementId(elem.id)}
+                  className="bg-[#0A3D2E]/90 border border-[#C9A86A]/50 rounded-2xl p-4 shadow-lg hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 rounded-xl border border-[#C9A86A]/60 bg-black/50 flex items-center justify-center overflow-hidden shrink-0 p-1 relative">
+                      {currentImg ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={currentImg}
+                          alt={elem.title}
+                          style={getElementStyle(elemConfig)}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-[10px] text-white/50">أصلي</span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] truncate group-hover:text-amber-300">
+                        {elem.title}
+                      </h4>
+                      <p className="text-[10px] text-emerald-200 line-clamp-2 mt-0.5">
+                        {elem.description}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[9px] font-bold">
+                        {hasCustomImg && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            صورة مخصصة 🖼️
+                          </span>
+                        )}
+                        {isRotated && (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            تدوير {elemConfig?.rotate}° 🔄
+                          </span>
+                        )}
+                        {isScaled && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            تكبير {Math.round((elemConfig?.scale ?? 1) * 100)}% 🔍
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="w-full py-2 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black group-hover:from-amber-500 group-hover:to-[#C9A86A] group-hover:text-[#06281D] transition flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <span>✏️</span> فتح صفحة التعديل والتدوير
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -950,24 +1504,23 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   );
 }
 
-// كارت التحكم بالعنصر المنفرد مع أدوات التكبير الحرة والإزاحة ونقطة الارتكاز
-function ElementControlCard({
-  title,
-  defaultImg,
+// لوحة التحكم المفصلة للزر المنفرد (شاملة التدوير، الأبعاد، الإزاحة، والحجم)
+function DedicatedElementInspector({
+  elementDef,
   config,
   onChange,
   onUploadImg,
 }: {
-  title: string;
-  defaultImg?: string;
+  elementDef: ElementDefinition;
   config?: CustomElementConfig;
   onChange: (field: keyof CustomElementConfig, val: any) => void;
   onUploadImg: () => void;
 }) {
-  const currentImg = config?.imageUrl || defaultImg;
+  const currentImg = config?.imageUrl || elementDef.defaultImg;
   const currentScale = config?.scale ?? 1;
   const currentScaleX = config?.scaleX ?? 1;
   const currentScaleY = config?.scaleY ?? 1;
+  const currentRotate = config?.rotate ?? 0;
   const currentOffsetX = config?.offsetX ?? 0;
   const currentOffsetY = config?.offsetY ?? 0;
   const currentOrigin = config?.transformOrigin || "center";
@@ -987,54 +1540,176 @@ function ElementControlCard({
   ];
 
   return (
-    <div className="bg-[#0A3D2E]/90 border border-[#C9A86A]/60 rounded-2xl p-4 shadow-xl space-y-3.5">
-      <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
-        <h4 className="font-black text-xs sm:text-sm text-[#F5D77F]">{title}</h4>
-        {config?.imageUrl && (
-          <button
-            type="button"
-            onClick={() => onChange("imageUrl", "")}
-            className="text-[10px] text-rose-300 hover:text-rose-200 underline cursor-pointer"
-          >
-            استعادة الصورة الأصلية
-          </button>
-        )}
-      </div>
+    <div className="space-y-5">
+      {/* صندوق معاينة العنصر ورفع الصورة */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-24 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
+            {currentImg ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={currentImg}
+                alt={elementDef.title}
+                style={previewStyle}
+                className="max-h-full max-w-full object-contain transition-transform duration-75"
+              />
+            ) : (
+              <span className="text-xs text-white/50">أصلي</span>
+            )}
+          </div>
 
-      <div className="flex items-center gap-3">
-        <div className="w-20 h-16 rounded-xl border border-[#C9A86A]/60 bg-black/50 flex items-center justify-center overflow-hidden shrink-0 p-1 relative">
-          {currentImg ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={currentImg}
-              alt={title}
-              style={previewStyle}
-              className="max-h-full max-w-full object-contain transition-transform duration-75"
-            />
-          ) : (
-            <span className="text-[10px] text-white/50">أصلي</span>
-          )}
+          <div>
+            <h4 className="font-black text-sm text-[#F5D77F]">{elementDef.title}</h4>
+            <p className="text-xs text-emerald-200 mt-0.5">
+              معاينة مصغرة لحظية مع التدوير والتكبير والإزاحة
+            </p>
+          </div>
         </div>
 
-        <div className="flex-1 space-y-1">
+        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
           <button
             type="button"
             onClick={onUploadImg}
-            className="w-full px-3 py-1.5 bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition cursor-pointer"
+            className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
           >
-            📤 رفع صورة جديدة (قص الفراغات + WEBP)
+            📤 رفع صورة مخصصة (قص الفراغات + WEBP)
           </button>
+          {config?.imageUrl && (
+            <button
+              type="button"
+              onClick={() => onChange("imageUrl", "")}
+              className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+            >
+              استعادة الأصلية
+            </button>
+          )}
         </div>
       </div>
 
-      {/* أشرطة التحكم المتقدمة */}
-      <div className="space-y-3 pt-2 border-t border-[#C9A86A]/20">
-        {/* 1. التكبير العام الكلي */}
-        <div className="space-y-1 bg-black/20 p-2 rounded-xl border border-[#C9A86A]/20">
+      {/* أدوات التحكم الشاملة: تدوير، أبعاد، إزاحة، اتجاه */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* ================= 1. أداة التدوير (Rotation) ================= */}
+        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-bold">🔍 التكبير الكلي (تناسبي):</span>
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono text-emerald-300 font-bold">
+            <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
+              <span>🔄</span> زاوية تدوير الزر (Rotate):
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-amber-300 font-black text-sm">
+                {currentRotate}°
+              </span>
+              {currentRotate !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", 0)}
+                  className="text-[10px] text-rose-300 hover:underline cursor-pointer"
+                >
+                  (إعادة ضبط 0°)
+                </button>
+              )}
+            </div>
+          </div>
+
+          <input
+            type="range"
+            dir="ltr"
+            min="-180"
+            max="180"
+            step="1"
+            value={currentRotate}
+            onChange={(e) => onChange("rotate", parseInt(e.target.value))}
+            className="w-full accent-[#C9A86A] cursor-pointer"
+          />
+
+          {/* أزرار التدوير السريعة */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => onChange("rotate", 0)}
+              className={`text-[10px] py-1 rounded font-bold transition ${
+                currentRotate === 0
+                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
+                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
+              }`}
+            >
+              0° معتدل
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", 90)}
+              className={`text-[10px] py-1 rounded font-bold transition ${
+                currentRotate === 90
+                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
+                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
+              }`}
+            >
+              90° عمودي
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", 180)}
+              className={`text-[10px] py-1 rounded font-bold transition ${
+                currentRotate === 180
+                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
+                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
+              }`}
+            >
+              180° مقلوب
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", -90)}
+              className={`text-[10px] py-1 rounded font-bold transition ${
+                currentRotate === -90
+                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
+                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
+              }`}
+            >
+              -90° عكسي
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-1 pt-1 text-[10px]">
+            <button
+              type="button"
+              onClick={() => onChange("rotate", currentRotate - 15)}
+              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
+            >
+              ⟲ -15°
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", currentRotate - 45)}
+              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
+            >
+              ⟲ -45°
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", currentRotate + 45)}
+              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
+            >
+              +45° ⟳
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("rotate", currentRotate + 15)}
+              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
+            >
+              +15° ⟳
+            </button>
+          </div>
+        </div>
+
+        {/* ================= 2. الحجم والتكبير الكلي ================= */}
+        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
+              <span>🔍</span> التكبير الكلي (تناسبي):
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-emerald-300 font-black text-sm">
                 {Math.round(currentScale * 100)}%
               </span>
               {currentScale !== 1 && (
@@ -1043,11 +1718,12 @@ function ElementControlCard({
                   onClick={() => onChange("scale", 1)}
                   className="text-[10px] text-amber-300 hover:underline cursor-pointer"
                 >
-                  (إعادة ضبط)
+                  (100% طبيعي)
                 </button>
               )}
             </div>
           </div>
+
           <input
             type="range"
             dir="ltr"
@@ -1058,53 +1734,104 @@ function ElementControlCard({
             onChange={(e) => onChange("scale", parseFloat(e.target.value))}
             className="w-full accent-[#C9A86A] cursor-pointer"
           />
-        </div>
 
-        {/* 2. تحكم حر بالأبعاد: العرض (أفقي) والارتفاع (عمودي) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/20 p-2 rounded-xl border border-[#C9A86A]/20">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-amber-200 font-bold">↔️ العرض (أفقي):</span>
-              <span className="font-mono text-emerald-300 font-bold">
-                {Math.round(currentScaleX * 100)}%
-              </span>
-            </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0.3"
-              max="3"
-              step="0.05"
-              value={currentScaleX}
-              onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-amber-200 font-bold">↕️ الارتفاع (عمودي):</span>
-              <span className="font-mono text-emerald-300 font-bold">
-                {Math.round(currentScaleY * 100)}%
-              </span>
-            </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0.3"
-              max="3"
-              step="0.05"
-              value={currentScaleY}
-              onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
+          <div className="grid grid-cols-4 gap-1.5 pt-1 text-[10px]">
+            <button
+              type="button"
+              onClick={() => onChange("scale", 0.75)}
+              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
+            >
+              75% مصغر
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("scale", 1)}
+              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
+            >
+              100% أصلي
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("scale", 1.25)}
+              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
+            >
+              125% مكبر
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("scale", 1.5)}
+              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
+            >
+              150% كبير
+            </button>
           </div>
         </div>
 
-        {/* 3. اتجاه الارتكاز للتكبير */}
-        <div className="space-y-1.5 bg-black/20 p-2 rounded-xl border border-[#C9A86A]/20">
-          <label className="text-[11px] text-[#F5D77F] font-bold block">
-            📍 اتجاه التمدد والارتكاز (من أين يكبر العنصر؟):
+        {/* ================= 3. تحكم حر بالأبعاد (أفقي وعمودي) ================= */}
+        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
+          <div className="text-xs font-black text-[#F5D77F] flex items-center justify-between">
+            <span>📐 أبعاد حرة (تمديد العرض والارتفاع):</span>
+            {(currentScaleX !== 1 || currentScaleY !== 1) && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scaleX", 1);
+                  onChange("scaleY", 1);
+                }}
+                className="text-[10px] text-amber-300 hover:underline cursor-pointer"
+              >
+                (إعادة 100%)
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* تمديد العرض X */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-amber-200 font-bold">↔️ العرض (أفقي):</span>
+                <span className="font-mono text-emerald-300 font-bold">
+                  {Math.round(currentScaleX * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0.3"
+                max="3"
+                step="0.05"
+                value={currentScaleX}
+                onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer"
+              />
+            </div>
+
+            {/* تمديد الارتفاع Y */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-amber-200 font-bold">↕️ الارتفاع (عمودي):</span>
+                <span className="font-mono text-emerald-300 font-bold">
+                  {Math.round(currentScaleY * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0.3"
+                max="3"
+                step="0.05"
+                value={currentScaleY}
+                onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ================= 4. اتجاه الارتكاز والتمدد ================= */}
+        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
+          <label className="text-xs text-[#F5D77F] font-black block">
+            📍 اتجاه الارتكاز (من أين يتمدد أو يدور العنصر؟):
           </label>
           <div className="grid grid-cols-3 gap-1">
             {origins.map((o) => (
@@ -1124,11 +1851,11 @@ function ElementControlCard({
           </div>
         </div>
 
-        {/* 4. الإزاحة الأفقية X (يمين / يسار) مع أزرار خطوة دقيقة */}
-        <div className="space-y-1 bg-black/20 p-2 rounded-xl border border-[#C9A86A]/20">
+        {/* ================= 5. الإزاحة الأفقية X ================= */}
+        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-bold">➡️ إزاحة أفقية (يمين / يسار):</span>
-            <span className="font-mono text-emerald-300 font-bold">
+            <span className="text-[#F5D77F] font-black">➡️ إزاحة أفقية (يمين / يسار):</span>
+            <span className="font-mono text-emerald-300 font-black">
               {currentOffsetX > 0
                 ? `+${currentOffsetX}px (يمين ▶)`
                 : currentOffsetX < 0
@@ -1141,7 +1868,7 @@ function ElementControlCard({
             <button
               type="button"
               onClick={() => onChange("offsetX", currentOffsetX - 2)}
-              className="px-2 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
               title="تحريك يسار"
             >
               ◀ يسار
@@ -1161,7 +1888,7 @@ function ElementControlCard({
             <button
               type="button"
               onClick={() => onChange("offsetX", currentOffsetX + 2)}
-              className="px-2 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
               title="تحريك يمين"
             >
               يمين ▶
@@ -1180,11 +1907,11 @@ function ElementControlCard({
           )}
         </div>
 
-        {/* 5. الإزاحة الرأسية Y (أعلى / أسفل) مع أزرار خطوة دقيقة */}
-        <div className="space-y-1 bg-black/20 p-2 rounded-xl border border-[#C9A86A]/20">
+        {/* ================= 6. الإزاحة الرأسية Y ================= */}
+        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-bold">↕️ إزاحة رأسية (أعلى / أسفل):</span>
-            <span className="font-mono text-emerald-300 font-bold">
+            <span className="text-[#F5D77F] font-black">↕️ إزاحة رأسية (أعلى / أسفل):</span>
+            <span className="font-mono text-emerald-300 font-black">
               {currentOffsetY > 0
                 ? `+${currentOffsetY}px (أسفل ▼)`
                 : currentOffsetY < 0
@@ -1197,7 +1924,7 @@ function ElementControlCard({
             <button
               type="button"
               onClick={() => onChange("offsetY", currentOffsetY - 2)}
-              className="px-2 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
               title="تحريك لأعلى"
             >
               ▲ أعلى
@@ -1217,7 +1944,7 @@ function ElementControlCard({
             <button
               type="button"
               onClick={() => onChange("offsetY", currentOffsetY + 2)}
-              className="px-2 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
               title="تحريك لأسفل"
             >
               أسفل ▼
@@ -1236,19 +1963,19 @@ function ElementControlCard({
           )}
         </div>
 
-        {/* 6. نطاق الظهور */}
-        <div className="pt-1">
-          <label className="text-xs text-[#F5D77F] font-bold block mb-1">
-            👁️ نطاق الظهور:
+        {/* ================= 7. نطاق الظهور والصلاحية ================= */}
+        <div className="space-y-1.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 md:col-span-2">
+          <label className="text-xs text-[#F5D77F] font-black block">
+            👁️ نطاق ظهور هذا العنصر:
           </label>
           <select
             value={config?.visibility || "all"}
             onChange={(e) => onChange("visibility", e.target.value)}
-            className="w-full bg-[#06281D] border border-[#C9A86A] rounded-lg text-xs p-2 text-white font-bold"
+            className="w-full bg-[#06281D] border border-[#C9A86A] rounded-xl text-xs p-2 text-white font-bold"
           >
-            <option value="all">الكل (إدارة ومندوب ومجهز)</option>
+            <option value="all">الكل (يظهر عند الإدارة والمندوب والمجهز)</option>
             <option value="admin">الإدارة فقط</option>
-            <option value="admin_mandoub">الإدارة والمندوب</option>
+            <option value="admin_mandoub">الإدارة والمندوب فقط</option>
             <option value="admin_mandoub_preparer">الإدارة والمندوب والمجهز</option>
           </select>
         </div>
