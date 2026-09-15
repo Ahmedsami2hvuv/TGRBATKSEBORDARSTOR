@@ -21,42 +21,43 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const [shopPendingCount, storePendingCount, latestShop, latestStore, settingsRow] = await withEphemeralCache(
-    "notif:admin:pending",
-    3000,
-    () =>
-      Promise.all([
-        prisma.order.count({ where: { status: "pending" } }),
-        prisma.companyPreparerShoppingDraft.count({
-          where: {
-            status: "draft",
-            preparerId: null
-          }
-        }),
-        prisma.order.findFirst({
-          where: { status: "pending" },
-          orderBy: { orderNumber: "desc" },
-          select: {
-            orderNumber: true,
-            orderType: true,
-            orderNoteTime: true,
-            orderSubtotal: true,
-            createdAt: true,
-            shop: { select: { name: true } },
-            customerRegion: { select: { name: true } },
-          },
-        }),
-        prisma.companyPreparerShoppingDraft.findFirst({
-          where: { status: "draft", preparerId: null },
-          orderBy: { createdAt: "desc" },
-          include: { customerRegion: { select: { name: true } } }
-        }),
-        getOrCreateNotificationSettings(),
-      ]),
-  );
-  const settings = audienceSettings(settingsRow, "admin");
+  try {
+    const [shopPendingCount, storePendingCount, latestShop, latestStore, settingsRow] = await withEphemeralCache(
+      "notif:admin:pending",
+      3000,
+      () =>
+        Promise.all([
+          prisma.order.count({ where: { status: "pending" } }),
+          prisma.companyPreparerShoppingDraft.count({
+            where: {
+              status: "draft",
+              preparerId: null
+            }
+          }),
+          prisma.order.findFirst({
+            where: { status: "pending" },
+            orderBy: { orderNumber: "desc" },
+            select: {
+              orderNumber: true,
+              orderType: true,
+              orderNoteTime: true,
+              orderSubtotal: true,
+              createdAt: true,
+              shop: { select: { name: true } },
+              customerRegion: { select: { name: true } },
+            },
+          }),
+          prisma.companyPreparerShoppingDraft.findFirst({
+            where: { status: "draft", preparerId: null },
+            orderBy: { createdAt: "desc" },
+            include: { customerRegion: { select: { name: true } } }
+          }),
+          getOrCreateNotificationSettings(),
+        ]),
+    );
+    const settings = audienceSettings(settingsRow, "admin");
 
-  const totalPending = shopPendingCount + storePendingCount;
+    const totalPending = shopPendingCount + storePendingCount;
   let latestDetails: any = null;
   let latestOrderNum = 0;
 
@@ -84,10 +85,19 @@ export async function GET(request: NextRequest) {
     };
   }
 
-  return NextResponse.json({
-    pendingCount: totalPending,
-    latestOrderNumber: latestOrderNum,
-    latestOrderDetails: latestDetails,
-    settings,
-  });
+    return NextResponse.json({
+      pendingCount: totalPending,
+      latestOrderNumber: latestOrderNum,
+      latestOrderDetails: latestDetails,
+      settings,
+    });
+  } catch (error) {
+    console.error("[Admin Pending API Error]", error);
+    return NextResponse.json({
+      pendingCount: 0,
+      latestOrderNumber: 0,
+      latestOrderDetails: null,
+      settings: {},
+    });
+  }
 }

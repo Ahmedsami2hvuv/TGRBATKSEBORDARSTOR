@@ -4,18 +4,15 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 let datasourceUrl = process.env.DATABASE_URL;
 
-if (datasourceUrl && process.env.NODE_ENV === "production") {
+if (datasourceUrl) {
   try {
     const url = new URL(datasourceUrl);
-    // Limit connections per lambda to 5 to prevent pool exhaustion while allowing concurrent queries
-    if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "5");
-    }
-    if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "20");
-    }
-    // Enable pgbouncer mode if using the Supabase transaction pooler (port 6543)
-    if (url.port === "6543" && !url.searchParams.has("pgbouncer")) {
+    // رفع حد الاتصالات وتفادي التعليق في بيئة سيرفرلس
+    url.searchParams.set("connection_limit", "10");
+    url.searchParams.set("pool_timeout", "15");
+    
+    // تفعيل pgbouncer عند استخدام بورت 6543 الخاص بـ Supabase Pooler
+    if (url.port === "6543" || url.hostname.includes("pooler.supabase.com")) {
       url.searchParams.set("pgbouncer", "true");
     }
     datasourceUrl = url.toString();

@@ -89,7 +89,16 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
 const DESIGNER_SETTING_TARGET = "global";
 const DESIGNER_SETTING_SECTION = "order_cards_designer";
 
+let cachedConfig: OrderCardDesignerConfig | null = null;
+let lastFetchTime = 0;
+const CACHE_TTL_MS = 60 * 1000; // دقيقة واحدة
+
 export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerConfig> {
+  const now = Date.now();
+  if (cachedConfig && now - lastFetchTime < CACHE_TTL_MS) {
+    return cachedConfig;
+  }
+
   try {
     const row = await prisma.uISystemSetting.findUnique({
       where: {
@@ -101,11 +110,13 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
     });
 
     if (!row || !row.config) {
+      cachedConfig = DEFAULT_DESIGNER_CONFIG;
+      lastFetchTime = now;
       return DEFAULT_DESIGNER_CONFIG;
     }
 
     const saved = row.config as any;
-    return {
+    const result: OrderCardDesignerConfig = {
       shopCard: {
         ...DEFAULT_DESIGNER_CONFIG.shopCard,
         ...(saved.shopCard || {}),
@@ -116,8 +127,13 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
       },
       waButtonsConfig: saved.waButtonsConfig || {},
     };
+
+    cachedConfig = result;
+    lastFetchTime = now;
+    return result;
   } catch (error) {
     console.error("Error reading order cards designer config:", error);
+    if (cachedConfig) return cachedConfig;
     return DEFAULT_DESIGNER_CONFIG;
   }
 }
@@ -141,6 +157,9 @@ export async function saveOrderCardsDesignerConfig(
         ...(config.waButtonsConfig || {}),
       },
     };
+
+    cachedConfig = merged;
+    lastFetchTime = Date.now();
 
     await prisma.uISystemSetting.upsert({
       where: {
