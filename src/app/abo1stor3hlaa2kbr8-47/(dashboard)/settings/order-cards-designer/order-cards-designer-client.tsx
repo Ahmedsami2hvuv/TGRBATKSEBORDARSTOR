@@ -44,7 +44,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
   // إعدادات المعاينة الحية
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
-  const [previewZoom, setPreviewZoom] = useState<number>(1);
+  const [previewZoom, setPreviewZoom] = useState<number>(0.85);
+  const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
+  const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
 
   // مراجع للتحكم بالحفظ التلقائي
   const isFirstMount = useRef(true);
@@ -854,92 +856,135 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. قسم المعاينة الحية المباشرة للكارت (Interactive Live Preview Studio) */}
+      {/* تخطيط الاستوديو المتجاوب (لوحة المعاينة الثابتة + لوحة الإعدادات المتحركة) */}
       {/* ========================================================================= */}
-      <div className="bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#C9A86A]/40 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">👁️</span>
-            <div>
-              <h3 className="text-sm sm:text-base font-black text-[#F5D77F]">
-                {activeTab === "shop_card" && "معاينة حية مباشرة: كارت المحل (المرسل)"}
-                {activeTab === "customer_card" && "معاينة حية مباشرة: كارت الزبون (المستلم)"}
-                {activeTab === "wa_buttons" && "معاينة حية مباشرة: أزرار الواتساب المخصصة"}
-              </h3>
-              <p className="text-[10px] sm:text-xs text-emerald-200">
-                انقر على أي زر أو على إطار الكارت لتعديل أبعاده وخلفيته مباشرة.
-              </p>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* ========================================================================= */}
+        {/* 1. قسم المعاينة الحية المباشرة للكارت (Interactive Live Preview Studio) */}
+        {/* ========================================================================= */}
+        <div
+          className={`lg:col-span-5 xl:col-span-5 transition-all ${
+            isStickyPreview ? "sticky top-2 z-20" : "relative"
+          }`}
+        >
+          <div className="bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-[24px] p-3.5 sm:p-5 shadow-2xl space-y-3 backdrop-blur-md">
+            <div className="flex flex-col gap-2.5 border-b border-[#C9A86A]/40 pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg sm:text-xl shrink-0">👁️</span>
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] flex items-center gap-1.5 truncate">
+                      <span>معاينة حية مباشرة</span>
+                      {isStickyPreview && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] border border-amber-400/40 shrink-0">
+                          📌 ثابتة
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[10px] text-emerald-200 truncate">
+                      ثابتة في مكانها أثناء تمرير الإعدادات بالأسفل
+                    </p>
+                  </div>
+                </div>
 
-          {/* أزرار ضبط شاشة المعاينة */}
-          <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-            <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setPreviewMode("mobile")}
-                className={`px-2.5 py-1 rounded-lg transition ${
-                  previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
-                }`}
-              >
-                📱 جوال
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewMode("desktop")}
-                className={`px-2.5 py-1 rounded-lg transition ${
-                  previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
-                }`}
-              >
-                💻 كمبيوتر
-              </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* زر تثبيت/إلغاء تثبيت المعاينة */}
+                  <button
+                    type="button"
+                    onClick={() => setIsStickyPreview((v) => !v)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-black border transition flex items-center gap-1 cursor-pointer ${
+                      isStickyPreview
+                        ? "bg-[#C9A86A] text-[#06281D] border-[#F5D77F] shadow"
+                        : "bg-[#0A3D2E] text-white/80 border-[#C9A86A]/50 hover:text-white"
+                    }`}
+                    title={isStickyPreview ? "إلغاء التثبيت" : "تثبيت المعاينة في الأعلى"}
+                  >
+                    <span>{isStickyPreview ? "📌 مثبتة" : "🔓 عادية"}</span>
+                  </button>
+
+                  {/* زر طي/توسيع للموبايل */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCompactPreview((v) => !v)}
+                    className="lg:hidden px-2.5 py-1 rounded-xl text-xs font-black bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A]/50 hover:bg-[#0F4D3A] transition cursor-pointer"
+                    title="طي أو توسيع المعاينة"
+                  >
+                    {isCompactPreview ? "🔽 إظهار" : "🔼 تصغير"}
+                  </button>
+                </div>
+              </div>
+
+              {/* أزرار ضبط شاشة المعاينة والزووم */}
+              {!isCompactPreview && (
+                <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("mobile")}
+                      className={`px-2 py-0.5 rounded-lg transition ${
+                        previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
+                      }`}
+                    >
+                      📱 جوال
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("desktop")}
+                      className={`px-2 py-0.5 rounded-lg transition ${
+                        previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80 hover:text-white"
+                      }`}
+                    >
+                      💻 كمبيوتر
+                    </button>
+                  </div>
+
+                  {/* زووم المعاينة */}
+                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(0.7)}
+                      className={`px-1.5 py-0.5 rounded-lg transition ${
+                        previewZoom === 0.7 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
+                      }`}
+                    >
+                      70%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(0.85)}
+                      className={`px-1.5 py-0.5 rounded-lg transition ${
+                        previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
+                      }`}
+                    >
+                      85%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(1)}
+                      className={`px-1.5 py-0.5 rounded-lg transition ${
+                        previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
+                      }`}
+                    >
+                      100%
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* زووم المعاينة */}
-            <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-xl p-0.5 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setPreviewZoom(0.85)}
-                className={`px-2 py-1 rounded-lg transition ${
-                  previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                }`}
-              >
-                85%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom(1)}
-                className={`px-2 py-1 rounded-lg transition ${
-                  previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                }`}
-              >
-                100%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom(1.15)}
-                className={`px-2 py-1 rounded-lg transition ${
-                  previewZoom === 1.15 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"
-                }`}
-              >
-                115%
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* حاوية المعاينة مع تطبيق getCardContainerStyle الشامل */}
-        <div className="flex items-center justify-center p-2 sm:p-4 bg-black/40 rounded-2xl border border-[#C9A86A]/20 overflow-x-auto min-h-[320px]">
-          <div
-            className="transition-all duration-150 origin-top"
-            style={{
-              width: previewMode === "mobile" ? "420px" : "100%",
-              maxWidth: "100%",
-              transform: `scale(${previewZoom})`,
-            }}
-          >
-            {/* 1. كارت المحل في المعاينة */}
-            {activeTab === "shop_card" && (
+            {/* حاوية المعاينة مع تطبيق getCardContainerStyle الشامل */}
+            {!isCompactPreview && (
+              <div className="flex items-center justify-center p-2 bg-black/50 rounded-2xl border border-[#C9A86A]/20 overflow-x-auto overflow-y-auto max-h-[38vh] sm:max-h-[48vh] lg:max-h-[calc(100vh-12rem)]">
+                <div
+                  className="transition-all duration-150 origin-top"
+                  style={{
+                    width: previewMode === "mobile" ? "420px" : "100%",
+                    maxWidth: "100%",
+                    transform: `scale(${previewZoom})`,
+                  }}
+                >
+                  {/* 1. كارت المحل في المعاينة */}
+                  {activeTab === "shop_card" && (
               <div
                 onClick={() => !selectedElementId && setSelectedElementId("shop_frame")}
                 className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto ${
@@ -1449,12 +1494,15 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             )}
           </div>
         </div>
-      </div>
+      )}
+    </div>
+  </div>
 
-      {/* ========================================================================= */}
-      {/* 2. شاشة التعديل الفردية المخصصة (Dedicated Inspector) */}
-      {/* ========================================================================= */}
-      {selectedElementId && currentSelectedDef ? (
+  {/* ========================================================================= */}
+  {/* 2. قسم الإعدادات وأدوات التحكم (المفتش المخصص / قائمة العناصر) */}
+  {/* ========================================================================= */}
+  <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+    {selectedElementId && currentSelectedDef ? (
         <div className="space-y-4 bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           
           {/* شريط أدوات الانتقال والرجوع */}
@@ -1681,6 +1729,8 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
