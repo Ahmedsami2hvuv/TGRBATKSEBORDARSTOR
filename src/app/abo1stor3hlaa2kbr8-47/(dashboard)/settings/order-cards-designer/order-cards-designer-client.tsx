@@ -940,50 +940,78 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           )}
 
-          {/* التبويبات الرئيسية */}
-          <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("shop_card");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "shop_card"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              🏬 كارت المحل (المرسل)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("customer_card");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "customer_card"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              👤 كارت الزبون (المستلم)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("wa_buttons");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "wa_buttons"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              💬 أزرار الواتساب المخصصة
-            </button>
+          {/* التبويبات الرئيسية + زر إعادة الضبط المصنعي */}
+          <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto flex-wrap">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("shop_card");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "shop_card"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                🏬 كارت المحل (المرسل)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("customer_card");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "customer_card"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                👤 كارت الزبون (المستلم)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("wa_buttons");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "wa_buttons"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                💬 أزرار الواتساب المخصصة
+              </button>
+            </div>
+
+            {/* زر إعادة ضبط الكارت بالكامل للوضع المصنعي */}
+            {activeTab !== "wa_buttons" && (
+              <button
+                type="button"
+                onClick={() => {
+                  const targetName = activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون";
+                  if (!confirm(`هل أنت متأكد من إعادة ضبط ${targetName} بالكامل للوضع المصنعي الأصلي ومسح كل التكبيرات والإزاحات المشوهة؟`)) return;
+                  if (activeTab === "shop_card") {
+                    setConfig((prev) => ({
+                      ...prev,
+                      shopCard: { ...DEFAULT_DESIGNER_CONFIG.shopCard },
+                    }));
+                  } else {
+                    setConfig((prev) => ({
+                      ...prev,
+                      customerCard: { ...DEFAULT_DESIGNER_CONFIG.customerCard },
+                    }));
+                  }
+                }}
+                className="px-3 py-1.5 bg-rose-950/90 border border-rose-500/70 text-rose-200 rounded-xl text-xs font-black hover:bg-rose-900 transition hover:scale-105 active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                title="إعادة الكارت للوضع المصنعي الأصلي المعتدل 100%"
+              >
+                <span>🔄</span> إعادة ضبط الكارت مصنعياً
+              </button>
+            )}
           </div>
         </>
       )}
@@ -3472,12 +3500,21 @@ function OrderCardsLivePreview({
                   style={getElementStyle(custCustom?.headerCustomerInfo)}
                   title="انقر لتعديل كبسولة عنوان الزبون"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.headerCustomerInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
-                    alt="الزبون"
-                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
-                  />
+                  {custCustom?.headerCustomerInfo?.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={custCustom.headerCustomerInfo.imageUrl}
+                      alt="الزبون"
+                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                    />
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg pointer-events-none">
+                      <span className="text-xs sm:text-sm">👤</span>
+                      <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                        الزبون (المستلم)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
@@ -3673,12 +3710,21 @@ function OrderCardsLivePreview({
                   style={getElementStyle(custCustom?.headerDoorPhoto)}
                   title="انقر لتعديل كبسولة عنوان صورة باب الزبون"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.headerDoorPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                    alt="صورة باب الزبون"
-                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
-                  />
+                  {custCustom?.headerDoorPhoto?.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={custCustom.headerDoorPhoto.imageUrl}
+                      alt="صورة باب الزبون"
+                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                    />
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg pointer-events-none">
+                      <span className="text-xs sm:text-sm">🚪</span>
+                      <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                        صورة باب الزبون
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div

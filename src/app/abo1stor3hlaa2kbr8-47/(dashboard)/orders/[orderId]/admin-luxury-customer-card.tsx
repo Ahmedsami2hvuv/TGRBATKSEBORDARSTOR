@@ -159,12 +159,21 @@ export function AdminLuxuryCustomerCard({
             <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
               {/* الرأس: كبسولة الزبون (المستلم) */}
               <div className="flex justify-start" style={getElementStyle(custCustom?.headerCustomerInfo)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={custCustom?.headerCustomerInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
-                  alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
-                />
+                {custCustom?.headerCustomerInfo?.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={custCustom.headerCustomerInfo.imageUrl}
+                    alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
+                  />
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
+                    <span className="text-xs sm:text-sm">👤</span>
+                    <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                      {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
@@ -340,12 +349,21 @@ export function AdminLuxuryCustomerCard({
             <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
               {/* الرأس: كبسولة صورة باب الزبون */}
               <div className="flex justify-center w-full" style={getElementStyle(custCustom?.headerDoorPhoto)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={custCustom?.headerDoorPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                  alt="صورة الباب"
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
-                />
+                {custCustom?.headerDoorPhoto?.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={custCustom.headerDoorPhoto.imageUrl}
+                    alt="صورة الباب"
+                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
+                  />
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
+                    <span className="text-xs sm:text-sm">🚪</span>
+                    <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                      صورة باب الزبون
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* مساحة عرض صورة باب الزبون أو الـ Placeholder */}
