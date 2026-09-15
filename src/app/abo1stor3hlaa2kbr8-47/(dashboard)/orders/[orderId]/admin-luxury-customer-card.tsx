@@ -153,7 +153,7 @@ export function AdminLuxuryCustomerCard({
           style={getCardContainerStyle(custCustom?.frameConfig, frameBg)}
         >
           {/* محتوى الكارت: عمودين متجاورين (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
             
             {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات الزبون + موقع الزبون + أزرار التواصل ================= */}
             <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
@@ -171,47 +171,57 @@ export function AdminLuxuryCustomerCard({
               <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                 {/* سطر 1: اسم الزبون */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                    alt="اسم الزبون"
-                    style={getElementStyle(custCustom?.iconCustomerName)}
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                  />
-                  <span
-                    style={getElementStyle(custCustom?.textCustomerName)}
-                    className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                  >
-                    {customerName || order.customer?.name || "الزبون"}
-                  </span>
+                  <div className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                      alt="اسم الزبون"
+                      style={getElementStyle(custCustom?.iconCustomerName)}
+                      className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <span
+                      style={getElementStyle(custCustom?.textCustomerName)}
+                      className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                    >
+                      {customerName || order.customer?.name || "الزبون"}
+                    </span>
+                  </div>
                 </div>
 
                 {/* سطر 2: اسم المنطقة */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                    alt="المنطقة"
-                    style={getElementStyle(custCustom?.iconRegion)}
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                  />
-                  <span
-                    style={getElementStyle(custCustom?.textRegion)}
-                    className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                  >
-                    {order.customerRegion?.name || "—"}
-                  </span>
+                  <div className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                      alt="المنطقة"
+                      style={getElementStyle(custCustom?.iconRegion)}
+                      className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <span
+                      style={getElementStyle(custCustom?.textRegion)}
+                      className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                    >
+                      {order.customerRegion?.name || "—"}
+                    </span>
+                  </div>
                 </div>
 
                 {/* سطر 3: رقم هاتف الزبون وتفاصيله التفاعلية */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                    alt="رقم الهاتف"
-                    style={getElementStyle(custCustom?.iconPhone)}
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                  />
+                  <div className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                      alt="رقم الهاتف"
+                      style={getElementStyle(custCustom?.iconPhone)}
+                      className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                    />
+                  </div>
                   <div style={getElementStyle(custCustom?.textPhone)} className="min-w-0 inline-block transition-transform">
                     {order.customerPhone ? (
                       <AdminCustomerPhoneInteractive
@@ -339,7 +349,7 @@ export function AdminLuxuryCustomerCard({
               </div>
 
               {/* مساحة عرض صورة باب الزبون أو الـ Placeholder */}
-              <div className="w-full flex flex-col items-center justify-center my-auto" style={getElementStyle(custCustom?.placeholderNoPhoto)}>
+              <div className="w-full flex items-center justify-center py-0.5" style={getElementStyle(custCustom?.placeholderNoPhoto)}>
                 {imgCustomerDoor ? (
                   <div className="w-full max-w-[170px] sm:max-w-[240px] md:max-w-[280px] flex flex-col items-center gap-1">
                     <div className="w-full aspect-[4/3] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
@@ -364,7 +374,7 @@ export function AdminLuxuryCustomerCard({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5">
+                  <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
@@ -373,21 +383,21 @@ export function AdminLuxuryCustomerCard({
                     />
                   </div>
                 )}
-
-                {/* أزرار مسح صورة الباب إن وجدت */}
-                {imgCustomerDoor && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
-                    >
-                      {deleting ? "جاري المسح..." : "🗑️ مسح"}
-                    </button>
-                  </div>
-                )}
               </div>
+
+              {/* أزرار مسح صورة الباب إن وجدت */}
+              {imgCustomerDoor && (
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
+                  >
+                    {deleting ? "جاري المسح..." : "🗑️ مسح"}
+                  </button>
+                </div>
+              )}
 
               {/* أزرار رفع صورة باب الزبون (كاميرا + معرض) */}
               <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">

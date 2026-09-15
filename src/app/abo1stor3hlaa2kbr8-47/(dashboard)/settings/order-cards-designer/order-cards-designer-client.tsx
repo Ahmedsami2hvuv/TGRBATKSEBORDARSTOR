@@ -2187,6 +2187,18 @@ function DedicatedElementInspector({
     },
   ];
 
+  const handleResetElementAll = () => {
+    onChange("scale", 1);
+    onChange("scaleX", 1);
+    onChange("scaleY", 1);
+    onChange("rotate", 0);
+    onChange("offsetX", 0);
+    onChange("offsetY", 0);
+    onChange("width", 0);
+    onChange("height", 0);
+    onChange("transformOrigin", "center");
+  };
+
   return (
     <div className="space-y-4">
       {/* صندوق معاينة العنصر المصغرة مع عنوانه */}
@@ -2225,8 +2237,8 @@ function DedicatedElementInspector({
           </div>
         </div>
 
-        {!elementDef.isText && (
-          <div className="flex items-center gap-2 self-stretch sm:self-auto">
+        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+          {!elementDef.isText && (
             <button
               type="button"
               onClick={onUploadImg}
@@ -2234,17 +2246,25 @@ function DedicatedElementInspector({
             >
               <span>📤</span> رفع صورة جديدة
             </button>
-            {config?.imageUrl && (
-              <button
-                type="button"
-                onClick={() => onChange("imageUrl", "")}
-                className="px-2.5 py-1.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
-              >
-                استعادة الأصلية
-              </button>
-            )}
-          </div>
-        )}
+          )}
+          {config?.imageUrl && !elementDef.isText && (
+            <button
+              type="button"
+              onClick={() => onChange("imageUrl", "")}
+              className="px-2.5 py-1.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+            >
+              استعادة الأصلية
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleResetElementAll}
+            className="px-3 py-1.5 bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 rounded-xl text-xs font-black hover:bg-emerald-900 hover:text-white transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shadow-sm"
+            title="إعادة ضبط الحجم والتدوير والموقع للوضع الافتراضي 100%"
+          >
+            <span>🔄</span> ضبط افتراضي للعنصر
+          </button>
+        </div>
       </div>
 
       {/* ========================================================================= */}
