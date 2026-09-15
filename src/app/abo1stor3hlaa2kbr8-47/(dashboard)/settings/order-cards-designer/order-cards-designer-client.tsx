@@ -157,7 +157,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
           </h1>
           <p className="text-xs sm:text-sm text-emerald-200 mt-1 font-bold">
-            تخصيص الخلفيات، رفع صور بديلة (تحويل تلقائي لـ WEBP)، تكبير وتعريض وتحريك الأزرار يمنة ويسرة، وتحديد نطاق الظهور.
+            قص الفراغات الزائدة تلقائياً ✂️، تحويل فوري لـ WEBP ⚡، تصغير الحجم، وتحريك وتكبير الأزرار يمنة ويسرة مع التكييش الفوري.
           </p>
         </div>
 
@@ -173,7 +173,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
       {uploadingKey && (
         <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 text-center text-xs font-bold text-amber-300 animate-pulse">
-          ⏳ جاري ضغط وتحويل الصورة إلى صيغة WEBP الملكية ورفعها للسيرفر...
+          ⏳ جاري قص الفراغات والشفافية المحيطة تلقائياً ✂️، وضغط وتحويل الصورة إلى صيغة WEBP ورفعها للسيرفر...
         </div>
       )}
 

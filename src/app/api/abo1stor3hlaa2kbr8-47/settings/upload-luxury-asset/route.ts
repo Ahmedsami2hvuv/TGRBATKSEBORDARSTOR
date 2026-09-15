@@ -17,11 +17,19 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // تحويل الصورة فوراً إلى صيغة WEBP عالية الجودة مع شفافية
+    // تحويل الصورة فوراً إلى صيغة WEBP مع قص كافة الحواف الشفافة أو الفارغة الزائدة
     sharp.cache(false);
-    const webpBuffer = await sharp(buffer)
-      .rotate()
-      .webp({ quality: 92, effort: 4 })
+    let imagePipeline = sharp(buffer).rotate();
+    
+    // محاولة القص التلقائي للحواف الشفافة والفارغة المحيطة بالأيقونة
+    try {
+      imagePipeline = imagePipeline.trim();
+    } catch (trimErr) {
+      console.warn("Trim fallback to regular pipeline:", trimErr);
+    }
+
+    const webpBuffer = await imagePipeline
+      .webp({ quality: 90, effort: 4 })
       .toBuffer();
 
     const timestamp = Date.now();
