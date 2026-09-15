@@ -125,46 +125,30 @@ export function AdminLuxuryCustomerCard({
         }}
       />
 
-      {/* زر طي وتوسيع كارت الزبون */}
-      <div className="flex items-center justify-between px-2 mb-1.5">
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border border-[#C9A86A] text-[11px] sm:text-xs font-black text-[#F5D77F] px-3.5 py-1 rounded-xl shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          <span>
-            {isExpanded
-              ? isDoubleRoute ? "▲ طي كارت المرسل (الوجهة الأولى)" : "▲ طي كارت الزبون (المستلم)"
-              : isDoubleRoute ? "▼ تفاصيل كارت المرسل (الوجهة الأولى)" : "▼ تفاصيل كارت الزبون (المستلم)"}
-          </span>
-        </button>
-
-        {pending && (
-          <span className="text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1">
-            <span>⏳</span> جاري رفع صورة الباب...
-          </span>
-        )}
-      </div>
-
       {/* الهيكل الرئيسي لكارت الزبون بالإطار الفاخر */}
-      {isExpanded && (
-        <div
-          className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto"
-          style={getCardContainerStyle(custCustom?.frameConfig, frameBg)}
-        >
-          {/* محتوى الكارت: عمودين متجاورين (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
+      <div
+        className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto"
+        style={getCardContainerStyle(custCustom?.frameConfig, frameBg)}
+      >
+        {isExpanded ? (
+          /* محتوى الكارت المفتوح: عمودين متجاورين (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */
           <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
             
             {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات الزبون + موقع الزبون + أزرار التواصل ================= */}
             <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-              {/* الرأس: كبسولة الزبون (المستلم) */}
-              <div className="flex justify-start" style={getElementStyle(custCustom?.headerCustomerInfo)}>
+              {/* الرأس: كبسولة الزبون (المستلم) - النقر عليها يطوي الكارت */}
+              <div
+                onClick={() => setIsExpanded(false)}
+                className="flex justify-start cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                style={getElementStyle(custCustom?.headerCustomerInfo)}
+                title="انقر لطي معلومات الزبون"
+              >
                 {custCustom?.headerCustomerInfo?.imageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={custCustom.headerCustomerInfo.imageUrl}
                     alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
+                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform pointer-events-none"
                   />
                 ) : (
                   <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
@@ -459,8 +443,88 @@ export function AdminLuxuryCustomerCard({
             </div>
 
           </div>
-        </div>
-      )}
+        ) : (
+          /* ================= محتوى الكارت المطوي: سطر مصغر أنيق وفخم ================= */
+          <div className="flex items-center justify-between gap-2 min-w-0 relative z-10">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+              {/* الرأس: كبسولة الزبون (المستلم) - النقر عليها يفتح الكارت */}
+              <div
+                onClick={() => setIsExpanded(true)}
+                className="flex justify-start cursor-pointer hover:scale-105 active:scale-95 transition-transform shrink-0"
+                style={getElementStyle(custCustom?.headerCustomerInfo)}
+                title="انقر لعرض تفاصيل الزبون"
+              >
+                {custCustom?.headerCustomerInfo?.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={custCustom.headerCustomerInfo.imageUrl}
+                    alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                    className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-md select-none transition-transform pointer-events-none"
+                  />
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
+                    <span className="text-xs">👤</span>
+                    <span className="font-black text-xs text-[#F5D77F] drop-shadow-md">
+                      {isDoubleRoute ? "المرسل" : "الزبون"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* تفاصيل مختصرة في السطر المطوي */}
+              <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => setIsExpanded(true)}>
+                <span className="font-black text-xs sm:text-sm text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  {customerName || order.customer?.name || "الزبون"}
+                </span>
+                {order.customerRegion?.name && (
+                  <span className="text-[11px] sm:text-xs text-[#FFF8F0]/80 truncate hidden sm:inline">
+                    • {order.customerRegion.name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* أزرار سريعة مصغرة إذا كان هناك هاتف وموقع */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {cleanPhone && (
+                <a
+                  href={telHref(cleanPhone)}
+                  className="p-1.5 bg-[#0F4D3A] hover:bg-[#164E3D] border border-[#C9A86A]/60 rounded-xl text-emerald-300 text-xs shadow-md transition hover:scale-110 active:scale-95"
+                  title="اتصال سريع"
+                >
+                  📞
+                </a>
+              )}
+              {hasLocation && (
+                <a
+                  href={order.customerLocationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 bg-[#0F4D3A] hover:bg-[#164E3D] border border-[#C9A86A]/60 rounded-xl text-amber-300 text-xs shadow-md transition hover:scale-110 active:scale-95"
+                  title="موقع الزبون"
+                >
+                  📍
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="text-[#F5D77F] text-xs font-black p-1 hover:scale-110 transition cursor-pointer"
+                title="توسيع الكارت"
+              >
+                ▼
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* مؤشر رفع صورة الباب إذا كان هناك رفع جاري */}
+        {pending && (
+          <div className="absolute top-2 left-2 z-30 bg-black/80 px-2.5 py-1 rounded-xl border border-amber-400 text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1 shadow-lg">
+            <span>⏳</span> جاري رفع صورة الباب...
+          </div>
+        )}
+      </div>
     </div>
   );
 }
