@@ -2231,68 +2231,38 @@ function DedicatedElementInspector({
 
   return (
     <div className="space-y-4">
-      {/* صندوق معاينة العنصر المصغرة مع عنوانه */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-20 h-16 sm:w-24 sm:h-18 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1.5 relative shadow-inner">
-            {elementDef.isText ? (
-              <span
-                style={previewStyle}
-                className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block text-center"
-              >
-                {elementDef.previewTextSample || "نص ملكي"}
-              </span>
-            ) : currentImg ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={currentImg}
-                alt={elementDef.title}
-                style={previewStyle}
-                className="max-h-full max-w-full object-contain transition-transform duration-75"
-              />
-            ) : (
-              <span className="text-xs text-white/50">أصلي</span>
-            )}
-          </div>
+      {/* صندوق معلومات العنصر المختار مع أزرار الإجراءات بدون معاينة مصغرة وبدون نصوص تعليمية زائدة */}
+      <div className="flex items-center justify-between gap-2 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-2.5 sm:p-3">
+        <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] flex items-center gap-1.5 truncate">
+          <span>✏️</span> {elementDef.title}
+        </h4>
 
-          <div>
-            <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-1.5">
-              <span>✏️</span> {elementDef.title}
-            </h4>
-            <p className="text-[11px] text-emerald-200 mt-0.5">
-              {elementDef.isText
-                ? "تعديل حجم، تدوير، وإزاحة هذا النص بشكل مستقل تماماً"
-                : "تعديل أبعاد وتدوير وإزاحة هذا الزر مع معاينة فورية"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+        <div className="flex items-center gap-1.5 shrink-0">
           {!elementDef.isText && (
             <button
               type="button"
               onClick={onUploadImg}
-              className="flex-1 sm:flex-initial px-3 py-1.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1"
+              className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-[11px] font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1"
             >
-              <span>📤</span> رفع صورة جديدة
+              <span>📤</span> رفع صورة
             </button>
           )}
           {config?.imageUrl && !elementDef.isText && (
             <button
               type="button"
               onClick={() => onChange("imageUrl", "")}
-              className="px-2.5 py-1.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+              className="px-2 py-1 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-[11px] font-bold hover:bg-rose-900/80 transition cursor-pointer"
             >
-              استعادة الأصلية
+              استعادة
             </button>
           )}
           <button
             type="button"
             onClick={handleResetElementAll}
-            className="px-3 py-1.5 bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 rounded-xl text-xs font-black hover:bg-emerald-900 hover:text-white transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shadow-sm"
+            className="px-2.5 py-1 bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 rounded-xl text-[11px] font-black hover:bg-emerald-900 hover:text-white transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shadow-sm"
             title="إعادة ضبط الحجم والتدوير والموقع للوضع الافتراضي 100%"
           >
-            <span>🔄</span> ضبط افتراضي للعنصر
+            <span>🔄</span> ضبط افتراضي
           </button>
         </div>
       </div>
@@ -2300,23 +2270,23 @@ function DedicatedElementInspector({
       {/* ========================================================================= */}
       {/* وحدة التحكم الاتجاهية الشاملة والدقيقة (Directional D-Pad Controller 🕹️) */}
       {/* ========================================================================= */}
-      <div className="bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-3 sm:p-4 shadow-xl">
-        <div className="flex items-center justify-between text-xs font-black text-[#F5D77F] mb-3 border-b border-[#C9A86A]/20 pb-1.5">
-          <span className="flex items-center gap-1.5">
-            <span>🕹️</span> وحدة التحكم المباشر بالاتجاهات (فوق، أسفل، يمين، يسار، زائد، ناقص):
+      <div className="bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-2.5 sm:p-3.5 shadow-xl">
+        <div className="flex items-center justify-between text-xs font-black text-[#F5D77F] mb-2.5 border-b border-[#C9A86A]/20 pb-1.5">
+          <span className="flex items-center gap-1">
+            <span>🕹️</span> الاتجاهات:
           </span>
           <span className="text-[10px] text-emerald-300 font-mono bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
             X: {currentOffsetX}px | Y: {currentOffsetY}px
           </span>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {/* أزرار الاتجاهات الخمسة مصفوفة بجانب بعضها أفقياً بشكل مدمج وأنيق */}
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full max-w-md mx-auto" dir="ltr">
+        <div className="flex flex-col gap-2.5">
+          {/* أزرار الاتجاهات الخمسة مصفوفة بجانب بعضها أفقياً */}
+          <div className="grid grid-cols-5 gap-1.5 w-full max-w-md mx-auto" dir="ltr">
             <button
               type="button"
               onClick={() => onChange("offsetX", currentOffsetX - 1)}
-              className="py-2.5 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              className="py-2 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
               title="تحريك لليسار 1px"
             >
               <span className="text-sm">◀</span>
@@ -2326,7 +2296,7 @@ function DedicatedElementInspector({
             <button
               type="button"
               onClick={() => onChange("offsetY", currentOffsetY - 1)}
-              className="py-2.5 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              className="py-2 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
               title="تحريك لأعلى 1px"
             >
               <span className="text-sm">▲</span>
@@ -2339,7 +2309,7 @@ function DedicatedElementInspector({
                 onChange("offsetX", 0);
                 onChange("offsetY", 0);
               }}
-              className="py-2.5 px-1 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition shadow-md flex flex-col items-center justify-center cursor-pointer"
+              className="py-2 px-1 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition shadow-md flex flex-col items-center justify-center cursor-pointer"
               title="إعادة ضبط للوسط (0,0)"
             >
               <span className="text-sm">🎯</span>
@@ -2349,7 +2319,7 @@ function DedicatedElementInspector({
             <button
               type="button"
               onClick={() => onChange("offsetY", currentOffsetY + 1)}
-              className="py-2.5 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              className="py-2 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
               title="تحريك لأسفل 1px"
             >
               <span className="text-sm">▼</span>
@@ -2359,7 +2329,7 @@ function DedicatedElementInspector({
             <button
               type="button"
               onClick={() => onChange("offsetX", currentOffsetX + 1)}
-              className="py-2.5 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              className="py-2 px-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
               title="تحريك لليمين 1px"
             >
               <span className="text-sm">▶</span>
@@ -2367,63 +2337,56 @@ function DedicatedElementInspector({
             </button>
           </div>
 
-          {/* أزرار الحجم والتدوير بجانب بعض أيضاً */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#C9A86A]/20 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-amber-200 font-bold">الحجم:</span>
-              <div className="flex items-center gap-1" dir="ltr">
-                <button
-                  type="button"
-                  onClick={() => onChange("scale", Math.max(0.3, parseFloat((currentScale - 0.05).toFixed(2))))}
-                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
-                >
-                  ➖ تصغير
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onChange("scale", Math.min(3, parseFloat((currentScale + 0.05).toFixed(2))))}
-                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
-                >
-                  ➕ تكبير
-                </button>
-              </div>
+          {/* أزرار التكبير/التصغير وأزرار الدوران بجانب بعضها مباشرة في نفس السطر */}
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 border-t border-[#C9A86A]/20 flex-wrap" dir="ltr">
+            {/* أزرار الحجم */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onChange("scale", Math.max(0.3, parseFloat((currentScale - 0.05).toFixed(2))))}
+                className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
+                title="تصغير الحجم"
+              >
+                ➖ تصغير
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange("scale", Math.min(3, parseFloat((currentScale + 0.05).toFixed(2))))}
+                className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
+                title="تكبير الحجم"
+              >
+                ➕ تكبير
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-amber-200 font-bold">التدوير:</span>
-              <div className="flex items-center gap-1" dir="ltr">
-                <button
-                  type="button"
-                  onClick={() => onChange("rotate", currentRotate - 5)}
-                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
-                >
-                  ⟲ -5°
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onChange("rotate", currentRotate + 5)}
-                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
-                >
-                  +5° ⟳
-                </button>
-              </div>
+            <div className="h-4 w-px bg-[#C9A86A]/30 mx-0.5 hidden sm:block" />
+
+            {/* أزرار الدوران بجانب زري التكبير والتصغير */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onChange("rotate", currentRotate - 5)}
+                className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
+                title="تدوير عكس عقارب الساعة 5 درجات"
+              >
+                ⟲ -5°
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange("rotate", currentRotate + 5)}
+                className="px-2.5 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer active:scale-95 transition"
+                title="تدوير مع عقارب الساعة 5 درجات"
+              >
+                +5° ⟳
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* شريط الأدوات الأفقي القابل للتمرير يميناً ويساراً (مثل Instagram و Lightroom) */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs px-1">
-          <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
-            <span>🎛️</span> أشرطة الأدوات (اسحب يميناً ويساراً واختر الخاصية):
-          </span>
-          <span className="text-[10px] text-emerald-300 font-bold bg-[#06281D] px-2 py-0.5 rounded-full border border-[#C9A86A]/40">
-            انقر على أي زر ليظهر شريطه
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth no-scrollbar">
+      {/* شريط أدوات التحكم السفلية بحجم مصغر ومدمج */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 px-0.5 scroll-smooth no-scrollbar">
           {tools.map((tool) => {
             const isActive = activeTool === tool.id;
             return (
@@ -2431,17 +2394,17 @@ function DedicatedElementInspector({
                 key={tool.id}
                 type="button"
                 onClick={() => setActiveTool(tool.id)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer shadow-md relative ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-black shrink-0 transition-all cursor-pointer shadow-sm relative ${
                   isActive
                     ? "bg-gradient-to-r from-amber-400 via-[#F5D77F] to-[#C9A86A] text-[#06281D] ring-2 ring-amber-300 shadow-amber-500/20 scale-105"
                     : "bg-[#0A3D2E] text-emerald-100 hover:bg-[#0F4D3A] border border-[#C9A86A]/40 hover:border-[#F5D77F]"
                 }`}
               >
-                <span className="text-base">{tool.icon}</span>
+                <span className="text-xs sm:text-sm">{tool.icon}</span>
                 <span>{tool.label}</span>
                 {tool.badge && (
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-black ${
+                    className={`text-[8.5px] px-1 py-0.1 rounded-full font-mono font-black ${
                       isActive ? "bg-[#06281D] text-[#F5D77F]" : "bg-amber-400/20 text-amber-300 border border-amber-400/40"
                     }`}
                   >
