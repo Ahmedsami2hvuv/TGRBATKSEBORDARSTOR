@@ -133,6 +133,7 @@ export function OrderViewContent({
   couriers = [],
   phoneProfile,
   secondPhoneProfile,
+  designerConfig,
 }: {
   order: OrderViewModel;
   preparers?: { id: string; name: string }[];
