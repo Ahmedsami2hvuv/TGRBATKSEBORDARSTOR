@@ -989,35 +989,35 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. وضع التعديل الفردي المخصص (لوحة المعاينة مثبتة في الأعلى 100% والإعدادات بالأسفل) */}
+      {/* 1. وضع التعديل الفردي المخصص (لوحة المعاينة مثبتة تماماً في الأعلى 100% وتمرير السلايدرات بالأسفل) */}
       {/* ========================================================================= */}
       {selectedElementId && currentSelectedDef ? (
-        <div className="space-y-4">
-          {/* لوحة المعاينة الحية وشريط التحكم المثبتان دائماً في أعلى الشاشة */}
-          <div className="sticky top-0 z-40 bg-[#06281D]/95 border-2 border-[#C9A86A] rounded-b-[24px] p-3 sm:p-4 shadow-2xl backdrop-blur-md space-y-3">
-            {/* شريط أدوات الانتقال والرجوع والحفظ الفوري */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2">
+        <div className="flex flex-col gap-3 min-h-[calc(100vh-140px)]">
+          {/* لوحة المعاينة الحية العلوية - ثابتة 100% في مكانها لا تتأثر بالتمرير */}
+          <div className="shrink-0 bg-[#06281D] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-4 shadow-2xl space-y-2 z-30">
+            {/* شريط أدوات الانتقال والرجوع والحفظ الفوري المدمج في سطر واحد */}
+            <div className="flex items-center justify-between gap-1.5 border-b border-[#C9A86A]/40 pb-2">
               <button
                 type="button"
                 onClick={() => setSelectedElementId(null)}
-                className="px-3.5 py-1.5 bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black hover:bg-[#0F4D3A] transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                className="px-2.5 py-1 bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] rounded-xl text-xs font-black hover:bg-[#0F4D3A] transition flex items-center gap-1 cursor-pointer shadow-md shrink-0 active:scale-95"
               >
-                <span>◀</span> عودة لكافة عناصر الكارت
+                <span>◀</span> عودة للكروت
               </button>
 
-              <div className="text-center min-w-0 px-1">
-                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] truncate flex items-center justify-center gap-1.5">
+              <div className="text-center min-w-0 px-1 flex-1">
+                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] truncate flex items-center justify-center gap-1">
                   <span>✏️</span> {currentSelectedDef.title}
                 </h3>
-                <div className="flex items-center justify-center gap-2 mt-0.5">
+                <div className="flex items-center justify-center gap-1 text-[10px] mt-0.5">
                   {saveStatus === "saving" && (
-                    <span className="text-[10px] text-amber-300 font-bold animate-pulse">🔄 جاري الحفظ تلقائياً...</span>
+                    <span className="text-amber-300 font-bold animate-pulse">🔄 جاري الحفظ...</span>
                   )}
                   {saveStatus === "saved" && (
-                    <span className="text-[10px] text-emerald-300 font-bold">✅ تم الحفظ تلقائياً</span>
+                    <span className="text-emerald-300 font-bold">✅ تم الحفظ تلقائياً</span>
                   )}
                   {saveStatus === "error" && (
-                    <span className="text-[10px] text-rose-300 font-bold">❌ فشل الحفظ</span>
+                    <span className="text-rose-300 font-bold">❌ فشل الحفظ</span>
                   )}
                 </div>
               </div>
@@ -1028,9 +1028,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   type="button"
                   disabled={!prevElement}
                   onClick={() => prevElement && setSelectedElementId(prevElement.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-black border transition ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-black border transition ${
                     prevElement
-                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer active:scale-95"
                       : "opacity-30 bg-black/20 text-white/30 border-transparent cursor-not-allowed"
                   }`}
                   title="العنصر السابق"
@@ -1041,9 +1041,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   type="button"
                   disabled={!nextElement}
                   onClick={() => nextElement && setSelectedElementId(nextElement.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-black border transition ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-black border transition ${
                     nextElement
-                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer"
+                      ? "bg-[#0A3D2E] text-white border-[#C9A86A] hover:bg-[#0F4D3A] cursor-pointer active:scale-95"
                       : "opacity-30 bg-black/20 text-white/30 border-transparent cursor-not-allowed"
                   }`}
                   title="العنصر التالي"
@@ -1061,7 +1061,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               config={config}
               showGuides={showGuides}
               previewMode={previewMode}
-              previewZoom={previewZoom}
+              previewZoom={isCompactPreview ? 0.65 : previewZoom}
               currentSelectedDef={currentSelectedDef}
               currentSelectedConfig={currentSelectedConfig}
               shopFrameBg={shopFrameBg}
@@ -1069,41 +1069,51 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               waButtons={waButtons}
             />
 
-            {/* شريط الزووم ونوع الشاشة وزر خطوط المحاذاة */}
-            <div className="flex items-center justify-between px-1 text-[11px] text-emerald-200 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
+            {/* شريط الزووم ونوع الشاشة وزر خطوط المحاذاة وزر تصغير المعاينة */}
+            <div className="flex items-center justify-between px-1 text-[11px] text-emerald-200 flex-wrap gap-2 pt-1 border-t border-[#C9A86A]/20">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setShowGuides((prev) => !prev)}
-                  className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 border cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition flex items-center gap-1 border cursor-pointer ${
                     showGuides
-                      ? "bg-amber-400 text-[#06281D] border-amber-400 shadow-md shadow-amber-500/20 scale-105"
+                      ? "bg-amber-400 text-[#06281D] border-amber-400 shadow-sm"
                       : "bg-[#0A3D2E] text-white/70 border-[#C9A86A]/40 hover:text-white"
                   }`}
                   title="تفعيل أو إخفاء خطوط وشبكة المحاذاة الذكية"
                 >
-                  <span>📐</span> خطوط المحاذاة: {showGuides ? "مفعلة 🟢" : "معطلة ⚪"}
+                  <span>📐</span> المحاذاة: {showGuides ? "مفعلة 🟢" : "معطلة ⚪"}
                 </button>
-                <span className="font-bold hidden sm:inline-block">
-                  📌 المعاينة ثابتة في الأعلى
-                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCompactPreview((prev) => !prev)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition flex items-center gap-1 border cursor-pointer ${
+                    isCompactPreview
+                      ? "bg-emerald-500 text-white border-emerald-400 shadow-sm"
+                      : "bg-[#0A3D2E] text-emerald-300 border-[#C9A86A]/40 hover:text-white"
+                  }`}
+                  title="تبديل حجم المعاينة لتوفير مساحة إضافية للسلايدرات"
+                >
+                  <span>{isCompactPreview ? "🔍 تكبير المعاينة" : "🤏 تصغير المعاينة"}</span>
+                </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
                   <button
                     type="button"
                     onClick={() => setPreviewMode("mobile")}
-                    className={`px-2 py-0.5 rounded transition ${previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                    className={`px-1.5 py-0.5 rounded transition ${previewMode === "mobile" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
                   >
-                    📱 جوال
+                    📱
                   </button>
                   <button
                     type="button"
                     onClick={() => setPreviewMode("desktop")}
-                    className={`px-2 py-0.5 rounded transition ${previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                    className={`px-1.5 py-0.5 rounded transition ${previewMode === "desktop" ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
                   >
-                    💻 كمبيوتر
+                    💻
                   </button>
                 </div>
 
@@ -1111,21 +1121,21 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   <button
                     type="button"
                     onClick={() => setPreviewZoom(0.7)}
-                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 0.7 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                    className={`px-1 py-0.5 rounded transition ${previewZoom === 0.7 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
                   >
                     70%
                   </button>
                   <button
                     type="button"
                     onClick={() => setPreviewZoom(0.85)}
-                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                    className={`px-1 py-0.5 rounded transition ${previewZoom === 0.85 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
                   >
                     85%
                   </button>
                   <button
                     type="button"
                     onClick={() => setPreviewZoom(1)}
-                    className={`px-1.5 py-0.5 rounded transition ${previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
+                    className={`px-1 py-0.5 rounded transition ${previewZoom === 1 ? "bg-[#C9A86A] text-[#06281D] font-black" : "text-white/80"}`}
                   >
                     100%
                   </button>
@@ -1134,8 +1144,8 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           </div>
 
-          {/* لوحة السلايدرات والإعدادات بالأسفل - قابلة للتمرير بحرية تامة */}
-          <div className="bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          {/* لوحة السلايدرات والإعدادات بالأسفل - قابلة للتمرير الداخلي بحرية تامة دون تحريك المعاينة */}
+          <div className="flex-1 overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-360px)] bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {currentSelectedDef.isFrame ? (
               <DedicatedFrameInspector
                 category={activeTab === "shop_card" ? "shopCard" : "customerCard"}
