@@ -7,9 +7,9 @@ let datasourceUrl = process.env.DATABASE_URL;
 if (datasourceUrl) {
   try {
     const url = new URL(datasourceUrl);
-    // رفع حد الاتصالات وتفادي التعليق في بيئة سيرفرلس
-    url.searchParams.set("connection_limit", "10");
-    url.searchParams.set("pool_timeout", "15");
+    // ضبط حد الاتصالات والمهلة في بيئة سيرفرلس لعدم استنزاف وصلات Supabase Pooler
+    url.searchParams.set("connection_limit", "5");
+    url.searchParams.set("pool_timeout", "20");
     
     // تفعيل pgbouncer عند استخدام بورت 6543 الخاص بـ Supabase Pooler
     if (url.port === "6543" || url.hostname.includes("pooler.supabase.com")) {
@@ -25,7 +25,7 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     datasourceUrl,
-    log: ["error"],
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
 globalForPrisma.prisma = prisma;

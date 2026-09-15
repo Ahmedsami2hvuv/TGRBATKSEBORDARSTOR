@@ -161,6 +161,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     let [orders, couriers, pendingTabCount] = await Promise.all([
       prisma.order.findMany({
         where,
+        take: 150,
         orderBy: { createdAt: "desc" },
         include: {
           shop: {
