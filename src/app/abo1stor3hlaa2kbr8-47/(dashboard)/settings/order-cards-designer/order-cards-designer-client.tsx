@@ -49,6 +49,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const [previewZoom, setPreviewZoom] = useState<number>(0.85);
   const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
   const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
+  const [showGuides, setShowGuides] = useState<boolean>(true); // خطوط المحاذاة الذكية
 
   // مراجع للتحكم بالحفظ التلقائي
   const isFirstMount = useRef(true);
@@ -1066,7 +1067,34 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     }`}
                     style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
                   >
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
+                    {/* طبقة خطوط وشبكة المحاذاة الذكية (Smart Alignment Guides) */}
+                    {showGuides && (
+                      <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                        {/* خط المنتصف العمودي */}
+                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
+                        {/* خط المنتصف الأفقي */}
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
+                        
+                        {/* خط المحاذاة الذكي الأفقي لصف الأزرار السفلي */}
+                        <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
+
+                        {/* مؤشر المحاذاة الذكي للعنصر المحدد */}
+                        {selectedElementId && (
+                          <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
+                            <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
+                              📐 محاذاة نشطة: {currentSelectedDef?.title}
+                            </span>
+                            {currentSelectedConfig && (
+                              <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
+                                X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
                       {/* الجانب الأيمن */}
                       <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
                         <div
@@ -1316,7 +1344,34 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     }`}
                     style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
                   >
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0">
+                    {/* طبقة خطوط وشبكة المحاذاة الذكية (Smart Alignment Guides) */}
+                    {showGuides && (
+                      <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                        {/* خط المنتصف العمودي */}
+                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
+                        {/* خط المنتصف الأفقي */}
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
+
+                        {/* خط المحاذاة الذكي الأفقي لصف الأزرار السفلي */}
+                        <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
+
+                        {/* مؤشر المحاذاة الذكي للعنصر المحدد */}
+                        {selectedElementId && (
+                          <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
+                            <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
+                              📐 محاذاة نشطة: {currentSelectedDef?.title}
+                            </span>
+                            {currentSelectedConfig && (
+                              <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
+                                X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
                       {/* الجانب الأيمن */}
                       <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
                         <div
@@ -1560,11 +1615,25 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               </div>
             </div>
 
-            {/* شريط الزووم ونوع الشاشة */}
+            {/* شريط الزووم ونوع الشاشة وزر خطوط المحاذاة */}
             <div className="flex items-center justify-between px-1 text-[11px] text-emerald-200 flex-wrap gap-2">
-              <span className="font-bold flex items-center gap-1">
-                <span>📌</span> المعاينة الحية ثابتة في الأعلى ولا تتحرك عند تمرير الإعدادات
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowGuides((prev) => !prev)}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 border cursor-pointer ${
+                    showGuides
+                      ? "bg-amber-400 text-[#06281D] border-amber-400 shadow-md shadow-amber-500/20 scale-105"
+                      : "bg-[#0A3D2E] text-white/70 border-[#C9A86A]/40 hover:text-white"
+                  }`}
+                  title="تفعيل أو إخفاء خطوط وشبكة المحاذاة الذكية"
+                >
+                  <span>📐</span> خطوط المحاذاة: {showGuides ? "مفعلة 🟢" : "معطلة ⚪"}
+                </button>
+                <span className="font-bold hidden sm:inline-block">
+                  📌 المعاينة ثابتة في الأعلى
+                </span>
+              </div>
 
               <div className="flex items-center gap-2">
                 <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
@@ -2041,7 +2110,7 @@ function DedicatedFrameInspector({
               )}
             </div>
 
-            {/* سلايدر التمديد الرأسي */}
+            {/* سلايدر التمديد الرأسي مع أزرار الزائد والناقص */}
             <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-amber-200 font-bold">تمديد طول الكارت (Scale Y):</span>
@@ -2049,21 +2118,37 @@ function DedicatedFrameInspector({
                   {Math.round(currentScaleY * 100)}%
                 </span>
               </div>
-              <input
-                type="range"
-                dir="ltr"
-                min="0.5"
-                max="2.5"
-                step="0.05"
-                value={currentScaleY}
-                onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleY", Math.max(0.5, parseFloat((currentScaleY - 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➖ تقصير (-5%)
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.5"
+                  max="2.5"
+                  step="0.05"
+                  value={currentScaleY}
+                  onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleY", Math.min(2.5, parseFloat((currentScaleY + 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➕ تطويل (+5%)
+                </button>
+              </div>
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scaleY", 0.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">80% قصير</button>
                 <button type="button" onClick={() => onChange("scaleY", 1.0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% عادي</button>
                 <button type="button" onClick={() => onChange("scaleY", 1.25)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% طويل</button>
-                <button type="button" onClick={() => onChange("scaleY", 1.5)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% طويل جداً</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.5)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% ممتد</button>
               </div>
             </div>
 
@@ -2073,7 +2158,7 @@ function DedicatedFrameInspector({
                 <span className="text-xs text-amber-200 font-bold">الارتفاع الأدنى (Min Height):</span>
                 <span className="font-mono text-sm font-bold text-emerald-300">{currentMinHeight}px</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" dir="ltr">
                 <button type="button" onClick={() => onChange("minHeight", Math.max(150, currentMinHeight - 15))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-15px</button>
                 <input
                   type="range"
@@ -2095,16 +2180,20 @@ function DedicatedFrameInspector({
                 <span className="text-xs text-amber-200 font-bold">المسافة الداخلية أعلى وأسفل (Padding Y):</span>
                 <span className="font-mono text-sm font-bold text-emerald-300">{currentPaddingY}px</span>
               </div>
-              <input
-                type="range"
-                dir="ltr"
-                min="0"
-                max="60"
-                step="2"
-                value={currentPaddingY}
-                onChange={(e) => onChange("paddingY", parseInt(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button type="button" onClick={() => onChange("paddingY", Math.max(0, currentPaddingY - 2))} className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-2px</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0"
+                  max="60"
+                  step="2"
+                  value={currentPaddingY}
+                  onChange={(e) => onChange("paddingY", parseInt(e.target.value))}
+                  className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("paddingY", Math.min(60, currentPaddingY + 2))} className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">+2px</button>
+              </div>
             </div>
           </div>
         )}
@@ -2135,7 +2224,7 @@ function DedicatedFrameInspector({
               )}
             </div>
 
-            {/* سلايدر التمديد الأفقي */}
+            {/* سلايدر التمديد الأفقي مع أزرار الزائد والناقص */}
             <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-amber-200 font-bold">تمديد عرض الكارت (Scale X):</span>
@@ -2143,16 +2232,32 @@ function DedicatedFrameInspector({
                   {Math.round(currentScaleX * 100)}%
                 </span>
               </div>
-              <input
-                type="range"
-                dir="ltr"
-                min="0.5"
-                max="2.5"
-                step="0.05"
-                value={currentScaleX}
-                onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleX", Math.max(0.5, parseFloat((currentScaleX - 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ◀ تضييق (-5%)
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.5"
+                  max="2.5"
+                  step="0.05"
+                  value={currentScaleX}
+                  onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleX", Math.min(2.5, parseFloat((currentScaleX + 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  (+5%) تعريض ▶
+                </button>
+              </div>
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scaleX", 0.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">80% مضغوط</button>
                 <button type="button" onClick={() => onChange("scaleX", 1.0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% عادي</button>
@@ -2167,7 +2272,7 @@ function DedicatedFrameInspector({
                 <span className="text-xs text-amber-200 font-bold">العرض الأقصى (Max Width):</span>
                 <span className="font-mono text-sm font-bold text-emerald-300">{currentMaxWidth}px</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" dir="ltr">
                 <button type="button" onClick={() => onChange("maxWidth", Math.max(320, currentMaxWidth - 25))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-25px</button>
                 <input
                   type="range"
@@ -2189,16 +2294,20 @@ function DedicatedFrameInspector({
                 <span className="text-xs text-amber-200 font-bold">المسافة الداخلية يمين ويسار (Padding X):</span>
                 <span className="font-mono text-sm font-bold text-emerald-300">{currentPaddingX}px</span>
               </div>
-              <input
-                type="range"
-                dir="ltr"
-                min="0"
-                max="60"
-                step="2"
-                value={currentPaddingX}
-                onChange={(e) => onChange("paddingX", parseInt(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button type="button" onClick={() => onChange("paddingX", Math.max(0, currentPaddingX - 2))} className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-2px</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0"
+                  max="60"
+                  step="2"
+                  value={currentPaddingX}
+                  onChange={(e) => onChange("paddingX", parseInt(e.target.value))}
+                  className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("paddingX", Math.min(60, currentPaddingX + 2))} className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">+2px</button>
+              </div>
             </div>
           </div>
         )}
@@ -2220,16 +2329,20 @@ function DedicatedFrameInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="0"
-                max="60"
-                step="2"
-                value={currentRadius}
-                onChange={(e) => onChange("borderRadius", parseInt(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button type="button" onClick={() => onChange("borderRadius", Math.max(0, currentRadius - 2))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black hover:bg-[#0F4D3A]">-2px</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0"
+                  max="60"
+                  step="2"
+                  value={currentRadius}
+                  onChange={(e) => onChange("borderRadius", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("borderRadius", Math.min(60, currentRadius + 2))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black hover:bg-[#0F4D3A]">+2px</button>
+              </div>
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("borderRadius", 0)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">0px حواف حادة</button>
                 <button type="button" onClick={() => onChange("borderRadius", 16)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">16px خفيفة</button>
@@ -2257,16 +2370,20 @@ function DedicatedFrameInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="0.5"
-                max="2"
-                step="0.05"
-                value={currentScale}
-                onChange={(e) => onChange("scale", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button type="button" onClick={() => onChange("scale", Math.max(0.5, parseFloat((currentScale - 0.05).toFixed(2))))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black hover:bg-[#0F4D3A]">➖ -5%</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.5"
+                  max="2"
+                  step="0.05"
+                  value={currentScale}
+                  onChange={(e) => onChange("scale", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("scale", Math.min(2, parseFloat((currentScale + 0.05).toFixed(2))))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black hover:bg-[#0F4D3A]">➕ +5%</button>
+              </div>
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scale", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% مصغر</button>
                 <button type="button" onClick={() => onChange("scale", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
@@ -2419,7 +2536,7 @@ function DedicatedFrameInspector({
 }
 
 // =============================================================================
-// لوحة التحكم المفصلة للزر/النص المنفرد (نظام شريط الأدوات الأفقي والسلايدر المخصص مثل Lightroom / Instagram)
+// لوحة التحكم المفصلة للزر/النص المنفرد مع وحدة D-Pad وأزرار الزائد والناقص
 // =============================================================================
 function DedicatedElementInspector({
   elementDef,
@@ -2580,6 +2697,125 @@ function DedicatedElementInspector({
         )}
       </div>
 
+      {/* ========================================================================= */}
+      {/* وحدة التحكم الاتجاهية الشاملة والدقيقة (Directional D-Pad Controller 🕹️) */}
+      {/* ========================================================================= */}
+      <div className="bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-3 sm:p-4 shadow-xl">
+        <div className="flex items-center justify-between text-xs font-black text-[#F5D77F] mb-3 border-b border-[#C9A86A]/20 pb-1.5">
+          <span className="flex items-center gap-1.5">
+            <span>🕹️</span> وحدة التحكم المباشر بالاتجاهات (فوق، أسفل، يمين، يسار، زائد، ناقص):
+          </span>
+          <span className="text-[10px] text-emerald-300 font-mono bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
+            X: {currentOffsetX}px | Y: {currentOffsetY}px
+          </span>
+        </div>
+
+        <div className="flex items-center justify-around flex-wrap gap-4">
+          {/* أزرار الاتجاهات مع ترتيب فيزيائي مضبوط 100% (يسار باليسار ويمين باليمين) */}
+          <div className="grid grid-cols-3 gap-1.5 w-44" dir="ltr">
+            <div></div>
+            <button
+              type="button"
+              onClick={() => onChange("offsetY", currentOffsetY - 1)}
+              className="p-2.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              title="تحريك لأعلى 1px"
+            >
+              <span>▲</span>
+              <span className="text-[10px]">فوق</span>
+            </button>
+            <div></div>
+
+            <button
+              type="button"
+              onClick={() => onChange("offsetX", currentOffsetX - 1)}
+              className="p-2.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              title="تحريك لليسار 1px"
+            >
+              <span>◀</span>
+              <span className="text-[10px]">يسار</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onChange("offsetX", 0);
+                onChange("offsetY", 0);
+              }}
+              className="p-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition shadow-md flex flex-col items-center justify-center cursor-pointer"
+              title="إعادة ضبط للوسط (0,0)"
+            >
+              <span>🎯</span>
+              <span className="text-[9px]">وسط</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onChange("offsetX", currentOffsetX + 1)}
+              className="p-2.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              title="تحريك لليمين 1px"
+            >
+              <span>▶</span>
+              <span className="text-[10px]">يمين</span>
+            </button>
+
+            <div></div>
+            <button
+              type="button"
+              onClick={() => onChange("offsetY", currentOffsetY + 1)}
+              className="p-2.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+              title="تحريك لأسفل 1px"
+            >
+              <span>▼</span>
+              <span className="text-[10px]">أسفل</span>
+            </button>
+            <div></div>
+          </div>
+
+          {/* أزرار الزيادة والنقصان السريعة للحجم والتدوير */}
+          <div className="flex flex-col gap-2 min-w-[150px]">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs text-amber-200 font-bold">الحجم الكلي:</span>
+              <div className="flex items-center gap-1" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scale", Math.max(0.3, parseFloat((currentScale - 0.05).toFixed(2))))}
+                  className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➖ تصغير
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("scale", Math.min(3, parseFloat((currentScale + 0.05).toFixed(2))))}
+                  className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➕ تكبير
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs text-amber-200 font-bold">زاوية التدوير:</span>
+              <div className="flex items-center gap-1" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate - 5)}
+                  className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ⟲ -5°
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate + 5)}
+                  className="px-2.5 py-1 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  +5° ⟳
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* شريط الأدوات الأفقي القابل للتمرير يميناً ويساراً (مثل Instagram و Lightroom) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs px-1">
@@ -2652,18 +2888,36 @@ function DedicatedElementInspector({
               </div>
             </div>
 
-            {/* السلايدر الرئيسي */}
+            {/* السلايدر الرئيسي مع أزرار الزائد والناقص */}
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="-180"
-                max="180"
-                step="1"
-                value={currentRotate}
-                onChange={(e) => onChange("rotate", parseInt(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate - 1)}
+                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                  title="إنقاص درجة واحدة"
+                >
+                  ⟲ -1°
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  value={currentRotate}
+                  onChange={(e) => onChange("rotate", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate + 1)}
+                  className="px-2.5 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                  title="زيادة درجة واحدة"
+                >
+                  +1° ⟳
+                </button>
+              </div>
 
               {/* أزرار التدوير السريعة */}
               <div className="grid grid-cols-4 gap-2 text-xs font-bold pt-1">
@@ -2714,32 +2968,32 @@ function DedicatedElementInspector({
               </div>
 
               {/* أزرار التدوير الدقيق */}
-              <div className="flex items-center justify-between gap-1.5 pt-1 text-xs">
+              <div className="flex items-center justify-between gap-1.5 pt-1 text-xs" dir="ltr">
                 <button
                   type="button"
                   onClick={() => onChange("rotate", currentRotate - 45)}
-                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer font-bold"
                 >
                   ⟲ -45°
                 </button>
                 <button
                   type="button"
                   onClick={() => onChange("rotate", currentRotate - 15)}
-                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer font-bold"
                 >
                   ⟲ -15°
                 </button>
                 <button
                   type="button"
                   onClick={() => onChange("rotate", currentRotate + 15)}
-                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer font-bold"
                 >
                   +15° ⟳
                 </button>
                 <button
                   type="button"
                   onClick={() => onChange("rotate", currentRotate + 45)}
-                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer font-bold"
                 >
                   +45° ⟳
                 </button>
@@ -2776,16 +3030,33 @@ function DedicatedElementInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="0.3"
-                max="3"
-                step="0.05"
-                value={currentScale}
-                onChange={(e) => onChange("scale", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scale", Math.max(0.3, parseFloat((currentScale - 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➖ تصغير (-5%)
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.3"
+                  max="3"
+                  step="0.05"
+                  value={currentScale}
+                  onChange={(e) => onChange("scale", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("scale", Math.min(3, parseFloat((currentScale + 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ➕ تكبير (+5%)
+                </button>
+              </div>
+
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scale", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% مصغر</button>
                 <button type="button" onClick={() => onChange("scale", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
@@ -2824,16 +3095,33 @@ function DedicatedElementInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="0.3"
-                max="3"
-                step="0.05"
-                value={currentScaleX}
-                onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleX", Math.max(0.3, parseFloat((currentScaleX - 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ◀ تضييق (-5%)
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.3"
+                  max="3"
+                  step="0.05"
+                  value={currentScaleX}
+                  onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleX", Math.min(3, parseFloat((currentScaleX + 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  (+5%) توسيع ▶
+                </button>
+              </div>
+
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scaleX", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% ضيق</button>
                 <button type="button" onClick={() => onChange("scaleX", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
@@ -2872,16 +3160,33 @@ function DedicatedElementInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <input
-                type="range"
-                dir="ltr"
-                min="0.3"
-                max="3"
-                step="0.05"
-                value={currentScaleY}
-                onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
-              />
+              <div className="flex items-center gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleY", Math.max(0.3, parseFloat((currentScaleY - 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ▲ تقصير (-5%)
+                </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="0.3"
+                  max="3"
+                  step="0.05"
+                  value={currentScaleY}
+                  onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange("scaleY", Math.min(3, parseFloat((currentScaleY + 0.05).toFixed(2))))}
+                  className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  (+5%) زيادة طول ▼
+                </button>
+              </div>
+
               <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                 <button type="button" onClick={() => onChange("scaleY", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% قصير</button>
                 <button type="button" onClick={() => onChange("scaleY", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
@@ -2900,7 +3205,7 @@ function DedicatedElementInspector({
                 <span className="text-xl">➡️</span>
                 <div>
                   <h4 className="font-black text-sm text-[#F5D77F]">إزاحة أفقية (تحريك يمين / يسار)</h4>
-                  <p className="text-[11px] text-emerald-200">تحريك موقع العنصر أفقياً بالبكسل</p>
+                  <p className="text-[11px] text-emerald-200">الزر على اليسار يحرك يساراً، والزر على اليمين يحرك يميناً</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -2923,12 +3228,14 @@ function DedicatedElementInspector({
               </div>
             </div>
 
+            {/* الحاوية مضبوطة LTR: زر اليسار في اليسار وزر اليمين في اليمين */}
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" dir="ltr">
                 <button
                   type="button"
                   onClick={() => onChange("offsetX", currentOffsetX - 2)}
-                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[#0A3D2E] border-2 border-[#C9A86A]/60 text-white rounded-xl text-xs font-black hover:bg-[#0F4D3A] cursor-pointer shadow-md active:scale-95"
+                  title="تحريك يسار 2 بكسل"
                 >
                   ◀ يسار (-2px)
                 </button>
@@ -2947,17 +3254,18 @@ function DedicatedElementInspector({
                 <button
                   type="button"
                   onClick={() => onChange("offsetX", currentOffsetX + 2)}
-                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[#0A3D2E] border-2 border-[#C9A86A]/60 text-white rounded-xl text-xs font-black hover:bg-[#0F4D3A] cursor-pointer shadow-md active:scale-95"
+                  title="تحريك يمين 2 بكسل"
                 >
                   (+2px) يمين ▶
                 </button>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
-                <button type="button" onClick={() => onChange("offsetX", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">-20px يسار</button>
-                <button type="button" onClick={() => onChange("offsetX", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-bold rounded-lg">0px وسط</button>
-                <button type="button" onClick={() => onChange("offsetX", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px يمين</button>
-                <button type="button" onClick={() => onChange("offsetX", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px يمين</button>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs" dir="ltr">
+                <button type="button" onClick={() => onChange("offsetX", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">◀ -20px</button>
+                <button type="button" onClick={() => onChange("offsetX", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-black rounded-lg">0px وسط</button>
+                <button type="button" onClick={() => onChange("offsetX", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px ▶</button>
+                <button type="button" onClick={() => onChange("offsetX", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px ▶</button>
               </div>
             </div>
           </div>
@@ -2995,11 +3303,12 @@ function DedicatedElementInspector({
             </div>
 
             <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" dir="ltr">
                 <button
                   type="button"
                   onClick={() => onChange("offsetY", currentOffsetY - 2)}
-                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[#0A3D2E] border-2 border-[#C9A86A]/60 text-white rounded-xl text-xs font-black hover:bg-[#0F4D3A] cursor-pointer shadow-md active:scale-95"
+                  title="تحريك لأعلى 2 بكسل"
                 >
                   ▲ أعلى (-2px)
                 </button>
@@ -3018,17 +3327,18 @@ function DedicatedElementInspector({
                 <button
                   type="button"
                   onClick={() => onChange("offsetY", currentOffsetY + 2)}
-                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[#0A3D2E] border-2 border-[#C9A86A]/60 text-white rounded-xl text-xs font-black hover:bg-[#0F4D3A] cursor-pointer shadow-md active:scale-95"
+                  title="تحريك لأسفل 2 بكسل"
                 >
                   (+2px) أسفل ▼
                 </button>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
-                <button type="button" onClick={() => onChange("offsetY", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">-20px أعلى</button>
-                <button type="button" onClick={() => onChange("offsetY", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-bold rounded-lg">0px وسط</button>
-                <button type="button" onClick={() => onChange("offsetY", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px أسفل</button>
-                <button type="button" onClick={() => onChange("offsetY", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px أسفل</button>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs" dir="ltr">
+                <button type="button" onClick={() => onChange("offsetY", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">▲ -20px</button>
+                <button type="button" onClick={() => onChange("offsetY", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-black rounded-lg">0px وسط</button>
+                <button type="button" onClick={() => onChange("offsetY", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px ▼</button>
+                <button type="button" onClick={() => onChange("offsetY", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px ▼</button>
               </div>
             </div>
           </div>
