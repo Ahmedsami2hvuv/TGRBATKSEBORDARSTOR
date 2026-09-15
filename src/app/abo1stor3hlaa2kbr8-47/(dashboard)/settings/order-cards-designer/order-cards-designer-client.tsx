@@ -1899,7 +1899,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   );
 }
 
-// لوحة التحكم المخصصة لإطار وخلفية الكارت ككل (تطويل، تقصير، تعريض، وضغط)
+// =============================================================================
+// لوحة التحكم المخصصة لإطار وخلفية الكارت ككل (نظام شريط الأدوات الأفقي مثل برامج تعديل الصور)
+// =============================================================================
 function DedicatedFrameInspector({
   category,
   frameConfig,
@@ -1913,323 +1915,348 @@ function DedicatedFrameInspector({
   onChange: (field: keyof CustomFrameConfig, val: any) => void;
   onUploadImg: () => void;
 }) {
+  const [activeTool, setActiveTool] = useState<
+    "height" | "width" | "radius" | "scale" | "presets" | "bg"
+  >("height");
+
   const currentBg = frameConfig?.bgUrl || defaultBg;
   const currentScale = frameConfig?.scale ?? 1;
   const currentScaleX = frameConfig?.scaleX ?? 1;
   const currentScaleY = frameConfig?.scaleY ?? 1;
-  const currentMaxWidth = frameConfig?.maxWidth ?? 896; // max-w-4xl الافتراضي 896px
+  const currentMaxWidth = frameConfig?.maxWidth ?? 896;
   const currentMinHeight = frameConfig?.minHeight ?? 240;
   const currentPaddingX = frameConfig?.paddingX ?? 24;
   const currentPaddingY = frameConfig?.paddingY ?? 24;
   const currentRadius = frameConfig?.borderRadius ?? 24;
 
+  const frameTools = [
+    {
+      id: "height" as const,
+      label: "طول الكارت",
+      icon: "↕️",
+      badge: currentScaleY !== 1 || currentMinHeight !== 240 ? `${Math.round(currentScaleY * 100)}%` : null,
+    },
+    {
+      id: "width" as const,
+      label: "عرض الكارت",
+      icon: "↔️",
+      badge: currentScaleX !== 1 || currentMaxWidth !== 896 ? `${Math.round(currentScaleX * 100)}%` : null,
+    },
+    {
+      id: "radius" as const,
+      label: "انحناء الزوايا",
+      icon: "🔘",
+      badge: currentRadius !== 24 ? `${currentRadius}px` : null,
+    },
+    {
+      id: "scale" as const,
+      label: "تكبير كلي",
+      icon: "🔍",
+      badge: currentScale !== 1 ? `${Math.round(currentScale * 100)}%` : null,
+    },
+    {
+      id: "presets" as const,
+      label: "نماذج جاهزة",
+      icon: "⚡",
+      badge: null,
+    },
+    {
+      id: "bg" as const,
+      label: "خلفية الإطار",
+      icon: "🖼️",
+      badge: frameConfig?.bgUrl ? "مخصصة" : null,
+    },
+  ];
+
   return (
-    <div className="space-y-5">
-      {/* صندوق معاينة وتغيير صورة الإطار */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-4">
-        <div className="flex items-center gap-4">
-          <div className="w-28 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentBg}
-              alt="صورة الإطار"
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
-
-          <div>
-            <h4 className="font-black text-sm text-[#F5D77F]">
-              خلفية إطار الكارت ({category === "shopCard" ? "كارت المحل" : "كارت الزبون"})
-            </h4>
-            <p className="text-xs text-emerald-200 mt-0.5">
-              الصورة المحيطة بالإطار الملكي الفاخر
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* شريط الأدوات الأفقي القابل للتمرير بالسحب (مثل تطبيقات تعديل الصور) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs px-1">
+          <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
+            <span>🎛️</span> شريط أدوات تحرير الإطار (اسحب يميناً ويساراً واختر الخاصية):
+          </span>
+          <span className="text-[10px] text-emerald-300 font-bold bg-[#06281D] px-2 py-0.5 rounded-full border border-[#C9A86A]/40">
+            انقر على أي زر ليظهر شريطه
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={onUploadImg}
-            className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
-          >
-            📤 رفع صورة إطار مخصصة (WEBP)
-          </button>
-          {frameConfig?.bgUrl && (
-            <button
-              type="button"
-              onClick={() => onChange("bgUrl", "")}
-              className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
-            >
-              استعادة الافتراضي
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* نماذج أبعاد جاهزة بنقرة زر */}
-      <div className="bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 space-y-2">
-        <label className="text-xs text-[#F5D77F] font-black block">
-          ⚡ نماذج أبعاد سريعة بنقرة واحدة:
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              onChange("scale", 1);
-              onChange("scaleX", 1);
-              onChange("scaleY", 1);
-              onChange("maxWidth", 896);
-              onChange("minHeight", 240);
-              onChange("paddingX", 24);
-              onChange("paddingY", 24);
-            }}
-            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-amber-300"
-          >
-            👑 الأبعاد الافتراضية
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onChange("scaleX", 1.15);
-              onChange("scaleY", 0.95);
-              onChange("maxWidth", 980);
-              onChange("paddingX", 28);
-            }}
-            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
-          >
-            ↔️ كارت عريض
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onChange("scaleX", 0.95);
-              onChange("scaleY", 1.2);
-              onChange("minHeight", 340);
-              onChange("paddingY", 32);
-            }}
-            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
-          >
-            ↕️ كارت طويل
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onChange("scale", 0.9);
-              onChange("scaleX", 0.9);
-              onChange("scaleY", 0.9);
-              onChange("maxWidth", 750);
-              onChange("paddingX", 16);
-              onChange("paddingY", 16);
-            }}
-            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
-          >
-            📦 كارت مضغوط
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onChange("scaleX", 1.2);
-              onChange("scaleY", 0.85);
-              onChange("maxWidth", 1020);
-            }}
-            className="p-2 bg-[#06281D] hover:bg-[#0F4D3A] rounded-xl border border-[#C9A86A] text-white"
-          >
-            📐 عريض وقصير
-          </button>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth no-scrollbar">
+          {frameTools.map((tool) => {
+            const isActive = activeTool === tool.id;
+            return (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => setActiveTool(tool.id)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer shadow-md relative ${
+                  isActive
+                    ? "bg-gradient-to-r from-amber-400 via-[#F5D77F] to-[#C9A86A] text-[#06281D] ring-2 ring-amber-300 shadow-amber-500/20 scale-105"
+                    : "bg-[#0A3D2E] text-emerald-100 hover:bg-[#0F4D3A] border border-[#C9A86A]/40 hover:border-[#F5D77F]"
+                }`}
+              >
+                <span className="text-base">{tool.icon}</span>
+                <span>{tool.label}</span>
+                {tool.badge && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-black ${
+                      isActive ? "bg-[#06281D] text-[#F5D77F]" : "bg-amber-400/20 text-amber-300 border border-amber-400/40"
+                    }`}
+                  >
+                    {tool.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* لوحات التحكم الدقيقة بأبعاد وطول وعرض الكارت ككل */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* لوحة السلايدر النشط المخصص فقط للأداة المختارة */}
+      <div className="bg-black/40 border-2 border-[#C9A86A]/70 rounded-2xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
-        {/* ================= 1. تطويل وتقصير الكارت (الارتفاع الرأسي) ================= */}
-        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <h4 className="text-xs font-black text-[#F5D77F] flex items-center gap-1.5 border-b border-[#C9A86A]/20 pb-2">
-            <span>↕️</span> تطويل وتقصير الكارت (الارتفاع الرأسي):
-          </h4>
-
-          {/* تمديد الارتفاع Scale Y */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">تمديد طول الكارت (Scale Y):</span>
-              <span className="font-mono text-emerald-300 font-bold">
-                {Math.round(currentScaleY * 100)}%
-              </span>
+        {/* ================= 1. أداة طول الكارت ================= */}
+        {activeTool === "height" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">↕️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">تطويل وتقصير الكارت (الارتفاع الرأسي)</h4>
+                  <p className="text-[11px] text-emerald-200">تحكم بمدى استطالة أو قصر الكارت بالكامل</p>
+                </div>
+              </div>
+              {currentScaleY !== 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange("scaleY", 1);
+                    onChange("minHeight", 240);
+                    onChange("paddingY", 24);
+                  }}
+                  className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                >
+                  إعادة ضبط 100%
+                </button>
+              )}
             </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0.5"
-              max="2.5"
-              step="0.05"
-              value={currentScaleY}
-              onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
-          </div>
 
-          {/* الحد الأدنى للارتفاع Min-Height */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">الارتفاع الأدنى (Min Height بالبكسل):</span>
-              <span className="font-mono text-emerald-300 font-bold">{currentMinHeight}px</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onChange("minHeight", Math.max(150, currentMinHeight - 15))}
-                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
-              >
-                -15px
-              </button>
+            {/* سلايدر التمديد الرأسي */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">تمديد طول الكارت (Scale Y):</span>
+                <span className="font-mono text-base font-black text-emerald-300 bg-black/60 px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {Math.round(currentScaleY * 100)}%
+                </span>
+              </div>
               <input
                 type="range"
                 dir="ltr"
-                min="150"
-                max="800"
-                step="10"
-                value={currentMinHeight}
-                onChange={(e) => onChange("minHeight", parseInt(e.target.value))}
-                className="flex-1 accent-[#C9A86A] cursor-pointer"
+                min="0.5"
+                max="2.5"
+                step="0.05"
+                value={currentScaleY}
+                onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
               />
-              <button
-                type="button"
-                onClick={() => onChange("minHeight", Math.min(800, currentMinHeight + 15))}
-                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
-              >
-                +15px
-              </button>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scaleY", 0.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">80% قصير</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% عادي</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.25)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% طويل</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.5)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% طويل جداً</button>
+              </div>
             </div>
-          </div>
 
-          {/* هوامش أعلى وأسفل Padding Y */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">مسافة أعلى وأسفل (Padding Y):</span>
-              <span className="font-mono text-emerald-300 font-bold">{currentPaddingY}px</span>
+            {/* الارتفاع الأدنى Min Height */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">الارتفاع الأدنى (Min Height):</span>
+                <span className="font-mono text-sm font-bold text-emerald-300">{currentMinHeight}px</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => onChange("minHeight", Math.max(150, currentMinHeight - 15))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-15px</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="150"
+                  max="800"
+                  step="10"
+                  value={currentMinHeight}
+                  onChange={(e) => onChange("minHeight", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("minHeight", Math.min(800, currentMinHeight + 15))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">+15px</button>
+              </div>
             </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0"
-              max="60"
-              step="2"
-              value={currentPaddingY}
-              onChange={(e) => onChange("paddingY", parseInt(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
-          </div>
-        </div>
 
-        {/* ================= 2. تعريض وضغط الكارت (العرض الأفقي) ================= */}
-        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <h4 className="text-xs font-black text-[#F5D77F] flex items-center gap-1.5 border-b border-[#C9A86A]/20 pb-2">
-            <span>↔️</span> تعريض وضغط الكارت (العرض الأفقي):
-          </h4>
-
-          {/* تمديد العرض Scale X */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">تمديد عرض الكارت (Scale X):</span>
-              <span className="font-mono text-emerald-300 font-bold">
-                {Math.round(currentScaleX * 100)}%
-              </span>
-            </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0.5"
-              max="2.5"
-              step="0.05"
-              value={currentScaleX}
-              onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
-          </div>
-
-          {/* العرض الأقصى Max-Width */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">العرض الأقصى للكارت (Max Width):</span>
-              <span className="font-mono text-emerald-300 font-bold">{currentMaxWidth}px</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onChange("maxWidth", Math.max(320, currentMaxWidth - 25))}
-                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
-              >
-                -25px
-              </button>
-              <input
-                type="range"
-                dir="ltr"
-                min="320"
-                max="1200"
-                step="20"
-                value={currentMaxWidth}
-                onChange={(e) => onChange("maxWidth", parseInt(e.target.value))}
-                className="flex-1 accent-[#C9A86A] cursor-pointer"
-              />
-              <button
-                type="button"
-                onClick={() => onChange("maxWidth", Math.min(1200, currentMaxWidth + 25))}
-                className="px-2 py-1 bg-[#06281D] text-white rounded text-xs hover:bg-[#0F4D3A]"
-              >
-                +25px
-              </button>
-            </div>
-          </div>
-
-          {/* هوامش يمين ويسار Padding X */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-amber-200 font-bold">مسافة يمين ويسار (Padding X):</span>
-              <span className="font-mono text-emerald-300 font-bold">{currentPaddingX}px</span>
-            </div>
-            <input
-              type="range"
-              dir="ltr"
-              min="0"
-              max="60"
-              step="2"
-              value={currentPaddingX}
-              onChange={(e) => onChange("paddingX", parseInt(e.target.value))}
-              className="w-full accent-[#C9A86A] cursor-pointer"
-            />
-          </div>
-        </div>
-
-        {/* ================= 3. تدوير زوايا الكارت والتكبير الكلي ================= */}
-        <div className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 md:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* تدوير الزوايا Border Radius */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-amber-200 font-bold">تدوير زوايا الكارت (Border Radius):</span>
-                <span className="font-mono text-emerald-300 font-bold">{currentRadius}px</span>
+            {/* هوامش أعلى وأسفل */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">المسافة الداخلية أعلى وأسفل (Padding Y):</span>
+                <span className="font-mono text-sm font-bold text-emerald-300">{currentPaddingY}px</span>
               </div>
               <input
                 type="range"
                 dir="ltr"
                 min="0"
-                max="50"
+                max="60"
+                step="2"
+                value={currentPaddingY}
+                onChange={(e) => onChange("paddingY", parseInt(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ================= 2. أداة عرض الكارت ================= */}
+        {activeTool === "width" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">↔️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">تعريض وضغط الكارت (العرض الأفقي)</h4>
+                  <p className="text-[11px] text-emerald-200">تحكم بمدى اتساع أو انضغاط الكارت أفقياً</p>
+                </div>
+              </div>
+              {currentScaleX !== 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange("scaleX", 1);
+                    onChange("maxWidth", 896);
+                    onChange("paddingX", 24);
+                  }}
+                  className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                >
+                  إعادة ضبط 100%
+                </button>
+              )}
+            </div>
+
+            {/* سلايدر التمديد الأفقي */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">تمديد عرض الكارت (Scale X):</span>
+                <span className="font-mono text-base font-black text-emerald-300 bg-black/60 px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {Math.round(currentScaleX * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0.5"
+                max="2.5"
+                step="0.05"
+                value={currentScaleX}
+                onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+              />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scaleX", 0.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">80% مضغوط</button>
+                <button type="button" onClick={() => onChange("scaleX", 1.0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% عادي</button>
+                <button type="button" onClick={() => onChange("scaleX", 1.2)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">120% عريض</button>
+                <button type="button" onClick={() => onChange("scaleX", 1.4)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">140% عريض جداً</button>
+              </div>
+            </div>
+
+            {/* العرض الأقصى Max Width */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">العرض الأقصى (Max Width):</span>
+                <span className="font-mono text-sm font-bold text-emerald-300">{currentMaxWidth}px</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => onChange("maxWidth", Math.max(320, currentMaxWidth - 25))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">-25px</button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="320"
+                  max="1200"
+                  step="20"
+                  value={currentMaxWidth}
+                  onChange={(e) => onChange("maxWidth", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+                />
+                <button type="button" onClick={() => onChange("maxWidth", Math.min(1200, currentMaxWidth + 25))} className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A]">+25px</button>
+              </div>
+            </div>
+
+            {/* هوامش يمين ويسار */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-200 font-bold">المسافة الداخلية يمين ويسار (Padding X):</span>
+                <span className="font-mono text-sm font-bold text-emerald-300">{currentPaddingX}px</span>
+              </div>
+              <input
+                type="range"
+                dir="ltr"
+                min="0"
+                max="60"
+                step="2"
+                value={currentPaddingX}
+                onChange={(e) => onChange("paddingX", parseInt(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ================= 3. أداة انحناء الزوايا ================= */}
+        {activeTool === "radius" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔘</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">تدوير وانحناء زوايا الكارت (Border Radius)</h4>
+                  <p className="text-[11px] text-emerald-200">تحكم بدرجة استدارة حواف الإطار الخارجي</p>
+                </div>
+              </div>
+              <span className="font-mono text-base font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                {currentRadius}px
+              </span>
+            </div>
+
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <input
+                type="range"
+                dir="ltr"
+                min="0"
+                max="60"
                 step="2"
                 value={currentRadius}
                 onChange={(e) => onChange("borderRadius", parseInt(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer"
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
               />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("borderRadius", 0)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">0px حواف حادة</button>
+                <button type="button" onClick={() => onChange("borderRadius", 16)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">16px خفيفة</button>
+                <button type="button" onClick={() => onChange("borderRadius", 24)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">24px ملكي (أصلي)</button>
+                <button type="button" onClick={() => onChange("borderRadius", 40)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">40px دائرية جداً</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 4. أداة التكبير الكلي ================= */}
+        {activeTool === "scale" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔍</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">التكبير الكلي التناسبي للكارت</h4>
+                  <p className="text-[11px] text-emerald-200">تكبير أو تصغير الكارت بجميع عناصره ككتلة واحدة</p>
+                </div>
+              </div>
+              <span className="font-mono text-base font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                {Math.round(currentScale * 100)}%
+              </span>
             </div>
 
-            {/* التكبير الكلي التناسبي */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-amber-200 font-bold">التكبير الكلي للكارت ككل:</span>
-                <span className="font-mono text-emerald-300 font-bold">
-                  {Math.round(currentScale * 100)}%
-                </span>
-              </div>
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
               <input
                 type="range"
                 dir="ltr"
@@ -2238,17 +2265,162 @@ function DedicatedFrameInspector({
                 step="0.05"
                 value={currentScale}
                 onChange={(e) => onChange("scale", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer"
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
               />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scale", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% مصغر</button>
+                <button type="button" onClick={() => onChange("scale", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
+                <button type="button" onClick={() => onChange("scale", 1.25)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% مكبر</button>
+                <button type="button" onClick={() => onChange("scale", 1.5)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% كبير جداً</button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* ================= 5. نماذج جاهزة سريعة ================= */}
+        {activeTool === "presets" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
+              <span className="text-xl">⚡</span>
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">نماذج أبعاد جاهزة بنقرة واحدة</h4>
+                <p className="text-[11px] text-emerald-200">اختر قالباً جاهزاً ليتم تطبيق أبعاده ونسبه فوراً</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scale", 1);
+                  onChange("scaleX", 1);
+                  onChange("scaleY", 1);
+                  onChange("maxWidth", 896);
+                  onChange("minHeight", 240);
+                  onChange("paddingX", 24);
+                  onChange("paddingY", 24);
+                }}
+                className="p-3.5 bg-[#06281D] hover:bg-[#0F4D3A] rounded-2xl border-2 border-[#C9A86A] text-amber-300 text-right space-y-1 hover:scale-105 transition"
+              >
+                <div className="text-base">👑 الأبعاد الملكية الافتراضية</div>
+                <div className="text-[10px] text-emerald-200 font-normal">المقاس القياسي المتوازن 100%</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scaleX", 1.18);
+                  onChange("scaleY", 0.95);
+                  onChange("maxWidth", 980);
+                  onChange("paddingX", 28);
+                }}
+                className="p-3.5 bg-[#06281D] hover:bg-[#0F4D3A] rounded-2xl border border-[#C9A86A]/60 text-white text-right space-y-1 hover:scale-105 transition"
+              >
+                <div className="text-base">↔️ كارت عريض وأنيق</div>
+                <div className="text-[10px] text-emerald-200 font-normal">تمدد أفقي إضافي 118%</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scaleX", 0.95);
+                  onChange("scaleY", 1.25);
+                  onChange("minHeight", 340);
+                  onChange("paddingY", 32);
+                }}
+                className="p-3.5 bg-[#06281D] hover:bg-[#0F4D3A] rounded-2xl border border-[#C9A86A]/60 text-white text-right space-y-1 hover:scale-105 transition"
+              >
+                <div className="text-base">↕️ كارت طويل وممتد</div>
+                <div className="text-[10px] text-emerald-200 font-normal">استطالة رأسية 125%</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scale", 0.9);
+                  onChange("scaleX", 0.9);
+                  onChange("scaleY", 0.9);
+                  onChange("maxWidth", 750);
+                  onChange("paddingX", 16);
+                  onChange("paddingY", 16);
+                }}
+                className="p-3.5 bg-[#06281D] hover:bg-[#0F4D3A] rounded-2xl border border-[#C9A86A]/60 text-white text-right space-y-1 hover:scale-105 transition"
+              >
+                <div className="text-base">📦 كارت مدمج ومضغوط</div>
+                <div className="text-[10px] text-emerald-200 font-normal">توفير مساحة وتصغير الحجم</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("scaleX", 1.25);
+                  onChange("scaleY", 0.85);
+                  onChange("maxWidth", 1050);
+                }}
+                className="p-3.5 bg-[#06281D] hover:bg-[#0F4D3A] rounded-2xl border border-[#C9A86A]/60 text-white text-right space-y-1 hover:scale-105 transition"
+              >
+                <div className="text-base">📐 عريض وقصير (بانوراما)</div>
+                <div className="text-[10px] text-emerald-200 font-normal">عرض 125% وارتفاع 85%</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 6. أداة خلفية الإطار ================= */}
+        {activeTool === "bg" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
+              <span className="text-xl">🖼️</span>
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">تغيير صورة وخلفية الإطار</h4>
+                <p className="text-[11px] text-emerald-200">ارفع صورة جديدة للإطار ليتم قصها وضغطها وتحويلها إلى WEBP</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-16 rounded-xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={currentBg} alt="الإطار" className="max-h-full max-w-full object-contain" />
+                </div>
+                <div>
+                  <h5 className="font-black text-xs text-[#F5D77F]">الصورة الحالية للإطار</h5>
+                  <p className="text-[10px] text-emerald-200 mt-0.5">
+                    {frameConfig?.bgUrl ? "تم رفع صورة إطار مخصصة" : "الإطار الملكي الافتراضي"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={onUploadImg}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
+                >
+                  📤 رفع صورة إطار جديدة (WEBP)
+                </button>
+                {frameConfig?.bgUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("bgUrl", "")}
+                    className="px-3 py-2.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+                  >
+                    استعادة الافتراضي
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
-// لوحة التحكم المفصلة للزر المنفرد (شاملة التدوير، الأبعاد، الإزاحة، والحجم)
+// =============================================================================
+// لوحة التحكم المفصلة للزر/النص المنفرد (نظام شريط الأدوات الأفقي والسلايدر المخصص مثل Lightroom / Instagram)
+// =============================================================================
 function DedicatedElementInspector({
   elementDef,
   config,
@@ -2260,6 +2432,10 @@ function DedicatedElementInspector({
   onChange: (field: keyof CustomElementConfig, val: any) => void;
   onUploadImg: () => void;
 }) {
+  const [activeTool, setActiveTool] = useState<
+    "rotate" | "scale" | "scaleX" | "scaleY" | "offsetX" | "offsetY" | "origin" | "image" | "visibility"
+  >("rotate");
+
   const currentImg = config?.imageUrl || elementDef.defaultImg;
   const currentScale = config?.scale ?? 1;
   const currentScaleX = config?.scaleX ?? 1;
@@ -2283,12 +2459,73 @@ function DedicatedElementInspector({
     { label: "⬍ أسفل يسار", value: "bottom left" },
   ];
 
+  const tools = [
+    {
+      id: "rotate" as const,
+      label: "تدوير",
+      icon: "🔄",
+      badge: currentRotate !== 0 ? `${currentRotate}°` : null,
+    },
+    {
+      id: "scale" as const,
+      label: "تكبير كلي",
+      icon: "🔍",
+      badge: currentScale !== 1 ? `${Math.round(currentScale * 100)}%` : null,
+    },
+    {
+      id: "scaleX" as const,
+      label: "عرض أفقي",
+      icon: "↔️",
+      badge: currentScaleX !== 1 ? `${Math.round(currentScaleX * 100)}%` : null,
+    },
+    {
+      id: "scaleY" as const,
+      label: "طول عمودي",
+      icon: "↕️",
+      badge: currentScaleY !== 1 ? `${Math.round(currentScaleY * 100)}%` : null,
+    },
+    {
+      id: "offsetX" as const,
+      label: "إزاحة أفقية",
+      icon: "➡️",
+      badge: currentOffsetX !== 0 ? `${currentOffsetX > 0 ? `+${currentOffsetX}` : currentOffsetX}px` : null,
+    },
+    {
+      id: "offsetY" as const,
+      label: "إزاحة رأسية",
+      icon: "⬇️",
+      badge: currentOffsetY !== 0 ? `${currentOffsetY > 0 ? `+${currentOffsetY}` : currentOffsetY}px` : null,
+    },
+    {
+      id: "origin" as const,
+      label: "نقطة الارتكاز",
+      icon: "📍",
+      badge: currentOrigin !== "center" ? "مخصصة" : null,
+    },
+    ...(!elementDef.isText
+      ? [
+          {
+            id: "image" as const,
+            label: "الصورة",
+            icon: "🖼️",
+            badge: config?.imageUrl ? "مخصصة" : null,
+          },
+        ]
+      : []),
+    {
+      id: "visibility" as const,
+      label: "الظهور",
+      icon: "👁️",
+      badge: config?.visibility && config.visibility !== "all" ? "مقيد" : null,
+    },
+  ];
+
   return (
-    <div className="space-y-5">
-      {/* صندوق معاينة العنصر أو النص */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-4">
-        <div className="flex items-center gap-4">
-          <div className="w-28 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-2 relative shadow-inner">
+    <div className="space-y-4">
+      {/* صندوق معاينة العنصر المصغرة مع عنوانه */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-20 h-16 sm:w-24 sm:h-18 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1.5 relative shadow-inner">
             {elementDef.isText ? (
               <span
                 style={previewStyle}
@@ -2310,249 +2547,283 @@ function DedicatedElementInspector({
           </div>
 
           <div>
-            <h4 className="font-black text-sm text-[#F5D77F]">{elementDef.title}</h4>
-            <p className="text-xs text-emerald-200 mt-0.5">
+            <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-1.5">
+              <span>✏️</span> {elementDef.title}
+            </h4>
+            <p className="text-[11px] text-emerald-200 mt-0.5">
               {elementDef.isText
-                ? "معاينة حية ومستقلة للنص مع التكبير، التدوير، والإزاحة"
-                : "معاينة مصغرة لحظية مع التدوير والتكبير والإزاحة"}
+                ? "تعديل حجم، تدوير، وإزاحة هذا النص بشكل مستقل تماماً"
+                : "تعديل أبعاد وتدوير وإزاحة هذا الزر مع معاينة فورية"}
             </p>
           </div>
         </div>
 
-        {!elementDef.isText ? (
-          <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+        {!elementDef.isText && (
+          <div className="flex items-center gap-2 self-stretch sm:self-auto">
             <button
               type="button"
               onClick={onUploadImg}
-              className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
+              className="flex-1 sm:flex-initial px-3 py-1.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1"
             >
-              📤 رفع صورة مخصصة (قص الفراغات + WEBP)
+              <span>📤</span> رفع صورة جديدة
             </button>
             {config?.imageUrl && (
               <button
                 type="button"
                 onClick={() => onChange("imageUrl", "")}
-                className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+                className="px-2.5 py-1.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
               >
                 استعادة الأصلية
               </button>
             )}
           </div>
-        ) : (
-          <div className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/40 rounded-xl text-xs font-bold text-emerald-200 flex items-center gap-2">
-            <span>✍️</span> نص مستقل، استخدم الأشرطة بالأسفل لتكبيره وتدويره وتحريكه
-          </div>
         )}
       </div>
 
-      {/* أدوات التحكم الشاملة: تدوير، أبعاد، إزاحة، اتجاه */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* شريط الأدوات الأفقي القابل للتمرير يميناً ويساراً (مثل Instagram و Lightroom) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs px-1">
+          <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
+            <span>🎛️</span> أشرطة الأدوات (اسحب يميناً ويساراً واختر الخاصية):
+          </span>
+          <span className="text-[10px] text-emerald-300 font-bold bg-[#06281D] px-2 py-0.5 rounded-full border border-[#C9A86A]/40">
+            انقر على أي زر ليظهر شريطه
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth no-scrollbar">
+          {tools.map((tool) => {
+            const isActive = activeTool === tool.id;
+            return (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => setActiveTool(tool.id)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer shadow-md relative ${
+                  isActive
+                    ? "bg-gradient-to-r from-amber-400 via-[#F5D77F] to-[#C9A86A] text-[#06281D] ring-2 ring-amber-300 shadow-amber-500/20 scale-105"
+                    : "bg-[#0A3D2E] text-emerald-100 hover:bg-[#0F4D3A] border border-[#C9A86A]/40 hover:border-[#F5D77F]"
+                }`}
+              >
+                <span className="text-base">{tool.icon}</span>
+                <span>{tool.label}</span>
+                {tool.badge && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-black ${
+                      isActive ? "bg-[#06281D] text-[#F5D77F]" : "bg-amber-400/20 text-amber-300 border border-amber-400/40"
+                    }`}
+                  >
+                    {tool.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* لوحة السلايدر النشط المخصص فقط للأداة المختارة */}
+      <div className="bg-black/40 border-2 border-[#C9A86A]/70 rounded-2xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
-        {/* ================= 1. أداة التدوير (Rotation) ================= */}
-        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
-              <span>🔄</span> زاوية تدوير الزر (Rotate):
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-amber-300 font-black text-sm">
-                {currentRotate}°
-              </span>
-              {currentRotate !== 0 && (
+        {/* ================= 1. أداة التدوير ================= */}
+        {activeTool === "rotate" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔄</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">زاوية تدوير العنصر (Rotate)</h4>
+                  <p className="text-[11px] text-emerald-200">اسحب الشريط لتدوير الزر من -180° إلى +180°</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-black text-amber-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {currentRotate}°
+                </span>
+                {currentRotate !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("rotate", 0)}
+                    className="text-xs text-rose-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-rose-500/40 hover:underline cursor-pointer"
+                  >
+                    إعادة ضبط 0°
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* السلايدر الرئيسي */}
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <input
+                type="range"
+                dir="ltr"
+                min="-180"
+                max="180"
+                step="1"
+                value={currentRotate}
+                onChange={(e) => onChange("rotate", parseInt(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+              />
+
+              {/* أزرار التدوير السريعة */}
+              <div className="grid grid-cols-4 gap-2 text-xs font-bold pt-1">
                 <button
                   type="button"
                   onClick={() => onChange("rotate", 0)}
-                  className="text-[10px] text-rose-300 hover:underline cursor-pointer"
+                  className={`py-2 rounded-xl transition ${
+                    currentRotate === 0
+                      ? "bg-[#C9A86A] text-[#06281D] font-black shadow-md"
+                      : "bg-[#0A3D2E] text-white hover:bg-[#0F4D3A]"
+                  }`}
                 >
-                  (إعادة ضبط 0°)
+                  0° معتدل
                 </button>
-              )}
-            </div>
-          </div>
-
-          <input
-            type="range"
-            dir="ltr"
-            min="-180"
-            max="180"
-            step="1"
-            value={currentRotate}
-            onChange={(e) => onChange("rotate", parseInt(e.target.value))}
-            className="w-full accent-[#C9A86A] cursor-pointer"
-          />
-
-          {/* أزرار التدوير السريعة */}
-          <div className="grid grid-cols-4 gap-1.5 pt-1">
-            <button
-              type="button"
-              onClick={() => onChange("rotate", 0)}
-              className={`text-[10px] py-1 rounded font-bold transition ${
-                currentRotate === 0
-                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
-                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
-              }`}
-            >
-              0° معتدل
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", 90)}
-              className={`text-[10px] py-1 rounded font-bold transition ${
-                currentRotate === 90
-                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
-                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
-              }`}
-            >
-              90° عمودي
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", 180)}
-              className={`text-[10px] py-1 rounded font-bold transition ${
-                currentRotate === 180
-                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
-                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
-              }`}
-            >
-              180° مقلوب
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", -90)}
-              className={`text-[10px] py-1 rounded font-bold transition ${
-                currentRotate === -90
-                  ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm"
-                  : "bg-[#06281D] text-white/90 hover:bg-[#0F4D3A]"
-              }`}
-            >
-              -90° عكسي
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between gap-1 pt-1 text-[10px]">
-            <button
-              type="button"
-              onClick={() => onChange("rotate", currentRotate - 15)}
-              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
-            >
-              ⟲ -15°
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", currentRotate - 45)}
-              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
-            >
-              ⟲ -45°
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", currentRotate + 45)}
-              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
-            >
-              +45° ⟳
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("rotate", currentRotate + 15)}
-              className="px-2 py-1 bg-[#06281D] text-amber-200 rounded hover:bg-[#0F4D3A] cursor-pointer"
-            >
-              +15° ⟳
-            </button>
-          </div>
-        </div>
-
-        {/* ================= 2. الحجم والتكبير الكلي ================= */}
-        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
-              <span>🔍</span> التكبير الكلي (تناسبي):
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-emerald-300 font-black text-sm">
-                {Math.round(currentScale * 100)}%
-              </span>
-              {currentScale !== 1 && (
                 <button
                   type="button"
-                  onClick={() => onChange("scale", 1)}
-                  className="text-[10px] text-amber-300 hover:underline cursor-pointer"
+                  onClick={() => onChange("rotate", 90)}
+                  className={`py-2 rounded-xl transition ${
+                    currentRotate === 90
+                      ? "bg-[#C9A86A] text-[#06281D] font-black shadow-md"
+                      : "bg-[#0A3D2E] text-white hover:bg-[#0F4D3A]"
+                  }`}
                 >
-                  (100% طبيعي)
+                  90° عمودي
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", 180)}
+                  className={`py-2 rounded-xl transition ${
+                    currentRotate === 180
+                      ? "bg-[#C9A86A] text-[#06281D] font-black shadow-md"
+                      : "bg-[#0A3D2E] text-white hover:bg-[#0F4D3A]"
+                  }`}
+                >
+                  180° مقلوب
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", -90)}
+                  className={`py-2 rounded-xl transition ${
+                    currentRotate === -90
+                      ? "bg-[#C9A86A] text-[#06281D] font-black shadow-md"
+                      : "bg-[#0A3D2E] text-white hover:bg-[#0F4D3A]"
+                  }`}
+                >
+                  -90° عكسي
+                </button>
+              </div>
+
+              {/* أزرار التدوير الدقيق */}
+              <div className="flex items-center justify-between gap-1.5 pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate - 45)}
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ⟲ -45°
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate - 15)}
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ⟲ -15°
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate + 15)}
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  +15° ⟳
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("rotate", currentRotate + 45)}
+                  className="flex-1 py-1.5 bg-[#0A3D2E] text-amber-200 rounded-lg hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  +45° ⟳
+                </button>
+              </div>
             </div>
           </div>
+        )}
 
-          <input
-            type="range"
-            dir="ltr"
-            min="0.3"
-            max="3"
-            step="0.05"
-            value={currentScale}
-            onChange={(e) => onChange("scale", parseFloat(e.target.value))}
-            className="w-full accent-[#C9A86A] cursor-pointer"
-          />
+        {/* ================= 2. أداة التكبير الكلي ================= */}
+        {activeTool === "scale" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔍</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">التكبير والتصغير الكلي (تناسبي)</h4>
+                  <p className="text-[11px] text-emerald-200">تكبير أو تصغير الحجم بنسبة متناسقة</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {Math.round(currentScale * 100)}%
+                </span>
+                {currentScale !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("scale", 1)}
+                    className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                  >
+                    100% أصلي
+                  </button>
+                )}
+              </div>
+            </div>
 
-          <div className="grid grid-cols-4 gap-1.5 pt-1 text-[10px]">
-            <button
-              type="button"
-              onClick={() => onChange("scale", 0.75)}
-              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
-            >
-              75% مصغر
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("scale", 1)}
-              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
-            >
-              100% أصلي
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("scale", 1.25)}
-              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
-            >
-              125% مكبر
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange("scale", 1.5)}
-              className="py-1 rounded bg-[#06281D] text-white hover:bg-[#0F4D3A]"
-            >
-              150% كبير
-            </button>
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <input
+                type="range"
+                dir="ltr"
+                min="0.3"
+                max="3"
+                step="0.05"
+                value={currentScale}
+                onChange={(e) => onChange("scale", parseFloat(e.target.value))}
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+              />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scale", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% مصغر</button>
+                <button type="button" onClick={() => onChange("scale", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
+                <button type="button" onClick={() => onChange("scale", 1.25)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% مكبر</button>
+                <button type="button" onClick={() => onChange("scale", 1.5)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% كبير</button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ================= 3. تحكم حر بالأبعاد (أفقي وعمودي) ================= */}
-        <div className="space-y-2.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <div className="text-xs font-black text-[#F5D77F] flex items-center justify-between">
-            <span>📐 أبعاد حرة (تمديد العرض والارتفاع):</span>
-            {(currentScaleX !== 1 || currentScaleY !== 1) && (
-              <button
-                type="button"
-                onClick={() => {
-                  onChange("scaleX", 1);
-                  onChange("scaleY", 1);
-                }}
-                className="text-[10px] text-amber-300 hover:underline cursor-pointer"
-              >
-                (إعادة 100%)
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* تمديد العرض X */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-amber-200 font-bold">↔️ العرض (أفقي):</span>
-                <span className="font-mono text-emerald-300 font-bold">
+        {/* ================= 3. أداة العرض الأفقي ================= */}
+        {activeTool === "scaleX" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">↔️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">تمديد العرض الأفقي فقط (Scale X)</h4>
+                  <p className="text-[11px] text-emerald-200">تمطيط أو ضغط عرض العنصر أفقياً دون التأثير على الارتفاع</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
                   {Math.round(currentScaleX * 100)}%
                 </span>
+                {currentScaleX !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("scaleX", 1)}
+                    className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                  >
+                    100% أصلي
+                  </button>
+                )}
               </div>
+            </div>
+
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
               <input
                 type="range"
                 dir="ltr"
@@ -2561,18 +2832,46 @@ function DedicatedElementInspector({
                 step="0.05"
                 value={currentScaleX}
                 onChange={(e) => onChange("scaleX", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer"
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
               />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scaleX", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% ضيق</button>
+                <button type="button" onClick={() => onChange("scaleX", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
+                <button type="button" onClick={() => onChange("scaleX", 1.25)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% ممتد</button>
+                <button type="button" onClick={() => onChange("scaleX", 1.5)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% عريض</button>
+              </div>
             </div>
+          </div>
+        )}
 
-            {/* تمديد الارتفاع Y */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-amber-200 font-bold">↕️ الارتفاع (عمودي):</span>
-                <span className="font-mono text-emerald-300 font-bold">
+        {/* ================= 4. أداة الطول العمودي ================= */}
+        {activeTool === "scaleY" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">↕️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">تمديد الارتفاع العمودي فقط (Scale Y)</h4>
+                  <p className="text-[11px] text-emerald-200">تمطيط أو ضغط ارتفاع العنصر رأسياً دون التأثير على العرض</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
                   {Math.round(currentScaleY * 100)}%
                 </span>
+                {currentScaleY !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("scaleY", 1)}
+                    className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                  >
+                    100% أصلي
+                  </button>
+                )}
               </div>
+            </div>
+
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
               <input
                 type="range"
                 dir="ltr"
@@ -2581,163 +2880,268 @@ function DedicatedElementInspector({
                 step="0.05"
                 value={currentScaleY}
                 onChange={(e) => onChange("scaleY", parseFloat(e.target.value))}
-                className="w-full accent-[#C9A86A] cursor-pointer"
+                className="w-full accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
               />
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("scaleY", 0.75)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">75% قصير</button>
+                <button type="button" onClick={() => onChange("scaleY", 1)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% أصلي</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.25)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% طويل</button>
+                <button type="button" onClick={() => onChange("scaleY", 1.5)} className="py-2 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% ممتد جداً</button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ================= 4. اتجاه الارتكاز والتمدد ================= */}
-        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <label className="text-xs text-[#F5D77F] font-black block">
-            📍 اتجاه الارتكاز (من أين يتمدد أو يدور العنصر؟):
-          </label>
-          <div className="grid grid-cols-3 gap-1">
-            {origins.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => onChange("transformOrigin", o.value)}
-                className={`text-[10px] py-1 px-1 rounded font-bold transition ${
-                  currentOrigin === o.value
-                    ? "bg-[#C9A86A] text-[#06281D] shadow-sm font-black scale-[1.02]"
-                    : "bg-[#06281D] text-white/80 hover:bg-[#0F4D3A]"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ================= 5. الإزاحة الأفقية X ================= */}
-        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-black">➡️ إزاحة أفقية (يمين / يسار):</span>
-            <span className="font-mono text-emerald-300 font-black">
-              {currentOffsetX > 0
-                ? `+${currentOffsetX}px (يمين ▶)`
-                : currentOffsetX < 0
-                ? `${currentOffsetX}px (◀ يسار)`
-                : "0px (وسط)"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onChange("offsetX", currentOffsetX - 2)}
-              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
-              title="تحريك يسار"
-            >
-              ◀ يسار
-            </button>
-
-            <input
-              type="range"
-              dir="ltr"
-              min="-80"
-              max="80"
-              step="1"
-              value={currentOffsetX}
-              onChange={(e) => onChange("offsetX", parseInt(e.target.value))}
-              className="flex-1 accent-[#C9A86A] cursor-pointer"
-            />
-
-            <button
-              type="button"
-              onClick={() => onChange("offsetX", currentOffsetX + 2)}
-              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
-              title="تحريك يمين"
-            >
-              يمين ▶
-            </button>
-          </div>
-          {currentOffsetX !== 0 && (
-            <div className="text-center pt-0.5">
-              <button
-                type="button"
-                onClick={() => onChange("offsetX", 0)}
-                className="text-[10px] text-amber-300 hover:underline cursor-pointer"
-              >
-                (إعادة للوسط 0px)
-              </button>
+        {/* ================= 5. أداة الإزاحة الأفقية X ================= */}
+        {activeTool === "offsetX" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">➡️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">إزاحة أفقية (تحريك يمين / يسار)</h4>
+                  <p className="text-[11px] text-emerald-200">تحريك موقع العنصر أفقياً بالبكسل</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-base font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {currentOffsetX > 0
+                    ? `+${currentOffsetX}px (يمين ▶)`
+                    : currentOffsetX < 0
+                    ? `${currentOffsetX}px (◀ يسار)`
+                    : "0px (وسط)"}
+                </span>
+                {currentOffsetX !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("offsetX", 0)}
+                    className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                  >
+                    إعادة للوسط 0px
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* ================= 6. الإزاحة الرأسية Y ================= */}
-        <div className="space-y-2 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[#F5D77F] font-black">↕️ إزاحة رأسية (أعلى / أسفل):</span>
-            <span className="font-mono text-emerald-300 font-black">
-              {currentOffsetY > 0
-                ? `+${currentOffsetY}px (أسفل ▼)`
-                : currentOffsetY < 0
-                ? `${currentOffsetY}px (▲ أعلى)`
-                : "0px (وسط)"}
-            </span>
-          </div>
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onChange("offsetX", currentOffsetX - 2)}
+                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ◀ يسار (-2px)
+                </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onChange("offsetY", currentOffsetY - 2)}
-              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
-              title="تحريك لأعلى"
-            >
-              ▲ أعلى
-            </button>
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="-80"
+                  max="80"
+                  step="1"
+                  value={currentOffsetX}
+                  onChange={(e) => onChange("offsetX", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
 
-            <input
-              type="range"
-              dir="ltr"
-              min="-80"
-              max="80"
-              step="1"
-              value={currentOffsetY}
-              onChange={(e) => onChange("offsetY", parseInt(e.target.value))}
-              className="flex-1 accent-[#C9A86A] cursor-pointer"
-            />
+                <button
+                  type="button"
+                  onClick={() => onChange("offsetX", currentOffsetX + 2)}
+                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  (+2px) يمين ▶
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => onChange("offsetY", currentOffsetY + 2)}
-              className="px-2.5 py-1 bg-[#06281D] border border-[#C9A86A]/50 text-white rounded-lg text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
-              title="تحريك لأسفل"
-            >
-              أسفل ▼
-            </button>
-          </div>
-          {currentOffsetY !== 0 && (
-            <div className="text-center pt-0.5">
-              <button
-                type="button"
-                onClick={() => onChange("offsetY", 0)}
-                className="text-[10px] text-amber-300 hover:underline cursor-pointer"
-              >
-                (إعادة للوسط 0px)
-              </button>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("offsetX", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">-20px يسار</button>
+                <button type="button" onClick={() => onChange("offsetX", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-bold rounded-lg">0px وسط</button>
+                <button type="button" onClick={() => onChange("offsetX", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px يمين</button>
+                <button type="button" onClick={() => onChange("offsetX", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px يمين</button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* ================= 7. نطاق الظهور والصلاحية ================= */}
-        <div className="space-y-1.5 bg-black/30 p-3.5 rounded-2xl border border-[#C9A86A]/30 md:col-span-2">
-          <label className="text-xs text-[#F5D77F] font-black block">
-            👁️ نطاق ظهور هذا العنصر:
-          </label>
-          <select
-            value={config?.visibility || "all"}
-            onChange={(e) => onChange("visibility", e.target.value)}
-            className="w-full bg-[#06281D] border border-[#C9A86A] rounded-xl text-xs p-2 text-white font-bold"
-          >
-            <option value="all">الكل (يظهر عند الإدارة والمندوب والمجهز)</option>
-            <option value="admin">الإدارة فقط</option>
-            <option value="admin_mandoub">الإدارة والمندوب فقط</option>
-            <option value="admin_mandoub_preparer">الإدارة والمندوب والمجهز</option>
-          </select>
-        </div>
+        {/* ================= 6. أداة الإزاحة الرأسية Y ================= */}
+        {activeTool === "offsetY" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⬇️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">إزاحة رأسية (تحريك أعلى / أسفل)</h4>
+                  <p className="text-[11px] text-emerald-200">تحريك موقع العنصر عمودياً بالبكسل</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-base font-black text-emerald-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                  {currentOffsetY > 0
+                    ? `+${currentOffsetY}px (أسفل ▼)`
+                    : currentOffsetY < 0
+                    ? `${currentOffsetY}px (▲ أعلى)`
+                    : "0px (وسط)"}
+                </span>
+                {currentOffsetY !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("offsetY", 0)}
+                    className="text-xs text-amber-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-amber-400/40 hover:underline cursor-pointer"
+                  >
+                    إعادة للوسط 0px
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onChange("offsetY", currentOffsetY - 2)}
+                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  ▲ أعلى (-2px)
+                </button>
+
+                <input
+                  type="range"
+                  dir="ltr"
+                  min="-80"
+                  max="80"
+                  step="1"
+                  value={currentOffsetY}
+                  onChange={(e) => onChange("offsetY", parseInt(e.target.value))}
+                  className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => onChange("offsetY", currentOffsetY + 2)}
+                  className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/50 text-white rounded-xl text-xs font-bold hover:bg-[#0F4D3A] cursor-pointer"
+                >
+                  (+2px) أسفل ▼
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+                <button type="button" onClick={() => onChange("offsetY", -20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">-20px أعلى</button>
+                <button type="button" onClick={() => onChange("offsetY", 0)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-amber-300 font-bold rounded-lg">0px وسط</button>
+                <button type="button" onClick={() => onChange("offsetY", 10)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+10px أسفل</button>
+                <button type="button" onClick={() => onChange("offsetY", 20)} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">+20px أسفل</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 7. أداة نقطة الارتكاز ================= */}
+        {activeTool === "origin" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📍</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">نقطة الارتكاز والتمدد والتدوير</h4>
+                  <p className="text-[11px] text-emerald-200">حدد النقطة التي يدور أو يتمدد منها العنصر</p>
+                </div>
+              </div>
+              <span className="font-mono text-xs font-bold text-amber-300 bg-[#06281D] px-3 py-1 rounded-lg border border-[#C9A86A]">
+                {origins.find((o) => o.value === currentOrigin)?.label || "🎯 الوسط"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 p-2 bg-[#06281D]/80 rounded-xl border border-[#C9A86A]/30">
+              {origins.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => onChange("transformOrigin", o.value)}
+                  className={`text-xs py-3 px-2 rounded-xl font-bold transition ${
+                    currentOrigin === o.value
+                      ? "bg-gradient-to-r from-amber-400 to-[#C9A86A] text-[#06281D] shadow-lg font-black scale-105"
+                      : "bg-[#0A3D2E] text-white/90 hover:bg-[#0F4D3A] border border-[#C9A86A]/20"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ================= 8. أداة الصورة المخصصة ================= */}
+        {activeTool === "image" && !elementDef.isText && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
+              <span className="text-xl">🖼️</span>
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">الصورة المخصصة للزر أو الأيقونة</h4>
+                <p className="text-[11px] text-emerald-200">ارفع أيقونة أو صورة مخصصة ليتم قصها وضغطها وتحويلها إلى WEBP</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-16 rounded-xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1.5 relative shadow-inner">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={currentImg} alt={elementDef.title} className="max-h-full max-w-full object-contain" />
+                </div>
+                <div>
+                  <h5 className="font-black text-xs text-[#F5D77F]">الصورة الحالية</h5>
+                  <p className="text-[10px] text-emerald-200 mt-0.5">
+                    {config?.imageUrl ? "صورة مخصصة مرفوعة" : "الأيقونة الأصلية للنظام"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={onUploadImg}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
+                >
+                  📤 رفع صورة جديدة (WEBP)
+                </button>
+                {config?.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("imageUrl", "")}
+                    className="px-3 py-2.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+                  >
+                    استعادة الأصلية
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 9. أداة نطاق الظهور ================= */}
+        {activeTool === "visibility" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
+              <span className="text-xl">👁️</span>
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">نطاق وصلاحية ظهور هذا العنصر</h4>
+                <p className="text-[11px] text-emerald-200">حدد من يمتلك صلاحية رؤية واستخدام هذا الزر</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <select
+                value={config?.visibility || "all"}
+                onChange={(e) => onChange("visibility", e.target.value)}
+                className="w-full bg-[#0A3D2E] border-2 border-[#C9A86A] rounded-xl text-xs p-3 text-white font-bold cursor-pointer"
+              >
+                <option value="all">👑 الكل (يظهر عند الإدارة والمندوب والمجهز)</option>
+                <option value="admin">🔒 الإدارة فقط</option>
+                <option value="admin_mandoub">🚚 الإدارة والمندوب فقط</option>
+                <option value="admin_mandoub_preparer">📦 الإدارة والمندوب والمجهز</option>
+              </select>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
