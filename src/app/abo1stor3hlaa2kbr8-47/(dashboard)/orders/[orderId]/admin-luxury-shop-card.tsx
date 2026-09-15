@@ -14,6 +14,10 @@ import {
   assignFileToInput,
 } from "@/lib/client-image-compress";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
+import type {
+  OrderCardDesignerConfig,
+  CustomElementConfig,
+} from "@/lib/order-card-customizer";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -23,6 +27,31 @@ function contactLine(phone: string): string {
   return t;
 }
 
+function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties {
+  if (!cfg) return {};
+  const style: React.CSSProperties = {};
+  const transforms: string[] = [];
+  if (cfg.scale !== undefined && cfg.scale !== 1) {
+    transforms.push(`scale(${cfg.scale})`);
+  }
+  if (cfg.offsetX !== undefined && cfg.offsetX !== 0) {
+    transforms.push(`translateX(${cfg.offsetX}px)`);
+  }
+  if (cfg.offsetY !== undefined && cfg.offsetY !== 0) {
+    transforms.push(`translateY(${cfg.offsetY}px)`);
+  }
+  if (transforms.length > 0) {
+    style.transform = transforms.join(" ");
+  }
+  if (cfg.width) {
+    style.width = `${cfg.width}px`;
+  }
+  if (cfg.height) {
+    style.height = `${cfg.height}px`;
+  }
+  return style;
+}
+
 export function AdminLuxuryShopCard({
   order,
   submitterName,
@@ -30,6 +59,7 @@ export function AdminLuxuryShopCard({
   imgShopDoor,
   setPreviewImageUrl,
   isSystemAdminOrder = false,
+  designerConfig,
 }: {
   order: any;
   submitterName: string;
@@ -37,6 +67,7 @@ export function AdminLuxuryShopCard({
   imgShopDoor: string | null;
   setPreviewImageUrl: (url: string | null) => void;
   isSystemAdminOrder?: boolean;
+  designerConfig?: OrderCardDesignerConfig;
 }) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -98,8 +129,11 @@ export function AdminLuxuryShopCard({
   const hasLocation = Boolean(order.shopLocationUrl && order.shopLocationUrl.trim());
   const cleanPhone = contactLine(submitterPhone);
 
+  const shopCustom = designerConfig?.shopCard;
+  const frameBg = shopCustom?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp";
+
   return (
-    <div className="w-full max-w-4xl mx-auto my-3 select-none" dir="rtl">
+    <div className="w-full max-w-4xl mx-auto my-2 select-none" dir="rtl">
       {/* مدخلات الملفات المخفية للكاميرا والمعرض */}
       <input
         ref={cameraFileRef}
@@ -147,7 +181,7 @@ export function AdminLuxuryShopCard({
         <div
           className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all"
           style={{
-            backgroundImage: "url('/images/order-luxury/shop-card/shop-card-frame.webp')",
+            backgroundImage: `url('${frameBg}')`,
           }}
         >
           {/* محتوى الكارت: عمودين متجاورين دائماً (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */}
@@ -155,25 +189,25 @@ export function AdminLuxuryShopCard({
             
             {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات المحل + موقع المحل + أزرار التواصل ================= */}
             <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
-              {/* الرأس: كبسولة المحل (المرسل) - كبيرة وبارزة */}
-              <div className="flex justify-start">
+              {/* الرأس: كبسولة المحل (المرسل) */}
+              <div className="flex justify-start" style={getElementStyle(shopCustom?.headerShopInfo)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/order-luxury/shop-card/header-shop-info.webp"
+                  src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
                   alt="المحل (المرسل)"
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none"
+                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
                 />
               </div>
 
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
               <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                 {/* سطر 1: اسم المحل */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconShopName)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/order-luxury/shop-card/icon-shop-name.webp"
+                    src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
                     alt="اسم المحل"
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
                   <span className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.name || "المحل"}
@@ -181,12 +215,12 @@ export function AdminLuxuryShopCard({
                 </div>
 
                 {/* سطر 2: اسم العميل / المسؤول */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconCustomerName)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/order-luxury/shop-card/icon-customer-name.webp"
+                    src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
                     alt="اسم العميل"
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
                   <span className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {submitterName || "—"}
@@ -194,12 +228,12 @@ export function AdminLuxuryShopCard({
                 </div>
 
                 {/* سطر 3: اسم المنطقة */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconRegion)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/order-luxury/shop-card/icon-region.webp"
+                    src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
                     alt="منطقة المحل"
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
                   <span className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {order.shop?.region?.name || "—"}
@@ -207,12 +241,12 @@ export function AdminLuxuryShopCard({
                 </div>
 
                 {/* سطر 4: رقم الهاتف */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconPhone)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/order-luxury/shop-card/icon-phone.webp"
+                    src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
                     alt="رقم الهاتف"
-                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
+                    className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
                   <span className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
                     {cleanPhone || "—"}
@@ -221,7 +255,7 @@ export function AdminLuxuryShopCard({
               </div>
 
               {/* زر موقع المحل على الخريطة */}
-              <div className="pt-0.5">
+              <div className="pt-0.5" style={getElementStyle(shopCustom?.btnShopLocation)}>
                 {hasLocation ? (
                   <a
                     href={order.shopLocationUrl}
@@ -232,9 +266,9 @@ export function AdminLuxuryShopCard({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/images/order-luxury/shop-card/btn-shop-location.webp"
+                      src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
                       alt="موقع المحل"
-                      className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg"
+                      className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg transition-transform"
                     />
                   </a>
                 ) : (
@@ -244,84 +278,88 @@ export function AdminLuxuryShopCard({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/images/order-luxury/shop-card/btn-shop-location.webp"
+                      src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
                       alt="موقع المحل غير متوفر"
-                      className="h-7 sm:h-9 md:h-10 w-auto object-contain grayscale"
+                      className="h-7 sm:h-9 md:h-10 w-auto object-contain grayscale transition-transform"
                     />
                   </div>
                 )}
               </div>
 
-              {/* أزرار التواصل (اتصال + واتساب) بحجم موحد ومكبر */}
+              {/* أزرار التواصل (اتصال + واتساب) */}
               <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
                 {/* 1. زر اتصال 📞 */}
-                {cleanPhone ? (
-                  <a
-                    href={telHref(cleanPhone)}
-                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                    title={`اتصال هاتفي: ${cleanPhone}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-call.webp"
-                      alt="اتصال"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                    />
-                  </a>
-                ) : (
-                  <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-call.webp"
-                      alt="اتصال"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain grayscale"
-                    />
-                  </div>
-                )}
+                <div style={getElementStyle(shopCustom?.btnCall)}>
+                  {cleanPhone ? (
+                    <a
+                      href={telHref(cleanPhone)}
+                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 inline-block"
+                      title={`اتصال هاتفي: ${cleanPhone}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                        alt="اتصال"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl transition-transform"
+                      />
+                    </a>
+                  ) : (
+                    <div className="opacity-50 cursor-not-allowed shrink-0 inline-block" title="لا يوجد رقم هاتف">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                        alt="اتصال"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain grayscale transition-transform"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* 2. زر واتس اب 💬 */}
-                {cleanPhone ? (
-                  <a
-                    href={whatsappMeUrl(cleanPhone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                    title="مراسلة عبر واتساب"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-whatsapp.webp"
-                      alt="واتس اب"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                    />
-                  </a>
-                ) : (
-                  <div className="opacity-50 cursor-not-allowed shrink-0" title="لا يوجد رقم هاتف">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-whatsapp.webp"
-                      alt="واتس اب"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain grayscale"
-                    />
-                  </div>
-                )}
+                <div style={getElementStyle(shopCustom?.btnWhatsapp)}>
+                  {cleanPhone ? (
+                    <a
+                      href={whatsappMeUrl(cleanPhone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 inline-block"
+                      title="مراسلة عبر واتساب"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                        alt="واتس اب"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl transition-transform"
+                      />
+                    </a>
+                  ) : (
+                    <div className="opacity-50 cursor-not-allowed shrink-0 inline-block" title="لا يوجد رقم هاتف">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                        alt="واتس اب"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain grayscale transition-transform"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل مرفوعة للأعلى + مربع الصورة المكبر + أزرار (كاميرا ومعرض) ================= */}
+            {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل + مربع الصورة + أزرار (كاميرا ومعرض) ================= */}
             <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-              {/* الرأس: كبسولة صورة المحل مرفوعة ومكبرة */}
-              <div className="flex justify-center w-full">
+              {/* الرأس: كبسولة صورة المحل */}
+              <div className="flex justify-center w-full" style={getElementStyle(shopCustom?.headerShopPhoto)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/order-luxury/shop-card/header-shop-photo.webp"
+                  src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
                   alt="صورة المحل"
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none"
+                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
                 />
               </div>
 
-              {/* مساحة عرض صورة باب المحل أو الـ Placeholder - مكبرة وواضحة */}
-              <div className="w-full flex flex-col items-center justify-center my-auto">
+              {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
+              <div className="w-full flex flex-col items-center justify-center my-auto" style={getElementStyle(shopCustom?.placeholderNoPhoto)}>
                 {imgShopDoor ? (
                   <div className="w-full max-w-[170px] sm:max-w-[240px] md:max-w-[280px] flex flex-col items-center gap-1">
                     <div className="w-full aspect-[4/3] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
@@ -349,9 +387,9 @@ export function AdminLuxuryShopCard({
                   <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center py-0.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/images/order-luxury/shop-card/placeholder-no-photo.webp"
+                      src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                       alt="لا توجد صورة"
-                      className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95 select-none"
+                      className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
                     />
                   </div>
                 )}
@@ -381,40 +419,44 @@ export function AdminLuxuryShopCard({
                 )}
               </div>
 
-              {/* أزرار رفع الصورة (كاميرا + معرض) بحجم موحد ومكبر */}
+              {/* أزرار رفع الصورة (كاميرا + معرض) */}
               {!isSystemAdminOrder && (
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
                   {/* 3. زر كاميرا 📷 */}
-                  <button
-                    type="button"
-                    onClick={() => cameraFileRef.current?.click()}
-                    disabled={pending}
-                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                    title="التقاط صورة المحل بالكاميرا"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-camera.webp"
-                      alt="كاميرا"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                    />
-                  </button>
+                  <div style={getElementStyle(shopCustom?.btnCamera)}>
+                    <button
+                      type="button"
+                      onClick={() => cameraFileRef.current?.click()}
+                      disabled={pending}
+                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 inline-block"
+                      title="التقاط صورة المحل بالكاميرا"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                        alt="كاميرا"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl transition-transform"
+                      />
+                    </button>
+                  </div>
 
                   {/* 4. زر معرض 🖼️ */}
-                  <button
-                    type="button"
-                    onClick={() => galleryFileRef.current?.click()}
-                    disabled={pending}
-                    className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                    title="اختيار صورة المحل من المعرض"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/order-luxury/shop-card/btn-gallery.webp"
-                      alt="معرض"
-                      className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
-                    />
-                  </button>
+                  <div style={getElementStyle(shopCustom?.btnGallery)}>
+                    <button
+                      type="button"
+                      onClick={() => galleryFileRef.current?.click()}
+                      disabled={pending}
+                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 inline-block"
+                      title="اختيار صورة المحل من المعرض"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                        alt="معرض"
+                        className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl transition-transform"
+                      />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

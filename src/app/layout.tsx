@@ -5,6 +5,7 @@ import { StaticBackground } from "@/components/static-background";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont, getFontFileUrl } from "@/lib/font-settings";
+import { getOrderCardsDesignerConfig } from "@/lib/order-card-customizer";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import Script from "next/script";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   icons: { icon: "/icon.png", apple: "/apple-icon.png" },
   appleWebApp: { capable: true, title: "أبو الأكبر للتوصيل", statusBarStyle: "default" },
-  // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.4
+  // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.5
 };
 
 export const viewport: Viewport = { themeColor: "#0ea5e9" };
@@ -31,14 +32,37 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const externalId = mandoubId || preparerId || employeeId;
 
   // استرجاع الميزات بشكل آمن جداً
-  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled, availableFonts, chosenFont] = await Promise.all([
+  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled, availableFonts, chosenFont, designerConfig] = await Promise.all([
     getRoleFeatures("mandoub").catch(() => ({})),
     getRoleFeatures("preparer").catch(() => ({})),
     isChatEnabledGlobally().catch(() => true),
     isTrackingEnabledGlobally().catch(() => true),
     Promise.resolve(getAvailableFonts()),
     getChosenFont(),
+    getOrderCardsDesignerConfig().catch(() => null),
   ]);
+
+  // استخراج روابط كافة الصور والأصول المخصصة للتكييش والتحميل المسبق
+  const customAssetUrls: string[] = [];
+  if (designerConfig) {
+    if (designerConfig.shopCard?.frameBgUrl && !designerConfig.shopCard.frameBgUrl.startsWith("/images/")) {
+      customAssetUrls.push(designerConfig.shopCard.frameBgUrl);
+    }
+    Object.values(designerConfig.shopCard).forEach((elem: any) => {
+      if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
+    });
+    if (designerConfig.customerCard?.frameBgUrl) {
+      customAssetUrls.push(designerConfig.customerCard.frameBgUrl);
+    }
+    Object.values(designerConfig.customerCard).forEach((elem: any) => {
+      if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
+    });
+    if (designerConfig.waButtonsConfig) {
+      Object.values(designerConfig.waButtonsConfig).forEach((elem: any) => {
+        if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
+      });
+    }
+  }
 
   // توليد تعريفات الخطوط ديناميكياً
   const fontFaceCss = availableFonts.map(fontName => {
@@ -128,6 +152,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/shop-card/btn-camera.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/shop-card/btn-gallery.webp" as="image" type="image/webp" />
 
+        {/* التحميل المسبق الديناميكي لأي أصول وصور مخصصة من استوديو التصميم */}
+        {customAssetUrls.map((url, idx) => (
+          <link key={`custom-asset-${idx}`} rel="preload" href={url} as="image" type="image/webp" />
+        ))}
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -173,10 +202,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/shop-card/btn-whatsapp.webp',
                     '/images/order-luxury/shop-card/btn-camera.webp',
                     '/images/order-luxury/shop-card/btn-gallery.webp'
-                  ];
+                  ].concat(${JSON.stringify(customAssetUrls)});
                   luxuryImages.forEach(function(src) {
-                    var img = new Image();
-                    img.src = src;
+                    if (src) {
+                      var img = new Image();
+                      img.src = src;
+                    }
                   });
                 } catch(e) {}
               })();

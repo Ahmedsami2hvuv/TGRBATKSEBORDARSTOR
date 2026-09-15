@@ -148,6 +148,7 @@ export function OrderViewContent({
   couriers?: { id: string; name: string; phone?: string }[];
   phoneProfile?: any;
   secondPhoneProfile?: any;
+  designerConfig?: any;
 }) {
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -499,6 +500,7 @@ export function OrderViewContent({
             imgShopDoor={imgShopDoor}
             setPreviewImageUrl={setPreviewImageUrl}
             isSystemAdminOrder={isSystemAdminOrder}
+            designerConfig={designerConfig}
           />
         )}
 

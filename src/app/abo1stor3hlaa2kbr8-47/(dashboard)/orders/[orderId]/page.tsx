@@ -22,6 +22,7 @@ import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { computeSmartHint } from "@/lib/smart-hint-logic";
 import { haversineMeters } from "@/lib/geo-distance";
 import { getTwoWayTemplates } from "@/lib/two-way-whatsapp-settings";
+import { getOrderCardsDesignerConfig } from "@/lib/order-card-customizer";
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -56,7 +57,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
  const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
- const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw, storeProducts, twoWayTemplates, couriersRaw] = await Promise.all([
+ const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw, storeProducts, twoWayTemplates, couriersRaw, designerConfig] = await Promise.all([
  prisma.companyPreparer.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
  prisma.mandoubWaButtonSetting.findMany({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
  customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
@@ -93,6 +94,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
   select: { id: true, name: true, phone: true },
   orderBy: { name: "asc" }
  }),
+ getOrderCardsDesignerConfig(),
  ]);
 
  const customerLocationUrlEffective = order.customerLocationUrl || customerProfile?.locationUrl || "";
@@ -203,6 +205,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       couriers={safeCouriers} 
       phoneProfile={safeCustomerProfile}
       secondPhoneProfile={safeSecondProfile}
+      designerConfig={designerConfig}
     />
     <AdminOrderMoneyEvents 
       orderId={order.id}
