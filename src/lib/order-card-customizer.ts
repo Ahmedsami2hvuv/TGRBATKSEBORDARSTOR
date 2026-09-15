@@ -218,7 +218,7 @@ const DESIGNER_SETTING_SECTION = "order_cards_designer";
 
 let cachedConfig: OrderCardDesignerConfig | null = null;
 let lastFetchTime = 0;
-const CACHE_TTL_MS = 60 * 1000; // دقيقة واحدة
+const CACHE_TTL_MS = 1000; // ثانية واحدة فقط لتقليل الضغط وضمان التحديث اللحظي الفوري
 
 export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerConfig> {
   const now = Date.now();

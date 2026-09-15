@@ -15,11 +15,12 @@ export async function updateOrderCardsDesignerAction(
       return { ok: false, error: "فشل حفظ إعدادات التصميم في قاعدة البيانات." };
     }
 
-    revalidatePath("/abo1stor3hlaa2kbr8-47");
-    revalidatePath("/abo1stor3hlaa2kbr8-47/orders");
-    revalidatePath("/mandoub");
-    revalidatePath("/preparer");
-    revalidatePath("/staff/portal");
+    revalidatePath("/abo1stor3hlaa2kbr8-47", "layout");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/orders", "layout");
+    revalidatePath("/mandoub", "layout");
+    revalidatePath("/preparer", "layout");
+    revalidatePath("/staff/portal", "layout");
+    revalidatePath("/", "layout");
 
     return { ok: true };
   } catch (error: any) {

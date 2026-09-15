@@ -38,8 +38,8 @@ import { OrderFabDock } from "@/components/order-fab-dock";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
-import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
+import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -530,203 +530,21 @@ export function OrderViewContent({
           )}
 
           {!shouldCollapseSender && (
-            <div className="relative overflow-hidden rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md">
-              <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+            <div className="space-y-3">
+              <AdminLuxuryCustomerCard
+                order={order}
+                customerName={order.customerName || (order.customer?.name ?? "")}
+                customerPhone={order.customerPhone}
+                imgCustomerDoor={imgCustDoor}
+                setPreviewImageUrl={setPreviewImageUrl}
+                isDoubleRoute={isDoubleRoute}
+                designerConfig={designerConfig}
+                phoneProfile={phoneProfile}
+              />
 
-              {isSenderPickedUp && (
-                <div className="relative z-10 flex justify-end mb-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsSenderExpanded(false)}
-                    className="px-3 py-1 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black shadow-xs border border-[#C9A86A]/60"
-                  >
-                    طوي بطاقة المرسل 🔼
-                  </button>
-                </div>
-              )}
-
-              <div className="relative z-10 flex flex-row gap-4 items-start justify-between">
-                <div className="flex-1 space-y-3 text-right">
-                  <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#1B4D3E] to-[#06281D] border border-[#C9A86A] flex items-center justify-center text-lg shadow-inner">
-                      👤
-                    </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-black text-[#F5D77F] drop-shadow-sm">
-                        {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-xs sm:text-sm">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-[#F5D77F]" title="منطقة الزبون">📍</span>
-                      <span className="font-black text-white text-sm sm:text-base">{order.customerRegion?.name ?? "—"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-[#F5D77F]" title="رقم الزبون">📞</span>
-                      {order.customerPhone ? (
-                        <AdminCustomerPhoneInteractive
-                          phone={order.customerPhone}
-                          formattedPhone={contactLine(order.customerPhone)}
-                          regionId={order.customerRegionId}
-                          currentOrderId={order.id}
-                          customerName={order.customerName}
-                          customerRegionName={order.customerRegion?.name}
-                          alternatePhone={order.alternatePhone}
-                          customerLocationUrl={order.customerLocationUrl || undefined}
-                          customerLandmark={order.customerLandmark || undefined}
-                          customerProfileId={order.customerProfileId}
-                        />
-                      ) : (
-                        <span className="font-mono font-black text-white/50">—</span>
-                      )}
-                    </div>
-
-                    {order.alternatePhone && (
-                      <div className="flex items-center gap-1.5 bg-[#06281D]/90 px-2 py-0.5 rounded-lg border border-[#C9A86A]/50 w-fit">
-                        <span className="font-bold text-amber-300 text-[10px]">رقم بديل / أرشيف:</span>
-                        <span className="font-mono font-black text-[#F5D77F] ml-1">{order.alternatePhone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-2 space-y-2.5 w-full">
-                    <div className="flex flex-col items-start gap-2">
-                      <div className="flex flex-wrap items-center gap-2 w-full">
-                        {order.customerLocationUrl?.trim() ? (
-                          <div className="flex flex-wrap items-center gap-2 w-full">
-                            <a
-                              href={order.customerLocationUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex min-h-[44px] sm:min-h-[48px] items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-4 text-xs sm:text-sm font-black text-[#F5D77F] hover:scale-[1.01] active:scale-95 transition-all gap-1.5 shadow-lg cursor-pointer"
-                            >
-                              <span>📍 موقع الزبون ↗</span>
-                            </a>
-                            <WaLocationCustomButtons
-                              userRole="admin"
-                              customerPhone={order.customerPhone}
-                              customerPhone2={order.customerPhone2 || undefined}
-                              shopPhone={submitterPhone || undefined}
-                              orderStatus={order.status}
-                              hasCustomerLocation={Boolean(order.customerLocationUrl)}
-                              hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-                              templateVars={{
-                                clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                                city: order.customerRegion?.name || "—",
-                                total_price: currentTotalPriceStr,
-                                total: currentTotalPriceStr,
-                                delivery: currentCourierName,
-                                courier: currentCourierName,
-                                courierName: currentCourierName,
-                                deliveryName: currentCourierName,
-                                location_url: order.customerLocationUrl || "",
-                                landmark: order.customerLandmark || "",
-                                order_number: String(order.orderNumber || ""),
-                                customer_phone: order.customerPhone || "",
-                                customer_phone2: order.customerPhone2 || "",
-                                shop_phone: submitterPhone || "",
-                              }}
-                              customButtons={waButtonSettings}
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap items-center gap-2 w-full">
-                            <AdminCustomerLocationQuick
-                              orderId={order.id}
-                              customerPhone={order.customerPhone}
-                              customerPhone2={order.customerPhone2 || undefined}
-                              shopPhone={submitterPhone || undefined}
-                              orderStatus={order.status}
-                              templateVars={{
-                                clientshop: order.shop?.name || "",
-                                city: order.customerRegion?.name || "",
-                                total_price: String(order.totalAmount || ""),
-                                delivery: order.courier?.name || "",
-                                location_url: order.customerLocationUrl || "",
-                                landmark: order.customerLandmark || "",
-                                order_number: String(order.orderNumber || ""),
-                                customer_phone: order.customerPhone || "",
-                                customer_phone2: order.customerPhone2 || "",
-                                shop_phone: submitterPhone || "",
-                              }}
-                              customButtons={waButtonSettings}
-                            />
-                          </div>
-                        )}
-
-                        <OtherRegionsCustomerDetails
-                          phone={order.customerPhone}
-                          currentRegionId={order.customerRegionId}
-                          currentRegionName={order.customerRegion?.name}
-                          orderId={order.id}
-                          isSecondDestination={false}
-                        />
-                      </div>
-
-                      {order.customerLocationUrl?.trim() && order.customerLocationUploadedByName?.trim() && (
-                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
-                      )}
-
-                      {/* أزرار الاتصال والواتساب السريعة للزبون بصور نانو بنانا */}
-                      {order.customerPhone && (
-                        <div className="flex items-center gap-3 w-full justify-center pt-1">
-                          <a
-                            href={telHref(order.customerPhone)}
-                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                            title="اتصال هاتفي بالزبون"
-                          >
-                            <img
-                              src="/images/order-luxury/btn-admin-call.webp"
-                              alt="اتصال"
-                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                            />
-                          </a>
-                          <a
-                            href={whatsappMeUrl(order.customerPhone)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                            title="مراسلة واتساب"
-                          >
-                            <img
-                              src="/images/order-luxury/btn-admin-whatsapp.webp"
-                              alt="واتس"
-                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                            />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* صورة باب الزبون */}
-                <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                  <span className="text-xs font-black text-[#F5D77F]">صورة الباب</span>
-                  {imgCustDoor ? (
-                    <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
-                        <img src={imgCustDoor} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgCustDoor)} />
-                      </div>
-                      {order.customerDoorPhotoUploadedByName?.trim() ? (
-                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} /></div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
-                      لا توجد صورة
-                    </div>
-                  )}
-                  <div className="w-full">
-                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative z-10 mt-3 space-y-2">
+              {/* عناصر إضافية مساندة تحت كارت الزبون الفاخر */}
+              <div className="bg-[#0A3D2E]/70 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+                {/* دالة الزبون وموقعه الإضافي */}
                 <div className="flex flex-col gap-1">
                   <InlineLandmarkEditor
                     orderId={order.id}
@@ -737,9 +555,70 @@ export function OrderViewContent({
                   />
                 </div>
 
+                {/* أزرار قوالب الواتساب المخصصة للموقع */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {order.customerLocationUrl?.trim() ? (
+                    <WaLocationCustomButtons
+                      userRole="admin"
+                      customerPhone={order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                      hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                      templateVars={{
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                        city: order.customerRegion?.name || "—",
+                        total_price: currentTotalPriceStr,
+                        total: currentTotalPriceStr,
+                        delivery: currentCourierName,
+                        courier: currentCourierName,
+                        courierName: currentCourierName,
+                        deliveryName: currentCourierName,
+                        location_url: order.customerLocationUrl || "",
+                        landmark: order.customerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                      }}
+                      customButtons={waButtonSettings}
+                    />
+                  ) : (
+                    <AdminCustomerLocationQuick
+                      orderId={order.id}
+                      customerPhone={order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      templateVars={{
+                        clientshop: order.shop?.name || "",
+                        city: order.customerRegion?.name || "",
+                        total_price: String(order.totalAmount || ""),
+                        delivery: order.courier?.name || "",
+                        location_url: order.customerLocationUrl || "",
+                        landmark: order.customerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                      }}
+                      customButtons={waButtonSettings}
+                    />
+                  )}
+
+                  <OtherRegionsCustomerDetails
+                    phone={order.customerPhone}
+                    currentRegionId={order.customerRegionId}
+                    currentRegionName={order.customerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={false}
+                  />
+                </div>
+
                 {/* بلوك الاستدلال الذكي المضيء */}
                 {isSmartHintValid(order.smartHintLine) && (
-                  <div className="mt-3 bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-3 flex items-center justify-between shadow-lg">
+                  <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-3 flex items-center justify-between shadow-lg">
                     <div className="flex-1 text-right">
                       <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
                         <span>💡 الاستدلال الذكي</span>

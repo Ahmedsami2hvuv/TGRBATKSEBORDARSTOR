@@ -890,99 +890,103 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         onChange={handleFileChange}
       />
 
-      {/* الرأس الملكي للصفحة مع مؤشر الحفظ التلقائي */}
-      <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-4 sm:p-5 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
-        <div>
-          <h1 className="text-base sm:text-xl font-black text-[#F5D77F] flex items-center gap-2">
-            <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
-          </h1>
-          <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
-            التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
-          </p>
-        </div>
+      {/* الرأس الملكي العام والتبويبات - يظهران فقط في وضع استعراض كافة العناصر */}
+      {!selectedElementId && (
+        <>
+          <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-4 sm:p-5 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
+            <div>
+              <h1 className="text-base sm:text-xl font-black text-[#F5D77F] flex items-center gap-2">
+                <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
+              </h1>
+              <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
+                التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
+              </p>
+            </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {saveStatus === "saving" && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-xl text-xs font-black animate-pulse">
-              <span className="animate-spin">🔄</span> جاري الحفظ تلقائياً...
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {saveStatus === "saving" && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-xl text-xs font-black animate-pulse">
+                  <span className="animate-spin">🔄</span> جاري الحفظ تلقائياً...
+                </div>
+              )}
+              {saveStatus === "saved" && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-black shadow-sm">
+                  <span>✅</span> تم الحفظ تلقائياً
+                </div>
+              )}
+              {saveStatus === "error" && (
+                <button
+                  type="button"
+                  onClick={() => void performSave(config)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700/40 border border-rose-400 text-rose-300 rounded-xl text-xs font-black cursor-pointer hover:bg-rose-700/60"
+                >
+                  <span>❌</span> فشل الحفظ - انقر لإعادة المحاولة
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => void performSave(config)}
+                className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black border border-[#C9A86A] hover:scale-105 active:scale-95 transition cursor-pointer"
+              >
+                💾 حفظ يدوي
+              </button>
+            </div>
+          </div>
+
+          {uploadingKey && (
+            <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 text-center text-xs font-bold text-amber-300 animate-pulse">
+              ⏳ جاري قص الفراغات والشفافية المحيطة تلقائياً ✂️، وضغط وتحويل الصورة إلى صيغة WEBP ورفعها للسيرفر...
             </div>
           )}
-          {saveStatus === "saved" && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-black shadow-sm">
-              <span>✅</span> تم الحفظ تلقائياً
-            </div>
-          )}
-          {saveStatus === "error" && (
+
+          {/* التبويبات الرئيسية */}
+          <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
             <button
               type="button"
-              onClick={() => void performSave(config)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700/40 border border-rose-400 text-rose-300 rounded-xl text-xs font-black cursor-pointer hover:bg-rose-700/60"
+              onClick={() => {
+                setActiveTab("shop_card");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "shop_card"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
             >
-              <span>❌</span> فشل الحفظ - انقر لإعادة المحاولة
+              🏬 كارت المحل (المرسل)
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void performSave(config)}
-            className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black border border-[#C9A86A] hover:scale-105 active:scale-95 transition cursor-pointer"
-          >
-            💾 حفظ يدوي
-          </button>
-        </div>
-      </div>
-
-      {uploadingKey && (
-        <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 text-center text-xs font-bold text-amber-300 animate-pulse">
-          ⏳ جاري قص الفراغات والشفافية المحيطة تلقائياً ✂️، وضغط وتحويل الصورة إلى صيغة WEBP ورفعها للسيرفر...
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("customer_card");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "customer_card"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
+            >
+              👤 كارت الزبون (المستلم)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("wa_buttons");
+                setSelectedElementId(null);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "wa_buttons"
+                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+              }`}
+            >
+              💬 أزرار الواتساب المخصصة
+            </button>
+          </div>
+        </>
       )}
-
-      {/* التبويبات الرئيسية */}
-      <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("shop_card");
-            setSelectedElementId(null);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "shop_card"
-              ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-              : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-          }`}
-        >
-          🏬 كارت المحل (المرسل)
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("customer_card");
-            setSelectedElementId(null);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "customer_card"
-              ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-              : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-          }`}
-        >
-          👤 كارت الزبون (المستلم)
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("wa_buttons");
-            setSelectedElementId(null);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "wa_buttons"
-              ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-              : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-          }`}
-        >
-          💬 أزرار الواتساب المخصصة
-        </button>
-      </div>
 
       {/* ========================================================================= */}
       {/* 1. وضع التعديل الفردي المخصص (لوحة المعاينة مثبتة في الأعلى 100% والإعدادات بالأسفل) */}
@@ -1245,7 +1249,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                         <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(shopCustom?.btnCall)}
@@ -1254,11 +1258,11 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                               alt="اتصال"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(shopCustom?.btnWhatsapp)}
@@ -1267,7 +1271,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                               alt="واتس اب"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                         </div>
@@ -1305,7 +1309,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                         <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(shopCustom?.btnCamera)}
@@ -1314,11 +1318,11 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                               alt="كاميرا"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(shopCustom?.btnGallery)}
@@ -1327,7 +1331,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                               alt="معرض"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                         </div>
@@ -1493,7 +1497,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                         <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(custCustom?.btnCall)}
@@ -1502,11 +1506,11 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                               alt="اتصال"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(custCustom?.btnWhatsapp)}
@@ -1515,7 +1519,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                               alt="واتس اب"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                         </div>
@@ -1553,7 +1557,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
                         <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(custCustom?.btnCamera)}
@@ -1562,11 +1566,11 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                               alt="كاميرا"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                           <div
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all inline-flex shrink-0 ${
                               selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl" : "hover:opacity-90"
                             }`}
                             style={getElementStyle(custCustom?.btnGallery)}
@@ -1575,7 +1579,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                             <img
                               src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                               alt="معرض"
-                              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-xl"
+                              className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block"
                             />
                           </div>
                         </div>
