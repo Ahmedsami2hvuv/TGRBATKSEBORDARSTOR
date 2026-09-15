@@ -25,6 +25,8 @@ type ElementDefinition = {
   defaultImg: string;
   description: string;
   isFrame?: boolean;
+  isText?: boolean;
+  previewTextSample?: string;
   getConfig: (cfg: OrderCardDesignerConfig) => CustomElementConfig | undefined;
   updateConfig: (
     prev: OrderCardDesignerConfig,
@@ -219,7 +221,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     },
     {
       id: "shop_iconShopName",
-      title: "أيقونة اسم المحل",
+      title: "أيقونة اسم المحل 🏪",
       category: "shop_card",
       defaultImg: "/images/order-luxury/shop-card/icon-shop-name.webp",
       description: "الأيقونة المجسمة لسطر اسم المحل التجاري",
@@ -240,11 +242,29 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       }),
     },
     {
+      id: "shop_textShopName",
+      title: "✍️ نص اسم المحل",
+      category: "shop_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "أزياء الأمير الملكي",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط اسم المحل التجاري",
+      getConfig: (c) => c.shopCard?.textShopName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          textShopName: { ...(prev.shopCard?.textShopName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
       id: "shop_iconCustomerName",
-      title: "أيقونة اسم العميل / المسؤول",
+      title: "أيقونة اسم العميل / المسؤول 👤",
       category: "shop_card",
       defaultImg: "/images/order-luxury/shop-card/icon-customer-name.webp",
-      description: "الأيقونة المجسمة لسطر اسم صاحب المحل أو المسؤول",
+      description: "الأيقونة المجسمة لسطر صاحب المحل أو المسؤول",
       getConfig: (c) => c.shopCard?.iconCustomerName,
       updateConfig: (prev, f, v) => ({
         ...prev,
@@ -262,8 +282,26 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       }),
     },
     {
+      id: "shop_textCustomerName",
+      title: "✍️ نص اسم صاحب المحل / المسؤول",
+      category: "shop_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "أحمد سامي (المدير)",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط اسم صاحب المحل",
+      getConfig: (c) => c.shopCard?.textCustomerName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          textCustomerName: { ...(prev.shopCard?.textCustomerName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
       id: "shop_iconRegion",
-      title: "أيقونة منطقة المحل",
+      title: "أيقونة منطقة المحل 📍",
       category: "shop_card",
       defaultImg: "/images/order-luxury/shop-card/icon-region.webp",
       description: "الأيقونة المجسمة لسطر المنطقة الجغرافية للمحل",
@@ -284,8 +322,26 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       }),
     },
     {
+      id: "shop_textRegion",
+      title: "✍️ نص منطقة المحل",
+      category: "shop_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "بغداد — الكرادة",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط منطقة المحل",
+      getConfig: (c) => c.shopCard?.textRegion,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          textRegion: { ...(prev.shopCard?.textRegion || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
       id: "shop_iconPhone",
-      title: "أيقونة هاتف المحل",
+      title: "أيقونة هاتف المحل 📞",
       category: "shop_card",
       defaultImg: "/images/order-luxury/shop-card/icon-phone.webp",
       description: "الأيقونة المجسمة لسطر رقم هاتف المحل",
@@ -304,6 +360,24 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           iconPhone: { ...(prev.shopCard?.iconPhone || {}), imageUrl: url },
         },
       }),
+    },
+    {
+      id: "shop_textPhone",
+      title: "✍️ نص رقم هاتف المحل",
+      category: "shop_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "07701234567",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط رقم هاتف المحل",
+      getConfig: (c) => c.shopCard?.textPhone,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          textPhone: { ...(prev.shopCard?.textPhone || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
     },
     {
       id: "shop_btnShopLocation",
@@ -505,7 +579,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     },
     {
       id: "cust_iconCustomerName",
-      title: "أيقونة اسم الزبون",
+      title: "أيقونة اسم الزبون 👤",
       category: "customer_card",
       defaultImg: "/images/order-luxury/shop-card/icon-customer-name.webp",
       description: "الأيقونة المجسمة لسطر اسم الزبون المستلم",
@@ -526,8 +600,26 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       }),
     },
     {
+      id: "cust_textCustomerName",
+      title: "✍️ نص اسم الزبون (المستلم)",
+      category: "customer_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "مريم علي (الزبون)",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط اسم الزبون المستلم",
+      getConfig: (c) => c.customerCard?.textCustomerName,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          textCustomerName: { ...(prev.customerCard?.textCustomerName || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
       id: "cust_iconRegion",
-      title: "أيقونة منطقة الزبون",
+      title: "أيقونة منطقة الزبون 📍",
       category: "customer_card",
       defaultImg: "/images/order-luxury/shop-card/icon-region.webp",
       description: "الأيقونة المجسمة لسطر منطقة وسكن الزبون",
@@ -548,8 +640,26 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       }),
     },
     {
+      id: "cust_textRegion",
+      title: "✍️ نص منطقة الزبون",
+      category: "customer_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "بغداد — المنصور",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط منطقة الزبون",
+      getConfig: (c) => c.customerCard?.textRegion,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          textRegion: { ...(prev.customerCard?.textRegion || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
       id: "cust_iconPhone",
-      title: "أيقونة هاتف الزبون",
+      title: "أيقونة هاتف الزبون 📞",
       category: "customer_card",
       defaultImg: "/images/order-luxury/shop-card/icon-phone.webp",
       description: "الأيقونة المجسمة لسطر رقم هاتف الزبون",
@@ -568,6 +678,24 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           iconPhone: { ...(prev.customerCard?.iconPhone || {}), imageUrl: url },
         },
       }),
+    },
+    {
+      id: "cust_textPhone",
+      title: "✍️ نص هاتف الزبون",
+      category: "customer_card",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "07809876543",
+      description: "التحكم بحجم، تكبير، تدوير، وإزاحة خط رقم هاتف الزبون",
+      getConfig: (c) => c.customerCard?.textPhone,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          textPhone: { ...(prev.customerCard?.textPhone || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
     },
     {
       id: "cust_btnLocation",
@@ -1014,88 +1142,152 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_iconShopName");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.iconShopName)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
-                          alt="اسم المحل"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          أزياء الأمير الملكي
-                        </span>
+                      {/* 1. سطر اسم المحل */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_iconShopName");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
+                            alt="اسم المحل"
+                            style={getElementStyle(shopCustom?.iconShopName)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_textShopName");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(shopCustom?.textShopName)}
+                            className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            أزياء الأمير الملكي
+                          </span>
+                        </div>
                       </div>
 
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_iconCustomerName");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.iconCustomerName)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                          alt="اسم العميل"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          أحمد سامي (المدير)
-                        </span>
+                      {/* 2. سطر اسم العميل / المسؤول */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_iconCustomerName");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                            alt="اسم العميل"
+                            style={getElementStyle(shopCustom?.iconCustomerName)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_textCustomerName");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(shopCustom?.textCustomerName)}
+                            className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            أحمد سامي (المدير)
+                          </span>
+                        </div>
                       </div>
 
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_iconRegion");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.iconRegion)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                          alt="المنطقة"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          بغداد — الكرادة
-                        </span>
+                      {/* 3. سطر المنطقة */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_iconRegion");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                            alt="المنطقة"
+                            style={getElementStyle(shopCustom?.iconRegion)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_textRegion");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(shopCustom?.textRegion)}
+                            className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            بغداد — الكرادة
+                          </span>
+                        </div>
                       </div>
 
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("shop_iconPhone");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(shopCustom?.iconPhone)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                          alt="الهاتف"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          07701234567
-                        </span>
+                      {/* 4. سطر الهاتف */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_iconPhone");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                            alt="الهاتف"
+                            style={getElementStyle(shopCustom?.iconPhone)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("shop_textPhone");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(shopCustom?.textPhone)}
+                            className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            07701234567
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1265,67 +1457,115 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_iconCustomerName");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.iconCustomerName)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                          alt="اسم الزبون"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          مريم علي (الزبون)
-                        </span>
+                      {/* 1. سطر اسم الزبون */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_iconCustomerName");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                            alt="اسم الزبون"
+                            style={getElementStyle(custCustom?.iconCustomerName)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_textCustomerName");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "cust_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(custCustom?.textCustomerName)}
+                            className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            مريم علي (الزبون)
+                          </span>
+                        </div>
                       </div>
 
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_iconRegion");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.iconRegion)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                          alt="المنطقة"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          بغداد — المنصور
-                        </span>
+                      {/* 2. سطر المنطقة */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_iconRegion");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                            alt="المنطقة"
+                            style={getElementStyle(custCustom?.iconRegion)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_textRegion");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "cust_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(custCustom?.textRegion)}
+                            className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            بغداد — المنصور
+                          </span>
+                        </div>
                       </div>
 
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("cust_iconPhone");
-                        }}
-                        className={`flex items-center gap-1.5 sm:gap-2.5 min-w-0 cursor-pointer rounded-xl p-0.5 transition-all ${
-                          selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
-                        }`}
-                        style={getElementStyle(custCustom?.iconPhone)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                          alt="الهاتف"
-                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm"
-                        />
-                        <span className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                          07809876543
-                        </span>
+                      {/* 3. سطر الهاتف */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_iconPhone");
+                          }}
+                          className={`cursor-pointer rounded-lg p-0.5 transition-all shrink-0 ${
+                            selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50" : "hover:opacity-90"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                            alt="الهاتف"
+                            style={getElementStyle(custCustom?.iconPhone)}
+                            className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
+                          />
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElementId("cust_textPhone");
+                          }}
+                          className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all ${
+                            selectedElementId === "cust_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10" : "hover:opacity-90"
+                          }`}
+                        >
+                          <span
+                            style={getElementStyle(custCustom?.textPhone)}
+                            className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                          >
+                            07809876543
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1676,7 +1916,16 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-14 h-14 rounded-xl border border-[#C9A86A]/60 bg-black/50 flex items-center justify-center overflow-hidden shrink-0 p-1 relative">
-                      {currentImg ? (
+                      {elem.isText ? (
+                        <div className="text-center p-1 overflow-hidden">
+                          <span
+                            style={getElementStyle(elemConfig)}
+                            className="text-[11px] font-black text-[#F5D77F] drop-shadow-sm inline-block line-clamp-2"
+                          >
+                            {elem.previewTextSample || "نص"}
+                          </span>
+                        </div>
+                      ) : currentImg ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={currentImg}
@@ -2121,11 +2370,18 @@ function DedicatedElementInspector({
 
   return (
     <div className="space-y-5">
-      {/* صندوق معاينة العنصر ورفع الصورة */}
+      {/* صندوق معاينة العنصر أو النص */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-4">
         <div className="flex items-center gap-4">
-          <div className="w-24 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-1 relative shadow-inner">
-            {currentImg ? (
+          <div className="w-28 h-20 rounded-2xl border-2 border-[#C9A86A] bg-black/70 flex items-center justify-center overflow-hidden shrink-0 p-2 relative shadow-inner">
+            {elementDef.isText ? (
+              <span
+                style={previewStyle}
+                className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block text-center"
+              >
+                {elementDef.previewTextSample || "نص ملكي"}
+              </span>
+            ) : currentImg ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={currentImg}
@@ -2141,29 +2397,37 @@ function DedicatedElementInspector({
           <div>
             <h4 className="font-black text-sm text-[#F5D77F]">{elementDef.title}</h4>
             <p className="text-xs text-emerald-200 mt-0.5">
-              معاينة مصغرة لحظية مع التدوير والتكبير والإزاحة
+              {elementDef.isText
+                ? "معاينة حية ومستقلة للنص مع التكبير، التدوير، والإزاحة"
+                : "معاينة مصغرة لحظية مع التدوير والتكبير والإزاحة"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={onUploadImg}
-            className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
-          >
-            📤 رفع صورة مخصصة (قص الفراغات + WEBP)
-          </button>
-          {config?.imageUrl && (
+        {!elementDef.isText ? (
+          <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
             <button
               type="button"
-              onClick={() => onChange("imageUrl", "")}
-              className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+              onClick={onUploadImg}
+              className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
             >
-              استعادة الأصلية
+              📤 رفع صورة مخصصة (قص الفراغات + WEBP)
             </button>
-          )}
-        </div>
+            {config?.imageUrl && (
+              <button
+                type="button"
+                onClick={() => onChange("imageUrl", "")}
+                className="px-3 py-2 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+              >
+                استعادة الأصلية
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="px-3.5 py-2 bg-[#0A3D2E] border border-[#C9A86A]/40 rounded-xl text-xs font-bold text-emerald-200 flex items-center gap-2">
+            <span>✍️</span> نص مستقل، استخدم الأشرطة بالأسفل لتكبيره وتدويره وتحريكه
+          </div>
+        )}
       </div>
 
       {/* أدوات التحكم الشاملة: تدوير، أبعاد، إزاحة، اتجاه */}

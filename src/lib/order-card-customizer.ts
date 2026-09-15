@@ -130,9 +130,13 @@ export type OrderCardDesignerConfig = {
     headerShopInfo?: CustomElementConfig;
     headerShopPhoto?: CustomElementConfig;
     iconShopName?: CustomElementConfig;
+    textShopName?: CustomElementConfig;
     iconCustomerName?: CustomElementConfig;
+    textCustomerName?: CustomElementConfig;
     iconRegion?: CustomElementConfig;
+    textRegion?: CustomElementConfig;
     iconPhone?: CustomElementConfig;
+    textPhone?: CustomElementConfig;
     btnShopLocation?: CustomElementConfig;
     photoContainer?: CustomElementConfig;
     placeholderNoPhoto?: CustomElementConfig;
@@ -149,8 +153,11 @@ export type OrderCardDesignerConfig = {
     headerCustomerInfo?: CustomElementConfig;
     headerDoorPhoto?: CustomElementConfig;
     iconCustomerName?: CustomElementConfig;
+    textCustomerName?: CustomElementConfig;
     iconRegion?: CustomElementConfig;
+    textRegion?: CustomElementConfig;
     iconPhone?: CustomElementConfig;
+    textPhone?: CustomElementConfig;
     btnLocation?: CustomElementConfig;
     photoContainer?: CustomElementConfig;
     placeholderNoPhoto?: CustomElementConfig;
@@ -170,9 +177,13 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     headerShopInfo: { scale: 1, offsetX: 0, offsetY: 0 },
     headerShopPhoto: { scale: 1, offsetX: 0, offsetY: 0 },
     iconShopName: { scale: 1, offsetX: 0, offsetY: 0 },
+    textShopName: { scale: 1, offsetX: 0, offsetY: 0 },
     iconCustomerName: { scale: 1, offsetX: 0, offsetY: 0 },
+    textCustomerName: { scale: 1, offsetX: 0, offsetY: 0 },
     iconRegion: { scale: 1, offsetX: 0, offsetY: 0 },
+    textRegion: { scale: 1, offsetX: 0, offsetY: 0 },
     iconPhone: { scale: 1, offsetX: 0, offsetY: 0 },
+    textPhone: { scale: 1, offsetX: 0, offsetY: 0 },
     btnShopLocation: { scale: 1, offsetX: 0, offsetY: 0 },
     photoContainer: { scale: 1, offsetX: 0, offsetY: 0 },
     placeholderNoPhoto: { scale: 1, offsetX: 0, offsetY: 0 },
@@ -186,8 +197,11 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     headerCustomerInfo: { scale: 1, offsetX: 0, offsetY: 0 },
     headerDoorPhoto: { scale: 1, offsetX: 0, offsetY: 0 },
     iconCustomerName: { scale: 1, offsetX: 0, offsetY: 0 },
+    textCustomerName: { scale: 1, offsetX: 0, offsetY: 0 },
     iconRegion: { scale: 1, offsetX: 0, offsetY: 0 },
+    textRegion: { scale: 1, offsetX: 0, offsetY: 0 },
     iconPhone: { scale: 1, offsetX: 0, offsetY: 0 },
+    textPhone: { scale: 1, offsetX: 0, offsetY: 0 },
     btnLocation: { scale: 1, offsetX: 0, offsetY: 0 },
     photoContainer: { scale: 1, offsetX: 0, offsetY: 0 },
     placeholderNoPhoto: { scale: 1, offsetX: 0, offsetY: 0 },

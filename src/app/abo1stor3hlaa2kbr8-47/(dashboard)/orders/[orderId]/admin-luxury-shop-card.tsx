@@ -178,53 +178,69 @@ export function AdminLuxuryShopCard({
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
               <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
                 {/* سطر 1: اسم المحل */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconShopName)}>
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
                     alt="اسم المحل"
+                    style={getElementStyle(shopCustom?.iconShopName)}
                     className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
-                  <span className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span
+                    style={getElementStyle(shopCustom?.textShopName)}
+                    className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                  >
                     {order.shop?.name || "المحل"}
                   </span>
                 </div>
 
                 {/* سطر 2: اسم العميل / المسؤول */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconCustomerName)}>
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
                     alt="اسم العميل"
+                    style={getElementStyle(shopCustom?.iconCustomerName)}
                     className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
-                  <span className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span
+                    style={getElementStyle(shopCustom?.textCustomerName)}
+                    className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                  >
                     {submitterName || "—"}
                   </span>
                 </div>
 
                 {/* سطر 3: اسم المنطقة */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconRegion)}>
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
                     alt="منطقة المحل"
+                    style={getElementStyle(shopCustom?.iconRegion)}
                     className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
-                  <span className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span
+                    style={getElementStyle(shopCustom?.textRegion)}
+                    className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                  >
                     {order.shop?.region?.name || "—"}
                   </span>
                 </div>
 
                 {/* سطر 4: رقم الهاتف */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0" style={getElementStyle(shopCustom?.iconPhone)}>
+                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
                     alt="رقم الهاتف"
+                    style={getElementStyle(shopCustom?.iconPhone)}
                     className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                   />
-                  <span className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
+                  <span
+                    style={getElementStyle(shopCustom?.textPhone)}
+                    className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                  >
                     {cleanPhone || "—"}
                   </span>
                 </div>
