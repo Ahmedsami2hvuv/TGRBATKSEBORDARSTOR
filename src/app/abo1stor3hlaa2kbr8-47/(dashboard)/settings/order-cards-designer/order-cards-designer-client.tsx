@@ -3332,14 +3332,14 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                {/* أزرار التواصل (اتصال + واتساب) */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
+                {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElementId("shop_btnCall");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(shopCustom?.btnCall)}
@@ -3349,7 +3349,7 @@ function OrderCardsLivePreview({
                     <img
                       src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                       alt="اتصال"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                   <div
@@ -3357,7 +3357,7 @@ function OrderCardsLivePreview({
                       e.stopPropagation();
                       setSelectedElementId("shop_btnWhatsapp");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(shopCustom?.btnWhatsapp)}
@@ -3367,7 +3367,7 @@ function OrderCardsLivePreview({
                     <img
                       src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                       alt="واتس اب"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                 </div>
@@ -3413,13 +3413,14 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
+                {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElementId("shop_btnCamera");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(shopCustom?.btnCamera)}
@@ -3429,7 +3430,7 @@ function OrderCardsLivePreview({
                     <img
                       src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                       alt="كاميرا"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                   <div
@@ -3437,7 +3438,7 @@ function OrderCardsLivePreview({
                       e.stopPropagation();
                       setSelectedElementId("shop_btnGallery");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(shopCustom?.btnGallery)}
@@ -3447,7 +3448,7 @@ function OrderCardsLivePreview({
                     <img
                       src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                       alt="معرض"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                 </div>
@@ -3658,14 +3659,14 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                {/* أزرار التواصل (اتصال + واتساب) */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 pt-1 flex-wrap">
+                {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElementId("cust_btnCall");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(custCustom?.btnCall)}
@@ -3675,7 +3676,7 @@ function OrderCardsLivePreview({
                     <img
                       src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                       alt="اتصال"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                   <div
@@ -3683,7 +3684,7 @@ function OrderCardsLivePreview({
                       e.stopPropagation();
                       setSelectedElementId("cust_btnWhatsapp");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(custCustom?.btnWhatsapp)}
@@ -3693,7 +3694,7 @@ function OrderCardsLivePreview({
                     <img
                       src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                       alt="واتس اب"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                 </div>
@@ -3748,13 +3749,14 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 pt-1 w-full flex-wrap">
+                {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElementId("cust_btnCamera");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(custCustom?.btnCamera)}
@@ -3764,7 +3766,7 @@ function OrderCardsLivePreview({
                     <img
                       src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                       alt="كاميرا"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                   <div
@@ -3772,7 +3774,7 @@ function OrderCardsLivePreview({
                       e.stopPropagation();
                       setSelectedElementId("cust_btnGallery");
                     }}
-                    className={`cursor-pointer transition-all inline-flex shrink-0 ${
+                    className={`cursor-pointer transition-all w-full flex justify-center min-w-0 ${
                       selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
                     }`}
                     style={getElementStyle(custCustom?.btnGallery)}
@@ -3782,7 +3784,7 @@ function OrderCardsLivePreview({
                     <img
                       src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                       alt="معرض"
-                      className="h-8 sm:h-10 md:h-11 max-w-[130px] w-auto object-contain drop-shadow-xl block pointer-events-none"
+                      className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
                     />
                   </div>
                 </div>
