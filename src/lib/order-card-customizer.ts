@@ -234,6 +234,27 @@ export type OrderCardDesignerConfig = {
     btnGallery?: CustomElementConfig;
   };
 
+  // كارت معلومات الطلب والأسعار
+  orderInfoCard?: {
+    frameBgUrl?: string;
+    frameConfig?: CustomFrameConfig;
+    headerInfo?: CustomElementConfig;
+    headerPhoto?: CustomElementConfig;
+    iconOrderBox?: CustomElementConfig;
+    textOrderType?: CustomElementConfig;
+    iconClock?: CustomElementConfig;
+    textOrderTime?: CustomElementConfig;
+    iconCoins?: CustomElementConfig;
+    blockSubtotal?: CustomElementConfig;
+    blockDelivery?: CustomElementConfig;
+    blockDebt?: CustomElementConfig;
+    blockTotal?: CustomElementConfig;
+    photoContainer?: CustomElementConfig;
+    placeholderNoPhoto?: CustomElementConfig;
+    btnCamera?: CustomElementConfig;
+    btnGallery?: CustomElementConfig;
+  };
+
   // أزرار الواتساب المخصصة
   waButtonsConfig?: Record<string, CustomElementConfig>;
 };
@@ -294,6 +315,24 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     btnCamera: { scale: 1, offsetX: 0, offsetY: 0 },
     btnGallery: { scale: 1, offsetX: 0, offsetY: 0 },
   },
+  orderInfoCard: {
+    frameBgUrl: "/images/order-luxury/order-info-card/order-info-frame.jpg",
+    headerInfo: { scale: 1, offsetX: 0, offsetY: 0 },
+    headerPhoto: { scale: 1, offsetX: 0, offsetY: 0 },
+    iconOrderBox: { scale: 1, offsetX: 0, offsetY: 0 },
+    textOrderType: { scale: 1, offsetX: 0, offsetY: 0 },
+    iconClock: { scale: 1, offsetX: 0, offsetY: 0 },
+    textOrderTime: { scale: 1, offsetX: 0, offsetY: 0 },
+    iconCoins: { scale: 1, offsetX: 0, offsetY: 0 },
+    blockSubtotal: { scale: 1, offsetX: 0, offsetY: 0 },
+    blockDelivery: { scale: 1, offsetX: 0, offsetY: 0 },
+    blockDebt: { scale: 1, offsetX: 0, offsetY: 0 },
+    blockTotal: { scale: 1, offsetX: 0, offsetY: 0 },
+    photoContainer: { scale: 1, offsetX: 0, offsetY: 0 },
+    placeholderNoPhoto: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnCamera: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnGallery: { scale: 1, offsetX: 0, offsetY: 0 },
+  },
   waButtonsConfig: {},
 };
 
@@ -343,6 +382,10 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
       customerCard: {
         ...DEFAULT_DESIGNER_CONFIG.customerCard,
         ...(saved.customerCard || {}),
+      },
+      orderInfoCard: {
+        ...DEFAULT_DESIGNER_CONFIG.orderInfoCard,
+        ...(saved.orderInfoCard || {}),
       },
       waButtonsConfig: saved.waButtonsConfig || {},
     };

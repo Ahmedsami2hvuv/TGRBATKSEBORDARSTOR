@@ -40,6 +40,7 @@ import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
+import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -854,96 +855,108 @@ export function OrderViewContent({
             </div>
           )}
         {/* --- تفاصيل الطلب والأسعار وصورة الطلب --- */}
-        <div className={gridInfoPhoto}>
-          <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
-            <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+        {designerConfig?.enabledPortals?.admin !== false ? (
+          <div className="w-full mb-3 -mt-2 sm:-mt-2.5">
+            <AdminLuxuryOrderInfoCard
+              order={order}
+              setPreviewImageUrl={setPreviewImageUrl}
+              designerConfig={designerConfig || undefined}
+              hideSubtotalInfo={false}
+              isMandoubPortal={false}
+            />
+          </div>
+        ) : (
+          <div className={gridInfoPhoto}>
+            <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
+              <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
 
-            {/* نوع الطلب */}
-            <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
-              <span className="text-xs sm:text-sm font-bold text-[#F5D77F] whitespace-nowrap">الطلب:</span>
-              <div className="text-left font-black text-white text-xs sm:text-sm">
-                <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl text-xs sm:text-sm shadow-md inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-white" />
-              </div>
-            </div>
-
-            {/* وقت الطلب */}
-            <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
-              <span className="text-xs sm:text-sm font-bold text-[#F5D77F]">الوقت:</span>
-              <span className="text-xs sm:text-sm font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-1 rounded-xl border border-[#C9A86A]/60 shadow-inner">
-                {order.orderNoteTime || "فوري"}
-              </span>
-            </div>
-
-            {/* سعر البضاعة والتوصيل والدين */}
-            {(() => {
-              const parseNum = (val: string | null | undefined): number => {
-                if (!val) return 0;
-                const clean = val.replace(/[^\d.]/g, "");
-                const num = parseFloat(clean);
-                return isNaN(num) ? 0 : num;
-              };
-
-              const subRaw = parseNum(order.orderSubtotal);
-              const delRaw = parseNum(order.deliveryPrice);
-              const totRaw = parseNum(order.totalAmount);
-              
-              const calculatedDebt = totRaw - (subRaw + delRaw);
-              const hasDebt = calculatedDebt > 0;
-
-              return (
-                <div className="relative z-10 space-y-2.5 pt-0.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-white">سعر البضاعة:</span>
-                    <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.orderSubtotal || "0"}</span>
-                  </div>
-
-                  {hasDebt && (
-                    <div className="flex items-center justify-between gap-2 rounded-xl border border-rose-500/80 bg-rose-950/50 px-3 py-1 shadow-md">
-                      <span className="text-xs font-black text-rose-300">الدين:</span>
-                      <span className="font-mono text-base font-black text-rose-200 animate-pulse">{calculatedDebt}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-white">التوصيل:</span>
-                    <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.deliveryPrice || "0"}</span>
-                  </div>
+              {/* نوع الطلب */}
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#F5D77F] whitespace-nowrap">الطلب:</span>
+                <div className="text-left font-black text-white text-xs sm:text-sm">
+                  <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl text-xs sm:text-sm shadow-md inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-white" />
                 </div>
-              );
-            })()}
+              </div>
 
-            {/* المبلغ الكلي أو كلشي واصل */}
-            <div className={`relative z-10 rounded-2xl border-2 p-3 shadow-xl flex items-center justify-between gap-2 mt-2 ${order.prepaidAll ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#1B4D3E] text-[#F5D77F]" : "border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#F5D77F]"}`}>
-              <span className="text-xs sm:text-sm font-black">
-                {order.prepaidAll ? "حالة الدفع:" : "المبلغ الكلي:"}
-              </span>
-              <span className="font-mono text-xl sm:text-2xl font-black tabular-nums drop-shadow-md">
-                {order.prepaidAll ? (
-                  <span className="text-[#F5D77F] font-black animate-pulse">كل شي واصل ✓</span>
-                ) : (
-                  order.totalAmount || "—"
-                )}
-              </span>
+              {/* وقت الطلب */}
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#F5D77F]">الوقت:</span>
+                <span className="text-xs sm:text-sm font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-1 rounded-xl border border-[#C9A86A]/60 shadow-inner">
+                  {order.orderNoteTime || "فوري"}
+                </span>
+              </div>
+
+              {/* سعر البضاعة والتوصيل والدين */}
+              {(() => {
+                const parseNum = (val: string | null | undefined): number => {
+                  if (!val) return 0;
+                  const clean = val.replace(/[^\d.]/g, "");
+                  const num = parseFloat(clean);
+                  return isNaN(num) ? 0 : num;
+                };
+
+                const subRaw = parseNum(order.orderSubtotal);
+                const delRaw = parseNum(order.deliveryPrice);
+                const totRaw = parseNum(order.totalAmount);
+                
+                const calculatedDebt = totRaw - (subRaw + delRaw);
+                const hasDebt = calculatedDebt > 0;
+
+                return (
+                  <div className="relative z-10 space-y-2.5 pt-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-white">سعر البضاعة:</span>
+                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.orderSubtotal || "0"}</span>
+                    </div>
+
+                    {hasDebt && (
+                      <div className="flex items-center justify-between gap-2 rounded-xl border border-rose-500/80 bg-rose-950/50 px-3 py-1 shadow-md">
+                        <span className="text-xs font-black text-rose-300">الدين:</span>
+                        <span className="font-mono text-base font-black text-rose-200 animate-pulse">{calculatedDebt}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-white">التوصيل:</span>
+                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.deliveryPrice || "0"}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* المبلغ الكلي أو كلشي واصل */}
+              <div className={`relative z-10 rounded-2xl border-2 p-3 shadow-xl flex items-center justify-between gap-2 mt-2 ${order.prepaidAll ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#1B4D3E] text-[#F5D77F]" : "border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#F5D77F]"}`}>
+                <span className="text-xs sm:text-sm font-black">
+                  {order.prepaidAll ? "حالة الدفع:" : "المبلغ الكلي:"}
+                </span>
+                <span className="font-mono text-xl sm:text-2xl font-black tabular-nums drop-shadow-md">
+                  {order.prepaidAll ? (
+                    <span className="text-[#F5D77F] font-black animate-pulse">كل شي واصل ✓</span>
+                  ) : (
+                    order.totalAmount || "—"
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="self-start rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md">
+              <p className="mb-2 text-xs sm:text-sm font-black text-[#F5D77F]">صورة الطلبية</p>
+              {imgOrder ? (
+                <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
+                  <img src={imgOrder} alt="" className="h-full w-full object-contain cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgOrder)} />
+                </div>
+              ) : (
+                <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
+                  لا توجد صورة
+                </div>
+              )}
+              <div className="mt-3 space-y-2">
+                <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
+                <ImageUploaderCaption name={order.orderImageUploadedByName} />
+              </div>
             </div>
           </div>
-
-          <div className="self-start rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md">
-            <p className="mb-2 text-xs sm:text-sm font-black text-[#F5D77F]">صورة الطلبية</p>
-            {imgOrder ? (
-              <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
-                <img src={imgOrder} alt="" className="h-full w-full object-contain cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgOrder)} />
-              </div>
-            ) : (
-              <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
-                لا توجد صورة
-              </div>
-            )}
-            <div className="mt-3 space-y-2">
-              <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
-              <ImageUploaderCaption name={order.orderImageUploadedByName} />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {(() => {

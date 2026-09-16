@@ -43,6 +43,7 @@ import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons
 import { PhoneActionModal, type PhoneActionModalProps } from "@/components/phone-action-modal";
 import { AdminLuxuryShopCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-customer-card";
+import { AdminLuxuryOrderInfoCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-order-info-card";
 import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 
 const STATUS_AR: Record<string, string> = {
@@ -1281,6 +1282,21 @@ export function OrderDetailSection({
       case "route_map":
         return null;
       case "price_details":
+        if (designerConfig?.enabledPortals?.mandoub !== false) {
+          return (
+            <div key="luxury_order_info_card_mandoub" className="w-full mb-3 -mt-2 sm:-mt-2.5">
+              <AdminLuxuryOrderInfoCard
+                order={order}
+                setPreviewImageUrl={setPreviewImageUrl}
+                designerConfig={designerConfig || undefined}
+                auth={auth}
+                nextUrl={nextUrl}
+                hideSubtotalInfo={hideSubtotalInfo}
+                isMandoubPortal={true}
+              />
+            </div>
+          );
+        }
         return (
           <div key="pricing" className="bg-gradient-to-br from-purple-50/70 via-white to-slate-50/80 dark:from-purple-950/30 dark:via-slate-900 dark:to-slate-900 backdrop-blur-md rounded-[2rem] border-2 border-purple-500/80 dark:border-purple-500/70 border-r-[8px] border-r-purple-500 shadow-xl shadow-purple-500/10 ring-1 ring-purple-500/20 p-4 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" style={blockStyle}>
             <div className="flex flex-row gap-4 items-start justify-between">
