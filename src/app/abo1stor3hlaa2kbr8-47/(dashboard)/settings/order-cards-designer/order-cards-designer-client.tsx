@@ -185,6 +185,41 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     });
   };
 
+  // دالة لتطبيق اللون والظل على عدة عناصر وبلوكات مختارة بالـ Checkbox
+  const applyStyleToMultipleElements = (
+    targetIds: string[],
+    styleToApply: {
+      color?: string;
+      hasShadow?: boolean;
+      shadowColor?: string;
+      shadowBlur?: number;
+      shadowOffsetX?: number;
+      shadowOffsetY?: number;
+      backgroundColor?: string;
+    }
+  ) => {
+    if (!targetIds || targetIds.length === 0) return;
+
+    setConfig((prev) => {
+      let nextConfig = { ...prev };
+      for (const targetId of targetIds) {
+        const def = allElements.find((e) => e.id === targetId);
+        if (def) {
+          for (const [key, val] of Object.entries(styleToApply)) {
+            if (val !== undefined) {
+              nextConfig = def.updateConfig(nextConfig, key as keyof CustomElementConfig, val);
+            }
+          }
+        }
+      }
+      return nextConfig;
+    });
+
+    setCopyNotification({
+      text: `تم بنجاح تطبيق اللون والتنسيق على (${targetIds.length}) من العناصر المحددة! 🎨✨`,
+    });
+  };
+
   // مراجع للتحكم بالحفظ التلقائي
   const isFirstMount = useRef(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -2352,6 +2387,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               <DedicatedElementInspector
                 elementDef={currentSelectedDef}
                 config={currentSelectedConfig}
+                tabElements={currentTabElements}
                 onChange={(field, val) => {
                   setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
                 }}
@@ -2360,6 +2396,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     setConfig((prev) => currentSelectedDef.setImageUrl(prev, url));
                   });
                 }}
+                onApplyStyleToElements={applyStyleToMultipleElements}
               />
             )}
           </div>
@@ -3271,23 +3308,122 @@ function DedicatedFrameInspector({
   );
 }
 
+// دوال مساعدة لمنتقي الألوان RGB و HEX
+function hexToRgb(hex: string) {
+  const clean = (hex || "").replace("#", "").trim();
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16) || 0;
+    const g = parseInt(clean[1] + clean[1], 16) || 0;
+    const b = parseInt(clean[2] + clean[2], 16) || 0;
+    return { r, g, b };
+  }
+  if (clean.length === 6) {
+    const r = parseInt(clean.substring(0, 2), 16) || 0;
+    const g = parseInt(clean.substring(2, 4), 16) || 0;
+    const b = parseInt(clean.substring(4, 6), 16) || 0;
+    return { r, g, b };
+  }
+  return { r: 245, g: 215, b: 127 }; // #F5D77F افتراضي
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function getContrastTextColor(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#06281D" : "#FFFFFF";
+}
+
+const COLOR_PRESETS = [
+  { name: "ذهبي ملكي", hex: "#F5D77F" },
+  { name: "ذهبي كلاسيكي", hex: "#C9A86A" },
+  { name: "ذهبي ساطع", hex: "#FDE047" },
+  { name: "أبيض ناصع", hex: "#FFFFFF" },
+  { name: "أبيض كريمي", hex: "#FFF8F0" },
+  { name: "زمردي أخضر", hex: "#10B981" },
+  { name: "نعناعي فاتح", hex: "#6EE7B7" },
+  { name: "أخضر ليموني", hex: "#84CC16" },
+  { name: "سماوي ساطع", hex: "#38BDF8" },
+  { name: "أزرق ملكي", hex: "#60A5FA" },
+  { name: "بنفسجي جذاب", hex: "#C084FC" },
+  { name: "وردي زاهي", hex: "#F472B6" },
+  { name: "برتقالي دافئ", hex: "#FB923C" },
+  { name: "أحمر قرمزي", hex: "#F87171" },
+  { name: "فضي رمادي", hex: "#94A3B8" },
+  { name: "أسود فحمي", hex: "#000000" },
+];
+
+const SHADOW_PRESETS = [
+  {
+    name: "🚫 بدون ظل",
+    hasShadow: false,
+  },
+  {
+    name: "🌓 ظل خفيف طبيعي",
+    hasShadow: true,
+    shadowColor: "rgba(0,0,0,0.85)",
+    shadowBlur: 2,
+    shadowOffsetX: 0,
+    shadowOffsetY: 1,
+  },
+  {
+    name: "🌑 ظل أسود عميق",
+    hasShadow: true,
+    shadowColor: "#000000",
+    shadowBlur: 6,
+    shadowOffsetX: 0,
+    shadowOffsetY: 2,
+  },
+  {
+    name: "✨ توهج ذهبي (Glow)",
+    hasShadow: true,
+    shadowColor: "#F5D77F",
+    shadowBlur: 8,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  },
+  {
+    name: "💚 توهج زمردي (Glow)",
+    hasShadow: true,
+    shadowColor: "#10B981",
+    shadowBlur: 8,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  },
+  {
+    name: "💙 توهج نيون أزرق",
+    hasShadow: true,
+    shadowColor: "#38BDF8",
+    shadowBlur: 10,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  },
+];
+
 // =============================================================================
 // لوحة التحكم المفصلة للزر/النص المنفرد مع وحدة D-Pad وأزرار الزائد والناقص
 // =============================================================================
 function DedicatedElementInspector({
   elementDef,
   config,
+  tabElements = [],
   onChange,
   onUploadImg,
+  onApplyStyleToElements,
 }: {
   elementDef: ElementDefinition;
   config?: CustomElementConfig;
+  tabElements?: ElementDefinition[];
   onChange: (field: keyof CustomElementConfig, val: any) => void;
   onUploadImg: () => void;
+  onApplyStyleToElements?: (targetIds: string[], style: Partial<CustomElementConfig>) => void;
 }) {
   const [activeTool, setActiveTool] = useState<
-    "rotate" | "scale" | "scaleX" | "scaleY" | "offsetX" | "offsetY" | "origin" | "image" | "visibility"
-  >("rotate");
+    "rotate" | "scale" | "scaleX" | "scaleY" | "offsetX" | "offsetY" | "origin" | "color" | "image" | "visibility"
+  >(elementDef.isText ? "color" : "rotate");
 
   const currentImg = config?.imageUrl || elementDef.defaultImg;
   const currentScale = config?.scale ?? 1;
@@ -3297,6 +3433,31 @@ function DedicatedElementInspector({
   const currentOffsetX = config?.offsetX ?? 0;
   const currentOffsetY = config?.offsetY ?? 0;
   const currentOrigin = config?.transformOrigin || "center";
+
+  // حالات منتقي الألوان RGB والظل
+  const currentColor = config?.color || "#F5D77F";
+  const initialRgb = hexToRgb(currentColor);
+  const [rgbR, setRgbR] = useState(initialRgb.r);
+  const [rgbG, setRgbG] = useState(initialRgb.g);
+  const [rgbB, setRgbB] = useState(initialRgb.b);
+  const [selectedTargetsForCopy, setSelectedTargetsForCopy] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (config?.color) {
+      const rgb = hexToRgb(config.color);
+      setRgbR(rgb.r);
+      setRgbG(rgb.g);
+      setRgbB(rgb.b);
+    }
+  }, [config?.color]);
+
+  const handleRgbChange = (r: number, g: number, b: number) => {
+    setRgbR(r);
+    setRgbG(g);
+    setRgbB(b);
+    const hex = rgbToHex(r, g, b);
+    onChange("color", hex);
+  };
 
   const previewStyle = getElementStyle(config);
 
@@ -3313,6 +3474,12 @@ function DedicatedElementInspector({
   ];
 
   const tools = [
+    {
+      id: "color" as const,
+      label: "اللون والظل",
+      icon: "🎨",
+      badge: config?.color || config?.hasShadow !== undefined ? "مخصص" : null,
+    },
     {
       id: "rotate" as const,
       label: "تدوير",
@@ -3383,6 +3550,10 @@ function DedicatedElementInspector({
     onChange("width", 0);
     onChange("height", 0);
     onChange("transformOrigin", "center");
+    onChange("color", "");
+    onChange("hasShadow", true);
+    onChange("shadowColor", "");
+    onChange("shadowBlur", 2);
   };
 
   return (
@@ -3576,6 +3747,339 @@ function DedicatedElementInspector({
       {/* لوحة السلايدر النشط المخصص فقط للأداة المختارة */}
       <div className="bg-black/40 border-2 border-[#C9A86A]/70 rounded-2xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
+        {/* ================= أداة لون وظل وتنسيق النص والبلوك ================= */}
+        {activeTool === "color" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎨</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">لون وظل وتنسيق الكلمات والبلوكات</h4>
+                  <p className="text-[11px] text-emerald-200">اختر لون النص، تحكم بالظل والتوهج، وطبقه على أي كلمات أخرى</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="px-3 py-1 rounded-xl text-xs font-black border border-white/20 shadow-md font-mono"
+                  style={{
+                    backgroundColor: currentColor,
+                    color: getContrastTextColor(currentColor),
+                  }}
+                >
+                  {currentColor}
+                </span>
+                {config?.color && (
+                  <button
+                    type="button"
+                    onClick={() => onChange("color", "")}
+                    className="text-xs text-rose-300 bg-[#06281D] px-2.5 py-1 rounded-lg border border-rose-500/40 hover:underline cursor-pointer"
+                  >
+                    استعادة الأصل
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* صندوق المعاينة الحية المباشرة للنص مع اللون والظل المختار */}
+            <div className="p-4 rounded-2xl bg-black/60 border-2 border-[#C9A86A]/50 text-center flex flex-col items-center justify-center gap-1 shadow-inner">
+              <span className="text-[10px] text-white/50">معاينة النص الفورية:</span>
+              <span
+                style={getElementStyle(config)}
+                className="text-base sm:text-lg font-black inline-block transition-all"
+              >
+                {elementDef.previewTextSample || elementDef.title}
+              </span>
+            </div>
+
+            {/* 1. منتقي الألوان الملكية السريعة (Color Swatches) */}
+            <div className="space-y-2 bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-200">
+                <span>👑 درجات ألوان جاهزة بنقرة واحدة:</span>
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-1">
+                {COLOR_PRESETS.map((col) => {
+                  const isSelected = currentColor.toLowerCase() === col.hex.toLowerCase();
+                  return (
+                    <button
+                      key={col.hex}
+                      type="button"
+                      onClick={() => onChange("color", col.hex)}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                        isSelected
+                          ? "ring-2 ring-amber-300 border-white scale-105 shadow-lg bg-[#0A3D2E]"
+                          : "border-white/10 bg-black/30 hover:border-[#C9A86A]/50"
+                      }`}
+                      title={`${col.name} (${col.hex})`}
+                    >
+                      <span
+                        className="w-6 h-6 rounded-full border border-black/40 shadow-inner block"
+                        style={{ backgroundColor: col.hex }}
+                      />
+                      <span className="text-[9px] font-bold text-white/90 truncate w-full text-center">
+                        {col.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. منتقي الألوان الدقيق (Color Picker + Hex + RGB Sliders) */}
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-200">
+                <span>🎛️ منتقي الألوان المباشر ومزج RGB:</span>
+                <span className="text-[10px] text-emerald-300 font-mono">
+                  R:{rgbR} G:{rgbG} B:{rgbB}
+                </span>
+              </div>
+
+              {/* حقل Color Picker المباشر مع حقل Hex */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer bg-[#0A3D2E] p-2 rounded-xl border border-[#C9A86A] hover:bg-[#0F4D3A] transition">
+                  <input
+                    type="color"
+                    value={currentColor.startsWith("#") && currentColor.length === 7 ? currentColor : "#F5D77F"}
+                    onChange={(e) => onChange("color", e.target.value)}
+                    className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                  />
+                  <span className="text-xs font-black text-amber-200">منتقي الألوان 🎨</span>
+                </label>
+
+                <div className="flex-1 flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/20">
+                  <span className="text-xs font-bold text-white/50">HEX:</span>
+                  <input
+                    type="text"
+                    value={currentColor}
+                    onChange={(e) => onChange("color", e.target.value)}
+                    placeholder="#F5D77F"
+                    className="w-full bg-transparent text-xs font-mono font-bold text-[#F5D77F] focus:outline-none"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* سلايدرات درجات RGB */}
+              <div className="space-y-2 pt-1 border-t border-[#C9A86A]/20" dir="ltr">
+                {/* R - أحمر */}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-12 text-rose-400 font-bold font-mono">R: {rgbR}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="255"
+                    value={rgbR}
+                    onChange={(e) => handleRgbChange(parseInt(e.target.value), rgbG, rgbB)}
+                    className="flex-1 accent-rose-500 cursor-pointer h-2 bg-rose-950/60 rounded-lg"
+                  />
+                </div>
+                {/* G - أخضر */}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-12 text-emerald-400 font-bold font-mono">G: {rgbG}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="255"
+                    value={rgbG}
+                    onChange={(e) => handleRgbChange(rgbR, parseInt(e.target.value), rgbB)}
+                    className="flex-1 accent-emerald-500 cursor-pointer h-2 bg-emerald-950/60 rounded-lg"
+                  />
+                </div>
+                {/* B - أزرق */}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-12 text-sky-400 font-bold font-mono">B: {rgbB}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="255"
+                    value={rgbB}
+                    onChange={(e) => handleRgbChange(rgbR, rgbG, parseInt(e.target.value))}
+                    className="flex-1 accent-sky-500 cursor-pointer h-2 bg-sky-950/60 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. التحكم بالظل والتوهج (Text Shadow & Glow) */}
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
+              <div className="flex items-center justify-between text-xs font-black text-amber-200 border-b border-[#C9A86A]/20 pb-2">
+                <span className="flex items-center gap-1.5">
+                  <span>🌓</span> التحكم بظل وتوهج النص (Text Shadow)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChange("hasShadow", config?.hasShadow === false ? true : false)}
+                  className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1 ${
+                    config?.hasShadow === false
+                      ? "bg-rose-900/60 text-rose-200 border border-rose-500/50"
+                      : "bg-emerald-700/60 text-emerald-200 border border-emerald-400/50"
+                  }`}
+                >
+                  {config?.hasShadow === false ? "🚫 بدون ظل (الظل معطل)" : "✅ الظل مفعل"}
+                </button>
+              </div>
+
+              {/* قوالب الظل الجاهزة */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                {SHADOW_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      onChange("hasShadow", preset.hasShadow);
+                      if (preset.hasShadow) {
+                        onChange("shadowColor", preset.shadowColor);
+                        onChange("shadowBlur", preset.shadowBlur);
+                        onChange("shadowOffsetX", preset.shadowOffsetX);
+                        onChange("shadowOffsetY", preset.shadowOffsetY);
+                      }
+                    }}
+                    className="p-2.5 rounded-xl bg-black/40 hover:bg-[#0A3D2E] border border-white/10 hover:border-amber-400/50 text-xs font-bold text-white/90 text-right transition cursor-pointer"
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* سلايدر قوة وتمويه الظل ولون الظل */}
+              {config?.hasShadow !== false && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-amber-100 font-bold">انتشار وتمويه الظل (Blur):</span>
+                    <span className="font-mono text-emerald-300 font-bold">{config?.shadowBlur ?? 2}px</span>
+                  </div>
+                  <div className="flex items-center gap-2" dir="ltr">
+                    <input
+                      type="range"
+                      min="0"
+                      max="25"
+                      step="1"
+                      value={config?.shadowBlur ?? 2}
+                      onChange={(e) => onChange("shadowBlur", parseInt(e.target.value))}
+                      className="flex-1 accent-[#C9A86A] cursor-pointer h-2.5 rounded-lg"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. ميزة تطبيق اللون والظل على كلمات وبلوكات أخرى مع Checkboxes */}
+            {onApplyStyleToElements && tabElements.length > 1 && (
+              <div className="space-y-3 bg-gradient-to-br from-[#06281D] to-[#0A3D2E] p-4 rounded-2xl border-2 border-amber-400/70 shadow-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2">
+                  <div className="flex items-center gap-1.5 text-sm font-black text-[#F5D77F]">
+                    <span>✨</span> تطبيق هذا التنسيق واللون على عناصر أخرى
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const otherTextIds = tabElements
+                        .filter((e) => e.id !== elementDef.id && e.isText)
+                        .map((e) => e.id);
+                      onApplyStyleToElements(otherTextIds, {
+                        color: config?.color,
+                        hasShadow: config?.hasShadow,
+                        shadowColor: config?.shadowColor,
+                        shadowBlur: config?.shadowBlur,
+                        shadowOffsetX: config?.shadowOffsetX,
+                        shadowOffsetY: config?.shadowOffsetY,
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+                  >
+                    ⚡ تطبيق فوري على جميع نصوص الكارت
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-emerald-200 font-bold">
+                    <span>اختر الكلمات أو البلوكات التي تريد وضع علامة (صح ✅) عليها:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allOtherIds = tabElements.filter((e) => e.id !== elementDef.id).map((e) => e.id);
+                          setSelectedTargetsForCopy(allOtherIds);
+                        }}
+                        className="text-[10px] text-amber-300 hover:underline cursor-pointer"
+                      >
+                        تحديد الكل
+                      </button>
+                      <span className="text-white/30">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTargetsForCopy([])}
+                        className="text-[10px] text-rose-300 hover:underline cursor-pointer"
+                      >
+                        إلغاء التحديد
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* شبكة العناصر مع مربعات الاختيار Checkboxes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 bg-black/40 rounded-xl border border-white/10 no-scrollbar">
+                    {tabElements
+                      .filter((e) => e.id !== elementDef.id)
+                      .map((otherElem) => {
+                        const isChecked = selectedTargetsForCopy.includes(otherElem.id);
+                        return (
+                          <label
+                            key={otherElem.id}
+                            className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer select-none transition-all ${
+                              isChecked
+                                ? "bg-[#0A3D2E] border-emerald-400 text-white shadow-sm"
+                                : "bg-black/20 border-white/5 text-white/70 hover:bg-black/40 hover:text-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                setSelectedTargetsForCopy((prev) =>
+                                  prev.includes(otherElem.id)
+                                    ? prev.filter((x) => x !== otherElem.id)
+                                    : [...prev, otherElem.id]
+                                );
+                              }}
+                              className="w-4 h-4 rounded accent-emerald-500 cursor-pointer"
+                            />
+                            <span className="text-xs font-bold truncate">{otherElem.title}</span>
+                          </label>
+                        );
+                      })}
+                  </div>
+
+                  {/* زر تنفيذ التطبيق على العناصر المحددة */}
+                  <button
+                    type="button"
+                    disabled={selectedTargetsForCopy.length === 0}
+                    onClick={() => {
+                      onApplyStyleToElements(selectedTargetsForCopy, {
+                        color: config?.color,
+                        hasShadow: config?.hasShadow,
+                        shadowColor: config?.shadowColor,
+                        shadowBlur: config?.shadowBlur,
+                        shadowOffsetX: config?.shadowOffsetX,
+                        shadowOffsetY: config?.shadowOffsetY,
+                      });
+                      setSelectedTargetsForCopy([]);
+                    }}
+                    className={`w-full py-2.5 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2 ${
+                      selectedTargetsForCopy.length > 0
+                        ? "bg-gradient-to-r from-emerald-600 via-emerald-500 to-[#C9A86A] text-white hover:scale-[1.01] active:scale-95 cursor-pointer shadow-emerald-900/30"
+                        : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                    }`}
+                  >
+                    <span>✅</span>
+                    <span>
+                      تطبيق اللون والتنسيق على ({selectedTargetsForCopy.length}) من العناصر المحددة
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ================= 1. أداة التدوير ================= */}
         {activeTool === "rotate" && (
           <div className="space-y-4">

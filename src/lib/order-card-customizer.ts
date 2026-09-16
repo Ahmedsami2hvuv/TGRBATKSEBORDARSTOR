@@ -14,6 +14,19 @@ export type CustomElementConfig = {
   transformOrigin?: string;// نقطة ارتكاز التكبير والتدوير (center, right, left, top, bottom, etc.)
   hidden?: boolean;        // إخفاء العنصر
   visibility?: "all" | "admin" | "admin_mandoub" | "admin_mandoub_preparer"; // نطاق الظهور
+
+  // إعدادات الألوان والظلال والنصوص المخصصة
+  color?: string;          // لون النص (RGB / RGBA / Hex)
+  fontSize?: number;       // حجم الخط بالبكسل
+  fontWeight?: string;     // سمك الخط (bold, normal, 900, etc.)
+  hasShadow?: boolean;     // تشغيل أو إلغاء ظل النص
+  shadowColor?: string;    // لون الظل (RGB / Hex)
+  shadowBlur?: number;     // انتشار وتمويه الظل بالبكسل (0 إلى 30)
+  shadowOffsetX?: number;  // إزاحة الظل الأفقية
+  shadowOffsetY?: number;  // إزاحة الظل الرأسية
+  textShadow?: string;     // نص ظل مخصص
+  backgroundColor?: string;// لون خلفية البلوك
+  opacity?: number;        // شفافية العنصر (0 إلى 1)
 };
 
 export function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties {
@@ -57,6 +70,47 @@ export function getElementStyle(cfg?: CustomElementConfig): React.CSSProperties 
 
   if (cfg.hidden) {
     style.display = "none";
+  }
+
+  // تطبيق لون النص إذا تم تحديده
+  if (cfg.color) {
+    style.color = cfg.color;
+  }
+
+  // تطبيق حجم الخط
+  if (cfg.fontSize) {
+    style.fontSize = `${cfg.fontSize}px`;
+  }
+
+  // تطبيق سمك الخط
+  if (cfg.fontWeight) {
+    style.fontWeight = cfg.fontWeight;
+  }
+
+  // تطبيق ظل النص والتحكم به
+  if (cfg.hasShadow !== undefined) {
+    if (cfg.hasShadow === false) {
+      style.textShadow = "none";
+      style.filter = "none";
+    } else {
+      const sColor = cfg.shadowColor || "rgba(0,0,0,0.85)";
+      const sBlur = cfg.shadowBlur ?? 2;
+      const sX = cfg.shadowOffsetX ?? 0;
+      const sY = cfg.shadowOffsetY ?? 1;
+      style.textShadow = `${sX}px ${sY}px ${sBlur}px ${sColor}`;
+    }
+  } else if (cfg.textShadow) {
+    style.textShadow = cfg.textShadow;
+  }
+
+  // تطبيق لون الخلفية
+  if (cfg.backgroundColor) {
+    style.backgroundColor = cfg.backgroundColor;
+  }
+
+  // تطبيق الشفافية
+  if (cfg.opacity !== undefined) {
+    style.opacity = cfg.opacity;
   }
 
   return style;
