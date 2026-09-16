@@ -16,7 +16,7 @@ type Props = {
   waButtons: any[];
 };
 
-type TabType = "shop_card" | "customer_card" | "wa_buttons";
+type TabType = "shop_card" | "customer_card" | "wa_buttons" | "floating_btn";
 
 type ElementDefinition = {
   id: string;
@@ -856,13 +856,48 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     }),
   }));
 
-  const allElements = [...shopElements, ...customerElements, ...waElements];
+  // تعريف عنصر الزر العائم للاستلام والتسليم
+  const floatingElements: ElementDefinition[] = [
+    {
+      id: "floating_action_btn",
+      title: "🔘 الزر العائم للاستلام والتسليم",
+      category: "floating_btn",
+      defaultImg: "",
+      description: "التحكم الكامل بالزر العائم للاستلام والتسليم، وتغيير صورته، لون النص والخلفية، وتكبير وتصغير وتدوير الزر",
+      getConfig: (c) => ({
+        imageUrl: c.floatingActionBtn?.imageUrl,
+        scale: c.floatingActionBtn?.scale ?? 1,
+        rotate: c.floatingActionBtn?.rotate ?? 0,
+        offsetX: c.floatingActionBtn?.offsetX ?? 0,
+        offsetY: c.floatingActionBtn?.offsetY ?? 0,
+        hidden: c.floatingActionBtn?.hidden ?? false,
+      }),
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        floatingActionBtn: {
+          ...(prev.floatingActionBtn || {}),
+          [f]: v,
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        floatingActionBtn: {
+          ...(prev.floatingActionBtn || {}),
+          imageUrl: url,
+        },
+      }),
+    },
+  ];
+
+  const allElements = [...shopElements, ...customerElements, ...waElements, ...floatingElements];
   const currentTabElements =
     activeTab === "shop_card"
       ? shopElements
       : activeTab === "customer_card"
       ? customerElements
-      : waElements;
+      : activeTab === "wa_buttons"
+      ? waElements
+      : floatingElements;
 
   const currentSelectedDef = allElements.find((e) => e.id === selectedElementId);
   const currentSelectedConfig = currentSelectedDef?.getConfig(config);
@@ -940,6 +975,111 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           )}
 
+          {/* خيارات تفعيل التصميم على البوابات المختلفة بخانات اختيار واضحة */}
+          <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 sm:p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏛️</span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">تطبيق التصميم الملكي على البوابات</h3>
+                  <p className="text-[10px] sm:text-[11px] text-emerald-200">اختر أين تريد تفعيل وتطبيق كروت الطلبات والزر العائم الملكي</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-amber-300 bg-[#0A3D2E] px-2 py-0.5 rounded-lg border border-[#C9A86A]/40">
+                حفظ فوري 💾
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* لوحة الإدارة */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                config.enabledPortals?.admin !== false
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  : "bg-black/30 border-white/10 text-white/50 opacity-70"
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">👑</span>
+                  <div>
+                    <span className="text-xs font-black block">لوحة الإدارة</span>
+                    <span className="text-[10px] text-emerald-300/80">صفحة وتفاصيل الطلب للمدير</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.enabledPortals?.admin !== false}
+                  onChange={(e) => {
+                    setConfig((prev) => ({
+                      ...prev,
+                      enabledPortals: {
+                        ...(prev.enabledPortals || { admin: true, mandoub: true, preparer: false }),
+                        admin: e.target.checked,
+                      },
+                    }));
+                  }}
+                  className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+                />
+              </label>
+
+              {/* بوابة المندوب */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                config.enabledPortals?.mandoub !== false
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  : "bg-black/30 border-white/10 text-white/50 opacity-70"
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🚚</span>
+                  <div>
+                    <span className="text-xs font-black block">بوابة المندوب</span>
+                    <span className="text-[10px] text-emerald-300/80">تفاصيل الطلب وكروت المندوب</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.enabledPortals?.mandoub !== false}
+                  onChange={(e) => {
+                    setConfig((prev) => ({
+                      ...prev,
+                      enabledPortals: {
+                        ...(prev.enabledPortals || { admin: true, mandoub: true, preparer: false }),
+                        mandoub: e.target.checked,
+                      },
+                    }));
+                  }}
+                  className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+                />
+              </label>
+
+              {/* بوابة المجهز */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                config.enabledPortals?.preparer === true
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  : "bg-black/30 border-white/10 text-white/50 opacity-70"
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📦</span>
+                  <div>
+                    <span className="text-xs font-black block">بوابة المجهز</span>
+                    <span className="text-[10px] text-emerald-300/80">صفحة وتفاصيل طلب المجهز</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.enabledPortals?.preparer === true}
+                  onChange={(e) => {
+                    setConfig((prev) => ({
+                      ...prev,
+                      enabledPortals: {
+                        ...(prev.enabledPortals || { admin: true, mandoub: true, preparer: false }),
+                        preparer: e.target.checked,
+                      },
+                    }));
+                  }}
+                  className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
           {/* التبويبات الرئيسية + زر إعادة الضبط المصنعي */}
           <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto flex-wrap">
             <div className="flex items-center gap-2 overflow-x-auto">
@@ -985,10 +1125,24 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               >
                 💬 أزرار الواتساب المخصصة
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("floating_btn");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "floating_btn"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                🔘 الزر العائم للاستلام والتسليم
+              </button>
             </div>
 
             {/* زر إعادة ضبط الكارت بالكامل للوضع المصنعي */}
-            {activeTab !== "wa_buttons" && (
+            {activeTab !== "wa_buttons" && activeTab !== "floating_btn" && (
               <button
                 type="button"
                 onClick={() => {
@@ -1208,6 +1362,30 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   });
                 }}
               />
+            ) : selectedElementId === "floating_action_btn" ? (
+              <DedicatedFloatingBtnInspector
+                floatingConfig={config.floatingActionBtn}
+                onChange={(field, val) => {
+                  setConfig((prev) => ({
+                    ...prev,
+                    floatingActionBtn: {
+                      ...(prev.floatingActionBtn || {}),
+                      [field]: val,
+                    },
+                  }));
+                }}
+                onUploadImg={() => {
+                  triggerImageUpload((url) => {
+                    setConfig((prev) => ({
+                      ...prev,
+                      floatingActionBtn: {
+                        ...(prev.floatingActionBtn || {}),
+                        imageUrl: url,
+                      },
+                    }));
+                  });
+                }}
+              />
             ) : (
               <DedicatedElementInspector
                 elementDef={currentSelectedDef}
@@ -1229,99 +1407,6 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         /* 2. وضع استعراض كافة عناصر الكارت */
         /* ========================================================================= */
         <div className="space-y-6">
-          {/* الرأس الملكي للصفحة مع مؤشر الحفظ التلقائي */}
-          <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-4 sm:p-5 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
-            <div>
-              <h1 className="text-base sm:text-xl font-black text-[#F5D77F] flex items-center gap-2">
-                <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
-              </h1>
-              <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
-                التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              {saveStatus === "saving" && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-xl text-xs font-black animate-pulse">
-                  <span className="animate-spin">🔄</span> جاري الحفظ تلقائياً...
-                </div>
-              )}
-              {saveStatus === "saved" && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-black shadow-sm">
-                  <span>✅</span> تم الحفظ تلقائياً
-                </div>
-              )}
-              {saveStatus === "error" && (
-                <button
-                  type="button"
-                  onClick={() => void performSave(config)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700/40 border border-rose-400 text-rose-300 rounded-xl text-xs font-black cursor-pointer hover:bg-rose-700/60"
-                >
-                  <span>❌</span> فشل الحفظ - انقر لإعادة المحاولة
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => void performSave(config)}
-                className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black border border-[#C9A86A] hover:scale-105 active:scale-95 transition cursor-pointer"
-              >
-                💾 حفظ يدوي
-              </button>
-            </div>
-          </div>
-
-          {uploadingKey && (
-            <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 text-center text-xs font-bold text-amber-300 animate-pulse">
-              ⏳ جاري قص الفراغات والشفافية المحيطة تلقائياً ✂️، وضغط وتحويل الصورة إلى صيغة WEBP ورفعها للسيرفر...
-            </div>
-          )}
-
-          {/* التبويبات الرئيسية */}
-          <div className="flex items-center gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("shop_card");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "shop_card"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              🏬 كارت المحل (المرسل)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("customer_card");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "customer_card"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              👤 كارت الزبون (المستلم)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("wa_buttons");
-                setSelectedElementId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "wa_buttons"
-                  ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
-                  : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
-              }`}
-            >
-              💬 أزرار الواتساب المخصصة
-            </button>
-          </div>
 
           {/* المعاينة الحية التفاعلية في وضع الاستعراض */}
           <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 sm:p-4 shadow-xl space-y-3">
@@ -3796,7 +3881,517 @@ function OrderCardsLivePreview({
             })}
           </div>
         )}
+
+        {/* 4. الزر العائم للاستلام والتسليم في المعاينة */}
+        {activeTab === "floating_btn" && (
+          <div className="relative h-44 w-full bg-gradient-to-b from-[#0A3D2E]/90 to-[#06281D] border-2 border-dashed border-[#C9A86A]/60 rounded-2xl flex flex-col items-center justify-center overflow-hidden p-4 select-none">
+            <div className="absolute top-2 right-3 text-[10px] font-bold text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-[#C9A86A]/40">
+              💡 انقر على الزر لتعديله
+            </div>
+            <div
+              onClick={() => setSelectedElementId("floating_action_btn")}
+              style={{
+                transform: `scale(${config.floatingActionBtn?.scale ?? 1}) rotate(${config.floatingActionBtn?.rotate ?? 0}deg) translate(${config.floatingActionBtn?.offsetX ?? 0}px, ${config.floatingActionBtn?.offsetY ?? 0}px)`,
+                backgroundColor: config.floatingActionBtn?.bgColor || "#003399",
+                color: config.floatingActionBtn?.textColor || "#FFFFFF",
+                borderColor: config.floatingActionBtn?.borderColor || "#C9A86A",
+              }}
+              className={`h-20 w-20 rounded-full border-4 font-black shadow-2xl flex items-center justify-center flex-col transition-all cursor-pointer select-none active:scale-95 ${
+                selectedElementId === "floating_action_btn"
+                  ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105 shadow-amber-400/50"
+                  : "hover:scale-105 hover:shadow-blue-500/50"
+              }`}
+              title="انقر لتعديل أبعاد وألوان وصورة الزر العائم"
+            >
+              {config.floatingActionBtn?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={config.floatingActionBtn.imageUrl}
+                  alt="أيقونة الزر"
+                  className="h-8 w-8 object-contain mb-0.5 drop-shadow-sm pointer-events-none"
+                />
+              ) : (
+                <span className="text-2xl mb-0.5 pointer-events-none">✈️</span>
+              )}
+              <span className="text-[10px] font-black pointer-events-none tracking-tight">
+                {config.floatingActionBtn?.customLabel || "استلام"}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// مكون محرر الزر العائم المخصص (الألوان، الحجم، التدوير، والأيقونة)
+// =============================================================================
+function DedicatedFloatingBtnInspector({
+  floatingConfig,
+  onChange,
+  onUploadImg,
+}: {
+  floatingConfig?: FloatingActionBtnConfig;
+  onChange: (field: keyof FloatingActionBtnConfig, val: any) => void;
+  onUploadImg: () => void;
+}) {
+  const currentImg = floatingConfig?.imageUrl || "";
+  const currentScale = floatingConfig?.scale ?? 1;
+  const currentRotate = floatingConfig?.rotate ?? 0;
+  const currentOffsetX = floatingConfig?.offsetX ?? 0;
+  const currentOffsetY = floatingConfig?.offsetY ?? 0;
+  const currentTextColor = floatingConfig?.textColor || "#FFFFFF";
+  const currentBgColor = floatingConfig?.bgColor || "#003399";
+  const currentBorderColor = floatingConfig?.borderColor || "#C9A86A";
+  const currentLabel = floatingConfig?.customLabel || "استلام";
+
+  const [activeSubTab, setActiveSubTab] = useState<"colors" | "size_rotate" | "text" | "image">("colors");
+
+  const presetBgColors = [
+    { label: "أزرق ملكي", val: "#003399" },
+    { label: "كحلي داكن", val: "#0A2540" },
+    { label: "أخضر زمردي", val: "#0F4D3A" },
+    { label: "أخضر غامق", val: "#006633" },
+    { label: "أحمر عنابي", val: "#8B0000" },
+    { label: "ذهبي فاخر", val: "#C9A86A" },
+    { label: "بنفسجي", val: "#4B0082" },
+    { label: "أسود داكن", val: "#0f172a" },
+  ];
+
+  const presetTextColors = [
+    { label: "أبيض", val: "#FFFFFF" },
+    { label: "ذهبي فاتح", val: "#F5D77F" },
+    { label: "أصفر ساطع", val: "#FACC15" },
+    { label: "أسود", val: "#000000" },
+    { label: "أخضر فاتح", val: "#86EFAC" },
+    { label: "سماوي", val: "#7DD3FC" },
+  ];
+
+  const presetBorderColors = [
+    { label: "ذهبي ملكي", val: "#C9A86A" },
+    { label: "أبيض ناصع", val: "#FFFFFF" },
+    { label: "فضي أنيق", val: "#CBD5E1" },
+    { label: "زمردي", val: "#10B981" },
+    { label: "سماوي", val: "#38BDF8" },
+    { label: "شفاف", val: "transparent" },
+  ];
+
+  const handleReset = () => {
+    onChange("scale", 1);
+    onChange("rotate", 0);
+    onChange("offsetX", 0);
+    onChange("offsetY", 0);
+    onChange("textColor", "#FFFFFF");
+    onChange("bgColor", "#003399");
+    onChange("borderColor", "#C9A86A");
+    onChange("customLabel", "استلام");
+    onChange("imageUrl", "");
+  };
+
+  return (
+    <div className="space-y-4 text-[#FFF8F0]">
+      {/* شريط رأس المفتش وأزرار الحفظ والإعادة */}
+      <div className="flex items-center justify-between gap-2 bg-black/40 border border-[#C9A86A]/40 rounded-2xl p-2.5 sm:p-3">
+        <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] flex items-center gap-1.5 truncate">
+          <span>🔘</span> تخصيص الزر العائم للاستلام والتسليم
+        </h4>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onUploadImg}
+            className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-[11px] font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1"
+          >
+            <span>📤</span> رفع صورة للزر
+          </button>
+          {currentImg && (
+            <button
+              type="button"
+              onClick={() => onChange("imageUrl", "")}
+              className="px-2 py-1 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-[11px] font-bold hover:bg-rose-900/80 transition cursor-pointer"
+            >
+              استعادة الأيقونة
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-2.5 py-1 bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 rounded-xl text-[11px] font-black hover:bg-emerald-900 hover:text-white transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shadow-sm"
+          >
+            <span>🔄</span> ضبط افتراضي
+          </button>
+        </div>
+      </div>
+
+      {/* ================= وحدة التحكم الاتجاهية D-Pad للزر العائم ================= */}
+      <div className="bg-[#06281D]/90 border border-[#C9A86A]/50 rounded-2xl p-2.5 sm:p-3.5 shadow-xl">
+        <div className="flex items-center justify-between text-xs font-black text-[#F5D77F] mb-2 border-b border-[#C9A86A]/20 pb-1.5">
+          <span className="flex items-center gap-1">
+            <span>🕹️</span> موضع وإزاحة الزر:
+          </span>
+          <span className="text-[10px] text-emerald-300 font-mono bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
+            X: {currentOffsetX}px | Y: {currentOffsetY}px
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-1.5 w-full max-w-md mx-auto" dir="ltr">
+          <button
+            type="button"
+            onClick={() => onChange("offsetX", currentOffsetX - 1)}
+            className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+            title="تحريك لليسار 1px"
+          >
+            <span>◀</span>
+            <span className="text-[9px]">يسار</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange("offsetY", currentOffsetY - 1)}
+            className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+            title="تحريك لأعلى 1px"
+          >
+            <span>▲</span>
+            <span className="text-[9px]">فوق</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("offsetX", 0);
+              onChange("offsetY", 0);
+            }}
+            className="py-1.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition shadow-md flex flex-col items-center justify-center cursor-pointer"
+            title="إعادة ضبط للوسط (0,0)"
+          >
+            <span>🎯</span>
+            <span className="text-[9px] font-black">وسط</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange("offsetY", currentOffsetY + 1)}
+            className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+            title="تحريك لأسفل 1px"
+          >
+            <span>▼</span>
+            <span className="text-[9px]">أسفل</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange("offsetX", currentOffsetX + 1)}
+            className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-emerald-200 rounded-xl border border-[#C9A86A]/60 font-black text-xs hover:scale-105 active:scale-95 transition shadow-sm flex flex-col items-center justify-center cursor-pointer"
+            title="تحريك لليمين 1px"
+          >
+            <span>▶</span>
+            <span className="text-[9px]">يمين</span>
+          </button>
+        </div>
+      </div>
+
+      {/* شريط تبويبات إعدادات الزر العائم */}
+      <div className="flex items-center gap-1.5 bg-[#06281D]/80 p-1 rounded-xl border border-[#C9A86A]/30 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("colors")}
+          className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-black transition ${
+            activeSubTab === "colors"
+              ? "bg-[#C9A86A] text-[#06281D] shadow-md"
+              : "bg-[#0A3D2E] text-white/80 hover:text-white"
+          }`}
+        >
+          🎨 الألوان
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("size_rotate")}
+          className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-black transition ${
+            activeSubTab === "size_rotate"
+              ? "bg-[#C9A86A] text-[#06281D] shadow-md"
+              : "bg-[#0A3D2E] text-white/80 hover:text-white"
+          }`}
+        >
+          🔍 الحجم والتدوير
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("text")}
+          className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-black transition ${
+            activeSubTab === "text"
+              ? "bg-[#C9A86A] text-[#06281D] shadow-md"
+              : "bg-[#0A3D2E] text-white/80 hover:text-white"
+          }`}
+        >
+          ✍️ نص الزر
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("image")}
+          className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-black transition ${
+            activeSubTab === "image"
+              ? "bg-[#C9A86A] text-[#06281D] shadow-md"
+              : "bg-[#0A3D2E] text-white/80 hover:text-white"
+          }`}
+        >
+          🖼️ الصورة المخصصة
+        </button>
+      </div>
+
+      {/* ================= 1. أداة الألوان ================= */}
+      {activeSubTab === "colors" && (
+        <div className="space-y-3">
+          {/* لون الخلفية */}
+          <div className="bg-[#06281D]/80 p-3 rounded-xl border border-[#C9A86A]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-200 font-bold">لون خلفية الزر العائم:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={currentBgColor.startsWith("#") ? currentBgColor : "#003399"}
+                  onChange={(e) => onChange("bgColor", e.target.value)}
+                  className="w-7 h-7 rounded-lg border border-[#C9A86A] cursor-pointer bg-transparent"
+                />
+                <span className="font-mono text-xs text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
+                  {currentBgColor}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 pt-1">
+              {presetBgColors.map((c) => (
+                <button
+                  key={c.val}
+                  type="button"
+                  onClick={() => onChange("bgColor", c.val)}
+                  style={{ backgroundColor: c.val }}
+                  className={`h-7 rounded-lg border text-[10px] font-bold text-white shadow-sm flex items-center justify-center transition hover:scale-105 active:scale-95 ${
+                    currentBgColor.toLowerCase() === c.val.toLowerCase() ? "ring-2 ring-amber-300 border-white font-black" : "border-[#C9A86A]/40"
+                  }`}
+                  title={c.label}
+                >
+                  {c.label.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* لون النص والكتابة */}
+          <div className="bg-[#06281D]/80 p-3 rounded-xl border border-[#C9A86A]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-200 font-bold">لون كتابة ونصوص الزر:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={currentTextColor.startsWith("#") ? currentTextColor : "#FFFFFF"}
+                  onChange={(e) => onChange("textColor", e.target.value)}
+                  className="w-7 h-7 rounded-lg border border-[#C9A86A] cursor-pointer bg-transparent"
+                />
+                <span className="font-mono text-xs text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
+                  {currentTextColor}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-1">
+              {presetTextColors.map((c) => (
+                <button
+                  key={c.val}
+                  type="button"
+                  onClick={() => onChange("textColor", c.val)}
+                  style={{ backgroundColor: c.val === "#FFFFFF" ? "#0A3D2E" : "#06281D", color: c.val }}
+                  className={`py-1 px-2 rounded-lg border text-xs font-black shadow-sm flex items-center justify-center transition hover:scale-105 active:scale-95 ${
+                    currentTextColor.toLowerCase() === c.val.toLowerCase() ? "ring-2 ring-amber-400 border-amber-400" : "border-[#C9A86A]/40"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* لون الإطار والحدود */}
+          <div className="bg-[#06281D]/80 p-3 rounded-xl border border-[#C9A86A]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-200 font-bold">لون إطار وحدود الزر:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={currentBorderColor.startsWith("#") ? currentBorderColor : "#C9A86A"}
+                  onChange={(e) => onChange("borderColor", e.target.value)}
+                  className="w-7 h-7 rounded-lg border border-[#C9A86A] cursor-pointer bg-transparent"
+                />
+                <span className="font-mono text-xs text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-[#C9A86A]/40">
+                  {currentBorderColor}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-1">
+              {presetBorderColors.map((c) => (
+                <button
+                  key={c.val}
+                  type="button"
+                  onClick={() => onChange("borderColor", c.val)}
+                  className={`py-1 px-2 rounded-lg border text-xs font-bold bg-[#0A3D2E] text-white shadow-sm flex items-center justify-center transition hover:scale-105 active:scale-95 ${
+                    currentBorderColor.toLowerCase() === c.val.toLowerCase() ? "ring-2 ring-amber-400 border-amber-400 font-black" : "border-[#C9A86A]/40"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 2. أداة الحجم والتدوير ================= */}
+      {activeSubTab === "size_rotate" && (
+        <div className="space-y-3">
+          {/* سلايدر التكبير العام */}
+          <div className="bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-200 font-bold">حجم وتكبير الزر العائم (Scale):</span>
+              <span className="font-mono text-base font-black text-emerald-300 bg-black/60 px-3 py-1 rounded-lg border border-[#C9A86A]">
+                {Math.round(currentScale * 100)}%
+              </span>
+            </div>
+            <div className="flex items-center gap-2" dir="ltr">
+              <button
+                type="button"
+                onClick={() => onChange("scale", Math.max(0.4, parseFloat((currentScale - 0.05).toFixed(2))))}
+                className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+              >
+                ➖ تصغير (-5%)
+              </button>
+              <input
+                type="range"
+                dir="ltr"
+                min="0.4"
+                max="2.5"
+                step="0.05"
+                value={currentScale}
+                onChange={(e) => onChange("scale", parseFloat(e.target.value))}
+                className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => onChange("scale", Math.min(2.5, parseFloat((currentScale + 0.05).toFixed(2))))}
+                className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+              >
+                (+5%) تكبير ➕
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-2 pt-1 text-xs">
+              <button type="button" onClick={() => onChange("scale", 0.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">80% صغير</button>
+              <button type="button" onClick={() => onChange("scale", 1.0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">100% عادي</button>
+              <button type="button" onClick={() => onChange("scale", 1.25)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">125% كبير</button>
+              <button type="button" onClick={() => onChange("scale", 1.5)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">150% ضخم</button>
+              <button type="button" onClick={() => onChange("scale", 1.8)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">180% عملاق</button>
+            </div>
+          </div>
+
+          {/* سلايدر التدوير */}
+          <div className="bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-200 font-bold">زاوية تدوير الزر العائم (Rotate):</span>
+              <span className="font-mono text-base font-black text-amber-300 bg-black/60 px-3 py-1 rounded-lg border border-[#C9A86A]">
+                {currentRotate}°
+              </span>
+            </div>
+            <div className="flex items-center gap-2" dir="ltr">
+              <button
+                type="button"
+                onClick={() => onChange("rotate", (currentRotate - 5 + 360) % 360)}
+                className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+              >
+                ⟲ -5°
+              </button>
+              <input
+                type="range"
+                dir="ltr"
+                min="0"
+                max="360"
+                step="1"
+                value={currentRotate}
+                onChange={(e) => onChange("rotate", parseInt(e.target.value))}
+                className="flex-1 accent-[#C9A86A] cursor-pointer h-3 rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => onChange("rotate", (currentRotate + 5) % 360)}
+                className="px-3 py-1.5 bg-[#0A3D2E] text-white rounded-lg text-xs font-black border border-[#C9A86A]/40 hover:bg-[#0F4D3A] cursor-pointer"
+              >
+                +5° ⟳
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
+              <button type="button" onClick={() => onChange("rotate", 0)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">0° عدل</button>
+              <button type="button" onClick={() => onChange("rotate", 90)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">90° عمودي</button>
+              <button type="button" onClick={() => onChange("rotate", 180)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">180° مقلوب</button>
+              <button type="button" onClick={() => onChange("rotate", 270)} className="py-1 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg">270° معاكس</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 3. أداة نص وكتابة الزر ================= */}
+      {activeSubTab === "text" && (
+        <div className="bg-[#06281D]/80 p-3.5 rounded-xl border border-[#C9A86A]/30 space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-amber-200 mb-1">
+              النص المكتوب داخل الزر العائم:
+            </label>
+            <input
+              type="text"
+              value={currentLabel}
+              onChange={(e) => onChange("customLabel", e.target.value)}
+              placeholder="مثال: استلام أو تسليم أو إجراء سريع"
+              className="w-full bg-[#0A3D2E] border-2 border-[#C9A86A] rounded-xl px-3 py-2 text-sm text-white font-black"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-1 text-xs">
+            <button type="button" onClick={() => onChange("customLabel", "استلام")} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg font-bold">✈️ استلام</button>
+            <button type="button" onClick={() => onChange("customLabel", "تسليم")} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg font-bold">📦 تسليم</button>
+            <button type="button" onClick={() => onChange("customLabel", "إجراء سريع")} className="py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-white rounded-lg font-bold">⚡ إجراء سريع</button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 4. أداة الصورة المخصصة ================= */}
+      {activeSubTab === "image" && (
+        <div className="bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full border-2 border-[#C9A86A] bg-black/60 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+              {currentImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={currentImg} alt="صورة الزر" className="h-12 w-12 object-contain" />
+              ) : (
+                <span className="text-3xl">✈️</span>
+              )}
+            </div>
+            <div>
+              <h5 className="font-black text-xs text-[#F5D77F]">الأيقونة أو الصورة الحالية للزر</h5>
+              <p className="text-[10px] text-emerald-200 mt-0.5">
+                {currentImg ? "صورة مخصصة مرفوعة" : "الأيقونة الافتراضية للنظام"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={onUploadImg}
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-lg"
+            >
+              📤 رفع صورة مخصصة (WEBP)
+            </button>
+            {currentImg && (
+              <button
+                type="button"
+                onClick={() => onChange("imageUrl", "")}
+                className="px-3 py-2.5 bg-rose-900/50 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-bold hover:bg-rose-900/80 transition cursor-pointer"
+              >
+                استعادة الأيقونة الأصلية
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

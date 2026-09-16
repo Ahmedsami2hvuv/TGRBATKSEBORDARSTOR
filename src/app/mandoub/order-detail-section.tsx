@@ -41,6 +41,9 @@ import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer
 import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
 import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
 import { PhoneActionModal, type PhoneActionModalProps } from "@/components/phone-action-modal";
+import { AdminLuxuryShopCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-shop-card";
+import { AdminLuxuryCustomerCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-customer-card";
+import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المجهز",
@@ -141,8 +144,16 @@ export function OrderDetailSection({
   const fontSizeConfig = fontSizeContext?.config;
 
   const [isMounted, setIsMounted] = useState(false);
+  const [designerConfig, setDesignerConfig] = useState<OrderCardDesignerConfig | null>(null);
+
   useEffect(() => {
     setIsMounted(true);
+    fetch("/api/order-cards-designer-config", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setDesignerConfig(data);
+      })
+      .catch(() => null);
   }, []);
   const activeConfig = isMounted ? fontSizeConfig : null;
 
@@ -385,6 +396,20 @@ export function OrderDetailSection({
     switch (blockId) {
       case "shop_info":
         if (isDoubleRoute) return null;
+        if (designerConfig?.enabledPortals?.mandoub !== false) {
+          return (
+            <div key="shop_luxury_mandoub" className="mb-4">
+              <AdminLuxuryShopCard
+                order={order}
+                submitterName={submitterName}
+                submitterPhone={shopContactPhone || ""}
+                imgShopDoor={shopImageUrl}
+                setPreviewImageUrl={setPreviewImageUrl}
+                designerConfig={designerConfig || undefined}
+              />
+            </div>
+          );
+        }
         const shouldHideShop = (courierSettings?.hideShopInfoOnPickup !== false || courierSettings?.guidedDeliverySteps) && ["delivering", "delivered", "archived"].includes(order.status);
         if (shouldHideShop && !isShopCardExpanded) {
           return (
@@ -640,6 +665,57 @@ export function OrderDetailSection({
           </div>
         );
       case "customer_info":
+        if (designerConfig?.enabledPortals?.mandoub !== false) {
+          return (
+            <div key="customer_luxury_mandoub" className="space-y-4 mb-4">
+              {/* زر الاستلام والتسليم العائم المخصص مع إعدادات المصمم */}
+              {order.status === "assigned" && (
+                <div className="flex justify-center -my-3 z-40 relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const btn = document.getElementById(`quick-pickup-btn-${order.id}`);
+                      if (btn) btn.click();
+                    }}
+                    style={{
+                      transform: `scale(${designerConfig?.floatingActionBtn?.scale ?? 1}) rotate(${designerConfig?.floatingActionBtn?.rotate ?? 0}deg) translate(${designerConfig?.floatingActionBtn?.offsetX ?? 0}px, ${designerConfig?.floatingActionBtn?.offsetY ?? 0}px)`,
+                      backgroundColor: designerConfig?.floatingActionBtn?.bgColor || "#003399",
+                      color: designerConfig?.floatingActionBtn?.textColor || "#FFFFFF",
+                      borderColor: designerConfig?.floatingActionBtn?.borderColor || "#C9A86A",
+                    }}
+                    className="h-16 w-16 rounded-full border-4 font-black text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] flex items-center justify-center flex-col transition active:scale-90 select-none cursor-pointer"
+                  >
+                    {designerConfig?.floatingActionBtn?.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={designerConfig.floatingActionBtn.imageUrl}
+                        alt="أيقونة الزر"
+                        className="h-6 w-6 object-contain mb-0.5 drop-shadow-sm pointer-events-none"
+                      />
+                    ) : (
+                      <DynamicIcon icon={icons?.ui_send} fallback="✈️" width={22} height={22} className="mb-0.5" />
+                    )}
+                    <span className="text-[10px] font-black">
+                      {designerConfig?.floatingActionBtn?.customLabel || "استلام"}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              <AdminLuxuryCustomerCard
+                order={order}
+                customerName={order.customerRegion?.name || "الزبون"}
+                customerPhone={order.customerPhone}
+                imgCustomerDoor={customerDoorDisplay}
+                setPreviewImageUrl={setPreviewImageUrl}
+                isDoubleRoute={isDoubleRoute}
+                designerConfig={designerConfig || undefined}
+                phoneProfile={phoneProfile}
+              />
+            </div>
+          );
+        }
+
         if (courierSettings?.orderViewTheme === "theme11") {
           return (
             <div key="customer_parent_theme11" className="space-y-4">

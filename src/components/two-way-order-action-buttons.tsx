@@ -101,6 +101,7 @@ export function TwoWayOrderActionButtons({
   const [dynConfig, setDynConfig] = useState<Partial<TwoWayTemplatesConfig> | null>(
     twoWayTemplates || (buttonRules ? { buttonRules } : null)
   );
+  const [designerFabConfig, setDesignerFabConfig] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -109,6 +110,13 @@ export function TwoWayOrderActionButtons({
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
     }
+
+    fetch("/api/order-cards-designer-config", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.floatingActionBtn) setDesignerFabConfig(d.floatingActionBtn);
+      })
+      .catch(() => null);
 
     try {
       const savedPos = localStorage.getItem(FAB_POS_STORAGE_KEY);
@@ -412,29 +420,41 @@ export function TwoWayOrderActionButtons({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onClick={handleButtonClick}
-            className="flex h-[56px] w-[56px] cursor-pointer touch-none select-none items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] ring-4 ring-white transition-all duration-300 active:scale-95 bg-indigo-600 hover:bg-indigo-700 outline-none focus:outline-none"
+            className="flex h-[56px] w-[56px] cursor-pointer touch-none select-none items-center justify-center rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.4)] border-4 transition-all duration-300 active:scale-95 outline-none focus:outline-none"
             style={{
-              transform: `scale(${scale})`,
+              transform: `scale(${scale * (designerFabConfig?.scale ?? 1)}) rotate(${designerFabConfig?.rotate ?? 0}deg)`,
               opacity: opacity,
+              backgroundColor: designerFabConfig?.bgColor || "#003399",
+              borderColor: designerFabConfig?.borderColor || "#FFFFFF",
+              color: designerFabConfig?.textColor || "#FFFFFF",
               transition: isDragging ? "none" : "transform 0.2s, background-color 0.3s, opacity 0.3s",
               WebkitUserSelect: "none",
               WebkitTouchCallout: "none",
             }}
           >
-            <svg
-              className="h-7 w-7 text-white drop-shadow-xs pointer-events-none"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-            </svg>
+            {designerFabConfig?.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={designerFabConfig.imageUrl}
+                alt="أيقونة"
+                className="h-8 w-8 object-contain pointer-events-none drop-shadow-sm"
+              />
+            ) : (
+              <svg
+                className="h-7 w-7 text-white drop-shadow-xs pointer-events-none"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            )}
           </button>
 
           {/* تلميح السحب والتحريك */}

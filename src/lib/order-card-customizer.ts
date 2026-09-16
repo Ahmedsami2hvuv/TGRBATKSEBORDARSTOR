@@ -122,7 +122,72 @@ export function getCardContainerStyle(
   return style;
 }
 
+export type FloatingActionBtnConfig = {
+  imageUrl?: string;        // صورة أو أيقونة مخصصة للزر العائم
+  textColor?: string;       // لون نص وكتابة الزر العائم
+  bgColor?: string;         // لون خلفية الزر
+  borderColor?: string;     // لون إطار وحدود الزر
+  scale?: number;           // معامل التكبير والتصغير (1 = 100%)
+  rotate?: number;          // زاوية التدوير بالدرجات
+  offsetX?: number;         // إزاحة أفقية (يمين/يسار)
+  offsetY?: number;         // إزاحة رأسية (أعلى/أسفل)
+  customLabel?: string;     // نص مخصص للاستلام أو التسليم
+  hidden?: boolean;         // إخفاء الزر
+};
+
+export function getFloatingBtnStyle(cfg?: FloatingActionBtnConfig): React.CSSProperties {
+  if (!cfg) return {};
+  const style: React.CSSProperties = {};
+  const transforms: string[] = [];
+
+  const baseScale = cfg.scale ?? 1;
+  if (baseScale !== 1) {
+    transforms.push(`scale(${baseScale})`);
+  }
+
+  if (cfg.rotate !== undefined && cfg.rotate !== 0) {
+    transforms.push(`rotate(${cfg.rotate}deg)`);
+  }
+
+  if (cfg.offsetX !== undefined && cfg.offsetX !== 0) {
+    transforms.push(`translateX(${cfg.offsetX}px)`);
+  }
+  if (cfg.offsetY !== undefined && cfg.offsetY !== 0) {
+    transforms.push(`translateY(${cfg.offsetY}px)`);
+  }
+
+  if (transforms.length > 0) {
+    style.transform = transforms.join(" ");
+  }
+
+  if (cfg.textColor) {
+    style.color = cfg.textColor;
+  }
+  if (cfg.bgColor) {
+    style.backgroundColor = cfg.bgColor;
+  }
+  if (cfg.borderColor) {
+    style.borderColor = cfg.borderColor;
+  }
+
+  if (cfg.hidden) {
+    style.display = "none";
+  }
+
+  return style;
+}
+
 export type OrderCardDesignerConfig = {
+  // خيارات تفعيل وتطبيق التصميم على البوابات المختلفة
+  enabledPortals?: {
+    admin?: boolean;     // لوحة الإدارة
+    mandoub?: boolean;   // بوابة المندوب
+    preparer?: boolean;  // بوابة المجهز
+  };
+
+  // الزر العائم المخصص للاستلام والتسليم
+  floatingActionBtn?: FloatingActionBtnConfig;
+
   // كارت المحل (المرسل)
   shopCard: {
     frameBgUrl?: string;
@@ -172,6 +237,23 @@ export type OrderCardDesignerConfig = {
 };
 
 export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
+  enabledPortals: {
+    admin: true,
+    mandoub: true,
+    preparer: false,
+  },
+  floatingActionBtn: {
+    imageUrl: "",
+    textColor: "#FFFFFF",
+    bgColor: "#003399",
+    borderColor: "#C9A86A",
+    scale: 1,
+    rotate: 0,
+    offsetX: 0,
+    offsetY: 0,
+    customLabel: "",
+    hidden: false,
+  },
   shopCard: {
     frameBgUrl: "/images/order-luxury/shop-card/shop-card-frame.webp",
     headerShopInfo: { scale: 1, offsetX: 0, offsetY: 0 },
@@ -244,6 +326,14 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
 
     const saved = row.config as any;
     const result: OrderCardDesignerConfig = {
+      enabledPortals: {
+        ...DEFAULT_DESIGNER_CONFIG.enabledPortals,
+        ...(saved.enabledPortals || {}),
+      },
+      floatingActionBtn: {
+        ...DEFAULT_DESIGNER_CONFIG.floatingActionBtn,
+        ...(saved.floatingActionBtn || {}),
+      },
       shopCard: {
         ...DEFAULT_DESIGNER_CONFIG.shopCard,
         ...(saved.shopCard || {}),
@@ -271,6 +361,14 @@ export async function saveOrderCardsDesignerConfig(
   try {
     const current = await getOrderCardsDesignerConfig();
     const merged: OrderCardDesignerConfig = {
+      enabledPortals: {
+        ...current.enabledPortals,
+        ...(config.enabledPortals || {}),
+      },
+      floatingActionBtn: {
+        ...current.floatingActionBtn,
+        ...(config.floatingActionBtn || {}),
+      },
       shopCard: {
         ...current.shopCard,
         ...(config.shopCard || {}),
