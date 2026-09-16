@@ -3868,22 +3868,23 @@ function OrderCardsLivePreview({
               </div>
             </div>
 
-            {/* 2. كارت الزبون في المعاينة (يبدأ دائماً أسفل كارت المحل مباشرة بفراغ صغير) */}
-            <div
-              onClick={() => {
-                setActiveTab("customer_card");
-                setSelectedElementId("cust_frame");
-              }}
-              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
-                selectedElementId === "cust_frame"
-                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
-                  : activeTab === "customer_card"
-                  ? "ring-1 ring-amber-400/50"
-                  : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
-              }`}
-              style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
-              title="انقر لتعديل خلفية وأبعاد إطار كارت الزبون"
-            >
+            {/* 2. كارت الزبون في المعاينة (يبدأ دائماً أسفل كارت المحل مباشرة شبه ملاصق) */}
+            <div className="-mt-1.5 sm:-mt-2">
+              <div
+                onClick={() => {
+                  setActiveTab("customer_card");
+                  setSelectedElementId("cust_frame");
+                }}
+                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
+                  selectedElementId === "cust_frame"
+                    ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                    : activeTab === "customer_card"
+                    ? "ring-1 ring-amber-400/50"
+                    : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
+                }`}
+                style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
+                title="انقر لتعديل خلفية وأبعاد إطار كارت الزبون"
+              >
               {/* طبقة خطوط وشبكة المحاذاة الذكية */}
               {showGuides && activeTab === "customer_card" && (
                 <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
@@ -4217,6 +4218,7 @@ function OrderCardsLivePreview({
             </div>
           </div>
         </div>
+      </div>
         )}
 
         {/* 3. أزرار الواتساب في المعاينة */}

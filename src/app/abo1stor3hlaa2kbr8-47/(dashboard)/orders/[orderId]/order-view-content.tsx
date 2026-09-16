@@ -502,8 +502,8 @@ export function OrderViewContent({
           </div>
         )}
         
-        {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة بفراغ صغير ومترابط) --- */}
-        <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
+        {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة شبه ملاصق ومترابط) --- */}
+        <div className="flex flex-col gap-0 w-full">
           {!isDoubleRoute && (
             <AdminLuxuryShopCard
               order={order}
@@ -539,16 +539,18 @@ export function OrderViewContent({
           )}
 
           {!shouldCollapseSender && (
-            <AdminLuxuryCustomerCard
-              order={order}
-              customerName={order.customerName || (order.customer?.name ?? "")}
-              customerPhone={order.customerPhone}
-              imgCustomerDoor={imgCustDoor}
-              setPreviewImageUrl={setPreviewImageUrl}
-              isDoubleRoute={isDoubleRoute}
-              designerConfig={designerConfig}
-              phoneProfile={phoneProfile}
-            />
+            <div className="-mt-1.5 sm:-mt-2">
+              <AdminLuxuryCustomerCard
+                order={order}
+                customerName={order.customerName || (order.customer?.name ?? "")}
+                customerPhone={order.customerPhone}
+                imgCustomerDoor={imgCustDoor}
+                setPreviewImageUrl={setPreviewImageUrl}
+                isDoubleRoute={isDoubleRoute}
+                designerConfig={designerConfig}
+                phoneProfile={phoneProfile}
+              />
+            </div>
           )}
         </div>
 

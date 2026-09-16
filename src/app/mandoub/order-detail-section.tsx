@@ -398,7 +398,7 @@ export function OrderDetailSection({
         if (isDoubleRoute) return null;
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
-            <div key="luxury_cards_group_mandoub" className="flex flex-col gap-0.5 sm:gap-1 w-full -mt-2 sm:-mt-2.5">
+            <div key="luxury_cards_group_mandoub" className="flex flex-col gap-0 w-full -mt-2 sm:-mt-2.5">
               <AdminLuxuryShopCard
                 order={order}
                 submitterName={submitterName}
@@ -407,16 +407,18 @@ export function OrderDetailSection({
                 setPreviewImageUrl={setPreviewImageUrl}
                 designerConfig={designerConfig || undefined}
               />
-              <AdminLuxuryCustomerCard
-                order={order}
-                customerName={order.customerName || order.customer?.name || "الزبون"}
-                customerPhone={order.customerPhone}
-                imgCustomerDoor={customerDoorDisplay}
-                setPreviewImageUrl={setPreviewImageUrl}
-                isDoubleRoute={isDoubleRoute}
-                designerConfig={designerConfig || undefined}
-                phoneProfile={phoneProfile}
-              />
+              <div className="-mt-1.5 sm:-mt-2">
+                <AdminLuxuryCustomerCard
+                  order={order}
+                  customerName={order.customerName || order.customer?.name || "الزبون"}
+                  customerPhone={order.customerPhone}
+                  imgCustomerDoor={customerDoorDisplay}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isDoubleRoute={isDoubleRoute}
+                  designerConfig={designerConfig || undefined}
+                  phoneProfile={phoneProfile}
+                />
+              </div>
             </div>
           );
         }
@@ -1483,7 +1485,9 @@ export function OrderDetailSection({
     <section
       style={customStyle}
       className={
-        courierSettings?.orderViewTheme === "theme11"
+        designerConfig?.enabledPortals?.mandoub !== false || isModal
+          ? "relative mt-0.5 sm:mt-1 p-0.5 sm:p-1.5 pb-28 text-base leading-relaxed"
+          : courierSettings?.orderViewTheme === "theme11"
           ? "relative mt-1 p-0.5 sm:p-2 pb-32 text-base leading-relaxed"
           : `kse-glass-dark relative mt-4 border p-4 pb-32 text-base leading-relaxed sm:p-5 sm:pb-36 ${!uiSettings ? orderStatusStartStripeClass(order.status) : ''} ${
               !uiSettings && order.prepaidAll ? "border-emerald-300/85 bg-gradient-to-b from-emerald-50/70 via-white/90 to-teal-50/40 ring-2 ring-emerald-200/55 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]" :
