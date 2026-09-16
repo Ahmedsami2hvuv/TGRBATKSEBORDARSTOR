@@ -52,6 +52,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
   const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
   const [showGuides, setShowGuides] = useState<boolean>(true); // خطوط المحاذاة الذكية
+  const [showRealData, setShowRealData] = useState<boolean>(true); // بيانات واقعية
   const [copyNotification, setCopyNotification] = useState<{
     text: string;
     targetTab?: TabType;
@@ -2202,6 +2203,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               onSelectElement={handleSelectElement}
               config={config}
               showGuides={showGuides}
+              showRealData={showRealData}
               previewMode={previewMode}
               previewZoom={isCompactPreview ? 0.65 : previewZoom}
               previewCardDisplay={previewCardDisplay}
@@ -2463,6 +2465,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               onSelectElement={handleSelectElement}
               config={config}
               showGuides={showGuides}
+              showRealData={showRealData}
               previewMode={previewMode}
               previewZoom={previewZoom}
               previewCardDisplay={previewCardDisplay}
@@ -4183,6 +4186,7 @@ function OrderCardsLivePreview({
   previewMode,
   previewZoom,
   previewCardDisplay = "single",
+  showRealData = true,
   currentSelectedDef,
   currentSelectedConfig,
   shopFrameBg,
@@ -4199,6 +4203,7 @@ function OrderCardsLivePreview({
   previewMode: "mobile" | "desktop";
   previewZoom: number;
   previewCardDisplay?: "single" | "both";
+  showRealData?: boolean;
   currentSelectedDef?: ElementDefinition;
   currentSelectedConfig?: CustomElementConfig;
   shopFrameBg: string;
