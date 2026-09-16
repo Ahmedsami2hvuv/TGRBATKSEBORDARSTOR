@@ -11,6 +11,7 @@ import {
   type OrderCardDesignerConfig,
   getElementStyle,
   getCardContainerStyle,
+  RenderCustomElementsLayer,
 } from "@/lib/order-card-customizer";
 import {
   assignFileToInput,
@@ -107,6 +108,17 @@ export function AdminLuxuryOrderInfoCard({
           backgroundColor: "#06281D",
         }}
       >
+        {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
+        <RenderCustomElementsLayer
+          elements={infoCustom?.customElements}
+          context={{
+            order,
+            onZoomImage: (url, title) => {
+              setPreviewImageUrl(url);
+            },
+          }}
+        />
+
         {/* طبقة تظليل زمردية ناعمة لضمان قراءة النصوص والألوان الذهبية */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#06281D]/80 via-[#0A3D2E]/60 to-[#06281D]/85 pointer-events-none rounded-[20px] sm:rounded-[24px]" />
 

@@ -233,6 +233,28 @@ export function getFloatingBtnStyle(cfg?: FloatingActionBtnConfig): React.CSSPro
   return style;
 }
 
+export type ElementActionType =
+  | "none"           // بدون إجراء (عنصر شكلي / زينة)
+  | "url"            // فتح رابط خارجي
+  | "call"           // اتصال بهاتف
+  | "whatsapp"       // رسالة واتساب
+  | "map"            // فتح الخريطة / لوكيشن
+  | "copy"           // نسخ نص للحافظة
+  | "alert_modal"    // إظهار نافذة تفاصيل / تنبيه
+  | "image_zoom";    // تكبير الصورة في مودال
+
+export type CustomAddedElement = {
+  id: string;                      // معرف فريد
+  type: "text" | "image";          // نوع العنصر (نص أو صورة)
+  title: string;                   // اسم العنصر في القائمة
+  textContent?: string;            // محتوى النص
+  imageUrl?: string;               // رابط الصورة المرفوعة
+  actionType?: ElementActionType;  // الإجراء عند النقر
+  actionValue?: string;            // قيمة الإجراء (رابط / هاتف / نص منسوخ)
+  actionExtra?: string;            // إضافات (نص رسالة واتساب أو تفاصيل التنبيه)
+  style: CustomElementConfig;      // الموقع والحجم واللون والظل والتدوير
+};
+
 export type OrderCardDesignerConfig = {
   // خيارات تفعيل وتطبيق التصميم على البوابات المختلفة
   enabledPortals?: {
@@ -268,6 +290,7 @@ export type OrderCardDesignerConfig = {
     btnUploadLocation?: CustomElementConfig;
     btnPasteLocation?: CustomElementConfig;
     btnOtherDetails?: CustomElementConfig;
+    customElements?: CustomAddedElement[];
   };
 
   // كارت الزبون (المستلم)
@@ -292,6 +315,7 @@ export type OrderCardDesignerConfig = {
     btnUploadLocation?: CustomElementConfig;
     btnPasteLocation?: CustomElementConfig;
     btnOtherDetails?: CustomElementConfig;
+    customElements?: CustomAddedElement[];
   };
 
   // كارت معلومات الطلب والأسعار
@@ -313,6 +337,7 @@ export type OrderCardDesignerConfig = {
     placeholderNoPhoto?: CustomElementConfig;
     btnCamera?: CustomElementConfig;
     btnGallery?: CustomElementConfig;
+    customElements?: CustomAddedElement[];
   };
 
   // شكل المعاملات المالية (الصادر والوارد)
@@ -325,11 +350,107 @@ export type OrderCardDesignerConfig = {
     btnWardAction?: CustomElementConfig;
     btnDeleteAction?: CustomElementConfig;
     recordItemCard?: CustomElementConfig;
+    customElements?: CustomAddedElement[];
   };
 
   // أزرار الواتساب المخصصة
   waButtonsConfig?: Record<string, CustomElementConfig>;
 };
+
+export function executeCustomElementAction(
+  elem: CustomAddedElement,
+  context: {
+    order?: any;
+    customerPhone?: string;
+    shopPhone?: string;
+    mandoubPhone?: string;
+    customerLocationUrl?: string;
+    shopLocationUrl?: string;
+    onZoomImage?: (url: string, title?: string) => void;
+    onShowAlert?: (title: string, message: string) => void;
+    onToast?: (msg: string) => void;
+  }
+) {
+  const actionType = elem.actionType || "none";
+  if (actionType === "none") return;
+
+  if (actionType === "url") {
+    if (elem.actionValue) {
+      let targetUrl = elem.actionValue.trim();
+      if (!/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = "https://" + targetUrl;
+      }
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  } else if (actionType === "call") {
+    let phoneToCall = elem.actionValue || "";
+    if (phoneToCall === "customer" || (!phoneToCall && context.customerPhone)) {
+      phoneToCall = context.customerPhone || "";
+    } else if (phoneToCall === "shop") {
+      phoneToCall = context.shopPhone || "";
+    } else if (phoneToCall === "mandoub") {
+      phoneToCall = context.mandoubPhone || "";
+    }
+    if (phoneToCall) {
+      window.location.href = `tel:${phoneToCall.replace(/[^\d+]/g, "")}`;
+    }
+  } else if (actionType === "whatsapp") {
+    let phoneToChat = elem.actionValue || "";
+    if (phoneToChat === "customer" || (!phoneToChat && context.customerPhone)) {
+      phoneToChat = context.customerPhone || "";
+    } else if (phoneToChat === "shop") {
+      phoneToChat = context.shopPhone || "";
+    } else if (phoneToChat === "mandoub") {
+      phoneToChat = context.mandoubPhone || "";
+    }
+    if (phoneToChat) {
+      const clean = phoneToChat.replace(/[^\d]/g, "");
+      const msg = encodeURIComponent(elem.actionExtra || "");
+      const waUrl = msg ? `https://wa.me/${clean}?text=${msg}` : `https://wa.me/${clean}`;
+      window.open(waUrl, "_blank", "noopener,noreferrer");
+    }
+  } else if (actionType === "map") {
+    let mapUrl = elem.actionValue || "";
+    if (mapUrl === "customer" || (!mapUrl && context.customerLocationUrl)) {
+      mapUrl = context.customerLocationUrl || "";
+    } else if (mapUrl === "shop") {
+      mapUrl = context.shopLocationUrl || "";
+    }
+    if (mapUrl) {
+      window.open(mapUrl, "_blank", "noopener,noreferrer");
+    }
+  } else if (actionType === "copy") {
+    let textToCopy = elem.actionValue || elem.textContent || "";
+    if (textToCopy === "order_id" && context.order?.id) {
+      textToCopy = String(context.order.id);
+    } else if (textToCopy === "customer_phone" && context.customerPhone) {
+      textToCopy = context.customerPhone;
+    } else if (textToCopy === "shop_phone" && context.shopPhone) {
+      textToCopy = context.shopPhone;
+    }
+    if (textToCopy && typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy);
+      if (context.onToast) {
+        context.onToast(`تم نسخ: "${textToCopy}" إلى الحافظة! 📋`);
+      } else {
+        alert(`تم نسخ: "${textToCopy}" إلى الحافظة! 📋`);
+      }
+    }
+  } else if (actionType === "alert_modal") {
+    const title = elem.actionValue || elem.title || "تنبيه";
+    const msg = elem.actionExtra || elem.textContent || "";
+    if (context.onShowAlert) {
+      context.onShowAlert(title, msg);
+    } else {
+      alert(`${title}\n\n${msg}`);
+    }
+  } else if (actionType === "image_zoom") {
+    const img = elem.imageUrl;
+    if (img && context.onZoomImage) {
+      context.onZoomImage(img, elem.title);
+    }
+  }
+}
 
 export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
   enabledPortals: {
@@ -554,4 +675,84 @@ export async function saveOrderCardsDesignerConfig(
     console.error("Error saving order cards designer config:", error);
     return false;
   }
+}
+
+export function RenderCustomElementsLayer({
+  elements,
+  context,
+  isDesignerPreview = false,
+  selectedElementId,
+  onSelectElement,
+}: {
+  elements?: CustomAddedElement[];
+  context: {
+    order?: any;
+    customerPhone?: string;
+    shopPhone?: string;
+    mandoubPhone?: string;
+    customerLocationUrl?: string;
+    shopLocationUrl?: string;
+    onZoomImage?: (url: string, title?: string) => void;
+    onShowAlert?: (title: string, message: string) => void;
+    onToast?: (msg: string) => void;
+  };
+  isDesignerPreview?: boolean;
+  selectedElementId?: string | null;
+  onSelectElement?: (id: string) => void;
+}) {
+  if (!elements || elements.length === 0) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-visible">
+      {elements.map((elem) => {
+        if (!elem || elem.style?.hidden) return null;
+        const style = getElementStyle(elem.style);
+        const isSelected = isDesignerPreview && selectedElementId === elem.id;
+        const hasAction = elem.actionType && elem.actionType !== "none";
+
+        return (
+          <div
+            key={elem.id}
+            onClick={(e) => {
+              if (isDesignerPreview) {
+                e.stopPropagation();
+                if (onSelectElement) onSelectElement(elem.id);
+              } else if (hasAction) {
+                e.stopPropagation();
+                executeCustomElementAction(elem, context);
+              }
+            }}
+            style={style}
+            className={`absolute inline-flex items-center justify-center transition-all ${
+              isDesignerPreview
+                ? "pointer-events-auto cursor-pointer"
+                : hasAction
+                ? "pointer-events-auto cursor-pointer hover:opacity-90 active:scale-95"
+                : "pointer-events-none"
+            } ${
+              isSelected ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-black rounded-lg" : ""
+            }`}
+            title={elem.title || (elem.type === "text" ? elem.textContent : "عنصر مخصص")}
+          >
+            {elem.type === "text" ? (
+              <span className="font-bold whitespace-pre-wrap select-none leading-tight">
+                {elem.textContent || elem.title || "نص جديد"}
+              </span>
+            ) : elem.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={elem.imageUrl}
+                alt={elem.title || "صورة مخصصة"}
+                className="max-w-none h-auto object-contain select-none pointer-events-none"
+              />
+            ) : (
+              <span className="p-1.5 bg-amber-500/20 border border-amber-400 rounded-lg text-amber-200 text-[10px] font-bold">
+                🖼️ صورة فارغة
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }

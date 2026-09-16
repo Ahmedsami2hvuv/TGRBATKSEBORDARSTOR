@@ -17,6 +17,7 @@ import {
   type OrderCardDesignerConfig,
   getElementStyle,
   getCardContainerStyle,
+  RenderCustomElementsLayer,
 } from "@/lib/order-card-customizer";
 import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
@@ -135,6 +136,19 @@ export function AdminLuxuryCustomerCard({
         className="relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto"
         style={getCardContainerStyle(custCustom?.frameConfig, frameBg)}
       >
+        {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
+        <RenderCustomElementsLayer
+          elements={custCustom?.customElements}
+          context={{
+            order,
+            customerPhone: cleanPhone,
+            customerLocationUrl: order.customerLocationUrl,
+            onZoomImage: (url, title) => {
+              setPreviewImageUrl(url);
+            },
+          }}
+        />
+
         {isExpanded ? (
           /* محتوى الكارت المفتوح: عمودين متجاورين (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */
           <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">

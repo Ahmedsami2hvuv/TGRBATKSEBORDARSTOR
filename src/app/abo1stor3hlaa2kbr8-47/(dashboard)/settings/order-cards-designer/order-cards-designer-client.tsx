@@ -6,6 +6,9 @@ import {
   OrderCardDesignerConfig,
   CustomElementConfig,
   CustomFrameConfig,
+  CustomAddedElement,
+  ElementActionType,
+  RenderCustomElementsLayer,
   getElementStyle,
   getCardContainerStyle,
 } from "@/lib/order-card-customizer";
@@ -343,6 +346,172 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         },
       };
     });
+  };
+
+  // دوال إدارة وتوليد العناصر المضافة المخصصة (نص أو صورة مع إجراء مخصص)
+  const handleAddCustomElement = (type: "text" | "image", targetTab?: TabType) => {
+    const tab = targetTab || activeTab;
+    const cardKey =
+      tab === "shop_card"
+        ? "shopCard"
+        : tab === "customer_card"
+        ? "customerCard"
+        : tab === "order_info"
+        ? "orderInfoCard"
+        : "moneyFlowCard";
+
+    const newId = `custom_${type}_${Date.now()}`;
+    const newTitle = type === "text" ? "نص مخصص جديد ✍️" : "صورة مخصصة جديدة 🖼️";
+    const newElement: CustomAddedElement = {
+      id: newId,
+      type,
+      title: newTitle,
+      textContent: type === "text" ? "اكتب النص المخصص هنا..." : undefined,
+      imageUrl: type === "image" ? "" : undefined,
+      actionType: "none",
+      actionValue: "",
+      actionExtra: "",
+      style: {
+        scale: 1,
+        scaleX: 1,
+        scaleY: 1,
+        rotate: 0,
+        offsetX: 0,
+        offsetY: 0,
+        color: type === "text" ? "#F5D77F" : undefined,
+        hasShadow: true,
+        shadowColor: "rgba(0,0,0,0.85)",
+        shadowBlur: 2,
+        shadowOffsetX: 0,
+        shadowOffsetY: 1,
+      },
+    };
+
+    setConfig((prev) => {
+      const currentCard = prev[cardKey] || {};
+      const currentCustoms = (currentCard as any).customElements || [];
+      return {
+        ...prev,
+        [cardKey]: {
+          ...currentCard,
+          customElements: [...currentCustoms, newElement],
+        },
+      };
+    });
+
+    handleSelectElement(newId, tab);
+  };
+
+  const handleDeleteCustomElement = (elemId: string, targetTab?: TabType) => {
+    if (!confirm("هل أنت متأكد من حذف هذا العنصر المخصص نهائياً؟ 🗑️")) return;
+    const tab = targetTab || activeTab;
+    const cardKey =
+      tab === "shop_card"
+        ? "shopCard"
+        : tab === "customer_card"
+        ? "customerCard"
+        : tab === "order_info"
+        ? "orderInfoCard"
+        : "moneyFlowCard";
+
+    setConfig((prev) => {
+      const currentCard = prev[cardKey] || {};
+      const currentCustoms = (currentCard as any).customElements || [];
+      return {
+        ...prev,
+        [cardKey]: {
+          ...currentCard,
+          customElements: currentCustoms.filter((e: CustomAddedElement) => e.id !== elemId),
+        },
+      };
+    });
+
+    setSelectedElementId(null);
+  };
+
+  const handleUpdateCustomElementData = (
+    elemId: string,
+    updates: Partial<CustomAddedElement>,
+    targetTab?: TabType
+  ) => {
+    const tab = targetTab || activeTab;
+    const cardKey =
+      tab === "shop_card"
+        ? "shopCard"
+        : tab === "customer_card"
+        ? "customerCard"
+        : tab === "order_info"
+        ? "orderInfoCard"
+        : "moneyFlowCard";
+
+    setConfig((prev) => {
+      const currentCard = prev[cardKey] || {};
+      const currentCustoms = (currentCard as any).customElements || [];
+      return {
+        ...prev,
+        [cardKey]: {
+          ...currentCard,
+          customElements: currentCustoms.map((e: CustomAddedElement) =>
+            e.id === elemId ? { ...e, ...updates } : e
+          ),
+        },
+      };
+    });
+  };
+
+  const getCustomElementDefs = (
+    customs: CustomAddedElement[] | undefined,
+    category: TabType,
+    cardKey: "shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard"
+  ): ElementDefinition[] => {
+    if (!customs || customs.length === 0) return [];
+    return customs.map((elem) => ({
+      id: elem.id,
+      title: elem.title || (elem.type === "text" ? elem.textContent || "نص مخصص" : "صورة مخصصة"),
+      category,
+      defaultImg: elem.imageUrl || "",
+      isText: elem.type === "text",
+      previewTextSample: elem.textContent || "نص مخصص",
+      description: `عنصر مضاف (${elem.type === "text" ? "نص" : "صورة"}) - الإجراء: ${
+        elem.actionType === "url"
+          ? "فتح رابط"
+          : elem.actionType === "call"
+          ? "اتصال هاتفي"
+          : elem.actionType === "whatsapp"
+          ? "رسالة واتساب"
+          : elem.actionType === "map"
+          ? "فتح خريطة"
+          : elem.actionType === "copy"
+          ? "نسخ نص"
+          : elem.actionType === "image_zoom"
+          ? "تكبير صورة"
+          : elem.actionType === "alert_modal"
+          ? "نافذة تفاصيل"
+          : "بدون إجراء (شكلي)"
+      }`,
+      getConfig: (c) => {
+        const found = (c[cardKey] as any)?.customElements?.find((e: any) => e.id === elem.id);
+        return found?.style;
+      },
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        [cardKey]: {
+          ...prev[cardKey],
+          customElements: ((prev[cardKey] as any)?.customElements || []).map((e: any) =>
+            e.id === elem.id ? { ...e, style: { ...e.style, [f]: v } } : e
+          ),
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        [cardKey]: {
+          ...prev[cardKey],
+          customElements: ((prev[cardKey] as any)?.customElements || []).map((e: any) =>
+            e.id === elem.id ? { ...e, imageUrl: url } : e
+          ),
+        },
+      }),
+    }));
   };
 
   // تعريف عناصر كارت المحل
@@ -1648,29 +1817,52 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     },
   ];
 
-  const allElements = [
+  const dynamicShopElements = [
     ...shopElements,
+    ...getCustomElementDefs(config.shopCard?.customElements, "shop_card", "shopCard"),
+  ];
+  const dynamicCustomerElements = [
     ...customerElements,
+    ...getCustomElementDefs(config.customerCard?.customElements, "customer_card", "customerCard"),
+  ];
+  const dynamicOrderInfoElements = [
     ...orderInfoElements,
+    ...getCustomElementDefs(config.orderInfoCard?.customElements, "order_info", "orderInfoCard"),
+  ];
+  const dynamicMoneyFlowElements = [
     ...moneyFlowElements,
+    ...getCustomElementDefs(config.moneyFlowCard?.customElements, "money_flow", "moneyFlowCard"),
+  ];
+
+  const allElements = [
+    ...dynamicShopElements,
+    ...dynamicCustomerElements,
+    ...dynamicOrderInfoElements,
+    ...dynamicMoneyFlowElements,
     ...waElements,
     ...floatingElements,
   ];
   const currentTabElements =
     activeTab === "shop_card"
-      ? shopElements
+      ? dynamicShopElements
       : activeTab === "customer_card"
-      ? customerElements
+      ? dynamicCustomerElements
       : activeTab === "order_info"
-      ? orderInfoElements
+      ? dynamicOrderInfoElements
       : activeTab === "money_flow"
-      ? moneyFlowElements
+      ? dynamicMoneyFlowElements
       : activeTab === "wa_buttons"
       ? waElements
       : floatingElements;
 
   const currentSelectedDef = allElements.find((e) => e.id === selectedElementId);
   const currentSelectedConfig = currentSelectedDef?.getConfig(config);
+
+  const currentCustomElementData: CustomAddedElement | undefined =
+    config.shopCard?.customElements?.find((e) => e.id === selectedElementId) ||
+    config.customerCard?.customElements?.find((e) => e.id === selectedElementId) ||
+    config.orderInfoCard?.customElements?.find((e) => e.id === selectedElementId) ||
+    config.moneyFlowCard?.customElements?.find((e) => e.id === selectedElementId);
 
   const currentIndex = currentTabElements.findIndex((e) => e.id === selectedElementId);
   const prevElement = currentIndex > 0 ? currentTabElements[currentIndex - 1] : null;
@@ -2388,6 +2580,17 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 elementDef={currentSelectedDef}
                 config={currentSelectedConfig}
                 tabElements={currentTabElements}
+                customElementData={currentCustomElementData}
+                onUpdateCustomElementData={(updates) => {
+                  if (selectedElementId) {
+                    handleUpdateCustomElementData(selectedElementId, updates);
+                  }
+                }}
+                onDeleteCustomElement={() => {
+                  if (selectedElementId) {
+                    handleDeleteCustomElement(selectedElementId);
+                  }
+                }}
                 onChange={(field, val) => {
                   setConfig((prev) => currentSelectedDef.updateConfig(prev, field, val));
                 }}
@@ -2513,6 +2716,41 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               waButtons={waButtons}
             />
           </div>
+
+          {/* شريط إضافة عناصر مخصصة جديدة للكارت (نص أو صورة مع إجراء مخصص) */}
+          {(activeTab === "shop_card" || activeTab === "customer_card" || activeTab === "order_info" || activeTab === "money_flow") && (
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl shadow-xl">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl animate-pulse">✨</span>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-[#F5D77F]">
+                    إضافة عناصر ونصوص وصور مخصصة للكارت
+                  </h4>
+                  <p className="text-[11px] text-emerald-200 mt-0.5">
+                    أضف نصوصاً أو صوراً وأيقونات جديدة، تحكم بمكانها بدقة، وحدد ماذا تفعل عند النقر عليها أو اجعلها زينة فقط
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomElement("text")}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] font-black text-xs rounded-xl shadow-md hover:scale-105 active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+                  title="إضافة نص وعبارة مخصصة جديدة للكارت"
+                >
+                  <span>✍️</span> إضافة نص مخصص
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomElement("image")}
+                  className="px-4 py-2 bg-[#06281D] hover:bg-[#0A3D2E] text-amber-200 border border-[#C9A86A]/70 font-black text-xs rounded-xl shadow-md hover:scale-105 active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+                  title="إضافة صورة أو أيقونة جديدة للكارت"
+                >
+                  <span>🖼️</span> إضافة صورة / أيقونة
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* قائمة استعراض عناصر الكارت */}
           <div className="space-y-4">
@@ -3425,6 +3663,9 @@ function DedicatedElementInspector({
   elementDef,
   config,
   tabElements = [],
+  customElementData,
+  onUpdateCustomElementData,
+  onDeleteCustomElement,
   onChange,
   onUploadImg,
   onApplyStyleToElements,
@@ -3432,13 +3673,16 @@ function DedicatedElementInspector({
   elementDef: ElementDefinition;
   config?: CustomElementConfig;
   tabElements?: ElementDefinition[];
+  customElementData?: CustomAddedElement;
+  onUpdateCustomElementData?: (updates: Partial<CustomAddedElement>) => void;
+  onDeleteCustomElement?: () => void;
   onChange: (field: keyof CustomElementConfig, val: any) => void;
   onUploadImg: () => void;
   onApplyStyleToElements?: (targetIds: string[], style: Partial<CustomElementConfig>) => void;
 }) {
   const [activeTool, setActiveTool] = useState<
-    "rotate" | "scale" | "scaleX" | "scaleY" | "offsetX" | "offsetY" | "origin" | "color" | "image" | "visibility"
-  >(elementDef.isText ? "color" : "rotate");
+    "content_action" | "rotate" | "scale" | "scaleX" | "scaleY" | "offsetX" | "offsetY" | "origin" | "color" | "image" | "visibility"
+  >(customElementData ? "content_action" : elementDef.isText ? "color" : "rotate");
 
   const currentImg = config?.imageUrl || elementDef.defaultImg;
   const currentScale = config?.scale ?? 1;
@@ -3528,6 +3772,19 @@ function DedicatedElementInspector({
   ];
 
   const tools = [
+    ...(customElementData
+      ? [
+          {
+            id: "content_action" as const,
+            label: customElementData.type === "text" ? "النص والإجراء" : "الصورة والإجراء",
+            icon: "⚙️",
+            badge:
+              customElementData.actionType && customElementData.actionType !== "none"
+                ? "إجراء مفعّل"
+                : "بدون إجراء",
+          },
+        ]
+      : []),
     {
       id: "color" as const,
       label: "اللون والظل",
@@ -3801,6 +4058,373 @@ function DedicatedElementInspector({
       {/* لوحة السلايدر النشط المخصص فقط للأداة المختارة */}
       <div className="bg-black/40 border-2 border-[#C9A86A]/70 rounded-2xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
+        {/* ================= أداة النص/الصورة والإجراء المخصص للعناصر المضافة ================= */}
+        {activeTool === "content_action" && customElementData && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚙️</span>
+                <div>
+                  <h4 className="font-black text-sm text-[#F5D77F]">
+                    {customElementData.type === "text" ? "إعدادات النص والإجراء" : "إعدادات الصورة والإجراء"}
+                  </h4>
+                  <p className="text-[11px] text-emerald-200">
+                    عدّل المحتوى وحدد ماذا يفعل هذا العنصر عند النقر عليه أو اتركه زينة فقط
+                  </p>
+                </div>
+              </div>
+              {onDeleteCustomElement && (
+                <button
+                  type="button"
+                  onClick={onDeleteCustomElement}
+                  className="px-3 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-500/50 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm"
+                  title="حذف هذا العنصر المخصص نهائياً"
+                >
+                  <span>🗑️</span> حذف العنصر
+                </button>
+              )}
+            </div>
+
+            {/* 1. تعديل محتوى العنصر (نص أو صورة) */}
+            <div className="bg-[#06281D]/90 p-3.5 sm:p-4 rounded-xl border border-[#C9A86A]/40 space-y-3 shadow-md">
+              <div className="flex items-center justify-between text-xs font-black text-amber-200">
+                <span>📝 محتوى وعنوان العنصر:</span>
+              </div>
+
+              {/* عنوان العنصر في القائمة */}
+              <div className="space-y-1">
+                <label className="text-[11px] text-emerald-300 font-bold">اسم العنصر التوضيحي:</label>
+                <input
+                  type="text"
+                  value={customElementData.title || ""}
+                  onChange={(e) => onUpdateCustomElementData?.({ title: e.target.value })}
+                  placeholder="مثال: ملاحظة مهمة، شارة توصيل، إلخ"
+                  className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              {/* إذا كان نص */}
+              {customElementData.type === "text" && (
+                <div className="space-y-1">
+                  <label className="text-[11px] text-amber-300 font-bold">النص المكتوب على الكارت:</label>
+                  <textarea
+                    rows={2}
+                    value={customElementData.textContent || ""}
+                    onChange={(e) => onUpdateCustomElementData?.({ textContent: e.target.value })}
+                    placeholder="اكتب العبارة أو النص الذي تريده..."
+                    className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-amber-200 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              )}
+
+              {/* إذا كان صورة */}
+              {customElementData.type === "image" && (
+                <div className="space-y-2">
+                  <label className="text-[11px] text-amber-300 font-bold">صورة أو أيقونة العنصر:</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={onUploadImg}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 transition cursor-pointer shadow-md flex items-center gap-1.5"
+                    >
+                      <span>📤</span> رفع صورة من الجهاز
+                    </button>
+                    {customElementData.imageUrl && (
+                      <div className="w-10 h-10 rounded-lg border border-[#C9A86A] bg-black/60 p-1 flex items-center justify-center overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={customElementData.imageUrl}
+                          alt="معاينة"
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. اختيار الإجراء والوظيفة عند النقر */}
+            <div className="bg-[#06281D]/90 p-3.5 sm:p-4 rounded-xl border border-[#C9A86A]/40 space-y-3 shadow-md">
+              <div className="flex items-center justify-between text-xs font-black text-amber-200">
+                <span className="flex items-center gap-1">
+                  <span>⚡</span> ماذا يحدث عند النقر على هذا العنصر؟
+                </span>
+                <span className="text-[10px] text-emerald-300 font-bold">
+                  {customElementData.actionType === "none" || !customElementData.actionType ? "بدون إجراء (زينة)" : "إجراء مفعّل"}
+                </span>
+              </div>
+
+              {/* خيارات الإجراءات المتنوعة */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "none" as const, label: "🚫 بدون إجراء", desc: "زينة فقط (لا يفعل شيئاً)" },
+                  { id: "url" as const, label: "🌐 فتح رابط ويب", desc: "موقع أو صفحة خارجية" },
+                  { id: "call" as const, label: "📞 اتصال هاتفي", desc: "اتصال برقم هاتف" },
+                  { id: "whatsapp" as const, label: "💬 رسالة واتساب", desc: "محادثة واتساب سريعة" },
+                  { id: "map" as const, label: "📍 فتح خريطة", desc: "لوكيشن Google Maps" },
+                  { id: "copy" as const, label: "📋 نسخ للحافظة", desc: "نسخ نص أو كود" },
+                  ...(customElementData.type === "image"
+                    ? [{ id: "image_zoom" as const, label: "🔍 تكبير الصورة", desc: "معاينة الصورة بالحجم الكامل" }]
+                    : []),
+                  { id: "alert_modal" as const, label: "🔔 تنبيه منبثق", desc: "إظهار نافذة تفاصيل" },
+                ].map((act) => {
+                  const isSelected = (customElementData.actionType || "none") === act.id;
+                  return (
+                    <button
+                      key={act.id}
+                      type="button"
+                      onClick={() => onUpdateCustomElementData?.({ actionType: act.id })}
+                      className={`p-2 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? "bg-gradient-to-r from-amber-400 via-[#F5D77F] to-[#C9A86A] text-[#06281D] font-black ring-2 ring-amber-300 shadow-md scale-[1.02]"
+                          : "bg-black/40 border-white/10 text-white/80 hover:bg-[#0A3D2E] hover:border-[#C9A86A]/50"
+                      }`}
+                    >
+                      <span className="text-xs font-black">{act.label}</span>
+                      <span className={`text-[9px] mt-0.5 ${isSelected ? "text-[#06281D]/80" : "text-white/50"}`}>
+                        {act.desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* تفاصيل وحقول الإجراء المختار */}
+              {customElementData.actionType === "url" && (
+                <div className="space-y-1.5 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">الرابط المطلوب فتحه (URL):</label>
+                  <input
+                    type="text"
+                    value={customElementData.actionValue || ""}
+                    onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                    placeholder="https://example.com"
+                    className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-mono text-[#F5D77F] focus:outline-none"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+
+              {customElementData.actionType === "call" && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">الرقم المطلوب الاتصال به:</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    {[
+                      { val: "customer", label: "👤 هاتف الزبون" },
+                      { val: "shop", label: "🏪 هاتف المحل" },
+                      { val: "mandoub", label: "🚚 هاتف المندوب" },
+                      { val: "custom", label: "✍️ رقم مخصص" },
+                    ].map((opt) => {
+                      const isCurrent =
+                        (opt.val === "custom" && customElementData.actionValue && !["customer", "shop", "mandoub"].includes(customElementData.actionValue)) ||
+                        customElementData.actionValue === opt.val;
+                      return (
+                        <button
+                          key={opt.val}
+                          type="button"
+                          onClick={() => {
+                            if (opt.val === "custom") {
+                              onUpdateCustomElementData?.({ actionValue: "" });
+                            } else {
+                              onUpdateCustomElementData?.({ actionValue: opt.val });
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border text-center font-bold transition cursor-pointer ${
+                            isCurrent
+                              ? "bg-[#C9A86A] text-[#06281D] font-black border-amber-300"
+                              : "bg-black/40 border-white/10 text-white/80 hover:bg-[#0A3D2E]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(!["customer", "shop", "mandoub"].includes(customElementData.actionValue || "")) && (
+                    <input
+                      type="text"
+                      value={customElementData.actionValue || ""}
+                      onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                      placeholder="اكتب رقم الهاتف هنا (مثال: 07701234567)"
+                      className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-mono text-[#F5D77F] focus:outline-none"
+                      dir="ltr"
+                    />
+                  )}
+                </div>
+              )}
+
+              {customElementData.actionType === "whatsapp" && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">رقم الواتساب والرسالة:</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    {[
+                      { val: "customer", label: "👤 واتساب الزبون" },
+                      { val: "shop", label: "🏪 واتساب المحل" },
+                      { val: "mandoub", label: "🚚 واتساب المندوب" },
+                      { val: "custom", label: "✍️ رقم مخصص" },
+                    ].map((opt) => {
+                      const isCurrent =
+                        (opt.val === "custom" && customElementData.actionValue && !["customer", "shop", "mandoub"].includes(customElementData.actionValue)) ||
+                        customElementData.actionValue === opt.val;
+                      return (
+                        <button
+                          key={opt.val}
+                          type="button"
+                          onClick={() => {
+                            if (opt.val === "custom") {
+                              onUpdateCustomElementData?.({ actionValue: "" });
+                            } else {
+                              onUpdateCustomElementData?.({ actionValue: opt.val });
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border text-center font-bold transition cursor-pointer ${
+                            isCurrent
+                              ? "bg-[#C9A86A] text-[#06281D] font-black border-amber-300"
+                              : "bg-black/40 border-white/10 text-white/80 hover:bg-[#0A3D2E]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(!["customer", "shop", "mandoub"].includes(customElementData.actionValue || "")) && (
+                    <input
+                      type="text"
+                      value={customElementData.actionValue || ""}
+                      onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                      placeholder="رقم الواتساب (مثال: 07701234567)"
+                      className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-mono text-[#F5D77F] focus:outline-none"
+                      dir="ltr"
+                    />
+                  )}
+                  <input
+                    type="text"
+                    value={customElementData.actionExtra || ""}
+                    onChange={(e) => onUpdateCustomElementData?.({ actionExtra: e.target.value })}
+                    placeholder="نص الرسالة المسبق (اختياري)..."
+                    className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-emerald-200 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {customElementData.actionType === "map" && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">الخريطة أو الموقع المطلوب فتحه:</label>
+                  <div className="grid grid-cols-3 gap-1.5 text-xs">
+                    {[
+                      { val: "customer", label: "📍 موقع الزبون" },
+                      { val: "shop", label: "🏪 موقع المحل" },
+                      { val: "custom", label: "🗺️ رابط مخصص" },
+                    ].map((opt) => {
+                      const isCurrent =
+                        (opt.val === "custom" && customElementData.actionValue && !["customer", "shop"].includes(customElementData.actionValue)) ||
+                        customElementData.actionValue === opt.val;
+                      return (
+                        <button
+                          key={opt.val}
+                          type="button"
+                          onClick={() => {
+                            if (opt.val === "custom") {
+                              onUpdateCustomElementData?.({ actionValue: "" });
+                            } else {
+                              onUpdateCustomElementData?.({ actionValue: opt.val });
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border text-center font-bold transition cursor-pointer ${
+                            isCurrent
+                              ? "bg-[#C9A86A] text-[#06281D] font-black border-amber-300"
+                              : "bg-black/40 border-white/10 text-white/80 hover:bg-[#0A3D2E]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(!["customer", "shop"].includes(customElementData.actionValue || "")) && (
+                    <input
+                      type="text"
+                      value={customElementData.actionValue || ""}
+                      onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                      placeholder="رابط خرائط جوجل (Google Maps URL)..."
+                      className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-mono text-[#F5D77F] focus:outline-none"
+                      dir="ltr"
+                    />
+                  )}
+                </div>
+              )}
+
+              {customElementData.actionType === "copy" && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">النص المراد نسخه للحافظة عند النقر:</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    {[
+                      { val: "order_id", label: "🔢 رقم الطلبية" },
+                      { val: "customer_phone", label: "👤 هاتف الزبون" },
+                      { val: "shop_phone", label: "🏪 هاتف المحل" },
+                      { val: "custom", label: "✍️ نص مخصص" },
+                    ].map((opt) => {
+                      const isCurrent =
+                        (opt.val === "custom" && customElementData.actionValue && !["order_id", "customer_phone", "shop_phone"].includes(customElementData.actionValue)) ||
+                        customElementData.actionValue === opt.val;
+                      return (
+                        <button
+                          key={opt.val}
+                          type="button"
+                          onClick={() => {
+                            if (opt.val === "custom") {
+                              onUpdateCustomElementData?.({ actionValue: "" });
+                            } else {
+                              onUpdateCustomElementData?.({ actionValue: opt.val });
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border text-center font-bold transition cursor-pointer ${
+                            isCurrent
+                              ? "bg-[#C9A86A] text-[#06281D] font-black border-amber-300"
+                              : "bg-black/40 border-white/10 text-white/80 hover:bg-[#0A3D2E]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(!["order_id", "customer_phone", "shop_phone"].includes(customElementData.actionValue || "")) && (
+                    <input
+                      type="text"
+                      value={customElementData.actionValue || ""}
+                      onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                      placeholder="اكتب النص المراد نسخه..."
+                      className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-[#F5D77F] focus:outline-none"
+                    />
+                  )}
+                </div>
+              )}
+
+              {customElementData.actionType === "alert_modal" && (
+                <div className="space-y-2 pt-2 border-t border-[#C9A86A]/20">
+                  <label className="text-[11px] text-amber-300 font-bold">عنوان ونص النافذة المنبثقة:</label>
+                  <input
+                    type="text"
+                    value={customElementData.actionValue || ""}
+                    onChange={(e) => onUpdateCustomElementData?.({ actionValue: e.target.value })}
+                    placeholder="عنوان التنبيه (مثال: شروط الاستلام والتسليم)"
+                    className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-[#F5D77F] focus:outline-none"
+                  />
+                  <textarea
+                    rows={3}
+                    value={customElementData.actionExtra || ""}
+                    onChange={(e) => onUpdateCustomElementData?.({ actionExtra: e.target.value })}
+                    placeholder="اكتب النص والتفاصيل الكاملة للتنبيه..."
+                    className="w-full bg-black/60 border border-[#C9A86A]/50 rounded-xl p-2 text-xs font-bold text-white focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ================= أداة لون وظل وتنسيق النص والبلوك ================= */}
         {activeTool === "color" && (
           <div className="space-y-4">
@@ -4964,6 +5588,15 @@ function OrderCardsLivePreview({
                 </div>
               )}
 
+              {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
+              <RenderCustomElementsLayer
+                elements={config.shopCard?.customElements}
+                context={{}}
+                isDesignerPreview={true}
+                selectedElementId={selectedElementId}
+                onSelectElement={(id) => handleElementClick({ stopPropagation: () => {} } as any, id, "shop_card")}
+              />
+
               <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
                 {/* الجانب الأيمن */}
                 <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
@@ -5307,6 +5940,15 @@ function OrderCardsLivePreview({
                   )}
                 </div>
               )}
+
+              {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
+              <RenderCustomElementsLayer
+                elements={config.customerCard?.customElements}
+                context={{}}
+                isDesignerPreview={true}
+                selectedElementId={selectedElementId}
+                onSelectElement={(id) => handleElementClick({ stopPropagation: () => {} } as any, id, "customer_card")}
+              />
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
               {/* الجانب الأيمن */}
@@ -5743,6 +6385,15 @@ function OrderCardsLivePreview({
                   )}
                 </div>
               )}
+
+              {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
+              <RenderCustomElementsLayer
+                elements={config.orderInfoCard?.customElements}
+                context={{}}
+                isDesignerPreview={true}
+                selectedElementId={selectedElementId}
+                onSelectElement={(id) => handleElementClick({ stopPropagation: () => {} } as any, id, "order_info")}
+              />
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
                 {/* الجانب الأيمن: تفاصيل الطلب والأسعار */}
