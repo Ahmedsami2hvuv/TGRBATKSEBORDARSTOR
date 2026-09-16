@@ -407,7 +407,7 @@ export function OrderDetailSection({
                 setPreviewImageUrl={setPreviewImageUrl}
                 designerConfig={designerConfig || undefined}
               />
-              <div className="-mt-1.5 sm:-mt-2">
+              <div className="-mt-4 sm:-mt-5.5">
                 <AdminLuxuryCustomerCard
                   order={order}
                   customerName={order.customerName || order.customer?.name || "الزبون"}

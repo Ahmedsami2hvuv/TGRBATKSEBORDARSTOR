@@ -597,21 +597,23 @@ export function PickupMoneyForm({
   }, [error]);
 
   return (
-    <div className="space-y-3">
-      <p className="font-bold text-emerald-950">اكتب المبلغ الذي سلّمته للعميل </p>
+    <div className="space-y-3 select-none">
+      <p className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5">
+        <span>💸</span> اكتب المبلغ الذي سلّمته للعميل (صادر)
+      </p>
       {!advanceToDelivering ? (
-        <p className="text-[11px] font-medium text-emerald-800/90">
+        <p className="text-[11px] font-bold text-emerald-200/90">
           تسجيل صادر فقط — دون تغيير حالة الطلب.
         </p>
       ) : null}
-      <div className={moneySaderSummaryBoxClass}>
-        <span className="min-w-0 flex-1 sm:flex-none">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 text-xs shadow-lg text-[#FFF8F0]">
+        <span className="min-w-0 flex-1 sm:flex-none font-bold">
           سعر الطلب:{" "}
-          <span className={moneySaderTotalValueClass}>{expectedAlfHint || "—"}</span>
+          <span className="font-mono text-sm sm:text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{expectedAlfHint || "—"}</span>
         </span>
-        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start">
+        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start font-bold">
           المتبقي للصادر:{" "}
-          <span className={moneySaderRemainValueClass}>{remainingAlfHint || "—"}</span>
+          <span className="font-mono text-sm sm:text-base font-black text-emerald-300 bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{remainingAlfHint || "—"}</span>
         </span>
       </div>
       <form
@@ -638,16 +640,16 @@ export function PickupMoneyForm({
         />
         {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
         <div className="flex items-center justify-between gap-3 pt-2">
-          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً بتصميم إسلامي مذهب */}
           <div className="w-28 sm:w-32 shrink-0 space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <label className="text-[10px] font-black text-[#F5D77F] block text-center truncate">سعر آخر يدوياً:</label>
             <input
               ref={amountRef}
               name="amountAlf"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={onPickupAmountKeyDown}
-              className={`${moneySaderAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              className="w-full text-center text-xs sm:text-sm h-11 rounded-xl border-2 border-[#C9A86A] bg-[#06281D] text-[#F5D77F] placeholder-[#F5D77F]/40 font-black shadow-inner focus:ring-2 focus:ring-[#F5D77F] outline-none"
               placeholder="اكتب السعر"
               inputMode="decimal"
               enterKeyHint="done"
@@ -655,7 +657,7 @@ export function PickupMoneyForm({
             />
           </div>
 
-          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
+          {/* اليسار: زر مربع كبيييييير جداً وضخم بتصميم ملكي إسلامي زمردي مذهب */}
           {remainingAlfHint && (
             <div className="relative flex-1 flex justify-end min-w-0">
               {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
@@ -683,14 +685,14 @@ export function PickupMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-green w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-[#F5D77F] bg-gradient-to-r from-[#0F4D3A] via-[#165B45] to-[#0F4D3A] p-2 font-black text-[#F5D77F] shadow-[0_0_20px_rgba(201,168,106,0.35)] active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-tighter leading-none text-[#F5D77F]">
                     {remainingAlfHint}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none text-emerald-200">
                     ألف
                   </span>
                 </div>
@@ -708,12 +710,12 @@ export function PickupMoneyForm({
             onKeyDown={onPickupNoteKeyDown}
             rows={2}
             required
-            className="w-full rounded-xl border-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm shadow-sm transition-all"
+            className="w-full rounded-xl border-2 border-amber-400 bg-[#06281D] text-amber-200 px-3 py-2 text-xs sm:text-sm shadow-inner placeholder-amber-400/60 focus:ring-2 focus:ring-amber-400 outline-none"
             placeholder="المبلغ مختلف — اكتب السبب"
           />
         )}
-        {error ? <p className="text-sm font-bold text-rose-700">{error}</p> : null}
-        <div className="flex flex-wrap gap-2">
+        {error ? <p className="text-sm font-bold text-rose-300">{error}</p> : null}
+        <div className="flex flex-wrap gap-2 pt-1">
           <button
             ref={mainSubmitRef}
             type="submit"
@@ -721,9 +723,9 @@ export function PickupMoneyForm({
             onClick={() => {
               if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
             }}
-            className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black border border-[#C9A86A] px-4 py-2.5 text-xs sm:text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "جارٍ الحفظ…" : advanceToDelivering ? "تسجيل وتحويل الحالة" : "تأكيد"}
+            {pending ? "جارٍ الحفظ…" : advanceToDelivering ? "✓ تسجيل وتحويل الحالة" : "✓ تأكيد"}
           </button>
           {advanceToDelivering ? (
             <button
@@ -735,7 +737,7 @@ export function PickupMoneyForm({
                   pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
                 }
               }}
-              className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-sm font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60"
+              className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-2.5 text-xs sm:text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
               title="تحويل الحالة إلى «عند المندوب» دون تسجيل مبلغ صادر في هذه الخطوة"
             >
               لم أدفع
@@ -744,7 +746,7 @@ export function PickupMoneyForm({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800"
+            className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] px-4 py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -925,15 +927,15 @@ export function DeliveryMoneyForm({
 
   if (prepaidConfirmState === "ask") {
     return (
-      <div className="space-y-4 p-4 text-right bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5 shadow-md">
+      <div className="space-y-4 p-4 text-right bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] rounded-2xl border-2 border-[#C9A86A] shadow-2xl text-[#FFF8F0]">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-200/50">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md">
             <svg className="size-6 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
           </div>
-          <h4 className="text-base font-black text-slate-900 dark:text-white text-center">تأكد أنك لم تأخذ أي مبلغ من الزبون</h4>
-          <p className="text-xs font-bold text-slate-500 text-center leading-relaxed">هذه الطلبية مسجلة بأنها "واصلة مسبقاً"، ويتم تحصيل أجور التوصيل فقط.</p>
+          <h4 className="text-sm sm:text-base font-black text-[#F5D77F] text-center drop-shadow-sm">تأكد أنك لم تأخذ أي مبلغ من الزبون</h4>
+          <p className="text-xs font-bold text-white/90 text-center leading-relaxed">هذه الطلبية مسجلة بأنها "واصلة مسبقاً"، ويتم تحصيل أجور التوصيل فقط.</p>
         </div>
 
         <div className="flex gap-3 mt-2">
@@ -954,9 +956,9 @@ export function DeliveryMoneyForm({
                 formRef.current?.requestSubmit();
               }
             }}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-650 hover:bg-emerald-750 bg-emerald-600 hover:bg-emerald-750 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black text-center shadow-lg active:scale-95 transition-all text-xs sm:text-sm disabled:opacity-50 cursor-pointer border border-[#C9A86A]"
           >
-            {pending ? "جارٍ الحفظ…" : "لا، لم آخذ"}
+            {pending ? "جارٍ الحفظ…" : "✓ لا، لم آخذ"}
           </button>
           <button
             type="button"
@@ -964,17 +966,17 @@ export function DeliveryMoneyForm({
             onClick={() => {
               setPrepaidConfirmState("took_money");
             }}
-            className="flex-1 py-3 px-4 rounded-xl bg-red-650 hover:bg-red-750 bg-red-600 hover:bg-red-700 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-700 to-rose-900 border border-[#C9A86A] text-[#F5D77F] font-black text-center shadow-md active:scale-95 transition-all text-xs sm:text-sm disabled:opacity-50 cursor-pointer"
           >
             نعم، أخذت مبلغاً
           </button>
         </div>
 
-        <div className="flex justify-center border-t border-slate-100 dark:border-white/5 pt-3 mt-3">
+        <div className="flex justify-center border-t border-[#C9A86A]/30 pt-3 mt-3">
           <button
             type="button"
             onClick={onClose}
-            className="text-xs font-bold text-slate-500 hover:text-slate-800"
+            className="text-xs font-black text-[#F5D77F]/80 hover:text-white transition cursor-pointer"
             disabled={pending}
           >
             إلغاء والرجوع
@@ -1010,14 +1012,14 @@ export function DeliveryMoneyForm({
         </form>
 
         {portalReady && locationModalOpen && createPortal(
-          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/55 p-4" dir="rtl">
-            <div className="max-w-md rounded-2xl border border-red-200 bg-white p-5 shadow-xl">
-              <p className="text-base font-black text-slate-900">هذا الطلب لا يحتوي على موقع للزبون</p>
-              <p className="mt-3 text-sm text-slate-600">أتممت تسليم الطلب الآن؟ هل تريد رفع موقعك الحالي كـ موقع للزبون؟</p>
-              {geoError && <p className="mt-3 text-sm font-bold text-rose-700">{geoError}</p>}
+          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" dir="rtl">
+            <div className="max-w-md w-full rounded-[24px] border-2 border-[#C9A86A] bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] p-5 shadow-2xl text-[#FFF8F0]">
+              <p className="text-base font-black text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5"><span>📍</span> هذا الطلب لا يحتوي على موقع للزبون</p>
+              <p className="mt-3 text-xs font-bold text-white/90 leading-relaxed">أتممت تسليم الطلب الآن؟ هل تريد رفع موقعك الحالي كـ موقع للزبون في الأرشيف؟</p>
+              {geoError && <p className="mt-3 text-xs font-bold text-rose-300 bg-rose-950/80 p-2 rounded-xl border border-rose-500/50">{geoError}</p>}
               <div className="mt-5 flex flex-col gap-2">
-                <button type="button" onClick={onConfirmGps} className="rounded-xl bg-red-700 py-3 text-sm font-black text-white">نعم، ارفع موقعي الحالي</button>
-                <button type="button" onClick={onSkipLocation} className="rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-700">لا، لا ترفع موقعي</button>
+                <button type="button" onClick={onConfirmGps} className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] py-3 text-xs sm:text-sm font-black border border-[#C9A86A] shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer">✓ نعم، ارفع موقعي الحالي</button>
+                <button type="button" onClick={onSkipLocation} className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer">لا، لا ترفع موقعي</button>
               </div>
             </div>
           </div>,
@@ -1028,25 +1030,25 @@ export function DeliveryMoneyForm({
   }
 
   return (
-    <div className="space-y-3">
-      <p className="font-bold text-red-950">
-        {prepaidConfirmState === "took_money"
+    <div className="space-y-3 select-none">
+      <p className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5">
+        <span>🫴</span> {prepaidConfirmState === "took_money"
           ? "الطلب واصل حسابه لكن يبدو أنك أخذت مبلغاً، اكتب المبلغ الذي أخذته واكتب السبب"
-          : "اكتب المبلغ الذي استلمته من الزبون"}
+          : "اكتب المبلغ الذي استلمته من الزبون (وارد)"}
       </p>
       {!advanceToDelivered ? (
-        <p className="text-[11px] font-medium text-red-800/90">
+        <p className="text-[11px] font-bold text-rose-300/90">
           تسجيل وارد فقط — دون تغيير حالة الطلب.
         </p>
       ) : null}
-      <div className={moneyWardSummaryBoxClass}>
-        <span className="min-w-0 flex-1 sm:flex-none">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 text-xs shadow-lg text-[#FFF8F0]">
+        <span className="min-w-0 flex-1 sm:flex-none font-bold">
           المبلغ الكلي:{" "}
-          <span className={moneyWardTotalValueClass}>{expectedAlfHint || "—"}</span>
+          <span className="font-mono text-sm sm:text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{expectedAlfHint || "—"}</span>
         </span>
-        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start">
+        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start font-bold">
           المتبقي للوارد:{" "}
-          <span className={moneyWardRemainValueClass}>{remainingAlfHint || "—"}</span>
+          <span className="font-mono text-sm sm:text-base font-black text-rose-300 bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{remainingAlfHint || "—"}</span>
         </span>
       </div>
       <form
@@ -1085,16 +1087,16 @@ export function DeliveryMoneyForm({
         <input ref={lngRef} type="hidden" name="lng" value="" />
         {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
         <div className="flex items-center justify-between gap-3 pt-2">
-          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً */}
+          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً بتصميم إسلامي مذهب */}
           <div className="w-28 sm:w-32 shrink-0 space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 block text-center truncate">سعر آخر يدوياً:</label>
+            <label className="text-[10px] font-black text-[#F5D77F] block text-center truncate">سعر آخر يدوياً:</label>
             <input
               ref={amountRef}
               name="amountAlf"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={onDeliveryAmountKeyDown}
-              className={`${moneyWardAmountInputClass} animate-placeholder w-full text-center text-xs h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold`}
+              className="w-full text-center text-xs sm:text-sm h-11 rounded-xl border-2 border-[#C9A86A] bg-[#06281D] text-[#F5D77F] placeholder-[#F5D77F]/40 font-black shadow-inner focus:ring-2 focus:ring-[#F5D77F] outline-none"
               placeholder="اكتب السعر"
               inputMode="decimal"
               enterKeyHint="done"
@@ -1102,7 +1104,7 @@ export function DeliveryMoneyForm({
             />
           </div>
 
-          {/* اليسار: زر مربع كبيييييير جداً وضخم ملفت للنقر السريع بلمسة واحدة */}
+          {/* اليسار: زر مربع كبيييييير جداً وضخم بتصميم ملكي إسلامي زمردي مذهب */}
           {remainingAlfHint && (
             <div className="relative flex-1 flex justify-end min-w-0">
               {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
@@ -1130,14 +1132,14 @@ export function DeliveryMoneyForm({
                     }
                   }, 40);
                 }}
-                className="magical-money-block-red w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-red-500 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 p-2 font-black text-white shadow-xl active:scale-95 transition-all cursor-pointer select-none group"
+                className="w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-[#F5D77F] bg-gradient-to-r from-[#0F4D3A] via-[#165B45] to-[#0F4D3A] p-2 font-black text-[#F5D77F] shadow-[0_0_20px_rgba(201,168,106,0.35)] active:scale-95 transition-all cursor-pointer select-none group"
                 title="اضغط لتأكيد وإرسال المبلغ مباشرة"
               >
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter leading-none">
+                  <span className="text-4xl sm:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-tighter leading-none text-[#F5D77F]">
                     {remainingAlfHint}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none">
+                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none text-emerald-200">
                     ألف
                   </span>
                 </div>
@@ -1155,12 +1157,12 @@ export function DeliveryMoneyForm({
             onKeyDown={onDeliveryNoteKeyDown}
             rows={2}
             required
-            className="w-full rounded-xl border-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm shadow-sm transition-all"
+            className="w-full rounded-xl border-2 border-amber-400 bg-[#06281D] text-amber-200 px-3 py-2 text-xs sm:text-sm shadow-inner placeholder-amber-400/60 focus:ring-2 focus:ring-amber-400 outline-none"
             placeholder={prepaidConfirmState === "took_money" ? "اكتب سبب أخذ المبلغ بالتفصيل (مثلاً: أخذت أجور التوصيل)" : "المبلغ مختلف — اكتب السبب"}
           />
         )}
-        {error ? <p className="text-sm font-bold text-rose-700">{error}</p> : null}
-        <div className="flex flex-wrap gap-2">
+        {error ? <p className="text-sm font-bold text-rose-300">{error}</p> : null}
+        <div className="flex flex-wrap gap-2 pt-1">
           <button
             ref={mainSubmitRef}
             type="submit"
@@ -1169,9 +1171,9 @@ export function DeliveryMoneyForm({
             onClick={() => {
               if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
             }}
-            className="rounded-xl bg-red-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black border border-[#C9A86A] px-4 py-2.5 text-xs sm:text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "جارٍ الحفظ…" : advanceToDelivered ? "تسجيل وتحويل الحالة" : "تأكيد"}
+            {pending ? "جارٍ الحفظ…" : advanceToDelivered ? "✓ تسجيل وتحويل الحالة" : "✓ تأكيد"}
           </button>
           {advanceToDelivered ? (
             <button
@@ -1184,7 +1186,7 @@ export function DeliveryMoneyForm({
                   deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
                 }
               }}
-              className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-2 text-sm font-black text-red-950 shadow-sm transition hover:bg-red-100 disabled:opacity-60"
+              className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-2.5 text-xs sm:text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
               title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد في هذه الخطوة"
             >
               لم أستلم
@@ -1193,7 +1195,7 @@ export function DeliveryMoneyForm({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800"
+            className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] px-4 py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -1204,43 +1206,43 @@ export function DeliveryMoneyForm({
       {portalReady && locationModalOpen
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/55 p-4"
+              className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
               dir="rtl"
               role="dialog"
               aria-modal="true"
               aria-labelledby="mandoub-delivery-loc-title"
             >
-              <div className="max-w-md rounded-2xl border border-red-200 bg-white p-5 shadow-xl">
+              <div className="max-w-md rounded-2xl border-2 border-[#C9A86A] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0]">
                 <p
                   id="mandoub-delivery-loc-title"
-                  className="text-base font-black leading-relaxed text-slate-900"
+                  className="text-base font-black leading-relaxed text-[#F5D77F]"
                 >
                   هذا الطلب لا يحتوي على موقع للزبون
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                <p className="mt-3 text-sm leading-relaxed text-[#FFF8F0]/85">
                   أتممت تسليم الطلب الآن؟ هل تريد رفع{" "}
-                  <strong className="text-slate-800">موقعك الحالي</strong> (حيث أنت الآن) على أنه
-                  موقع الزبون؟ قد يكون قد غيرت مكانك بعد مغادرة الزبون — اختر بعناية.
+                  <strong className="text-[#F5D77F]">موقعك الحالي</strong> (حيث أنت الآن) على أنه
+                  موقع الزبون؟ قد تكون قد غيرت مكانك بعد مغادرة الزبون — اختر بعناية.
                 </p>
                 {geoError ? (
-                  <p className="mt-3 text-sm font-bold text-rose-700">{geoError}</p>
+                  <p className="mt-3 text-sm font-bold text-rose-300">{geoError}</p>
                 ) : null}
-                <div className="mt-5 flex flex-col gap-2">
+                <div className="mt-5 flex flex-col gap-2.5">
                   <button
                     type="button"
                     onClick={onConfirmGps}
                     disabled={pending}
-                    className="rounded-xl bg-red-700 px-4 py-3 text-sm font-black text-white disabled:opacity-60"
+                    className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
                   >
-                    نعم، ارفع موقعي الحالي
+                    ✓ نعم، ارفع موقعي الحالي
                   </button>
                   <button
                     type="button"
                     onClick={onSkipLocation}
                     disabled={pending}
-                    className="rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+                    className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
                   >
-                    لا، لا ترفع موقعي
+                    ✕ لا، لا ترفع موقعي
                   </button>
                   <button
                     type="button"
@@ -1248,7 +1250,7 @@ export function DeliveryMoneyForm({
                       setLocationModalOpen(false);
                       setGeoError("");
                     }}
-                    className="mt-2 text-center text-sm font-bold text-slate-500 hover:underline"
+                    className="mt-2 text-center text-sm font-bold text-[#C9A86A] hover:underline cursor-pointer"
                     disabled={pending}
                   >
                     إلغاء والرجوع لتعديل المبلغ

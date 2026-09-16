@@ -143,7 +143,7 @@ export function AdminLuxuryShopCard({
 
       {/* الهيكل الرئيسي لكارت المحل بالإطار الملكي الفاخر */}
       <div
-        className="relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto"
+        className="relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto"
         style={getCardContainerStyle(shopCustom?.frameConfig, frameBg)}
       >
         {isExpanded ? (

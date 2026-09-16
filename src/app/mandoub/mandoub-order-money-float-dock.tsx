@@ -357,19 +357,22 @@ function DraggableFloatPanel({
       lang="ar"
     >
       <div
-        className="flex max-h-full flex-col overflow-hidden rounded-2xl border border-slate-400/40 bg-white/95 shadow-2xl ring-2 ring-slate-300/50 backdrop-blur-sm"
-        style={{ maxHeight: `min(${MONEY_FLOAT_DIMS.panelH}px, 80vh)` }}
+        className="flex max-h-full flex-col overflow-hidden rounded-[26px] border-2 border-[#C9A86A] bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] text-[#FFF8F0] shadow-[0_25px_60px_rgba(0,0,0,0.9)] ring-2 ring-[#F5D77F]/40 backdrop-blur-md relative"
+        style={{ maxHeight: `min(${MONEY_FLOAT_DIMS.panelH}px, 85vh)` }}
       >
-        <div className="flex shrink-0 items-stretch justify-between gap-2 border-b border-slate-200 bg-slate-100/90">
+        {/* زخرفة مذهبة في أعلى النافذة */}
+        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-90 pointer-events-none z-20" />
+
+        <div className="flex shrink-0 items-stretch justify-between gap-2 border-b border-[#C9A86A]/40 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-1.5">
           <div
-            className="min-w-0 flex-1 cursor-grab px-3 py-2.5 active:cursor-grabbing"
+            className="min-w-0 flex-1 cursor-grab px-3 py-2 active:cursor-grabbing flex items-center gap-1.5"
             onPointerDownCapture={drag.onPointerDownCapture}
             onPointerMove={drag.onPointerMove}
             onPointerUp={drag.onPointerUp}
             onPointerCancel={drag.onPointerCancel}
           >
-            <span className="text-xs font-bold leading-snug text-slate-600">
-              اسحب من هنا للتحريك — يُحفظ المكان لكل الطلبات
+            <span className="text-xs font-black text-[#F5D77F] drop-shadow-sm flex items-center gap-1">
+              <span>✥</span> اسحب للتحريك <span>✥</span>
             </span>
           </div>
           <button
@@ -379,12 +382,12 @@ function DraggableFloatPanel({
               e.stopPropagation();
               onClose();
             }}
-            className="pointer-events-auto shrink-0 self-stretch border-s border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-800 hover:bg-slate-50 active:bg-slate-100"
+            className="pointer-events-auto shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-700 to-rose-900 border border-[#C9A86A] px-3.5 py-1 text-xs font-black text-[#F5D77F] shadow-md hover:from-rose-600 hover:to-rose-800 active:scale-95 transition-all cursor-pointer"
           >
-            إغلاق
+            ✕ إغلاق
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3.5 text-right">{children}</div>
       </div>
     </div>
   );

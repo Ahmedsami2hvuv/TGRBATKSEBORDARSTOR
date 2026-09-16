@@ -94,11 +94,6 @@ export function getCardContainerStyle(
   if (sX !== 1 || sY !== 1) {
     transforms.push(`scale(${sX}, ${sY})`);
     style.transformOrigin = "top center";
-    // تعويض الهامش الرأسي التلقائي عند التكبير أو التصغير بحيث يتبعه الكارت التالي مباشرة
-    const extraH = (sY - 1) * 200; // نسبة تقريبية لارتفاع الكارت القياسي
-    if (extraH !== 0) {
-      style.marginBottom = `${extraH}px`;
-    }
   }
 
   if (frameCfg.rotate !== undefined && frameCfg.rotate !== 0) {

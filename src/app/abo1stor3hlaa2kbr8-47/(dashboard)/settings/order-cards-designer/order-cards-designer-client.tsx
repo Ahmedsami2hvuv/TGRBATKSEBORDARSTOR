@@ -3869,13 +3869,13 @@ function OrderCardsLivePreview({
             </div>
 
             {/* 2. كارت الزبون في المعاينة (يبدأ دائماً أسفل كارت المحل مباشرة شبه ملاصق) */}
-            <div className="-mt-1.5 sm:-mt-2">
+            <div className="-mt-4 sm:-mt-5.5">
               <div
                 onClick={() => {
                   setActiveTab("customer_card");
                   setSelectedElementId("cust_frame");
                 }}
-                className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
+                className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${
                   selectedElementId === "cust_frame"
                     ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
                     : activeTab === "customer_card"
