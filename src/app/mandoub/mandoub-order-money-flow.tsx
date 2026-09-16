@@ -203,40 +203,79 @@ export function MandoubOrderMoneyFlow({
   }, []);
 
   return (
-    <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
-      <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
-        <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
-        المعاملات المالية (الصادر والوارد)
-      </h3>
+    <div className="mt-6 space-y-4 border-t-2 border-[#C9A86A]/40 pt-5 text-[#FFF8F0]">
+      {/* عنوان المعاملات المالية الملكي */}
+      <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2">
+        <h3 className="flex items-center gap-2 text-base sm:text-lg font-black text-[#F5D77F] drop-shadow-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/order-luxury/order-info-card/icon-order-coins.jpg"
+            alt="المعاملات المالية"
+            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-contain border border-[#C9A86A]/70 shadow-xs"
+          />
+          المعاملات المالية (الصادر والوارد)
+        </h3>
+        <span className="text-[11px] font-bold text-[#F5D77F]/70 bg-[#06281D] px-2.5 py-1 rounded-xl border border-[#C9A86A]/40 shadow-inner">
+          سجل الحركات
+        </span>
+      </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-6">
-          {/* أزرار أخذت / أعطيت الثابتة (الصادر والوارد) */}
-          <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  setPickupAdvanceToDelivering(false);
-                  setPickupOpen(true);
-                  setDeliveryOpen(false);
-                }}
-                className="flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95"
-              >
-                <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
-                أعطيت للعميل (صادر)
-              </button>
+      <div className="grid grid-cols-1 gap-3 mb-4">
+        {/* أزرار أخذت / أعطيت الملكية (الصادر والوارد) بصور نانو بنانا الفاخرة */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+          {/* 1. زر الصادر (أعطيت للعميل) */}
+          <button
+            type="button"
+            onClick={() => {
+              setPickupAdvanceToDelivering(false);
+              setPickupOpen(true);
+              setDeliveryOpen(false);
+            }}
+            className="flex min-h-[58px] sm:min-h-[64px] items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#0F4D3A] p-2 sm:p-2.5 shadow-xl hover:brightness-110 active:scale-95 transition-all cursor-pointer group"
+          >
+            <div className="flex flex-col text-right min-w-0 flex-1">
+              <span className="text-xs sm:text-sm font-black text-[#F5D77F] drop-shadow-sm truncate">
+                أعطيت للعميل
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-200">
+                تسجيل (صادر 💸)
+              </span>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/order-luxury/badge-sader-royal.jpg"
+              alt="صادر"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain border border-[#C9A86A] shadow-md group-hover:scale-105 transition shrink-0"
+            />
+          </button>
 
-              <button
-                onClick={() => {
-                  setDeliveryAdvanceToDelivered(false);
-                  setDeliverySession((n) => n + 1);
-                  setDeliveryOpen(true);
-                  setPickupOpen(false);
-                }}
-                className="flex h-14 items-center justify-center gap-2 rounded-xl bg-red-600 px-3 font-black text-white shadow-md hover:bg-red-700 active:scale-95"
-              >
-                <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
-                أخذت من الزبون (وارد)
-              </button>
-          </div>
+          {/* 2. زر الوارد (أخذت من الزبون) */}
+          <button
+            type="button"
+            onClick={() => {
+              setDeliveryAdvanceToDelivered(false);
+              setDeliverySession((n) => n + 1);
+              setDeliveryOpen(true);
+              setPickupOpen(false);
+            }}
+            className="flex min-h-[58px] sm:min-h-[64px] items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#0F4D3A] p-2 sm:p-2.5 shadow-xl hover:brightness-110 active:scale-95 transition-all cursor-pointer group"
+          >
+            <div className="flex flex-col text-right min-w-0 flex-1">
+              <span className="text-xs sm:text-sm font-black text-[#F5D77F] drop-shadow-sm truncate">
+                أخذت من الزبون
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-200">
+                تسجيل (وارد 🫴)
+              </span>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/order-luxury/badge-ward-royal.jpg"
+              alt="وارد"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain border border-[#C9A86A] shadow-md group-hover:scale-105 transition shrink-0"
+            />
+          </button>
+        </div>
       </div>
 
       <MandoubOrderMoneyFloatDock
@@ -318,12 +357,17 @@ export function MandoubOrderMoneyFlow({
         }
       />
 
-      <ul className="space-y-3">
+      {/* قائمة بطاقات حركات الصادر والوارد الملكية */}
+      <ul className="space-y-3 pt-1">
         {mergedEvents.map((ev) => {
           const deleted = ev.deletedAt != null;
           const isPending = (ev as any).isPendingSync;
           const manualDel = isManualDeletionReasonClient(ev.deletedReason);
-          const dirLabel = ev.kind === MONEY_KIND_PICKUP ? "صادر" : "وارد";
+          const isPickup = ev.kind === MONEY_KIND_PICKUP;
+          const dirLabel = isPickup ? "صادر" : "وارد";
+          const badgeImg = isPickup
+            ? "/images/order-luxury/badge-sader-royal.jpg"
+            : "/images/order-luxury/badge-ward-royal.jpg";
           const noteParts: string[] = [];
           if (ev.mismatchReason?.trim()) noteParts.push(ev.mismatchReason.trim());
           if (ev.mismatchNote?.trim()) noteParts.push(ev.mismatchNote.trim());
@@ -337,69 +381,78 @@ export function MandoubOrderMoneyFlow({
           return (
             <li
               key={ev.id}
-              className={`rounded-xl border-2 px-3 py-3 text-sm sm:px-4 sm:py-3.5 ${
+              className={`rounded-2xl border-2 p-3 sm:p-4 shadow-xl transition-all ${
                 isPending
-                  ? "border-amber-400 bg-amber-50/50 animate-pulse"
+                  ? "border-amber-400 bg-[#06281D]/90 animate-pulse text-amber-200"
                   : deleted
-                    ? "border-slate-200 bg-slate-100/80 text-slate-500 line-through decoration-slate-400"
-                    : ev.kind === MONEY_KIND_PICKUP
-                      ? "border-emerald-600 bg-lime-200/95 text-emerald-950 shadow-sm"
-                      : "border-red-600 bg-red-300/95 text-red-950 shadow-sm"
+                    ? "border-slate-700 bg-slate-900/80 text-slate-500 line-through opacity-60"
+                    : "border-[#C9A86A] bg-gradient-to-br from-[#06281D] via-[#0A3D2E] to-[#06281D] text-[#FFF8F0]"
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1 space-y-2 text-right leading-relaxed">
-                  <p className="text-base font-bold sm:text-lg">
-                    <span className="font-black">{dirLabel}</span> —
-                    {ev.performedByDisplayName?.trim() || courierName.trim() || "—"}{" "}
-                    <span className="text-xs font-semibold text-slate-500 sm:text-sm">
+                {/* شارة الصادر / الوارد الملكية ثلاثية الأبعاد */}
+                <div className="shrink-0 pt-0.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={badgeImg}
+                    alt={dirLabel}
+                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-contain border-2 border-[#C9A86A] shadow-lg"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-1.5 text-right leading-relaxed">
+                  {/* سطر النوع والمنفذ والتاريخ */}
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-[#C9A86A]/30 pb-1.5">
+                    <p className="text-sm sm:text-base font-black text-[#F5D77F] flex items-center gap-1.5">
+                      <span>{dirLabel}</span>
+                      <span className="text-white/60 text-xs font-normal">بواسطة:</span>
+                      <span className="text-white font-bold">{ev.performedByDisplayName?.trim() || courierName.trim() || "—"}</span>
+                    </p>
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-[#F5D77F]/80 bg-[#06281D] px-2 py-0.5 rounded-lg border border-[#C9A86A]/40 shadow-inner">
                       {isPending ? "جاري المزامنة... ⏳" : formatRecordedAtClient(ev.recordedAt)}
                     </span>
-                  </p>
-                  <p className="text-sm font-bold text-slate-700 sm:text-base">
-                    طلب{" "}
-                    <span className="tabular-nums text-slate-900">{orderNumber}</span>
-                    <span className="text-slate-500"> — </span>
-                    <span className="font-bold">ملاحظة:</span>{" "}
-                    <span
-                      className={`whitespace-pre-wrap break-words ${
-                        noteLine === "—" ? "text-slate-500" : "text-slate-800"
-                      }`}
-                    >
+                  </div>
+
+                  {/* سطر الملاحظة ورقم الطلب */}
+                  <div className="text-xs sm:text-sm font-bold text-slate-200">
+                    <span className="text-[#F5D77F]/80">ملاحظة:</span>{" "}
+                    <span className={`whitespace-pre-wrap break-words ${noteLine === "—" ? "text-white/50" : "text-amber-200 font-black"}`}>
                       {noteLine}
                     </span>
-                  </p>
-                  <p className="flex flex-wrap items-baseline text-sm sm:text-base">
-                    <span className="font-bold">
-                      متوقع:
-                      <span
-                        className={`font-mono font-black tabular-nums text-slate-900 ${moneyLedgerAmountClass}`}
-                      >
-                        {ev.expectedDinar != null
-                          ? formatDinarAsAlfWithUnit(ev.expectedDinar)
-                          : "—"}
-                      </span>{" "}
-                      مسجّل:
-                      <span
-                        className={`font-mono font-black tabular-nums text-slate-900 ${moneyLedgerAmountClass}`}
-                      >
+                  </div>
+
+                  {/* سطر المبالغ: المتوقع والمسجل */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1 text-xs sm:text-sm">
+                    {ev.expectedDinar != null && (
+                      <div className="flex items-center gap-1 bg-[#06281D]/80 px-2 py-0.5 rounded-lg border border-[#C9A86A]/40 shadow-inner">
+                        <span className="text-[10px] text-white/70">متوقع:</span>
+                        <span className="font-mono font-bold text-[#FFF8F0] tabular-nums">
+                          {formatDinarAsAlfWithUnit(ev.expectedDinar)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#165B45] px-2.5 py-0.5 rounded-lg border border-[#C9A86A] shadow-md">
+                      <span className="text-[10px] text-[#F5D77F] font-black">المسجّل:</span>
+                      <span className="font-mono text-sm sm:text-base font-black text-[#F5D77F] tabular-nums drop-shadow-sm">
                         {formatDinarAsAlfWithUnit(ev.amountDinar)}
                       </span>
-                    </span>
-                  </p>
+                    </div>
+
+                    {hasMismatch && (
+                      <span className="text-[10px] font-black text-rose-300 bg-rose-950/80 border border-rose-500/60 px-2 py-0.5 rounded-lg animate-pulse">
+                        ⚠️ فرق في المبلغ
+                      </span>
+                    )}
+                  </div>
+
                   {deleted ? (
-                    <p className="text-xs font-semibold text-slate-600">
+                    <p className="text-[11px] font-bold text-rose-300 bg-rose-950/60 px-2 py-0.5 rounded-lg border border-rose-500/40 w-fit mt-1">
                       {manualDel ? (
                         <>
                           محذوف يدوياً
                           {ev.deletedByDisplayName?.trim() ? (
-                            <>
-                              {" "}
-                              — بواسطة:{" "}
-                              <span className="font-bold text-slate-800">
-                                {ev.deletedByDisplayName.trim()}
-                              </span>
-                            </>
+                            <> — بواسطة: <span className="font-bold text-white">{ev.deletedByDisplayName.trim()}</span></>
                           ) : null}
                         </>
                       ) : ev.deletedReason === "status_revert" ? (
@@ -410,7 +463,9 @@ export function MandoubOrderMoneyFlow({
                     </p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 flex-col items-center gap-2 self-start">
+
+                {/* زر الحذف الملكي */}
+                <div className="flex shrink-0 flex-col items-center gap-2 self-center">
                   {(() => {
                     const isBeforeReset = totalsBaseline
                       ? new Date(ev.recordedAt) <= new Date(totalsBaseline)
@@ -437,56 +492,23 @@ export function MandoubOrderMoneyFlow({
                           <button
                             type="submit"
                             disabled={deletePending}
-                            className="flex min-h-[52px] min-w-[3.8rem] items-center justify-center rounded-xl border-2 border-rose-400 bg-white py-3 text-base font-black text-rose-900 shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
+                            className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border border-rose-500/80 bg-gradient-to-b from-rose-950 to-rose-900 text-rose-200 shadow-md hover:brightness-125 active:scale-90 transition-all cursor-pointer disabled:opacity-50"
+                            title={`حذف حركة ${dirLabel}`}
                           >
-                            <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={20} height={20} />
+                            <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={18} height={18} />
                           </button>
                         </form>
                       );
                     }
                     if (!deleted) {
                       return (
-                        <p className="max-w-[9rem] text-center text-[11px] font-bold leading-snug text-slate-500">
-                          {isBeforeReset ? "معاملة مصفّرة (لا يمكن الحذف)" : "حذف من لوحة المجهز فقط"}
+                        <p className="max-w-[7rem] text-center text-[10px] font-bold leading-tight text-[#F5D77F]/60">
+                          {isBeforeReset ? "معاملة مصفّرة" : "حذف من لوحة المجهز"}
                         </p>
                       );
                     }
                     return null;
                   })()}
-
-                  {!deleted && ev.expectedDinar != null && (
-                    <div className={`flex w-full flex-col items-center justify-center rounded-lg border px-1.5 py-1 text-[10px] font-black shadow-inner ${
-                      !hasMismatch
-                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                        : diff > 0
-                          ? "border-amber-400 bg-amber-50 text-amber-700"
-                          : "border-rose-400 bg-rose-50 text-rose-700"
-                    }`}>
-                      <span className="flex items-center gap-1">
-                        {!hasMismatch ? (
-                          <>
-                            <DynamicIcon icon={icons?.ui_success} fallback="✅" width={10} height={10} />
-                            مطابق
-                          </>
-                        ) : diff > 0 ? (
-                          <>
-                            <DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={10} height={10} />
-                            زيادة
-                          </>
-                        ) : (
-                          <>
-                            <DynamicIcon icon={icons?.ui_alert} fallback="🚨" width={10} height={10} />
-                            نقص
-                          </>
-                        )}
-                      </span>
-                      {hasMismatch && (
-                        <span className="mt-0.5 tabular-nums">
-                          ({diff > 0 ? "+" : ""}{formatDinarAsAlfWithUnit(Math.abs(diff))})
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </li>
