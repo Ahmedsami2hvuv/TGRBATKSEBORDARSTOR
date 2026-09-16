@@ -46,7 +46,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
   // إعدادات المعاينة الحية
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
-  const [previewZoom, setPreviewZoom] = useState<number>(0.85);
+  const [previewZoom, setPreviewZoom] = useState<number>(1);
   const [previewCardDisplay, setPreviewCardDisplay] = useState<"single" | "both">("single");
   const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
   const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
@@ -1101,34 +1101,28 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           )}
 
-          {/* خيارات تفعيل التصميم على البوابات المختلفة بخانات اختيار واضحة */}
-          <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 sm:p-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2 mb-3">
+          {/* خيارات تفعيل التصميم على البوابات المختلفة */}
+          <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2 mb-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🏛️</span>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">تطبيق التصميم الملكي على البوابات</h3>
-                  <p className="text-[10px] sm:text-[11px] text-emerald-200">اختر أين تريد تفعيل وتطبيق كروت الطلبات والزر العائم الملكي</p>
-                </div>
+                <span className="text-lg">🏛️</span>
+                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">تفعيل التصميم على البوابات</h3>
               </div>
               <span className="text-[10px] font-bold text-amber-300 bg-[#0A3D2E] px-2 py-0.5 rounded-lg border border-[#C9A86A]/40">
                 حفظ فوري 💾
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* لوحة الإدارة */}
-              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.admin !== false
-                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
                   : "bg-black/30 border-white/10 text-white/50 opacity-70"
               }`}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">👑</span>
-                  <div>
-                    <span className="text-xs font-black block">لوحة الإدارة</span>
-                    <span className="text-[10px] text-emerald-300/80">صفحة وتفاصيل الطلب للمدير</span>
-                  </div>
+                  <span className="text-xs font-black">لوحة الإدارة</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1147,17 +1141,14 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               </label>
 
               {/* بوابة المندوب */}
-              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.mandoub !== false
-                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
                   : "bg-black/30 border-white/10 text-white/50 opacity-70"
               }`}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">🚚</span>
-                  <div>
-                    <span className="text-xs font-black block">بوابة المندوب</span>
-                    <span className="text-[10px] text-emerald-300/80">تفاصيل الطلب وكروت المندوب</span>
-                  </div>
+                  <span className="text-xs font-black">بوابة المندوب</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1176,17 +1167,14 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               </label>
 
               {/* بوابة المجهز */}
-              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
+              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.preparer === true
-                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md scale-[1.01]"
+                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
                   : "bg-black/30 border-white/10 text-white/50 opacity-70"
               }`}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">📦</span>
-                  <div>
-                    <span className="text-xs font-black block">بوابة المجهز</span>
-                    <span className="text-[10px] text-emerald-300/80">صفحة وتفاصيل طلب المجهز</span>
-                  </div>
+                  <span className="text-xs font-black">بوابة المجهز</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1649,14 +1637,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2">
               <div className="flex items-center gap-2">
                 <span className="text-base">👁️</span>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">
-                    المعاينة الحية التفاعلية (انقر على أي زر أو عنصر في الكارت لتحديده وتعديله فوراً):
-                  </h3>
-                  <p className="text-[10px] text-emerald-200">
-                    يمكنك النقر مباشرة على أي زر في الكارت أدناه لفتح شاشة إعداداته فوراً
-                  </p>
-                </div>
+                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">
+                  المعاينة الحية
+                </h3>
               </div>
 
               {/* شريط أدوات المعاينة */}
@@ -1751,69 +1734,14 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               custFrameBg={custFrameBg}
               waButtons={waButtons}
             />
-
-            {/* شريط الإجراءات السريعة لنسخ وتطبيق أبعاد الكارت بنقرة واحدة */}
-            {(activeTab === "shop_card" || activeTab === "customer_card") && (
-              <div className="bg-gradient-to-r from-[#0A3D2E] via-[#0F4D3A] to-[#0A3D2E] border-2 border-emerald-400/80 rounded-2xl p-3.5 sm:p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 mt-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400 flex items-center justify-center text-xl shrink-0 shadow-inner">
-                    💡
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-black text-[#F5D77F]">
-                      {activeTab === "shop_card"
-                        ? "هل أعجبتك أبعاد وتنسيق كارت المحل وتريد تطبيقها على كارت الزبون؟"
-                        : "هل أعجبتك أبعاد وتنسيق كارت الزبون وتريد تطبيقها على كارت المحل؟"}
-                    </h4>
-                    <p className="text-[10px] sm:text-[11px] text-emerald-200 mt-0.5">
-                      {activeTab === "shop_card"
-                        ? "يمكنك بنقرة واحدة نسخ الأبعاد أو كامل التصميم لكارت الزبون ثم الدخول وتعديل بعض الأشياء فيه بحرية!"
-                        : "يمكنك بنقرة واحدة نسخ الأبعاد أو كامل التصميم لكارت المحل ثم الدخول وتعديل بعض الأشياء فيه بحرية!"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap sm:flex-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeTab === "shop_card") {
-                        copyFrameDimensions("shop_card", "customer_card");
-                      } else {
-                        copyFrameDimensions("customer_card", "shop_card");
-                      }
-                    }}
-                    className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#06281D] hover:bg-[#083526] text-emerald-300 border border-emerald-400/70 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1 whitespace-nowrap"
-                  >
-                    <span>📐</span> نسخ أبعاد الإطار فقط
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeTab === "shop_card") {
-                        copyFullCardDesign("shop_card", "customer_card");
-                      } else {
-                        copyFullCardDesign("customer_card", "shop_card");
-                      }
-                    }}
-                    className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap"
-                  >
-                    <span>🎨</span> نسخ كامل التصميم والأزرار
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* قائمة استعراض عناصر الكارت */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[#F5D77F]">
-                📑 اختر العنصر أو الإطار لتعديل أبعاده وتدويره في صفحة مخصصة:
+              <h3 className="text-xs sm:text-sm font-black text-[#F5D77F] flex items-center gap-1.5">
+                <span>📑</span> عناصر الكارت ({currentTabElements.length})
               </h3>
-              <span className="text-xs text-emerald-200 font-bold">
-                {currentTabElements.length} عنصر قابل للتخصيص
-              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -1847,9 +1775,6 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                           <h4 className="font-black text-sm text-[#F5D77F] flex items-center gap-2">
                             <span>📐</span> {elem.title}
                           </h4>
-                          <p className="text-xs text-emerald-100 mt-0.5 font-bold">
-                            {elem.description}
-                          </p>
                         </div>
                       </div>
 
@@ -1857,7 +1782,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         type="button"
                         className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-lg hover:scale-105 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
                       >
-                        <span>⚙️</span> تخصيص أبعاد وطول وعرض الإطار
+                        <span>⚙️</span> تخصيص أبعاد الإطار
                       </button>
                     </div>
                   );
@@ -1903,9 +1828,6 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                         <h4 className="font-black text-xs sm:text-sm text-[#F5D77F] truncate group-hover:text-amber-300">
                           {elem.title}
                         </h4>
-                        <p className="text-[10px] text-emerald-200 line-clamp-2 mt-0.5">
-                          {elem.description}
-                        </p>
 
                         <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[9px] font-bold">
                           {hasCustomImg && (
@@ -3521,13 +3443,16 @@ function OrderCardsLivePreview({
   const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card";
 
   return (
-    <div className="flex items-center justify-center p-2 bg-black/60 rounded-2xl border border-[#C9A86A]/30 overflow-x-auto overflow-y-auto max-h-[34vh] sm:max-h-[40vh]">
+    <div className={`w-full flex justify-center p-2 sm:p-3 bg-black/70 rounded-2xl border border-[#C9A86A]/40 overflow-x-auto ${
+      selectedElementId ? "max-h-[44vh] sm:max-h-[48vh] overflow-y-auto" : "overflow-visible"
+    }`}>
       <div
-        className="transition-all duration-150 origin-top"
+        className="w-full transition-all duration-150 flex flex-col items-center justify-start"
         style={{
-          width: previewMode === "mobile" ? "420px" : "100%",
-          maxWidth: "100%",
-          transform: `scale(${previewZoom})`,
+          width: previewMode === "mobile" ? "100%" : "100%",
+          maxWidth: previewMode === "mobile" ? "430px" : "100%",
+          transform: previewZoom !== 1 ? `scale(${previewZoom})` : undefined,
+          transformOrigin: "top center",
         }}
       >
         {/* معاينة الكروت الفاخرة (كارت المحل أو كارت الزبون أو كلاهما معاً) */}
