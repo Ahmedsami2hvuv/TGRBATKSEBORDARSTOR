@@ -35,27 +35,39 @@ type Props = {
   searchParams: Promise<{ view?: string }>;
 };
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 350): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (retries <= 0) throw err;
+    await new Promise((r) => setTimeout(r, delayMs));
+    return withRetry(fn, retries - 1, delayMs * 1.5);
+  }
+}
+
 export default async function AdminOrderViewPage({ params, searchParams }: Props) {
   const { orderId } = await params;
   const sp = await searchParams;
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        submittedBy: { select: { name: true, phone: true } },
-        submittedByCompanyPreparer: { select: { name: true, phone: true } },
-        shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true, region: { select: { name: true } } } },
-        customerRegion: { select: { name: true } },
-        secondCustomerRegion: { select: { name: true } },
-        courier: { select: { name: true, phone: true } },
-        customer: { select: { name: true, customerDoorPhotoUrl: true } },
-      },
-    });
+    const order = await withRetry(() =>
+      prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          submittedBy: { select: { name: true, phone: true } },
+          submittedByCompanyPreparer: { select: { name: true, phone: true } },
+          shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true, region: { select: { name: true } } } },
+          customerRegion: { select: { name: true } },
+          secondCustomerRegion: { select: { name: true } },
+          courier: { select: { name: true, phone: true } },
+          customer: { select: { name: true, customerDoorPhotoUrl: true } },
+        },
+      })
+    );
 
     if (!order) notFound();
 
-    // جلب البيانات الملحقة بكفاءة عالية
+    // جلب البيانات الملحقة بكفاءة عالية مع حماية كاملة ضد الأخطاء
     const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
     const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
@@ -70,8 +82,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       couriersRaw,
       designerConfig,
     ] = await Promise.all([
-      getCachedCompanyPreparers(),
-      getCachedMandoubWaButtonSettings(),
+      getCachedCompanyPreparers().catch(() => []),
+      getCachedMandoubWaButtonSettings().catch(() => []),
       customerPhoneNorm && order.customerRegionId
         ? prisma.customerPhoneProfile
             .findUnique({
@@ -93,9 +105,9 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           include: { courier: { select: { name: true } }, recordedByCompanyPreparer: { select: { name: true } } },
         })
         .catch(() => []),
-      getCachedStoreProducts(),
+      getCachedStoreProducts().catch(() => []),
       getTwoWayTemplates().catch(() => null),
-      getCachedActiveCouriers(),
+      getCachedActiveCouriers().catch(() => []),
       getOrderCardsDesignerConfig().catch(() => null),
     ]);
 
@@ -126,6 +138,13 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       return order.customer?.customerDoorPhotoUrl || null;
     };
 
+    const createdAtStr =
+      order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt
+        ? new Date(order.createdAt).toISOString()
+        : new Date().toISOString();
+
     const view = {
       ...order,
       imageUrl: resolvePublicAssetSrc(order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl),
@@ -151,7 +170,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       orderSubtotal: order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
       deliveryPrice: order.deliveryPrice != null ? formatDinarAsAlfWithUnit(order.deliveryPrice) : null,
       totalAmount: order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : null,
-      createdAt: order.createdAt.toISOString(),
+      createdAt: createdAtStr,
       reversePickup: isReversePickupOrderType(order.orderType),
       smartHintLine,
       secondSmartHintLine,
@@ -164,16 +183,24 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
     };
 
-    const adminMoneyEvents = (moneyEventsRaw || []).reverse().map((e: any) => ({
-      ...e,
-      amountDinar: Number(e.amountDinar),
-      expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
-      recordedAt: e.createdAt.toISOString(),
-      performedByDisplayName:
-        e.recordedByCompanyPreparer?.name ||
-        e.courier?.name ||
-        (!e.courierId && !e.recordedByCompanyPreparerId ? "الإدارة" : "—"),
-    }));
+    const adminMoneyEvents = (moneyEventsRaw || []).reverse().map((e: any) => {
+      const recDate =
+        e.createdAt instanceof Date
+          ? e.createdAt.toISOString()
+          : e.createdAt
+          ? new Date(e.createdAt).toISOString()
+          : new Date().toISOString();
+      return {
+        ...e,
+        amountDinar: Number(e.amountDinar),
+        expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
+        recordedAt: recDate,
+        performedByDisplayName:
+          e.recordedByCompanyPreparer?.name ||
+          e.courier?.name ||
+          (!e.courierId && !e.recordedByCompanyPreparerId ? "الإدارة" : "—"),
+      };
+    });
 
     const adminCustomWaButtons = (waButtonSettings || []).flatMap((r: any) => {
       // 1. فحص الصلاحية (هل يظهر للإدارة؟)
