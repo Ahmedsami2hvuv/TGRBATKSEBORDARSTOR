@@ -368,19 +368,19 @@ export function AdminLuxuryShopCard({
                 />
               </div>
 
-              {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
+              {/* مساحة عرض صورة باب المحل أو الـ Placeholder - متطابقة هندسياً 100% مع الاستوديو */}
               <div
-                className="w-fit max-w-[160px] sm:max-w-[220px] md:max-w-[260px] mx-auto flex items-center justify-center py-0.5"
+                className="w-fit inline-flex mx-auto justify-center items-center py-0.5"
                 style={getElementStyle(shopCustom?.placeholderNoPhoto)}
               >
                 {imgShopDoor ? (
-                  <div className="w-full max-w-[150px] sm:max-w-[210px] md:max-w-[240px] flex flex-col items-center gap-1">
-                    <div className="w-full aspect-[4/3] max-h-[110px] sm:max-h-[145px] md:max-h-[165px] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-[110px] sm:w-[135px] md:w-[155px] h-[72px] sm:h-[88px] md:h-[102px] overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={imgShopDoor}
                         alt="باب المحل"
-                        className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300"
+                        className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300 pointer-events-auto"
                         onClick={() => setZoomOpen(true)}
                       />
                       <div
@@ -397,12 +397,12 @@ export function AdminLuxuryShopCard({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full flex items-center justify-center">
+                  <div className="flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                       alt="لا توجد صورة"
-                      className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
+                      className="w-[110px] sm:w-[135px] md:w-[155px] h-[72px] sm:h-[88px] md:h-[102px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
                     />
                   </div>
                 )}

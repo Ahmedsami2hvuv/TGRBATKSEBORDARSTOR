@@ -3782,7 +3782,7 @@ function OrderCardsLivePreview({
                     e.stopPropagation();
                     setSelectedElementId("shop_placeholderNoPhoto");
                   }}
-                  className={`w-fit max-w-[160px] sm:max-w-[220px] md:max-w-[260px] mx-auto flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                  className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
                     selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
                   }`}
                   style={getElementStyle(shopCustom?.placeholderNoPhoto)}
@@ -3792,7 +3792,7 @@ function OrderCardsLivePreview({
                   <img
                     src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                     alt="لا توجد صورة"
-                    className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    className="w-[110px] sm:w-[135px] md:w-[155px] h-auto object-contain drop-shadow-xl opacity-95 pointer-events-none"
                   />
                 </div>
 
@@ -4126,7 +4126,7 @@ function OrderCardsLivePreview({
                     e.stopPropagation();
                     setSelectedElementId("cust_placeholderNoPhoto");
                   }}
-                  className={`w-fit max-w-[160px] sm:max-w-[220px] md:max-w-[260px] mx-auto flex items-center justify-center py-0.5 cursor-pointer transition-all ${
+                  className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
                     selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
                   }`}
                   style={getElementStyle(custCustom?.placeholderNoPhoto)}
@@ -4136,7 +4136,7 @@ function OrderCardsLivePreview({
                   <img
                     src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                     alt="لا توجد صورة باب"
-                    className="w-full h-auto max-h-[110px] sm:max-h-[150px] md:max-h-[180px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    className="w-[110px] sm:w-[135px] md:w-[155px] h-auto object-contain drop-shadow-xl opacity-95 pointer-events-none"
                   />
                 </div>
 
