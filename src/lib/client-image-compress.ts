@@ -148,3 +148,92 @@ export async function compressImageFileForUpload(
     img.src = url;
   });
 }
+
+/**
+ * ضغط وتجهيز صور وأصول وخلفيات استوديو المصمم في المتصفح قبل الرفع
+ * يحافظ على الشفافية في ملفات PNG و WEBP ويصغر الأبعاد الفائقة لتجنب تجاوز حدود السيرفر (413 Request Entity Too Large)
+ */
+export async function compressDesignerAssetForUpload(
+  file: File,
+  maxEdgePx = 2048
+): Promise<File> {
+  if (typeof window === "undefined") return file;
+  if (!file.type.startsWith("image/")) return file;
+
+  const isSvg = file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg");
+  if (isSvg) return file; // ملفات الفكتور لا تحتاج معالجة بالكانفاس
+
+  const isPng = file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+  const isWebp = file.type === "image/webp" || file.name.toLowerCase().endsWith(".webp");
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const nw = img.naturalWidth;
+      const nh = img.naturalHeight;
+
+      if (nw <= 0 || nh <= 0) {
+        resolve(file);
+        return;
+      }
+
+      // إذا كانت الأبعاد مناسبة وحجم الملف أقل من 1 ميجابايت، نرسله كما هو
+      if (nw <= maxEdgePx && nh <= maxEdgePx && file.size < 1_000_000) {
+        resolve(file);
+        return;
+      }
+
+      let width = nw;
+      let height = nh;
+      if (width > maxEdgePx || height > maxEdgePx) {
+        if (width > height) {
+          height = Math.round((height * maxEdgePx) / width);
+          width = maxEdgePx;
+        } else {
+          width = Math.round((width * maxEdgePx) / height);
+          height = maxEdgePx;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // الحفاظ على الشفافية إذا كانت PNG أو WEBP
+      const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
+      const quality = isPng ? undefined : 0.88;
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const baseName = file.name.replace(/\.[^.]+$/, "") || "asset";
+          const ext = isPng ? "png" : isWebp ? "webp" : "jpg";
+          const out = new File([blob], `${baseName}.${ext}`, { type: mimeType });
+          resolve(out);
+        },
+        mimeType,
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+

@@ -10,6 +10,7 @@ import {
   getCardContainerStyle,
 } from "@/lib/order-card-customizer";
 import { updateOrderCardsDesignerAction } from "./actions";
+import { compressDesignerAssetForUpload } from "@/lib/client-image-compress";
 
 type Props = {
   initialConfig: OrderCardDesignerConfig;
@@ -240,25 +241,44 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     if (!file) return;
 
     setUploadingKey("uploading");
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("category", "designer-assets");
 
     try {
+      // ضغط وتجهيز الصورة بالمتصفح لتفادي مشاكل الحجم الكبير وحدود السيرفر (413 Request Entity Too Large)
+      const compressedFile = await compressDesignerAssetForUpload(file, 2048);
+
+      const isFrame = selectedElementId?.endsWith("_frame") || false;
+      const category = isFrame ? "designer-frames" : "designer-assets";
+
+      const fd = new FormData();
+      fd.append("file", compressedFile);
+      fd.append("category", category);
+
       const res = await fetch("/api/abo1stor3hlaa2kbr8-47/settings/upload-luxury-asset", {
         method: "POST",
         body: fd,
       });
-      const data = await res.json();
-      if (data.ok && data.url) {
+
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          res.status === 413
+            ? "حجم الصورة كبير جداً، يرجى اختيار صورة أخرى أصغر حجماً."
+            : `استجابة غير متوقعة من السيرفر (${res.status} ${res.statusText || ""})`
+        );
+      }
+
+      if (res.ok && data.ok && data.url) {
         if (uploadCallbackRef.current) {
           uploadCallbackRef.current(data.url);
         }
       } else {
-        alert(data.error || "فشل رفع الصورة.");
+        alert(data.error || "فشل رفع الصورة على السيرفر.");
       }
     } catch (err: any) {
-      alert("حدث خطأ أثناء رفع الصورة: " + err.message);
+      alert("حدث خطأ أثناء رفع الصورة: " + (err?.message || "خطأ غير معروف"));
     } finally {
       setUploadingKey(null);
       if (fileInputRef.current) {
@@ -2588,6 +2608,25 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* لافتة / نافذة جاري الرفع والضغط */}
+      {uploadingKey && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#06281D] border-2 border-[#C9A86A] rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-3">
+            <div className="w-12 h-12 border-4 border-[#C9A86A] border-t-transparent rounded-full animate-spin mx-auto" />
+            <h4 className="text-base font-black text-[#F5D77F]">جاري تجهيز ورفع الصورة...</h4>
+            <p className="text-xs text-emerald-200">نقوم الآن بضغط الصورة وتحسين أبعادها ورفعها إلى السيرفر السحابي بسرعة وأمان.</p>
+          </div>
+        </div>
+      )}
+
+      {/* إشعار نجاح النسخ */}
+      {copyNotification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#06281D]/95 border-2 border-emerald-400 text-emerald-300 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+          <span className="text-xl">✨</span>
+          <span className="text-xs font-black">{copyNotification.text}</span>
         </div>
       )}
     </div>
