@@ -50,6 +50,131 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
   const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
   const [showGuides, setShowGuides] = useState<boolean>(true); // خطوط المحاذاة الذكية
+  const [copyNotification, setCopyNotification] = useState<{
+    text: string;
+    targetTab?: TabType;
+  } | null>(null);
+
+  // إخفاء إشعار النسخ تلقائياً بعد 5 ثوانٍ
+  useEffect(() => {
+    if (!copyNotification) return;
+    const timer = setTimeout(() => {
+      setCopyNotification(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [copyNotification]);
+
+  // دالة لنسخ أبعاد ومقاسات الإطار فقط (تطويل، تقصير، تعريض، زوايا، وخلفية)
+  const copyFrameDimensions = (from: "shop_card" | "customer_card", to: "shop_card" | "customer_card") => {
+    const fromName = from === "shop_card" ? "كارت المحل (المرسل)" : "كارت الزبون (المستلم)";
+    const toName = to === "shop_card" ? "كارت المحل (المرسل)" : "كارت الزبون (المستلم)";
+    const sourceFrame = from === "shop_card" ? config.shopCard?.frameConfig : config.customerCard?.frameConfig;
+    const sourceBg = from === "shop_card" ? config.shopCard?.frameBgUrl : config.customerCard?.frameBgUrl;
+
+    if (!confirm(`هل أنت متأكد من نسخ أبعاد ومقاسات وخلفية (${fromName}) وتطبيقها فوراً على (${toName})؟`)) return;
+
+    setConfig((prev) => {
+      if (to === "customer_card") {
+        return {
+          ...prev,
+          customerCard: {
+            ...prev.customerCard,
+            frameBgUrl: sourceBg || prev.customerCard?.frameBgUrl,
+            frameConfig: sourceFrame ? JSON.parse(JSON.stringify(sourceFrame)) : undefined,
+          },
+        };
+      } else {
+        return {
+          ...prev,
+          shopCard: {
+            ...prev.shopCard,
+            frameBgUrl: sourceBg || prev.shopCard?.frameBgUrl,
+            frameConfig: sourceFrame ? JSON.parse(JSON.stringify(sourceFrame)) : undefined,
+          },
+        };
+      }
+    });
+
+    setCopyNotification({
+      text: `تم بنجاح نسخ أبعاد ومقاسات وخلفية ${fromName} وتطبيقها على ${toName}! 📐`,
+      targetTab: to,
+    });
+  };
+
+  // دالة لنسخ كامل تصميم الكارت (أبعاد الإطار + مقاسات ومواقع وتدويرات كافة الأزرار)
+  const copyFullCardDesign = (from: "shop_card" | "customer_card", to: "shop_card" | "customer_card") => {
+    const fromName = from === "shop_card" ? "كارت المحل (المرسل)" : "كارت الزبون (المستلم)";
+    const toName = to === "shop_card" ? "كارت المحل (المرسل)" : "كارت الزبون (المستلم)";
+
+    if (!confirm(`هل أنت متأكد من نسخ كامل تصميم وأبعاد ومواقع وتكبيرات أزرار (${fromName}) وتطبيقها بالكامل على (${toName})؟`)) return;
+
+    setConfig((prev) => {
+      const copyElem = (elem?: CustomElementConfig, fallbackTarget?: CustomElementConfig): CustomElementConfig | undefined => {
+        if (!elem) return fallbackTarget;
+        return {
+          ...elem,
+          imageUrl: elem.imageUrl || fallbackTarget?.imageUrl,
+        };
+      };
+
+      if (from === "shop_card" && to === "customer_card") {
+        const src = prev.shopCard;
+        return {
+          ...prev,
+          customerCard: {
+            ...prev.customerCard,
+            frameBgUrl: src?.frameBgUrl || prev.customerCard?.frameBgUrl,
+            frameConfig: src?.frameConfig ? JSON.parse(JSON.stringify(src.frameConfig)) : undefined,
+            headerCustomerInfo: copyElem(src?.headerShopInfo, prev.customerCard?.headerCustomerInfo),
+            headerDoorPhoto: copyElem(src?.headerShopPhoto, prev.customerCard?.headerDoorPhoto),
+            iconCustomerName: copyElem(src?.iconShopName, prev.customerCard?.iconCustomerName),
+            textCustomerName: copyElem(src?.textShopName, prev.customerCard?.textCustomerName),
+            iconRegion: copyElem(src?.iconRegion, prev.customerCard?.iconRegion),
+            textRegion: copyElem(src?.textRegion, prev.customerCard?.textRegion),
+            iconPhone: copyElem(src?.iconPhone, prev.customerCard?.iconPhone),
+            textPhone: copyElem(src?.textPhone, prev.customerCard?.textPhone),
+            btnLocation: copyElem(src?.btnShopLocation, prev.customerCard?.btnLocation),
+            photoContainer: copyElem(src?.photoContainer, prev.customerCard?.photoContainer),
+            placeholderNoPhoto: copyElem(src?.placeholderNoPhoto, prev.customerCard?.placeholderNoPhoto),
+            btnCall: copyElem(src?.btnCall, prev.customerCard?.btnCall),
+            btnWhatsapp: copyElem(src?.btnWhatsapp, prev.customerCard?.btnWhatsapp),
+            btnCamera: copyElem(src?.btnCamera, prev.customerCard?.btnCamera),
+            btnGallery: copyElem(src?.btnGallery, prev.customerCard?.btnGallery),
+          },
+        };
+      } else {
+        const src = prev.customerCard;
+        return {
+          ...prev,
+          shopCard: {
+            ...prev.shopCard,
+            frameBgUrl: src?.frameBgUrl || prev.shopCard?.frameBgUrl,
+            frameConfig: src?.frameConfig ? JSON.parse(JSON.stringify(src.frameConfig)) : undefined,
+            headerShopInfo: copyElem(src?.headerCustomerInfo, prev.shopCard?.headerShopInfo),
+            headerShopPhoto: copyElem(src?.headerDoorPhoto, prev.shopCard?.headerShopPhoto),
+            iconShopName: copyElem(src?.iconCustomerName, prev.shopCard?.iconShopName),
+            textShopName: copyElem(src?.textCustomerName, prev.shopCard?.textShopName),
+            iconRegion: copyElem(src?.iconRegion, prev.shopCard?.iconRegion),
+            textRegion: copyElem(src?.textRegion, prev.shopCard?.textRegion),
+            iconPhone: copyElem(src?.iconPhone, prev.shopCard?.iconPhone),
+            textPhone: copyElem(src?.textPhone, prev.shopCard?.textPhone),
+            btnShopLocation: copyElem(src?.btnLocation, prev.shopCard?.btnShopLocation),
+            photoContainer: copyElem(src?.photoContainer, prev.shopCard?.photoContainer),
+            placeholderNoPhoto: copyElem(src?.placeholderNoPhoto, prev.shopCard?.placeholderNoPhoto),
+            btnCall: copyElem(src?.btnCall, prev.shopCard?.btnCall),
+            btnWhatsapp: copyElem(src?.btnWhatsapp, prev.shopCard?.btnWhatsapp),
+            btnCamera: copyElem(src?.btnCamera, prev.shopCard?.btnCamera),
+            btnGallery: copyElem(src?.btnGallery, prev.shopCard?.btnGallery),
+          },
+        };
+      }
+    });
+
+    setCopyNotification({
+      text: `تم بنجاح نسخ كامل تصميم ومقاسات ومواقع أزرار ${fromName} وتطبيقها على ${toName}! 🎨`,
+      targetTab: to,
+    });
+  };
 
   // مراجع للتحكم بالحفظ التلقائي
   const isFirstMount = useRef(true);
@@ -1080,7 +1205,33 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           </div>
 
-          {/* التبويبات الرئيسية + زر إعادة الضبط المصنعي */}
+          {/* إشعار نجاح النسخ المنبثق الأنيق */}
+          {copyNotification && (
+            <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-[#06281D] border-2 border-emerald-400 p-3.5 rounded-2xl shadow-2xl flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl animate-bounce">✨</span>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-[#F5D77F]">{copyNotification.text}</h4>
+                  <p className="text-[10px] text-emerald-200 mt-0.5 font-bold">تم حفظ التغييرات وتطبيقها على الكارت فوراً 💾</p>
+                </div>
+              </div>
+              {copyNotification.targetTab && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(copyNotification.targetTab!);
+                    setSelectedElementId(null);
+                    setCopyNotification(null);
+                  }}
+                  className="px-3.5 py-2 bg-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 transition cursor-pointer shrink-0 shadow-md flex items-center gap-1"
+                >
+                  <span>👁️</span> انتقال لمعاينة {copyNotification.targetTab === "customer_card" ? "كارت الزبون" : "كارت المحل"} 👈
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* التبويبات الرئيسية + أدوات نسخ وتطبيق الأبعاد + زر إعادة الضبط المصنعي */}
           <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/40 pb-2 overflow-x-auto flex-wrap">
             <div className="flex items-center gap-2 overflow-x-auto">
               <button
@@ -1141,31 +1292,77 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               </button>
             </div>
 
-            {/* زر إعادة ضبط الكارت بالكامل للوضع المصنعي */}
-            {activeTab !== "wa_buttons" && activeTab !== "floating_btn" && (
-              <button
-                type="button"
-                onClick={() => {
-                  const targetName = activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون";
-                  if (!confirm(`هل أنت متأكد من إعادة ضبط ${targetName} بالكامل للوضع المصنعي الأصلي ومسح كل التكبيرات والإزاحات المشوهة؟`)) return;
-                  if (activeTab === "shop_card") {
-                    setConfig((prev) => ({
-                      ...prev,
-                      shopCard: { ...DEFAULT_DESIGNER_CONFIG.shopCard },
-                    }));
-                  } else {
-                    setConfig((prev) => ({
-                      ...prev,
-                      customerCard: { ...DEFAULT_DESIGNER_CONFIG.customerCard },
-                    }));
-                  }
-                }}
-                className="px-3 py-1.5 bg-rose-950/90 border border-rose-500/70 text-rose-200 rounded-xl text-xs font-black hover:bg-rose-900 transition hover:scale-105 active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                title="إعادة الكارت للوضع المصنعي الأصلي المعتدل 100%"
-              >
-                <span>🔄</span> إعادة ضبط الكارت مصنعياً
-              </button>
-            )}
+            {/* أزرار النسخ الذكي وإعادة الضبط */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* أزرار النسخ والتطبيق الفوري بين الكارتين */}
+              {activeTab === "shop_card" && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => copyFrameDimensions("shop_card", "customer_card")}
+                    className="px-3 py-1.5 bg-gradient-to-r from-emerald-800 to-[#0A3D2E] border border-emerald-400 text-emerald-200 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1 shrink-0 whitespace-nowrap"
+                    title="نسخ أبعاد ومقاسات وخلفية إطار كارت المحل وتطبيقها على كارت الزبون"
+                  >
+                    <span>📐</span> نسخ أبعاد الإطار ⬅️ لكارت الزبون
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyFullCardDesign("shop_card", "customer_card")}
+                    className="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-[#C9A86A] text-[#06281D] border border-amber-300 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1 shrink-0 whitespace-nowrap"
+                    title="نسخ كامل تصميم وأبعاد ومواقع أزرار كارت المحل وتطبيقها على كارت الزبون"
+                  >
+                    <span>🎨</span> نسخ كامل التصميم ⬅️ لكارت الزبون
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "customer_card" && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => copyFrameDimensions("customer_card", "shop_card")}
+                    className="px-3 py-1.5 bg-gradient-to-r from-emerald-800 to-[#0A3D2E] border border-emerald-400 text-emerald-200 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1 shrink-0 whitespace-nowrap"
+                    title="نسخ أبعاد ومقاسات وخلفية إطار كارت الزبون وتطبيقها على كارت المحل"
+                  >
+                    <span>📐</span> نسخ أبعاد الإطار ⬅️ لكارت المحل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyFullCardDesign("customer_card", "shop_card")}
+                    className="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-[#C9A86A] text-[#06281D] border border-amber-300 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center gap-1 shrink-0 whitespace-nowrap"
+                    title="نسخ كامل تصميم وأبعاد ومواقع أزرار كارت الزبون وتطبيقها على كارت المحل"
+                  >
+                    <span>🎨</span> نسخ كامل التصميم ⬅️ لكارت المحل
+                  </button>
+                </div>
+              )}
+
+              {/* زر إعادة ضبط الكارت بالكامل للوضع المصنعي */}
+              {activeTab !== "wa_buttons" && activeTab !== "floating_btn" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetName = activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون";
+                    if (!confirm(`هل أنت متأكد من إعادة ضبط ${targetName} بالكامل للوضع المصنعي الأصلي ومسح كل التكبيرات والإزاحات المشوهة؟`)) return;
+                    if (activeTab === "shop_card") {
+                      setConfig((prev) => ({
+                        ...prev,
+                        shopCard: { ...DEFAULT_DESIGNER_CONFIG.shopCard },
+                      }));
+                    } else {
+                      setConfig((prev) => ({
+                        ...prev,
+                        customerCard: { ...DEFAULT_DESIGNER_CONFIG.customerCard },
+                      }));
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-rose-950/90 border border-rose-500/70 text-rose-200 rounded-xl text-xs font-black hover:bg-rose-900 transition hover:scale-105 active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                  title="إعادة الكارت للوضع المصنعي الأصلي المعتدل 100%"
+                >
+                  <span>🔄</span> ضبط مصنعي
+                </button>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -1338,6 +1535,21 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 onChange={(field, val) =>
                   updateFrameConfig(activeTab === "shop_card" ? "shopCard" : "customerCard", field, val)
                 }
+                onCopyFrameDimensions={() => {
+                  if (activeTab === "shop_card") {
+                    copyFrameDimensions("shop_card", "customer_card");
+                  } else {
+                    copyFrameDimensions("customer_card", "shop_card");
+                  }
+                }}
+                onCopyFullCard={() => {
+                  if (activeTab === "shop_card") {
+                    copyFullCardDesign("shop_card", "customer_card");
+                  } else {
+                    copyFullCardDesign("customer_card", "shop_card");
+                  }
+                }}
+                targetCardLabel={activeTab === "shop_card" ? "كارت الزبون (المستلم)" : "كارت المحل (المرسل)"}
                 onUploadImg={() => {
                   triggerImageUpload((url) => {
                     setConfig((prev) =>
@@ -1492,6 +1704,58 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               custFrameBg={custFrameBg}
               waButtons={waButtons}
             />
+
+            {/* شريط الإجراءات السريعة لنسخ وتطبيق أبعاد الكارت بنقرة واحدة */}
+            {(activeTab === "shop_card" || activeTab === "customer_card") && (
+              <div className="bg-gradient-to-r from-[#0A3D2E] via-[#0F4D3A] to-[#0A3D2E] border-2 border-emerald-400/80 rounded-2xl p-3.5 sm:p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 mt-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400 flex items-center justify-center text-xl shrink-0 shadow-inner">
+                    💡
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-[#F5D77F]">
+                      {activeTab === "shop_card"
+                        ? "هل أعجبتك أبعاد وتنسيق كارت المحل وتريد تطبيقها على كارت الزبون؟"
+                        : "هل أعجبتك أبعاد وتنسيق كارت الزبون وتريد تطبيقها على كارت المحل؟"}
+                    </h4>
+                    <p className="text-[10px] sm:text-[11px] text-emerald-200 mt-0.5">
+                      {activeTab === "shop_card"
+                        ? "يمكنك بنقرة واحدة نسخ الأبعاد أو كامل التصميم لكارت الزبون ثم الدخول وتعديل بعض الأشياء فيه بحرية!"
+                        : "يمكنك بنقرة واحدة نسخ الأبعاد أو كامل التصميم لكارت المحل ثم الدخول وتعديل بعض الأشياء فيه بحرية!"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap sm:flex-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "shop_card") {
+                        copyFrameDimensions("shop_card", "customer_card");
+                      } else {
+                        copyFrameDimensions("customer_card", "shop_card");
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#06281D] hover:bg-[#083526] text-emerald-300 border border-emerald-400/70 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1 whitespace-nowrap"
+                  >
+                    <span>📐</span> نسخ أبعاد الإطار فقط
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "shop_card") {
+                        copyFullCardDesign("shop_card", "customer_card");
+                      } else {
+                        copyFullCardDesign("customer_card", "shop_card");
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap"
+                  >
+                    <span>🎨</span> نسخ كامل التصميم والأزرار
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* قائمة استعراض عناصر الكارت */}
@@ -1642,15 +1906,21 @@ function DedicatedFrameInspector({
   defaultBg,
   onChange,
   onUploadImg,
+  onCopyFrameDimensions,
+  onCopyFullCard,
+  targetCardLabel,
 }: {
   category: "shopCard" | "customerCard";
   frameConfig?: CustomFrameConfig;
   defaultBg: string;
   onChange: (field: keyof CustomFrameConfig, val: any) => void;
   onUploadImg: () => void;
+  onCopyFrameDimensions?: () => void;
+  onCopyFullCard?: () => void;
+  targetCardLabel?: string;
 }) {
   const [activeTool, setActiveTool] = useState<
-    "height" | "width" | "radius" | "scale" | "presets" | "bg"
+    "height" | "width" | "radius" | "scale" | "presets" | "bg" | "copy"
   >("height");
 
   const currentBg = frameConfig?.bgUrl || defaultBg;
@@ -1699,6 +1969,12 @@ function DedicatedFrameInspector({
       label: "خلفية الإطار",
       icon: "🖼️",
       badge: frameConfig?.bgUrl ? "مخصصة" : null,
+    },
+    {
+      id: "copy" as const,
+      label: `نسخ لـ (${targetCardLabel ? targetCardLabel.split(" ")[1] || targetCardLabel : "الآخر"})`,
+      icon: "📋",
+      badge: "جديد ✨",
     },
   ];
 
@@ -2190,6 +2466,65 @@ function DedicatedFrameInspector({
                     استعادة الافتراضي
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= 7. أداة نسخ وتطبيق الأبعاد والتصميم ================= */}
+        {activeTool === "copy" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
+              <span className="text-xl">📋</span>
+              <div>
+                <h4 className="font-black text-sm text-[#F5D77F]">
+                  نسخ الأبعاد والتصميم وتطبيقها على ({targetCardLabel || "الكارت الآخر"})
+                </h4>
+                <p className="text-[11px] text-emerald-200">
+                  اختر نوع النسخ لتطبيق مقاسات أو تصميم هذا الكارت فوراً وبضغطة زر واحدة
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="p-4 bg-gradient-to-br from-[#06281D] to-[#0A3D2E] border-2 border-emerald-400/80 rounded-2xl flex flex-col justify-between gap-3 shadow-lg">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-emerald-300 font-black text-sm">
+                    <span className="text-lg">📐</span>
+                    <span>نسخ أبعاد ومقاسات الإطار فقط</span>
+                  </div>
+                  <p className="text-xs text-emerald-100/90 leading-relaxed font-bold">
+                    ينسخ أبعاد الإطار (الطول، العرض، التكبير، انحناء الزوايا، الهوامش الداخلية، وخلفية الإطار) إلى ({targetCardLabel || "الكارت الآخر"}) مع الإبقاء على أزرار الزبون كما هي.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onCopyFrameDimensions}
+                  className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-black shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>📐</span> تطبيق أبعاد الإطار على ({targetCardLabel ? targetCardLabel.split(" ")[1] || targetCardLabel : "الكارت الآخر"})
+                </button>
+              </div>
+
+              <div className="p-4 bg-gradient-to-br from-[#06281D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl flex flex-col justify-between gap-3 shadow-lg">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-[#F5D77F] font-black text-sm">
+                    <span className="text-lg">🎨</span>
+                    <span>نسخ كامل التصميم ومواقع الأزرار</span>
+                  </div>
+                  <p className="text-xs text-emerald-100/90 leading-relaxed font-bold">
+                    ينسخ أبعاد الإطار + كافة مواقع وتكبيرات وتدويرات الأزرار والعناصر إلى ({targetCardLabel || "الكارت الآخر"}) ليصبح طبق الأصل في الدقة والتناسق الهندسي.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onCopyFullCard}
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>🎨</span> نسخ كامل التصميم لكافة الأزرار
+                </button>
               </div>
             </div>
           </div>

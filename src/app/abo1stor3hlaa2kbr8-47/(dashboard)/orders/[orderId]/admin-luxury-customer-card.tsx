@@ -204,7 +204,7 @@ export function AdminLuxuryCustomerCard({
                   </div>
                 </div>
 
-                {/* سطر 3: رقم هاتف الزبون وتفاصيله التفاعلية */}
+                {/* سطر 3: رقم هاتف الزبون */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                   <div className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -215,24 +215,13 @@ export function AdminLuxuryCustomerCard({
                       className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                     />
                   </div>
-                  <div style={getElementStyle(custCustom?.textPhone)} className="min-w-0 inline-block transition-transform">
-                    {order.customerPhone ? (
-                      <AdminCustomerPhoneInteractive
-                        phone={order.customerPhone}
-                        formattedPhone={cleanPhone}
-                        regionId={order.customerRegionId}
-                        currentOrderId={order.id}
-                        customerName={order.customerName}
-                        customerRegionName={order.customerRegion?.name}
-                        alternatePhone={order.alternatePhone}
-                        customerLocationUrl={order.customerLocationUrl || undefined}
-                        customerLandmark={order.customerLandmark || undefined}
-                        customerProfileId={order.customerProfileId}
-                        profile={phoneProfile}
-                      />
-                    ) : (
-                      <span className="text-white/40 text-xs">—</span>
-                    )}
+                  <div className="min-w-0">
+                    <span
+                      style={getElementStyle(custCustom?.textPhone)}
+                      className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
+                    >
+                      {cleanPhone || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -353,8 +342,8 @@ export function AdminLuxuryCustomerCard({
               {/* مساحة عرض صورة باب الزبون أو الـ Placeholder */}
               <div className="w-full flex items-center justify-center py-0.5" style={getElementStyle(custCustom?.placeholderNoPhoto)}>
                 {imgCustomerDoor ? (
-                  <div className="w-full max-w-[170px] sm:max-w-[240px] md:max-w-[280px] flex flex-col items-center gap-1">
-                    <div className="w-full aspect-[4/3] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
+                  <div className="w-full max-w-[150px] sm:max-w-[210px] md:max-w-[240px] flex flex-col items-center gap-1">
+                    <div className="w-full aspect-[4/3] max-h-[110px] sm:max-h-[145px] md:max-h-[165px] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={imgCustomerDoor}
@@ -368,6 +357,16 @@ export function AdminLuxuryCustomerCard({
                       >
                         🔍 تكبير
                       </div>
+                      {/* زر مسح الصورة عائم أنيق في الزاوية */}
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-rose-900/90 border border-rose-400/80 text-rose-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
+                        title="مسح صورة الباب"
+                      >
+                        {deleting ? "⏳" : "🗑️"}
+                      </button>
                     </div>
                     {order.customerDoorPhotoUploadedByName?.trim() && (
                       <div className="mt-0.5">
@@ -386,20 +385,6 @@ export function AdminLuxuryCustomerCard({
                   </div>
                 )}
               </div>
-
-              {/* أزرار مسح صورة الباب إن وجدت */}
-              {imgCustomerDoor && (
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
-                  >
-                    {deleting ? "جاري المسح..." : "🗑️ مسح"}
-                  </button>
-                </div>
-              )}
 
               {/* أزرار رفع صورة باب الزبون (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
               <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">

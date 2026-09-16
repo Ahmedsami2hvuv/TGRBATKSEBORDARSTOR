@@ -357,8 +357,8 @@ export function AdminLuxuryShopCard({
               {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
               <div className="w-full flex items-center justify-center py-0.5" style={getElementStyle(shopCustom?.placeholderNoPhoto)}>
                 {imgShopDoor ? (
-                  <div className="w-full max-w-[170px] sm:max-w-[240px] md:max-w-[280px] flex flex-col items-center gap-1">
-                    <div className="w-full aspect-[4/3] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
+                  <div className="w-full max-w-[150px] sm:max-w-[210px] md:max-w-[240px] flex flex-col items-center gap-1">
+                    <div className="w-full aspect-[4/3] max-h-[110px] sm:max-h-[145px] md:max-h-[165px] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={imgShopDoor}
@@ -372,6 +372,32 @@ export function AdminLuxuryShopCard({
                       >
                         🔍 تكبير
                       </div>
+
+                      {/* أزرار الحذف والاسترجاع الإدارية إن وجدت صورة */}
+                      {!isSystemAdminOrder && (
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-20">
+                          <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="p-1 bg-black/70 hover:bg-rose-900/90 border border-rose-400/80 text-rose-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
+                            title="مسح صورة المحل"
+                          >
+                            {deleting ? "⏳" : "🗑️"}
+                          </button>
+                          {order.shopPhotoUrl && (
+                            <button
+                              type="button"
+                              onClick={handleRevert}
+                              disabled={reverting}
+                              className="p-1 bg-black/70 hover:bg-amber-900/90 border border-amber-400/80 text-amber-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
+                              title="استرجاع الصورة الأصلية"
+                            >
+                              {reverting ? "⏳" : "🔄"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() && (
                       <div className="mt-0.5">
@@ -390,30 +416,6 @@ export function AdminLuxuryShopCard({
                   </div>
                 )}
               </div>
-
-              {/* أزرار الحذف والاسترجاع الإدارية إن وجدت صورة */}
-              {imgShopDoor && !isSystemAdminOrder && (
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="text-[10px] sm:text-xs font-bold text-rose-300 hover:text-rose-200 underline cursor-pointer"
-                  >
-                    {deleting ? "جاري المسح..." : "🗑️ مسح"}
-                  </button>
-                  {order.shopPhotoUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRevert}
-                      disabled={reverting}
-                      className="text-[10px] sm:text-xs font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
-                    >
-                      {reverting ? "جاري الاسترجاع..." : "🔄 استرجاع"}
-                    </button>
-                  )}
-                </div>
-              )}
 
               {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
               {!isSystemAdminOrder && (
