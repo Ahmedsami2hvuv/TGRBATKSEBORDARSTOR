@@ -4169,7 +4169,7 @@ function OrderCardsLivePreview({
   const shopCustom = config.shopCard;
   const custCustom = config.customerCard;
   const showShopCard = previewCardDisplay === "both" || activeTab === "shop_card";
-  const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card";
+  const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card" || activeTab === "wa_buttons";
   const showOrderInfoCard = previewCardDisplay === "both" || activeTab === "order_info";
 
   // دالة موحدة للتفاعل مع أي عنصر من المعاينة
@@ -4197,7 +4197,7 @@ function OrderCardsLivePreview({
         }}
       >
         {/* معاينة الكروت الفاخرة (كارت المحل، كارت الزبون، وكارت نوع الطلبية مترابطة بدون أي فواصل) */}
-        {(activeTab === "shop_card" || activeTab === "customer_card" || activeTab === "order_info") && (
+        {(activeTab === "shop_card" || activeTab === "customer_card" || activeTab === "order_info" || activeTab === "wa_buttons") && (
           <div className="flex flex-col gap-0 w-full">
             {/* 1. كارت المحل في المعاينة */}
             {showShopCard && (
@@ -4905,35 +4905,36 @@ function OrderCardsLivePreview({
                 </div>
               </div>
 
-              {/* 4. شريط أزرار الواتساب المتغيرة في كارت الزبون */}
-              {waButtons && waButtons.length > 0 && (
-                <div className="pt-1 flex flex-wrap items-center gap-1.5 justify-center">
-                  {waButtons.slice(0, 4).map((btn) => {
-                    const btnCustom = config.waButtonsConfig?.[btn.id];
-                    const previewImg = btnCustom?.imageUrl;
-                    const isSelected = selectedElementId === `wa_${btn.id}`;
-                    return (
-                      <div
-                        key={btn.id}
-                        onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
-                        style={getElementStyle(btnCustom)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-[11px] shadow-md cursor-pointer transition-all ${
-                          isSelected ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
-                        }`}
-                        title={`انقر لتعديل زر الواتساب: ${btn.label}`}
-                      >
-                        {previewImg ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={previewImg} alt={btn.label} className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
-                        ) : (
-                          <span>💬</span>
-                        )}
-                        <span className="pointer-events-none">{btn.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {/* 4. شريط أزرار الواتساب المتغيرة داخل كارت الزبون */}
+              {((waButtons && waButtons.length > 0) ? waButtons : [
+                { id: "req_loc", label: "طلب لكيشن" },
+                { id: "req_rate", label: "طلب تقييم" },
+                { id: "notify_cust", label: "تبليغ زبون" },
+                { id: "delay_order", label: "تأجيل طلب" },
+              ]).map((btn: any) => {
+                const btnCustom = config.waButtonsConfig?.[btn.id];
+                const previewImg = btnCustom?.imageUrl;
+                const isSelected = selectedElementId === `wa_${btn.id}`;
+                return (
+                  <div
+                    key={btn.id}
+                    onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
+                    style={getElementStyle(btnCustom)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-[11px] shadow-md cursor-pointer transition-all m-0.5 ${
+                      isSelected ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
+                    }`}
+                    title={`انقر لتعديل زر الواتساب: ${btn.label}`}
+                  >
+                    {previewImg ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={previewImg} alt={btn.label} className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+                    ) : (
+                      <span>💬</span>
+                    )}
+                    <span className="pointer-events-none">{btn.label}</span>
+                  </div>
+                );
+              })}
             </div>
 
           </div>
@@ -5374,35 +5375,6 @@ function OrderCardsLivePreview({
           </div>
         )}
 
-        {/* 3. أزرار الواتساب في المعاينة */}
-        {activeTab === "wa_buttons" && (
-          <div className="p-4 bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-2xl shadow-xl flex flex-wrap items-center gap-3 justify-center">
-            {waButtons.map((btn) => {
-              const btnCustom = config.waButtonsConfig?.[btn.id];
-              const previewImg = btnCustom?.imageUrl;
-              const isSelected = selectedElementId === `wa_${btn.id}`;
-              return (
-                <div
-                  key={btn.id}
-                  onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
-                  style={getElementStyle(btnCustom)}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-all ${
-                    isSelected ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105 shadow-[0_0_15px_rgba(245,215,127,0.7)]" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
-                  }`}
-                  title={`انقر لتعديل إعدادات زر: ${btn.label}`}
-                >
-                  {previewImg ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previewImg} alt={btn.label} className="w-5 h-5 object-contain shrink-0 pointer-events-none" />
-                  ) : (
-                    <span>💬</span>
-                  )}
-                  <span className="pointer-events-none">{btn.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
         {/* 4. الزر العائم للاستلام والتسليم في المعاينة */}
         {activeTab === "floating_btn" && (
