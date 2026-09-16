@@ -47,6 +47,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   // إعدادات المعاينة الحية
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
   const [previewZoom, setPreviewZoom] = useState<number>(0.85);
+  const [previewCardDisplay, setPreviewCardDisplay] = useState<"single" | "both">("single");
   const [isStickyPreview, setIsStickyPreview] = useState<boolean>(true);
   const [isCompactPreview, setIsCompactPreview] = useState<boolean>(false);
   const [showGuides, setShowGuides] = useState<boolean>(true); // خطوط المحاذاة الذكية
@@ -1463,6 +1464,28 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap">
+                {/* أزرار تبديل عرض كارت واحد أو كلا الكارتين معاً */}
+                {(activeTab === "shop_card" || activeTab === "customer_card") && (
+                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewCardDisplay("single")}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "single" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
+                      title="عرض الكارت المختار حالياً فقط للتركيز عليه"
+                    >
+                      🎴 {activeTab === "shop_card" ? "كارت المحل فقط" : "كارت الزبون فقط"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewCardDisplay("both")}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "both" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
+                      title="عرض كلا الكارتين معاً للتحقق من التناسق والتلاصق"
+                    >
+                      📑 كلا الكارتين معاً
+                    </button>
+                  </div>
+                )}
+
                 {/* أزرار نوع الشاشة: جوال / كمبيوتر */}
                 <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
                   <button
@@ -1517,6 +1540,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               showGuides={showGuides}
               previewMode={previewMode}
               previewZoom={isCompactPreview ? 0.65 : previewZoom}
+              previewCardDisplay={previewCardDisplay}
               currentSelectedDef={currentSelectedDef}
               currentSelectedConfig={currentSelectedConfig}
               shopFrameBg={shopFrameBg}
@@ -1637,6 +1661,28 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
               {/* شريط أدوات المعاينة */}
               <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                {/* أزرار تبديل عرض كارت واحد أو كلا الكارتين معاً */}
+                {(activeTab === "shop_card" || activeTab === "customer_card") && (
+                  <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewCardDisplay("single")}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "single" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
+                      title="عرض الكارت المختار حالياً فقط للتركيز عليه"
+                    >
+                      🎴 {activeTab === "shop_card" ? "كارت المحل فقط" : "كارت الزبون فقط"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewCardDisplay("both")}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "both" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
+                      title="عرض كلا الكارتين معاً للتحقق من التناسق والتلاصق"
+                    >
+                      📑 كلا الكارتين معاً
+                    </button>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setShowGuides((prev) => !prev)}
@@ -1698,6 +1744,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               showGuides={showGuides}
               previewMode={previewMode}
               previewZoom={previewZoom}
+              previewCardDisplay={previewCardDisplay}
               currentSelectedDef={currentSelectedDef}
               currentSelectedConfig={currentSelectedConfig}
               shopFrameBg={shopFrameBg}
@@ -3447,6 +3494,7 @@ function OrderCardsLivePreview({
   showGuides,
   previewMode,
   previewZoom,
+  previewCardDisplay = "single",
   currentSelectedDef,
   currentSelectedConfig,
   shopFrameBg,
@@ -3460,6 +3508,7 @@ function OrderCardsLivePreview({
   showGuides: boolean;
   previewMode: "mobile" | "desktop";
   previewZoom: number;
+  previewCardDisplay?: "single" | "both";
   currentSelectedDef?: ElementDefinition;
   currentSelectedConfig?: CustomElementConfig;
   shopFrameBg: string;
@@ -3468,6 +3517,8 @@ function OrderCardsLivePreview({
 }) {
   const shopCustom = config.shopCard;
   const custCustom = config.customerCard;
+  const showShopCard = previewCardDisplay === "both" || activeTab === "shop_card";
+  const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card";
 
   return (
     <div className="flex items-center justify-center p-2 bg-black/60 rounded-2xl border border-[#C9A86A]/30 overflow-x-auto overflow-y-auto max-h-[34vh] sm:max-h-[40vh]">
@@ -3479,10 +3530,11 @@ function OrderCardsLivePreview({
           transform: `scale(${previewZoom})`,
         }}
       >
-        {/* معاينة الكروت الفاخرة (كارت المحل وكارت الزبون أسفل بعضهما بفراغ صغير ومترابطين) */}
+        {/* معاينة الكروت الفاخرة (كارت المحل أو كارت الزبون أو كلاهما معاً) */}
         {(activeTab === "shop_card" || activeTab === "customer_card") && (
           <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
             {/* 1. كارت المحل في المعاينة */}
+            {showShopCard && (
             <div
               onClick={() => {
                 setActiveTab("shop_card");
@@ -3867,9 +3919,11 @@ function OrderCardsLivePreview({
                 </div>
               </div>
             </div>
+            )}
 
-            {/* 2. كارت الزبون في المعاينة (يبدأ دائماً أسفل كارت المحل مباشرة شبه ملاصق) */}
-            <div className="-mt-4 sm:-mt-5.5">
+            {/* 2. كارت الزبون في المعاينة */}
+            {showCustomerCard && (
+            <div className={showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
               <div
                 onClick={() => {
                   setActiveTab("customer_card");
@@ -4218,8 +4272,9 @@ function OrderCardsLivePreview({
             </div>
           </div>
         </div>
-      </div>
         )}
+      </div>
+      )}
 
         {/* 3. أزرار الواتساب في المعاينة */}
         {activeTab === "wa_buttons" && (
