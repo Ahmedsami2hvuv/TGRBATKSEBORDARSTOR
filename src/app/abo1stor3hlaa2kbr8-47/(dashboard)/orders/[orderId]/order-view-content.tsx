@@ -471,7 +471,7 @@ export function OrderViewContent({
           </div>
         )}
 
-      <div className="mt-5 space-y-6 sm:space-y-8">
+      <div className="mt-1.5 space-y-3 sm:space-y-4">
         
         {/* --- ⇄ TWO WAY ORDER ACTION BUTTONS (أزرار الطلب ذو الوجهتين) --- */}
         {isDoubleRoute && (
@@ -503,7 +503,7 @@ export function OrderViewContent({
         )}
         
         {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة بفراغ صغير ومترابط) --- */}
-        <div className="flex flex-col gap-1 sm:gap-1.5 w-full">
+        <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
           {!isDoubleRoute && (
             <AdminLuxuryShopCard
               order={order}

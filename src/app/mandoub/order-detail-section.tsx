@@ -398,7 +398,7 @@ export function OrderDetailSection({
         if (isDoubleRoute) return null;
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
-            <div key="shop_luxury_mandoub" className="mb-1">
+            <div key="luxury_cards_group_mandoub" className="flex flex-col gap-0.5 sm:gap-1 w-full -mt-2 sm:-mt-2.5">
               <AdminLuxuryShopCard
                 order={order}
                 submitterName={submitterName}
@@ -406,6 +406,16 @@ export function OrderDetailSection({
                 imgShopDoor={shopImageUrl}
                 setPreviewImageUrl={setPreviewImageUrl}
                 designerConfig={designerConfig || undefined}
+              />
+              <AdminLuxuryCustomerCard
+                order={order}
+                customerName={order.customerName || order.customer?.name || "الزبون"}
+                customerPhone={order.customerPhone}
+                imgCustomerDoor={customerDoorDisplay}
+                setPreviewImageUrl={setPreviewImageUrl}
+                isDoubleRoute={isDoubleRoute}
+                designerConfig={designerConfig || undefined}
+                phoneProfile={phoneProfile}
               />
             </div>
           );
@@ -666,8 +676,11 @@ export function OrderDetailSection({
         );
       case "customer_info":
         if (designerConfig?.enabledPortals?.mandoub !== false) {
+          if (!isDoubleRoute) {
+            return null;
+          }
           return (
-            <div key="customer_luxury_mandoub" className="space-y-2 mb-3">
+            <div key="customer_luxury_mandoub" className="space-y-1 mb-2">
               <AdminLuxuryCustomerCard
                 order={order}
                 customerName={order.customerName || order.customer?.name || "الزبون"}
@@ -1649,7 +1662,7 @@ export function OrderDetailSection({
         )}
 
         {isModal || courierSettings?.orderViewTheme === "theme11" ? null : (
-          <div className="grid grid-cols-1 gap-2 border-b border-sky-100 dark:border-white/10 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="grid grid-cols-1 gap-1.5 border-b border-sky-100 dark:border-white/10 pb-1.5 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-slate-900 dark:text-white"><span className="tabular-nums text-sky-800 dark:text-sky-400">#{order.orderNumber}</span></h2>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
@@ -1680,7 +1693,7 @@ export function OrderDetailSection({
           nextUrl={nextUrl} 
         />
 
-        <div className="mt-5 space-y-6">
+        <div className="mt-1 space-y-3 sm:space-y-4">
           {layout.map((blockId) => renderBlock(blockId))}
         </div>
       </div>

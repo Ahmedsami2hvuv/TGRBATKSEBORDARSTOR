@@ -3481,7 +3481,7 @@ function OrderCardsLivePreview({
       >
         {/* معاينة الكروت الفاخرة (كارت المحل وكارت الزبون أسفل بعضهما بفراغ صغير ومترابطين) */}
         {(activeTab === "shop_card" || activeTab === "customer_card") && (
-          <div className="flex flex-col gap-2 sm:gap-2.5 w-full">
+          <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
             {/* 1. كارت المحل في المعاينة */}
             <div
               onClick={() => {
