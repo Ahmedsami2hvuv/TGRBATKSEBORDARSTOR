@@ -134,6 +134,7 @@ export function OrderViewContent({
   phoneProfile,
   secondPhoneProfile,
   designerConfig,
+  initialCustomerDebt = null,
 }: {
   order: OrderViewModel;
   preparers?: { id: string; name: string }[];
@@ -150,6 +151,7 @@ export function OrderViewContent({
   phoneProfile?: any;
   secondPhoneProfile?: any;
   designerConfig?: any;
+  initialCustomerDebt?: number | null;
 }) {
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -226,15 +228,23 @@ export function OrderViewContent({
     return true;
   };
 
-  const [customerDebt, setCustomerDebt] = useState<number | null>(null);
+  const [customerDebt, setCustomerDebt] = useState<number | null>(initialCustomerDebt);
 
   useEffect(() => {
-    if (order.customerPhone) {
-      import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions").then(({ getCustomerDebtByPhone }) => {
-        getCustomerDebtByPhone(order.customerPhone).then(setCustomerDebt);
-      });
+    if (initialCustomerDebt !== null && initialCustomerDebt !== undefined) {
+      setCustomerDebt(initialCustomerDebt);
+      return;
     }
-  }, [order.customerPhone]);
+    if (order.customerPhone) {
+      import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions")
+        .then(({ getCustomerDebtByPhone }) => {
+          getCustomerDebtByPhone(order.customerPhone)
+            .then(setCustomerDebt)
+            .catch(() => setCustomerDebt(null));
+        })
+        .catch(() => setCustomerDebt(null));
+    }
+  }, [order.customerPhone, initialCustomerDebt]);
 
   return (
     <>

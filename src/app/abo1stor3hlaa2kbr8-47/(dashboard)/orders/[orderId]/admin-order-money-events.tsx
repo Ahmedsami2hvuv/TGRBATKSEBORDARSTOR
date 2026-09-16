@@ -101,7 +101,9 @@ export function AdminOrderMoneyEvents({
   );
 
   useEffect(() => {
-    getGlobalIcons().then(setIcons);
+    getGlobalIcons()
+      .then(setIcons)
+      .catch(() => null);
   }, []);
 
   const closePanels = () => {

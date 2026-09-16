@@ -25,6 +25,7 @@ import {
   getCachedActiveCouriers,
   getCachedStoreProducts,
 } from "@/lib/server-reference-cache";
+import { getCustomerDebtByPhone } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -81,6 +82,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       twoWayTemplates,
       couriersRaw,
       designerConfig,
+      customerDebtVal,
     ] = await Promise.all([
       getCachedCompanyPreparers().catch(() => []),
       getCachedMandoubWaButtonSettings().catch(() => []),
@@ -109,6 +111,9 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       getTwoWayTemplates().catch(() => null),
       getCachedActiveCouriers().catch(() => []),
       getOrderCardsDesignerConfig().catch(() => null),
+      order.customerPhone
+        ? getCustomerDebtByPhone(order.customerPhone).catch(() => 0)
+        : Promise.resolve(0),
     ]);
 
     const customerLocationUrlEffective = (order.customerLocationUrl || customerProfile?.locationUrl || "").trim();
@@ -258,6 +263,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           phoneProfile={safeCustomerProfile}
           secondPhoneProfile={safeSecondProfile}
           designerConfig={designerConfig || undefined}
+          initialCustomerDebt={typeof customerDebtVal === "number" ? customerDebtVal : null}
         />
         <AdminOrderMoneyEvents
           orderId={order.id}
