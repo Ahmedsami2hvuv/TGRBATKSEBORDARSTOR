@@ -16,7 +16,7 @@ type Props = {
   waButtons: any[];
 };
 
-type TabType = "shop_card" | "customer_card" | "wa_buttons" | "floating_btn";
+type TabType = "shop_card" | "customer_card" | "order_info" | "money_flow" | "wa_buttons" | "floating_btn";
 
 type ElementDefinition = {
   id: string;
@@ -263,16 +263,17 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
   // تعديل خصائص الإطار ككل
   const updateFrameConfig = (
-    category: "shopCard" | "customerCard",
+    category: "shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard",
     field: keyof CustomFrameConfig,
     value: any
   ) => {
     setConfig((prev) => {
-      const currentFrame = prev[category]?.frameConfig || {};
+      const currentCategory = prev[category] || {};
+      const currentFrame = (currentCategory as any).frameConfig || {};
       return {
         ...prev,
         [category]: {
-          ...prev[category],
+          ...currentCategory,
           frameConfig: {
             ...currentFrame,
             [field]: value,
@@ -958,6 +959,444 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     },
   ];
 
+  // تعريف عناصر كارت نوع وتفاصيل الطلبية
+  const orderInfoElements: ElementDefinition[] = [
+    {
+      id: "orderInfo_frame",
+      title: "🖼️ خلفية وإطار كارت نوع الطلبية (تطويل، تقصير، تعريض، وضغط)",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/order-info-card/order-info-frame.jpg",
+      description: "التحكم في أبعاد وخلفية كارت معلومات وتفاصيل الطلبية ككل",
+      isFrame: true,
+      getConfig: () => undefined,
+      updateConfig: (prev) => prev,
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          frameBgUrl: url,
+          frameConfig: { ...(prev.orderInfoCard?.frameConfig || {}), bgUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_headerInfo",
+      title: "كبسولة عنوان تفاصيل الطلب",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-info.webp",
+      description: "الشريط العلوي لتفاصيل الطلب والمبالغ",
+      getConfig: (c) => c.orderInfoCard?.headerInfo,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          headerInfo: { ...(prev.orderInfoCard?.headerInfo || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          headerInfo: { ...(prev.orderInfoCard?.headerInfo || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_headerPhoto",
+      title: "كبسولة عنوان صورة الطلبية",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/shop-card/header-shop-photo.webp",
+      description: "الشريط العلوي فوق صورة البضاعة والطلبية",
+      getConfig: (c) => c.orderInfoCard?.headerPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          headerPhoto: { ...(prev.orderInfoCard?.headerPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          headerPhoto: { ...(prev.orderInfoCard?.headerPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_iconOrderBox",
+      title: "أيقونة نوع ومحتوى الطلبية 📦",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/order-info-card/icon-order-box.jpg",
+      description: "الأيقونة المجسمة لسطر نوع الطلبية والبضاعة",
+      getConfig: (c) => c.orderInfoCard?.iconOrderBox,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconOrderBox: { ...(prev.orderInfoCard?.iconOrderBox || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconOrderBox: { ...(prev.orderInfoCard?.iconOrderBox || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_textOrderType",
+      title: "✍️ نص نوع الطلبية",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "ملابس نسائية فاخرة",
+      description: "التحكم بحجم وتكبير وتدوير وإزاحة خط نوع الطلبية",
+      getConfig: (c) => c.orderInfoCard?.textOrderType,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          textOrderType: { ...(prev.orderInfoCard?.textOrderType || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_iconClock",
+      title: "أيقونة وقت وتاريخ الطلب ⏰",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/order-info-card/icon-order-clock.jpg",
+      description: "الأيقونة المجسمة لسطر وقت وتاريخ إضافة الطلب",
+      getConfig: (c) => c.orderInfoCard?.iconClock,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconClock: { ...(prev.orderInfoCard?.iconClock || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconClock: { ...(prev.orderInfoCard?.iconClock || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_textOrderTime",
+      title: "✍️ نص وقت وتاريخ الطلب",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "اليوم 04:30 م",
+      description: "التحكم بحجم وتكبير وتدوير وإزاحة خط وقت وتاريخ الطلب",
+      getConfig: (c) => c.orderInfoCard?.textOrderTime,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          textOrderTime: { ...(prev.orderInfoCard?.textOrderTime || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_iconCoins",
+      title: "أيقونة العملات والمبالغ 🪙",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/order-info-card/icon-order-coins.jpg",
+      description: "الأيقونة المجسمة لسطر الحساب والأسعار",
+      getConfig: (c) => c.orderInfoCard?.iconCoins,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconCoins: { ...(prev.orderInfoCard?.iconCoins || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          iconCoins: { ...(prev.orderInfoCard?.iconCoins || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_blockSubtotal",
+      title: "✍️ شريط سعر المفرد (البضاعة)",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "سعر المفرد: 25,000 د.ع",
+      description: "تخصيص حجم وموضع سطر سعر المفرد",
+      getConfig: (c) => c.orderInfoCard?.blockSubtotal,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          blockSubtotal: { ...(prev.orderInfoCard?.blockSubtotal || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_blockDelivery",
+      title: "✍️ شريط أجور التوصيل",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "أجور التوصيل: 5,000 د.ع",
+      description: "تخصيص حجم وموضع سطر أجور التوصيل",
+      getConfig: (c) => c.orderInfoCard?.blockDelivery,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          blockDelivery: { ...(prev.orderInfoCard?.blockDelivery || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_blockDebt",
+      title: "✍️ شريط الدين السابق",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "الدين السابق: 0 د.ع",
+      description: "تخصيص حجم وموضع سطر الدين السابق",
+      getConfig: (c) => c.orderInfoCard?.blockDebt,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          blockDebt: { ...(prev.orderInfoCard?.blockDebt || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_blockTotal",
+      title: "✍️ شريط الحساب الكلي الواصل",
+      category: "order_info",
+      defaultImg: "",
+      isText: true,
+      previewTextSample: "المجموع الكلي: 30,000 د.ع",
+      description: "تخصيص حجم وموضع سطر المجموع الكلي النهائي الواصل",
+      getConfig: (c) => c.orderInfoCard?.blockTotal,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          blockTotal: { ...(prev.orderInfoCard?.blockTotal || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev) => prev,
+    },
+    {
+      id: "orderInfo_placeholderNoPhoto",
+      title: "أيقونة لا توجد صورة طلبية",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/shop-card/placeholder-no-photo.webp",
+      description: "الشعار المعروض في حالة عدم رفع صورة للطلبية",
+      getConfig: (c) => c.orderInfoCard?.placeholderNoPhoto,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          placeholderNoPhoto: { ...(prev.orderInfoCard?.placeholderNoPhoto || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          placeholderNoPhoto: { ...(prev.orderInfoCard?.placeholderNoPhoto || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_btnCamera",
+      title: "زر تصوير الطلبية بالكاميرا 📷",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/shop-card/btn-camera.webp",
+      description: "زر التقاط صورة للبضاعة بالكاميرا",
+      getConfig: (c) => c.orderInfoCard?.btnCamera,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          btnCamera: { ...(prev.orderInfoCard?.btnCamera || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          btnCamera: { ...(prev.orderInfoCard?.btnCamera || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "orderInfo_btnGallery",
+      title: "زر اختيار صورة الطلبية من المعرض 🖼️",
+      category: "order_info",
+      defaultImg: "/images/order-luxury/shop-card/btn-gallery.webp",
+      description: "زر اختيار صورة للبضاعة من الألبوم",
+      getConfig: (c) => c.orderInfoCard?.btnGallery,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          btnGallery: { ...(prev.orderInfoCard?.btnGallery || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        orderInfoCard: {
+          ...(prev.orderInfoCard || {}),
+          btnGallery: { ...(prev.orderInfoCard?.btnGallery || {}), imageUrl: url },
+        },
+      }),
+    },
+  ];
+
+  // تعريف عناصر شكل المعاملات المالية (الصادر والوارد)
+  const moneyFlowElements: ElementDefinition[] = [
+    {
+      id: "money_frame",
+      title: "🖼️ خلفية وبطاقة سجل المعاملة المالية",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/luxury-money-card-bg.jpg",
+      description: "التحكم في أبعاد وخلفية إطار المعاملات المالية ككل",
+      isFrame: true,
+      getConfig: () => undefined,
+      updateConfig: (prev) => prev,
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          frameBgUrl: url,
+          frameConfig: { ...(prev.moneyFlowCard?.frameConfig || {}), bgUrl: url },
+        },
+      }),
+    },
+    {
+      id: "money_badgeSader",
+      title: "شارة وبطاقة حركة (صادر 💸)",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/badge-sader-royal.jpg",
+      description: "الشارة الملكية المخصصة للمبالغ الصادرة المسلمة للعميل",
+      getConfig: (c) => c.moneyFlowCard?.badgeSader,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          badgeSader: { ...(prev.moneyFlowCard?.badgeSader || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          badgeSader: { ...(prev.moneyFlowCard?.badgeSader || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "money_badgeWard",
+      title: "شارة وبطاقة حركة (وارد 🫴)",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/badge-ward-royal.jpg",
+      description: "الشارة الملكية المخصصة للمبالغ الواردة المقبوضة من الزبون",
+      getConfig: (c) => c.moneyFlowCard?.badgeWard,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          badgeWard: { ...(prev.moneyFlowCard?.badgeWard || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          badgeWard: { ...(prev.moneyFlowCard?.badgeWard || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "money_btnSaderAction",
+      title: "زر حركة أعطيت للعميل (صادر 💸)",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/badge-sader-royal.jpg",
+      description: "الزر التفاعلي لتسجيل حركة تسليم أموال للعميل",
+      getConfig: (c) => c.moneyFlowCard?.btnSaderAction,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnSaderAction: { ...(prev.moneyFlowCard?.btnSaderAction || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnSaderAction: { ...(prev.moneyFlowCard?.btnSaderAction || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "money_btnWardAction",
+      title: "زر حركة أخذت من الزبون (وارد 🫴)",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/badge-ward-royal.jpg",
+      description: "الزر التفاعلي لتسجيل حركة استلام أموال من الزبون",
+      getConfig: (c) => c.moneyFlowCard?.btnWardAction,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnWardAction: { ...(prev.moneyFlowCard?.btnWardAction || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnWardAction: { ...(prev.moneyFlowCard?.btnWardAction || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "money_btnDeleteAction",
+      title: "زر حذف المعاملة 🗑️",
+      category: "money_flow",
+      defaultImg: "/images/order-luxury/shop-card/btn-call.webp",
+      description: "أيقونة أو زر حذف المعاملة المالية من السجل",
+      getConfig: (c) => c.moneyFlowCard?.btnDeleteAction,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnDeleteAction: { ...(prev.moneyFlowCard?.btnDeleteAction || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        moneyFlowCard: {
+          ...(prev.moneyFlowCard || {}),
+          btnDeleteAction: { ...(prev.moneyFlowCard?.btnDeleteAction || {}), imageUrl: url },
+        },
+      }),
+    },
+  ];
+
   // تعريف عناصر أزرار الواتساب
   const waElements: ElementDefinition[] = waButtons.map((btn) => ({
     id: `wa_${btn.id}`,
@@ -1015,12 +1454,23 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     },
   ];
 
-  const allElements = [...shopElements, ...customerElements, ...waElements, ...floatingElements];
+  const allElements = [
+    ...shopElements,
+    ...customerElements,
+    ...orderInfoElements,
+    ...moneyFlowElements,
+    ...waElements,
+    ...floatingElements,
+  ];
   const currentTabElements =
     activeTab === "shop_card"
       ? shopElements
       : activeTab === "customer_card"
       ? customerElements
+      : activeTab === "order_info"
+      ? orderInfoElements
+      : activeTab === "money_flow"
+      ? moneyFlowElements
       : activeTab === "wa_buttons"
       ? waElements
       : floatingElements;
@@ -1054,14 +1504,11 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
       {/* الرأس الملكي العام والتبويبات - يظهران فقط في وضع استعراض كافة العناصر */}
       {!selectedElementId && (
         <>
-          <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-4 sm:p-5 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
+          <div className="sticky top-2 z-30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3.5 sm:p-4 rounded-[22px] border-2 border-[#C9A86A] shadow-2xl backdrop-blur-md">
             <div>
-              <h1 className="text-base sm:text-xl font-black text-[#F5D77F] flex items-center gap-2">
-                <span>🎨</span> استوديو تصميم كروت الطلبات والأزرار الملكية
+              <h1 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
+                <span>🎨</span> استوديو تصميم كروت الطلبات
               </h1>
-              <p className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-bold">
-                التحكم الكامل بأبعاد وخلفية الكارت (تطويل، تقصير، تعريض، وضغط) 📐، تدوير حر للأزرار 🔄، وحفظ فوري 💾.
-              </p>
             </div>
 
             <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -1254,6 +1701,34 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               <button
                 type="button"
                 onClick={() => {
+                  setActiveTab("order_info");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "order_info"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                📦 كارت نوع الطلبية
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("money_flow");
+                  setSelectedElementId(null);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "money_flow"
+                    ? "bg-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
+                }`}
+              >
+                💸 شكل المعاملة المالية
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setActiveTab("wa_buttons");
                   setSelectedElementId(null);
                 }}
@@ -1263,7 +1738,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
                 }`}
               >
-                💬 أزرار الواتساب المخصصة
+                💬 أزرار الواتساب
               </button>
               <button
                 type="button"
@@ -1277,7 +1752,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                     : "bg-[#0A3D2E] text-[#F5D77F] hover:bg-[#0F4D3A]"
                 }`}
               >
-                🔘 الزر العائم للاستلام والتسليم
+                🔘 الزر العائم
               </button>
             </div>
 
@@ -1331,17 +1806,34 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    const targetName = activeTab === "shop_card" ? "كارت المحل" : "كارت الزبون";
-                    if (!confirm(`هل أنت متأكد من إعادة ضبط ${targetName} بالكامل للوضع المصنعي الأصلي ومسح كل التكبيرات والإزاحات المشوهة؟`)) return;
+                    const targetName =
+                      activeTab === "shop_card"
+                        ? "كارت المحل"
+                        : activeTab === "customer_card"
+                        ? "كارت الزبون"
+                        : activeTab === "order_info"
+                        ? "كارت نوع الطلبية"
+                        : "شكل المعاملة المالية";
+                    if (!confirm(`هل أنت متأكد من إعادة ضبط ${targetName} بالكامل للوضع المصنعي الأصلي؟`)) return;
                     if (activeTab === "shop_card") {
                       setConfig((prev) => ({
                         ...prev,
                         shopCard: { ...DEFAULT_DESIGNER_CONFIG.shopCard },
                       }));
-                    } else {
+                    } else if (activeTab === "customer_card") {
                       setConfig((prev) => ({
                         ...prev,
                         customerCard: { ...DEFAULT_DESIGNER_CONFIG.customerCard },
+                      }));
+                    } else if (activeTab === "order_info") {
+                      setConfig((prev) => ({
+                        ...prev,
+                        orderInfoCard: { ...DEFAULT_DESIGNER_CONFIG.orderInfoCard },
+                      }));
+                    } else if (activeTab === "money_flow") {
+                      setConfig((prev) => ({
+                        ...prev,
+                        moneyFlowCard: { ...DEFAULT_DESIGNER_CONFIG.moneyFlowCard },
                       }));
                     }
                   }}
@@ -1541,48 +2033,108 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           <div className="flex-1 overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-360px)] bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {currentSelectedDef.isFrame ? (
               <DedicatedFrameInspector
-                category={activeTab === "shop_card" ? "shopCard" : "customerCard"}
-                frameConfig={activeTab === "shop_card" ? config.shopCard?.frameConfig : config.customerCard?.frameConfig}
-                defaultBg={activeTab === "shop_card" ? shopFrameBg : custFrameBg}
+                category={
+                  activeTab === "shop_card"
+                    ? "shopCard"
+                    : activeTab === "customer_card"
+                    ? "customerCard"
+                    : activeTab === "order_info"
+                    ? "orderInfoCard"
+                    : "moneyFlowCard"
+                }
+                frameConfig={
+                  activeTab === "shop_card"
+                    ? config.shopCard?.frameConfig
+                    : activeTab === "customer_card"
+                    ? config.customerCard?.frameConfig
+                    : activeTab === "order_info"
+                    ? config.orderInfoCard?.frameConfig
+                    : config.moneyFlowCard?.frameConfig
+                }
+                defaultBg={
+                  activeTab === "shop_card"
+                    ? shopFrameBg
+                    : activeTab === "customer_card"
+                    ? custFrameBg
+                    : activeTab === "order_info"
+                    ? "/images/order-luxury/order-info-card/order-info-frame.jpg"
+                    : "/images/order-luxury/luxury-money-card-bg.jpg"
+                }
                 onChange={(field, val) =>
-                  updateFrameConfig(activeTab === "shop_card" ? "shopCard" : "customerCard", field, val)
+                  updateFrameConfig(
+                    activeTab === "shop_card"
+                      ? "shopCard"
+                      : activeTab === "customer_card"
+                      ? "customerCard"
+                      : activeTab === "order_info"
+                      ? "orderInfoCard"
+                      : "moneyFlowCard",
+                    field,
+                    val
+                  )
                 }
                 onCopyFrameDimensions={() => {
                   if (activeTab === "shop_card") {
                     copyFrameDimensions("shop_card", "customer_card");
-                  } else {
+                  } else if (activeTab === "customer_card") {
                     copyFrameDimensions("customer_card", "shop_card");
                   }
                 }}
                 onCopyFullCard={() => {
                   if (activeTab === "shop_card") {
                     copyFullCardDesign("shop_card", "customer_card");
-                  } else {
+                  } else if (activeTab === "customer_card") {
                     copyFullCardDesign("customer_card", "shop_card");
                   }
                 }}
-                targetCardLabel={activeTab === "shop_card" ? "كارت الزبون (المستلم)" : "كارت المحل (المرسل)"}
+                targetCardLabel={
+                  activeTab === "shop_card"
+                    ? "كارت الزبون (المستلم)"
+                    : activeTab === "customer_card"
+                    ? "كارت المحل (المرسل)"
+                    : undefined
+                }
                 onUploadImg={() => {
                   triggerImageUpload((url) => {
-                    setConfig((prev) =>
-                      activeTab === "shop_card"
-                        ? {
-                            ...prev,
-                            shopCard: {
-                              ...prev.shopCard,
-                              frameBgUrl: url,
-                              frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
-                            },
-                          }
-                        : {
-                            ...prev,
-                            customerCard: {
-                              ...prev.customerCard,
-                              frameBgUrl: url,
-                              frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
-                            },
-                          }
-                    );
+                    setConfig((prev) => {
+                      if (activeTab === "shop_card") {
+                        return {
+                          ...prev,
+                          shopCard: {
+                            ...prev.shopCard,
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.shopCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        };
+                      } else if (activeTab === "customer_card") {
+                        return {
+                          ...prev,
+                          customerCard: {
+                            ...prev.customerCard,
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.customerCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        };
+                      } else if (activeTab === "order_info") {
+                        return {
+                          ...prev,
+                          orderInfoCard: {
+                            ...(prev.orderInfoCard || {}),
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.orderInfoCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        };
+                      } else {
+                        return {
+                          ...prev,
+                          moneyFlowCard: {
+                            ...(prev.moneyFlowCard || {}),
+                            frameBgUrl: url,
+                            frameConfig: { ...(prev.moneyFlowCard?.frameConfig || {}), bgUrl: url },
+                          },
+                        };
+                      }
+                    });
                   });
                 }}
               />
@@ -1750,10 +2302,20 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   const currentFrameCfg =
                     elem.category === "shop_card"
                       ? config.shopCard?.frameConfig
-                      : config.customerCard?.frameConfig;
+                      : elem.category === "customer_card"
+                      ? config.customerCard?.frameConfig
+                      : elem.category === "order_info"
+                      ? config.orderInfoCard?.frameConfig
+                      : config.moneyFlowCard?.frameConfig;
                   const currentBg =
                     currentFrameCfg?.bgUrl ||
-                    (elem.category === "shop_card" ? shopFrameBg : custFrameBg);
+                    (elem.category === "shop_card"
+                      ? shopFrameBg
+                      : elem.category === "customer_card"
+                      ? custFrameBg
+                      : elem.category === "order_info"
+                      ? "/images/order-luxury/order-info-card/order-info-frame.jpg"
+                      : "/images/order-luxury/luxury-money-card-bg.jpg");
 
                   return (
                     <div
@@ -1879,7 +2441,7 @@ function DedicatedFrameInspector({
   onCopyFullCard,
   targetCardLabel,
 }: {
-  category: "shopCard" | "customerCard";
+  category: "shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard";
   frameConfig?: CustomFrameConfig;
   defaultBg: string;
   onChange: (field: keyof CustomFrameConfig, val: any) => void;
@@ -1949,14 +2511,11 @@ function DedicatedFrameInspector({
 
   return (
     <div className="space-y-4">
-      {/* شريط الأدوات الأفقي القابل للتمرير بالسحب (مثل تطبيقات تعديل الصور) */}
+      {/* شريط الأدوات الأفقي القابل للتمرير */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs px-1">
           <span className="text-[#F5D77F] font-black flex items-center gap-1.5">
-            <span>🎛️</span> شريط أدوات تحرير الإطار (اسحب يميناً ويساراً واختر الخاصية):
-          </span>
-          <span className="text-[10px] text-emerald-300 font-bold bg-[#06281D] px-2 py-0.5 rounded-full border border-[#C9A86A]/40">
-            انقر على أي زر ليظهر شريطه
+            <span>🎛️</span> أدوات تحرير الإطار
           </span>
         </div>
 
@@ -4200,6 +4759,483 @@ function OrderCardsLivePreview({
         )}
       </div>
       )}
+
+        {/* معاينة كارت تفاصيل ونوع الطلبية */}
+        {activeTab === "order_info" && (
+          <div className="w-full">
+            <div
+              onClick={() => {
+                setSelectedElementId("orderInfo_frame");
+              }}
+              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-6 transition-all mx-auto cursor-pointer ${
+                selectedElementId === "orderInfo_frame"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                  : "ring-1 ring-amber-400/50 hover:ring-amber-400/80"
+              }`}
+              style={getCardContainerStyle(
+                config.orderInfoCard?.frameConfig,
+                config.orderInfoCard?.frameBgUrl || "/images/order-luxury/order-info-card/order-info-frame.jpg"
+              )}
+              title="انقر لتعديل خلفية وأبعاد إطار كارت نوع الطلبية"
+            >
+              {/* طبقة خطوط وشبكة المحاذاة الذكية */}
+              {showGuides && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
+
+                  {selectedElementId && (
+                    <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
+                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
+                        📐 محاذاة نشطة: {currentSelectedDef?.title}
+                      </span>
+                      {currentSelectedConfig && (
+                        <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
+                          X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
+                {/* الجانب الأيمن: تفاصيل الطلب والأسعار */}
+                <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId("orderInfo_headerInfo");
+                    }}
+                    className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
+                      selectedElementId === "orderInfo_headerInfo"
+                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105"
+                        : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(config.orderInfoCard?.headerInfo)}
+                    title="انقر لتعديل كبسولة عنوان تفاصيل الطلب"
+                  >
+                    {config.orderInfoCard?.headerInfo?.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={config.orderInfoCard.headerInfo.imageUrl}
+                        alt="تفاصيل الطلب"
+                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                      />
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg pointer-events-none">
+                        <span className="text-xs sm:text-sm">📦</span>
+                        <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                          تفاصيل وحساب الطلبية
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 sm:space-y-2 py-0.5 w-full">
+                    {/* 1. سطر نوع الطلبية */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_iconOrderBox");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "orderInfo_iconOrderBox"
+                            ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110"
+                            : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة نوع الطلبية"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={
+                            config.orderInfoCard?.iconOrderBox?.imageUrl ||
+                            "/images/order-luxury/order-info-card/icon-order-box.jpg"
+                          }
+                          alt="نوع الطلبية"
+                          style={getElementStyle(config.orderInfoCard?.iconOrderBox)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_textOrderType");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "orderInfo_textOrderType"
+                            ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105"
+                            : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص نوع الطلبية"
+                      >
+                        <span
+                          style={getElementStyle(config.orderInfoCard?.textOrderType)}
+                          className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          ملابس نسائية فاخرة
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. سطر وقت وتاريخ الطلب */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_iconClock");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "orderInfo_iconClock"
+                            ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110"
+                            : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة الوقت والتاريخ"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={
+                            config.orderInfoCard?.iconClock?.imageUrl ||
+                            "/images/order-luxury/order-info-card/icon-order-clock.jpg"
+                          }
+                          alt="وقت الطلب"
+                          style={getElementStyle(config.orderInfoCard?.iconClock)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_textOrderTime");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "orderInfo_textOrderTime"
+                            ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105"
+                            : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص وقت الطلب"
+                      >
+                        <span
+                          style={getElementStyle(config.orderInfoCard?.textOrderTime)}
+                          className="font-bold text-xs sm:text-sm md:text-base text-emerald-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          اليوم 04:30 م
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. كتل الأسعار والمبالغ */}
+                    <div className="space-y-1 pt-1 border-t border-[#C9A86A]/30">
+                      {/* سعر المفرد */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_blockSubtotal");
+                        }}
+                        className={`cursor-pointer rounded-lg px-2 py-1 bg-black/40 border border-[#C9A86A]/30 transition-all flex items-center justify-between text-[11px] sm:text-xs ${
+                          selectedElementId === "orderInfo_blockSubtotal"
+                            ? "ring-2 ring-amber-400 bg-amber-500/20 scale-105"
+                            : "hover:border-[#F5D77F]"
+                        }`}
+                        style={getElementStyle(config.orderInfoCard?.blockSubtotal)}
+                      >
+                        <span className="text-white/80 font-bold">سعر المفرد:</span>
+                        <span className="text-[#F5D77F] font-mono font-black">25,000 د.ع</span>
+                      </div>
+
+                      {/* أجور التوصيل */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_blockDelivery");
+                        }}
+                        className={`cursor-pointer rounded-lg px-2 py-1 bg-black/40 border border-[#C9A86A]/30 transition-all flex items-center justify-between text-[11px] sm:text-xs ${
+                          selectedElementId === "orderInfo_blockDelivery"
+                            ? "ring-2 ring-amber-400 bg-amber-500/20 scale-105"
+                            : "hover:border-[#F5D77F]"
+                        }`}
+                        style={getElementStyle(config.orderInfoCard?.blockDelivery)}
+                      >
+                        <span className="text-white/80 font-bold">أجور التوصيل:</span>
+                        <span className="text-emerald-300 font-mono font-black">5,000 د.ع</span>
+                      </div>
+
+                      {/* الحساب الكلي الواصل */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_blockTotal");
+                        }}
+                        className={`cursor-pointer rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border-2 border-[#C9A86A] transition-all flex items-center justify-between text-xs sm:text-sm font-black ${
+                          selectedElementId === "orderInfo_blockTotal"
+                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105"
+                            : "hover:scale-[1.02]"
+                        }`}
+                        style={getElementStyle(config.orderInfoCard?.blockTotal)}
+                      >
+                        <span className="text-[#F5D77F] font-black">المجموع الكلي الواصل:</span>
+                        <span className="text-[#F5D77F] font-mono font-black text-sm sm:text-base">30,000 د.ع</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* الجانب الأيسر: صورة الطلبية */}
+                <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId("orderInfo_headerPhoto");
+                    }}
+                    className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
+                      selectedElementId === "orderInfo_headerPhoto"
+                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
+                        : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(config.orderInfoCard?.headerPhoto)}
+                    title="انقر لتعديل كبسولة عنوان صورة الطلبية"
+                  >
+                    {config.orderInfoCard?.headerPhoto?.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={config.orderInfoCard.headerPhoto.imageUrl}
+                        alt="صورة الطلبية"
+                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                      />
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg pointer-events-none">
+                        <span className="text-xs sm:text-sm">📸</span>
+                        <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                          صورة الطلبية
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId("orderInfo_placeholderNoPhoto");
+                    }}
+                    className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
+                      selectedElementId === "orderInfo_placeholderNoPhoto"
+                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
+                        : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(config.orderInfoCard?.placeholderNoPhoto)}
+                    title="انقر لتعديل صورة الطلبية"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        config.orderInfoCard?.placeholderNoPhoto?.imageUrl ||
+                        "/images/order-luxury/shop-card/placeholder-no-photo.webp"
+                      }
+                      alt="لا توجد صورة طلبية"
+                      className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    />
+                  </div>
+
+                  {/* أزرار الكاميرا والمعرض */}
+                  <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_btnCamera");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "orderInfo_btnCamera"
+                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
+                            : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(config.orderInfoCard?.btnCamera)}
+                        title="انقر لتعديل زر الكاميرا"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={
+                            config.orderInfoCard?.btnCamera?.imageUrl ||
+                            "/images/order-luxury/shop-card/btn-camera.webp"
+                          }
+                          alt="كاميرا"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElementId("orderInfo_btnGallery");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "orderInfo_btnGallery"
+                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
+                            : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(config.orderInfoCard?.btnGallery)}
+                        title="انقر لتعديل زر المعرض"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={
+                            config.orderInfoCard?.btnGallery?.imageUrl ||
+                            "/images/order-luxury/shop-card/btn-gallery.webp"
+                          }
+                          alt="معرض"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* معاينة شكل المعاملات المالية (الصادر والوارد) */}
+        {activeTab === "money_flow" && (
+          <div className="w-full space-y-3">
+            {/* أزرار الحركات المالية السريعة */}
+            <div className="grid grid-cols-2 gap-2">
+              <div
+                onClick={() => setSelectedElementId("money_btnSaderAction")}
+                className={`cursor-pointer rounded-2xl p-2.5 bg-gradient-to-r from-rose-950 via-rose-900 to-rose-950 border-2 border-rose-500/80 shadow-xl flex items-center justify-center gap-2 transition-all ${
+                  selectedElementId === "money_btnSaderAction"
+                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-rose-500/40"
+                    : "hover:scale-[1.02]"
+                }`}
+                style={getElementStyle(config.moneyFlowCard?.btnSaderAction)}
+                title="انقر لتعديل زر حركة أعطيت للعميل (صادر 💸)"
+              >
+                <span className="text-base">💸</span>
+                <span className="text-xs font-black text-rose-200">أعطيت للعميل (صادر)</span>
+              </div>
+
+              <div
+                onClick={() => setSelectedElementId("money_btnWardAction")}
+                className={`cursor-pointer rounded-2xl p-2.5 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 border-2 border-emerald-400 shadow-xl flex items-center justify-center gap-2 transition-all ${
+                  selectedElementId === "money_btnWardAction"
+                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-emerald-500/40"
+                    : "hover:scale-[1.02]"
+                }`}
+                style={getElementStyle(config.moneyFlowCard?.btnWardAction)}
+                title="انقر لتعديل زر حركة أخذت من الزبون (وارد 🫴)"
+              >
+                <span className="text-base">🫴</span>
+                <span className="text-xs font-black text-emerald-200">أخذت من الزبون (وارد)</span>
+              </div>
+            </div>
+
+            {/* بطاقة وسجل المعاملات المالية */}
+            <div
+              onClick={() => setSelectedElementId("money_frame")}
+              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 transition-all mx-auto cursor-pointer ${
+                selectedElementId === "money_frame"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                  : "ring-1 ring-amber-400/50 hover:ring-amber-400/80"
+              }`}
+              style={getCardContainerStyle(
+                config.moneyFlowCard?.frameConfig,
+                config.moneyFlowCard?.frameBgUrl || "/images/order-luxury/luxury-money-card-bg.jpg"
+              )}
+              title="انقر لتعديل خلفية وإطار سجل المعاملات المالية"
+            >
+              {/* شريط عنوان السجل */}
+              <div className="flex items-center justify-between border-b border-[#C9A86A]/40 pb-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📜</span>
+                  <h4 className="text-xs sm:text-sm font-black text-[#F5D77F]">سجل الحركات والمعاملات المالية</h4>
+                </div>
+                <span className="text-[10px] font-bold text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-[#C9A86A]/40">
+                  حركات الطلب 💰
+                </span>
+              </div>
+
+              {/* نماذج الحركات المالية في السجل */}
+              <div className="space-y-2">
+                {/* 1. حركة صادر */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedElementId("money_badgeSader");
+                  }}
+                  className={`p-2.5 rounded-xl bg-black/60 border border-rose-500/60 flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                    selectedElementId === "money_badgeSader"
+                      ? "ring-2 ring-[#F5D77F] bg-rose-950/40 scale-102"
+                      : "hover:border-rose-400"
+                  }`}
+                  style={getElementStyle(config.moneyFlowCard?.badgeSader)}
+                  title="انقر لتعديل شارة وبطاقة حركة (صادر 💸)"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black">
+                      صادر 💸
+                    </span>
+                    <span className="text-xs font-black text-rose-200">25,000 د.ع</span>
+                    <span className="text-[10px] text-white/60">(تسليم للمحل)</span>
+                  </div>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId("money_btnDeleteAction");
+                    }}
+                    className={`px-2 py-1 bg-rose-900/60 border border-rose-500/50 text-rose-300 rounded-lg text-[10px] font-black transition-all ${
+                      selectedElementId === "money_btnDeleteAction"
+                        ? "ring-2 ring-[#F5D77F] scale-110"
+                        : "hover:bg-rose-900"
+                    }`}
+                    style={getElementStyle(config.moneyFlowCard?.btnDeleteAction)}
+                    title="انقر لتعديل زر الحذف"
+                  >
+                    🗑️ حذف
+                  </div>
+                </div>
+
+                {/* 2. حركة وارد */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedElementId("money_badgeWard");
+                  }}
+                  className={`p-2.5 rounded-xl bg-black/60 border border-emerald-500/60 flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                    selectedElementId === "money_badgeWard"
+                      ? "ring-2 ring-[#F5D77F] bg-emerald-950/40 scale-102"
+                      : "hover:border-emerald-400"
+                  }`}
+                  style={getElementStyle(config.moneyFlowCard?.badgeWard)}
+                  title="انقر لتعديل شارة وبطاقة حركة (وارد 🫴)"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black">
+                      وارد 🫴
+                    </span>
+                    <span className="text-xs font-black text-emerald-200">30,000 د.ع</span>
+                    <span className="text-[10px] text-white/60">(قبض من الزبون)</span>
+                  </div>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId("money_btnDeleteAction");
+                    }}
+                    className={`px-2 py-1 bg-rose-900/60 border border-rose-500/50 text-rose-300 rounded-lg text-[10px] font-black transition-all ${
+                      selectedElementId === "money_btnDeleteAction"
+                        ? "ring-2 ring-[#F5D77F] scale-110"
+                        : "hover:bg-rose-900"
+                    }`}
+                    style={getElementStyle(config.moneyFlowCard?.btnDeleteAction)}
+                    title="انقر لتعديل زر الحذف"
+                  >
+                    🗑️ حذف
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 3. أزرار الواتساب في المعاينة */}
         {activeTab === "wa_buttons" && (

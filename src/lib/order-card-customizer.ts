@@ -255,6 +255,18 @@ export type OrderCardDesignerConfig = {
     btnGallery?: CustomElementConfig;
   };
 
+  // شكل المعاملات المالية (الصادر والوارد)
+  moneyFlowCard?: {
+    frameBgUrl?: string;
+    frameConfig?: CustomFrameConfig;
+    badgeSader?: CustomElementConfig;
+    badgeWard?: CustomElementConfig;
+    btnSaderAction?: CustomElementConfig;
+    btnWardAction?: CustomElementConfig;
+    btnDeleteAction?: CustomElementConfig;
+    recordItemCard?: CustomElementConfig;
+  };
+
   // أزرار الواتساب المخصصة
   waButtonsConfig?: Record<string, CustomElementConfig>;
 };
@@ -333,6 +345,15 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     btnCamera: { scale: 1, offsetX: 0, offsetY: 0 },
     btnGallery: { scale: 1, offsetX: 0, offsetY: 0 },
   },
+  moneyFlowCard: {
+    frameBgUrl: "/images/order-luxury/money-flow/luxury-money-card-bg.jpg",
+    badgeSader: { scale: 1, offsetX: 0, offsetY: 0 },
+    badgeWard: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnSaderAction: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnWardAction: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnDeleteAction: { scale: 1, offsetX: 0, offsetY: 0 },
+    recordItemCard: { scale: 1, offsetX: 0, offsetY: 0 },
+  },
   waButtonsConfig: {},
 };
 
@@ -387,6 +408,10 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
         ...DEFAULT_DESIGNER_CONFIG.orderInfoCard,
         ...(saved.orderInfoCard || {}),
       },
+      moneyFlowCard: {
+        ...DEFAULT_DESIGNER_CONFIG.moneyFlowCard,
+        ...(saved.moneyFlowCard || {}),
+      },
       waButtonsConfig: saved.waButtonsConfig || {},
     };
 
@@ -421,6 +446,16 @@ export async function saveOrderCardsDesignerConfig(
       customerCard: {
         ...current.customerCard,
         ...(config.customerCard || {}),
+      },
+      orderInfoCard: {
+        ...DEFAULT_DESIGNER_CONFIG.orderInfoCard,
+        ...(current.orderInfoCard || {}),
+        ...(config.orderInfoCard || {}),
+      },
+      moneyFlowCard: {
+        ...DEFAULT_DESIGNER_CONFIG.moneyFlowCard,
+        ...(current.moneyFlowCard || {}),
+        ...(config.moneyFlowCard || {}),
       },
       waButtonsConfig: {
         ...current.waButtonsConfig,
