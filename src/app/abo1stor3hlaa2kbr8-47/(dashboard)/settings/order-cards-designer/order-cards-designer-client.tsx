@@ -3792,7 +3792,7 @@ function OrderCardsLivePreview({
                   <img
                     src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                     alt="لا توجد صورة"
-                    className="w-[110px] sm:w-[135px] md:w-[155px] h-auto object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
                   />
                 </div>
 
@@ -4136,7 +4136,7 @@ function OrderCardsLivePreview({
                   <img
                     src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                     alt="لا توجد صورة باب"
-                    className="w-[110px] sm:w-[135px] md:w-[155px] h-auto object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
                   />
                 </div>
 

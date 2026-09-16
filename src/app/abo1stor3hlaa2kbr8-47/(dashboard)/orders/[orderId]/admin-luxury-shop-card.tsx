@@ -375,7 +375,7 @@ export function AdminLuxuryShopCard({
               >
                 {imgShopDoor ? (
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-[110px] sm:w-[135px] md:w-[155px] h-[72px] sm:h-[88px] md:h-[102px] overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
+                    <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={imgShopDoor}
@@ -385,7 +385,7 @@ export function AdminLuxuryShopCard({
                       />
                       <div
                         onClick={() => setZoomOpen(true)}
-                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-xs cursor-zoom-in"
+                        className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-[10px] cursor-zoom-in"
                       >
                         🔍 تكبير
                       </div>
@@ -397,12 +397,12 @@ export function AdminLuxuryShopCard({
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center">
+                  <div className="w-fit inline-flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
                       alt="لا توجد صورة"
-                      className="w-[110px] sm:w-[135px] md:w-[155px] h-[72px] sm:h-[88px] md:h-[102px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
+                      className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
                     />
                   </div>
                 )}

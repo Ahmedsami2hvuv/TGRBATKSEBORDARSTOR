@@ -139,6 +139,7 @@ function DraggableFloatButton({
   onLongPress,
   disabled,
   icon,
+  style,
 }: {
   id: MoneyFloatId;
   label: string;
@@ -153,6 +154,7 @@ function DraggableFloatButton({
   onLongPress?: () => void;
   disabled?: boolean;
   icon?: ReactNode;
+  style?: React.CSSProperties;
 }) {
   const dragRef = useRef<DragState | null>(null);
   const longPressRef = useRef<number | null>(null);
@@ -276,10 +278,10 @@ function DraggableFloatButton({
         type="button"
         disabled={disabled}
         onClick={(ev) => ev.preventDefault()}
-        style={{ fontSize: labelPx }}
+        style={{ fontSize: labelPx, ...style }}
         className={`flex h-full w-full cursor-grab flex-col items-center justify-center rounded-full px-0.5 text-center font-black leading-tight shadow-lg ring-2 ring-white/30 active:cursor-grabbing disabled:opacity-50 ${className}`}
       >
-        <div style={{ fontSize: labelPx * 1.4 }} className="mb-0.5">{icon}</div>
+        {icon && <div style={{ fontSize: labelPx * 1.4 }} className="mb-0.5">{icon}</div>}
         {label}
       </button>
     </div>
@@ -422,6 +424,7 @@ export function MandoubOrderMoneyFloatDock(props: {
   deliveryForm: ReactNode;
   /** إخفاء الأزرار العائمة (مثلاً أثناء تعديل الطلب من المجهز) */
   dockHidden?: boolean;
+  designerConfig?: any;
 }) {
   const mounted = useMounted();
   const [fabScale, setFabScale] = useState(initialFabScale);
@@ -522,14 +525,32 @@ export function MandoubOrderMoneyFloatDock(props: {
   const statusPickedUp = props.showStatusFab && props.statusFabMode === "pickedUp";
   const statusDelivered = props.showStatusFab && props.statusFabMode === "delivered";
 
+  const btnCustom = props.designerConfig?.floatingActionBtn;
+  const customFabScale = (btnCustom?.scale && btnCustom.scale > 0) ? btnCustom.scale : 1;
+
   return createPortal(
     <>
       {statusPickedUp ? (
         <DraggableFloatButton
           id="statusBtn"
-          label="استلام"
-          icon={null}
+          label={btnCustom?.customLabel || "استلام"}
+          icon={
+            btnCustom?.imageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={btnCustom.imageUrl}
+                alt=""
+                className="w-6 h-6 object-contain mb-0.5 pointer-events-none drop-shadow-sm"
+              />
+            ) : null
+          }
           className="whitespace-nowrap border-2 border-amber-700 bg-amber-400 text-amber-950 font-black hover:bg-amber-500 text-xs sm:text-sm"
+          style={{
+            ...(btnCustom?.bgColor ? { backgroundColor: btnCustom.bgColor } : {}),
+            ...(btnCustom?.textColor ? { color: btnCustom.textColor } : {}),
+            ...(btnCustom?.borderColor ? { borderColor: btnCustom.borderColor } : {}),
+          }}
+          sizeScale={customFabScale}
           pos={positions.statusBtn}
           fabSize={fabSize}
           onMove={(p) => moveOne("statusBtn", p)}
@@ -542,8 +563,21 @@ export function MandoubOrderMoneyFloatDock(props: {
         <DraggableFloatButton
           id="statusBtn"
           label="تسليم"
-          icon={null}
+          icon={
+            btnCustom?.imageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={btnCustom.imageUrl}
+                alt=""
+                className="w-6 h-6 object-contain mb-0.5 pointer-events-none drop-shadow-sm"
+              />
+            ) : null
+          }
           className="whitespace-nowrap border-2 border-red-900 bg-red-600 text-white font-black hover:bg-red-700 text-xs sm:text-sm"
+          style={{
+            ...(btnCustom?.borderColor ? { borderColor: btnCustom.borderColor } : {}),
+          }}
+          sizeScale={customFabScale}
           pos={positions.statusBtn}
           fabSize={fabSize}
           onMove={(p) => moveOne("statusBtn", p)}

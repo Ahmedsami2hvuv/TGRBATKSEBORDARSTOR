@@ -668,40 +668,6 @@ export function OrderDetailSection({
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
             <div key="customer_luxury_mandoub" className="space-y-4 mb-4">
-              {/* زر الاستلام والتسليم العائم المخصص مع إعدادات المصمم */}
-              {order.status === "assigned" && (
-                <div className="flex justify-center -my-3 z-40 relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const btn = document.getElementById(`quick-pickup-btn-${order.id}`);
-                      if (btn) btn.click();
-                    }}
-                    style={{
-                      transform: `scale(${designerConfig?.floatingActionBtn?.scale ?? 1}) rotate(${designerConfig?.floatingActionBtn?.rotate ?? 0}deg) translate(${designerConfig?.floatingActionBtn?.offsetX ?? 0}px, ${designerConfig?.floatingActionBtn?.offsetY ?? 0}px)`,
-                      backgroundColor: designerConfig?.floatingActionBtn?.bgColor || "#003399",
-                      color: designerConfig?.floatingActionBtn?.textColor || "#FFFFFF",
-                      borderColor: designerConfig?.floatingActionBtn?.borderColor || "#C9A86A",
-                    }}
-                    className="h-16 w-16 rounded-full border-4 font-black text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] flex items-center justify-center flex-col transition active:scale-90 select-none cursor-pointer"
-                  >
-                    {designerConfig?.floatingActionBtn?.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={designerConfig.floatingActionBtn.imageUrl}
-                        alt="أيقونة الزر"
-                        className="h-6 w-6 object-contain mb-0.5 drop-shadow-sm pointer-events-none"
-                      />
-                    ) : (
-                      <DynamicIcon icon={icons?.ui_send} fallback="✈️" width={22} height={22} className="mb-0.5" />
-                    )}
-                    <span className="text-[10px] font-black">
-                      {designerConfig?.floatingActionBtn?.customLabel || "استلام"}
-                    </span>
-                  </button>
-                </div>
-              )}
-
               <AdminLuxuryCustomerCard
                 order={order}
                 customerName={order.customerName || order.customer?.name || "الزبون"}
@@ -719,24 +685,7 @@ export function OrderDetailSection({
         if (courierSettings?.orderViewTheme === "theme11") {
           return (
             <div key="customer_parent_theme11" className="space-y-4">
-              {/* زر الاستلام الدائري البارز بالمنتصف */}
-              {order.status === "assigned" && (
-                <div className="flex justify-center -my-6 z-40 relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const btn = document.getElementById(`quick-pickup-btn-${order.id}`);
-                      if (btn) btn.click();
-                    }}
-                    className="h-16 w-16 rounded-full bg-[#003399] border-4 border-white dark:border-slate-900 text-white font-black text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] flex items-center justify-center flex-col transition active:scale-90 hover:bg-blue-800"
-                  >
-                    <DynamicIcon icon={icons?.ui_send} fallback="✈️" width={24} height={24} className="mb-0.5" />
-                    <span className="text-[10px]">استلام</span>
-                  </button>
-                </div>
-              )}
-
-              <div key="customer" className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#006633] p-4 shadow-xl mb-4 relative overflow-hidden mt-6">
+              <div key="customer" className="bg-white dark:bg-slate-900 rounded-[2rem] border-[2px] border-[#006633] p-4 shadow-xl mb-4 relative overflow-hidden">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 mb-3">
                    <div className="flex-1" />
                    <h3 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
@@ -1465,6 +1414,7 @@ export function OrderDetailSection({
         return (
           <MandoubOrderMoneyFlow
             key="money"
+            designerConfig={designerConfig || undefined}
             orderId={order.id}
             orderNumber={order.orderNumber}
             courierName={order.courier?.name ?? "—"}

@@ -80,6 +80,7 @@ export function MandoubOrderMoneyFlow({
   canRecordMoney = true,
   totalsBaseline,
   prepaidAll = false,
+  designerConfig,
 }: {
   orderId: string;
   orderNumber: number;
@@ -94,6 +95,7 @@ export function MandoubOrderMoneyFlow({
   canRecordMoney?: boolean;
   totalsBaseline?: string | null;
   prepaidAll?: boolean;
+  designerConfig?: any;
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -238,6 +240,7 @@ export function MandoubOrderMoneyFlow({
       </div>
 
       <MandoubOrderMoneyFloatDock
+        designerConfig={designerConfig}
         showStatusFab={canMarkPickedUp || canMarkDelivered}
         statusFabMode={canMarkPickedUp ? "pickedUp" : "delivered"}
         onStatusFabClick={() => {
