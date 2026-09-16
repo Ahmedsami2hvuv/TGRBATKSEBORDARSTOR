@@ -19,6 +19,7 @@ import {
   getCardContainerStyle,
 } from "@/lib/order-card-customizer";
 import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -49,6 +50,7 @@ export function AdminLuxuryCustomerCard({
 }) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   // مراجع رفع الصور للكاميرا والمعرض
   const cameraFileRef = useRef<HTMLInputElement>(null);
@@ -86,6 +88,7 @@ export function AdminLuxuryCustomerCard({
     setDeleting(true);
     try {
       await deleteCustomerDoorPhotoAction(order.id);
+      setZoomOpen(false);
       router.refresh();
     } finally {
       setDeleting(false);
@@ -362,24 +365,14 @@ export function AdminLuxuryCustomerCard({
                         src={imgCustomerDoor}
                         alt="باب الزبون"
                         className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300"
-                        onClick={() => setPreviewImageUrl(imgCustomerDoor)}
+                        onClick={() => setZoomOpen(true)}
                       />
                       <div
-                        onClick={() => setPreviewImageUrl(imgCustomerDoor)}
+                        onClick={() => setZoomOpen(true)}
                         className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-xs cursor-zoom-in"
                       >
                         🔍 تكبير
                       </div>
-                      {/* زر مسح الصورة عائم أنيق في الزاوية */}
-                      <button
-                        type="button"
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-rose-900/90 border border-rose-400/80 text-rose-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
-                        title="مسح صورة الباب"
-                      >
-                        {deleting ? "⏳" : "🗑️"}
-                      </button>
                     </div>
                     {order.customerDoorPhotoUploadedByName?.trim() && (
                       <div className="mt-0.5">
@@ -527,6 +520,18 @@ export function AdminLuxuryCustomerCard({
           </div>
         )}
       </div>
+
+      {/* مودال معاينة وتكبير صورة باب الزبون مع زر المسح */}
+      {zoomOpen && imgCustomerDoor && (
+        <ImageZoomModal
+          imageUrl={imgCustomerDoor}
+          onClose={() => setZoomOpen(false)}
+          title="صورة باب الزبون"
+          onDelete={handleDelete}
+          deleteLabel="مسح صورة باب الزبون"
+          isDeleting={deleting}
+        />
+      )}
     </div>
   );
 }

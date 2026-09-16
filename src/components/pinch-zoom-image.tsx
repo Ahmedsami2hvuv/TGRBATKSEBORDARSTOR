@@ -6,9 +6,23 @@ import { createPortal } from "react-dom";
 export function ImageZoomModal({
   imageUrl,
   onClose,
+  title,
+  onDelete,
+  deleteLabel = "مسح الصورة",
+  isDeleting = false,
+  onRevert,
+  revertLabel = "استرجاع الصورة الأصلية",
+  isReverting = false,
 }: {
   imageUrl: string;
   onClose: () => void;
+  title?: string;
+  onDelete?: () => Promise<void> | void;
+  deleteLabel?: string;
+  isDeleting?: boolean;
+  onRevert?: () => Promise<void> | void;
+  revertLabel?: string;
+  isReverting?: boolean;
 }) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -157,8 +171,9 @@ export function ImageZoomModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-4 transition-all duration-300 animate-fade-in"
       onClick={onClose}
+      dir="rtl"
     >
       <div
         className="relative w-full h-full flex flex-col items-center justify-center select-none touch-none"
@@ -168,15 +183,49 @@ export function ImageZoomModal({
         onTouchEnd={handleTouchEnd}
       >
         {/* شريط الأزرار العلوي */}
-        <div className="absolute top-4 left-0 right-0 z-50 flex items-center justify-center gap-2 px-4">
+        <div className="absolute top-3 sm:top-4 left-0 right-0 z-50 flex flex-wrap items-center justify-center gap-2 px-3 sm:px-4">
           <button
             onClick={onClose}
-            className="flex h-9 px-4 items-center justify-center gap-1.5 rounded-full bg-white/20 text-white hover:bg-white/35 border border-white/20 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer"
+            className="flex h-9 px-3.5 items-center justify-center gap-1.5 rounded-full bg-white/20 text-white hover:bg-white/35 border border-white/20 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer backdrop-blur-md"
           >
             ✕ إغلاق
           </button>
+
+          {/* زر استرجاع الصورة الأصلية إن وجد */}
+          {onRevert && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (onRevert) await onRevert();
+              }}
+              disabled={isReverting || isDeleting}
+              className="flex h-9 px-3.5 items-center justify-center gap-1.5 rounded-full bg-amber-600/90 hover:bg-amber-500 text-white border border-amber-300/60 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer backdrop-blur-md disabled:opacity-50"
+              title="استرجاع الصورة الأصلية"
+            >
+              <span>{isReverting ? "⏳" : "🔄"}</span>
+              <span>{isReverting ? "جارٍ الاسترجاع..." : revertLabel}</span>
+            </button>
+          )}
+
+          {/* زر مسح الصورة إن وجد */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (onDelete) await onDelete();
+              }}
+              disabled={isDeleting || isReverting}
+              className="flex h-9 px-3.5 items-center justify-center gap-1.5 rounded-full bg-rose-600/90 hover:bg-rose-500 text-white border border-rose-300/60 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer backdrop-blur-md disabled:opacity-50"
+              title="مسح الصورة"
+            >
+              <span>{isDeleting ? "⏳" : "🗑️"}</span>
+              <span>{isDeleting ? "جارٍ المسح..." : deleteLabel}</span>
+            </button>
+          )}
           
-          <div className="flex bg-white/20 rounded-full border border-white/20 px-1 py-0.5 shadow-xl">
+          <div className="flex bg-white/20 rounded-full border border-white/20 px-1 py-0.5 shadow-xl backdrop-blur-md">
             <button
               onClick={zoomOut}
               className="w-8 h-8 flex items-center justify-center text-white text-lg font-black hover:bg-white/10 rounded-full cursor-pointer active:scale-90"
@@ -186,7 +235,7 @@ export function ImageZoomModal({
             </button>
             <button
               onClick={resetZoom}
-              className="px-2 text-white text-[10px] font-black hover:bg-white/10 rounded-lg cursor-pointer flex items-center justify-center"
+              className="px-2 text-white text-[10px] font-black hover:bg-white/10 rounded-lg cursor-pointer flex items-center justify-center font-mono"
               title="إعادة ضبط"
             >
               {Math.round(scale * 100)}%

@@ -21,6 +21,7 @@ import {
   getElementStyle,
   getCardContainerStyle,
 } from "@/lib/order-card-customizer";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -49,6 +50,7 @@ export function AdminLuxuryShopCard({
 }) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   // مراجع رفع الصور للكاميرا والمعرض
   const cameraFileRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,7 @@ export function AdminLuxuryShopCard({
     setDeleting(true);
     try {
       await deleteShopDoorPhotoAction(order.id);
+      setZoomOpen(false);
       router.refresh();
     } finally {
       setDeleting(false);
@@ -98,6 +101,7 @@ export function AdminLuxuryShopCard({
     setReverting(true);
     try {
       await revertShopDoorPhotoToOriginal(order.id);
+      setZoomOpen(false);
       router.refresh();
     } finally {
       setReverting(false);
@@ -377,40 +381,14 @@ export function AdminLuxuryShopCard({
                         src={imgShopDoor}
                         alt="باب المحل"
                         className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300"
-                        onClick={() => setPreviewImageUrl(imgShopDoor)}
+                        onClick={() => setZoomOpen(true)}
                       />
                       <div
-                        onClick={() => setPreviewImageUrl(imgShopDoor)}
+                        onClick={() => setZoomOpen(true)}
                         className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-xs cursor-zoom-in"
                       >
                         🔍 تكبير
                       </div>
-
-                      {/* أزرار الحذف والاسترجاع الإدارية إن وجدت صورة */}
-                      {!isSystemAdminOrder && (
-                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-20">
-                          <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={deleting}
-                            className="p-1 bg-black/70 hover:bg-rose-900/90 border border-rose-400/80 text-rose-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
-                            title="مسح صورة المحل"
-                          >
-                            {deleting ? "⏳" : "🗑️"}
-                          </button>
-                          {order.shopPhotoUrl && (
-                            <button
-                              type="button"
-                              onClick={handleRevert}
-                              disabled={reverting}
-                              className="p-1 bg-black/70 hover:bg-amber-900/90 border border-amber-400/80 text-amber-300 rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
-                              title="استرجاع الصورة الأصلية"
-                            >
-                              {reverting ? "⏳" : "🔄"}
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() && (
                       <div className="mt-0.5">
@@ -550,6 +528,21 @@ export function AdminLuxuryShopCard({
           </div>
         )}
       </div>
+
+      {/* مودال معاينة وتكبير صورة المحل مع أزرار المسح والاسترجاع */}
+      {zoomOpen && imgShopDoor && (
+        <ImageZoomModal
+          imageUrl={imgShopDoor}
+          onClose={() => setZoomOpen(false)}
+          title="صورة باب المحل"
+          onDelete={!isSystemAdminOrder ? handleDelete : undefined}
+          deleteLabel="مسح صورة المحل"
+          isDeleting={deleting}
+          onRevert={!isSystemAdminOrder && order.shopPhotoUrl ? handleRevert : undefined}
+          revertLabel="استرجاع صورة المحل الأصلية"
+          isReverting={reverting}
+        />
+      )}
     </div>
   );
 }
