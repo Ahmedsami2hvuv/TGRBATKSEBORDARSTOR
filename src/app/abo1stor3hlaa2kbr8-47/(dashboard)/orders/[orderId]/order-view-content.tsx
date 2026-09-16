@@ -543,7 +543,7 @@ export function OrderViewContent({
             <div className="-mt-4 sm:-mt-5.5">
               <AdminLuxuryCustomerCard
                 order={order}
-                customerName={order.customerName || (order.customer?.name ?? "")}
+                customerName={(order as any).customerName || order.customer?.name || "الزبون"}
                 customerPhone={order.customerPhone}
                 imgCustomerDoor={imgCustDoor}
                 setPreviewImageUrl={setPreviewImageUrl}

@@ -185,7 +185,7 @@ export function AdminLuxuryShopCard({
                       style={getElementStyle(shopCustom?.textShopName)}
                       className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
                     >
-                      {order.shop?.name || "المحل"}
+                      {order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل")}
                     </span>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export function AdminLuxuryShopCard({
                       style={getElementStyle(shopCustom?.textCustomerName)}
                       className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
                     >
-                      {submitterName || "—"}
+                      {submitterName || (isSystemAdminOrder ? "الإدارة" : "—")}
                     </span>
                   </div>
                 </div>
@@ -227,7 +227,7 @@ export function AdminLuxuryShopCard({
                       style={getElementStyle(shopCustom?.textRegion)}
                       className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
                     >
-                      {order.shop?.region?.name || "—"}
+                      {order.shop?.region?.name || (isSystemAdminOrder ? "الإدارة العامة" : "—")}
                     </span>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export function AdminLuxuryShopCard({
                       style={getElementStyle(shopCustom?.textPhone)}
                       className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
                     >
-                      {cleanPhone || "—"}
+                      {cleanPhone || (isSystemAdminOrder ? "07733921568" : "—")}
                     </span>
                   </div>
                 </div>

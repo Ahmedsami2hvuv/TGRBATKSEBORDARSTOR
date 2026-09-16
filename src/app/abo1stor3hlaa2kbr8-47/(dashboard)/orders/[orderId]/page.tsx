@@ -69,7 +69,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
     if (!order) notFound();
 
     // جلب البيانات الملحقة بكفاءة عالية مع حماية كاملة ضد الأخطاء
-    const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
+    const customerPhoneNorm = order.customerPhone ? normalizeIraqMobileLocal11(order.customerPhone) : null;
     const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
     const [
@@ -83,6 +83,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       couriersRaw,
       designerConfig,
       customerDebtVal,
+      smartHintLine,
+      secondSmartHintLine,
     ] = await Promise.all([
       getCachedCompanyPreparers().catch(() => []),
       getCachedMandoubWaButtonSettings().catch(() => []),
@@ -114,20 +116,26 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       order.customerPhone
         ? getCustomerDebtByPhone(order.customerPhone).catch(() => 0)
         : Promise.resolve(0),
+      computeSmartHint(order.id, "primary").catch(() => null),
+      computeSmartHint(order.id, "secondary").catch(() => null),
     ]);
 
     const customerLocationUrlEffective = (order.customerLocationUrl || customerProfile?.locationUrl || "").trim();
     const secondCustomerLocationUrlEffective = (order.secondCustomerLocationUrl || secondProfile?.locationUrl || "").trim();
 
-    const [smartHintLine, secondSmartHintLine] = await Promise.all([
-      computeSmartHint(order.id, "primary").catch(() => null),
-      computeSmartHint(order.id, "secondary").catch(() => null),
-    ]);
+    const isSystemAdminOrder = Boolean(
+      order.submissionSource === "admin_portal" ||
+      order.submissionSource === "company_preparer" ||
+      !order.shop ||
+      order.shop?.name === "الإدارة" ||
+      order.shop?.name === "طلبات الإدارة العامة" ||
+      order.submittedByCompanyPreparerId
+    );
 
     const submitterPhone =
       order.submittedByCompanyPreparer?.phone ||
       order.submittedBy?.phone ||
-      (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone || "");
+      (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : order.shop?.phone || SYSTEM_ADMIN_PHONE);
 
     const getCustomerDoorUrl = () => {
       if (order.customerDoorPhotoUrl) {
@@ -150,25 +158,31 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
         ? new Date(order.createdAt).toISOString()
         : new Date().toISOString();
 
+    const shopPhotoUrlFinal = order.shop?.photoUrl?.startsWith("data:") && order.shopId
+      ? `/api/image/shop/${order.shopId}/photo`
+      : order.shop?.photoUrl || null;
+
+    const shopDoorPhotoUrlFinal = order.shopDoorPhotoUrl?.startsWith("data:")
+      ? `/api/image/order/${order.id}/shopDoor`
+      : order.shopDoorPhotoUrl || order.shop?.photoUrl || null;
+
+    const safePreparerShoppingJson = order.preparerShoppingJson
+      ? (typeof order.preparerShoppingJson === "string" ? order.preparerShoppingJson : JSON.stringify(order.preparerShoppingJson))
+      : null;
+
     const view = {
       ...order,
       imageUrl: resolvePublicAssetSrc(order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl),
       voiceNoteUrl: resolvePublicAssetSrc(order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : order.voiceNoteUrl),
       adminVoiceNoteUrl: resolvePublicAssetSrc(order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : order.adminVoiceNoteUrl),
-      shopDoorPhotoUrl: resolvePublicAssetSrc(
-        order.shopDoorPhotoUrl?.startsWith("data:")
-          ? `/api/image/order/${order.id}/shopDoor`
-          : order.shopDoorPhotoUrl || order.shop?.photoUrl
-      ),
+      shopDoorPhotoUrl: resolvePublicAssetSrc(shopDoorPhotoUrlFinal),
       customerDoorPhotoUrl: resolvePublicAssetSrc(getCustomerDoorUrl()),
       secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
         order.secondCustomerDoorPhotoUrl?.startsWith("data:")
           ? `/api/image/order/${order.id}/secondCustomerDoor`
           : order.secondCustomerDoorPhotoUrl
       ),
-      shopPhotoUrl: resolvePublicAssetSrc(
-        order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shopId}/photo` : order.shop?.photoUrl
-      ),
+      shopPhotoUrl: resolvePublicAssetSrc(shopPhotoUrlFinal),
       orderSubtotalRaw: order.orderSubtotal ? Number(order.orderSubtotal) : 0,
       deliveryPriceRaw: order.deliveryPrice ? Number(order.deliveryPrice) : 0,
       totalAmountRaw: order.totalAmount ? Number(order.totalAmount) : 0,
@@ -185,7 +199,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       shopLocationUrl: (order.shop?.locationUrl || "").trim(),
       customerProfileId: customerProfile?.id || null,
       isBlocked: customerProfile?.isBlocked || false,
-      preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
+      preparerShoppingJson: safePreparerShoppingJson,
     };
 
     const adminMoneyEvents = (moneyEventsRaw || []).reverse().map((e: any) => {
@@ -197,7 +211,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           : new Date().toISOString();
       return {
         ...e,
-        amountDinar: Number(e.amountDinar),
+        amountDinar: Number(e.amountDinar || 0),
         expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
         recordedAt: recDate,
         performedByDisplayName:
@@ -227,13 +241,13 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       if (!matchesCustomerLocationRules(locRules, hasCustLoc, hasCourierLoc)) return [];
 
       const vars = {
-        clientshop: order.shop?.name || "",
+        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
         city: order.customerRegion?.name || "",
         total_price: view.totalAmount || "",
         location_url: customerLocationUrlEffective,
-        order_number: String(order.orderNumber),
-        customer_phone: order.customerPhone,
-        shop_phone: submitterPhone,
+        order_number: String(order.orderNumber || ""),
+        customer_phone: order.customerPhone || "",
+        shop_phone: submitterPhone || "",
       };
       const messages = splitMandoubWaTemplateVariants(r.templateText || "").map((t) => applyMandoubWaTemplate(t, vars));
       return messages.length > 0 ? [{ id: r.id, label: r.label, iconKey: r.iconKey, messages }] : [];
