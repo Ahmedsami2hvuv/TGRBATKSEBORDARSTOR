@@ -331,10 +331,10 @@ export function AdminLuxuryCustomerCard({
             </div>
 
             {/* ================= 2. الجانب الأيسر: كبسولة صورة باب الزبون + مربع الصورة + أزرار (كاميرا ومعرض) ================= */}
-            <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+            <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
               {/* الرأس: كبسولة صورة باب الزبون */}
               <div
-                className="flex justify-center w-fit mx-auto"
+                className="flex justify-center w-fit mx-auto shrink-0"
                 style={getElementStyle(custCustom?.headerDoorPhoto)}
               >
                 {custCustom?.headerDoorPhoto?.imageUrl ? (
@@ -356,11 +356,11 @@ export function AdminLuxuryCustomerCard({
 
               {/* مساحة عرض صورة باب الزبون أو الـ Placeholder - متطابقة هندسياً 100% مع الاستوديو */}
               <div
-                className="w-fit inline-flex mx-auto justify-center items-center py-0.5"
+                className="w-fit inline-flex flex-col mx-auto justify-center items-center py-0.5 relative"
                 style={getElementStyle(custCustom?.placeholderNoPhoto)}
               >
                 {imgCustomerDoor ? (
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -377,7 +377,7 @@ export function AdminLuxuryCustomerCard({
                       </div>
                     </div>
                     {order.customerDoorPhotoUploadedByName?.trim() && (
-                      <div className="mt-0.5">
+                      <div className="max-w-[125px] overflow-hidden text-center mt-0.5">
                         <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
                       </div>
                     )}

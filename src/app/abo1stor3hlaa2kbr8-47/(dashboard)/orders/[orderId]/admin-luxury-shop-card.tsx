@@ -354,27 +354,36 @@ export function AdminLuxuryShopCard({
             </div>
 
             {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل + مربع الصورة + أزرار (كاميرا ومعرض) ================= */}
-            <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+            <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
               {/* الرأس: كبسولة صورة المحل */}
               <div
-                className="flex justify-center w-fit mx-auto"
+                className="flex justify-center w-fit mx-auto shrink-0"
                 style={getElementStyle(shopCustom?.headerShopPhoto)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                  alt="صورة المحل"
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
-                />
+                {shopCustom?.headerShopPhoto?.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={shopCustom.headerShopPhoto.imageUrl}
+                    alt="صورة المحل"
+                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
+                  />
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
+                    <span className="text-xs sm:text-sm">🏪</span>
+                    <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                      صورة المحل
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* مساحة عرض صورة باب المحل أو الـ Placeholder - متطابقة هندسياً 100% مع الاستوديو */}
               <div
-                className="w-fit inline-flex mx-auto justify-center items-center py-0.5"
+                className="w-fit inline-flex flex-col mx-auto justify-center items-center py-0.5 relative"
                 style={getElementStyle(shopCustom?.placeholderNoPhoto)}
               >
                 {imgShopDoor ? (
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -391,7 +400,7 @@ export function AdminLuxuryShopCard({
                       </div>
                     </div>
                     {order.shopDoorPhotoUploadedByName?.trim() && (
-                      <div className="mt-0.5">
+                      <div className="max-w-[125px] overflow-hidden text-center mt-0.5">
                         <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
                       </div>
                     )}

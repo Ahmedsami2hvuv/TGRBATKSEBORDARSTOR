@@ -4484,7 +4484,7 @@ function OrderCardsLivePreview({
                 </div>
 
                 {/* الجانب الأيسر */}
-                <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+                <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
                   <div
                     onClick={(e) => handleElementClick(e, "shop_headerShopPhoto", "shop_card")}
                     className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
@@ -4493,28 +4493,51 @@ function OrderCardsLivePreview({
                     style={getElementStyle(shopCustom?.headerShopPhoto)}
                     title="انقر لتعديل كبسولة عنوان صورة المحل"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                      alt="صورة المحل"
-                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
-                    />
+                    {shopCustom?.headerShopPhoto?.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={shopCustom.headerShopPhoto.imageUrl}
+                        alt="صورة المحل"
+                        className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                      />
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg pointer-events-none">
+                        <span className="text-xs sm:text-sm">🏪</span>
+                        <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
+                          صورة المحل
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div
                     onClick={(e) => handleElementClick(e, "shop_placeholderNoPhoto", "shop_card")}
-                    className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
+                    className={`w-fit inline-flex flex-col mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
                       selectedElementId === "shop_placeholderNoPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(shopCustom?.placeholderNoPhoto)}
                     title="انقر لتعديل موضع وحجم صورة المحل"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                      alt="لا توجد صورة"
-                      className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
-                    />
+                    {showRealData ? (
+                      <div className="flex flex-col items-center gap-0.5 pointer-events-none">
+                        <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                            alt="باب المحل"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <span className="text-[9px] text-slate-400 mt-0.5">رفع بواسطة: النظام</span>
+                      </div>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                        alt="لا توجد صورة"
+                        className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                      />
+                    )}
                   </div>
 
                   {/* أزرار رفع الصورة (كاميرا + معرض) */}
@@ -4782,7 +4805,7 @@ function OrderCardsLivePreview({
               </div>
 
               {/* الجانب الأيسر */}
-              <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+              <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
                 <div
                   onClick={(e) => handleElementClick(e, "cust_headerDoorPhoto", "customer_card")}
                   className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
@@ -4810,18 +4833,32 @@ function OrderCardsLivePreview({
 
                 <div
                   onClick={(e) => handleElementClick(e, "cust_placeholderNoPhoto", "customer_card")}
-                  className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
+                  className={`w-fit inline-flex flex-col mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
                     selectedElementId === "cust_placeholderNoPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(custCustom?.placeholderNoPhoto)}
                   title="انقر لتعديل صورة باب الزبون"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                    alt="لا توجد صورة باب"
-                    className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
-                  />
+                  {showRealData ? (
+                    <div className="flex flex-col items-center gap-0.5 pointer-events-none">
+                      <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                          alt="باب الزبون"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <span className="text-[9px] text-slate-400 mt-0.5">رفع بواسطة: النظام</span>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                      alt="لا توجد صورة باب"
+                      className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    />
+                  )}
                 </div>
 
                 {/* أزرار رفع الصورة (كاميرا + معرض) */}
