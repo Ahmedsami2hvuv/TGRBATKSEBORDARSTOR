@@ -550,13 +550,7 @@ export function OrderViewContent({
                 isDoubleRoute={isDoubleRoute}
                 designerConfig={designerConfig}
                 phoneProfile={phoneProfile}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* عناصر إضافية مساندة تحت كارت الزبون الفاخر */}
-        <div className="bg-[#0A3D2E]/70 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+              >
                 {/* دالة الزبون وموقعه الإضافي */}
                 <div className="flex flex-col gap-1">
                   <InlineLandmarkEditor
@@ -569,7 +563,7 @@ export function OrderViewContent({
                 </div>
 
                 {/* أزرار قوالب الواتساب المخصصة للموقع */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   {order.customerLocationUrl?.trim() ? (
                     <WaLocationCustomButtons
                       userRole="admin"
@@ -605,7 +599,7 @@ export function OrderViewContent({
                       shopPhone={submitterPhone || undefined}
                       orderStatus={order.status}
                       templateVars={{
-                        clientshop: order.shop?.name || "",
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
                         city: order.customerRegion?.name || "",
                         total_price: String(order.totalAmount || ""),
                         delivery: order.courier?.name || "",
@@ -631,7 +625,7 @@ export function OrderViewContent({
 
                 {/* بلوك الاستدلال الذكي المضيء */}
                 {isSmartHintValid(order.smartHintLine) && (
-                  <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-3 flex items-center justify-between shadow-lg">
+                  <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
                     <div className="flex-1 text-right">
                       <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
                         <span>💡 الاستدلال الذكي</span>
@@ -640,12 +634,15 @@ export function OrderViewContent({
                         {order.smartHintLine!.trim()}
                       </p>
                     </div>
-                    <div className="h-10 w-10 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0 mr-2">
+                    <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
                       💡
                     </div>
                   </div>
                 )}
-              </div>
+              </AdminLuxuryCustomerCard>
+            </div>
+          )}
+        </div>
 
           {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين --- */}
           {order.routeMode === "double" && (

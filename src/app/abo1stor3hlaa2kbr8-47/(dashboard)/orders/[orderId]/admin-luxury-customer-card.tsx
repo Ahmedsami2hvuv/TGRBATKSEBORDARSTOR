@@ -38,6 +38,7 @@ export function AdminLuxuryCustomerCard({
   isDoubleRoute = false,
   designerConfig,
   phoneProfile,
+  children,
 }: {
   order: any;
   customerName: string;
@@ -47,6 +48,7 @@ export function AdminLuxuryCustomerCard({
   isDoubleRoute?: boolean;
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
+  children?: React.ReactNode;
 }) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -436,6 +438,13 @@ export function AdminLuxuryCustomerCard({
               </div>
 
             </div>
+
+            {/* ================= 3. قسم البلوكات المدمجة (أقرب نقطة دالة + الاستدلال الذكي + أزرار الموقع) ================= */}
+            {children && (
+              <div className="col-span-2 mt-2 pt-2.5 border-t border-[#C9A86A]/40 w-full space-y-2.5 relative z-10">
+                {children}
+              </div>
+            )}
 
           </div>
         ) : (
