@@ -1490,6 +1490,30 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const shopFrameBg = shopCustom?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp";
   const custFrameBg = custCustom?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp";
 
+  const inspectorRef = useRef<HTMLDivElement>(null);
+
+  // دالة موحدة لتحديد العنصر والانتقال الفوري والسلس للوحة إعداداته
+  const handleSelectElement = (elementId: string, targetTab?: TabType) => {
+    let finalTab = targetTab;
+    if (!finalTab) {
+      const found = allElements.find((e) => e.id === elementId);
+      if (found?.category) {
+        finalTab = found.category;
+      }
+    }
+    if (finalTab && finalTab !== activeTab) {
+      setActiveTab(finalTab);
+    }
+    setSelectedElementId(elementId);
+
+    // تمرير سلس وتلقائي نحو لوحة إعدادات وسلايدرات العنصر المختار
+    setTimeout(() => {
+      if (inspectorRef.current) {
+        inspectorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 60);
+  };
+
   return (
     <div className="space-y-6 text-[#FFF8F0] select-none" dir="rtl">
       {/* المدخل المخفي لرفع الصور */}
@@ -2014,8 +2038,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             {/* 3. بطاقة المعاينة الحية المباشرة (ثابتة في مكانها تحت الخيارات) */}
             <OrderCardsLivePreview
               activeTab={activeTab}
+              setActiveTab={setActiveTab}
               selectedElementId={selectedElementId}
               setSelectedElementId={setSelectedElementId}
+              onSelectElement={handleSelectElement}
               config={config}
               showGuides={showGuides}
               previewMode={previewMode}
@@ -2030,7 +2056,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
           </div>
 
           {/* لوحة السلايدرات والإعدادات بالأسفل - قابلة للتمرير الداخلي بحرية تامة دون تحريك المعاينة */}
-          <div className="flex-1 overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-360px)] bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div ref={inspectorRef} className="flex-1 overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-360px)] bg-gradient-to-b from-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] rounded-[24px] p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {currentSelectedDef.isFrame ? (
               <DedicatedFrameInspector
                 category={
@@ -2273,8 +2299,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
             <OrderCardsLivePreview
               activeTab={activeTab}
+              setActiveTab={setActiveTab}
               selectedElementId={selectedElementId}
               setSelectedElementId={setSelectedElementId}
+              onSelectElement={handleSelectElement}
               config={config}
               showGuides={showGuides}
               previewMode={previewMode}
@@ -2320,7 +2348,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                   return (
                     <div
                       key={elem.id}
-                      onClick={() => setSelectedElementId(elem.id)}
+                      onClick={() => handleSelectElement(elem.id, elem.category)}
                       className="sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-amber-400/80 rounded-2xl p-4 shadow-xl hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 group"
                     >
                       <div className="flex items-center gap-3.5">
@@ -2359,7 +2387,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 return (
                   <div
                     key={elem.id}
-                    onClick={() => setSelectedElementId(elem.id)}
+                    onClick={() => handleSelectElement(elem.id, elem.category)}
                     className="bg-[#0A3D2E]/90 border border-[#C9A86A]/50 rounded-2xl p-4 shadow-lg hover:border-[#F5D77F] hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between gap-3 group"
                   >
                     <div className="flex items-start gap-3">
@@ -3969,8 +3997,10 @@ function DedicatedElementInspector({
 // =============================================================================
 function OrderCardsLivePreview({
   activeTab,
+  setActiveTab,
   selectedElementId,
   setSelectedElementId,
+  onSelectElement,
   config,
   showGuides,
   previewMode,
@@ -3983,8 +4013,10 @@ function OrderCardsLivePreview({
   waButtons,
 }: {
   activeTab: TabType;
+  setActiveTab?: (tab: TabType) => void;
   selectedElementId: string | null;
   setSelectedElementId: (id: string | null) => void;
+  onSelectElement?: (id: string, tab?: TabType) => void;
   config: OrderCardDesignerConfig;
   showGuides: boolean;
   previewMode: "mobile" | "desktop";
@@ -4000,6 +4032,17 @@ function OrderCardsLivePreview({
   const custCustom = config.customerCard;
   const showShopCard = previewCardDisplay === "both" || activeTab === "shop_card";
   const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card";
+
+  // دالة موحدة للتفاعل مع أي عنصر من المعاينة
+  const handleElementClick = (e: React.MouseEvent, elemId: string, tab?: TabType) => {
+    e.stopPropagation();
+    if (onSelectElement) {
+      onSelectElement(elemId, tab);
+    } else {
+      if (tab && setActiveTab) setActiveTab(tab);
+      setSelectedElementId(elemId);
+    }
+  };
 
   return (
     <div className={`w-full flex justify-center p-2 sm:p-3 bg-black/70 rounded-2xl border border-[#C9A86A]/40 overflow-x-auto ${
@@ -4020,19 +4063,16 @@ function OrderCardsLivePreview({
             {/* 1. كارت المحل في المعاينة */}
             {showShopCard && (
             <div
-              onClick={() => {
-                setActiveTab("shop_card");
-                setSelectedElementId("shop_frame");
-              }}
+              onClick={(e) => handleElementClick(e, "shop_frame", "shop_card")}
               className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
                 selectedElementId === "shop_frame"
-                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
                   : activeTab === "shop_card"
-                  ? "ring-1 ring-amber-400/50"
+                  ? "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
                   : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
               }`}
               style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
-              title="انقر لتعديل خلفية وأبعاد إطار كارت المحل"
+              title="انقر لفتح إعدادات وتخصيص خلفية وأبعاد إطار كارت المحل"
             >
               {/* طبقة خطوط وشبكة المحاذاة الذكية */}
               {showGuides && activeTab === "shop_card" && (
@@ -4060,13 +4100,9 @@ function OrderCardsLivePreview({
                 {/* الجانب الأيمن */}
                 <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab("shop_card");
-                      setSelectedElementId("shop_headerShopInfo");
-                    }}
+                    onClick={(e) => handleElementClick(e, "shop_headerShopInfo", "shop_card")}
                     className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
-                      selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                      selectedElementId === "shop_headerShopInfo" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(shopCustom?.headerShopInfo)}
                     title="انقر لتعديل كبسولة عنوان المحل"
@@ -4083,13 +4119,9 @@ function OrderCardsLivePreview({
                     {/* 1. سطر اسم المحل */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_iconShopName");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_iconShopName", "shop_card")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                          selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_iconShopName" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة اسم المحل"
                       >
@@ -4102,13 +4134,9 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_textShopName");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_textShopName", "shop_card")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                          selectedElementId === "shop_textShopName" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص وموقع اسم المحل"
                       >
@@ -4124,13 +4152,9 @@ function OrderCardsLivePreview({
                     {/* 2. سطر اسم العميل / المسؤول */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_iconCustomerName");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_iconCustomerName", "shop_card")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                          selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_iconCustomerName" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة اسم العميل"
                       >
@@ -4143,13 +4167,9 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_textCustomerName");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_textCustomerName", "shop_card")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                          selectedElementId === "shop_textCustomerName" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص وموقع اسم العميل"
                       >
@@ -4165,13 +4185,9 @@ function OrderCardsLivePreview({
                     {/* 3. سطر المنطقة */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_iconRegion");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_iconRegion", "shop_card")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                          selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_iconRegion" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة المنطقة"
                       >
@@ -4184,13 +4200,9 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_textRegion");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_textRegion", "shop_card")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                          selectedElementId === "shop_textRegion" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص وموقع المنطقة"
                       >
@@ -4206,13 +4218,9 @@ function OrderCardsLivePreview({
                     {/* 4. سطر الهاتف */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_iconPhone");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_iconPhone", "shop_card")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                          selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_iconPhone" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة الهاتف"
                       >
@@ -4225,13 +4233,9 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_textPhone");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_textPhone", "shop_card")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                          selectedElementId === "shop_textPhone" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص ورقم الهاتف"
                       >
@@ -4247,13 +4251,9 @@ function OrderCardsLivePreview({
 
                   {/* زر موقع المحل */}
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab("shop_card");
-                      setSelectedElementId("shop_btnShopLocation");
-                    }}
+                    onClick={(e) => handleElementClick(e, "shop_btnShopLocation", "shop_card")}
                     className={`pt-0.5 cursor-pointer transition-all w-fit inline-flex self-start ${
-                      selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                      selectedElementId === "shop_btnShopLocation" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(shopCustom?.btnShopLocation)}
                     title="انقر لتعديل زر موقع المحل"
@@ -4266,17 +4266,13 @@ function OrderCardsLivePreview({
                     />
                   </div>
 
-                  {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                  {/* أزرار التواصل (اتصال + واتساب) */}
                   <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_btnCall");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_btnCall", "shop_card")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_btnCall" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(shopCustom?.btnCall)}
                         title="انقر لتعديل زر الاتصال"
@@ -4291,13 +4287,9 @@ function OrderCardsLivePreview({
                     </div>
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_btnWhatsapp");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_btnWhatsapp", "shop_card")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_btnWhatsapp" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(shopCustom?.btnWhatsapp)}
                         title="انقر لتعديل زر الواتساب"
@@ -4316,13 +4308,9 @@ function OrderCardsLivePreview({
                 {/* الجانب الأيسر */}
                 <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab("shop_card");
-                      setSelectedElementId("shop_headerShopPhoto");
-                    }}
+                    onClick={(e) => handleElementClick(e, "shop_headerShopPhoto", "shop_card")}
                     className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
-                      selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                      selectedElementId === "shop_headerShopPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(shopCustom?.headerShopPhoto)}
                     title="انقر لتعديل كبسولة عنوان صورة المحل"
@@ -4336,13 +4324,9 @@ function OrderCardsLivePreview({
                   </div>
 
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab("shop_card");
-                      setSelectedElementId("shop_placeholderNoPhoto");
-                    }}
+                    onClick={(e) => handleElementClick(e, "shop_placeholderNoPhoto", "shop_card")}
                     className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
-                      selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                      selectedElementId === "shop_placeholderNoPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(shopCustom?.placeholderNoPhoto)}
                     title="انقر لتعديل موضع وحجم صورة المحل"
@@ -4355,17 +4339,13 @@ function OrderCardsLivePreview({
                     />
                   </div>
 
-                  {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                  {/* أزرار رفع الصورة (كاميرا + معرض) */}
                   <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_btnCamera");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_btnCamera", "shop_card")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_btnCamera" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(shopCustom?.btnCamera)}
                         title="انقر لتعديل زر الكاميرا"
@@ -4380,13 +4360,9 @@ function OrderCardsLivePreview({
                     </div>
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTab("shop_card");
-                          setSelectedElementId("shop_btnGallery");
-                        }}
+                        onClick={(e) => handleElementClick(e, "shop_btnGallery", "shop_card")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
-                          selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                          selectedElementId === "shop_btnGallery" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(shopCustom?.btnGallery)}
                         title="انقر لتعديل زر المعرض"
@@ -4409,19 +4385,16 @@ function OrderCardsLivePreview({
             {showCustomerCard && (
             <div className={showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
               <div
-                onClick={() => {
-                  setActiveTab("customer_card");
-                  setSelectedElementId("cust_frame");
-                }}
+                onClick={(e) => handleElementClick(e, "cust_frame", "customer_card")}
                 className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${
                   selectedElementId === "cust_frame"
-                    ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                    ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
                     : activeTab === "customer_card"
-                    ? "ring-1 ring-amber-400/50"
+                    ? "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
                     : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
                 }`}
                 style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
-                title="انقر لتعديل خلفية وأبعاد إطار كارت الزبون"
+                title="انقر لفتح إعدادات وتخصيص خلفية وأبعاد إطار كارت الزبون"
               >
               {/* طبقة خطوط وشبكة المحاذاة الذكية */}
               {showGuides && activeTab === "customer_card" && (
@@ -4449,12 +4422,9 @@ function OrderCardsLivePreview({
               {/* الجانب الأيمن */}
               <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("cust_headerCustomerInfo");
-                  }}
+                  onClick={(e) => handleElementClick(e, "cust_headerCustomerInfo", "customer_card")}
                   className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
-                    selectedElementId === "cust_headerCustomerInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    selectedElementId === "cust_headerCustomerInfo" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(custCustom?.headerCustomerInfo)}
                   title="انقر لتعديل كبسولة عنوان الزبون"
@@ -4480,12 +4450,9 @@ function OrderCardsLivePreview({
                   {/* 1. سطر اسم الزبون */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_iconCustomerName");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_iconCustomerName", "customer_card")}
                       className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "cust_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_iconCustomerName" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       title="انقر لتعديل أيقونة اسم الزبون"
                     >
@@ -4498,12 +4465,9 @@ function OrderCardsLivePreview({
                       />
                     </div>
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_textCustomerName");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_textCustomerName", "customer_card")}
                       className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        selectedElementId === "cust_textCustomerName" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                       }`}
                       title="انقر لتعديل نص وموقع اسم الزبون"
                     >
@@ -4519,12 +4483,9 @@ function OrderCardsLivePreview({
                   {/* 2. سطر المنطقة */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_iconRegion");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_iconRegion", "customer_card")}
                       className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "cust_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_iconRegion" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       title="انقر لتعديل أيقونة المنطقة"
                     >
@@ -4537,12 +4498,9 @@ function OrderCardsLivePreview({
                       />
                     </div>
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_textRegion");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_textRegion", "customer_card")}
                       className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        selectedElementId === "cust_textRegion" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                       }`}
                       title="انقر لتعديل نص وموقع المنطقة"
                     >
@@ -4558,12 +4516,9 @@ function OrderCardsLivePreview({
                   {/* 3. سطر الهاتف */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_iconPhone");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_iconPhone", "customer_card")}
                       className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "cust_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_iconPhone" ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40" : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       title="انقر لتعديل أيقونة الهاتف"
                     >
@@ -4576,12 +4531,9 @@ function OrderCardsLivePreview({
                       />
                     </div>
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_textPhone");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_textPhone", "customer_card")}
                       className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        selectedElementId === "cust_textPhone" ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105" : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                       }`}
                       title="انقر لتعديل نص ورقم الهاتف"
                     >
@@ -4597,12 +4549,9 @@ function OrderCardsLivePreview({
 
                 {/* زر موقع الزبون */}
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("cust_btnLocation");
-                  }}
+                  onClick={(e) => handleElementClick(e, "cust_btnLocation", "customer_card")}
                   className={`pt-0.5 cursor-pointer transition-all w-fit inline-flex self-start ${
-                    selectedElementId === "cust_btnLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    selectedElementId === "cust_btnLocation" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(custCustom?.btnLocation)}
                   title="انقر لتعديل زر موقع الزبون"
@@ -4615,16 +4564,13 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                {/* أزرار التواصل (اتصال + واتساب) */}
                 <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div className="w-full flex justify-center min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_btnCall");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_btnCall", "customer_card")}
                       className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_btnCall" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       style={getElementStyle(custCustom?.btnCall)}
                       title="انقر لتعديل زر الاتصال"
@@ -4639,12 +4585,9 @@ function OrderCardsLivePreview({
                   </div>
                   <div className="w-full flex justify-center min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_btnWhatsapp");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_btnWhatsapp", "customer_card")}
                       className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_btnWhatsapp" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       style={getElementStyle(custCustom?.btnWhatsapp)}
                       title="انقر لتعديل زر الواتساب"
@@ -4663,12 +4606,9 @@ function OrderCardsLivePreview({
               {/* الجانب الأيسر */}
               <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("cust_headerDoorPhoto");
-                  }}
+                  onClick={(e) => handleElementClick(e, "cust_headerDoorPhoto", "customer_card")}
                   className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
-                    selectedElementId === "cust_headerDoorPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    selectedElementId === "cust_headerDoorPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(custCustom?.headerDoorPhoto)}
                   title="انقر لتعديل كبسولة عنوان صورة باب الزبون"
@@ -4691,12 +4631,9 @@ function OrderCardsLivePreview({
                 </div>
 
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("cust_placeholderNoPhoto");
-                  }}
+                  onClick={(e) => handleElementClick(e, "cust_placeholderNoPhoto", "customer_card")}
                   className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
-                    selectedElementId === "cust_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    selectedElementId === "cust_placeholderNoPhoto" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(custCustom?.placeholderNoPhoto)}
                   title="انقر لتعديل صورة باب الزبون"
@@ -4709,16 +4646,13 @@ function OrderCardsLivePreview({
                   />
                 </div>
 
-                {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                {/* أزرار رفع الصورة (كاميرا + معرض) */}
                 <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   <div className="w-full flex justify-center min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_btnCamera");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_btnCamera", "customer_card")}
                       className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_btnCamera" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       style={getElementStyle(custCustom?.btnCamera)}
                       title="انقر لتعديل زر الكاميرا"
@@ -4733,12 +4667,9 @@ function OrderCardsLivePreview({
                   </div>
                   <div className="w-full flex justify-center min-w-0">
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("cust_btnGallery");
-                      }}
+                      onClick={(e) => handleElementClick(e, "cust_btnGallery", "customer_card")}
                       className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "cust_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        selectedElementId === "cust_btnGallery" ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                       }`}
                       style={getElementStyle(custCustom?.btnGallery)}
                       title="انقر لتعديل زر المعرض"
@@ -4754,6 +4685,58 @@ function OrderCardsLivePreview({
                 </div>
               </div>
             </div>
+
+            {/* ================= البلوكات المدمجة لكارت الزبون (أقرب نقطة دالة + الاستدلال الذكي + أزرار الواتساب) ================= */}
+            <div className="mt-2.5 pt-2 border-t border-[#C9A86A]/40 w-full space-y-2 relative z-10">
+              {/* 1. بلوك أقرب نقطة دالة */}
+              <div className="p-2 rounded-xl bg-black/60 border border-emerald-500/40 flex items-start gap-2">
+                <span className="text-base shrink-0">📍</span>
+                <div className="text-xs min-w-0">
+                  <span className="text-amber-300 font-bold block text-[11px]">أقرب نقطة دالة:</span>
+                  <span className="text-white/90 font-medium text-[11px]">قرب جامع الفردوس، الفرع المقابل للصيدلية</span>
+                </div>
+              </div>
+
+              {/* 2. بلوك الاستدلال الذكي */}
+              <div className="p-2 rounded-xl bg-black/60 border border-purple-500/40 flex items-start gap-2">
+                <span className="text-base shrink-0">🧠</span>
+                <div className="text-xs min-w-0">
+                  <span className="text-purple-300 font-bold block text-[11px]">الاستدلال الذكي:</span>
+                  <span className="text-white/90 font-medium text-[11px]">المنطقة تشهد حركة خفيفة بعد الساعة 6 مساءً</span>
+                </div>
+              </div>
+
+              {/* 3. شريط أزرار الواتساب المتغيرة في كارت الزبون */}
+              {waButtons && waButtons.length > 0 && (
+                <div className="pt-1 flex flex-wrap items-center gap-1.5 justify-center">
+                  {waButtons.slice(0, 4).map((btn) => {
+                    const btnCustom = config.waButtonsConfig?.[btn.id];
+                    const previewImg = btnCustom?.imageUrl;
+                    const isSelected = selectedElementId === `wa_${btn.id}`;
+                    return (
+                      <div
+                        key={btn.id}
+                        onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
+                        style={getElementStyle(btnCustom)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-[11px] shadow-md cursor-pointer transition-all ${
+                          isSelected ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
+                        }`}
+                        title={`انقر لتعديل زر الواتساب: ${btn.label}`}
+                      >
+                        {previewImg ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={previewImg} alt={btn.label} className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+                        ) : (
+                          <span>💬</span>
+                        )}
+                        <span className="pointer-events-none">{btn.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
         )}
@@ -4764,19 +4747,17 @@ function OrderCardsLivePreview({
         {activeTab === "order_info" && (
           <div className="w-full">
             <div
-              onClick={() => {
-                setSelectedElementId("orderInfo_frame");
-              }}
+              onClick={(e) => handleElementClick(e, "orderInfo_frame", "order_info")}
               className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-6 transition-all mx-auto cursor-pointer ${
                 selectedElementId === "orderInfo_frame"
-                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
-                  : "ring-1 ring-amber-400/50 hover:ring-amber-400/80"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
+                  : "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
               }`}
               style={getCardContainerStyle(
                 config.orderInfoCard?.frameConfig,
                 config.orderInfoCard?.frameBgUrl || "/images/order-luxury/order-info-card/order-info-frame.jpg"
               )}
-              title="انقر لتعديل خلفية وأبعاد إطار كارت نوع الطلبية"
+              title="انقر لفتح إعدادات وتخصيص خلفية وأبعاد إطار كارت نوع الطلبية"
             >
               {/* طبقة خطوط وشبكة المحاذاة الذكية */}
               {showGuides && (
@@ -4803,14 +4784,11 @@ function OrderCardsLivePreview({
                 {/* الجانب الأيمن: تفاصيل الطلب والأسعار */}
                 <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElementId("orderInfo_headerInfo");
-                    }}
+                    onClick={(e) => handleElementClick(e, "orderInfo_headerInfo", "order_info")}
                     className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
                       selectedElementId === "orderInfo_headerInfo"
-                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105"
-                        : "hover:opacity-90 hover:scale-[1.02]"
+                        ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105 shadow-amber-400/40"
+                        : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(config.orderInfoCard?.headerInfo)}
                     title="انقر لتعديل كبسولة عنوان تفاصيل الطلب"
@@ -4836,14 +4814,11 @@ function OrderCardsLivePreview({
                     {/* 1. سطر نوع الطلبية */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_iconOrderBox");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_iconOrderBox", "order_info")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
                           selectedElementId === "orderInfo_iconOrderBox"
-                            ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110"
-                            : "hover:opacity-90 hover:scale-105"
+                            ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40"
+                            : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة نوع الطلبية"
                       >
@@ -4859,14 +4834,11 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_textOrderType");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_textOrderType", "order_info")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
                           selectedElementId === "orderInfo_textOrderType"
-                            ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105"
-                            : "hover:opacity-90 hover:bg-white/5"
+                            ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105"
+                            : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص نوع الطلبية"
                       >
@@ -4882,14 +4854,11 @@ function OrderCardsLivePreview({
                     {/* 2. سطر وقت وتاريخ الطلب */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_iconClock");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_iconClock", "order_info")}
                         className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
                           selectedElementId === "orderInfo_iconClock"
-                            ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110"
-                            : "hover:opacity-90 hover:scale-105"
+                            ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110 shadow-amber-400/40"
+                            : "hover:opacity-90 hover:scale-110 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         title="انقر لتعديل أيقونة الوقت والتاريخ"
                       >
@@ -4905,14 +4874,11 @@ function OrderCardsLivePreview({
                         />
                       </div>
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_textOrderTime");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_textOrderTime", "order_info")}
                         className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
                           selectedElementId === "orderInfo_textOrderTime"
-                            ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105"
-                            : "hover:opacity-90 hover:bg-white/5"
+                            ? "ring-4 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/20 scale-105"
+                            : "hover:opacity-90 hover:bg-white/10 hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         title="انقر لتعديل نص وقت الطلب"
                       >
@@ -4929,16 +4895,14 @@ function OrderCardsLivePreview({
                     <div className="space-y-1 pt-1 border-t border-[#C9A86A]/30">
                       {/* سعر المفرد */}
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_blockSubtotal");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_blockSubtotal", "order_info")}
                         className={`cursor-pointer rounded-lg px-2 py-1 bg-black/40 border border-[#C9A86A]/30 transition-all flex items-center justify-between text-[11px] sm:text-xs ${
                           selectedElementId === "orderInfo_blockSubtotal"
-                            ? "ring-2 ring-amber-400 bg-amber-500/20 scale-105"
-                            : "hover:border-[#F5D77F]"
+                            ? "ring-4 ring-amber-400 bg-amber-500/20 scale-105"
+                            : "hover:border-[#F5D77F] hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         style={getElementStyle(config.orderInfoCard?.blockSubtotal)}
+                        title="انقر لتعديل كتلة سعر المفرد"
                       >
                         <span className="text-white/80 font-bold">سعر المفرد:</span>
                         <span className="text-[#F5D77F] font-mono font-black">25,000 د.ع</span>
@@ -4946,16 +4910,14 @@ function OrderCardsLivePreview({
 
                       {/* أجور التوصيل */}
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_blockDelivery");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_blockDelivery", "order_info")}
                         className={`cursor-pointer rounded-lg px-2 py-1 bg-black/40 border border-[#C9A86A]/30 transition-all flex items-center justify-between text-[11px] sm:text-xs ${
                           selectedElementId === "orderInfo_blockDelivery"
-                            ? "ring-2 ring-amber-400 bg-amber-500/20 scale-105"
-                            : "hover:border-[#F5D77F]"
+                            ? "ring-4 ring-amber-400 bg-amber-500/20 scale-105"
+                            : "hover:border-[#F5D77F] hover:ring-1 hover:ring-amber-400/60"
                         }`}
                         style={getElementStyle(config.orderInfoCard?.blockDelivery)}
+                        title="انقر لتعديل كتلة أجور التوصيل"
                       >
                         <span className="text-white/80 font-bold">أجور التوصيل:</span>
                         <span className="text-emerald-300 font-mono font-black">5,000 د.ع</span>
@@ -4963,16 +4925,14 @@ function OrderCardsLivePreview({
 
                       {/* الحساب الكلي الواصل */}
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_blockTotal");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_blockTotal", "order_info")}
                         className={`cursor-pointer rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] border-2 border-[#C9A86A] transition-all flex items-center justify-between text-xs sm:text-sm font-black ${
                           selectedElementId === "orderInfo_blockTotal"
-                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105"
-                            : "hover:scale-[1.02]"
+                            ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105 shadow-amber-400/40"
+                            : "hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(config.orderInfoCard?.blockTotal)}
+                        title="انقر لتعديل كتلة الحساب الكلي الواصل"
                       >
                         <span className="text-[#F5D77F] font-black">المجموع الكلي الواصل:</span>
                         <span className="text-[#F5D77F] font-mono font-black text-sm sm:text-base">30,000 د.ع</span>
@@ -4984,14 +4944,11 @@ function OrderCardsLivePreview({
                 {/* الجانب الأيسر: صورة الطلبية */}
                 <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElementId("orderInfo_headerPhoto");
-                    }}
+                    onClick={(e) => handleElementClick(e, "orderInfo_headerPhoto", "order_info")}
                     className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
                       selectedElementId === "orderInfo_headerPhoto"
-                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
-                        : "hover:opacity-90 hover:scale-[1.02]"
+                        ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40"
+                        : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(config.orderInfoCard?.headerPhoto)}
                     title="انقر لتعديل كبسولة عنوان صورة الطلبية"
@@ -5014,14 +4971,11 @@ function OrderCardsLivePreview({
                   </div>
 
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElementId("orderInfo_placeholderNoPhoto");
-                    }}
+                    onClick={(e) => handleElementClick(e, "orderInfo_placeholderNoPhoto", "order_info")}
                     className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
                       selectedElementId === "orderInfo_placeholderNoPhoto"
-                        ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
-                        : "hover:opacity-90 hover:scale-[1.02]"
+                        ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40"
+                        : "hover:opacity-90 hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(config.orderInfoCard?.placeholderNoPhoto)}
                     title="انقر لتعديل صورة الطلبية"
@@ -5041,14 +4995,11 @@ function OrderCardsLivePreview({
                   <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_btnCamera");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_btnCamera", "order_info")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
                           selectedElementId === "orderInfo_btnCamera"
-                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
-                            : "hover:opacity-90 hover:scale-105"
+                            ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40"
+                            : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(config.orderInfoCard?.btnCamera)}
                         title="انقر لتعديل زر الكاميرا"
@@ -5066,14 +5017,11 @@ function OrderCardsLivePreview({
                     </div>
                     <div className="w-full flex justify-center min-w-0">
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedElementId("orderInfo_btnGallery");
-                        }}
+                        onClick={(e) => handleElementClick(e, "orderInfo_btnGallery", "order_info")}
                         className={`cursor-pointer transition-all w-fit inline-flex ${
                           selectedElementId === "orderInfo_btnGallery"
-                            ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105"
-                            : "hover:opacity-90 hover:scale-105"
+                            ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105 shadow-amber-400/40"
+                            : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                         }`}
                         style={getElementStyle(config.orderInfoCard?.btnGallery)}
                         title="انقر لتعديل زر المعرض"
@@ -5102,11 +5050,11 @@ function OrderCardsLivePreview({
             {/* أزرار الحركات المالية السريعة */}
             <div className="grid grid-cols-2 gap-2">
               <div
-                onClick={() => setSelectedElementId("money_btnSaderAction")}
+                onClick={(e) => handleElementClick(e, "money_btnSaderAction", "money_flow")}
                 className={`cursor-pointer rounded-2xl p-2.5 bg-gradient-to-r from-rose-950 via-rose-900 to-rose-950 border-2 border-rose-500/80 shadow-xl flex items-center justify-center gap-2 transition-all ${
                   selectedElementId === "money_btnSaderAction"
-                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-rose-500/40"
-                    : "hover:scale-[1.02]"
+                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-rose-500/50"
+                    : "hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                 }`}
                 style={getElementStyle(config.moneyFlowCard?.btnSaderAction)}
                 title="انقر لتعديل زر حركة أعطيت للعميل (صادر 💸)"
@@ -5116,11 +5064,11 @@ function OrderCardsLivePreview({
               </div>
 
               <div
-                onClick={() => setSelectedElementId("money_btnWardAction")}
+                onClick={(e) => handleElementClick(e, "money_btnWardAction", "money_flow")}
                 className={`cursor-pointer rounded-2xl p-2.5 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 border-2 border-emerald-400 shadow-xl flex items-center justify-center gap-2 transition-all ${
                   selectedElementId === "money_btnWardAction"
-                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-emerald-500/40"
-                    : "hover:scale-[1.02]"
+                    ? "ring-4 ring-[#F5D77F] scale-105 shadow-emerald-500/50"
+                    : "hover:scale-[1.03] hover:ring-2 hover:ring-amber-400/70"
                 }`}
                 style={getElementStyle(config.moneyFlowCard?.btnWardAction)}
                 title="انقر لتعديل زر حركة أخذت من الزبون (وارد 🫴)"
@@ -5132,17 +5080,17 @@ function OrderCardsLivePreview({
 
             {/* بطاقة وسجل المعاملات المالية */}
             <div
-              onClick={() => setSelectedElementId("money_frame")}
+              onClick={(e) => handleElementClick(e, "money_frame", "money_flow")}
               className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 transition-all mx-auto cursor-pointer ${
                 selectedElementId === "money_frame"
-                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
-                  : "ring-1 ring-amber-400/50 hover:ring-amber-400/80"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
+                  : "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
               }`}
               style={getCardContainerStyle(
                 config.moneyFlowCard?.frameConfig,
                 config.moneyFlowCard?.frameBgUrl || "/images/order-luxury/luxury-money-card-bg.jpg"
               )}
-              title="انقر لتعديل خلفية وإطار سجل المعاملات المالية"
+              title="انقر لفتح إعدادات وتخصيص خلفية وإطار سجل المعاملات المالية"
             >
               {/* شريط عنوان السجل */}
               <div className="flex items-center justify-between border-b border-[#C9A86A]/40 pb-2 mb-3">
@@ -5159,14 +5107,11 @@ function OrderCardsLivePreview({
               <div className="space-y-2">
                 {/* 1. حركة صادر */}
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("money_badgeSader");
-                  }}
+                  onClick={(e) => handleElementClick(e, "money_badgeSader", "money_flow")}
                   className={`p-2.5 rounded-xl bg-black/60 border border-rose-500/60 flex items-center justify-between gap-2 transition-all cursor-pointer ${
                     selectedElementId === "money_badgeSader"
-                      ? "ring-2 ring-[#F5D77F] bg-rose-950/40 scale-102"
-                      : "hover:border-rose-400"
+                      ? "ring-4 ring-[#F5D77F] bg-rose-950/40 scale-[1.03] shadow-amber-400/40"
+                      : "hover:border-rose-400 hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(config.moneyFlowCard?.badgeSader)}
                   title="انقر لتعديل شارة وبطاقة حركة (صادر 💸)"
@@ -5179,14 +5124,11 @@ function OrderCardsLivePreview({
                     <span className="text-[10px] text-white/60">(تسليم للمحل)</span>
                   </div>
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElementId("money_btnDeleteAction");
-                    }}
+                    onClick={(e) => handleElementClick(e, "money_btnDeleteAction", "money_flow")}
                     className={`px-2 py-1 bg-rose-900/60 border border-rose-500/50 text-rose-300 rounded-lg text-[10px] font-black transition-all ${
                       selectedElementId === "money_btnDeleteAction"
-                        ? "ring-2 ring-[#F5D77F] scale-110"
-                        : "hover:bg-rose-900"
+                        ? "ring-4 ring-[#F5D77F] scale-110 shadow-amber-400/40"
+                        : "hover:bg-rose-900 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(config.moneyFlowCard?.btnDeleteAction)}
                     title="انقر لتعديل زر الحذف"
@@ -5197,14 +5139,11 @@ function OrderCardsLivePreview({
 
                 {/* 2. حركة وارد */}
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("money_badgeWard");
-                  }}
+                  onClick={(e) => handleElementClick(e, "money_badgeWard", "money_flow")}
                   className={`p-2.5 rounded-xl bg-black/60 border border-emerald-500/60 flex items-center justify-between gap-2 transition-all cursor-pointer ${
                     selectedElementId === "money_badgeWard"
-                      ? "ring-2 ring-[#F5D77F] bg-emerald-950/40 scale-102"
-                      : "hover:border-emerald-400"
+                      ? "ring-4 ring-[#F5D77F] bg-emerald-950/40 scale-[1.03] shadow-amber-400/40"
+                      : "hover:border-emerald-400 hover:ring-2 hover:ring-amber-400/70"
                   }`}
                   style={getElementStyle(config.moneyFlowCard?.badgeWard)}
                   title="انقر لتعديل شارة وبطاقة حركة (وارد 🫴)"
@@ -5217,14 +5156,11 @@ function OrderCardsLivePreview({
                     <span className="text-[10px] text-white/60">(قبض من الزبون)</span>
                   </div>
                   <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElementId("money_btnDeleteAction");
-                    }}
+                    onClick={(e) => handleElementClick(e, "money_btnDeleteAction", "money_flow")}
                     className={`px-2 py-1 bg-rose-900/60 border border-rose-500/50 text-rose-300 rounded-lg text-[10px] font-black transition-all ${
                       selectedElementId === "money_btnDeleteAction"
-                        ? "ring-2 ring-[#F5D77F] scale-110"
-                        : "hover:bg-rose-900"
+                        ? "ring-4 ring-[#F5D77F] scale-110 shadow-amber-400/40"
+                        : "hover:bg-rose-900 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     style={getElementStyle(config.moneyFlowCard?.btnDeleteAction)}
                     title="انقر لتعديل زر الحذف"
@@ -5247,11 +5183,12 @@ function OrderCardsLivePreview({
               return (
                 <div
                   key={btn.id}
-                  onClick={() => setSelectedElementId(`wa_${btn.id}`)}
+                  onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
                   style={getElementStyle(btnCustom)}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-xs shadow-md cursor-pointer transition-all ${
-                    isSelected ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105" : "hover:opacity-90 hover:scale-105"
+                    isSelected ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105 shadow-[0_0_15px_rgba(245,215,127,0.7)]" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                   }`}
+                  title={`انقر لتعديل إعدادات زر: ${btn.label}`}
                 >
                   {previewImg ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -5270,10 +5207,10 @@ function OrderCardsLivePreview({
         {activeTab === "floating_btn" && (
           <div className="relative h-44 w-full bg-gradient-to-b from-[#0A3D2E]/90 to-[#06281D] border-2 border-dashed border-[#C9A86A]/60 rounded-2xl flex flex-col items-center justify-center overflow-hidden p-4 select-none">
             <div className="absolute top-2 right-3 text-[10px] font-bold text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-[#C9A86A]/40">
-              💡 انقر على الزر لتعديله
+              💡 انقر على الزر لتعديله فوراً
             </div>
             <div
-              onClick={() => setSelectedElementId("floating_action_btn")}
+              onClick={(e) => handleElementClick(e, "floating_action_btn", "floating_btn")}
               style={{
                 transform: `scale(${config.floatingActionBtn?.scale ?? 1}) rotate(${config.floatingActionBtn?.rotate ?? 0}deg) translate(${config.floatingActionBtn?.offsetX ?? 0}px, ${config.floatingActionBtn?.offsetY ?? 0}px)`,
                 backgroundColor: config.floatingActionBtn?.bgColor || "#003399",
@@ -5283,7 +5220,7 @@ function OrderCardsLivePreview({
               className={`h-20 w-20 rounded-full border-4 font-black shadow-2xl flex items-center justify-center flex-col transition-all cursor-pointer select-none active:scale-95 ${
                 selectedElementId === "floating_action_btn"
                   ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-black scale-105 shadow-amber-400/50"
-                  : "hover:scale-105 hover:shadow-blue-500/50"
+                  : "hover:scale-105 hover:shadow-blue-500/50 hover:ring-2 hover:ring-amber-400/70"
               }`}
               title="انقر لتعديل أبعاد وألوان وصورة الزر العائم"
             >
