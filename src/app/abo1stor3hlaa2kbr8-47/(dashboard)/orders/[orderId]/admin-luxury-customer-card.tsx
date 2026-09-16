@@ -246,7 +246,7 @@ export function AdminLuxuryCustomerCard({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                      src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/btn-open-location.webp"}
                       alt="موقع الزبون"
                       className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg transition-transform"
                     />
@@ -258,7 +258,7 @@ export function AdminLuxuryCustomerCard({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                      src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/btn-no-location.webp"}
                       alt="موقع الزبون غير متوفر"
                       className="h-7 sm:h-9 md:h-10 w-auto object-contain grayscale transition-transform"
                     />
