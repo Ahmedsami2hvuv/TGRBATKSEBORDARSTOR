@@ -8,6 +8,10 @@ import {
 } from "@/lib/mandoub-wa-button-template";
 import { openUrlFromUserGesture, whatsappMeUrl } from "@/lib/whatsapp";
 import { PhoneActionModal } from "@/components/phone-action-modal";
+import {
+  type OrderCardDesignerConfig,
+  getElementStyle,
+} from "@/lib/order-card-customizer";
 
 export type WaButtonNextItem = {
   id: string;
@@ -32,6 +36,7 @@ type Props = {
   templateVars?: MandoubWaButtonVariableValues;
   customButtons?: WaButtonNextItem[];
   compact?: boolean;
+  designerConfig?: OrderCardDesignerConfig;
 };
 
 export function WaLocationCustomButtons({
@@ -45,6 +50,7 @@ export function WaLocationCustomButtons({
   templateVars = {},
   customButtons,
   compact = false,
+  designerConfig,
 }: Props) {
   const [buttons, setButtons] = useState<WaButtonNextItem[]>(customButtons || []);
   const [openModalBtnId, setOpenModalBtnId] = useState<string | null>(null);
@@ -170,8 +176,14 @@ export function WaLocationCustomButtons({
   return (
     <>
       {locationButtons.map((btn) => {
+        const btnCustom = designerConfig?.waButtonsConfig?.[btn.id];
+        if (btnCustom?.hidden) return null;
+
+        const customStyle = getElementStyle(btnCustom);
+        const customImg = btnCustom?.imageUrl;
+
         return (
-          <div key={btn.id} className="relative inline-block w-full">
+          <div key={btn.id} className="relative inline-block w-full min-w-0" style={customStyle}>
             <button
               type="button"
               onClick={() => handleButtonClick(btn)}
@@ -180,7 +192,16 @@ export function WaLocationCustomButtons({
               }`}
               title={btn.label}
             >
-              <span className="text-sm shrink-0">{btn.iconKey || "⚡"}</span>
+              {customImg ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={customImg}
+                  alt={btn.label}
+                  className="w-5 h-5 object-contain shrink-0 drop-shadow-sm pointer-events-none"
+                />
+              ) : (
+                <span className="text-sm shrink-0">{btn.iconKey || "⚡"}</span>
+              )}
               <span className="truncate">{btn.label}</span>
             </button>
           </div>

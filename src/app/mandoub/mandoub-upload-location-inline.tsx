@@ -22,6 +22,7 @@ function IconMapPin() {
  * رفع لوكيشن الزبون من موقع المندوب الحالي — يُعرض مكان خانة اللوكيشن عندما لا يوجد رابط بعد.
  */
 import { WaLocationCustomButtons } from "@/components/wa-location-custom-buttons";
+import type { OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 
 export function MandoubUploadLocationInline({
   orderId,
@@ -37,6 +38,7 @@ export function MandoubUploadLocationInline({
   hasCourierUploadedLocation,
   templateVars,
   customWaButtons,
+  designerConfig,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -51,6 +53,7 @@ export function MandoubUploadLocationInline({
   hasCourierUploadedLocation?: boolean;
   templateVars?: Record<string, string>;
   customWaButtons?: any[];
+  designerConfig?: OrderCardDesignerConfig;
 }) {
   const [state, formAction, pending] = useActionState(
     setMandoubCustomerLocationFromGeolocation,
@@ -191,6 +194,7 @@ export function MandoubUploadLocationInline({
             hasCourierUploadedLocation={hasCourierUploadedLocation}
             templateVars={templateVars}
             customButtons={customWaButtons}
+            designerConfig={designerConfig}
           />
         </div>
       </div>

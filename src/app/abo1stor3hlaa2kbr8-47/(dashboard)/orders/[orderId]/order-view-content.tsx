@@ -590,6 +590,7 @@ export function OrderViewContent({
                         shop_phone: submitterPhone || "",
                       }}
                       customButtons={waButtonSettings}
+                      designerConfig={designerConfig}
                     />
                   ) : (
                     <AdminCustomerLocationQuick
@@ -611,6 +612,7 @@ export function OrderViewContent({
                         shop_phone: submitterPhone || "",
                       }}
                       customButtons={waButtonSettings}
+                      designerConfig={designerConfig}
                     />
                   )}
 
@@ -751,6 +753,7 @@ export function OrderViewContent({
                               shop_phone: submitterPhone || "",
                             }}
                             customButtons={waButtonSettings}
+                            designerConfig={designerConfig}
                           />
                         </div>
                       ) : (
@@ -775,6 +778,7 @@ export function OrderViewContent({
                               shop_phone: submitterPhone || "",
                             }}
                             customButtons={waButtonSettings}
+                            designerConfig={designerConfig}
                           />
                         </div>
                       )}

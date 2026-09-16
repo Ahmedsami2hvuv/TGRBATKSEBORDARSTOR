@@ -971,6 +971,7 @@ export function OrderDetailSection({
                                     shop_phone: order.shop?.phone || order.shopPhone || "",
                                   }}
                                   customButtons={customWaButtons}
+                                  designerConfig={designerConfig || undefined}
                                 />
                               </div>
                             ) : (
@@ -985,6 +986,7 @@ export function OrderDetailSection({
                                 orderStatus={order.status}
                                 hasCustomerLocation={!missingCustomerLocation}
                                 hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                                designerConfig={designerConfig || undefined}
                                 templateVars={{
                                   clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
                                   city: order.customerRegion?.name || order.regionLine || "—",
@@ -1180,6 +1182,7 @@ export function OrderDetailSection({
                               customerPhone2={order.customerPhone2 || undefined}
                               shopPhone={order.shopPhone || undefined}
                               orderStatus={order.status}
+                              designerConfig={designerConfig || undefined}
                               templateVars={{
                                 clientshop: order.shop?.name || order.clientName || (order as any).submitterName || (order.submissionSource === "staff_portal" ? "الإدارة" : "المحل"),
                                 city: order.secondCustomerRegion?.name || order.secondCustomerRegionName || order.regionLine || "—",

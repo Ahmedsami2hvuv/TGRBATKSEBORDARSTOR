@@ -293,7 +293,7 @@ export function AdminLuxuryShopCard({
               <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                 {/* 1. زر اتصال 📞 */}
                 <div className="w-full flex justify-center min-w-0">
-                  <div style={getElementStyle(shopCustom?.btnCall)} className="w-fit inline-flex">
+                  <div style={getElementStyle(shopCustom?.btnCall)} className="w-fit inline-flex origin-center">
                     {cleanPhone ? (
                       <a
                         href={telHref(cleanPhone)}
@@ -304,7 +304,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                           alt="اتصال"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
                         />
                       </a>
                     ) : (
@@ -313,7 +313,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
                           alt="اتصال"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain grayscale transition-transform block"
                         />
                       </div>
                     )}
@@ -322,7 +322,7 @@ export function AdminLuxuryShopCard({
 
                 {/* 2. زر واتس اب 💬 */}
                 <div className="w-full flex justify-center min-w-0">
-                  <div style={getElementStyle(shopCustom?.btnWhatsapp)} className="w-fit inline-flex">
+                  <div style={getElementStyle(shopCustom?.btnWhatsapp)} className="w-fit inline-flex origin-center">
                     {cleanPhone ? (
                       <a
                         href={whatsappMeUrl(cleanPhone)}
@@ -335,7 +335,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                           alt="واتس اب"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
                         />
                       </a>
                     ) : (
@@ -344,7 +344,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
                           alt="واتس اب"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain grayscale transition-transform block"
                         />
                       </div>
                     )}
@@ -413,7 +413,7 @@ export function AdminLuxuryShopCard({
                 <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   {/* 3. زر كاميرا 📷 */}
                   <div className="w-full flex justify-center min-w-0">
-                    <div style={getElementStyle(shopCustom?.btnCamera)} className="w-fit inline-flex">
+                    <div style={getElementStyle(shopCustom?.btnCamera)} className="w-fit inline-flex origin-center">
                       <button
                         type="button"
                         onClick={() => cameraFileRef.current?.click()}
@@ -425,7 +425,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
                           alt="كاميرا"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
                         />
                       </button>
                     </div>
@@ -433,7 +433,7 @@ export function AdminLuxuryShopCard({
 
                   {/* 4. زر معرض 🖼️ */}
                   <div className="w-full flex justify-center min-w-0">
-                    <div style={getElementStyle(shopCustom?.btnGallery)} className="w-fit inline-flex">
+                    <div style={getElementStyle(shopCustom?.btnGallery)} className="w-fit inline-flex origin-center">
                       <button
                         type="button"
                         onClick={() => galleryFileRef.current?.click()}
@@ -445,7 +445,7 @@ export function AdminLuxuryShopCard({
                         <img
                           src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
                           alt="معرض"
-                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
                         />
                       </button>
                     </div>

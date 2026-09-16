@@ -27,6 +27,7 @@ function IconLink() {
 }
 
 import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
+import type { OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 
 export function AdminCustomerLocationQuick({
   orderId,
@@ -37,6 +38,7 @@ export function AdminCustomerLocationQuick({
   orderStatus,
   templateVars,
   customButtons,
+  designerConfig,
 }: {
   orderId: string;
   target?: "first" | "second";
@@ -46,6 +48,7 @@ export function AdminCustomerLocationQuick({
   orderStatus?: string;
   templateVars?: Record<string, string>;
   customButtons?: WaButtonNextItem[];
+  designerConfig?: OrderCardDesignerConfig;
 }) {
   const [gpsState, gpsAction, gpsPending] = useActionState(
     uploadCustomerLocationFromView.bind(null, orderId),
@@ -140,6 +143,7 @@ export function AdminCustomerLocationQuick({
             orderStatus={orderStatus}
             templateVars={templateVars}
             customButtons={customButtons}
+            designerConfig={designerConfig}
           />
         </div>
       </div>
