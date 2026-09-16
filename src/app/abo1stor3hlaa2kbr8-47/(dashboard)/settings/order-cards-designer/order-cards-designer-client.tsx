@@ -2222,8 +2222,8 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
               {/* شريط أدوات المعاينة */}
               <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                {/* أزرار تبديل عرض كارت واحد أو كلا الكارتين معاً */}
-                {(activeTab === "shop_card" || activeTab === "customer_card") && (
+                {/* أزرار تبديل عرض كارت مفرد أو كافة الكروت الثلاثة معاً */}
+                {(activeTab === "shop_card" || activeTab === "customer_card" || activeTab === "order_info") && (
                   <div className="flex items-center bg-[#0A3D2E] border border-[#C9A86A]/60 rounded-lg p-0.5 text-[10px] font-bold">
                     <button
                       type="button"
@@ -2231,15 +2231,15 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                       className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "single" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
                       title="عرض الكارت المختار حالياً فقط للتركيز عليه"
                     >
-                      🎴 {activeTab === "shop_card" ? "كارت المحل فقط" : "كارت الزبون فقط"}
+                      🎴 {activeTab === "shop_card" ? "كارت المحل فقط" : activeTab === "customer_card" ? "كارت الزبون فقط" : "كارت نوع الطلبية فقط"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setPreviewCardDisplay("both")}
                       className={`px-2 py-0.5 rounded transition cursor-pointer ${previewCardDisplay === "both" ? "bg-[#C9A86A] text-[#06281D] font-black shadow-sm" : "text-white/80 hover:text-white"}`}
-                      title="عرض كلا الكارتين معاً للتحقق من التناسق والتلاصق"
+                      title="عرض الكروت الثلاثة متصلة ومترابطة معاً للتحقق من التناسق والتلاصق التام"
                     >
-                      📑 كلا الكارتين معاً
+                      📑 الكروت الثلاثة مترابطة معاً
                     </button>
                   </div>
                 )}
@@ -4032,6 +4032,7 @@ function OrderCardsLivePreview({
   const custCustom = config.customerCard;
   const showShopCard = previewCardDisplay === "both" || activeTab === "shop_card";
   const showCustomerCard = previewCardDisplay === "both" || activeTab === "customer_card";
+  const showOrderInfoCard = previewCardDisplay === "both" || activeTab === "order_info";
 
   // دالة موحدة للتفاعل مع أي عنصر من المعاينة
   const handleElementClick = (e: React.MouseEvent, elemId: string, tab?: TabType) => {
@@ -4057,9 +4058,9 @@ function OrderCardsLivePreview({
           transformOrigin: "top center",
         }}
       >
-        {/* معاينة الكروت الفاخرة (كارت المحل أو كارت الزبون أو كلاهما معاً) */}
-        {(activeTab === "shop_card" || activeTab === "customer_card") && (
-          <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
+        {/* معاينة الكروت الفاخرة (كارت المحل، كارت الزبون، وكارت نوع الطلبية مترابطة بدون أي فواصل) */}
+        {(activeTab === "shop_card" || activeTab === "customer_card" || activeTab === "order_info") && (
+          <div className="flex flex-col gap-0 w-full">
             {/* 1. كارت المحل في المعاينة */}
             {showShopCard && (
             <div
@@ -4740,25 +4741,25 @@ function OrderCardsLivePreview({
           </div>
         </div>
         )}
-      </div>
-      )}
 
-        {/* معاينة كارت تفاصيل ونوع الطلبية */}
-        {activeTab === "order_info" && (
-          <div className="w-full">
-            <div
-              onClick={(e) => handleElementClick(e, "orderInfo_frame", "order_info")}
-              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-6 transition-all mx-auto cursor-pointer ${
-                selectedElementId === "orderInfo_frame"
-                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
-                  : "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
-              }`}
-              style={getCardContainerStyle(
-                config.orderInfoCard?.frameConfig,
-                config.orderInfoCard?.frameBgUrl || "/images/order-luxury/order-info-card/order-info-frame.jpg"
-              )}
-              title="انقر لفتح إعدادات وتخصيص خلفية وأبعاد إطار كارت نوع الطلبية"
-            >
+            {/* 3. كارت تفاصيل ونوع الطلبية في المعاينة */}
+            {showOrderInfoCard && (
+              <div className={showCustomerCard || showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
+                <div
+                  onClick={(e) => handleElementClick(e, "orderInfo_frame", "order_info")}
+                  className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-6 transition-all mx-auto cursor-pointer ${
+                    selectedElementId === "orderInfo_frame"
+                      ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
+                      : activeTab === "order_info"
+                      ? "ring-1 ring-amber-400/50 hover:ring-2 hover:ring-amber-400/80"
+                      : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
+                  }`}
+                  style={getCardContainerStyle(
+                    config.orderInfoCard?.frameConfig,
+                    config.orderInfoCard?.frameBgUrl || "/images/order-luxury/order-info-card/order-info-frame.jpg"
+                  )}
+                  title="انقر لفتح إعدادات وتخصيص خلفية وأبعاد إطار كارت نوع الطلبية"
+                >
               {/* طبقة خطوط وشبكة المحاذاة الذكية */}
               {showGuides && (
                 <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
@@ -5043,6 +5044,8 @@ function OrderCardsLivePreview({
             </div>
           </div>
         )}
+      </div>
+      )}
 
         {/* معاينة شكل المعاملات المالية (الصادر والوارد) */}
         {activeTab === "money_flow" && (

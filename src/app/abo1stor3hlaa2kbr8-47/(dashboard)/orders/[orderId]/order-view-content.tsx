@@ -642,6 +642,19 @@ export function OrderViewContent({
               </AdminLuxuryCustomerCard>
             </div>
           )}
+
+          {/* كارت معلومات الطلب مدمج ومترابط مباشرة مع كارت الزبون بدون أي فجوة أو فراغ */}
+          {!isDoubleRoute && designerConfig?.enabledPortals?.admin !== false && (
+            <div className="-mt-4 sm:-mt-5.5">
+              <AdminLuxuryOrderInfoCard
+                order={order}
+                setPreviewImageUrl={setPreviewImageUrl}
+                designerConfig={designerConfig || undefined}
+                hideSubtotalInfo={false}
+                isMandoubPortal={false}
+              />
+            </div>
+          )}
         </div>
 
           {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين --- */}
@@ -766,37 +779,40 @@ export function OrderViewContent({
                         </div>
                       )}
 
-                      <OtherRegionsCustomerDetails
-                        phone={order.secondCustomerPhone || order.customerPhone}
-                        currentRegionId={order.secondCustomerRegionId}
-                        currentRegionName={order.secondCustomerRegion?.name}
-                        orderId={order.id}
-                        isSecondDestination={true}
-                      />
+                      <div className="mt-2">
+                        <OtherRegionsCustomerDetails
+                          phone={order.secondCustomerPhone || order.customerPhone}
+                          currentRegionId={order.secondCustomerRegionId}
+                          currentRegionName={order.secondCustomerRegion?.name}
+                          orderId={order.id}
+                          isSecondDestination={true}
+                        />
+                      </div>
+                    </div>
 
-                      {/* أزرار الاتصال والواتساب السريعة للمستلم بصور نانو بنانا */}
+                    <div className="flex items-center gap-2 w-full">
                       {(order.secondCustomerPhone || order.customerPhone) && (
-                        <div className="flex items-center gap-3 w-full justify-center pt-2">
+                        <div className="flex items-center gap-2 w-full">
                           <a
-                            href={telHref(order.secondCustomerPhone || order.customerPhone)}
-                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                            title="اتصال هاتفي بالمستلم"
+                            href={telHref(order.secondCustomerPhone || order.customerPhone!)}
+                            className="flex-1 group relative transition-transform active:scale-95 flex items-center justify-center"
+                            title="اتصال بالمستلم"
                           >
                             <img
-                              src="/images/order-luxury/btn-admin-call.webp"
+                              src="/images/order-luxury/shop-card/btn-call.webp"
                               alt="اتصال"
                               className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
                             />
                           </a>
                           <a
-                            href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone)}
+                            href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone!)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group relative transition-transform active:scale-90 flex items-center justify-center"
-                            title="مراسلة واتساب"
+                            className="flex-1 group relative transition-transform active:scale-95 flex items-center justify-center"
+                            title="مراسلة المستلم واتساب"
                           >
                             <img
-                              src="/images/order-luxury/btn-admin-whatsapp.webp"
+                              src="/images/order-luxury/shop-card/btn-whatsapp.webp"
                               alt="واتس"
                               className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
                             />
@@ -851,8 +867,8 @@ export function OrderViewContent({
               </div>
             </div>
           )}
-        {/* --- تفاصيل الطلب والأسعار وصورة الطلب --- */}
-        {designerConfig?.enabledPortals?.admin !== false ? (
+        {/* --- تفاصيل الطلب والأسعار وصورة الطلب (في حالة الوجهتين أو التصميم القديم) --- */}
+        {isDoubleRoute && designerConfig?.enabledPortals?.admin !== false ? (
           <div className="w-full mb-3 -mt-2 sm:-mt-2.5">
             <AdminLuxuryOrderInfoCard
               order={order}
@@ -862,7 +878,7 @@ export function OrderViewContent({
               isMandoubPortal={false}
             />
           </div>
-        ) : (
+        ) : designerConfig?.enabledPortals?.admin === false ? (
           <div className={gridInfoPhoto}>
             <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
               <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
@@ -953,7 +969,7 @@ export function OrderViewContent({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {(() => {

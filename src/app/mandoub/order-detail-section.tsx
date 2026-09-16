@@ -420,6 +420,17 @@ export function OrderDetailSection({
                   phoneProfile={phoneProfile}
                 />
               </div>
+              <div className="-mt-4 sm:-mt-5.5">
+                <AdminLuxuryOrderInfoCard
+                  order={order}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  designerConfig={designerConfig || undefined}
+                  auth={auth}
+                  nextUrl={nextUrl}
+                  hideSubtotalInfo={hideSubtotalInfo}
+                  isMandoubPortal={true}
+                />
+              </div>
             </div>
           );
         }
@@ -1283,6 +1294,9 @@ export function OrderDetailSection({
         return null;
       case "price_details":
         if (designerConfig?.enabledPortals?.mandoub !== false) {
+          if (!isDoubleRoute) {
+            return null;
+          }
           return (
             <div key="luxury_order_info_card_mandoub" className="w-full mb-3 -mt-2 sm:-mt-2.5">
               <AdminLuxuryOrderInfoCard

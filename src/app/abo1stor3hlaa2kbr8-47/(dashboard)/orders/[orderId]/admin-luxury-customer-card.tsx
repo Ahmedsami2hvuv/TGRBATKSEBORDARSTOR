@@ -104,7 +104,7 @@ export function AdminLuxuryCustomerCard({
   const frameBg = custCustom?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp";
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-0 sm:my-0.5 select-none" dir="rtl">
+    <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
       {/* مدخلات الملفات المخفية للكاميرا والمعرض */}
       <input
         ref={cameraFileRef}
