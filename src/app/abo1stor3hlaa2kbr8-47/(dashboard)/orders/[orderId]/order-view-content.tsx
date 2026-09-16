@@ -622,6 +622,7 @@ export function OrderViewContent({
                     currentRegionName={order.customerRegion?.name}
                     orderId={order.id}
                     isSecondDestination={false}
+                    designerConfig={designerConfig}
                   />
                 </div>
 
@@ -790,6 +791,7 @@ export function OrderViewContent({
                           currentRegionName={order.secondCustomerRegion?.name}
                           orderId={order.id}
                           isSecondDestination={true}
+                          designerConfig={designerConfig}
                         />
                       </div>
                     </div>

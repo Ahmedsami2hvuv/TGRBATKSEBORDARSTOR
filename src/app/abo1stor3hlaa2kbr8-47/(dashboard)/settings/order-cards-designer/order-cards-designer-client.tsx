@@ -141,6 +141,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             btnWhatsapp: copyElem(src?.btnWhatsapp, prev.customerCard?.btnWhatsapp),
             btnCamera: copyElem(src?.btnCamera, prev.customerCard?.btnCamera),
             btnGallery: copyElem(src?.btnGallery, prev.customerCard?.btnGallery),
+            btnUploadLocation: copyElem(src?.btnUploadLocation, prev.customerCard?.btnUploadLocation),
+            btnPasteLocation: copyElem(src?.btnPasteLocation, prev.customerCard?.btnPasteLocation),
+            btnOtherDetails: copyElem(src?.btnOtherDetails, prev.customerCard?.btnOtherDetails),
           },
         };
       } else {
@@ -166,6 +169,9 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             btnWhatsapp: copyElem(src?.btnWhatsapp, prev.shopCard?.btnWhatsapp),
             btnCamera: copyElem(src?.btnCamera, prev.shopCard?.btnCamera),
             btnGallery: copyElem(src?.btnGallery, prev.shopCard?.btnGallery),
+            btnUploadLocation: copyElem(src?.btnUploadLocation, prev.shopCard?.btnUploadLocation),
+            btnPasteLocation: copyElem(src?.btnPasteLocation, prev.shopCard?.btnPasteLocation),
+            btnOtherDetails: copyElem(src?.btnOtherDetails, prev.shopCard?.btnOtherDetails),
           },
         };
       }
@@ -639,6 +645,72 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         },
       }),
     },
+    {
+      id: "shop_btnUploadLocation",
+      title: "زر رفع لوكيشن المحل (GPS) 📍",
+      category: "shop_card",
+      defaultImg: "",
+      description: "زر رفع موقع المحل الحالي عبر نظام التموضع الجغرافي GPS",
+      getConfig: (c) => c.shopCard?.btnUploadLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnUploadLocation: { ...(prev.shopCard?.btnUploadLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnUploadLocation: { ...(prev.shopCard?.btnUploadLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnPasteLocation",
+      title: "زر لصق لوكيشن المحل 🔗",
+      category: "shop_card",
+      defaultImg: "",
+      description: "زر فتح خانة لصق رابط لوكيشن قوقل ماب للمحل",
+      getConfig: (c) => c.shopCard?.btnPasteLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnPasteLocation: { ...(prev.shopCard?.btnPasteLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnPasteLocation: { ...(prev.shopCard?.btnPasteLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "shop_btnOtherDetails",
+      title: "زر تفاصيل أخرى للمحل 🌍",
+      category: "shop_card",
+      defaultImg: "",
+      description: "زر عرض تفاصيل ومعلومات المحل المسجلة في المناطق الأخرى",
+      getConfig: (c) => c.shopCard?.btnOtherDetails,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnOtherDetails: { ...(prev.shopCard?.btnOtherDetails || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        shopCard: {
+          ...prev.shopCard,
+          btnOtherDetails: { ...(prev.shopCard?.btnOtherDetails || {}), imageUrl: url },
+        },
+      }),
+    },
   ];
 
   // تعريف عناصر كارت الزبون
@@ -954,6 +1026,72 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         customerCard: {
           ...prev.customerCard,
           btnGallery: { ...(prev.customerCard?.btnGallery || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnUploadLocation",
+      title: "زر رفع لوكيشن الزبون (GPS) 📍",
+      category: "customer_card",
+      defaultImg: "",
+      description: "زر رفع موقع الزبون الحالي عبر نظام التموضع الجغرافي GPS",
+      getConfig: (c) => c.customerCard?.btnUploadLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnUploadLocation: { ...(prev.customerCard?.btnUploadLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnUploadLocation: { ...(prev.customerCard?.btnUploadLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnPasteLocation",
+      title: "زر لصق لوكيشن الزبون 🔗",
+      category: "customer_card",
+      defaultImg: "",
+      description: "زر فتح خانة لصق رابط لوكيشن قوقل ماب للزبون",
+      getConfig: (c) => c.customerCard?.btnPasteLocation,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnPasteLocation: { ...(prev.customerCard?.btnPasteLocation || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnPasteLocation: { ...(prev.customerCard?.btnPasteLocation || {}), imageUrl: url },
+        },
+      }),
+    },
+    {
+      id: "cust_btnOtherDetails",
+      title: "زر تفاصيل أخرى للزبون 🌍",
+      category: "customer_card",
+      defaultImg: "",
+      description: "زر عرض تفاصيل ومعلومات الزبون المسجلة في المناطق الأخرى",
+      getConfig: (c) => c.customerCard?.btnOtherDetails,
+      updateConfig: (prev, f, v) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnOtherDetails: { ...(prev.customerCard?.btnOtherDetails || {}), [f]: v },
+        },
+      }),
+      setImageUrl: (prev, url) => ({
+        ...prev,
+        customerCard: {
+          ...prev.customerCard,
+          btnOtherDetails: { ...(prev.customerCard?.btnOtherDetails || {}), imageUrl: url },
         },
       }),
     },
@@ -4698,7 +4836,67 @@ function OrderCardsLivePreview({
                 </div>
               </div>
 
-              {/* 2. بلوك الاستدلال الذكي */}
+              {/* 2. شريط أزرار رفع الموقع ولصق الموقع وتفاصيل أخرى */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <div
+                  onClick={(e) => handleElementClick(e, "cust_btnUploadLocation", "customer_card")}
+                  style={getElementStyle(custCustom?.btnUploadLocation)}
+                  className={`flex-1 min-w-[100px] flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-2.5 py-1.5 text-xs font-black text-[#F5D77F] shadow-md cursor-pointer transition-all ${
+                    selectedElementId === "cust_btnUploadLocation"
+                      ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40"
+                      : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
+                  }`}
+                  title="انقر لتعديل زر رفع لوكيشن (GPS)"
+                >
+                  {custCustom?.btnUploadLocation?.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={custCustom.btnUploadLocation.imageUrl} alt="رفع لوكيشن" className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+                  ) : (
+                    <span className="text-xs shrink-0">📍</span>
+                  )}
+                  <span className="pointer-events-none">رفع لوكيشن (GPS)</span>
+                </div>
+
+                <div
+                  onClick={(e) => handleElementClick(e, "cust_btnPasteLocation", "customer_card")}
+                  style={getElementStyle(custCustom?.btnPasteLocation)}
+                  className={`flex-1 min-w-[90px] flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-2.5 py-1.5 text-xs font-black text-[#FFF8F0] shadow-md cursor-pointer transition-all ${
+                    selectedElementId === "cust_btnPasteLocation"
+                      ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40"
+                      : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
+                  }`}
+                  title="انقر لتعديل زر لصق لوكيشن"
+                >
+                  {custCustom?.btnPasteLocation?.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={custCustom.btnPasteLocation.imageUrl} alt="لصق لوكيشن" className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+                  ) : (
+                    <span className="text-xs shrink-0">🔗</span>
+                  )}
+                  <span className="pointer-events-none">لصق لكيشن</span>
+                </div>
+
+                <div
+                  onClick={(e) => handleElementClick(e, "cust_btnOtherDetails", "customer_card")}
+                  style={getElementStyle(custCustom?.btnOtherDetails)}
+                  className={`inline-flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-100/90 hover:bg-amber-200 text-amber-900 px-2.5 text-[11px] font-black cursor-pointer transition-all shadow-sm ${
+                    selectedElementId === "cust_btnOtherDetails"
+                      ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40"
+                      : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
+                  }`}
+                  title="انقر لتعديل زر تفاصيل أخرى"
+                >
+                  {custCustom?.btnOtherDetails?.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={custCustom.btnOtherDetails.imageUrl} alt="تفاصيل أخرى" className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+                  ) : (
+                    <span className="text-xs shrink-0">🌍</span>
+                  )}
+                  <span className="pointer-events-none">تفاصيل أخرى (2)</span>
+                </div>
+              </div>
+
+              {/* 3. بلوك الاستدلال الذكي */}
               <div className="p-2 rounded-xl bg-black/60 border border-purple-500/40 flex items-start gap-2">
                 <span className="text-base shrink-0">🧠</span>
                 <div className="text-xs min-w-0">
@@ -4707,7 +4905,7 @@ function OrderCardsLivePreview({
                 </div>
               </div>
 
-              {/* 3. شريط أزرار الواتساب المتغيرة في كارت الزبون */}
+              {/* 4. شريط أزرار الواتساب المتغيرة في كارت الزبون */}
               {waButtons && waButtons.length > 0 && (
                 <div className="pt-1 flex flex-wrap items-center gap-1.5 justify-center">
                   {waButtons.slice(0, 4).map((btn) => {

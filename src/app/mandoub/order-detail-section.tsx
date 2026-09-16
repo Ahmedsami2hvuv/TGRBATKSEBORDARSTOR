@@ -807,6 +807,7 @@ export function OrderDetailSection({
                       prefetchedProfiles={(order as any).otherRegionsProfiles}
                       orderId={order.id}
                       isSecondDestination={false}
+                      designerConfig={designerConfig || undefined}
                     />
                   </div>
                 </div>
@@ -1017,6 +1018,7 @@ export function OrderDetailSection({
                           prefetchedProfiles={(order as any).otherRegionsProfiles}
                           orderId={order.id}
                           isSecondDestination={false}
+                          designerConfig={designerConfig || undefined}
                         />
                       </div>
                       {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && senderLocUploaderName && (
@@ -1218,6 +1220,7 @@ export function OrderDetailSection({
                         prefetchedProfiles={(order as any).secondOtherRegionsProfiles}
                         orderId={order.id}
                         isSecondDestination={true}
+                        designerConfig={designerConfig || undefined}
                       />
 
                       {/* أزرار الاتصال المباشر والواتس المباشر للمستلم */}

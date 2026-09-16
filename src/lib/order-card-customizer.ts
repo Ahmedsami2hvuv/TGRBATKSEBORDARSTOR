@@ -211,6 +211,9 @@ export type OrderCardDesignerConfig = {
     btnWhatsapp?: CustomElementConfig;
     btnCamera?: CustomElementConfig;
     btnGallery?: CustomElementConfig;
+    btnUploadLocation?: CustomElementConfig;
+    btnPasteLocation?: CustomElementConfig;
+    btnOtherDetails?: CustomElementConfig;
   };
 
   // كارت الزبون (المستلم)
@@ -232,6 +235,9 @@ export type OrderCardDesignerConfig = {
     btnWhatsapp?: CustomElementConfig;
     btnCamera?: CustomElementConfig;
     btnGallery?: CustomElementConfig;
+    btnUploadLocation?: CustomElementConfig;
+    btnPasteLocation?: CustomElementConfig;
+    btnOtherDetails?: CustomElementConfig;
   };
 
   // كارت معلومات الطلب والأسعار
@@ -308,6 +314,9 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     btnWhatsapp: { scale: 1, offsetX: 0, offsetY: 0 },
     btnCamera: { scale: 1, offsetX: 0, offsetY: 0 },
     btnGallery: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnUploadLocation: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnPasteLocation: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnOtherDetails: { scale: 1, offsetX: 0, offsetY: 0 },
   },
   customerCard: {
     frameBgUrl: "",
@@ -326,6 +335,9 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
     btnWhatsapp: { scale: 1, offsetX: 0, offsetY: 0 },
     btnCamera: { scale: 1, offsetX: 0, offsetY: 0 },
     btnGallery: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnUploadLocation: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnPasteLocation: { scale: 1, offsetX: 0, offsetY: 0 },
+    btnOtherDetails: { scale: 1, offsetX: 0, offsetY: 0 },
   },
   orderInfoCard: {
     frameBgUrl: "/images/order-luxury/order-info-card/order-info-frame.jpg",

@@ -5,6 +5,7 @@ import { getCustomerOtherRegionsDetails, pullCustomerProfileDetails } from "@/ap
 import { createPortal } from "react-dom";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { type OrderCardDesignerConfig, getElementStyle } from "@/lib/order-card-customizer";
 
 export function OtherRegionsCustomerDetails({
   phone,
@@ -15,6 +16,7 @@ export function OtherRegionsCustomerDetails({
   prefetchedProfiles,
   orderId,
   isSecondDestination,
+  designerConfig,
 }: {
   phone?: string | null;
   currentRegionId?: string | null;
@@ -24,6 +26,7 @@ export function OtherRegionsCustomerDetails({
   prefetchedProfiles?: any[];
   orderId?: string | null;
   isSecondDestination?: boolean;
+  designerConfig?: OrderCardDesignerConfig;
 }) {
   const [profiles, setProfiles] = useState<any[]>(prefetchedProfiles || []);
   const [loading, setLoading] = useState(!prefetchedProfiles);
@@ -62,25 +65,36 @@ export function OtherRegionsCustomerDetails({
 
   if (loading || profiles.length === 0) return null;
 
+  const btnCustom = designerConfig?.customerCard?.btnOtherDetails;
+  if (btnCustom?.hidden) return null;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setShowModal(true);
-        }}
-        className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-100/90 hover:bg-amber-200 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 px-2.5 text-[11px] font-black text-amber-900 dark:text-amber-200 transition-all shadow-sm"
-        style={{
-          fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-          height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
-        }}
-      >
-        <span style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined }}>
-          تفاصيل أخرى{profiles.length}
-        </span>
-      </button>
+      <div className="inline-flex w-fit origin-center" style={getElementStyle(btnCustom)}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowModal(true);
+          }}
+          className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-100/90 hover:bg-amber-200 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 px-2.5 text-[11px] font-black text-amber-900 dark:text-amber-200 transition-all shadow-sm"
+          style={{
+            fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
+            height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+          }}
+        >
+          {btnCustom?.imageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={btnCustom.imageUrl} alt="تفاصيل أخرى" className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+          ) : (
+            <span>🌍</span>
+          )}
+          <span style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined }}>
+            تفاصيل أخرى ({profiles.length})
+          </span>
+        </button>
+      </div>
 
       {showModal && typeof document !== "undefined" &&
         createPortal(

@@ -27,7 +27,7 @@ function IconLink() {
 }
 
 import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
-import type { OrderCardDesignerConfig } from "@/lib/order-card-customizer";
+import { type OrderCardDesignerConfig, getElementStyle } from "@/lib/order-card-customizer";
 
 export function AdminCustomerLocationQuick({
   orderId,
@@ -95,6 +95,9 @@ export function AdminCustomerLocationQuick({
   const error = gpsState.error || pasteState.error || clientError;
   const ok = gpsState.ok || pasteState.ok;
 
+  const uploadBtnCustom = designerConfig?.customerCard?.btnUploadLocation;
+  const pasteBtnCustom = designerConfig?.customerCard?.btnPasteLocation;
+
   return (
     <div className="mt-2 space-y-2 w-full">
       {/* Hidden GPS form */}
@@ -105,33 +108,51 @@ export function AdminCustomerLocationQuick({
       </form>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={pending || locating}
-          onClick={requestLocation}
-          aria-busy={pending || locating}
-          className="flex-1 min-w-[120px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-2.5 py-2 text-xs font-black text-[#F5D77F] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-wait disabled:opacity-70 cursor-pointer"
-        >
-          <IconMapPin />
-          <span>{locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}</span>
-        </button>
+        {!uploadBtnCustom?.hidden && (
+          <div className="flex-1 min-w-[120px]" style={getElementStyle(uploadBtnCustom)}>
+            <button
+              type="button"
+              disabled={pending || locating}
+              onClick={requestLocation}
+              aria-busy={pending || locating}
+              className="w-full flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-2.5 py-2 text-xs font-black text-[#F5D77F] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-wait disabled:opacity-70 cursor-pointer"
+            >
+              {uploadBtnCustom?.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={uploadBtnCustom.imageUrl} alt="GPS" className="w-5 h-5 object-contain shrink-0 pointer-events-none" />
+              ) : (
+                <IconMapPin />
+              )}
+              <span>{locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}</span>
+            </button>
+          </div>
+        )}
 
-        <button
-          type="button"
-          disabled={pending || locating}
-          onClick={() => {
-            setShowPaste(!showPaste);
-            setClientError("");
-          }}
-          className={`flex-1 min-w-[110px] flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] px-2.5 py-2 text-xs font-black shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer ${
-            showPaste 
-              ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F]" 
-              : "bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#FFF8F0]"
-          }`}
-        >
-          <IconLink />
-          <span>لصق لكيشن</span>
-        </button>
+        {!pasteBtnCustom?.hidden && (
+          <div className="flex-1 min-w-[110px]" style={getElementStyle(pasteBtnCustom)}>
+            <button
+              type="button"
+              disabled={pending || locating}
+              onClick={() => {
+                setShowPaste(!showPaste);
+                setClientError("");
+              }}
+              className={`w-full flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] px-2.5 py-2 text-xs font-black shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer ${
+                showPaste 
+                  ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F]" 
+                  : "bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#FFF8F0]"
+              }`}
+            >
+              {pasteBtnCustom?.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={pasteBtnCustom.imageUrl} alt="Link" className="w-5 h-5 object-contain shrink-0 pointer-events-none" />
+              ) : (
+                <IconLink />
+              )}
+              <span>لصق لكيشن</span>
+            </button>
+          </div>
+        )}
 
         {/* أزرار الواتساب المخصصة للموقع (طلب لوكيشن) */}
         <div className="flex-1 min-w-[120px]">
