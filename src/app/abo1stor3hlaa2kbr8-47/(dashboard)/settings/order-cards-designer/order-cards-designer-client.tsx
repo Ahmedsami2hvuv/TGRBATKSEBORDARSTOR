@@ -4242,7 +4242,7 @@ function OrderCardsLivePreview({
             {showShopCard && (
             <div
               onClick={(e) => handleElementClick(e, "shop_frame", "shop_card")}
-              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
+              className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${
                 selectedElementId === "shop_frame"
                   ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
                   : activeTab === "shop_card"
@@ -5022,7 +5022,7 @@ function OrderCardsLivePreview({
               <div className={showCustomerCard || showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
                 <div
                   onClick={(e) => handleElementClick(e, "orderInfo_frame", "order_info")}
-                  className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-5 md:p-6 transition-all mx-auto cursor-pointer ${
+                  className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${
                     selectedElementId === "orderInfo_frame"
                       ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black shadow-[0_0_15px_rgba(245,215,127,0.7)]"
                       : activeTab === "order_info"
