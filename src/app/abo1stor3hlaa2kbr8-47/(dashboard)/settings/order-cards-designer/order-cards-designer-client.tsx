@@ -3309,6 +3309,21 @@ function DedicatedFrameInspector({
 }
 
 // دوال مساعدة لمنتقي الألوان RGB و HEX
+function normalizeHexColor(input: string): string | null {
+  if (!input) return null;
+  let clean = input.trim();
+  if (clean.startsWith("#")) {
+    clean = clean.substring(1);
+  }
+  if (/^[0-9a-fA-F]{3}$/.test(clean)) {
+    return `#${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`.toUpperCase();
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(clean)) {
+    return `#${clean}`.toUpperCase();
+  }
+  return null;
+}
+
 function hexToRgb(hex: string) {
   const clean = (hex || "").replace("#", "").trim();
   if (clean.length === 3) {
@@ -3434,12 +3449,14 @@ function DedicatedElementInspector({
   const currentOffsetY = config?.offsetY ?? 0;
   const currentOrigin = config?.transformOrigin || "center";
 
-  // حالات منتقي الألوان RGB والظل
+  // حالات منتقي الألوان RGB والظل وكود اللون المباشر
   const currentColor = config?.color || "#F5D77F";
   const initialRgb = hexToRgb(currentColor);
   const [rgbR, setRgbR] = useState(initialRgb.r);
   const [rgbG, setRgbG] = useState(initialRgb.g);
   const [rgbB, setRgbB] = useState(initialRgb.b);
+  const [customHexInput, setCustomHexInput] = useState(currentColor);
+  const [copiedHex, setCopiedHex] = useState(false);
   const [selectedTargetsForCopy, setSelectedTargetsForCopy] = useState<string[]>([]);
 
   useEffect(() => {
@@ -3448,15 +3465,52 @@ function DedicatedElementInspector({
       setRgbR(rgb.r);
       setRgbG(rgb.g);
       setRgbB(rgb.b);
+      setCustomHexInput(config.color);
+    } else {
+      setCustomHexInput("#F5D77F");
     }
   }, [config?.color]);
 
   const handleRgbChange = (r: number, g: number, b: number) => {
-    setRgbR(r);
-    setRgbG(g);
-    setRgbB(b);
-    const hex = rgbToHex(r, g, b);
+    const clampedR = Math.max(0, Math.min(255, r));
+    const clampedG = Math.max(0, Math.min(255, g));
+    const clampedB = Math.max(0, Math.min(255, b));
+    setRgbR(clampedR);
+    setRgbG(clampedG);
+    setRgbB(clampedB);
+    const hex = rgbToHex(clampedR, clampedG, clampedB);
+    setCustomHexInput(hex);
     onChange("color", hex);
+  };
+
+  const handleNumberRgbChange = (channel: "r" | "g" | "b", valStr: string) => {
+    let num = parseInt(valStr, 10);
+    if (isNaN(num)) num = 0;
+    num = Math.max(0, Math.min(255, num));
+    if (channel === "r") handleRgbChange(num, rgbG, rgbB);
+    if (channel === "g") handleRgbChange(rgbR, num, rgbB);
+    if (channel === "b") handleRgbChange(rgbR, rgbG, num);
+  };
+
+  const handleApplyCustomHex = (rawInput?: string) => {
+    const target = rawInput !== undefined ? rawInput : customHexInput;
+    const validHex = normalizeHexColor(target);
+    if (validHex) {
+      onChange("color", validHex);
+      setCustomHexInput(validHex);
+      const rgb = hexToRgb(validHex);
+      setRgbR(rgb.r);
+      setRgbG(rgb.g);
+      setRgbB(rgb.b);
+    }
+  };
+
+  const handleCopyHex = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(currentColor);
+      setCopiedHex(true);
+      setTimeout(() => setCopiedHex(false), 2000);
+    }
   };
 
   const previewStyle = getElementStyle(config);
@@ -3824,77 +3878,204 @@ function DedicatedElementInspector({
               </div>
             </div>
 
-            {/* 2. منتقي الألوان الدقيق (Color Picker + Hex + RGB Sliders) */}
-            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/30">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-200">
-                <span>🎛️ منتقي الألوان المباشر ومزج RGB:</span>
-                <span className="text-[10px] text-emerald-300 font-mono">
-                  R:{rgbR} G:{rgbG} B:{rgbB}
+            {/* 2. كتابة كود اللون (Hex) ومنتقي الألوان المباشر مع زر تطبيق ونسخ */}
+            <div className="space-y-3 bg-[#06281D]/80 p-4 rounded-xl border border-[#C9A86A]/40 shadow-md">
+              <div className="flex items-center justify-between text-xs font-black text-amber-200">
+                <span className="flex items-center gap-1.5">
+                  <span>✍️</span> كتابة كود اللون (HEX) والمنتقي المباشر:
+                </span>
+                <span className="text-[11px] text-emerald-300 font-mono font-bold bg-black/40 px-2 py-0.5 rounded border border-emerald-500/30">
+                  {currentColor}
                 </span>
               </div>
 
-              {/* حقل Color Picker المباشر مع حقل Hex */}
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-[#0A3D2E] p-2 rounded-xl border border-[#C9A86A] hover:bg-[#0F4D3A] transition">
+              {/* حقل كتابة كود الـ Hex + أزرار التطبيق والنسخ والمنتقي */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* زر المنتقي اللوني */}
+                <label className="flex items-center gap-1.5 cursor-pointer bg-[#0A3D2E] px-3 py-2 rounded-xl border border-[#C9A86A] hover:bg-[#0F4D3A] transition shadow-sm shrink-0">
                   <input
                     type="color"
                     value={currentColor.startsWith("#") && currentColor.length === 7 ? currentColor : "#F5D77F"}
-                    onChange={(e) => onChange("color", e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                    onChange={(e) => {
+                      const newCol = e.target.value.toUpperCase();
+                      onChange("color", newCol);
+                      setCustomHexInput(newCol);
+                      const rgb = hexToRgb(newCol);
+                      setRgbR(rgb.r);
+                      setRgbG(rgb.g);
+                      setRgbB(rgb.b);
+                    }}
+                    className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
                   />
-                  <span className="text-xs font-black text-amber-200">منتقي الألوان 🎨</span>
+                  <span className="text-[11px] font-black text-amber-200">المنتقي 🎨</span>
                 </label>
 
-                <div className="flex-1 flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/20">
-                  <span className="text-xs font-bold text-white/50">HEX:</span>
+                {/* حقل إدخال الكود المباشر */}
+                <div className="flex-1 min-w-[140px] flex items-center gap-1.5 bg-black/70 px-3 py-1.5 rounded-xl border-2 border-[#C9A86A]/60 focus-within:border-amber-300 transition">
+                  <span className="text-xs font-black text-amber-400">#</span>
                   <input
                     type="text"
-                    value={currentColor}
-                    onChange={(e) => onChange("color", e.target.value)}
-                    placeholder="#F5D77F"
-                    className="w-full bg-transparent text-xs font-mono font-bold text-[#F5D77F] focus:outline-none"
+                    value={customHexInput.startsWith("#") ? customHexInput.substring(1) : customHexInput}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+                      setCustomHexInput(val ? `#${val}` : "");
+                      if (val.length === 6 || val.length === 3) {
+                        handleApplyCustomHex(val);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleApplyCustomHex();
+                      }
+                    }}
+                    placeholder="F5D77F"
+                    className="w-full bg-transparent text-sm font-mono font-black text-[#F5D77F] focus:outline-none uppercase"
                     dir="ltr"
                   />
                 </div>
+
+                {/* زر تطبيق الكود المكتوب */}
+                <button
+                  type="button"
+                  onClick={() => handleApplyCustomHex()}
+                  className="px-3 py-2 bg-gradient-to-r from-amber-500 to-[#C9A86A] text-[#06281D] rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition shadow-sm cursor-pointer flex items-center gap-1 shrink-0"
+                  title="تطبيق كود اللون المدخل"
+                >
+                  <span>⚡</span> تطبيق
+                </button>
+
+                {/* زر نسخ كود اللون الحالي */}
+                <button
+                  type="button"
+                  onClick={handleCopyHex}
+                  className="px-3 py-2 bg-black/60 hover:bg-[#0A3D2E] text-amber-200 border border-[#C9A86A]/50 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition cursor-pointer flex items-center gap-1 shrink-0"
+                  title="نسخ كود اللون للحافظة"
+                >
+                  <span>{copiedHex ? "✅" : "📋"}</span>
+                  <span>{copiedHex ? "تم النسخ!" : "نسخ الكود"}</span>
+                </button>
               </div>
 
-              {/* سلايدرات درجات RGB */}
-              <div className="space-y-2 pt-1 border-t border-[#C9A86A]/20" dir="ltr">
-                {/* R - أحمر */}
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-12 text-rose-400 font-bold font-mono">R: {rgbR}</span>
+              {/* 3. إدخال ومزج درجات RGB بالأرقام والسلايدرات المباشرة */}
+              <div className="space-y-2.5 pt-3 border-t border-[#C9A86A]/20">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-200">
+                  <span className="flex items-center gap-1">
+                    <span>🎛️</span> أرقام درجات ألوان RGB (من 0 إلى 255):
+                  </span>
+                  <span className="text-[10px] text-emerald-300 font-mono font-black">
+                    RGB({rgbR}, {rgbG}, {rgbB})
+                  </span>
+                </div>
+
+                {/* R - أحمر Red */}
+                <div className="flex items-center gap-2 bg-black/40 p-2 rounded-xl border border-rose-500/30" dir="ltr">
+                  <span className="w-10 text-rose-400 font-black text-xs font-mono">R:</span>
                   <input
                     type="range"
                     min="0"
                     max="255"
                     value={rgbR}
                     onChange={(e) => handleRgbChange(parseInt(e.target.value), rgbG, rgbB)}
-                    className="flex-1 accent-rose-500 cursor-pointer h-2 bg-rose-950/60 rounded-lg"
+                    className="flex-1 accent-rose-500 cursor-pointer h-2.5 bg-rose-950/60 rounded-lg"
                   />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(Math.max(0, rgbR - 1), rgbG, rgbB)}
+                      className="w-6 h-6 bg-rose-950/80 text-rose-300 border border-rose-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-rose-900 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      max="255"
+                      value={rgbR}
+                      onChange={(e) => handleNumberRgbChange("r", e.target.value)}
+                      className="w-12 bg-black/80 text-rose-300 text-xs font-mono font-black text-center py-1 rounded border border-rose-500/50 focus:outline-none focus:border-rose-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(Math.min(255, rgbR + 1), rgbG, rgbB)}
+                      className="w-6 h-6 bg-rose-950/80 text-rose-300 border border-rose-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-rose-900 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-                {/* G - أخضر */}
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-12 text-emerald-400 font-bold font-mono">G: {rgbG}</span>
+
+                {/* G - أخضر Green */}
+                <div className="flex items-center gap-2 bg-black/40 p-2 rounded-xl border border-emerald-500/30" dir="ltr">
+                  <span className="w-10 text-emerald-400 font-black text-xs font-mono">G:</span>
                   <input
                     type="range"
                     min="0"
                     max="255"
                     value={rgbG}
                     onChange={(e) => handleRgbChange(rgbR, parseInt(e.target.value), rgbB)}
-                    className="flex-1 accent-emerald-500 cursor-pointer h-2 bg-emerald-950/60 rounded-lg"
+                    className="flex-1 accent-emerald-500 cursor-pointer h-2.5 bg-emerald-950/60 rounded-lg"
                   />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(rgbR, Math.max(0, rgbG - 1), rgbB)}
+                      className="w-6 h-6 bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-emerald-900 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      max="255"
+                      value={rgbG}
+                      onChange={(e) => handleNumberRgbChange("g", e.target.value)}
+                      className="w-12 bg-black/80 text-emerald-300 text-xs font-mono font-black text-center py-1 rounded border border-emerald-500/50 focus:outline-none focus:border-emerald-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(rgbR, Math.min(255, rgbG + 1), rgbB)}
+                      className="w-6 h-6 bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-emerald-900 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-                {/* B - أزرق */}
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-12 text-sky-400 font-bold font-mono">B: {rgbB}</span>
+
+                {/* B - أزرق Blue */}
+                <div className="flex items-center gap-2 bg-black/40 p-2 rounded-xl border border-sky-500/30" dir="ltr">
+                  <span className="w-10 text-sky-400 font-black text-xs font-mono">B:</span>
                   <input
                     type="range"
                     min="0"
                     max="255"
                     value={rgbB}
                     onChange={(e) => handleRgbChange(rgbR, rgbG, parseInt(e.target.value))}
-                    className="flex-1 accent-sky-500 cursor-pointer h-2 bg-sky-950/60 rounded-lg"
+                    className="flex-1 accent-sky-500 cursor-pointer h-2.5 bg-sky-950/60 rounded-lg"
                   />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(rgbR, rgbG, Math.max(0, rgbB - 1))}
+                      className="w-6 h-6 bg-sky-950/80 text-sky-300 border border-sky-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-sky-900 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      max="255"
+                      value={rgbB}
+                      onChange={(e) => handleNumberRgbChange("b", e.target.value)}
+                      className="w-12 bg-black/80 text-sky-300 text-xs font-mono font-black text-center py-1 rounded border border-sky-500/50 focus:outline-none focus:border-sky-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRgbChange(rgbR, rgbG, Math.min(255, rgbB + 1))}
+                      className="w-6 h-6 bg-sky-950/80 text-sky-300 border border-sky-500/40 rounded flex items-center justify-center text-xs font-bold hover:bg-sky-900 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
