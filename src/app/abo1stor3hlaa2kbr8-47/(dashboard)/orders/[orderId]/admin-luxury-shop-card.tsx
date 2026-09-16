@@ -147,11 +147,11 @@ export function AdminLuxuryShopCard({
           <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
             
             {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات المحل + موقع المحل + أزرار التواصل ================= */}
-            <div className="flex flex-col justify-between gap-2 sm:gap-3 min-w-0">
+            <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
               {/* الرأس: كبسولة المحل (المرسل) - النقر عليها يطوي الكارت */}
               <div
                 onClick={() => setIsExpanded(false)}
-                className="flex justify-start cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                className="w-fit inline-flex self-start cursor-pointer hover:scale-105 active:scale-95 transition-transform"
                 style={getElementStyle(shopCustom?.headerShopInfo)}
                 title="انقر لطي معلومات المحل"
               >
@@ -159,15 +159,15 @@ export function AdminLuxuryShopCard({
                 <img
                   src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
                   alt="المحل (المرسل)"
-                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform pointer-events-none"
+                  className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none pointer-events-none"
                 />
               </div>
 
               {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
-              <div className="space-y-1.5 sm:space-y-2.5 py-0.5">
+              <div className="space-y-1.5 sm:space-y-2.5 py-0.5 w-full">
                 {/* سطر 1: اسم المحل */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  <div className="shrink-0">
+                  <div className="shrink-0 w-fit inline-flex">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
@@ -176,7 +176,7 @@ export function AdminLuxuryShopCard({
                       className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-fit inline-flex">
                     <span
                       style={getElementStyle(shopCustom?.textShopName)}
                       className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
@@ -188,7 +188,7 @@ export function AdminLuxuryShopCard({
 
                 {/* سطر 2: اسم العميل / المسؤول */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  <div className="shrink-0">
+                  <div className="shrink-0 w-fit inline-flex">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
@@ -197,7 +197,7 @@ export function AdminLuxuryShopCard({
                       className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-fit inline-flex">
                     <span
                       style={getElementStyle(shopCustom?.textCustomerName)}
                       className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
@@ -209,7 +209,7 @@ export function AdminLuxuryShopCard({
 
                 {/* سطر 3: اسم المنطقة */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  <div className="shrink-0">
+                  <div className="shrink-0 w-fit inline-flex">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
@@ -218,7 +218,7 @@ export function AdminLuxuryShopCard({
                       className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-fit inline-flex">
                     <span
                       style={getElementStyle(shopCustom?.textRegion)}
                       className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
@@ -230,7 +230,7 @@ export function AdminLuxuryShopCard({
 
                 {/* سطر 4: رقم الهاتف */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  <div className="shrink-0">
+                  <div className="shrink-0 w-fit inline-flex">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
@@ -239,7 +239,7 @@ export function AdminLuxuryShopCard({
                       className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-fit inline-flex">
                     <span
                       style={getElementStyle(shopCustom?.textPhone)}
                       className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
@@ -251,7 +251,10 @@ export function AdminLuxuryShopCard({
               </div>
 
               {/* زر موقع المحل على الخريطة */}
-              <div className="pt-0.5" style={getElementStyle(shopCustom?.btnShopLocation)}>
+              <div
+                className="pt-0.5 w-fit inline-flex self-start"
+                style={getElementStyle(shopCustom?.btnShopLocation)}
+              >
                 {hasLocation ? (
                   <a
                     href={order.shopLocationUrl}
@@ -285,59 +288,63 @@ export function AdminLuxuryShopCard({
               {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
               <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                 {/* 1. زر اتصال 📞 */}
-                <div style={getElementStyle(shopCustom?.btnCall)} className="w-full flex justify-center min-w-0">
-                  {cleanPhone ? (
-                    <a
-                      href={telHref(cleanPhone)}
-                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block w-full flex justify-center"
-                      title={`اتصال هاتفي: ${cleanPhone}`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                        alt="اتصال"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
-                      />
-                    </a>
-                  ) : (
-                    <div className="opacity-50 cursor-not-allowed block w-full flex justify-center" title="لا يوجد رقم هاتف">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                        alt="اتصال"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
-                      />
-                    </div>
-                  )}
+                <div className="w-full flex justify-center min-w-0">
+                  <div style={getElementStyle(shopCustom?.btnCall)} className="w-fit inline-flex">
+                    {cleanPhone ? (
+                      <a
+                        href={telHref(cleanPhone)}
+                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
+                        title={`اتصال هاتفي: ${cleanPhone}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                          alt="اتصال"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                        />
+                      </a>
+                    ) : (
+                      <div className="opacity-50 cursor-not-allowed block" title="لا يوجد رقم هاتف">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                          alt="اتصال"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 2. زر واتس اب 💬 */}
-                <div style={getElementStyle(shopCustom?.btnWhatsapp)} className="w-full flex justify-center min-w-0">
-                  {cleanPhone ? (
-                    <a
-                      href={whatsappMeUrl(cleanPhone)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block w-full flex justify-center"
-                      title="مراسلة عبر واتساب"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                        alt="واتس اب"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
-                      />
-                    </a>
-                  ) : (
-                    <div className="opacity-50 cursor-not-allowed block w-full flex justify-center" title="لا يوجد رقم هاتف">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                        alt="واتس اب"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
-                      />
-                    </div>
-                  )}
+                <div className="w-full flex justify-center min-w-0">
+                  <div style={getElementStyle(shopCustom?.btnWhatsapp)} className="w-fit inline-flex">
+                    {cleanPhone ? (
+                      <a
+                        href={whatsappMeUrl(cleanPhone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
+                        title="مراسلة عبر واتساب"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                          alt="واتس اب"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                        />
+                      </a>
+                    ) : (
+                      <div className="opacity-50 cursor-not-allowed block" title="لا يوجد رقم هاتف">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                          alt="واتس اب"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain grayscale transition-transform block"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -345,7 +352,10 @@ export function AdminLuxuryShopCard({
             {/* ================= 2. الجانب الأيسر: كبسولة صورة المحل + مربع الصورة + أزرار (كاميرا ومعرض) ================= */}
             <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
               {/* الرأس: كبسولة صورة المحل */}
-              <div className="flex justify-center w-full" style={getElementStyle(shopCustom?.headerShopPhoto)}>
+              <div
+                className="flex justify-center w-fit mx-auto"
+                style={getElementStyle(shopCustom?.headerShopPhoto)}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
@@ -355,7 +365,10 @@ export function AdminLuxuryShopCard({
               </div>
 
               {/* مساحة عرض صورة باب المحل أو الـ Placeholder */}
-              <div className="w-full flex items-center justify-center py-0.5" style={getElementStyle(shopCustom?.placeholderNoPhoto)}>
+              <div
+                className="w-fit max-w-[160px] sm:max-w-[220px] md:max-w-[260px] mx-auto flex items-center justify-center py-0.5"
+                style={getElementStyle(shopCustom?.placeholderNoPhoto)}
+              >
                 {imgShopDoor ? (
                   <div className="w-full max-w-[150px] sm:max-w-[210px] md:max-w-[240px] flex flex-col items-center gap-1">
                     <div className="w-full aspect-[4/3] max-h-[110px] sm:max-h-[145px] md:max-h-[165px] overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-2xl bg-black/40 relative group">
@@ -406,7 +419,7 @@ export function AdminLuxuryShopCard({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full max-w-[160px] sm:max-w-[220px] md:max-w-[260px] flex items-center justify-center">
+                  <div className="w-full flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
@@ -421,39 +434,43 @@ export function AdminLuxuryShopCard({
               {!isSystemAdminOrder && (
                 <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
                   {/* 3. زر كاميرا 📷 */}
-                  <div style={getElementStyle(shopCustom?.btnCamera)} className="w-full flex justify-center min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => cameraFileRef.current?.click()}
-                      disabled={pending}
-                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block w-full flex justify-center"
-                      title="التقاط صورة المحل بالكاميرا"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
-                        alt="كاميرا"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
-                      />
-                    </button>
+                  <div className="w-full flex justify-center min-w-0">
+                    <div style={getElementStyle(shopCustom?.btnCamera)} className="w-fit inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => cameraFileRef.current?.click()}
+                        disabled={pending}
+                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
+                        title="التقاط صورة المحل بالكاميرا"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                          alt="كاميرا"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                        />
+                      </button>
+                    </div>
                   </div>
 
                   {/* 4. زر معرض 🖼️ */}
-                  <div style={getElementStyle(shopCustom?.btnGallery)} className="w-full flex justify-center min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => galleryFileRef.current?.click()}
-                      disabled={pending}
-                      className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block w-full flex justify-center"
-                      title="اختيار صورة المحل من المعرض"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
-                        alt="معرض"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
-                      />
-                    </button>
+                  <div className="w-full flex justify-center min-w-0">
+                    <div style={getElementStyle(shopCustom?.btnGallery)} className="w-fit inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => galleryFileRef.current?.click()}
+                        disabled={pending}
+                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
+                        title="اختيار صورة المحل من المعرض"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                          alt="معرض"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl transition-transform block"
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -704,7 +704,7 @@ export function OrderDetailSection({
 
               <AdminLuxuryCustomerCard
                 order={order}
-                customerName={order.customerRegion?.name || "الزبون"}
+                customerName={order.customerName || order.customer?.name || "الزبون"}
                 customerPhone={order.customerPhone}
                 imgCustomerDoor={customerDoorDisplay}
                 setPreviewImageUrl={setPreviewImageUrl}
