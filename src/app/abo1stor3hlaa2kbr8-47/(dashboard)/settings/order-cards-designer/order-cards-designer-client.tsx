@@ -3479,402 +3479,432 @@ function OrderCardsLivePreview({
           transform: `scale(${previewZoom})`,
         }}
       >
-        {/* 1. كارت المحل في المعاينة */}
-        {activeTab === "shop_card" && (
-          <div
-            onClick={() => setSelectedElementId("shop_frame")}
-            className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
-              selectedElementId === "shop_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : "hover:ring-1 hover:ring-amber-400/40"
-            }`}
-            style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
-            title="انقر لتعديل خلفية وأبعاد إطار كارت المحل"
-          >
-            {/* طبقة خطوط وشبكة المحاذاة الذكية */}
-            {showGuides && (
-              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
-                <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
+        {/* معاينة الكروت الفاخرة (كارت المحل وكارت الزبون أسفل بعضهما بفراغ صغير ومترابطين) */}
+        {(activeTab === "shop_card" || activeTab === "customer_card") && (
+          <div className="flex flex-col gap-2 sm:gap-2.5 w-full">
+            {/* 1. كارت المحل في المعاينة */}
+            <div
+              onClick={() => {
+                setActiveTab("shop_card");
+                setSelectedElementId("shop_frame");
+              }}
+              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
+                selectedElementId === "shop_frame"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                  : activeTab === "shop_card"
+                  ? "ring-1 ring-amber-400/50"
+                  : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
+              }`}
+              style={getCardContainerStyle(shopCustom?.frameConfig, shopFrameBg)}
+              title="انقر لتعديل خلفية وأبعاد إطار كارت المحل"
+            >
+              {/* طبقة خطوط وشبكة المحاذاة الذكية */}
+              {showGuides && activeTab === "shop_card" && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
+                  <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
 
-                {selectedElementId && (
-                  <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
-                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
-                      📐 محاذاة نشطة: {currentSelectedDef?.title}
-                    </span>
-                    {currentSelectedConfig && (
-                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
-                        X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                  {selectedElementId && (
+                    <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
+                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
+                        📐 محاذاة نشطة: {currentSelectedDef?.title}
                       </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
-              {/* الجانب الأيمن */}
-              <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("shop_headerShopInfo");
-                  }}
-                  className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
-                    selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105" : "hover:opacity-90 hover:scale-[1.02]"
-                  }`}
-                  style={getElementStyle(shopCustom?.headerShopInfo)}
-                  title="انقر لتعديل كبسولة عنوان المحل"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
-                    alt="المحل"
-                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2.5 py-0.5 w-full">
-                  {/* 1. سطر اسم المحل */}
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_iconShopName");
-                      }}
-                      className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      title="انقر لتعديل أيقونة اسم المحل"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
-                        alt="اسم المحل"
-                        style={getElementStyle(shopCustom?.iconShopName)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
-                      />
+                      {currentSelectedConfig && (
+                        <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
+                          X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                        </span>
+                      )}
                     </div>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_textShopName");
-                      }}
-                      className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
-                      }`}
-                      title="انقر لتعديل نص وموقع اسم المحل"
-                    >
-                      <span
-                        style={getElementStyle(shopCustom?.textShopName)}
-                        className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
+                {/* الجانب الأيمن */}
+                <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab("shop_card");
+                      setSelectedElementId("shop_headerShopInfo");
+                    }}
+                    className={`cursor-pointer rounded-xl transition-all w-fit inline-flex self-start ${
+                      selectedElementId === "shop_headerShopInfo" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(shopCustom?.headerShopInfo)}
+                    title="انقر لتعديل كبسولة عنوان المحل"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={shopCustom?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
+                      alt="المحل"
+                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:space-y-2.5 py-0.5 w-full">
+                    {/* 1. سطر اسم المحل */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_iconShopName");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "shop_iconShopName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة اسم المحل"
                       >
-                        أزياء الأمير الملكي
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 2. سطر اسم العميل / المسؤول */}
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_iconCustomerName");
-                      }}
-                      className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      title="انقر لتعديل أيقونة اسم العميل"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                        alt="اسم العميل"
-                        style={getElementStyle(shopCustom?.iconCustomerName)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
-                      />
-                    </div>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_textCustomerName");
-                      }}
-                      className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
-                      }`}
-                      title="انقر لتعديل نص وموقع اسم العميل"
-                    >
-                      <span
-                        style={getElementStyle(shopCustom?.textCustomerName)}
-                        className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.iconShopName?.imageUrl || "/images/order-luxury/shop-card/icon-shop-name.webp"}
+                          alt="اسم المحل"
+                          style={getElementStyle(shopCustom?.iconShopName)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_textShopName");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_textShopName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص وموقع اسم المحل"
                       >
-                        أحمد سامي (المدير)
-                      </span>
+                        <span
+                          style={getElementStyle(shopCustom?.textShopName)}
+                          className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          أزياء الأمير الملكي
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* 3. سطر المنطقة */}
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_iconRegion");
-                      }}
-                      className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      title="انقر لتعديل أيقونة المنطقة"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                        alt="المنطقة"
-                        style={getElementStyle(shopCustom?.iconRegion)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
-                      />
-                    </div>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_textRegion");
-                      }}
-                      className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
-                      }`}
-                      title="انقر لتعديل نص وموقع المنطقة"
-                    >
-                      <span
-                        style={getElementStyle(shopCustom?.textRegion)}
-                        className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                    {/* 2. سطر اسم العميل / المسؤول */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_iconCustomerName");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "shop_iconCustomerName" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة اسم العميل"
                       >
-                        بغداد — الكرادة
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 4. سطر الهاتف */}
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_iconPhone");
-                      }}
-                      className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
-                        selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      title="انقر لتعديل أيقونة الهاتف"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                        alt="الهاتف"
-                        style={getElementStyle(shopCustom?.iconPhone)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
-                      />
-                    </div>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_textPhone");
-                      }}
-                      className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
-                      }`}
-                      title="انقر لتعديل نص ورقم الهاتف"
-                    >
-                      <span
-                        style={getElementStyle(shopCustom?.textPhone)}
-                        className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
+                          alt="اسم العميل"
+                          style={getElementStyle(shopCustom?.iconCustomerName)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_textCustomerName");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_textCustomerName" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص وموقع اسم العميل"
                       >
-                        07701234567
-                      </span>
+                        <span
+                          style={getElementStyle(shopCustom?.textCustomerName)}
+                          className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          أحمد سامي (المدير)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. سطر المنطقة */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_iconRegion");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "shop_iconRegion" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة المنطقة"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
+                          alt="المنطقة"
+                          style={getElementStyle(shopCustom?.iconRegion)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_textRegion");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_textRegion" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص وموقع المنطقة"
+                      >
+                        <span
+                          style={getElementStyle(shopCustom?.textRegion)}
+                          className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          بغداد — الكرادة
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 4. سطر الهاتف */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_iconPhone");
+                        }}
+                        className={`cursor-pointer rounded-lg p-0.5 transition-all w-fit inline-flex shrink-0 ${
+                          selectedElementId === "shop_iconPhone" ? "ring-2 ring-[#F5D77F] ring-offset-1 ring-offset-black/50 scale-110" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        title="انقر لتعديل أيقونة الهاتف"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
+                          alt="الهاتف"
+                          style={getElementStyle(shopCustom?.iconPhone)}
+                          className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform pointer-events-none"
+                        />
+                      </div>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_textPhone");
+                        }}
+                        className={`min-w-0 cursor-pointer rounded-lg px-1 py-0.5 transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_textPhone" ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black/50 bg-amber-500/10 scale-105" : "hover:opacity-90 hover:bg-white/5"
+                        }`}
+                        title="انقر لتعديل نص ورقم الهاتف"
+                      >
+                        <span
+                          style={getElementStyle(shopCustom?.textPhone)}
+                          className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform pointer-events-none"
+                        >
+                          07701234567
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* زر موقع المحل */}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab("shop_card");
+                      setSelectedElementId("shop_btnShopLocation");
+                    }}
+                    className={`pt-0.5 cursor-pointer transition-all w-fit inline-flex self-start ${
+                      selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(shopCustom?.btnShopLocation)}
+                    title="انقر لتعديل زر موقع المحل"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                      alt="موقع المحل"
+                      className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg pointer-events-none"
+                    />
+                  </div>
+
+                  {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                  <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_btnCall");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnCall)}
+                        title="انقر لتعديل زر الاتصال"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                          alt="اتصال"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_btnWhatsapp");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnWhatsapp)}
+                        title="انقر لتعديل زر الواتساب"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                          alt="واتس اب"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* زر موقع المحل */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("shop_btnShopLocation");
-                  }}
-                  className={`pt-0.5 cursor-pointer transition-all w-fit inline-flex self-start ${
-                    selectedElementId === "shop_btnShopLocation" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
-                  }`}
-                  style={getElementStyle(shopCustom?.btnShopLocation)}
-                  title="انقر لتعديل زر موقع المحل"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={shopCustom?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
-                    alt="موقع المحل"
-                    className="h-7 sm:h-9 md:h-10 w-auto object-contain drop-shadow-lg pointer-events-none"
-                  />
-                </div>
-
-                {/* أزرار التواصل (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
-                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
-                  <div className="w-full flex justify-center min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_btnCall");
-                      }}
-                      className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_btnCall" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      style={getElementStyle(shopCustom?.btnCall)}
-                      title="انقر لتعديل زر الاتصال"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                        alt="اتصال"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
-                      />
-                    </div>
+                {/* الجانب الأيسر */}
+                <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab("shop_card");
+                      setSelectedElementId("shop_headerShopPhoto");
+                    }}
+                    className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
+                      selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(shopCustom?.headerShopPhoto)}
+                    title="انقر لتعديل كبسولة عنوان صورة المحل"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
+                      alt="صورة المحل"
+                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
+                    />
                   </div>
-                  <div className="w-full flex justify-center min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_btnWhatsapp");
-                      }}
-                      className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_btnWhatsapp" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      style={getElementStyle(shopCustom?.btnWhatsapp)}
-                      title="انقر لتعديل زر الواتساب"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                        alt="واتس اب"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
-                      />
-                    </div>
+
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab("shop_card");
+                      setSelectedElementId("shop_placeholderNoPhoto");
+                    }}
+                    className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
+                      selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
+                    }`}
+                    style={getElementStyle(shopCustom?.placeholderNoPhoto)}
+                    title="انقر لتعديل موضع وحجم صورة المحل"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
+                      alt="لا توجد صورة"
+                      className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
+                    />
                   </div>
-                </div>
-              </div>
 
-              {/* الجانب الأيسر */}
-              <div className="flex flex-col items-center justify-between gap-2 sm:gap-3 min-w-0 h-full">
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("shop_headerShopPhoto");
-                  }}
-                  className={`flex justify-center w-fit mx-auto cursor-pointer transition-all ${
-                    selectedElementId === "shop_headerShopPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
-                  }`}
-                  style={getElementStyle(shopCustom?.headerShopPhoto)}
-                  title="انقر لتعديل كبسولة عنوان صورة المحل"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={shopCustom?.headerShopPhoto?.imageUrl || "/images/order-luxury/shop-card/header-shop-photo.webp"}
-                    alt="صورة المحل"
-                    className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md pointer-events-none"
-                  />
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElementId("shop_placeholderNoPhoto");
-                  }}
-                  className={`w-fit inline-flex mx-auto justify-center items-center py-0.5 cursor-pointer transition-all ${
-                    selectedElementId === "shop_placeholderNoPhoto" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-[1.02]"
-                  }`}
-                  style={getElementStyle(shopCustom?.placeholderNoPhoto)}
-                  title="انقر لتعديل موضع وحجم صورة المحل"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={shopCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                    alt="لا توجد صورة"
-                    className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 pointer-events-none"
-                  />
-                </div>
-
-                {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
-                <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
-                  <div className="w-full flex justify-center min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_btnCamera");
-                      }}
-                      className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      style={getElementStyle(shopCustom?.btnCamera)}
-                      title="انقر لتعديل زر الكاميرا"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
-                        alt="كاميرا"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
-                      />
+                  {/* أزرار رفع الصورة (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
+                  <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_btnCamera");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_btnCamera" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnCamera)}
+                        title="انقر لتعديل زر الكاميرا"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                          alt="كاميرا"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="w-full flex justify-center min-w-0">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedElementId("shop_btnGallery");
-                      }}
-                      className={`cursor-pointer transition-all w-fit inline-flex ${
-                        selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
-                      }`}
-                      style={getElementStyle(shopCustom?.btnGallery)}
-                      title="انقر لتعديل زر المعرض"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
-                        alt="معرض"
-                        className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
-                      />
+                    <div className="w-full flex justify-center min-w-0">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTab("shop_card");
+                          setSelectedElementId("shop_btnGallery");
+                        }}
+                        className={`cursor-pointer transition-all w-fit inline-flex ${
+                          selectedElementId === "shop_btnGallery" ? "ring-2 ring-[#F5D77F] ring-offset-2 ring-offset-black/50 rounded-xl scale-105" : "hover:opacity-90 hover:scale-105"
+                        }`}
+                        style={getElementStyle(shopCustom?.btnGallery)}
+                        title="انقر لتعديل زر المعرض"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={shopCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                          alt="معرض"
+                          className="h-7 sm:h-8.5 md:h-10 w-full max-w-[110px] object-contain drop-shadow-xl block pointer-events-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* 2. كارت الزبون في المعاينة */}
-        {activeTab === "customer_card" && (
-          <div
-            onClick={() => setSelectedElementId("cust_frame")}
-            className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
-              selectedElementId === "cust_frame" ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black" : "hover:ring-1 hover:ring-amber-400/40"
-            }`}
-            style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
-            title="انقر لتعديل خلفية وأبعاد إطار كارت الزبون"
-          >
-            {/* طبقة خطوط وشبكة المحاذاة الذكية */}
-            {showGuides && (
-              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
-                <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
+            {/* 2. كارت الزبون في المعاينة (يبدأ دائماً أسفل كارت المحل مباشرة بفراغ صغير) */}
+            <div
+              onClick={() => {
+                setActiveTab("customer_card");
+                setSelectedElementId("cust_frame");
+              }}
+              className={`relative w-full rounded-[22px] sm:rounded-[28px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-3.5 sm:p-6 md:p-7 transition-all mx-auto cursor-pointer ${
+                selectedElementId === "cust_frame"
+                  ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-black"
+                  : activeTab === "customer_card"
+                  ? "ring-1 ring-amber-400/50"
+                  : "opacity-85 hover:opacity-100 hover:ring-1 hover:ring-amber-400/40"
+              }`}
+              style={getCardContainerStyle(custCustom?.frameConfig, custFrameBg)}
+              title="انقر لتعديل خلفية وأبعاد إطار كارت الزبون"
+            >
+              {/* طبقة خطوط وشبكة المحاذاة الذكية */}
+              {showGuides && activeTab === "customer_card" && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0 border-r border-dashed border-amber-400/40" />
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0 border-b border-dashed border-amber-400/40" />
+                  <div className="absolute left-4 right-4 bottom-[18%] h-0 border-b border-dotted border-emerald-400/30" />
 
-                {selectedElementId && (
-                  <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
-                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
-                      📐 محاذاة نشطة: {currentSelectedDef?.title}
-                    </span>
-                    {currentSelectedConfig && (
-                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
-                        X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                  {selectedElementId && (
+                    <div className="absolute top-1.5 left-2 right-2 flex items-center justify-between pointer-events-none">
+                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-400/50 shadow-md">
+                        📐 محاذاة نشطة: {currentSelectedDef?.title}
                       </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                      {currentSelectedConfig && (
+                        <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-[#06281D]/90 text-emerald-300 border border-emerald-400/50 shadow-md">
+                          X: {currentSelectedConfig.offsetX || 0}px | Y: {currentSelectedConfig.offsetY || 0}px
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
               {/* الجانب الأيمن */}
@@ -4186,6 +4216,7 @@ function OrderCardsLivePreview({
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {/* 3. أزرار الواتساب في المعاينة */}

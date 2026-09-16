@@ -502,25 +502,24 @@ export function OrderViewContent({
           </div>
         )}
         
-        {/* --- بطاقة المحل (المرسل) - بالتصميم الملكي الإسلامي الفاخر المصمم بالكامل من صور نانو بنانا --- */}
-        {!isDoubleRoute && (
-          <AdminLuxuryShopCard
-            order={order}
-            submitterName={submitterName}
-            submitterPhone={submitterPhone}
-            imgShopDoor={imgShopDoor}
-            setPreviewImageUrl={setPreviewImageUrl}
-            isSystemAdminOrder={isSystemAdminOrder}
-            designerConfig={designerConfig}
-          />
-        )}
+        {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة بفراغ صغير ومترابط) --- */}
+        <div className="flex flex-col gap-1 sm:gap-1.5 w-full">
+          {!isDoubleRoute && (
+            <AdminLuxuryShopCard
+              order={order}
+              submitterName={submitterName}
+              submitterPhone={submitterPhone}
+              imgShopDoor={imgShopDoor}
+              setPreviewImageUrl={setPreviewImageUrl}
+              isSystemAdminOrder={isSystemAdminOrder}
+              designerConfig={designerConfig}
+            />
+          )}
 
-        {/* --- بطاقة الزبون (المستلم) أو المرسل (الوجهة الأولى) --- */}
-        <div className="space-y-4">
           {shouldCollapseSender && (
             <div
               onClick={() => setIsSenderExpanded(true)}
-              className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-3 active:scale-[0.99]"
+              className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-1 active:scale-[0.99]"
             >
               <div className="flex items-center gap-2.5">
                 <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] flex items-center justify-center font-black text-sm shadow-md">✓</span>
@@ -540,20 +539,21 @@ export function OrderViewContent({
           )}
 
           {!shouldCollapseSender && (
-            <div className="space-y-3">
-              <AdminLuxuryCustomerCard
-                order={order}
-                customerName={order.customerName || (order.customer?.name ?? "")}
-                customerPhone={order.customerPhone}
-                imgCustomerDoor={imgCustDoor}
-                setPreviewImageUrl={setPreviewImageUrl}
-                isDoubleRoute={isDoubleRoute}
-                designerConfig={designerConfig}
-                phoneProfile={phoneProfile}
-              />
+            <AdminLuxuryCustomerCard
+              order={order}
+              customerName={order.customerName || (order.customer?.name ?? "")}
+              customerPhone={order.customerPhone}
+              imgCustomerDoor={imgCustDoor}
+              setPreviewImageUrl={setPreviewImageUrl}
+              isDoubleRoute={isDoubleRoute}
+              designerConfig={designerConfig}
+              phoneProfile={phoneProfile}
+            />
+          )}
+        </div>
 
-              {/* عناصر إضافية مساندة تحت كارت الزبون الفاخر */}
-              <div className="bg-[#0A3D2E]/70 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+        {/* عناصر إضافية مساندة تحت كارت الزبون الفاخر */}
+        <div className="bg-[#0A3D2E]/70 border border-[#C9A86A]/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
                 {/* دالة الزبون وموقعه الإضافي */}
                 <div className="flex flex-col gap-1">
                   <InlineLandmarkEditor
@@ -643,8 +643,6 @@ export function OrderViewContent({
                   </div>
                 )}
               </div>
-            </div>
-          )}
 
           {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين --- */}
           {order.routeMode === "double" && (
@@ -853,8 +851,6 @@ export function OrderViewContent({
               </div>
             </div>
           )}
-        </div>
-
         {/* --- تفاصيل الطلب والأسعار وصورة الطلب --- */}
         <div className={gridInfoPhoto}>
           <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">

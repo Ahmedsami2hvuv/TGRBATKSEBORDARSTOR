@@ -398,7 +398,7 @@ export function OrderDetailSection({
         if (isDoubleRoute) return null;
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
-            <div key="shop_luxury_mandoub" className="mb-4">
+            <div key="shop_luxury_mandoub" className="mb-1">
               <AdminLuxuryShopCard
                 order={order}
                 submitterName={submitterName}
@@ -667,7 +667,7 @@ export function OrderDetailSection({
       case "customer_info":
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
-            <div key="customer_luxury_mandoub" className="space-y-4 mb-4">
+            <div key="customer_luxury_mandoub" className="space-y-2 mb-3">
               <AdminLuxuryCustomerCard
                 order={order}
                 customerName={order.customerName || order.customer?.name || "الزبون"}
