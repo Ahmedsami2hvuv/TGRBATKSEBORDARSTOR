@@ -157,6 +157,7 @@ export function OrderViewContent({
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
   const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
   const [isSenderExpanded, setIsSenderExpanded] = useState(false);
 
@@ -835,11 +836,16 @@ export function OrderViewContent({
                   {imgCustDoor2 ? (
                     <div className="w-full flex flex-col items-center gap-1">
                       <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative">
-                        <img src={imgCustDoor2} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgCustDoor2)} />
+                        <img
+                          src={imgCustDoor2}
+                          alt=""
+                          className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
+                          onClick={() => {
+                            setPreviewImageUrl(imgCustDoor2);
+                            setPreviewUploadedByName(order.secondCustomerDoorPhotoUploadedByName || null);
+                          }}
+                        />
                       </div>
-                      {order.secondCustomerDoorPhotoUploadedByName?.trim() ? (
-                        <div className="mt-0.5"><ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} /></div>
-                      ) : null}
                     </div>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
@@ -962,7 +968,15 @@ export function OrderViewContent({
               <p className="mb-2 text-xs sm:text-sm font-black text-[#F5D77F]">صورة الطلبية</p>
               {imgOrder ? (
                 <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
-                  <img src={imgOrder} alt="" className="h-full w-full object-contain cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgOrder)} />
+                  <img
+                    src={imgOrder}
+                    alt=""
+                    className="h-full w-full object-contain cursor-zoom-in hover:scale-105 transition duration-300"
+                    onClick={() => {
+                      setPreviewImageUrl(imgOrder);
+                      setPreviewUploadedByName(order.orderImageUploadedByName || null);
+                    }}
+                  />
                 </div>
               ) : (
                 <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
@@ -971,7 +985,6 @@ export function OrderViewContent({
               )}
               <div className="mt-3 space-y-2">
                 <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
-                <ImageUploaderCaption name={order.orderImageUploadedByName} />
               </div>
             </div>
           </div>
@@ -1046,7 +1059,11 @@ export function OrderViewContent({
       {previewImageUrl && (
         <ImageZoomModal
           imageUrl={previewImageUrl}
-          onClose={() => setPreviewImageUrl(null)}
+          uploadedByName={previewUploadedByName}
+          onClose={() => {
+            setPreviewImageUrl(null);
+            setPreviewUploadedByName(null);
+          }}
         />
       )}
 

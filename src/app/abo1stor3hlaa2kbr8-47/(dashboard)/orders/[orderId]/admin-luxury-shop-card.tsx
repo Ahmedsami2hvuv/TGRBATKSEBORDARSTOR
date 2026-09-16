@@ -399,11 +399,6 @@ export function AdminLuxuryShopCard({
                         🔍 تكبير
                       </div>
                     </div>
-                    {order.shopDoorPhotoUploadedByName?.trim() && (
-                      <div className="max-w-[125px] overflow-hidden text-center mt-0.5">
-                        <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="w-fit inline-flex items-center justify-center">
@@ -544,6 +539,7 @@ export function AdminLuxuryShopCard({
           imageUrl={imgShopDoor}
           onClose={() => setZoomOpen(false)}
           title="صورة باب المحل"
+          uploadedByName={order.shopDoorPhotoUploadedByName}
           onDelete={!isSystemAdminOrder ? handleDelete : undefined}
           deleteLabel="مسح صورة المحل"
           isDeleting={deleting}

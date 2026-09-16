@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useRef, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
@@ -312,13 +312,6 @@ export function AdminLuxuryOrderInfoCard({
                   </div>
                 </div>
 
-                {/* اسم رافع الصورة إن وجد */}
-                {order.orderImageUploadedByName?.trim() && (
-                  <div className="w-full">
-                    <ImageUploaderCaption name={order.orderImageUploadedByName} />
-                  </div>
-                )}
-
                 {/* أزرار الكاميرا والمعرض لرفع وتحديث صورة الطلبية */}
                 <div className="grid grid-cols-2 gap-1 w-full pt-0.5">
                   {/* زر الكاميرا 📷 */}
@@ -402,8 +395,9 @@ export function AdminLuxuryOrderInfoCard({
       {/* نافذة التكبير الذكية للصورة */}
       {zoomOpen && orderImageUrl && (
         <ImageZoomModal
-          src={orderImageUrl}
-          isOpen={zoomOpen}
+          imageUrl={orderImageUrl}
+          title="صورة الطلبية"
+          uploadedByName={order.orderImageUploadedByName}
           onClose={() => setZoomOpen(false)}
         />
       )}

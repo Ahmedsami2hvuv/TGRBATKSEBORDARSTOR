@@ -5,8 +5,10 @@ import { createPortal } from "react-dom";
 
 export function ImageZoomModal({
   imageUrl,
+  src,
   onClose,
   title,
+  uploadedByName,
   onDelete,
   deleteLabel = "مسح الصورة",
   isDeleting = false,
@@ -14,9 +16,12 @@ export function ImageZoomModal({
   revertLabel = "استرجاع الصورة الأصلية",
   isReverting = false,
 }: {
-  imageUrl: string;
+  imageUrl?: string;
+  src?: string;
+  isOpen?: boolean;
   onClose: () => void;
   title?: string;
+  uploadedByName?: string | null;
   onDelete?: () => Promise<void> | void;
   deleteLabel?: string;
   isDeleting?: boolean;
@@ -24,6 +29,7 @@ export function ImageZoomModal({
   revertLabel?: string;
   isReverting?: boolean;
 }) {
+  const finalImageUrl = (imageUrl || src || "").trim();
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
@@ -169,6 +175,8 @@ export function ImageZoomModal({
     setPosition({ x: 0, y: 0 });
   };
 
+  if (!finalImageUrl) return null;
+
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-4 transition-all duration-300 animate-fade-in"
@@ -259,16 +267,29 @@ export function ImageZoomModal({
         >
           <img
             ref={imgRef}
-            src={imageUrl}
-            alt="معاينة الصورة"
+            src={finalImageUrl}
+            alt={title || "معاينة الصورة"}
             className="max-w-[95vw] max-h-[80vh] object-contain rounded-xl pointer-events-none"
             draggable={false}
           />
         </div>
         
-        {/* تلميح صغير للمستخدم */}
-        <div className="absolute bottom-6 text-[10px] font-bold text-white/50 bg-black/40 px-3 py-1 rounded-full pointer-events-none">
-          💡 يمكنك التكبير بالإصبعين أو السحب للتحريك
+        {/* شريط معلومات رافع الصورة والعنوان وأسفل الشاشة */}
+        <div className="absolute bottom-3 sm:bottom-4 left-0 right-0 z-50 flex flex-col items-center gap-1.5 px-3 pointer-events-none">
+          {uploadedByName?.trim() && (
+            <div className="flex items-center gap-2 px-4 py-1.5 sm:py-2 rounded-full bg-slate-950/90 border border-amber-400/60 backdrop-blur-md shadow-2xl text-amber-300 text-xs sm:text-sm font-black animate-fade-in pointer-events-auto">
+              <span className="text-sm sm:text-base">👤</span>
+              <span>رفع بواسطة: <span className="text-white font-extrabold">{uploadedByName.trim()}</span></span>
+            </div>
+          )}
+          {title && !uploadedByName?.trim() && (
+            <div className="px-3.5 py-1 rounded-full bg-black/70 border border-white/20 backdrop-blur-md text-white text-xs font-black shadow-lg">
+              {title}
+            </div>
+          )}
+          <div className="text-[10px] font-bold text-white/50 bg-black/40 px-3 py-0.5 rounded-full pointer-events-none">
+            💡 يمكنك التكبير بالإصبعين أو السحب للتحريك
+          </div>
         </div>
       </div>
     </div>,

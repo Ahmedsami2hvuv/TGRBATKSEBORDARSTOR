@@ -4533,7 +4533,6 @@ function OrderCardsLivePreview({
                             className="h-full w-full object-cover"
                           />
                         </div>
-                        <span className="text-[9px] text-slate-400 mt-0.5">رفع بواسطة: النظام</span>
                       </div>
                     ) : (
                       /* eslint-disable-next-line @next/next/no-img-element */
@@ -4854,7 +4853,6 @@ function OrderCardsLivePreview({
                           className="h-full w-full object-cover"
                         />
                       </div>
-                      <span className="text-[9px] text-slate-400 mt-0.5">رفع بواسطة: النظام</span>
                     </div>
                   ) : (
                     /* eslint-disable-next-line @next/next/no-img-element */

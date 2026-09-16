@@ -376,11 +376,6 @@ export function AdminLuxuryCustomerCard({
                         🔍 تكبير
                       </div>
                     </div>
-                    {order.customerDoorPhotoUploadedByName?.trim() && (
-                      <div className="max-w-[125px] overflow-hidden text-center mt-0.5">
-                        <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="w-fit inline-flex items-center justify-center">
@@ -536,6 +531,7 @@ export function AdminLuxuryCustomerCard({
           imageUrl={imgCustomerDoor}
           onClose={() => setZoomOpen(false)}
           title="صورة باب الزبون"
+          uploadedByName={order.customerDoorPhotoUploadedByName}
           onDelete={handleDelete}
           deleteLabel="مسح صورة باب الزبون"
           isDeleting={deleting}

@@ -213,6 +213,7 @@ export function OrderDetailSection({
   }, [isModal]);
 
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
   const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
 
 
@@ -657,11 +658,16 @@ export function OrderDetailSection({
                 {shopImageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
                     <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-amber-500/80 dark:border-amber-400/80 shadow-md shadow-amber-500/10">
-                      <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                      <img
+                        src={imgSrc(shopImageUrl)!}
+                        alt=""
+                        className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
+                        onClick={() => {
+                          setPreviewImageUrl(imgSrc(shopImageUrl));
+                          setPreviewUploadedByName(order.shopDoorPhotoUploadedByName || null);
+                        }}
+                      />
                     </div>
-                    {order.shopDoorPhotoUploadedByName?.trim() ? (
-                      <div className="mt-0.5"><ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} /></div>
-                    ) : null}
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
@@ -1055,11 +1061,16 @@ export function OrderDetailSection({
                   {customerDoorDisplay ? (
                     <div className="w-full flex flex-col items-center gap-1">
                       <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-emerald-500/80 dark:border-emerald-400/80 shadow-md shadow-emerald-500/10">
-                        <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
+                        <img
+                          src={imgSrc(customerDoorDisplay)!}
+                          alt=""
+                          className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
+                          onClick={() => {
+                            setPreviewImageUrl(imgSrc(customerDoorDisplay));
+                            setPreviewUploadedByName(senderDoorUploaderName || null);
+                          }}
+                        />
                       </div>
-                      {senderDoorUploaderName ? (
-                        <div className="mt-0.5"><ImageUploaderCaption name={senderDoorUploaderName} /></div>
-                      ) : null}
                     </div>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
@@ -1253,9 +1264,16 @@ export function OrderDetailSection({
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center gap-1">
                         <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-violet-500/80 dark:border-violet-400/80 shadow-md shadow-violet-500/10 relative">
-                          <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(secondDoorMerged))} />
+                          <img
+                            src={imgSrc(secondDoorMerged)!}
+                            alt=""
+                            className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
+                            onClick={() => {
+                              setPreviewImageUrl(imgSrc(secondDoorMerged));
+                              setPreviewUploadedByName(secondDoorUploaderName || null);
+                            }}
+                          />
                         </div>
-                        {secondDoorUploaderName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorUploaderName} /></div> : null}
                       </div>
                     ) : (
                       <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-350 dark:border-slate-700 text-xs text-slate-400 font-bold">
@@ -1392,11 +1410,16 @@ export function OrderDetailSection({
                 {order.imageUrl ? (
                   <div className="w-full flex flex-col items-center gap-1">
                     <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-sky-300 dark:border-white/10 shadow-lg bg-white">
-                      <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(order.imageUrl))} />
+                      <img
+                        src={imgSrc(order.imageUrl)!}
+                        alt=""
+                        className="h-full w-full object-contain cursor-zoom-in"
+                        onClick={() => {
+                          setPreviewImageUrl(imgSrc(order.imageUrl));
+                          setPreviewUploadedByName(order.orderImageUploadedByName || null);
+                        }}
+                      />
                     </div>
-                    {order.orderImageUploadedByName?.trim() ? (
-                      <div className="mt-0.5"><ImageUploaderCaption name={order.orderImageUploadedByName} /></div>
-                    ) : null}
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-2">
@@ -1742,7 +1765,11 @@ export function OrderDetailSection({
       {previewImageUrl && (
         <ImageZoomModal
           imageUrl={previewImageUrl}
-          onClose={() => setPreviewImageUrl(null)}
+          uploadedByName={previewUploadedByName}
+          onClose={() => {
+            setPreviewImageUrl(null);
+            setPreviewUploadedByName(null);
+          }}
         />
       )}
 
