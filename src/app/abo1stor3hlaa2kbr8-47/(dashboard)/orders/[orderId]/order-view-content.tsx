@@ -34,7 +34,6 @@ import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
 import { DeleteAdminVoiceNoteButton } from "./edit/delete-admin-voice-note-button";
 import { AdminCustomerOrderHistory, AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
-import { OrderFabDock } from "@/components/order-fab-dock";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
@@ -944,19 +943,6 @@ export function OrderViewContent({
           </div>
         );
       })()}
-
-      <OrderFabDock
-        storageKey="adminFab_v1"
-        orderId={order.id}
-        shopPhone={submitterPhone}
-        customerPhone={order.customerPhone}
-        customerAlternatePhone={order.alternatePhone ?? undefined}
-        secondCustomerPhone={order.secondCustomerPhone ?? undefined}
-        secondCustomerAlternatePhone={order.secondCustomerAlternatePhone ?? undefined}
-        customWaButtons={customWaButtons}
-        editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-        isDoubleRoute={isDoubleRoute}
-      />
 
       {/* مودال معاينة الصور التفاعلي الأنيق الداعم للتكبير بالإصبعين والسحب */}
       {previewImageUrl && (
