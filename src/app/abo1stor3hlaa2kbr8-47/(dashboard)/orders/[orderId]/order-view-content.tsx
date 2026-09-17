@@ -590,16 +590,7 @@ export function OrderViewContent({
                 designerConfig={designerConfigState}
                 phoneProfile={phoneProfile}
               >
-                {/* دالة الزبون وموقعه الإضافي */}
-                <div className="flex flex-col gap-1">
-                  <InlineLandmarkEditor
-                    orderId={order.id}
-                    initialLandmark={order.customerLandmark}
-                    isSecondDestination={false}
-                    label="📍 دالة:"
-                    uploadedByName={order.customerLocationUploadedByName || order.customerDoorPhotoUploadedByName}
-                  />
-                </div>
+
 
                 {/* أزرار اللوكيشن الملكية الثلاثة المذهبة من تحديث Meta AI (طلب لوكيشن - رفع لوكيشن - لصق لوكيشن) */}
                 <div className="w-full pt-1">

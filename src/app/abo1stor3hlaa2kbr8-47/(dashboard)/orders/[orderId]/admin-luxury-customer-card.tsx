@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useActionState } from "react";
+import React, { useRef, useState, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import {
@@ -15,6 +15,7 @@ import {
 import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
+import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -47,6 +48,50 @@ export function AdminLuxuryCustomerCard({
 }) {
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
+
+  // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت
+  const [landmarkModalOpen, setLandmarkModalOpen] = useState(false);
+  const [landmarkTextState, setLandmarkTextState] = useState(
+    (order.customerLandmark || phoneProfile?.landmark || "").trim()
+  );
+  const [landmarkLoading, setLandmarkLoading] = useState(false);
+  const [landmarkError, setLandmarkError] = useState<string | null>(null);
+  const landmarkInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setLandmarkTextState((order.customerLandmark || phoneProfile?.landmark || "").trim());
+  }, [order.customerLandmark, phoneProfile?.landmark]);
+
+  useEffect(() => {
+    if (landmarkModalOpen) {
+      setTimeout(() => {
+        if (landmarkInputRef.current) {
+          landmarkInputRef.current.focus();
+          landmarkInputRef.current.selectionStart = landmarkInputRef.current.value.length;
+          landmarkInputRef.current.selectionEnd = landmarkInputRef.current.value.length;
+        }
+      }, 50);
+    }
+  }, [landmarkModalOpen]);
+
+  async function handleSaveLandmark() {
+    if (landmarkLoading) return;
+    setLandmarkLoading(true);
+    setLandmarkError(null);
+    try {
+      const res = await updateOrderLandmarkAction(order.id, landmarkTextState.trim(), false);
+      if (res.error) {
+        setLandmarkError(res.error);
+      } else {
+        setLandmarkModalOpen(false);
+        router.refresh();
+      }
+    } catch (err: any) {
+      setLandmarkError(err.message || "حدث خطأ أثناء حفظ النقطة الدالة");
+    } finally {
+      setLandmarkLoading(false);
+    }
+  }
 
   // مراجع رفع الصور للكاميرا والمعرض
   const cameraFileRef = useRef<HTMLInputElement>(null);
@@ -93,7 +138,6 @@ export function AdminLuxuryCustomerCard({
 
   const hasLocation = Boolean(order.customerLocationUrl && order.customerLocationUrl.trim());
   const cleanPhone = contactLine(customerPhone || order.customerPhone);
-  const landmarkText = (order.customerLandmark || phoneProfile?.landmark || "").trim();
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
@@ -184,22 +228,31 @@ export function AdminLuxuryCustomerCard({
                 )}
               </div>
 
-              {/* بطاقة أقرب نقطة دالة */}
-              <div className="relative rounded-[12px] border-[1.5px] border-[#C9A86A] bg-gradient-to-br from-[#FFF8E1] via-[#FFFEF8] to-[#F6EED7] p-2.5 shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] overflow-hidden w-full min-h-[86px] flex items-center">
+              {/* بطاقة أقرب نقطة دالة - قابلة للنقر والتعديل المباشر */}
+              <div
+                onClick={() => setLandmarkModalOpen(true)}
+                title="انقر لتعديل أو إضافة أقرب نقطة دالة"
+                className="group relative rounded-[12px] border-[1.5px] border-[#C9A86A] bg-gradient-to-br from-[#FFF8E1] via-[#FFFEF8] to-[#F6EED7] p-2.5 shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(201,168,106,0.25)] hover:border-[#8B6A2A] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
+              >
                 <div className="absolute right-0 top-0 bottom-0 w-[3px] gold-grad" />
                 <div className="flex items-start gap-2 w-full pr-1">
-                  <span className="w-[22px] h-[22px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.15)] shrink-0 mt-[1px]">
+                  <span className="w-[22px] h-[22px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.15)] shrink-0 mt-[1px] group-hover:bg-[#FDF6E3] transition">
                     <svg className="w-[11px] h-[11px] text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[9px] font-black text-[#8B6A2A]/70 leading-none mb-1 tracking-wide">
-                      أقرب نقطة دالة
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <div className="text-[9px] font-black text-[#8B6A2A]/70 leading-none tracking-wide">
+                        أقرب نقطة دالة
+                      </div>
+                      <span className="text-[9px] font-bold text-[#8B6A2A]/80 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ✏️ تعديل
+                      </span>
                     </div>
                     <p className="text-[11px] leading-[1.35] font-bold text-[#3A2E1A] text-right">
-                      {landmarkText || "لا توجد نقطة دالة مسجلة بعد"}
+                      {landmarkTextState || "لا توجد نقطة دالة مسجلة بعد (انقر للإضافة)"}
                     </p>
                   </div>
                 </div>
@@ -313,6 +366,73 @@ export function AdminLuxuryCustomerCard({
           </div>
         </div>
       </div>
+
+      {/* نافذة تعديل أقرب نقطة دالة المنبثقة المذهبة */}
+      {landmarkModalOpen && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => {
+            if (!landmarkLoading) setLandmarkModalOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-4 sm:p-5 shadow-2xl text-right animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/20 pb-3 mb-3">
+              <h4 className="text-sm sm:text-base font-black text-[#0A3D2E] flex items-center gap-2">
+                <span>📍</span>
+                <span>تعديل أقرب نقطة دالة</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setLandmarkModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {landmarkError && (
+              <div className="mb-3 p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700">
+                {landmarkError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[#8B6A2A] block">نص النقطة الدالة:</label>
+              <textarea
+                ref={landmarkInputRef}
+                rows={3}
+                value={landmarkTextState}
+                onChange={(e) => setLandmarkTextState(e.target.value)}
+                placeholder="اكتب أقرب نقطة دالة بالتفصيل..."
+                className="w-full rounded-xl border border-[#C9A86A] bg-white p-2.5 text-xs sm:text-sm font-bold text-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/20 resize-none shadow-inner"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-[#C9A86A]/15">
+              <button
+                type="button"
+                onClick={() => setLandmarkModalOpen(false)}
+                disabled={landmarkLoading}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 cursor-pointer"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveLandmark}
+                disabled={landmarkLoading}
+                className="px-5 py-2 rounded-xl gold-grad border border-[#9C7D46]/40 text-[#0A3D2E] font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+              >
+                {landmarkLoading ? "جاري الحفظ..." : "💾 حفظ النقطة الدالة"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* مودال معاينة وتكبير صورة باب الزبون مع زر المسح */}
       {zoomOpen && imgCustomerDoor && (
