@@ -248,10 +248,10 @@ export function OrderViewContent({
 
   return (
     <>
-      <div className="relative mt-4 rounded-[28px] border-2 border-[#C9A86A] bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3.5 sm:p-6 pb-24 sm:pb-32 text-[#FFF8F0] shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-base leading-relaxed select-none overflow-hidden" dir="rtl">
+      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#C9A86A]/50 bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0A3D2E] shadow-[0_10px_35px_rgba(201,168,106,0.15)] text-base leading-relaxed select-none" dir="rtl">
 
-        {/* زخرفة دمشقية في أعلى وأسفل الصفحة */}
-        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-80 pointer-events-none" />
+        {/* زخرفة دمشقية مذهبة في أعلى الصفحة */}
+        <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-90 pointer-events-none" />
 
         {/* قواعد التصميم الملكي الزمردي الإسلامي */}
         <style>{`
@@ -305,7 +305,7 @@ export function OrderViewContent({
         )}
 
         {customerDebt !== null && customerDebt > 0 && (
-          <div className="mb-4 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] p-4 text-right shadow-xl animate-pulse">
+          <div className="mb-4 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] p-4 text-right shadow-xl animate-pulse text-white">
             <p className="text-base font-black text-[#F5D77F] flex items-center gap-2 drop-shadow-md">
               <span>⚠️ تنبيه مالي للزبون:</span>
               نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
@@ -322,8 +322,8 @@ export function OrderViewContent({
           </div>
         )}
 
-        {/* --- بطاقة ترويسة الطلبية الملكية المتطابقة 100% مع التصميم والصور --- */}
-        <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] p-3.5 shadow-[0_6px_20px_rgba(201,168,106,0.12)] select-none overflow-hidden mb-3.5" dir="rtl">
+        {/* --- بطاقة ترويسة الطلبية الملكية الثابتة في الأعلى (Sticky Header) --- */}
+        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB]/95 backdrop-blur-md p-3.5 shadow-[0_8px_25px_rgba(201,168,106,0.22)] select-none mb-3.5" dir="rtl">
           {/* معينات الزوايا الذهبية الأربعة */}
           <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
           <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
