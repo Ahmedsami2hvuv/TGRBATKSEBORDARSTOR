@@ -238,23 +238,13 @@ export function OrderViewContent({
     return true;
   };
 
-  const [customerDebt, setCustomerDebt] = useState<number | null>(initialCustomerDebt);
+  const [customerDebt, setCustomerDebt] = useState<number | null>(initialCustomerDebt ?? null);
 
   useEffect(() => {
     if (initialCustomerDebt !== null && initialCustomerDebt !== undefined) {
       setCustomerDebt(initialCustomerDebt);
-      return;
     }
-    if (order.customerPhone) {
-      import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions")
-        .then(({ getCustomerDebtByPhone }) => {
-          getCustomerDebtByPhone(order.customerPhone)
-            .then(setCustomerDebt)
-            .catch(() => setCustomerDebt(null));
-        })
-        .catch(() => setCustomerDebt(null));
-    }
-  }, [order.customerPhone, initialCustomerDebt]);
+  }, [initialCustomerDebt]);
 
   return (
     <>
@@ -445,7 +435,7 @@ export function OrderViewContent({
             <div className="flex items-center gap-1.5 text-[11px] text-[#6B7D77] flex-wrap">
               <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
                 <span>📅</span>
-                <span className="font-mono">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
+                <span className="font-mono">{(() => { try { return order.createdAt ? formatBaghdadDateTime(new Date(order.createdAt)) : "—"; } catch { return "—"; } })()}</span>
               </span>
               <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
                 <span>⏰</span>

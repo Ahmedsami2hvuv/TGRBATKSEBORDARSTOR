@@ -398,12 +398,18 @@ export function AdminLuxuryShopCard({
       </div>
 
       {/* مودال تكبير الصورة إن وجدت */}
-      {imgShopDoor && (
+      {zoomOpen && imgShopDoor && (
         <ImageZoomModal
-          open={zoomOpen}
+          imageUrl={imgShopDoor}
           onClose={() => setZoomOpen(false)}
-          src={imgShopDoor}
           title={shopName}
+          uploadedByName={order.shopDoorPhotoUploadedByName}
+          onDelete={handleDelete}
+          deleteLabel="مسح صورة المحل"
+          isDeleting={deleting}
+          onRevert={order.shop?.photoUrl ? handleRevert : undefined}
+          revertLabel="الرجوع للصورة الأصلية"
+          isReverting={reverting}
         />
       )}
     </div>
