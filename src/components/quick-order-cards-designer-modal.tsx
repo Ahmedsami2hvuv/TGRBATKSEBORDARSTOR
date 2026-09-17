@@ -375,6 +375,49 @@ export function QuickOrderCardsDesignerModal({
           </button>
         </div>
 
+        {/* خيار تفعيل / تعطيل الستايل الملكي في حساب المندوب */}
+        {canSwitchScope && config && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🚚</span>
+              <div>
+                <span className="text-xs sm:text-sm font-black text-amber-300 block">
+                  تفعيل الستايل الملكي في حساب المندوب:
+                </span>
+                <span className="text-[11px] font-bold text-slate-400">
+                  {config.enabledPortals?.mandoub !== false ? (
+                    <span className="text-emerald-400 font-black">✅ مفعّل للمندوبين حالياً</span>
+                  ) : (
+                    <span className="text-rose-400 font-black">⛔ معطّل للمندوبين (يظهر لهم الستايل الكلاسيكي القديم)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.enabledPortals?.mandoub !== false}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setConfig((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          enabledPortals: {
+                            ...(prev.enabledPortals || { admin: true, mandoub: true, preparer: false }),
+                            mandoub: val,
+                          },
+                        }
+                      : null
+                  );
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-12 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+        )}
+
         {/* إشعار النجاح */}
         {saveSuccessMsg && (
           <div className="bg-emerald-600/90 text-white text-center py-2 px-4 text-xs sm:text-sm font-black animate-pulse flex items-center justify-center gap-2">

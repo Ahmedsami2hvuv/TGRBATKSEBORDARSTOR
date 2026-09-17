@@ -2034,28 +2034,40 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
             </div>
           )}
 
-          {/* خيارات تفعيل التصميم على البوابات المختلفة */}
-          <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2 mb-2.5">
+          {/* خيارات تفعيل الستايل الملكي على البوابات المختلفة */}
+          <div className="bg-[#06281D]/90 border-2 border-[#C9A86A] rounded-2xl p-3 sm:p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-2.5 mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🏛️</span>
-                <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">تفعيل التصميم على البوابات</h3>
+                <span className="text-xl">👑</span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-[#F5D77F]">
+                    التحكم في تشغيل وإيقاف الستايل الملكي
+                  </h3>
+                  <p className="text-[10px] text-emerald-200 font-bold">
+                    يمكنك إيقاف الستايل الملكي للمندوبين مؤقتاً ليروا الستايل الكلاسيكي القديم أثناء تعديلك للتصميم
+                  </p>
+                </div>
               </div>
-              <span className="text-[10px] font-bold text-amber-300 bg-[#0A3D2E] px-2 py-0.5 rounded-lg border border-[#C9A86A]/40">
+              <span className="text-[10px] font-bold text-amber-300 bg-[#0A3D2E] px-2.5 py-1 rounded-lg border border-[#C9A86A]/40">
                 حفظ فوري 💾
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* لوحة الإدارة */}
-              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* تفعيل الستايل الملكي في لوحة الإدارة */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.admin !== false
                   ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
-                  : "bg-black/30 border-white/10 text-white/50 opacity-70"
+                  : "bg-black/30 border-rose-500/40 text-rose-300/70"
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-base">👑</span>
-                  <span className="text-xs font-black">لوحة الإدارة</span>
+                  <span className="text-lg">🖥️</span>
+                  <div>
+                    <span className="text-xs font-black block">الستايل الملكي للإدارة</span>
+                    <span className="text-[10px] text-slate-300">
+                      {config.enabledPortals?.admin !== false ? "✅ مفعّل للإدارة" : "⛔ معطّل (كلاسيكي)"}
+                    </span>
+                  </div>
                 </div>
                 <input
                   type="checkbox"
@@ -2073,15 +2085,24 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 />
               </label>
 
-              {/* بوابة المندوب */}
-              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+              {/* تفعيل الستايل الملكي في حساب المندوب */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.mandoub !== false
-                  ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
-                  : "bg-black/30 border-white/10 text-white/50 opacity-70"
+                  ? "bg-gradient-to-r from-emerald-900 to-[#0A3D2E] border-emerald-400 text-emerald-200 shadow-md ring-2 ring-emerald-400/30"
+                  : "bg-rose-950/40 border-rose-500 text-rose-200"
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-base">🚚</span>
-                  <span className="text-xs font-black">بوابة المندوب</span>
+                  <span className="text-lg">🚚</span>
+                  <div>
+                    <span className="text-xs font-black block text-[#F5D77F]">تفعيل الستايل الملكي في حساب المندوب</span>
+                    <span className="text-[10px] font-bold">
+                      {config.enabledPortals?.mandoub !== false ? (
+                        <span className="text-emerald-300">✅ ظاهر للمندوبين الآن</span>
+                      ) : (
+                        <span className="text-rose-300">⛔ مطفي (يظهر لهم الستايل القديم)</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <input
                   type="checkbox"
@@ -2099,15 +2120,20 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
                 />
               </label>
 
-              {/* بوابة المجهز */}
-              <label className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+              {/* تفعيل الستايل الملكي في بوابة المجهز */}
+              <label className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${
                 config.enabledPortals?.preparer === true
                   ? "bg-[#0A3D2E] border-emerald-400 text-[#F5D77F] shadow-md"
                   : "bg-black/30 border-white/10 text-white/50 opacity-70"
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-base">📦</span>
-                  <span className="text-xs font-black">بوابة المجهز</span>
+                  <span className="text-lg">📦</span>
+                  <div>
+                    <span className="text-xs font-black block">الستايل الملكي للمجهز</span>
+                    <span className="text-[10px] text-slate-300">
+                      {config.enabledPortals?.preparer === true ? "✅ مفعّل للمجهز" : "⛔ معطّل"}
+                    </span>
+                  </div>
                 </div>
                 <input
                   type="checkbox"
