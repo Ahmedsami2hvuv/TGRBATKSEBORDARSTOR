@@ -203,40 +203,30 @@ export function AdminLuxuryOrderInfoCard({
                 {!hideSubtotalInfo && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 pt-0.5">
                     {/* سعر البضاعة */}
-                    {wrapInteractive(
-                      "blockSubtotal",
-                      "بلوك سعر المواد",
-                      <div
-                        style={getElementStyle(infoCustom?.blockSubtotal)}
-                        className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
-                      >
-                        <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
-                          سعر البضاعة:
-                        </span>
-                        <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
-                          {order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "0"}
-                        </span>
-                      </div>,
-                      infoCustom?.blockSubtotal
-                    )}
+                    <div
+                      style={getElementStyle(infoCustom?.blockSubtotal)}
+                      className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
+                    >
+                      <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
+                        سعر البضاعة:
+                      </span>
+                      <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
+                        {order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "0"}
+                      </span>
+                    </div>
 
                     {/* سعر التوصيل */}
-                    {wrapInteractive(
-                      "blockDelivery",
-                      "بلوك أجور التوصيل",
-                      <div
-                        style={getElementStyle(infoCustom?.blockDelivery)}
-                        className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
-                      >
-                        <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
-                          التوصيل:
-                        </span>
-                        <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
-                          {order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "0"}
-                        </span>
-                      </div>,
-                      infoCustom?.blockDelivery
-                    )}
+                    <div
+                      style={getElementStyle(infoCustom?.blockDelivery)}
+                      className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
+                    >
+                      <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
+                        التوصيل:
+                      </span>
+                      <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
+                        {order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "0"}
+                      </span>
+                    </div>
 
                     {/* الدين إن وجد */}
                     {hasDebt && (
