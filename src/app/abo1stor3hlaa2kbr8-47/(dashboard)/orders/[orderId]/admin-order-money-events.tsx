@@ -284,87 +284,45 @@ export function AdminOrderMoneyEvents({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-            {/* زر أعطيت للعميل (تسجيل صادر) */}
-            <div className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setPickupAdvanceToDelivering(false);
-                  setPickupOpen(true);
-                  setDeliveryOpen(false);
-                }}
-                className="group relative h-[88px] rounded-[18px] bg-[#103D2A] border-[1.5px] border-[#C9A86A]/70 overflow-hidden shadow-[0_6px_18px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition-all text-right w-full cursor-pointer"
-                title="تسجيل صادر: أعطيت للعميل"
-              >
-                <div className="absolute inset-0 opacity-[0.06] emerald-pattern pointer-events-none" />
-                <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: "radial-gradient(ellipse at 85% 20%, rgba(201,168,106,0.18) 0%, transparent 55%)" }} />
-                <div className="absolute top-[6px] right-[6px] w-[28px] h-[1px] bg-gradient-to-l from-[#E8C77E]/50 to-transparent" />
-                
-                <div className="relative h-full flex items-center gap-2.5 px-3">
-                  <div className="relative w-[44px] h-[44px] rounded-full p-[2px] gold-grad shadow-[0_3px_10px_rgba(201,168,106,0.4)] shrink-0">
-                    <div className="w-full h-full rounded-full bg-[#0A3D2E] flex items-center justify-center border border-[#0A3D2E] relative overflow-hidden">
-                      <span className="relative text-[13px] font-black text-[#E8C77E] leading-none">مـا</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-right">
-                    <div className="text-[13px] sm:text-[14px] font-black text-[#E8C77E] leading-tight">أعطيت للعميل</div>
-                    <div className="mt-[3px] inline-flex items-center gap-1 px-2 py-[2px] rounded-full bg-[#0A3D2E]/60 border border-[#C9A86A]/20">
-                      <span className="text-[10px] font-bold text-[#E8C77E]/80">تسجيل صادر</span>
-                      <span className="text-[11px]">💸</span>
-                    </div>
-                  </div>
-                  <div className="w-[22px] h-[22px] rounded-full bg-[#E8C77E]/10 border border-[#E8C77E]/20 flex items-center justify-center shrink-0">
-                    <span className="text-[#E8C77E] text-xs font-bold">‹</span>
-                  </div>
-                </div>
-              </button>
-              {pickupRemaining !== null && (
-                <span className="text-[11px] font-bold bg-[#0A3D2E]/90 text-[#E8C77E] border border-[#C9A86A]/40 px-2.5 py-0.5 rounded-lg shadow-sm text-center">
-                  المتبقي للصادر: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
-                </span>
-              )}
-            </div>
+          {/* زري أعطيت وأخذت من تصميم Meta AI الجديد للنسخة 2 */}
+          <div className="flex gap-[8px] pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setPickupAdvanceToDelivering(false);
+                setPickupOpen(true);
+                setDeliveryOpen(false);
+              }}
+              className="flex-1 h-[48px] rounded-[14px] flex items-center justify-center gap-2 border-[1.5px] border-[#0A3D2E] shadow-[0_4px_12px_rgba(10,61,46,0.15),inset_0_1px_0_white,0_0_0_1px_#C9A86A_inset] active:scale-[0.98] transition-transform cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #E6F4EF 0%, #D1E7D6 100%)" }}
+            >
+              <span className="w-[26px] h-[26px] rounded-full bg-[#0A3D2E] border border-[#C9A86A]/30 flex items-center justify-center shadow-[0_2px_6px_rgba(10,61,46,0.2)] shrink-0">
+                <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="19" x2="12" y2="5" />
+                  <polyline points="5 12 12 5 19 12" />
+                </svg>
+              </span>
+              <span className="text-[14px] font-black text-[#0A3D2E]">أعطيت</span>
+            </button>
 
-            {/* زر أخذت من الزبون (تسجيل وارد) */}
-            <div className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setDeliveryAdvanceToDelivered(false);
-                  setDeliveryOpen(true);
-                  setPickupOpen(false);
-                }}
-                className="group relative h-[88px] rounded-[18px] bg-[#0F2F26] border-[1.5px] border-[#C9A86A]/60 overflow-hidden shadow-[0_6px_18px_rgba(10,61,46,0.22),inset_0_1px_0_rgba(232,199,126,0.12)] active:scale-[0.98] transition-all text-right w-full cursor-pointer"
-                title="تسجيل وارد: أخذت من الزبون"
-              >
-                <div className="absolute inset-0 opacity-[0.05] emerald-pattern pointer-events-none" />
-                <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse at 15% 85%, rgba(17,87,64,0.4) 0%, transparent 60%)" }} />
-                
-                <div className="relative h-full flex items-center gap-2.5 px-3">
-                  <div className="relative w-[44px] h-[44px] rounded-full p-[2px] bg-gradient-to-br from-[#D9BF7F] to-[#A8864A] shadow-[0_3px_10px_rgba(201,168,106,0.35)] shrink-0">
-                    <div className="w-full h-full rounded-full bg-[#122E24] flex items-center justify-center relative overflow-hidden">
-                      <span className="relative text-[11px] font-black text-[#E8C77E]">شـاء</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-right">
-                    <div className="text-[13px] sm:text-[14px] font-black text-[#E8C77E] leading-tight">أخذت من الزبون</div>
-                    <div className="mt-[3px] inline-flex items-center gap-1 px-2 py-[2px] rounded-full bg-[#0A3D2E]/50 border border-[#C9A86A]/20">
-                      <span className="text-[10px] font-bold text-[#E8C77E]/80">تسجيل وارد</span>
-                      <span className="text-[11px]">🫴</span>
-                    </div>
-                  </div>
-                  <div className="w-[22px] h-[22px] rounded-full bg-[#E8C77E]/10 border border-[#E8C77E]/20 flex items-center justify-center shrink-0">
-                    <span className="text-[#E8C77E] text-xs font-bold">‹</span>
-                  </div>
-                </div>
-              </button>
-              {deliveryRemaining !== null && !prepaidAll && (
-                <span className="text-[11px] font-bold bg-[#122F26]/90 text-[#E8C77E] border border-[#C9A86A]/40 px-2.5 py-0.5 rounded-lg shadow-sm text-center">
-                  المتبقي للوارد: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
-                </span>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(false);
+                setDeliveryOpen(true);
+                setPickupOpen(false);
+              }}
+              className="flex-1 h-[48px] rounded-[14px] flex items-center justify-center gap-2 border-[1.5px] border-[#E65100]/60 shadow-[0_4px_12px_rgba(230,81,0,0.15),inset_0_1px_0_white,0_0_0_1px_#E8D5A3_inset] active:scale-[0.98] transition-transform cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)" }}
+            >
+              <span className="w-[26px] h-[26px] rounded-full bg-white border border-[#FF8A65] flex items-center justify-center shadow-[0_2px_6px_rgba(230,81,0,0.15)] shrink-0">
+                <svg className="w-[14px] h-[14px] text-[#BF360C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <polyline points="19 12 12 19 5 12" />
+                </svg>
+              </span>
+              <span className="text-[14px] font-black text-[#BF360C]">أخذت</span>
+            </button>
           </div>
         </div>
       )}

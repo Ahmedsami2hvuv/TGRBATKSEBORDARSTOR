@@ -321,22 +321,22 @@ export function AdminLuxuryShopCard({
                         href={whatsappMeUrl(cleanPhone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-[38px] rounded-full bg-[#115740] text-white flex items-center justify-center gap-1.5 shadow-[0_3px_12px_rgba(17,87,64,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] border border-[#0A3D2E]/20 active:scale-[0.98] transition-transform"
+                        className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition-all hover:bg-[#103D2A]"
                       >
-                        <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                        <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                         </svg>
-                        <span className="text-[12px] font-bold">واتس</span>
+                        <span className="text-[12px] font-black">واتس</span>
                       </a>
 
                       <a
                         href={telHref(cleanPhone)}
-                        className="h-[38px] rounded-full bg-[#0A3D2E] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_12px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(232,199,126,0.15)] border border-[#C9A86A]/40 active:scale-[0.98] transition-transform"
+                        className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition-all hover:bg-[#103D2A]"
                       >
-                        <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                        <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
-                        <span className="text-[12px] font-bold">اتصال</span>
+                        <span className="text-[12px] font-black">اتصال</span>
                       </a>
                     </div>
                   )}

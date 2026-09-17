@@ -2,16 +2,12 @@
 
 import React, { useRef, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import {
   type OrderCardDesignerConfig,
-  type CustomElementConfig,
   getElementStyle,
-  getCardContainerStyle,
   RenderCustomElementsLayer,
 } from "@/lib/order-card-customizer";
 import {
@@ -42,7 +38,6 @@ export function AdminLuxuryOrderInfoCard({
   const [zoomOpen, setZoomOpen] = useState(false);
   const [compressing, setCompressing] = useState(false);
 
-  // مراجع رفع الصور للكاميرا والمعرض
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -52,7 +47,6 @@ export function AdminLuxuryOrderInfoCard({
   const orderImageUrl = resolvePublicAssetSrc(order.imageUrl);
   const infoCustom = designerConfig?.orderInfoCard;
 
-  // الحسابات المالية (سعر البضاعة + التوصيل + الدين + الإجمالي)
   const parseNum = (val: string | number | null | undefined): number => {
     if (val === null || val === undefined) return 0;
     if (typeof val === "number") return isNaN(val) ? 0 : val;
@@ -65,10 +59,6 @@ export function AdminLuxuryOrderInfoCard({
   const deliveryVal = order.deliveryPrice != null ? parseNum(order.deliveryPrice) : 0;
   const totalVal = order.totalAmount != null ? parseNum(order.totalAmount) : 0;
 
-  const calculatedDebt = totalVal - (subtotalVal + deliveryVal);
-  const hasDebt = calculatedDebt > 0;
-
-  // معالجة اختيار ورفع ملف الصورة
   async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
     if (!(file instanceof File) || file.size <= 0) return;
 
@@ -91,316 +81,220 @@ export function AdminLuxuryOrderInfoCard({
   const busy = compressing || pending;
 
   return (
-    <div
-      className="relative overflow-hidden transition-all duration-300 select-none"
-      style={{
-        width: "100%",
-        maxWidth: "100%",
-        direction: "rtl",
-      }}
-    >
-      <div
-        className="w-full relative shadow-2xl rounded-[22px] sm:rounded-[26px] md:rounded-[30px] border-2 border-[#C9A86A] bg-cover bg-center bg-no-repeat p-2 sm:p-3.5 md:p-4.5"
-        style={{
-          ...getCardContainerStyle(
-            infoCustom?.frameConfig,
-            infoCustom?.frameBgUrl || "/images/order-luxury/order-info-card/order-info-frame.jpg"
-          ),
-          backgroundColor: "#06281D",
-        }}
-      >
-        {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
-        <RenderCustomElementsLayer
-          elements={infoCustom?.customElements}
-          context={{
-            order,
-            onZoomImage: (url, title) => {
-              setPreviewImageUrl(url);
-            },
+    <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
+      {/* مدخلات رفع الصور المخفية */}
+      <form ref={formRef} action={formAction} className="hidden">
+        <input type="hidden" name="orderId" value={order.id} />
+        {nextUrl && <input type="hidden" name="nextUrl" value={nextUrl} />}
+        {auth && (
+          <>
+            <input type="hidden" name="c" value={auth.c} />
+            <input type="hidden" name="exp" value={auth.exp} />
+            <input type="hidden" name="s" value={auth.s} />
+          </>
+        )}
+        <input
+          ref={cameraFileRef}
+          type="file"
+          name="orderImage"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            void handleFileSelected(file, cameraFileRef.current);
           }}
         />
+        <input
+          ref={galleryFileRef}
+          type="file"
+          name="orderImage"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            void handleFileSelected(file, galleryFileRef.current);
+          }}
+        />
+      </form>
 
-        {/* طبقة تظليل زمردية ناعمة لضمان قراءة النصوص والألوان الذهبية */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#06281D]/80 via-[#0A3D2E]/60 to-[#06281D]/85 pointer-events-none rounded-[20px] sm:rounded-[24px]" />
+      {/* كارت تفاصيل الطلبية والمبلغ الملكي الزمردي المذهب */}
+      <div className="relative mt-1">
+        {/* إطار التدرج الخارجي */}
+        <div className="absolute -inset-[1px] rounded-[24px] bg-gradient-to-b from-[#E8C77E] via-[#C9A86A] to-[#9C7D46] opacity-90 pointer-events-none" />
+        <div className="absolute -inset-[6px] rounded-[28px] bg-[#C9A86A]/10 blur-[8px] pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col gap-2">
-          {/* سطر الرأس الملكي: تفاصيل الطلب مع زر طي/فتح البردة */}
-          <div className="flex items-center justify-between border-b border-[#C9A86A]/40 pb-1.5 sm:pb-2">
-            {/* يمين الرأس: عنوان معلومات الطلب */}
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0" style={getElementStyle(infoCustom?.headerInfo)}>
-              <div className="shrink-0 w-fit inline-flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={infoCustom?.iconOrderBox?.imageUrl || "/images/order-luxury/order-info-card/icon-order-box.jpg"}
-                  alt="تفاصيل الطلب"
-                  style={getElementStyle(infoCustom?.iconOrderBox)}
-                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-lg object-contain border border-[#C9A86A]/70 shadow-sm transition-transform"
-                />
+        <div className="relative rounded-[22px] bg-[#FFFEFB] border border-[#FDF6E3] shadow-[0_8px_24px_rgba(10,61,46,0.07),0_1px_3px_rgba(0,0,0,0.05),inset_0_1px_0_white] overflow-hidden">
+          {/* زخارف أرابيسك وزوايا مذهبة */}
+          <div className="absolute top-[10px] right-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_0_4px_rgba(201,168,106,0.5)] pointer-events-none" />
+          <div className="absolute top-[10px] left-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_0_4px_rgba(201,168,106,0.5)] pointer-events-none" />
+          <div className="absolute bottom-[10px] right-[10px] w-[5px] h-[5px] rotate-45 border border-[#C9A86A]/40 pointer-events-none" />
+          <div className="absolute bottom-[10px] left-[10px] w-[5px] h-[5px] rotate-45 border border-[#C9A86A]/40 pointer-events-none" />
+
+          {/* طبقة العناصر المخصصة */}
+          <RenderCustomElementsLayer
+            elements={infoCustom?.customElements}
+            context={{
+              order,
+              onZoomImage: (url) => setPreviewImageUrl(url),
+            }}
+          />
+
+          {/* هيدر الكارت المذهب */}
+          <div className="px-3.5 py-3 flex items-center justify-between border-b border-[#C9A86A]/20 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-[32px] h-[32px] rounded-[10px] gold-grad flex items-center justify-center shadow-[0_3px_10px_rgba(201,168,106,0.4)] border border-[#9C7D46]/30">
+                <svg className="w-[16px] h-[16px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
               </div>
-              <h3 className="font-black text-xs sm:text-sm md:text-base text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                تفاصيل الطلبية والمبالغ
-              </h3>
+              <h3 className="text-[14px] font-black text-[#0A3D2E] leading-none">تفاصيل الطلبية والمبلغ</h3>
             </div>
 
-            {/* يسار الرأس: عنوان صورة الطلبية مع زر طي البردة */}
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:inline-flex items-center gap-1" style={getElementStyle(infoCustom?.headerPhoto)}>
-                <span className="font-black text-[11px] sm:text-xs text-[#F5D77F]/90">
-                  صورة الطلبية
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsExpanded((prev) => !prev)}
-                className="inline-flex items-center gap-1 bg-[#0F4D3A] hover:bg-[#165B45] border border-[#C9A86A] text-[10px] sm:text-xs font-black text-[#F5D77F] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
-                title={isExpanded ? "طي تفاصيل الطلب" : "فتح تفاصيل الطلب"}
-              >
-                <span>{isExpanded ? "▲ طي" : "▼ فتح"}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="inline-flex items-center gap-1 bg-[#FDF6E3] hover:bg-[#F7E9B0] border border-[#C9A86A]/40 text-[10px] font-black text-[#8B6A2A] px-2.5 py-1 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
+            >
+              <span>{isExpanded ? "طي ▲" : "عرض ▼"}</span>
+            </button>
           </div>
 
-          {/* محتوى الكارت القابل للتوسيع والطي */}
+          {/* محتوى تفاصيل الطلبية والمبالغ */}
           {isExpanded && (
-            <div className="grid grid-cols-[1fr_auto] gap-2 sm:gap-3.5 items-stretch pt-0.5">
-              {/* الجهة اليمنى: نوع الطلب + الوقت + تفاصيل الأسعار والمبالغ */}
-              <div className="flex flex-col justify-between space-y-2 min-w-0">
-                
-                {/* سطر 1: نوع الطلب */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-                  <span className="text-[11px] sm:text-xs font-bold text-[#FFF8F0]/80 shrink-0">
-                    نوع الطلب:
-                  </span>
-                  <div style={getElementStyle(infoCustom?.textOrderType)} className="w-fit inline-flex min-w-0">
-                    <OrderTypeDetailBlock
-                      orderType={order.orderType}
-                      prefixClassName="font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-black shadow-md inline-block"
-                      restClassName="text-[11px] sm:text-xs font-black text-[#FFF8F0]"
-                    />
-                  </div>
-                </div>
-
-                {/* سطر 2: وقت الطلب / وقت الاستلام */}
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0" style={getElementStyle(infoCustom?.textOrderTime)}>
-                  <div className="shrink-0 w-fit inline-flex">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={infoCustom?.iconClock?.imageUrl || "/images/order-luxury/order-info-card/icon-order-clock.jpg"}
-                      alt="وقت الطلب"
-                      style={getElementStyle(infoCustom?.iconClock)}
-                      className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full object-contain border border-[#C9A86A]/60 shadow-xs"
-                    />
-                  </div>
-                  <span className="text-[11px] sm:text-xs font-bold text-[#FFF8F0]/80 shrink-0">
-                    وقت الطلب:
-                  </span>
-                  <span className="font-black text-[11px] sm:text-xs text-[#F5D77F] bg-[#0F4D3A] px-2 py-0.5 rounded-lg border border-[#C9A86A]/40 shadow-inner">
-                    {order.orderNoteTime || "فوري"}
-                  </span>
-                </div>
-
-                {/* سطر 3: بطاقات المبالغ الفرعية (سعر الطلب والتوصيل والدين) */}
-                {!hideSubtotalInfo && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 pt-0.5">
-                    {/* سعر البضاعة */}
-                    <div
-                      style={getElementStyle(infoCustom?.blockSubtotal)}
-                      className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
-                    >
-                      <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
-                        سعر البضاعة:
-                      </span>
-                      <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
-                        {order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "0"}
-                      </span>
+            <div className="p-3.5 bg-[#FFFEF8]">
+              <div className="flex gap-3 items-start">
+                {/* القسم الأيمن للمبالغ ونوع الطلبية */}
+                <div className="flex-1 min-w-0 space-y-2.5">
+                  {/* نوع الطلبية / التفاصيل */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-[36px] h-[36px] rounded-[10px] bg-[#FDF6E3] border border-[#C9A86A]/40 flex items-center justify-center shadow-[inset_0_1px_0_white] shrink-0">
+                      <svg className="w-[18px] h-[18px] text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                      </svg>
                     </div>
-
-                    {/* سعر التوصيل */}
-                    <div
-                      style={getElementStyle(infoCustom?.blockDelivery)}
-                      className="flex flex-col gap-0.5 rounded-xl border border-[#C9A86A]/50 bg-[#06281D]/90 p-1.5 shadow-inner"
-                    >
-                      <span className="text-[9px] sm:text-[10px] font-bold text-[#FFF8F0]/70">
-                        التوصيل:
-                      </span>
-                      <span className="font-mono font-black text-xs sm:text-sm text-[#F5D77F] tabular-nums">
-                        {order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "0"}
-                      </span>
+                    <div className="text-[16px] font-black text-[#0A3D2E] leading-none truncate">
+                      {order.orderType || order.summary || "تفاصيل الطلب"}
                     </div>
+                  </div>
 
-                    {/* الدين إن وجد */}
-                    {hasDebt && (
-                      <div
-                        style={getElementStyle(infoCustom?.blockDebt)}
-                        className="col-span-2 sm:col-span-1 flex flex-col gap-0.5 rounded-xl border-2 border-rose-400 bg-rose-950/80 p-1.5 shadow-md animate-pulse"
-                      >
-                        <span className="text-[9px] sm:text-[10px] font-bold text-rose-300">
-                          الدين:
+                  {/* سطر سعر الطلب */}
+                  {!hideSubtotalInfo && (
+                    <div className="w-full h-[38px] rounded-[12px] bg-[#FFFEF8] border-[1.5px] border-[#C9A86A] px-3 flex items-center justify-between gap-2 shadow-[0_2px_6px_rgba(201,168,106,0.12),inset_0_1px_0_white]">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="w-[20px] h-[20px] rounded-[8px] bg-[#FDF6E3] border border-[#C9A86A]/30 flex items-center justify-center">
+                          <svg className="w-[11px] h-[11px] text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                            <path d="M12 18V6" />
+                          </svg>
                         </span>
-                        <span className="font-mono font-black text-xs sm:text-sm text-rose-200 tabular-nums">
-                          {`${formatDinarAsAlf(calculatedDebt)} الف`}
-                        </span>
+                        <span className="text-[11px] font-bold text-[#0A3D2E] whitespace-nowrap">سعر الطلب</span>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* سطر 4: المبلغ الكلي المطلوب أو شارة كل شي واصل */}
-                <div
-                  style={getElementStyle(infoCustom?.blockTotal)}
-                  className={`rounded-xl border-2 p-2 sm:p-2.5 shadow-lg flex items-center justify-between gap-2 mt-1 ${
-                    order.prepaidAll
-                      ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#165B45] to-[#0F4D3A] text-[#F5D77F]"
-                      : "border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] text-[#F5D77F]"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <div className="shrink-0 w-fit inline-flex">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={infoCustom?.iconCoins?.imageUrl || "/images/order-luxury/order-info-card/icon-order-coins.jpg"}
-                        alt="المبلغ الكلي"
-                        style={getElementStyle(infoCustom?.iconCoins)}
-                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-contain border border-[#C9A86A]/60 shadow-xs shrink-0"
-                      />
+                      <div className="flex items-baseline gap-1 shrink-0">
+                        <span className="text-[13px] font-black text-[#0A3D2E] font-mono">
+                          {order.orderSubtotal != null ? formatDinarAsAlf(subtotalVal) : "0"}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#8B6A2A] whitespace-nowrap">ألف</span>
+                      </div>
                     </div>
-                    <span className="text-[10px] sm:text-xs font-black">
-                      {order.prepaidAll ? "حالة الدفع:" : "المبلغ الكلي:"}
-                    </span>
+                  )}
+
+                  {/* سطر التوصيل */}
+                  <div className="w-full h-[38px] rounded-[12px] bg-[#FFFEF8] border-[1.5px] border-[#C9A86A] px-3 flex items-center justify-between gap-2 shadow-[0_2px_6px_rgba(201,168,106,0.12),inset_0_1px_0_white]">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="w-[20px] h-[20px] rounded-[8px] bg-[#0A3D2E] border border-[#C9A86A]/20 flex items-center justify-center">
+                        <svg className="w-[11px] h-[11px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <rect x="1" y="3" width="15" height="13" />
+                          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                          <circle cx="5.5" cy="18.5" r="2.5" />
+                          <circle cx="18.5" cy="18.5" r="2.5" />
+                        </svg>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#0A3D2E] whitespace-nowrap">التوصيل</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 shrink-0">
+                      <span className="text-[13px] font-black text-[#0A3D2E] font-mono">
+                        {order.deliveryPrice != null ? formatDinarAsAlf(deliveryVal) : "0"}
+                      </span>
+                      <span className="text-[10px] font-bold text-[#8B6A2A] whitespace-nowrap">ألف</span>
+                    </div>
                   </div>
 
-                  <span className="font-mono text-base sm:text-lg md:text-xl font-black tabular-nums tracking-wide drop-shadow-md">
+                  {/* الصندوق الملكي الذهبي الكبير للمبلغ الإجمالي */}
+                  <div
+                    className="w-full h-[64px] rounded-[14px] border-[2px] border-[#0A3D2E] shadow-[0_4px_14px_rgba(201,168,106,0.3),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #E8C77E 0%, #C9A86A 100%)" }}
+                  >
                     {order.prepaidAll ? (
-                      <span className="text-[#F5D77F] font-black animate-pulse">كل شي واصل ✓</span>
-                    ) : order.totalAmount != null ? (
-                      formatDinarAsAlfWithUnit(order.totalAmount)
+                      <span className="text-[20px] font-black text-[#0A3D2E]">كل شي واصل ✓</span>
                     ) : (
-                      "—"
+                      <span className="text-[36px] font-black leading-none text-[#0A3D2E] font-mono tracking-tight">
+                        {order.totalAmount != null ? formatDinarAsAlf(totalVal) : "0"}
+                      </span>
                     )}
-                  </span>
+                  </div>
                 </div>
 
-              </div>
-
-              {/* الجهة اليسرى: صورة الطلبية + أزرار الرفع بالكاميرا والمعرض */}
-              <div
-                className="w-[100px] xs:w-[115px] sm:w-[135px] md:w-[155px] flex flex-col items-center justify-between shrink-0 gap-1.5 self-center"
-                style={getElementStyle(infoCustom?.photoContainer)}
-              >
-                {/* إطار الصورة المذهب الملكي */}
-                <div className="w-full relative group">
-                  <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] bg-[#06281D]/90 shadow-xl relative flex items-center justify-center">
-                    {orderImageUrl ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                {/* القسم الأيسر: صورة الطلبية */}
+                <div className="shrink-0 flex flex-col items-center gap-1.5 w-[110px]">
+                  <div className="relative w-[110px] h-[110px] rounded-[18px] p-[2.5px] bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_4px_16px_rgba(201,168,106,0.28)]">
+                    <div className="w-full h-full rounded-[15px] bg-gradient-to-br from-[#E8E0C8] via-[#D8CCB0] to-[#C9B997] relative overflow-hidden border border-white/50 flex flex-col items-center justify-center">
+                      {orderImageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={orderImageUrl}
                           alt="صورة الطلبية"
-                          className="h-full w-full object-contain cursor-zoom-in group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300"
                           onClick={() => {
                             setPreviewImageUrl(orderImageUrl);
                             setZoomOpen(true);
                           }}
                         />
-                        <div
-                          className="absolute bottom-1 left-1 bg-[#06281D]/80 border border-[#C9A86A]/80 text-[#F5D77F] p-1 rounded-md text-[10px] shadow-sm cursor-pointer hover:bg-[#0A3D2E]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImageUrl(orderImageUrl);
-                            setZoomOpen(true);
-                          }}
-                        >
-                          🔍
-                        </div>
-                      </>
-                    ) : (
-                      <div
-                        className="flex flex-col items-center justify-center p-2 text-center"
-                        style={getElementStyle(infoCustom?.placeholderNoPhoto)}
-                      >
-                        <span className="text-2xl mb-0.5 opacity-50">📦</span>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-[#F5D77F]/60 leading-tight">
-                          لا توجد صورة
-                        </span>
-                      </div>
-                    )}
+                      ) : (
+                        <>
+                          <div
+                            className="absolute inset-0 opacity-[0.15]"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15 0 L16 12 L28 8 L18 15 L28 22 L16 18 L15 30 L14 18 L2 22 L12 15 L2 8 L14 12 Z' fill='%230A3D2E'/%3E%3C/svg%3E")`,
+                            }}
+                          />
+                          <div className="relative z-10 text-center">
+                            <div className="w-[32px] h-[32px] mx-auto rounded-[9px] bg-[#0A3D2E]/10 border border-[#0A3D2E]/15 flex items-center justify-center mb-1">
+                              <svg className="w-4 h-4 text-[#0A3D2E]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                              </svg>
+                            </div>
+                            <span className="text-[10px] font-bold text-[#3A2E1A]/80 leading-none">صورة الطلب</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* أزرار الكاميرا والمعرض لرفع وتحديث صورة الطلبية */}
-                <div className="grid grid-cols-2 gap-1 w-full pt-0.5">
-                  {/* زر الكاميرا 📷 */}
-                  <div className="w-full flex justify-center" style={getElementStyle(infoCustom?.btnCamera)}>
+                  {/* أزرار كاميرا ومعرض صور الطلب */}
+                  <div className="grid grid-cols-2 gap-1.5 w-full">
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => {
-                        const el = cameraFileRef.current;
-                        if (!el) return;
-                        el.setAttribute("capture", "environment");
-                        el.click();
-                      }}
-                      className="w-full rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#165B45] py-1 text-[10px] sm:text-xs font-black text-[#F5D77F] shadow-sm hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
-                      title="التقاط صورة الطلبية بالكاميرا"
+                      onClick={() => cameraFileRef.current?.click()}
+                      className="h-[28px] rounded-full bg-white border border-[#C9A86A]/35 text-[#6B5A38] flex items-center justify-center gap-1 text-[10px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
                     >
                       <span>📷</span>
-                      <span>{busy ? "…" : "كاميرا"}</span>
+                      <span>كاميرا</span>
                     </button>
-                  </div>
-
-                  {/* زر المعرض 🖼️ */}
-                  <div className="w-full flex justify-center" style={getElementStyle(infoCustom?.btnGallery)}>
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => {
-                        const el = galleryFileRef.current;
-                        if (!el) return;
-                        el.removeAttribute("capture");
-                        el.click();
-                      }}
-                      className="w-full rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#165B45] py-1 text-[10px] sm:text-xs font-black text-[#F5D77F] shadow-sm hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
-                      title="اختيار صورة الطلبية من المعرض"
+                      onClick={() => galleryFileRef.current?.click()}
+                      className="h-[28px] rounded-full bg-white border border-[#C9A86A]/35 text-[#6B5A38] flex items-center justify-center gap-1 text-[10px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
                     >
                       <span>🖼️</span>
-                      <span>{busy ? "…" : "معرض"}</span>
+                      <span>معرض</span>
                     </button>
                   </div>
                 </div>
-
-                {/* نموذج رفع صورة الطلبية في الخلفية */}
-                <form
-                  ref={formRef}
-                  action={formAction}
-                  encType="multipart/form-data"
-                  className="hidden"
-                >
-                  <input type="hidden" name="orderId" value={order.id} />
-                  {nextUrl && <input type="hidden" name="next" value={nextUrl} />}
-                  {auth && (
-                    <>
-                      <input type="hidden" name="c" value={auth.c} />
-                      <input type="hidden" name="exp" value={auth.exp} />
-                      <input type="hidden" name="s" value={auth.s} />
-                    </>
-                  )}
-                  <input
-                    ref={cameraFileRef}
-                    name="orderImage"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="sr-only"
-                    onChange={(e) => handleFileSelected(e.target.files?.[0], cameraFileRef.current)}
-                  />
-                  <input
-                    ref={galleryFileRef}
-                    name="orderImage"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="sr-only"
-                    onChange={(e) => handleFileSelected(e.target.files?.[0], galleryFileRef.current)}
-                  />
-                </form>
               </div>
             </div>
           )}
