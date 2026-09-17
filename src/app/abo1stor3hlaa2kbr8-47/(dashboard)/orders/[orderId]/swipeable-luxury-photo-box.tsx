@@ -59,10 +59,12 @@ export function SwipeableLuxuryPhotoBox({
     const diff = currentOffsetRef.current;
     setOffsetX(0);
 
-    if (diff > 35) {
-      onSwipeRight(); // يمين = كاميرا
-    } else if (diff < -35) {
-      onSwipeLeft(); // يسار = استوديو / معرض
+    if (diff > 25) {
+      // سحب لليمين -> فتح الكاميرا 📷
+      onSwipeRight();
+    } else if (diff < -25) {
+      // سحب لليسار -> فتح المعرض / الاستوديو 🖼️
+      onSwipeLeft();
     } else if (!hasMovedRef.current) {
       onClickPreview();
     }
@@ -81,7 +83,7 @@ export function SwipeableLuxuryPhotoBox({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || isBusy) return;
     const diff = e.clientX - startXRef.current;
-    if (Math.abs(diff) > 6) {
+    if (Math.abs(diff) > 5) {
       hasMovedRef.current = true;
     }
     const dampened = diff * 0.45;
@@ -95,10 +97,12 @@ export function SwipeableLuxuryPhotoBox({
     const diff = currentOffsetRef.current;
     setOffsetX(0);
 
-    if (diff > 35) {
-      onSwipeRight(); // يمين = كاميرا
-    } else if (diff < -35) {
-      onSwipeLeft(); // يسار = معرض
+    if (diff > 25) {
+      // سحب لليمين -> فتح الكاميرا 📷
+      onSwipeRight();
+    } else if (diff < -25) {
+      // سحب لليسار -> فتح المعرض 🖼️
+      onSwipeLeft();
     } else if (!hasMovedRef.current) {
       onClickPreview();
     }

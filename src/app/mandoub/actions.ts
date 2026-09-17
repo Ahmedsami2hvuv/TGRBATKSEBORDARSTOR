@@ -810,7 +810,11 @@ export async function uploadMandoubOrderImage(
     return { error: "معرّف الطلب مفقود" };
   }
 
-  const file = formData.get("orderImage");
+  const file =
+    formData.get("orderImage") ||
+    formData.get("orderPhoto") ||
+    formData.get("orderImageCamera") ||
+    formData.get("orderImageGallery");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "التقط صورة أو اختر ملفاً من المعرض" };
   }

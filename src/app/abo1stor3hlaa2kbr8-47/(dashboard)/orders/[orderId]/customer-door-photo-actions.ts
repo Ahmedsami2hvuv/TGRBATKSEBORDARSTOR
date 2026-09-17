@@ -165,7 +165,11 @@ export async function uploadOrderImageFromView(
   });
   if (!order) return { error: "الطلب غير موجود" };
 
-  const file = formData.get("orderPhoto");
+  const file =
+    formData.get("orderPhoto") ||
+    formData.get("orderImage") ||
+    formData.get("orderImageCamera") ||
+    formData.get("orderImageGallery");
   if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أولاً" };
 
   let photoUrl: string;

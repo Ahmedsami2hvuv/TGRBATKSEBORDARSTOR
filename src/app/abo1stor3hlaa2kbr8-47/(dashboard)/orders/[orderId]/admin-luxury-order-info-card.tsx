@@ -77,7 +77,7 @@ export function AdminLuxuryOrderInfoCard({
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      <form ref={formRef} action={formAction} className="hidden">
+      <form ref={formRef} action={formAction} className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]">
         <input type="hidden" name="orderId" value={order.id} />
         {nextUrl && <input type="hidden" name="nextUrl" value={nextUrl} />}
         {auth && (
@@ -90,7 +90,7 @@ export function AdminLuxuryOrderInfoCard({
         <input
           ref={cameraFileRef}
           type="file"
-          name="orderImage"
+          name="orderImageCamera"
           accept="image/*"
           capture="environment"
           onChange={(e) => {
@@ -101,7 +101,7 @@ export function AdminLuxuryOrderInfoCard({
         <input
           ref={galleryFileRef}
           type="file"
-          name="orderImage"
+          name="orderImageGallery"
           accept="image/*"
           onChange={(e) => {
             const file = e.target.files?.[0];

@@ -228,14 +228,14 @@ export function AdminLuxuryCustomerCard({
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      {/* مدخلات الملفات المخفية للكاميرا والمعرض */}
+      {/* مدخلات الملفات المخفية للكاميرا والمعرض - خارج الشاشة لضمان دعم capture للكاميرا */}
       <input
         ref={cameraFileRef}
         type="file"
         name={isSecondDestination ? "secondCustomerDoorPhotoCamera" : "customerDoorPhotoCamera"}
         accept="image/*"
         capture="environment"
-        className="sr-only hidden"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, cameraFileRef.current);
@@ -246,7 +246,7 @@ export function AdminLuxuryCustomerCard({
         type="file"
         name={isSecondDestination ? "secondCustomerDoorPhotoGallery" : "customerDoorPhotoGallery"}
         accept="image/*"
-        className="sr-only hidden"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, galleryFileRef.current);
