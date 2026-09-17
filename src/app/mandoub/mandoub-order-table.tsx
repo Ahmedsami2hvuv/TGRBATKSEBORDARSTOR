@@ -1787,8 +1787,21 @@ export function MandoubOrderTable({
         createPortal(
           <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
             {/* الهيدر العلوي المثبت للطلب */}
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm">
-              <div className="flex items-center gap-3">
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-2.5 sm:p-3.5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                {/* معلومات الوقت والتاريخ لرفع الطلب ووقت التوصيل */}
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 flex-wrap">
+                  {activeOrderData.createdAt && (
+                    <span className="inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800/60 font-black text-[11px]">
+                      📅 {formatBaghdadDateTime(activeOrderData.createdAt)}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-800/60 font-black text-[11px]">
+                    ⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}
+                  </span>
+                </div>
+
+                {/* زر الإغلاق الأحمر الدائري في الأعلى */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1798,28 +1811,11 @@ export function MandoubOrderTable({
                     const newPath = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
                     window.history.pushState({}, "", newPath);
                   }}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white font-black shadow-lg border-2 border-white dark:border-slate-800 active:scale-90 transition-all cursor-pointer"
+                  className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white font-black shadow-lg border-2 border-white dark:border-slate-800 active:scale-90 transition-all cursor-pointer"
                   title="إغلاق النافذة"
                 >
                   <span className="text-lg font-black leading-none">✕</span>
                 </button>
-
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base font-black text-slate-900 dark:text-white">#{activeOrderData.shortId}</span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${orderStatusBadgeClass(activeOrderData.orderStatus)}`}>
-                      {STATUS_AR[activeOrderData.orderStatus] ?? activeOrderData.orderStatus}
-                    </span>
-                    <MandoubOrderDetailActions closeHref="#" orderId={activeOrderData.id} />
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 flex-wrap">
-                    {activeOrderData.createdAt && (
-                      <span className="text-sky-700 dark:text-sky-400">📅 {formatBaghdadDateTime(activeOrderData.createdAt)}</span>
-                    )}
-                    <span>•</span>
-                    <span className="text-rose-700 dark:text-rose-400">⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}</span>
-                  </div>
-                </div>
               </div>
             </div>
 

@@ -368,8 +368,8 @@ export function OrderDetailSection({
           <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
           <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
 
-          {/* سطر موحد نظيف وأنيق: رقم الطلب + شارة الحالة */}
-          <div className="flex items-center justify-between gap-2">
+          {/* سطر موحد فاخر: رقم الطلب + شارة الحالة الخضراء عند التسليم + زر تعديل الطلب الفاخر */}
+          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
             {/* جهة اليمين: رقم الطلب + شارة الحالة */}
             <div className="flex items-center gap-[8px] flex-nowrap shrink-0">
               {/* صندوق رقم الطلب الذهبي */}
@@ -382,32 +382,66 @@ export function OrderDetailSection({
                 </span>
               </div>
 
-              {/* شارة حالة الطلب */}
+              {/* شارة حالة الطلب (أخضر زمردي فاخر عند التسليم) */}
               <div
-                className="inline-flex items-center gap-1.5 px-[10px] rounded-full bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A] font-black shadow-[inset_0_1px_0_white] shrink-0"
+                className={`inline-flex items-center gap-1.5 px-[10px] rounded-full font-black shadow-[inset_0_1px_0_white] shrink-0 ${
+                  order.status === "delivered"
+                    ? "bg-[#E6F4EF] border border-[#0A3D2E]/30 text-[#0A3D2E]"
+                    : "bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A]"
+                }`}
                 style={{ whiteSpace: "nowrap", height: "30px", fontSize: "11px" }}
               >
-                <div className="w-[6px] h-[6px] rounded-full bg-[#D4A017] animate-pulse shadow-[0_0_6px_#E8C77E] shrink-0" />
+                <div
+                  className={`w-[6px] h-[6px] rounded-full animate-pulse shrink-0 ${
+                    order.status === "delivered"
+                      ? "bg-[#0A3D2E] shadow-[0_0_6px_#0A3D2E]"
+                      : "bg-[#D4A017] shadow-[0_0_6px_#E8C77E]"
+                  }`}
+                />
                 <span style={{ whiteSpace: "nowrap" }}>
                   {STATUS_AR[order.status] ?? order.status}
                 </span>
               </div>
             </div>
 
-            {/* جهة اليسار: زر الإغلاق يظهر فقط عند فتح الطلب في صفحة مستقلة وليس داخل المودال */}
-            {!isModal && (
+            {/* جهة اليسار: زر تعديل الطلب الفاخر وزر الإغلاق عند الحاجة */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={handleClose}
-                className="w-[28px] h-[28px] rounded-full bg-white border border-[#FF8A8A]/50 flex items-center justify-center shadow-[0_1px_4px_rgba(197,48,48,0.12)] active:scale-90 shrink-0 cursor-pointer hover:bg-rose-50 transition"
-                title="إغلاق عرض الطلب"
+                id={`edit-order-btn-${order.id}`}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
+                }}
+                className="h-[32px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.15),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition cursor-pointer"
+                title="تعديل بيانات الطلب"
               >
-                <svg className="w-[13px] h-[13px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل الطلب</span>
+                <span
+                  className="w-[18px] h-[18px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                  style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                >
+                  <svg className="w-[9px] h-[9px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </span>
               </button>
-            )}
+
+              {/* زر الإغلاق يظهر فقط عند فتح الطلب في صفحة مستقلة وليس داخل المودال */}
+              {!isModal && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="w-[28px] h-[28px] rounded-full bg-white border border-[#FF8A8A]/50 flex items-center justify-center shadow-[0_1px_4px_rgba(197,48,48,0.12)] active:scale-90 shrink-0 cursor-pointer hover:bg-rose-50 transition"
+                  title="إغلاق عرض الطلب"
+                >
+                  <svg className="w-[13px] h-[13px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
