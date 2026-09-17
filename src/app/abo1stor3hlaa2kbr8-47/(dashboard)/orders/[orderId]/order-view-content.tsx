@@ -600,68 +600,44 @@ export function OrderViewContent({
                   />
                 </div>
 
-                {/* أزرار قوالب الواتساب المخصصة للموقع */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  {order.customerLocationUrl?.trim() ? (
-                    <WaLocationCustomButtons
-                      userRole="admin"
-                      customerPhone={order.customerPhone}
-                      customerPhone2={order.customerPhone2 || undefined}
-                      shopPhone={submitterPhone || undefined}
-                      orderStatus={order.status}
-                      hasCustomerLocation={Boolean(order.customerLocationUrl)}
-                      hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-                      templateVars={{
-                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                        city: order.customerRegion?.name || "—",
-                        total_price: currentTotalPriceStr,
-                        total: currentTotalPriceStr,
-                        delivery: currentCourierName,
-                        courier: currentCourierName,
-                        courierName: currentCourierName,
-                        deliveryName: currentCourierName,
-                        location_url: order.customerLocationUrl || "",
-                        landmark: order.customerLandmark || "",
-                        order_number: String(order.orderNumber || ""),
-                        customer_phone: order.customerPhone || "",
-                        customer_phone2: order.customerPhone2 || "",
-                        shop_phone: submitterPhone || "",
-                      }}
-                      customButtons={waButtonSettings}
-                      designerConfig={designerConfigState}
-                    />
-                  ) : (
-                    <AdminCustomerLocationQuick
-                      orderId={order.id}
-                      customerPhone={order.customerPhone}
-                      customerPhone2={order.customerPhone2 || undefined}
-                      shopPhone={submitterPhone || undefined}
-                      orderStatus={order.status}
-                      templateVars={{
-                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                        city: order.customerRegion?.name || "",
-                        total_price: String(order.totalAmount || ""),
-                        delivery: order.courier?.name || "",
-                        location_url: order.customerLocationUrl || "",
-                        landmark: order.customerLandmark || "",
-                        order_number: String(order.orderNumber || ""),
-                        customer_phone: order.customerPhone || "",
-                        customer_phone2: order.customerPhone2 || "",
-                        shop_phone: submitterPhone || "",
-                      }}
-                      customButtons={waButtonSettings}
-                      designerConfig={designerConfigState}
-                    />
-                  )}
-
-                  <OtherRegionsCustomerDetails
-                    phone={order.customerPhone}
-                    currentRegionId={order.customerRegionId}
-                    currentRegionName={order.customerRegion?.name}
+                {/* أزرار اللوكيشن الملكية الثلاثة المذهبة من تحديث Meta AI (طلب لوكيشن - رفع لوكيشن - لصق لوكيشن) */}
+                <div className="w-full pt-1">
+                  <AdminCustomerLocationQuick
                     orderId={order.id}
-                    isSecondDestination={false}
+                    customerPhone={order.customerPhone}
+                    customerPhone2={order.customerPhone2 || undefined}
+                    shopPhone={submitterPhone || undefined}
+                    orderStatus={order.status}
+                    templateVars={{
+                      clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                      city: order.customerRegion?.name || "—",
+                      total_price: currentTotalPriceStr,
+                      total: currentTotalPriceStr,
+                      delivery: currentCourierName,
+                      courier: currentCourierName,
+                      courierName: currentCourierName,
+                      deliveryName: currentCourierName,
+                      location_url: order.customerLocationUrl || "",
+                      landmark: order.customerLandmark || "",
+                      order_number: String(order.orderNumber || ""),
+                      customer_phone: order.customerPhone || "",
+                      customer_phone2: order.customerPhone2 || "",
+                      shop_phone: submitterPhone || "",
+                    }}
+                    customButtons={waButtonSettings}
                     designerConfig={designerConfigState}
                   />
+
+                  <div className="mt-2">
+                    <OtherRegionsCustomerDetails
+                      phone={order.customerPhone}
+                      currentRegionId={order.customerRegionId}
+                      currentRegionName={order.customerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={false}
+                      designerConfig={designerConfigState}
+                    />
+                  </div>
                 </div>
 
                 {/* بلوك الاستدلال الذكي المضيء */}

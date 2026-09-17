@@ -267,11 +267,11 @@ export function AdminLuxuryCustomerCard({
                       <span className="text-[13px] font-bold">موقع الزبون</span>
                     </a>
                   ) : (
-                    <div className="w-full h-[40px] rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center gap-1.5 text-xs font-bold">
-                      <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <div className="w-full h-[38px] rounded-full bg-[#0A3D2E]/5 text-[#6B7D77] border border-[#0A3D2E]/10 flex items-center justify-center gap-1.5 text-xs font-bold shadow-inner">
+                      <svg className="w-3.5 h-3.5 opacity-60 text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       </svg>
-                      <span>لا يوجد موقع للزبون</span>
+                      <span>لم يتم حفظ موقع للزبون بعد</span>
                     </div>
                   )}
 

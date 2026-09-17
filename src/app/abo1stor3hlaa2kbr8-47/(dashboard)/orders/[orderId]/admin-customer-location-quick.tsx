@@ -1,33 +1,18 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import React, { useActionState, useRef, useState, useEffect } from "react";
 import {
   type CustomerDoorPhotoState,
   uploadCustomerLocationFromView,
   pasteCustomerLocationFromView,
 } from "./customer-door-photo-actions";
-
-const initial: CustomerDoorPhotoState = {};
-
-function IconMapPin() {
-  return (
-    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-    </svg>
-  );
-}
-
-function IconLink() {
-  return (
-    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-}
-
 import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
 import { type OrderCardDesignerConfig, getElementStyle } from "@/lib/order-card-customizer";
+import { whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
+import { PhoneActionModal } from "@/components/phone-action-modal";
+import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
+
+const initial: CustomerDoorPhotoState = {};
 
 export function AdminCustomerLocationQuick({
   orderId,
@@ -68,6 +53,32 @@ export function AdminCustomerLocationQuick({
   const [showPaste, setShowPaste] = useState(false);
   const [pastedUrl, setPastedUrl] = useState("");
 
+  const [buttons, setButtons] = useState<WaButtonNextItem[]>(customButtons || []);
+  const [activePhoneModal, setActivePhoneModal] = useState<{
+    phone1: string;
+    phone2?: string | null;
+    messageText: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (customButtons) {
+      setButtons(customButtons);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: WaButtonNextItem[]) => {
+        if (!cancelled && Array.isArray(data)) {
+          setButtons(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [customButtons]);
+
   const requestLocation = () => {
     setClientError("");
     if (!navigator.geolocation) {
@@ -91,6 +102,47 @@ export function AdminCustomerLocationQuick({
     );
   };
 
+  const handleRequestLocationWa = () => {
+    const locBtn = buttons.find((b) => b.showNextToLocation);
+    let messageText = "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك 📍";
+
+    if (locBtn && locBtn.templateText) {
+      const variants = splitMandoubWaTemplateVariants(locBtn.templateText);
+      const chosenTemplate = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : locBtn.templateText;
+      messageText = applyMandoubWaTemplate(chosenTemplate, {
+        ...(templateVars || {}),
+        customer_phone: customerPhone || templateVars?.customer_phone || "",
+        customer_phone2: customerPhone2 || templateVars?.customer_phone2 || "",
+        shop_phone: shopPhone || templateVars?.shop_phone || "",
+      });
+    }
+
+    const p1 = customerPhone || templateVars?.customer_phone || "";
+    const p2 = customerPhone2 || templateVars?.customer_phone2 || "";
+
+    if (p1 && p2 && p1.trim() !== p2.trim()) {
+      setActivePhoneModal({
+        phone1: p1,
+        phone2: p2,
+        messageText,
+      });
+      return;
+    }
+
+    const targetPhone = p1 || p2;
+    if (!targetPhone) {
+      setClientError("رقم هاتف الزبون غير متوفر لطلب الموقع");
+      return;
+    }
+
+    const url = whatsappMeUrl(targetPhone, messageText);
+    if (url && url !== "#") {
+      openUrlFromUserGesture(url);
+    } else {
+      setClientError("تعذر فتح الواتساب");
+    }
+  };
+
   const pending = gpsPending || pastePending;
   const error = gpsState.error || pasteState.error || clientError;
   const ok = gpsState.ok || pasteState.ok;
@@ -99,37 +151,48 @@ export function AdminCustomerLocationQuick({
   const pasteBtnCustom = designerConfig?.customerCard?.btnPasteLocation;
 
   return (
-    <div className="mt-2 space-y-2 w-full">
-      {/* Hidden GPS form */}
+    <div className="mt-3.5 space-y-2.5 w-full" dir="rtl">
+      {/* نموذج الـ GPS المخفي */}
       <form ref={gpsFormRef} action={gpsAction} className="hidden">
         <input ref={latRef} type="hidden" name="lat" />
         <input ref={lngRef} type="hidden" name="lng" />
         <input type="hidden" name="target" value={target} />
       </form>
 
-      <div className="flex flex-wrap items-center gap-2">
+      {/* صف الأزرار الملكية الثلاثة المذهبة من تصميم Meta AI */}
+      <div className="flex gap-[8px] items-center w-full">
+        {/* الزر 1: رفع لوكيشن أوتوماتيكي (GPS) */}
         {!uploadBtnCustom?.hidden && (
-          <div className="flex-1 min-w-[120px]" style={getElementStyle(uploadBtnCustom)}>
+          <div className="flex-1 min-w-0" style={getElementStyle(uploadBtnCustom)}>
             <button
               type="button"
               disabled={pending || locating}
               onClick={requestLocation}
               aria-busy={pending || locating}
-              className="w-full flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] px-2.5 py-2 text-xs font-black text-[#F5D77F] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-wait disabled:opacity-70 cursor-pointer"
+              className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] overflow-hidden cursor-pointer"
             >
-              {uploadBtnCustom?.imageUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={uploadBtnCustom.imageUrl} alt="GPS" className="w-5 h-5 object-contain shrink-0 pointer-events-none" />
-              ) : (
-                <IconMapPin />
-              )}
-              <span>{locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}</span>
+              <div
+                className="absolute inset-0 opacity-[0.09] pointer-events-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
+                }}
+              />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+              <span className="relative flex flex-col items-center justify-center gap-[1px] leading-none px-[2px] text-center">
+                <span className="flex items-center gap-[3px] text-[11px] font-black text-[#0A3D2E] tracking-tight">
+                  <span className="text-[11px]">📍</span>
+                  <span>{locating ? "جارٍ الجلب…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن"}</span>
+                </span>
+                <span className="text-[10px] font-black text-[#0A3D2E]/80 tracking-wide">(GPS)</span>
+              </span>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
             </button>
           </div>
         )}
 
+        {/* الزر 2: لصق لوكيشن */}
         {!pasteBtnCustom?.hidden && (
-          <div className="flex-1 min-w-[110px]" style={getElementStyle(pasteBtnCustom)}>
+          <div className="flex-1 min-w-0" style={getElementStyle(pasteBtnCustom)}>
             <button
               type="button"
               disabled={pending || locating}
@@ -137,64 +200,97 @@ export function AdminCustomerLocationQuick({
                 setShowPaste(!showPaste);
                 setClientError("");
               }}
-              className={`w-full flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#C9A86A] px-2.5 py-2 text-xs font-black shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer ${
-                showPaste 
-                  ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F]" 
-                  : "bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#FFF8F0]"
-              }`}
+              className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] overflow-hidden cursor-pointer"
             >
-              {pasteBtnCustom?.imageUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={pasteBtnCustom.imageUrl} alt="Link" className="w-5 h-5 object-contain shrink-0 pointer-events-none" />
-              ) : (
-                <IconLink />
-              )}
-              <span>لصق لكيشن</span>
+              <div
+                className="absolute inset-0 opacity-[0.09] pointer-events-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
+                }}
+              />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+              <span className="relative flex items-center justify-center gap-1 text-center px-1">
+                <span className="text-[12px]">📋</span>
+                <span className="text-[12px] font-black text-[#0A3D2E] leading-none">لصق لوكيشن</span>
+              </span>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
             </button>
           </div>
         )}
 
-        {/* أزرار الواتساب المخصصة للموقع (طلب لوكيشن) */}
-        <div className="flex-1 min-w-[120px]">
-          <WaLocationCustomButtons
-            userRole="admin"
-            customerPhone={customerPhone}
-            customerPhone2={customerPhone2}
-            shopPhone={shopPhone}
-            orderStatus={orderStatus}
-            templateVars={templateVars}
-            customButtons={customButtons}
-            designerConfig={designerConfig}
-          />
+        {/* الزر 3: طلب لوكيشن (واتساب) */}
+        <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={handleRequestLocationWa}
+            className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#E8A525] via-[#D4850F] to-[#B86D0A] border border-[#9C7D46]/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_4px_14px_rgba(184,109,10,0.32)] active:scale-[0.97] transition-all hover:shadow-[0_0_18px_rgba(212,133,15,0.5),0_4px_14px_rgba(184,109,10,0.38)] overflow-hidden cursor-pointer"
+          >
+            <div
+              className="absolute inset-0 opacity-[0.10] pointer-events-none"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
+              }}
+            />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+            <span className="relative flex items-center justify-center gap-1 text-center px-1">
+              <span className="text-[12px] font-black text-[#0A3D2E] leading-none">طلب لوكيشن</span>
+              <span className="text-[12px]">💬</span>
+            </span>
+            <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            <span className="absolute inset-[1px] rounded-[11px] border border-white/20 pointer-events-none" />
+          </button>
         </div>
       </div>
 
+      {/* نموذج لصق الرابط الملكي المذهب */}
       {showPaste && (
-        <form action={pasteAction} className="mt-2 p-3 bg-[#06281D]/90 rounded-2xl border-2 border-[#C9A86A]/70 space-y-2 animate-in slide-in-from-top-1 duration-200 shadow-xl">
+        <form
+          action={pasteAction}
+          className="mt-2.5 p-3 rounded-[16px] bg-gradient-to-b from-[#FFFEFB] to-[#FDF6E3] border-[1.5px] border-[#C9A86A]/70 shadow-[0_4px_18px_rgba(201,168,106,0.25)] space-y-2 animate-in slide-in-from-top-1 duration-200"
+        >
           <input type="hidden" name="target" value={target} />
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <input
               type="text"
               name="locationUrl"
               value={pastedUrl}
               onChange={(e) => setPastedUrl(e.target.value)}
-              placeholder="الصق رابط لوكيشن قوقل ماب هنا..."
-              className="flex-1 min-h-[40px] rounded-xl border border-[#C9A86A]/60 bg-[#0A1A18] text-[#F5D77F] px-3 text-xs font-bold outline-none focus:border-[#F5D77F] font-mono transition-all text-right [direction:ltr]"
+              placeholder="الصق رابط خرائط قوقل ماب هنا..."
+              className="flex-1 min-h-[40px] rounded-[10px] border border-[#C9A86A]/60 bg-white text-[#0A3D2E] px-3 text-xs font-bold outline-none focus:border-[#0A3D2E] shadow-inner transition-all text-right [direction:ltr]"
               required
             />
             <button
               type="submit"
               disabled={pending}
-              className="px-5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
+              className="px-4 min-h-[40px] rounded-[10px] gold-grad border border-[#9C7D46]/40 text-[#0A3D2E] text-xs font-black shadow-[0_2px_8px_rgba(201,168,106,0.35)] hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
             >
-              {pastePending ? "حفظ..." : "حفظ"}
+              {pastePending ? "حفظ…" : "حفظ الرابط"}
             </button>
           </div>
         </form>
       )}
 
-      {error ? <p className="text-xs font-black text-rose-400 bg-rose-950/60 p-1.5 rounded-lg border border-rose-500/40 text-center">{error}</p> : null}
-      {ok ? <p className="text-xs font-black text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-500/40 text-center">تم تحديث لوكيشن الزبون بنجاح</p> : null}
+      {error ? (
+        <p className="text-xs font-black text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-300 text-center">
+          {error}
+        </p>
+      ) : null}
+      {ok ? (
+        <p className="text-xs font-black text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-300 text-center">
+          تم تحديث لوكيشن الزبون بنجاح ✨
+        </p>
+      ) : null}
+
+      {/* مودال اختيار الرقم عند إرسال طلب الواتساب */}
+      {activePhoneModal && (
+        <PhoneActionModal
+          type="whatsapp"
+          phone1={activePhoneModal.phone1}
+          phone2={activePhoneModal.phone2}
+          messageText={activePhoneModal.messageText}
+          onClose={() => setActivePhoneModal(null)}
+        />
+      )}
     </div>
   );
 }
