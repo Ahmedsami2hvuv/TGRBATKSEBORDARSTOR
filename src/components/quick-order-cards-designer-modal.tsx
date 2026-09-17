@@ -39,6 +39,7 @@ export function QuickOrderCardsDesignerModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [selectedElementKey, setSelectedElementKey] = useState<string>("btnCall");
+  const [moveStep, setMoveStep] = useState<number>(3); // خطوة التحريك بالبكسل
 
   // جلب إعدادات النطاق المحدد عند التبديل
   const fetchScopeConfig = async (targetScope: "admin" | "mandoub") => {
@@ -72,15 +73,20 @@ export function QuickOrderCardsDesignerModal({
     if (activeCard === "shop_card") {
       const list = [
         { key: "btnCall", label: "📞 زر الاتصال" },
-        { key: "btnWhatsApp", label: "💬 زر الواتساب" },
-        { key: "btnLocation", label: "📍 زر الموقع" },
-        { key: "btnDoorCamera", label: "📷 كاميرا باب المحل" },
-        { key: "btnDoorGallery", label: "🖼️ معرض باب المحل" },
-        { key: "btnDoorZoom", label: "🔍 تكبير باب المحل" },
-        { key: "shopNameBadge", label: "🏷️ اسم المحل" },
-        { key: "ownerNameBadge", label: "👤 اسم صاحب المحل" },
-        { key: "regionBadge", label: "📍 منطقة المحل" },
-        { key: "phoneBadge", label: "📱 هاتف المحل" },
+        { key: "btnWhatsapp", label: "💬 زر الواتساب" },
+        { key: "btnShopLocation", label: "📍 زر موقع المحل" },
+        { key: "headerShopInfo", label: "🏷️ كبسولة عنوان المحل" },
+        { key: "iconShopName", label: "🏢 أيقونة اسم المحل" },
+        { key: "textShopName", label: "✍️ نص اسم المحل" },
+        { key: "iconCustomerName", label: "👤 أيقونة اسم صاحب المحل" },
+        { key: "textCustomerName", label: "✍️ نص اسم صاحب المحل" },
+        { key: "iconRegion", label: "📍 أيقونة المنطقة" },
+        { key: "textRegion", label: "✍️ نص المنطقة" },
+        { key: "iconPhone", label: "📱 أيقونة رقم الهاتف" },
+        { key: "textPhone", label: "✍️ نص رقم الهاتف" },
+        { key: "photoContainer", label: "🖼️ إطار صورة باب المحل" },
+        { key: "btnCamera", label: "📷 زر كاميرا الباب" },
+        { key: "btnGallery", label: "🖼️ زر معرض الباب" },
       ];
       (config.shopCard?.customElements || []).forEach((el) => {
         list.push({ key: `custom_${el.id}`, label: `✨ ${el.title || (el.type === "text" ? el.textContent : "عنصر مخصص")}`, isCustom: true });
@@ -90,17 +96,18 @@ export function QuickOrderCardsDesignerModal({
     if (activeCard === "customer_card") {
       const list = [
         { key: "btnCall", label: "📞 زر الاتصال" },
-        { key: "btnWhatsApp", label: "💬 زر الواتساب" },
-        { key: "btnLocation", label: "📍 زر الموقع" },
-        { key: "btnAltPhone", label: "📱 الهاتف البديل" },
-        { key: "btnDoorCamera", label: "📷 كاميرا باب الزبون" },
-        { key: "btnDoorGallery", label: "🖼️ معرض باب الزبون" },
-        { key: "btnDoorZoom", label: "🔍 تكبير باب الزبون" },
-        { key: "customerNameBadge", label: "👤 اسم الزبون" },
-        { key: "customerRegionBadge", label: "📍 منطقة الزبون" },
-        { key: "landmarkBadge", label: "🏛️ نقطة دالة / ملاحظة" },
-        { key: "phoneBadge", label: "📱 هاتف الزبون" },
-        { key: "deliveryPriceBadge", label: "💵 سعر التوصيل" },
+        { key: "btnWhatsapp", label: "💬 زر الواتساب" },
+        { key: "btnLocation", label: "📍 زر موقع الزبون" },
+        { key: "headerCustomerInfo", label: "🏷️ كبسولة عنوان الزبون" },
+        { key: "iconCustomerName", label: "👤 أيقونة اسم الزبون" },
+        { key: "textCustomerName", label: "✍️ نص اسم الزبون" },
+        { key: "iconRegion", label: "📍 أيقونة المنطقة" },
+        { key: "textRegion", label: "✍️ نص المنطقة" },
+        { key: "iconPhone", label: "📱 أيقونة رقم الهاتف" },
+        { key: "textPhone", label: "✍️ نص رقم الهاتف" },
+        { key: "photoContainer", label: "🖼️ إطار صورة باب الزبون" },
+        { key: "btnCamera", label: "📷 زر كاميرا الباب" },
+        { key: "btnGallery", label: "🖼️ زر معرض الباب" },
       ];
       (config.customerCard?.customElements || []).forEach((el) => {
         list.push({ key: `custom_${el.id}`, label: `✨ ${el.title || (el.type === "text" ? el.textContent : "عنصر مخصص")}`, isCustom: true });
@@ -109,13 +116,19 @@ export function QuickOrderCardsDesignerModal({
     }
     if (activeCard === "order_info") {
       const list = [
-        { key: "orderNumberBadge", label: "🔢 رقم الطلب" },
-        { key: "orderTotalBadge", label: "💰 المبلغ الكلي" },
-        { key: "orderStatusBadge", label: "🔄 حالة الطلب" },
-        { key: "courierNameBadge", label: "🛵 اسم المندوب" },
-        { key: "orderNotesBadge", label: "📝 ملاحظات الطلب" },
-        { key: "btnQuickImage", label: "📸 صورة الطلب السريعة" },
-        { key: "btnVoiceNote", label: "🎙️ الملاحظة الصوتية" },
+        { key: "headerInfo", label: "🏷️ رأس كارت الطلبية" },
+        { key: "iconOrderBox", label: "📦 أيقونة صندوق الطلب" },
+        { key: "textOrderType", label: "✍️ نص نوع الطلب" },
+        { key: "iconClock", label: "⏰ أيقونة التوقيت" },
+        { key: "textOrderTime", label: "✍️ نص وقت الطلب" },
+        { key: "iconCoins", label: "🪙 أيقونة العملات" },
+        { key: "blockSubtotal", label: "💵 بلوك سعر المواد" },
+        { key: "blockDelivery", label: "🛵 بلوك أجور التوصيل" },
+        { key: "blockDebt", label: "💳 بلوك الديون" },
+        { key: "blockTotal", label: "💰 بلوك الحساب الكلي" },
+        { key: "photoContainer", label: "🖼️ إطار صورة الطلبية" },
+        { key: "btnCamera", label: "📷 زر كاميرا الطلبية" },
+        { key: "btnGallery", label: "🖼️ زر معرض الطلبية" },
       ];
       (config.orderInfoCard?.customElements || []).forEach((el) => {
         list.push({ key: `custom_${el.id}`, label: `✨ ${el.title || (el.type === "text" ? el.textContent : "عنصر مخصص")}`, isCustom: true });
@@ -124,10 +137,11 @@ export function QuickOrderCardsDesignerModal({
     }
     if (activeCard === "money_flow") {
       const list = [
-        { key: "btnSaderAction", label: "📤 زر الصادر" },
-        { key: "btnWardAction", label: "📥 زر الوارد" },
-        { key: "totalCollectedBadge", label: "💵 إجمالي المستلم" },
-        { key: "deliveryFeeBadge", label: "🛵 أجور التوصيل" },
+        { key: "badgeSader", label: "📤 شارة الصادر" },
+        { key: "badgeWard", label: "📥 شارة الوارد" },
+        { key: "btnSaderAction", label: "📤 زر تسليم صادر" },
+        { key: "btnWardAction", label: "📥 زر استلام وارد" },
+        { key: "recordItemCard", label: "📄 كارت السجل المالي" },
       ];
       (config.moneyFlowCard?.customElements || []).forEach((el) => {
         list.push({ key: `custom_${el.id}`, label: `✨ ${el.title || (el.type === "text" ? el.textContent : "عنصر مخصص")}`, isCustom: true });
@@ -201,14 +215,46 @@ export function QuickOrderCardsDesignerModal({
     const current = getSelectedElementConfig();
     const curX = current.offsetX || 0;
     const curY = current.offsetY || 0;
-    updateSelectedElementField("offsetX", curX + dx);
-    updateSelectedElementField("offsetY", curY + dy);
+    updateSelectedElementField("offsetX", Math.round(curX + dx));
+    updateSelectedElementField("offsetY", Math.round(curY + dy));
   };
 
   // إعادة ضبط الموضع للمركز
   const handleResetPosition = () => {
     updateSelectedElementField("offsetX", 0);
     updateSelectedElementField("offsetY", 0);
+  };
+
+  // تعديل التكبير الأفقي ScaleX
+  const adjustScaleX = (delta: number) => {
+    const current = getSelectedElementConfig();
+    const cur = current.scaleX ?? 1;
+    const nextVal = Math.max(0.1, Math.min(3, Math.round((cur + delta) * 100) / 100));
+    updateSelectedElementField("scaleX", nextVal);
+  };
+
+  // تعديل التكبير العمودي ScaleY
+  const adjustScaleY = (delta: number) => {
+    const current = getSelectedElementConfig();
+    const cur = current.scaleY ?? 1;
+    const nextVal = Math.max(0.1, Math.min(3, Math.round((cur + delta) * 100) / 100));
+    updateSelectedElementField("scaleY", nextVal);
+  };
+
+  // تعديل التكبير الكلي Scale
+  const adjustScale = (delta: number) => {
+    const current = getSelectedElementConfig();
+    const cur = current.scale ?? 1;
+    const nextVal = Math.max(0.2, Math.min(3, Math.round((cur + delta) * 100) / 100));
+    updateSelectedElementField("scale", nextVal);
+  };
+
+  // تعديل زاوية التدوير Rotate
+  const adjustRotate = (delta: number) => {
+    const current = getSelectedElementConfig();
+    const cur = current.rotate ?? 0;
+    const nextVal = Math.round(cur + delta);
+    updateSelectedElementField("rotate", nextVal);
   };
 
   // إضافة عنصر نصي أو صورة مخصصة
@@ -223,6 +269,9 @@ export function QuickOrderCardsDesignerModal({
       actionType: "none",
       style: {
         scale: 1,
+        scaleX: 1,
+        scaleY: 1,
+        rotate: 0,
         offsetX: 0,
         offsetY: 0,
         color: "#ffffff",
@@ -319,20 +368,66 @@ export function QuickOrderCardsDesignerModal({
       )
     : null;
 
+  // مكون مساعد لتغليف كل عنصر في المعاينة وجعله قابلاً للنقر والتحديد البصري المباشر
+  const InteractiveElement = ({
+    elemKey,
+    title,
+    cfg,
+    children,
+    className = "",
+    styleOverride,
+  }: {
+    elemKey: string;
+    title: string;
+    cfg?: CustomElementConfig;
+    children: React.ReactNode;
+    className?: string;
+    styleOverride?: React.CSSProperties;
+  }) => {
+    const isSelected = selectedElementKey === elemKey;
+    const isHidden = cfg?.hidden;
+
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedElementKey(elemKey);
+        }}
+        title={`انقر لتحديد (${title}) وتعديل موضعه وتكبيره وتدويره`}
+        className={`relative group cursor-pointer transition-all duration-200 select-none ${
+          isSelected
+            ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950 rounded-xl shadow-[0_0_15px_rgba(245,215,127,0.8)] z-30"
+            : "hover:ring-1 hover:ring-amber-400/60 hover:rounded-lg"
+        } ${isHidden ? "opacity-30 grayscale dashed border border-rose-500/50" : ""} ${className}`}
+        style={{
+          ...getElementStyle(cfg),
+          ...styleOverride,
+        }}
+      >
+        {isSelected && (
+          <div className="absolute -top-5 right-0 bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-md pointer-events-none whitespace-nowrap z-40 animate-bounce">
+            ★ {title}
+          </div>
+        )}
+        {children}
+      </div>
+    );
+  };
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-gradient-to-b from-slate-900 via-slate-950 to-black border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-1 sm:p-3 overflow-y-auto animate-fadeIn">
+      <div className="relative w-full max-w-5xl bg-gradient-to-b from-slate-900 via-slate-950 to-black border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh]">
         
         {/* شريط العنوان والتبديل العلوي */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-950/90 border-b border-amber-500/20 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 sm:p-4 bg-slate-950/90 border-b border-amber-500/20 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎨</span>
             <div>
               <h3 className="text-base sm:text-lg font-black text-amber-300">
-                استوديو ترتيب وتخصيص كروت الطلب
+                استوديو التعديل البصري المباشر لكروت الطلب
               </h3>
               <p className="text-xs font-bold text-slate-400">
-                تعديل وتزامن فوري ومستقل
+                انقر على أي زر لتحديده وتحريكه وتدويره وتكبيره فوراً 🎯
               </p>
             </div>
           </div>
@@ -377,7 +472,7 @@ export function QuickOrderCardsDesignerModal({
 
         {/* خيار تفعيل / تعطيل الستايل الملكي في حساب المندوب */}
         {canSwitchScope && config && (
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-amber-500/20">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-amber-500/20">
             <div className="flex items-center gap-2">
               <span className="text-lg">🚚</span>
               <div>
@@ -426,11 +521,14 @@ export function QuickOrderCardsDesignerModal({
           </div>
         )}
 
-        {/* شريط اختيار الكارت */}
-        <div className="flex items-center gap-2 p-2.5 bg-slate-900/60 border-b border-slate-800 overflow-x-auto shrink-0">
+        {/* شريط اختيار الكارت والأزرار السريعة */}
+        <div className="flex items-center gap-2 p-2 bg-slate-900/80 border-b border-slate-800 overflow-x-auto shrink-0">
           <button
             type="button"
-            onClick={() => setActiveCard("shop_card")}
+            onClick={() => {
+              setActiveCard("shop_card");
+              setSelectedElementKey("btnCall");
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition flex items-center gap-1.5 ${
               activeCard === "shop_card"
                 ? "bg-blue-600 text-white shadow-md border border-blue-400"
@@ -441,7 +539,10 @@ export function QuickOrderCardsDesignerModal({
           </button>
           <button
             type="button"
-            onClick={() => setActiveCard("customer_card")}
+            onClick={() => {
+              setActiveCard("customer_card");
+              setSelectedElementKey("btnCall");
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition flex items-center gap-1.5 ${
               activeCard === "customer_card"
                 ? "bg-purple-600 text-white shadow-md border border-purple-400"
@@ -452,7 +553,10 @@ export function QuickOrderCardsDesignerModal({
           </button>
           <button
             type="button"
-            onClick={() => setActiveCard("order_info")}
+            onClick={() => {
+              setActiveCard("order_info");
+              setSelectedElementKey("blockTotal");
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition flex items-center gap-1.5 ${
               activeCard === "order_info"
                 ? "bg-amber-600 text-white shadow-md border border-amber-400"
@@ -463,7 +567,10 @@ export function QuickOrderCardsDesignerModal({
           </button>
           <button
             type="button"
-            onClick={() => setActiveCard("money_flow")}
+            onClick={() => {
+              setActiveCard("money_flow");
+              setSelectedElementKey("btnSaderAction");
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition flex items-center gap-1.5 ${
               activeCard === "money_flow"
                 ? "bg-emerald-600 text-white shadow-md border border-emerald-400"
@@ -486,19 +593,24 @@ export function QuickOrderCardsDesignerModal({
         </div>
 
         {/* محتوى الاستوديو الرئيسي */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4">
           
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-amber-400 font-bold">
               ⏳ جاري تحميل الإعدادات والتزامن...
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="space-y-4">
               
-              {/* العمود الأيمن: قائمة العناصر وإضافة عناصر جديدة */}
-              <div className="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="text-xs font-black text-amber-400">قائمة العناصر والأزرار</span>
+              {/* ================= 1. قسم المعاينة التفاعلية البصرية الحية (Live Interactive Visual Preview) ================= */}
+              <div className="bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 sm:p-4 shadow-xl">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-400 font-black text-xs sm:text-sm">👁️ المعاينة الحية المباشرة:</span>
+                    <span className="text-[11px] text-slate-400 font-bold">
+                      (انقر مباشرة على أي زر أو عنصر لتحديده والتحكم به)
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -519,158 +631,834 @@ export function QuickOrderCardsDesignerModal({
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1 max-h-[220px] sm:max-h-[300px] overflow-y-auto pr-1">
-                  {elementsList.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setSelectedElementKey(item.key)}
-                      className={`w-full text-right px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between ${
-                        selectedElementKey === item.key
-                          ? "bg-amber-500 text-black shadow-md font-black"
-                          : "bg-slate-800/60 text-slate-300 hover:bg-slate-800"
-                      }`}
+                {/* كارت المعاينة التفاعلي بحسب الكارت النشط */}
+                <div className="relative max-w-2xl mx-auto p-1 sm:p-2 bg-slate-900/40 rounded-2xl border border-slate-800">
+                  
+                  {/* --- كارت المحل (Shop Card) --- */}
+                  {activeCard === "shop_card" && (
+                    <div
+                      className="relative w-full rounded-[20px] bg-no-repeat bg-[length:100%_100%] shadow-2xl p-3 sm:p-4 min-h-[220px]"
+                      style={getCardContainerStyle(
+                        config?.shopCard?.frameConfig,
+                        config?.shopCard?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp"
+                      )}
                     >
-                      <span className="truncate">{item.label}</span>
-                      {selectedElementKey === item.key && <span>✓</span>}
-                    </button>
-                  ))}
+                      {/* العناصر المخصصة المضافة */}
+                      {(config?.shopCard?.customElements || []).map((el) => (
+                        <InteractiveElement
+                          key={el.id}
+                          elemKey={`custom_${el.id}`}
+                          title={el.title || "عنصر مخصص"}
+                          cfg={el.style}
+                          className="absolute z-20"
+                        >
+                          {el.type === "text" ? (
+                            <span className="font-bold text-xs">{el.textContent || "نص مخصص"}</span>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={el.imageUrl || "/images/placeholder.png"} alt="صورة" className="h-7 w-auto object-contain" />
+                          )}
+                        </InteractiveElement>
+                      ))}
+
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 items-start relative z-10">
+                        {/* الجانب الأيمن */}
+                        <div className="flex flex-col gap-2">
+                          <InteractiveElement
+                            elemKey="headerShopInfo"
+                            title="كبسولة عنوان المحل"
+                            cfg={config?.shopCard?.headerShopInfo}
+                            className="w-fit"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={config?.shopCard?.headerShopInfo?.imageUrl || "/images/order-luxury/shop-card/header-shop-info.webp"}
+                              alt="المحل"
+                              className="h-8 sm:h-9 w-auto object-contain pointer-events-none"
+                            />
+                          </InteractiveElement>
+
+                          {/* بيانات المحل */}
+                          <div className="space-y-1.5 py-0.5">
+                            {/* اسم المحل */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconShopName" title="أيقونة اسم المحل" cfg={config?.shopCard?.iconShopName}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/shop-card/icon-shop-name.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textShopName" title="نص اسم المحل" cfg={config?.shopCard?.textShopName}>
+                                <span className="font-black text-xs sm:text-sm text-[#F5D77F]">متجر النور الملكي</span>
+                              </InteractiveElement>
+                            </div>
+
+                            {/* اسم العميل / صاحب المحل */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconCustomerName" title="أيقونة صاحب المحل" cfg={config?.shopCard?.iconCustomerName}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/shop-card/icon-customer-name.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textCustomerName" title="نص صاحب المحل" cfg={config?.shopCard?.textCustomerName}>
+                                <span className="font-black text-xs text-emerald-300">أحمد سامي</span>
+                              </InteractiveElement>
+                            </div>
+
+                            {/* المنطقة */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconRegion" title="أيقونة المنطقة" cfg={config?.shopCard?.iconRegion}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/shop-card/icon-region.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textRegion" title="نص المنطقة" cfg={config?.shopCard?.textRegion}>
+                                <span className="font-bold text-xs text-[#FFF8F0]">بغداد - الكرادة</span>
+                              </InteractiveElement>
+                            </div>
+
+                            {/* الهاتف */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconPhone" title="أيقونة الهاتف" cfg={config?.shopCard?.iconPhone}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/shop-card/icon-phone.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textPhone" title="نص الهاتف" cfg={config?.shopCard?.textPhone}>
+                                <span className="font-mono font-black text-xs text-[#F5D77F]">07701234567</span>
+                              </InteractiveElement>
+                            </div>
+                          </div>
+
+                          {/* زر موقع المحل */}
+                          <InteractiveElement
+                            elemKey="btnShopLocation"
+                            title="زر موقع المحل"
+                            cfg={config?.shopCard?.btnShopLocation}
+                            className="w-fit"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={config?.shopCard?.btnShopLocation?.imageUrl || "/images/order-luxury/shop-card/btn-shop-location.webp"}
+                              alt="موقع المحل"
+                              className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                            />
+                          </InteractiveElement>
+
+                          {/* أزرار الاتصال والواتساب */}
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <InteractiveElement elemKey="btnCall" title="زر الاتصال" cfg={config?.shopCard?.btnCall}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.shopCard?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
+                                alt="اتصال"
+                                className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                              />
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="btnWhatsapp" title="زر الواتساب" cfg={config?.shopCard?.btnWhatsapp}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.shopCard?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
+                                alt="واتساب"
+                                className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                              />
+                            </InteractiveElement>
+                          </div>
+                        </div>
+
+                        {/* الجانب الأيسر (صورة الباب وأزرار الكاميرا) */}
+                        <div className="flex flex-col items-center gap-2">
+                          <InteractiveElement
+                            elemKey="photoContainer"
+                            title="إطار صورة باب المحل"
+                            cfg={config?.shopCard?.photoContainer}
+                            className="w-full"
+                          >
+                            <div className="w-full aspect-[4/3] rounded-xl border border-amber-500/40 bg-slate-900/80 flex items-center justify-center overflow-hidden">
+                              <span className="text-2xl">🚪</span>
+                            </div>
+                          </InteractiveElement>
+
+                          <div className="grid grid-cols-2 gap-1.5 w-full">
+                            <InteractiveElement elemKey="btnCamera" title="زر كاميرا الباب" cfg={config?.shopCard?.btnCamera}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.shopCard?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
+                                alt="كاميرا"
+                                className="h-7 w-auto object-contain pointer-events-none mx-auto"
+                              />
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="btnGallery" title="زر معرض الباب" cfg={config?.shopCard?.btnGallery}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.shopCard?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
+                                alt="معرض"
+                                className="h-7 w-auto object-contain pointer-events-none mx-auto"
+                              />
+                            </InteractiveElement>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- كارت الزبون (Customer Card) --- */}
+                  {activeCard === "customer_card" && (
+                    <div
+                      className="relative w-full rounded-[20px] bg-no-repeat bg-[length:100%_100%] shadow-2xl p-3 sm:p-4 min-h-[220px]"
+                      style={getCardContainerStyle(
+                        config?.customerCard?.frameConfig,
+                        config?.customerCard?.frameBgUrl || "/images/order-luxury/customer-card/customer-card-frame.webp"
+                      )}
+                    >
+                      {/* العناصر المخصصة المضافة */}
+                      {(config?.customerCard?.customElements || []).map((el) => (
+                        <InteractiveElement
+                          key={el.id}
+                          elemKey={`custom_${el.id}`}
+                          title={el.title || "عنصر مخصص"}
+                          cfg={el.style}
+                          className="absolute z-20"
+                        >
+                          {el.type === "text" ? (
+                            <span className="font-bold text-xs">{el.textContent || "نص مخصص"}</span>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={el.imageUrl || "/images/placeholder.png"} alt="صورة" className="h-7 w-auto object-contain" />
+                          )}
+                        </InteractiveElement>
+                      ))}
+
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 items-start relative z-10">
+                        {/* الجانب الأيمن */}
+                        <div className="flex flex-col gap-2">
+                          <InteractiveElement
+                            elemKey="headerCustomerInfo"
+                            title="كبسولة عنوان الزبون"
+                            cfg={config?.customerCard?.headerCustomerInfo}
+                            className="w-fit"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={config?.customerCard?.headerCustomerInfo?.imageUrl || "/images/order-luxury/customer-card/header-customer-info.webp"}
+                              alt="الزبون"
+                              className="h-8 sm:h-9 w-auto object-contain pointer-events-none"
+                            />
+                          </InteractiveElement>
+
+                          {/* بيانات الزبون */}
+                          <div className="space-y-1.5 py-0.5">
+                            {/* اسم الزبون */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconCustomerName" title="أيقونة اسم الزبون" cfg={config?.customerCard?.iconCustomerName}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/customer-card/icon-customer-name.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textCustomerName" title="نص اسم الزبون" cfg={config?.customerCard?.textCustomerName}>
+                                <span className="font-black text-xs sm:text-sm text-purple-300">سارة علي محمد</span>
+                              </InteractiveElement>
+                            </div>
+
+                            {/* منطقة الزبون */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconRegion" title="أيقونة المنطقة" cfg={config?.customerCard?.iconRegion}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/customer-card/icon-region.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textRegion" title="نص المنطقة" cfg={config?.customerCard?.textRegion}>
+                                <span className="font-bold text-xs text-[#FFF8F0]">بغداد - المنصور - شارع 14 رمضان</span>
+                              </InteractiveElement>
+                            </div>
+
+                            {/* هاتف الزبون */}
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconPhone" title="أيقونة الهاتف" cfg={config?.customerCard?.iconPhone}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/customer-card/icon-phone.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textPhone" title="نص الهاتف" cfg={config?.customerCard?.textPhone}>
+                                <span className="font-mono font-black text-xs text-purple-300">07809876543</span>
+                              </InteractiveElement>
+                            </div>
+                          </div>
+
+                          {/* زر موقع الزبون */}
+                          <InteractiveElement
+                            elemKey="btnLocation"
+                            title="زر موقع الزبون"
+                            cfg={config?.customerCard?.btnLocation}
+                            className="w-fit"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={config?.customerCard?.btnLocation?.imageUrl || "/images/order-luxury/customer-card/btn-location.webp"}
+                              alt="موقع الزبون"
+                              className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                            />
+                          </InteractiveElement>
+
+                          {/* أزرار الاتصال والواتساب */}
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <InteractiveElement elemKey="btnCall" title="زر الاتصال" cfg={config?.customerCard?.btnCall}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.customerCard?.btnCall?.imageUrl || "/images/order-luxury/customer-card/btn-call.webp"}
+                                alt="اتصال"
+                                className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                              />
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="btnWhatsapp" title="زر الواتساب" cfg={config?.customerCard?.btnWhatsapp}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.customerCard?.btnWhatsapp?.imageUrl || "/images/order-luxury/customer-card/btn-whatsapp.webp"}
+                                alt="واتساب"
+                                className="h-7 sm:h-8 w-auto object-contain pointer-events-none"
+                              />
+                            </InteractiveElement>
+                          </div>
+                        </div>
+
+                        {/* الجانب الأيسر (صورة باب الزبون) */}
+                        <div className="flex flex-col items-center gap-2">
+                          <InteractiveElement
+                            elemKey="photoContainer"
+                            title="إطار صورة باب الزبون"
+                            cfg={config?.customerCard?.photoContainer}
+                            className="w-full"
+                          >
+                            <div className="w-full aspect-[4/3] rounded-xl border border-purple-500/40 bg-slate-900/80 flex items-center justify-center overflow-hidden">
+                              <span className="text-2xl">🏡</span>
+                            </div>
+                          </InteractiveElement>
+
+                          <div className="grid grid-cols-2 gap-1.5 w-full">
+                            <InteractiveElement elemKey="btnCamera" title="زر كاميرا الزبون" cfg={config?.customerCard?.btnCamera}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.customerCard?.btnCamera?.imageUrl || "/images/order-luxury/customer-card/btn-camera.webp"}
+                                alt="كاميرا"
+                                className="h-7 w-auto object-contain pointer-events-none mx-auto"
+                              />
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="btnGallery" title="زر معرض الزبون" cfg={config?.customerCard?.btnGallery}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={config?.customerCard?.btnGallery?.imageUrl || "/images/order-luxury/customer-card/btn-gallery.webp"}
+                                alt="معرض"
+                                className="h-7 w-auto object-contain pointer-events-none mx-auto"
+                              />
+                            </InteractiveElement>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- كارت الطلبية (Order Info Card) --- */}
+                  {activeCard === "order_info" && (
+                    <div
+                      className="relative w-full rounded-[20px] bg-no-repeat bg-[length:100%_100%] shadow-2xl p-3 sm:p-4 min-h-[220px]"
+                      style={getCardContainerStyle(
+                        config?.orderInfoCard?.frameConfig,
+                        config?.orderInfoCard?.frameBgUrl || "/images/order-luxury/order-info-card/order-card-frame.webp"
+                      )}
+                    >
+                      {/* العناصر المخصصة المضافة */}
+                      {(config?.orderInfoCard?.customElements || []).map((el) => (
+                        <InteractiveElement
+                          key={el.id}
+                          elemKey={`custom_${el.id}`}
+                          title={el.title || "عنصر مخصص"}
+                          cfg={el.style}
+                          className="absolute z-20"
+                        >
+                          {el.type === "text" ? (
+                            <span className="font-bold text-xs">{el.textContent || "نص مخصص"}</span>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={el.imageUrl || "/images/placeholder.png"} alt="صورة" className="h-7 w-auto object-contain" />
+                          )}
+                        </InteractiveElement>
+                      ))}
+
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 items-start relative z-10">
+                        <div className="flex flex-col gap-2">
+                          <InteractiveElement elemKey="headerInfo" title="رأس كارت الطلبية" cfg={config?.orderInfoCard?.headerInfo} className="w-fit">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/images/order-luxury/order-info-card/header-order-info.webp" alt="معلومات الطلب" className="h-8 sm:h-9 w-auto object-contain pointer-events-none" />
+                          </InteractiveElement>
+
+                          <div className="space-y-1 py-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconOrderBox" title="أيقونة صندوق الطلب" cfg={config?.orderInfoCard?.iconOrderBox}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/order-info-card/icon-order-box.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textOrderType" title="نص نوع الطلب" cfg={config?.orderInfoCard?.textOrderType}>
+                                <span className="font-black text-xs text-amber-300">طلب عادي (شحنة ملابس)</span>
+                              </InteractiveElement>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <InteractiveElement elemKey="iconClock" title="أيقونة التوقيت" cfg={config?.orderInfoCard?.iconClock}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/images/order-luxury/order-info-card/icon-clock.webp" alt="" className="w-6 h-6 object-contain pointer-events-none" />
+                              </InteractiveElement>
+                              <InteractiveElement elemKey="textOrderTime" title="نص وقت الطلب" cfg={config?.orderInfoCard?.textOrderTime}>
+                                <span className="font-bold text-xs text-slate-300">اليوم - 04:30 مساءً</span>
+                              </InteractiveElement>
+                            </div>
+                          </div>
+
+                          {/* الحسابات والأسعار */}
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <InteractiveElement elemKey="blockSubtotal" title="بلوك سعر المواد" cfg={config?.orderInfoCard?.blockSubtotal}>
+                              <div className="bg-slate-900/90 border border-slate-700 rounded-lg p-1.5 text-center">
+                                <span className="text-[10px] text-slate-400 block">سعر المواد</span>
+                                <span className="text-xs font-black text-emerald-400">45,000 د.ع</span>
+                              </div>
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="blockDelivery" title="بلوك التوصيل" cfg={config?.orderInfoCard?.blockDelivery}>
+                              <div className="bg-slate-900/90 border border-slate-700 rounded-lg p-1.5 text-center">
+                                <span className="text-[10px] text-slate-400 block">التوصيل</span>
+                                <span className="text-xs font-black text-amber-400">5,000 د.ع</span>
+                              </div>
+                            </InteractiveElement>
+                          </div>
+
+                          <InteractiveElement elemKey="blockTotal" title="المبلغ الكلي النهائي" cfg={config?.orderInfoCard?.blockTotal} className="w-full">
+                            <div className="bg-gradient-to-r from-amber-600/30 to-amber-500/20 border border-amber-500/50 rounded-xl p-2 text-center">
+                              <span className="text-[10px] text-amber-300 font-bold block">المبلغ الكلي المطلوب</span>
+                              <span className="text-sm sm:text-base font-black text-amber-300">50,000 د.ع</span>
+                            </div>
+                          </InteractiveElement>
+                        </div>
+
+                        {/* صورة الطلبية السريعة */}
+                        <div className="flex flex-col items-center gap-2">
+                          <InteractiveElement elemKey="photoContainer" title="إطار صورة الطلبية" cfg={config?.orderInfoCard?.photoContainer} className="w-full">
+                            <div className="w-full aspect-[4/3] rounded-xl border border-amber-500/40 bg-slate-900/80 flex items-center justify-center overflow-hidden">
+                              <span className="text-2xl">📦</span>
+                            </div>
+                          </InteractiveElement>
+                          <div className="grid grid-cols-2 gap-1.5 w-full">
+                            <InteractiveElement elemKey="btnCamera" title="زر كاميرا الطلبية" cfg={config?.orderInfoCard?.btnCamera}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src="/images/order-luxury/order-info-card/btn-camera.webp" alt="كاميرا" className="h-7 w-auto object-contain pointer-events-none mx-auto" />
+                            </InteractiveElement>
+                            <InteractiveElement elemKey="btnGallery" title="زر معرض الطلبية" cfg={config?.orderInfoCard?.btnGallery}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src="/images/order-luxury/order-info-card/btn-gallery.webp" alt="معرض" className="h-7 w-auto object-contain pointer-events-none mx-auto" />
+                            </InteractiveElement>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- كارت حركة الأموال (Money Flow Card) --- */}
+                  {activeCard === "money_flow" && (
+                    <div
+                      className="relative w-full rounded-[20px] bg-no-repeat bg-[length:100%_100%] shadow-2xl p-3 sm:p-4 min-h-[180px]"
+                      style={getCardContainerStyle(
+                        config?.moneyFlowCard?.frameConfig,
+                        config?.moneyFlowCard?.frameBgUrl || "/images/order-luxury/money-card/money-card-frame.webp"
+                      )}
+                    >
+                      {/* العناصر المخصصة المضافة */}
+                      {(config?.moneyFlowCard?.customElements || []).map((el) => (
+                        <InteractiveElement
+                          key={el.id}
+                          elemKey={`custom_${el.id}`}
+                          title={el.title || "عنصر مخصص"}
+                          cfg={el.style}
+                          className="absolute z-20"
+                        >
+                          {el.type === "text" ? (
+                            <span className="font-bold text-xs">{el.textContent || "نص مخصص"}</span>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={el.imageUrl || "/images/placeholder.png"} alt="صورة" className="h-7 w-auto object-contain" />
+                          )}
+                        </InteractiveElement>
+                      ))}
+
+                      <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex items-center justify-around gap-2">
+                          <InteractiveElement elemKey="badgeSader" title="شارة الصادر" cfg={config?.moneyFlowCard?.badgeSader}>
+                            <div className="px-3 py-1 bg-rose-600/30 border border-rose-500/60 rounded-xl text-rose-300 text-xs font-black">
+                              📤 الصادر (تسليم للمحل): 45,000 د.ع
+                            </div>
+                          </InteractiveElement>
+                          <InteractiveElement elemKey="badgeWard" title="شارة الوارد" cfg={config?.moneyFlowCard?.badgeWard}>
+                            <div className="px-3 py-1 bg-emerald-600/30 border border-emerald-500/60 rounded-xl text-emerald-300 text-xs font-black">
+                              📥 الوارد (استلام من الزبون): 50,000 د.ع
+                            </div>
+                          </InteractiveElement>
+                        </div>
+
+                        {/* أزرار الإجراء */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <InteractiveElement elemKey="btnSaderAction" title="زر تسليم صادر" cfg={config?.moneyFlowCard?.btnSaderAction}>
+                            <button type="button" className="w-full py-2 bg-gradient-to-r from-rose-600 to-rose-700 text-white font-black text-xs rounded-xl shadow">
+                              📤 تأكيد تسليم الصادر للمحل
+                            </button>
+                          </InteractiveElement>
+                          <InteractiveElement elemKey="btnWardAction" title="زر استلام وارد" cfg={config?.moneyFlowCard?.btnWardAction}>
+                            <button type="button" className="w-full py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-black text-xs rounded-xl shadow">
+                              📥 تأكيد استلام الوارد من الزبون
+                            </button>
+                          </InteractiveElement>
+                        </div>
+
+                        {/* كارت السجل */}
+                        <InteractiveElement elemKey="recordItemCard" title="كارت السجل المالي" cfg={config?.moneyFlowCard?.recordItemCard}>
+                          <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-2 text-center text-xs text-slate-300 font-bold">
+                            📄 حركة مسجلة: تم استلام 50,000 د.ع بنجاح
+                          </div>
+                        </InteractiveElement>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
 
-              {/* العمود الأيسر: لوحة التحكم المباشرة (D-Pad، الحجم، اللون، الإجراء) */}
-              <div className="lg:col-span-8 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-4">
+              {/* ================= 2. لوحة التحكم المباشرة بالعنصر المحدد (Live Control Panel) ================= */}
+              <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-3 sm:p-4 space-y-4">
                 
-                {/* عنوان العنصر النشط */}
-                <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                {/* رأس لوحة التحكم: العنصر النشط + القائمة السريعة + إخفاء/إظهار */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="text-amber-400 font-black text-sm">العنصر المحدد:</span>
-                    <span className="text-white font-black text-sm">
-                      {elementsList.find((i) => i.key === selectedElementKey)?.label || selectedElementKey}
-                    </span>
+                    <span className="text-amber-400 font-black text-xs sm:text-sm">🎯 العنصر المحدد حالياً:</span>
+                    <select
+                      value={selectedElementKey}
+                      onChange={(e) => setSelectedElementKey(e.target.value)}
+                      className="bg-slate-900 border border-amber-500/40 text-amber-300 font-black text-xs sm:text-sm rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-amber-400"
+                    >
+                      {elementsList.map((i) => (
+                        <option key={i.key} value={i.key}>
+                          {i.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => updateSelectedElementField("hidden", !selectedStyle.hidden)}
-                    className={`px-3 py-1 rounded-lg text-xs font-black transition ${
-                      selectedStyle.hidden
-                        ? "bg-rose-600 text-white"
-                        : "bg-emerald-600/80 text-white"
-                    }`}
-                  >
-                    {selectedStyle.hidden ? "👁️ مخفي (إظهار)" : "👁️ ظاهر (إخفاء)"}
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedElementField("hidden", !selectedStyle.hidden)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1 ${
+                        selectedStyle.hidden
+                          ? "bg-rose-600 text-white shadow-md shadow-rose-600/30"
+                          : "bg-emerald-600/80 text-white hover:bg-emerald-600"
+                      }`}
+                    >
+                      <span>{selectedStyle.hidden ? "👁️ مخفي (إظهار)" : "👁️ ظاهر (إخفاء)"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSelectedElementField("offsetX", 0);
+                        updateSelectedElementField("offsetY", 0);
+                        updateSelectedElementField("scale", 1);
+                        updateSelectedElementField("scaleX", 1);
+                        updateSelectedElementField("scaleY", 1);
+                        updateSelectedElementField("rotate", 0);
+                      }}
+                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition"
+                      title="إعادة ضبط الحجم والموضع الافتراضي"
+                    >
+                      🔄 ضبط افتراضي
+                    </button>
+                  </div>
                 </div>
 
-                {/* لوحة الأسهم D-Pad لتعديل الموقع بدقة */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                {/* شبكة الأدوات التفاعلية: التحريك D-Pad + التكبير الأفقي/العمودي + التدوير والألوان */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   
-                  {/* أزرار التحريك D-Pad */}
-                  <div className="flex flex-col items-center justify-center p-3 bg-slate-950 rounded-2xl border border-slate-800/80">
-                    <span className="text-[11px] font-black text-slate-400 mb-2">🕹️ تحريك الموقع (X / Y)</span>
-                    <div className="flex flex-col items-center gap-1.5">
+                  {/* --- لوحة 1: أزرار التحريك D-Pad والموقع --- */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex flex-col items-center justify-between">
+                    <div className="w-full flex items-center justify-between mb-2">
+                      <span className="text-xs font-black text-amber-300">🕹️ تحريك الموقع (X / Y)</span>
+                      <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded-lg border border-slate-800">
+                        <span className="text-[10px] text-slate-400">الخطوة:</span>
+                        {[1, 3, 10].map((step) => (
+                          <button
+                            key={step}
+                            type="button"
+                            onClick={() => setMoveStep(step)}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              moveStep === step ? "bg-amber-500 text-black font-black" : "text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {step}px
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* D-Pad Buttons */}
+                    <div className="flex flex-col items-center gap-1.5 my-1">
                       <button
                         type="button"
-                        onClick={() => handleShift(0, -3)}
-                        className="w-12 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-sm"
-                        title="أعلى"
+                        onClick={() => handleShift(0, -moveStep)}
+                        className="w-14 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-md flex items-center justify-center text-base"
+                        title="تحريك لأعلى"
                       >
                         ▲
                       </button>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => handleShift(3, 0)}
-                          className="w-12 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-sm"
-                          title="يمين"
+                          onClick={() => handleShift(moveStep, 0)}
+                          className="w-14 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-md flex items-center justify-center text-base"
+                          title="تحريك لليمين"
                         >
                           ▶
                         </button>
                         <button
                           type="button"
                           onClick={handleResetPosition}
-                          className="w-10 h-10 bg-slate-900 border border-amber-500/40 text-amber-300 text-[10px] font-black rounded-xl active:scale-90 transition shadow-sm"
-                          title="إعادة للمركز"
+                          className="w-10 h-10 bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-black rounded-xl active:scale-90 transition shadow-md flex items-center justify-center"
+                          title="إعادة للمركز (0, 0)"
                         >
                           🎯
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleShift(-3, 0)}
-                          className="w-12 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-sm"
-                          title="يسار"
+                          onClick={() => handleShift(-moveStep, 0)}
+                          className="w-14 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-md flex items-center justify-center text-base"
+                          title="تحريك لليسار"
                         >
                           ◀
                         </button>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleShift(0, 3)}
-                        className="w-12 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-sm"
-                        title="أسفل"
+                        onClick={() => handleShift(0, moveStep)}
+                        className="w-14 h-10 bg-slate-800 hover:bg-amber-500 hover:text-black text-white font-black rounded-xl active:scale-90 transition shadow-md flex items-center justify-center text-base"
+                        title="تحريك لأسفل"
                       >
                         ▼
                       </button>
                     </div>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] font-mono text-slate-400">
-                      <span>X: {selectedStyle.offsetX || 0}px</span>
-                      <span>Y: {selectedStyle.offsetY || 0}px</span>
+
+                    <div className="w-full flex items-center justify-around mt-2 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-300">
+                      <span>X (أفقي): <strong className="text-amber-400">{selectedStyle.offsetX || 0}px</strong></span>
+                      <span>Y (عمودي): <strong className="text-amber-400">{selectedStyle.offsetY || 0}px</strong></span>
                     </div>
                   </div>
 
-                  {/* الحجم والتدوير والظل */}
-                  <div className="space-y-3 bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                  {/* --- لوحة 2: التكبير الأفقي والتكبير العمودي والتكبير الكلي --- */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2.5">
+                    <span className="text-xs font-black text-amber-300 block">📐 التكبير والتصغير والمقاسات</span>
+
+                    {/* 1. التكبير الأفقي (ScaleX / العرض) */}
                     <div>
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-300 mb-1">
-                        <span>🔍 الحجم والتكبير:</span>
-                        <span className="font-mono text-amber-400">{Math.round((selectedStyle.scale ?? 1) * 100)}%</span>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 mb-1">
+                        <span>↔️ التكبير الأفقي (العرض):</span>
+                        <span className="font-mono text-amber-400">{Math.round((selectedStyle.scaleX ?? 1) * 100)}%</span>
                       </div>
-                      <input
-                        type="range"
-                        min="0.3"
-                        max="2.5"
-                        step="0.05"
-                        value={selectedStyle.scale ?? 1}
-                        onChange={(e) => updateSelectedElementField("scale", parseFloat(e.target.value))}
-                        className="w-full accent-amber-500 cursor-pointer"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => adjustScaleX(-0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="range"
+                          min="0.2"
+                          max="2.5"
+                          step="0.05"
+                          value={selectedStyle.scaleX ?? 1}
+                          onChange={(e) => updateSelectedElementField("scaleX", parseFloat(e.target.value))}
+                          className="w-full accent-amber-500 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adjustScaleX(0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
 
+                    {/* 2. التكبير العمودي (ScaleY / الارتفاع) */}
                     <div>
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-300 mb-1">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 mb-1">
+                        <span>↕️ التكبير العمودي (الارتفاع):</span>
+                        <span className="font-mono text-amber-400">{Math.round((selectedStyle.scaleY ?? 1) * 100)}%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => adjustScaleY(-0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="range"
+                          min="0.2"
+                          max="2.5"
+                          step="0.05"
+                          value={selectedStyle.scaleY ?? 1}
+                          onChange={(e) => updateSelectedElementField("scaleY", parseFloat(e.target.value))}
+                          className="w-full accent-amber-500 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adjustScaleY(0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 3. التكبير الكلي المتناسق (Scale) */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 mb-1">
+                        <span>🔍 الحجم الكلي العام:</span>
+                        <span className="font-mono text-amber-400">{Math.round((selectedStyle.scale ?? 1) * 100)}%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => adjustScale(-0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="range"
+                          min="0.3"
+                          max="2.5"
+                          step="0.05"
+                          value={selectedStyle.scale ?? 1}
+                          onChange={(e) => updateSelectedElementField("scale", parseFloat(e.target.value))}
+                          className="w-full accent-amber-500 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adjustScale(0.05)}
+                          className="w-7 h-6 bg-slate-800 hover:bg-slate-700 text-white font-black rounded text-xs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* --- لوحة 3: التدوير واللون والظل --- */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2.5">
+                    <span className="text-xs font-black text-amber-300 block">🔄 التدوير والألوان والظلال</span>
+
+                    {/* التدوير السلس والأزرار السريعة */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 mb-1">
                         <span>🔄 زاوية التدوير:</span>
                         <span className="font-mono text-amber-400">{selectedStyle.rotate || 0}°</span>
                       </div>
-                      <input
-                        type="range"
-                        min="-180"
-                        max="180"
-                        step="5"
-                        value={selectedStyle.rotate ?? 0}
-                        onChange={(e) => updateSelectedElementField("rotate", parseInt(e.target.value))}
-                        className="w-full accent-amber-500 cursor-pointer"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => adjustRotate(-5)}
+                          className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded text-[10px]"
+                        >
+                          -5°
+                        </button>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          step="1"
+                          value={selectedStyle.rotate ?? 0}
+                          onChange={(e) => updateSelectedElementField("rotate", parseInt(e.target.value))}
+                          className="w-full accent-amber-500 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adjustRotate(5)}
+                          className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded text-[10px]"
+                        >
+                          +5°
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between gap-1 mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => updateSelectedElementField("rotate", 0)}
+                          className="px-2 py-0.5 bg-slate-900 border border-slate-700 text-[10px] font-bold text-slate-300 hover:text-white rounded"
+                        >
+                          0° استقامة
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateSelectedElementField("rotate", 90)}
+                          className="px-2 py-0.5 bg-slate-900 border border-slate-700 text-[10px] font-bold text-slate-300 hover:text-white rounded"
+                        >
+                          90° عمودي
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateSelectedElementField("rotate", 180)}
+                          className="px-2 py-0.5 bg-slate-900 border border-slate-700 text-[10px] font-bold text-slate-300 hover:text-white rounded"
+                        >
+                          180° مقلوب
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedStyle.hasShadow ?? false}
-                          onChange={(e) => updateSelectedElementField("hasShadow", e.target.checked)}
-                          className="accent-amber-500 h-4 w-4 rounded"
-                        />
-                        <span>تشغيل ظل أنيق</span>
-                      </label>
-                      <input
-                        type="color"
-                        value={selectedStyle.color || "#ffffff"}
-                        onChange={(e) => updateSelectedElementField("color", e.target.value)}
-                        className="h-7 w-12 bg-transparent rounded cursor-pointer border border-slate-700"
-                        title="تغيير اللون"
-                      />
+                    {/* اللون والظل */}
+                    <div className="pt-1 space-y-2 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-slate-300">لون النص / الأيقونة:</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={selectedStyle.color || "#ffffff"}
+                            onChange={(e) => updateSelectedElementField("color", e.target.value)}
+                            className="w-20 bg-slate-900 border border-slate-700 text-[10px] font-mono text-center rounded px-1 py-0.5 text-white"
+                          />
+                          <input
+                            type="color"
+                            value={selectedStyle.color || "#ffffff"}
+                            onChange={(e) => updateSelectedElementField("color", e.target.value)}
+                            className="h-6 w-8 bg-transparent rounded cursor-pointer border border-slate-700"
+                            title="تغيير اللون"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 text-[11px] font-bold text-slate-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedStyle.hasShadow ?? false}
+                            onChange={(e) => updateSelectedElementField("hasShadow", e.target.checked)}
+                            className="accent-amber-500 h-4 w-4 rounded"
+                          />
+                          <span>تشغيل ظل أنيق</span>
+                        </label>
+                        {selectedStyle.hasShadow && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400">قوة:</span>
+                            <input
+                              type="range"
+                              min="1"
+                              max="15"
+                              value={selectedStyle.shadowBlur ?? 3}
+                              onChange={(e) => updateSelectedElementField("shadowBlur", parseInt(e.target.value))}
+                              className="w-16 accent-amber-500"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
+
                   </div>
+
                 </div>
 
                 {/* إذا كان العنصر مخصصاً (نص أو صورة مضافة) */}
@@ -744,13 +1532,13 @@ export function QuickOrderCardsDesignerModal({
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-amber-300 font-bold"
                       >
                         <option value="none">عنصر زينة وشكل فقط (بدون إجراء)</option>
-                        <option value="open_url">🌐 فتح رابط موقع (URL)</option>
-                        <option value="call_phone">📞 اتصال برقم هاتف</option>
+                        <option value="url">🌐 فتح رابط موقع (URL)</option>
+                        <option value="call">📞 اتصال برقم هاتف</option>
                         <option value="whatsapp">💬 فتح محادثة واتساب</option>
-                        <option value="google_maps">📍 فتح لوكيشن في خرائط جوجل</option>
-                        <option value="copy_text">📋 نسخ نص للحافظة</option>
-                        <option value="zoom_image">🔍 تكبير الصورة</option>
-                        <option value="show_alert">⚠️ إظهار تنبيه ورسالة منبثقة</option>
+                        <option value="map">📍 فتح لوكيشن في الخرائط</option>
+                        <option value="copy">📋 نسخ نص للحافظة</option>
+                        <option value="image_zoom">🔍 تكبير الصورة</option>
+                        <option value="alert_modal">⚠️ إظهار تنبيه ورسالة منبثقة</option>
                       </select>
                     </div>
 
@@ -786,7 +1574,7 @@ export function QuickOrderCardsDesignerModal({
         </div>
 
         {/* الشريط السفلي: أزرار الحفظ والإغلاق */}
-        <div className="flex items-center justify-between gap-3 p-4 bg-slate-950/90 border-t border-slate-800 shrink-0">
+        <div className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-slate-950/90 border-t border-slate-800 shrink-0">
           <button
             type="button"
             onClick={onClose}
