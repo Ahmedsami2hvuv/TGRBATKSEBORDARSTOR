@@ -33,6 +33,7 @@ type Props = {
   availableForAssignment: boolean;
   telegramLink: string | null;
   userKey?: string;
+  initialLuxuryEnabled?: boolean;
 };
 
 export default function CourierSettingsClient({
@@ -43,6 +44,7 @@ export default function CourierSettingsClient({
   availableForAssignment,
   telegramLink,
   userKey,
+  initialLuxuryEnabled = true,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
@@ -50,6 +52,39 @@ export default function CourierSettingsClient({
   const [savingTheme, setSavingTheme] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>(initialSettings.orderViewTheme || "default");
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
+  const [luxuryEnabled, setLuxuryEnabled] = useState(initialLuxuryEnabled !== false);
+  const [savingLuxury, setSavingLuxury] = useState(false);
+
+  async function handleToggleLuxury() {
+    const nextVal = !luxuryEnabled;
+    setLuxuryEnabled(nextVal);
+    setSavingLuxury(true);
+    try {
+      const getRes = await fetch("/api/order-cards-designer-config?scope=mandoub", { cache: "no-store" });
+      const currentCfg = getRes.ok ? await getRes.json() : {};
+      const updatedCfg = {
+        ...currentCfg,
+        enabledPortals: {
+          ...(currentCfg.enabledPortals || { admin: true, mandoub: true, preparer: false }),
+          mandoub: nextVal,
+        },
+      };
+      const res = await fetch("/api/order-cards-designer-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: updatedCfg, scope: "mandoub" }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to save");
+      }
+    } catch (e) {
+      console.error("Failed to toggle luxury style:", e);
+      setLuxuryEnabled(!nextVal);
+      alert("حدث خطأ أثناء حفظ الإعداد، يرجى المحاولة ثانية.");
+    } finally {
+      setSavingLuxury(false);
+    }
+  }
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("c", auth.c);
@@ -207,6 +242,49 @@ export default function CourierSettingsClient({
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تخصيص واجهة المندوب: {courierName}</p>
           </div>
         </header>
+
+        {/* قسم الستايل الملكي لكروت الطلبات */}
+        <section className="mb-6 border-2 border-[#C9A86A] bg-gradient-to-br from-[#06281D] via-[#0A3D2E] to-[#06281D] rounded-2xl p-4 sm:p-5 shadow-xl text-white">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl sm:text-3xl">👑</span>
+              <div>
+                <h2 className="text-sm sm:text-base font-black text-[#F5D77F] flex items-center gap-2">
+                  <span>الستايل الملكي لكروت الطلبات</span>
+                  {luxuryEnabled ? (
+                    <span className="text-[10px] bg-emerald-400 text-black font-black px-2 py-0.5 rounded-md">مُفعّل الآن ✅</span>
+                  ) : (
+                    <span className="text-[10px] bg-rose-600 text-white font-black px-2 py-0.5 rounded-md">معطّل (كلاسيكي) ⛔</span>
+                  )}
+                </h2>
+                <p className="text-xs text-emerald-200 mt-1 font-bold">
+                  {luxuryEnabled
+                    ? "تظهر كروت الطلبات بالستايل الملكي الجديد والأزرار المخصصة والتزامن الفوري"
+                    : "تظهر كروت الطلبات بالستايل الكلاسيكي الافتراضي القديم"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {savingLuxury && <span className="text-[11px] font-bold text-amber-300 animate-pulse">جارٍ الحفظ...</span>}
+              <button
+                type="button"
+                onClick={handleToggleLuxury}
+                disabled={savingLuxury}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                  luxuryEnabled ? "bg-emerald-500" : "bg-slate-700"
+                }`}
+                title="تشغيل أو إطفاء الستايل الملكي"
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    luxuryEnabled ? "-translate-x-8" : "-translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* قسم ثيمات عرض الطلبية */}
         <section className="kse-glass-dark mb-6 border border-sky-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">

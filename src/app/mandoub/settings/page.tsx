@@ -5,6 +5,7 @@ import CourierSettingsClient from "./settings-client";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { randomBytes } from "crypto";
+import { getOrderCardsDesignerConfig } from "@/lib/order-card-customizer";
 
 export const dynamic = "force-dynamic";
 
@@ -140,10 +141,14 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
     }
     const userKey = `courier_${courier.id}`;
-    const dbBg = await prisma.userBackgroundSelection.findUnique({
-      where: { userKey }
-    });
+    const [dbBg, designerConfig] = await Promise.all([
+      prisma.userBackgroundSelection.findUnique({
+        where: { userKey },
+      }),
+      getOrderCardsDesignerConfig("mandoub").catch(() => null),
+    ]);
     const userBgUrl = dbBg?.imageUrl || null;
+    const initialLuxuryEnabled = designerConfig?.enabledPortals?.mandoub !== false;
 
     return (
       <CourierSettingsClient
@@ -155,6 +160,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         telegramLink={telegramLink}
         userKey={userKey}
         userBgUrl={userBgUrl}
+        initialLuxuryEnabled={initialLuxuryEnabled}
       />
     );
   } catch (error) {
