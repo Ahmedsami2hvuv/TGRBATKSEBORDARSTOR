@@ -41,8 +41,6 @@ import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
-import { QuickOrderCardsDesignerModal } from "@/components/quick-order-cards-designer-modal";
-import { OnPageCardsDesignerToolbar } from "@/components/on-page-cards-designer-toolbar";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -158,44 +156,6 @@ export function OrderViewContent({
 }) {
   const router = useRouter();
   const [designerConfigState, setDesignerConfigState] = useState(designerConfig);
-  const [showDesignerModal, setShowDesignerModal] = useState(false);
-  const [isDesignModeActive, setIsDesignModeActive] = useState(false);
-  const [selectedDesignCard, setSelectedDesignCard] = useState<"shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard">("shopCard");
-  const [selectedDesignElementKey, setSelectedDesignElementKey] = useState<string>("btnCall");
-  const [designerScope, setDesignerScope] = useState<"admin" | "mandoub">("admin");
-  const [isSavingDesigner, setIsSavingDesigner] = useState(false);
-  const [designerSaveSuccessMsg, setDesignerSaveSuccessMsg] = useState<string | null>(null);
-
-  const handleSelectDesignElement = (key: string, cardType?: "shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard") => {
-    setSelectedDesignElementKey(key);
-    if (cardType) {
-      setSelectedDesignCard(cardType);
-    }
-  };
-
-  const handleSaveDesignerConfig = async () => {
-    setIsSavingDesigner(true);
-    setDesignerSaveSuccessMsg(null);
-    try {
-      const res = await fetch("/api/order-cards-designer-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scope: designerScope,
-          config: designerConfigState,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "فشل الحفظ");
-      setDesignerSaveSuccessMsg(`✅ تم حفظ وتزامن التعديلات بنجاح لحسابات (${designerScope === "admin" ? "الإدارة" : "المندوبين"})!`);
-      setTimeout(() => setDesignerSaveSuccessMsg(null), 4000);
-    } catch (err: any) {
-      alert("حدث خطأ أثناء حفظ التصميم: " + (err.message || err));
-    } finally {
-      setIsSavingDesigner(false);
-    }
-  };
-
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
@@ -303,21 +263,41 @@ export function OrderViewContent({
         {/* زخرفة دمشقية في أعلى وأسفل الصفحة */}
         <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-80 pointer-events-none" />
 
+        {/* قواعد التصميم الملكي الزمردي الإسلامي */}
+        <style>{`
+          .gold-foil {
+            background: linear-gradient(180deg, #E8C77E 0%, #C9A86A 45%, #9C7D46 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 1px 0 rgba(156,125,70,0.3));
+          }
+          .gold-grad {
+            background: linear-gradient(180deg, #F1D99A 0%, #E8C77E 15%, #C9A86A 55%, #A8864A 100%);
+          }
+          .emerald-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A86A' fill-opacity='0.08'%3E%3Cpath d='M40 0L42.5 15.5L55 10L45 20L60 28L45 30L55 45L42.5 36L40 52L37.5 36L25 45L35 30L20 28L35 20L25 10L37.5 15.5L40 0Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          }
+          .islamic-border {
+            background-image: 
+              linear-gradient(90deg, transparent 0%, #C9A86A 50%, transparent 100%),
+              url("data:image/svg+xml,%3Csvg width='24' height='6' viewBox='0 0 24 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 3 L6 0 L12 3 L18 0 L24 3 L18 6 L12 3 L6 6 Z' fill='%23C9A86A' fill-opacity='0.6'/%3E%3C/svg%3E");
+          }
+          @keyframes animated-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .prepaid-rgb-block {
+            background: linear-gradient(120deg, #059669, #0891b2, #2563eb, #7c3aed, #db2777, #059669);
+            background-size: 300% 300%;
+            animation: animated-gradient 8s ease infinite;
+          }
+        `}</style>
+
         {/* --- بلوك كلشي واصل المشع والمتحرك (RGB) --- */}
         {order.prepaidAll && (
           <div className="relative mb-4 overflow-hidden rounded-2xl p-5 shadow-xl text-white prepaid-rgb-block border-2 border-[#F5D77F]/60">
-            <style>{`
-              @keyframes animated-gradient {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-              }
-              .prepaid-rgb-block {
-                background: linear-gradient(120deg, #059669, #0891b2, #2563eb, #7c3aed, #db2777, #059669);
-                background-size: 300% 300%;
-                animation: animated-gradient 8s ease infinite;
-              }
-            `}</style>
             <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start z-10">
               <div className="flex size-[4rem] shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-md border border-white/20">
                 <svg className="size-10 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -353,63 +333,130 @@ export function OrderViewContent({
         )}
 
         {/* --- بطاقة ترويسة الطلبية الملكية الإسلامية المذهبة --- */}
-        <div className="mb-5 rounded-[24px] border-2 border-[#C9A86A]/80 bg-[#0A241C]/95 p-3.5 sm:p-5 shadow-2xl backdrop-blur-md relative overflow-hidden">
+        <div className="mb-5 rounded-[26px] border-2 border-[#C9A86A]/80 bg-[#FFFEFB] p-3.5 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.35),0_0_0_1px_rgba(201,168,106,0.3),inset_0_1px_0_rgba(255,255,255,0.8)] relative overflow-hidden text-slate-900">
           
-          {/* سطر الأزرار العلوية الأربعة: إغلاق - تعديل - تغيير المندوب - بصمة المدير (صور ملكية ثلاثية الأبعاد) */}
-          <div className="mb-4 grid grid-cols-4 gap-2 sm:gap-3 items-center justify-items-center">
+          {/* شريط الأرابيسك العلوي الدقيق */}
+          <div className="relative h-[22px] -mx-3.5 -mt-3.5 sm:-mx-5 sm:-mt-5 mb-3 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] flex items-center justify-center overflow-hidden border-b border-[#C9A86A]/20">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#C9A86A]/60 to-transparent" />
+            </div>
+            <div className="relative flex items-center gap-[10px]">
+              <div className="w-[14px] h-[1px] bg-[#C9A86A]/50" />
+              <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A] shadow-[0_0_6px_rgba(201,168,106,0.6)]" />
+              <div className="w-[10px] h-[10px] rotate-45 border border-[#C9A86A]/60 flex items-center justify-center">
+                <div className="w-[4px] h-[4px] bg-[#C9A86A]/80 rotate-45" />
+              </div>
+              <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A] shadow-[0_0_6px_rgba(201,168,106,0.6)]" />
+              <div className="w-[14px] h-[1px] bg-[#C9A86A]/50" />
+            </div>
+          </div>
+
+          {/* سطر رقم الطلب والشارة وزر الإغلاق والرجوع */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black tracking-[0.08em] text-[#9C7D46]">ORDER</span>
+                <span className="text-[24px] sm:text-[28px] font-black gold-foil leading-none">#{order.orderNumber}</span>
+              </div>
+              <div className="h-5 w-[1px] bg-[#C9A86A]/30" />
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F4EF] border border-[#115740]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <div className="w-[7px] h-[7px] rounded-full bg-[#115740] shadow-[0_0_6px_rgba(17,87,64,0.5)] animate-pulse" />
+                <span className="text-[11.5px] font-black text-[#115740] tracking-wide">
+                  {STATUS_AR[order.status] ?? order.status}
+                </span>
+              </div>
+              {order.courier ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C9A86A]/40 bg-[#0A3D2E] px-3 py-1 text-xs font-black text-[#E8C77E] shadow-sm">
+                  <span>🛵</span>
+                  <span>{order.courier.name}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                  <span>🛵</span>
+                  <span>غير مسند</span>
+                </span>
+              )}
+              {isReversePickup && (
+                <span className="rounded-full border border-amber-400/40 bg-amber-100 text-amber-900 px-2.5 py-0.5 text-xs font-black shadow-xs">
+                  📦⤺ طلب عكسي
+                </span>
+              )}
+              {isDoubleRoute && (
+                <span className="rounded-full border border-purple-400/40 bg-purple-100 text-purple-900 px-2.5 py-0.5 text-xs font-black shadow-xs">
+                  📦➔ وجهتين
+                </span>
+              )}
+              {order.prepaidAll && (
+                <span className="rounded-full border border-emerald-500 bg-emerald-100 text-emerald-900 px-3 py-0.5 text-xs font-black shadow-xs animate-pulse">
+                  ✓ كلشي واصل
+                </span>
+              )}
+            </div>
+
+            {/* زر الإغلاق الدائري الأحمر الفاخر */}
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-              className="relative group transition-transform active:scale-90 flex items-center justify-center w-full"
+              className="w-[32px] h-[32px] rounded-full bg-gradient-to-b from-[#FFF1F1] to-[#FFE0E0] border border-[#E85D5D]/30 flex items-center justify-center shadow-[0_2px_6px_rgba(232,93,93,0.15),inset_0_1px_0_rgba(255,255,255,0.9)] active:scale-95 transition-transform"
               title="إغلاق والرجوع"
             >
-              <img
-                src="/images/order-luxury/btn-admin-close.webp"
-                alt="إغلاق"
-                className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
-              />
+              <svg className="w-[14px] h-[14px] text-[#C13C3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </Link>
+          </div>
 
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="relative group transition-transform active:scale-90 flex items-center justify-center w-full"
-              title="تعديل الطلب"
-            >
-              <img
-                src="/images/order-luxury/زر تعديل الطلب.webp"
-                alt="تعديل"
-                className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
-              />
-            </Link>
-
-            {order.status !== "cancelled" && order.status !== "archived" ? (
-              <button
-                type="button"
-                onClick={() => setShowAssignCourierModal(true)}
-                className="relative group transition-transform active:scale-90 flex items-center justify-center w-full cursor-pointer"
-                title="إسناد / تغيير المندوب"
+          {/* سطر الإجراءات: زر تعديل الطلب + تغيير المندوب + بصمة المدير + التواريخ */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#C9A86A]/20 pt-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+                className="group flex items-center gap-1.5 pl-1 pr-3 py-[6px] rounded-full bg-white border border-[#C9A86A]/50 shadow-[0_2px_10px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.98] transition-all"
               >
-                <img
-                  src="/images/order-luxury/زر اسناد الطلب.webp"
-                  alt="المندوب"
-                  className="h-11 sm:h-12 w-auto object-contain drop-shadow-lg group-hover:scale-105 transition"
-                />
-              </button>
-            ) : (
-              <div />
-            )}
+                <span className="w-[22px] h-[22px] rounded-full gold-grad flex items-center justify-center shadow-[0_1px_4px_rgba(201,168,106,0.4)]">
+                  <svg className="w-[11px] h-[11px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                </span>
+                <span className="text-[12px] font-bold text-[#0A3D2E]">تعديل الطلب</span>
+              </Link>
 
-            <div className="relative group transition-transform active:scale-90 flex items-center justify-center w-full">
+              {order.status !== "cancelled" && order.status !== "archived" && (
+                <button
+                  type="button"
+                  onClick={() => setShowAssignCourierModal(true)}
+                  className="group flex items-center gap-1.5 pl-1 pr-3 py-[6px] rounded-full bg-white border border-[#C9A86A]/50 shadow-[0_2px_10px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <span className="w-[22px] h-[22px] rounded-full bg-[#0A3D2E] flex items-center justify-center text-xs">
+                    🛵
+                  </span>
+                  <span className="text-[12px] font-bold text-[#0A3D2E]">تغيير المندوب</span>
+                </button>
+              )}
+
               <AdminVoiceNoteSection
                 variant="button"
                 orderId={order.id}
                 defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
               />
             </div>
+
+            <div className="flex items-center gap-1.5 text-[11px] text-[#6B7D77] flex-wrap">
+              <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
+                <span>📅</span>
+                <span className="font-mono">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
+              </span>
+              <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
+                <span>⏰</span>
+                <span className="text-rose-600 font-black">{order.orderNoteTime || "فوري"}</span>
+              </span>
+            </div>
           </div>
 
           {/* سطر زر تعديل التسعير التكميلي إن وجد */}
           {parsedShoppingJson !== null && (
-            <div className="mb-3.5 flex justify-center">
+            <div className="mt-2.5 flex justify-center">
               <Link
                 href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
                 className="relative group transition-transform active:scale-95 inline-flex items-center justify-center p-1"
@@ -418,103 +465,20 @@ export function OrderViewContent({
                 <img
                   src="/images/order-luxury/btn-admin-pricing.webp"
                   alt="تعديل التسعير"
-                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
+                  className="h-11 sm:h-12 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
                 />
               </Link>
             </div>
           )}
 
-          {/* زر استوديو ترتيب وتخصيص الكروت الفوري والتعديل الحي من داخل الطلب الحقيقي */}
-          <div className="mb-3.5 flex flex-col sm:flex-row items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsDesignModeActive((prev) => !prev)}
-              className={`w-full py-2.5 px-4 border-2 rounded-2xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 active:scale-98 transition group ${
-                isDesignModeActive
-                  ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 border-amber-300 text-slate-950 ring-4 ring-amber-400/40"
-                  : "bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] hover:from-[#165c47] hover:to-[#165c47] border-[#C9A86A] text-[#F5D77F]"
-              }`}
-            >
-              <span className="text-lg group-hover:rotate-12 transition">{isDesignModeActive ? "🛑" : "🎨"}</span>
-              <span>{isDesignModeActive ? "إيقاف وضع تحريك وتعديل الأيقونات الحقيقي" : "تعديل وتحريك الأيقونات والكروت مباشرة"}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-                isDesignModeActive ? "bg-slate-950 text-amber-300 animate-pulse" : "bg-[#C9A86A] text-[#06281D]"
-              }`}>
-                {isDesignModeActive ? "وضع التعديل الحي نشط" : "تحريك وتكبير فوري"}
-              </span>
-            </button>
-          </div>
-
-          {/* السطر الثاني: كبسولة رقم الطلب + اسم المندوب + حالة الطلب + الشارات الخاصة */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#C9A86A]/40 pt-3.5">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* كبسولة رقم الطلب بالخلفية المكيشة المذهبة الفاخرة */}
-              <div
-                className="min-w-[85px] sm:min-w-[105px] h-11 sm:h-12 px-3 rounded-lg flex items-center justify-center text-center font-black font-mono text-xl sm:text-2xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none shrink-0"
-                style={{
-                  backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
-                  color: "#F5D77F",
-                  textShadow: "0 1px 3px rgba(0,0,0,0.85)",
-                }}
-              >
-                <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pt-0.5">
-                  #{order.orderNumber}
-                </span>
-              </div>
-
-              {order.courier ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] px-3 py-1.5 text-xs font-black text-[#F5D77F] shadow-sm">
-                  <span>🛵</span>
-                  <span>{order.courier.name}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-xs font-black text-slate-300">
-                  <span>🛵</span>
-                  <span>غير مسند</span>
-                </span>
-              )}
-              
-              {isReversePickup && (
-                <span className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#78350F] to-[#B45309] px-2.5 py-1 text-xs font-black text-[#F5D77F] shadow-sm">
-                  📦⤺ طلب عكسي
-                </span>
-              )}
-              {isDoubleRoute && (
-                <span className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#4C1D95] to-[#6D28D9] px-2.5 py-1 text-xs font-black text-[#F5D77F] shadow-sm">
-                  📦➔ وجهتين
-                </span>
-              )}
-              {order.prepaidAll && (
-                <span className="rounded-xl border border-[#F5D77F] bg-emerald-600 text-[#FFF8F0] px-3 py-1 text-xs font-black shadow-md animate-pulse">
-                  ✓ كلشي واصل
-                </span>
-              )}
+          {/* فاصل أرابيسك داخلي */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#C9A86A]/50 to-transparent" />
+            <div className="w-4 h-4 relative flex items-center justify-center">
+              <div className="absolute w-4 h-4 rotate-45 border border-[#C9A86A]/60" />
+              <div className="w-1.5 h-1.5 rotate-45 bg-[#C9A86A]" />
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="rounded-full px-4 py-1.5 text-xs sm:text-sm font-black border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#F5D77F] shadow-md drop-shadow-sm">
-                {STATUS_AR[order.status] ?? order.status}
-              </span>
-            </div>
-          </div>
-
-          {/* سطر التواريخ والأوقات الأرابيسك المذهب الفاخر */}
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-[#C9A86A]/60 bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-2.5 text-[11px] sm:text-xs font-bold text-[#FFF8F0] whitespace-nowrap overflow-x-auto shadow-md">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-b from-[#E67E22] to-[#D35400] text-white flex items-center justify-center font-black text-[10px] shadow-xs">
-                📅
-              </div>
-              <span className="text-[#F5D77F] font-black">تاريخ الرفع:</span>
-              <span className="font-mono text-white [direction:ltr]">{formatBaghdadDateTime(new Date(order.createdAt))}</span>
-            </div>
-
-            <div className="h-4 w-px bg-[#C9A86A]/50 shrink-0" />
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-base">⏰</span>
-              <span className="text-rose-400 font-black">وقت الاستلام:</span>
-              <span className="text-[#F5D77F] font-black">{order.orderNoteTime || "فوري"}</span>
-            </div>
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#C9A86A]/50 to-transparent" />
           </div>
 
         </div>
@@ -584,10 +548,21 @@ export function OrderViewContent({
               setPreviewImageUrl={setPreviewImageUrl}
               isSystemAdminOrder={isSystemAdminOrder}
               designerConfig={designerConfigState}
-              isDesignMode={isDesignModeActive}
-              selectedElementKey={selectedDesignCard === "shopCard" ? selectedDesignElementKey : undefined}
-              onSelectElement={(key) => handleSelectDesignElement(key, "shopCard")}
             />
+          )}
+
+          {/* الفاصل الأرابيسك المذهب بين كارت المحل وكارت الزبون */}
+          {!isDoubleRoute && !shouldCollapseSender && (
+            <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+              <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+              <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                <div className="w-[12px] h-[12px] relative">
+                  <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                  <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                </div>
+              </div>
+              <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+            </div>
           )}
 
           {shouldCollapseSender && (
@@ -623,9 +598,6 @@ export function OrderViewContent({
                 isDoubleRoute={isDoubleRoute}
                 designerConfig={designerConfigState}
                 phoneProfile={phoneProfile}
-                isDesignMode={isDesignModeActive}
-                selectedElementKey={selectedDesignCard === "customerCard" ? selectedDesignElementKey : undefined}
-                onSelectElement={(key) => handleSelectDesignElement(key, "customerCard")}
               >
                 {/* دالة الزبون وموقعه الإضافي */}
                 <div className="flex flex-col gap-1">
@@ -722,20 +694,29 @@ export function OrderViewContent({
             </div>
           )}
 
-          {/* كارت معلومات الطلب مدمج ومترابط مباشرة مع كارت الزبون بدون أي فجوة أو فراغ */}
+          {/* كارت معلومات الطلب مدمج ومترابط مع فاصل أرابيسك مذهب */}
           {!isDoubleRoute && designerConfigState?.enabledPortals?.admin !== false && (
-            <div className="-mt-4 sm:-mt-5.5">
-              <AdminLuxuryOrderInfoCard
-                order={order}
-                setPreviewImageUrl={setPreviewImageUrl}
-                designerConfig={designerConfigState || undefined}
-                hideSubtotalInfo={false}
-                isMandoubPortal={false}
-                isDesignMode={isDesignModeActive}
-                selectedElementKey={selectedDesignCard === "orderInfoCard" ? selectedDesignElementKey : undefined}
-                onSelectElement={(key) => handleSelectDesignElement(key, "orderInfoCard")}
-              />
-            </div>
+            <>
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                  </div>
+                </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+              </div>
+              <div className="w-full">
+                <AdminLuxuryOrderInfoCard
+                  order={order}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  designerConfig={designerConfigState || undefined}
+                  hideSubtotalInfo={false}
+                  isMandoubPortal={false}
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -1171,38 +1152,6 @@ export function OrderViewContent({
             setShowAssignCourierModal(false);
           }}
           onClose={() => setShowAssignCourierModal(false)}
-        />
-      )}
-
-      {/* --- استوديو ترتيب وتخصيص الكروت السريع التفاعلي من داخل الطلب --- */}
-      <QuickOrderCardsDesignerModal
-        isOpen={showDesignerModal}
-        onClose={() => setShowDesignerModal(false)}
-        currentScope="admin"
-        canSwitchScope={true}
-        initialConfig={designerConfigState}
-        onConfigSaved={(savedConfig, savedScope) => {
-          if (savedScope === "admin") {
-            setDesignerConfigState(savedConfig);
-          }
-        }}
-        orderSample={order}
-      />
-
-      {/* --- شريط أدوات التحريك والتصميم الحي داخل صفحة الطلب الحقيقية --- */}
-      {isDesignModeActive && (
-        <OnPageCardsDesignerToolbar
-          config={designerConfigState || {}}
-          onChangeConfig={(newCfg) => setDesignerConfigState(newCfg)}
-          selectedCard={selectedDesignCard}
-          selectedElementKey={selectedDesignElementKey}
-          onSelectElement={handleSelectDesignElement}
-          currentScope={designerScope}
-          onScopeChange={(scope) => setDesignerScope(scope)}
-          onSave={handleSaveDesignerConfig}
-          onClose={() => setIsDesignModeActive(false)}
-          isSaving={isSavingDesigner}
-          saveSuccessMsg={designerSaveSuccessMsg}
         />
       )}
 

@@ -197,9 +197,8 @@ export function AdminOrderMoneyEvents({
   const isDelivered = orderStatus === "delivered";
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md space-y-4" dir="rtl">
-      <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
-
+    <div className="relative overflow-hidden rounded-[24px] border-2 border-[#C9A86A] bg-[#FFFEFB] shadow-[0_15px_45px_rgba(0,0,0,0.35),0_0_0_1px_rgba(201,168,106,0.3),inset_0_1px_0_rgba(255,255,255,0.8)] text-slate-900 select-none" dir="rtl">
+      
       {/* التوست المنبثق */}
       {toastMsg && (
         <div
@@ -238,24 +237,42 @@ export function AdminOrderMoneyEvents({
         />
       )}
 
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-3">
-        <h2 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
-          <span>📊</span>
-          <span>المعاملات المالية للطلب وإجراءات الاستلام والتسليم</span>
-        </h2>
-        
-        {assignedCourierId ? (
-          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] bg-[#0F4D3A] border border-[#C9A86A]/60 px-3 py-1 rounded-xl flex items-center gap-1 shadow-inner">
-            <span>🛵</span>
-            <span>مسند للمندوب: <strong>{courierName || "المندوب"}</strong> (تُحسب له الأرباح والحركات بالنيابة)</span>
+      {/* رأس الكارت الملكي الزمردي المذهب */}
+      <div className="relative bg-[#0A3D2E] border-b-[2px] border-[#C9A86A] px-3.5 sm:px-4 py-[14px] flex items-center justify-between overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.08] pointer-events-none emerald-pattern" />
+        <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse at 80% 50%, rgba(201,168,106,0.18) 0%, transparent 60%)" }} />
+
+        <div className="relative flex items-center gap-2.5">
+          <div className="w-[30px] h-[30px] sm:w-[34px] sm:h-[34px] rounded-[10px] gold-grad flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.35),inset_0_1px_0_rgba(255,255,255,0.6)] border border-[#9C7D46]/30 shrink-0">
+            <span className="text-base sm:text-lg">💳</span>
+          </div>
+          <div>
+            <h3 className="text-[14px] sm:text-[16px] font-black leading-none tracking-wide text-[#E8C77E]">
+              المعاملات المالية <span className="text-[11px] sm:text-xs font-bold text-[#E8C77E]/70">(الصادر والوارد)</span>
+            </h3>
+          </div>
+        </div>
+
+        <div className="relative flex items-center gap-1.5 px-3 py-[6px] rounded-full bg-[#122F26] border border-[#C9A86A]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.2)]">
+          <span className="text-xs">📜</span>
+          <span className="text-[11px] font-bold text-[#E8C77E] tracking-wide">
+            {assignedCourierId ? courierName || "المندوب" : "حساب الإدارة"}
           </span>
-        ) : (
-          <span className="text-[11px] sm:text-xs font-black text-[#F5D77F] bg-[#06281D] border border-[#C9A86A]/60 px-3 py-1 rounded-xl flex items-center gap-1 shadow-inner">
-            <span>🏢</span>
-            <span>غير مسند لمندوب (تُسجل للإدارة مباشرة وتظهر في دفتر الديون باسم الإدارة)</span>
-          </span>
-        )}
+          <div className="w-[5px] h-[5px] rounded-full bg-[#E8C77E] shadow-[0_0_6px_#E8C77E] animate-pulse" />
+        </div>
       </div>
+
+      {/* فاصل زخرفي إسلامي */}
+      <div className="relative bg-[#FDF6E3]/50 px-3 py-[8px] flex items-center justify-center gap-2 border-b border-[#C9A86A]/15">
+        <div className="h-[1px] flex-1 bg-gradient-to-l from-[#C9A86A]/50 to-transparent" />
+        <div className="w-[18px] h-[18px] relative flex items-center justify-center">
+          <div className="absolute w-[18px] h-[18px] rotate-45 border border-[#C9A86A]/60 bg-[#FFFEFB] shadow-[0_1px_4px_rgba(201,168,106,0.2)]" />
+          <div className="w-[7px] h-[7px] rotate-45 bg-[#C9A86A]" />
+        </div>
+        <div className="h-[1px] flex-1 bg-gradient-to-r from-[#C9A86A]/50 to-transparent" />
+      </div>
+
+      <div className="relative p-3 sm:p-4 bg-gradient-to-b from-[#FFFEFB] to-[#FDF6E3]/40 space-y-3.5">
 
       {/* --- أزرار أعطيت وأخذت لتسجيل المبالغ والصادر والوارد --- */}
       {orderId && (
@@ -267,9 +284,9 @@ export function AdminOrderMoneyEvents({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {/* زر أعطيت (صادر) بصورة نانو بنانا */}
-            <div className="flex flex-col items-center gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {/* زر أعطيت للعميل (تسجيل صادر) */}
+            <div className="flex flex-col gap-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -277,24 +294,40 @@ export function AdminOrderMoneyEvents({
                   setPickupOpen(true);
                   setDeliveryOpen(false);
                 }}
-                className="group relative transition-transform active:scale-95 flex items-center justify-center cursor-pointer p-0 border-0 bg-transparent w-full"
-                title="أعطيت للعميل (صادر)"
+                className="group relative h-[88px] rounded-[18px] bg-[#103D2A] border-[1.5px] border-[#C9A86A]/70 overflow-hidden shadow-[0_6px_18px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition-all text-right w-full cursor-pointer"
+                title="تسجيل صادر: أعطيت للعميل"
               >
-                <img
-                  src="/images/order-luxury/زر استلام.webp"
-                  alt="أعطيت للعميل (صادر)"
-                  className="h-14 sm:h-16 w-auto max-w-[280px] object-contain drop-shadow-xl group-hover:scale-105 transition"
-                />
+                <div className="absolute inset-0 opacity-[0.06] emerald-pattern pointer-events-none" />
+                <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: "radial-gradient(ellipse at 85% 20%, rgba(201,168,106,0.18) 0%, transparent 55%)" }} />
+                <div className="absolute top-[6px] right-[6px] w-[28px] h-[1px] bg-gradient-to-l from-[#E8C77E]/50 to-transparent" />
+                
+                <div className="relative h-full flex items-center gap-2.5 px-3">
+                  <div className="relative w-[44px] h-[44px] rounded-full p-[2px] gold-grad shadow-[0_3px_10px_rgba(201,168,106,0.4)] shrink-0">
+                    <div className="w-full h-full rounded-full bg-[#0A3D2E] flex items-center justify-center border border-[#0A3D2E] relative overflow-hidden">
+                      <span className="relative text-[13px] font-black text-[#E8C77E] leading-none">مـا</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="text-[13px] sm:text-[14px] font-black text-[#E8C77E] leading-tight">أعطيت للعميل</div>
+                    <div className="mt-[3px] inline-flex items-center gap-1 px-2 py-[2px] rounded-full bg-[#0A3D2E]/60 border border-[#C9A86A]/20">
+                      <span className="text-[10px] font-bold text-[#E8C77E]/80">تسجيل صادر</span>
+                      <span className="text-[11px]">💸</span>
+                    </div>
+                  </div>
+                  <div className="w-[22px] h-[22px] rounded-full bg-[#E8C77E]/10 border border-[#E8C77E]/20 flex items-center justify-center shrink-0">
+                    <span className="text-[#E8C77E] text-xs font-bold">‹</span>
+                  </div>
+                </div>
               </button>
               {pickupRemaining !== null && (
-                <span className="text-xs font-bold bg-[#06281D]/90 text-[#F5D77F] border border-[#C9A86A]/50 px-3 py-0.5 rounded-xl shadow-inner">
+                <span className="text-[11px] font-bold bg-[#0A3D2E]/90 text-[#E8C77E] border border-[#C9A86A]/40 px-2.5 py-0.5 rounded-lg shadow-sm text-center">
                   المتبقي للصادر: {formatDinarAsAlfWithUnit(Math.max(0, pickupRemaining))}
                 </span>
               )}
             </div>
 
-            {/* زر أخذت (وارد) بصورة نانو بنانا */}
-            <div className="flex flex-col items-center gap-1.5">
+            {/* زر أخذت من الزبون (تسجيل وارد) */}
+            <div className="flex flex-col gap-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -302,17 +335,32 @@ export function AdminOrderMoneyEvents({
                   setDeliveryOpen(true);
                   setPickupOpen(false);
                 }}
-                className="group relative transition-transform active:scale-95 flex items-center justify-center cursor-pointer p-0 border-0 bg-transparent w-full"
-                title="أخذت من الزبون (وارد)"
+                className="group relative h-[88px] rounded-[18px] bg-[#0F2F26] border-[1.5px] border-[#C9A86A]/60 overflow-hidden shadow-[0_6px_18px_rgba(10,61,46,0.22),inset_0_1px_0_rgba(232,199,126,0.12)] active:scale-[0.98] transition-all text-right w-full cursor-pointer"
+                title="تسجيل وارد: أخذت من الزبون"
               >
-                <img
-                  src="/images/order-luxury/زر تسليم.webp"
-                  alt="أخذت من الزبون (وارد)"
-                  className="h-14 sm:h-16 w-auto max-w-[280px] object-contain drop-shadow-xl group-hover:scale-105 transition"
-                />
+                <div className="absolute inset-0 opacity-[0.05] emerald-pattern pointer-events-none" />
+                <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse at 15% 85%, rgba(17,87,64,0.4) 0%, transparent 60%)" }} />
+                
+                <div className="relative h-full flex items-center gap-2.5 px-3">
+                  <div className="relative w-[44px] h-[44px] rounded-full p-[2px] bg-gradient-to-br from-[#D9BF7F] to-[#A8864A] shadow-[0_3px_10px_rgba(201,168,106,0.35)] shrink-0">
+                    <div className="w-full h-full rounded-full bg-[#122E24] flex items-center justify-center relative overflow-hidden">
+                      <span className="relative text-[11px] font-black text-[#E8C77E]">شـاء</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="text-[13px] sm:text-[14px] font-black text-[#E8C77E] leading-tight">أخذت من الزبون</div>
+                    <div className="mt-[3px] inline-flex items-center gap-1 px-2 py-[2px] rounded-full bg-[#0A3D2E]/50 border border-[#C9A86A]/20">
+                      <span className="text-[10px] font-bold text-[#E8C77E]/80">تسجيل وارد</span>
+                      <span className="text-[11px]">🫴</span>
+                    </div>
+                  </div>
+                  <div className="w-[22px] h-[22px] rounded-full bg-[#E8C77E]/10 border border-[#E8C77E]/20 flex items-center justify-center shrink-0">
+                    <span className="text-[#E8C77E] text-xs font-bold">‹</span>
+                  </div>
+                </div>
               </button>
               {deliveryRemaining !== null && !prepaidAll && (
-                <span className="text-xs font-bold bg-[#3B0764]/80 text-[#F5D77F] border border-[#C9A86A]/50 px-3 py-0.5 rounded-xl shadow-inner">
+                <span className="text-[11px] font-bold bg-[#122F26]/90 text-[#E8C77E] border border-[#C9A86A]/40 px-2.5 py-0.5 rounded-lg shadow-sm text-center">
                   المتبقي للوارد: {formatDinarAsAlfWithUnit(Math.max(0, deliveryRemaining))}
                 </span>
               )}
@@ -438,70 +486,79 @@ export function AdminOrderMoneyEvents({
             return (
               <li
                 key={ev.id}
-                className={`relative overflow-hidden rounded-2xl border-2 p-3.5 text-sm transition-all shadow-md ${
+                className={`relative overflow-hidden rounded-[20px] border-[1.5px] p-3.5 text-sm transition-all shadow-[0_8px_24px_rgba(10,61,46,0.3),inset_0_1px_0_rgba(232,199,126,0.12)] ${
                   deleted
                     ? "border-slate-700 bg-[#06281D]/40 text-slate-400 line-through"
                     : ev.kind === MONEY_KIND_PICKUP
-                      ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#0A3D2E] text-white"
-                      : "border-[#C9A86A] bg-gradient-to-r from-[#5C1D24] to-[#3B0764]/80 text-white"
+                      ? "border-[#C9A86A]/40 bg-[#0E3B2A] text-white"
+                      : "border-[#C9A86A]/40 bg-[#122E24] text-white"
                 }`}
               >
-                <div className="space-y-3">
+                <div className="absolute inset-0 opacity-[0.07] pointer-events-none emerald-pattern" />
+                <div className="absolute top-0 right-0 w-[120px] h-[1px] bg-gradient-to-l from-[#E8C77E]/40 to-transparent pointer-events-none" />
+
+                <div className="relative space-y-3 z-10">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1 space-y-1.5 leading-relaxed text-right">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`font-black text-xs px-2.5 py-0.5 rounded-lg text-white border border-white/20 ${
-                            ev.kind === MONEY_KIND_PICKUP ? "bg-emerald-700" : "bg-rose-700"
-                          }`}
-                        >
-                          {dirLabel}
-                        </span>
-                        <span className="font-black text-[#F5D77F] text-sm">
-                          {isRecordedByAdmin ? "🏢 الإدارة" : ev.performedByDisplayName || "المندوب"}
-                        </span>
-                        <span
-                          className="text-xs font-mono font-bold text-emerald-200 inline-flex items-center gap-1.5 bg-[#06281D]/80 border border-[#C9A86A]/40 px-2 py-0.5 rounded-lg shadow-inner"
-                          dir="ltr"
-                        >
-                          <span className="tabular-nums">{timeInfo.dateStr}</span>
-                          <span className="text-[#C9A86A] font-normal">|</span>
-                          <span className="tabular-nums">{timeInfo.timeStr}</span>
-                        </span>
+                    <div className="min-w-0 flex-1 space-y-2 leading-relaxed text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-[36px] h-[36px] rounded-full p-[1.5px] gold-grad shadow-[0_2px_8px_rgba(201,168,106,0.35)] shrink-0">
+                            <div className="w-full h-full rounded-full bg-[#081F18] flex items-center justify-center border border-[#0A3D2E] relative overflow-hidden">
+                              <span className="relative text-[10px] font-black text-[#E8C77E] tracking-widest">
+                                {ev.kind === MONEY_KIND_PICKUP ? "صادر" : "وارد"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-bold text-[#C9A86A]/90">
+                              {ev.kind === MONEY_KIND_PICKUP ? "صادر بواسطة:" : "وارد بواسطة:"}
+                            </span>
+                            <span className="text-[13px] font-black text-white tracking-wide">
+                              {isRecordedByAdmin ? "🏢 الإدارة" : ev.performedByDisplayName || "المندوب"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 px-2.5 py-[4px] rounded-full bg-[#1A2F26] border border-[#C9A86A]/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#E8C77E] shadow-[0_0_4px_#E8C77E]" />
+                          <span className="text-[10.5px] font-bold text-[#E8C77E]/90 tracking-[0.02em] dir-ltr">
+                            {timeInfo.dateStr} {timeInfo.timeStr}
+                          </span>
+                        </div>
                       </div>
 
-                      <p className="text-sm flex flex-wrap items-baseline gap-3">
-                        <span className="font-bold text-white">
+                      <div className="pr-[46px] flex flex-wrap items-baseline gap-3">
+                        <span className="font-bold text-emerald-100 text-xs">
                           المسجّل:{" "}
-                          <span className="font-mono font-black tabular-nums text-[#F5D77F] text-base">
+                          <span className="font-mono font-black tabular-nums text-[#E8C77E] text-base">
                             {formatDinarAsAlfWithUnit(ev.amountDinar)}
                           </span>
                         </span>
                         {ev.expectedDinar != null && (
-                          <span className="font-bold text-emerald-200/80">
+                          <span className="font-bold text-[#C9A86A]/80 text-xs">
                             المتوقع:{" "}
                             <span className="font-mono font-bold tabular-nums text-white">
                               {formatDinarAsAlfWithUnit(ev.expectedDinar)}
                             </span>
                           </span>
                         )}
-                      </p>
+                      </div>
 
                       {noteLine !== "—" && (
-                        <p className="text-xs font-bold text-[#F5D77F]/90">
-                          <span className="text-[#F5D77F]/60">ملاحظة: </span>
+                        <p className="pr-[46px] text-xs font-bold text-[#E8C77E]/90">
+                          <span className="text-[#E8C77E]/60">ملاحظة: </span>
                           <span className="whitespace-pre-wrap break-words">{noteLine}</span>
                         </p>
                       )}
 
                       {ev.recordedByCompanyPreparerId ? (
-                        <p className="text-xs font-black text-amber-300">
+                        <p className="pr-[46px] text-xs font-black text-amber-300">
                           📦 سُجّلت من لوحة المجهز
                         </p>
                       ) : null}
 
                       {deleted ? (
-                        <p className="text-xs font-bold text-rose-300">
+                        <p className="pr-[46px] text-xs font-bold text-rose-300">
                           {ev.deletedReason === "status_revert" ? (
                             <>⚠️ أُلغيت تلقائياً عند تغيير حالة الطلب</>
                           ) : (
@@ -518,7 +575,7 @@ export function AdminOrderMoneyEvents({
                         <button
                           type="submit"
                           disabled={softPending}
-                          className="inline-flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-rose-400 bg-rose-950/80 hover:bg-rose-900 px-3 py-1.5 text-xs font-black text-rose-200 shadow-sm transition-colors cursor-pointer"
+                          className="inline-flex min-h-[34px] items-center justify-center gap-1 rounded-xl border border-rose-400/40 bg-rose-950/80 hover:bg-rose-900 px-3 py-1 text-xs font-black text-rose-200 shadow-sm transition-colors cursor-pointer"
                           onClick={(e) => {
                             if (
                               !window.confirm(
@@ -581,6 +638,7 @@ export function AdminOrderMoneyEvents({
           })}
         </ul>
       )}
+      </div>
     </div>
   );
 }

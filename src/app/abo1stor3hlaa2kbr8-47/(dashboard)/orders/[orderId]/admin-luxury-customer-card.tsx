@@ -40,9 +40,6 @@ export function AdminLuxuryCustomerCard({
   isDoubleRoute = false,
   designerConfig,
   phoneProfile,
-  isDesignMode = false,
-  selectedElementKey,
-  onSelectElement,
   children,
 }: {
   order: any;
@@ -53,9 +50,6 @@ export function AdminLuxuryCustomerCard({
   isDoubleRoute?: boolean;
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
-  isDesignMode?: boolean;
-  selectedElementKey?: string;
-  onSelectElement?: (key: string, cardType: "customerCard") => void;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -111,36 +105,6 @@ export function AdminLuxuryCustomerCard({
   const custCustom = designerConfig?.customerCard;
   const frameBg = custCustom?.frameBgUrl || "/images/order-luxury/shop-card/shop-card-frame.webp";
 
-  // دالة تغليف كل عنصر في كارت الزبون لجعله قابلاً للنقر والتحديد الفوري في وضع التعديل المباشر
-  const wrapInteractive = (elemKey: string, title: string, element: React.ReactNode, cfg?: CustomElementConfig, containerClassName = "") => {
-    if (!isDesignMode) return element;
-    const isSelected = selectedElementKey === elemKey;
-    return (
-      <div
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (onSelectElement) {
-            onSelectElement(elemKey, "customerCard");
-          }
-        }}
-        title={`انقر لتحديد (${title}) وتعديل موضعه وحجمه`}
-        className={`relative cursor-pointer transition-all duration-200 ${containerClassName} ${
-          isSelected
-            ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-xl shadow-[0_0_15px_rgba(245,215,127,0.85)] z-30"
-            : "hover:ring-1 hover:ring-amber-400/60 hover:rounded-lg"
-        } ${cfg?.hidden ? "opacity-30 grayscale dashed border border-rose-500/50" : ""}`}
-      >
-        {isSelected && (
-          <div className="absolute -top-5 right-0 bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-md pointer-events-none whitespace-nowrap z-40 animate-bounce">
-            ★ {title}
-          </div>
-        )}
-        {element}
-      </div>
-    );
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
       {/* مدخلات الملفات المخفية للكاميرا والمعرض */}
@@ -168,484 +132,237 @@ export function AdminLuxuryCustomerCard({
         }}
       />
 
-      {/* الهيكل الرئيسي لكارت الزبون بالإطار الفاخر */}
-      <div
-        className="relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto"
-        style={getCardContainerStyle(custCustom?.frameConfig, frameBg)}
-      >
-        {/* طبقة العناصر والنصوص والصور المخصصة المضافة */}
-        <RenderCustomElementsLayer
-          elements={custCustom?.customElements}
-          context={{
-            order,
-            customerPhone: cleanPhone,
-            customerLocationUrl: order.customerLocationUrl,
-            onZoomImage: (url, title) => {
-              setPreviewImageUrl(url);
-            },
-          }}
-        />
+      {/* كارت الزبون الملكي الزمردي الفاخر */}
+      <div className="relative mt-1">
+        {/* إطار التدرج الزمردي الذهبي الخارجي */}
+        <div className="absolute -inset-[1px] rounded-[24px] bg-gradient-to-b from-[#C9A86A]/80 to-[#9C7D46]/70 opacity-80 pointer-events-none" />
 
-        {isExpanded ? (
-          /* محتوى الكارت المفتوح: عمودين متجاورين (اليمين للمعلومات والتواصل، اليسار للصورة وأزرار الرفع) */
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-7 items-start min-w-0 relative z-10">
-            
-            {/* ================= 1. الجانب الأيمن: كبسولة العنوان + بيانات الزبون + موقع الزبون + أزرار التواصل ================= */}
-            <div className="flex flex-col justify-between items-start gap-2 sm:gap-3 min-w-0">
-              {/* الرأس: كبسولة الزبون (المستلم) - النقر عليها يطوي الكارت */}
-              {wrapInteractive(
-                "headerCustomerInfo",
-                "كبسولة عنوان الزبون",
-                <div
-                  onClick={() => !isDesignMode && setIsExpanded(false)}
-                  className="w-fit inline-flex self-start cursor-pointer hover:scale-105 active:scale-95 transition-transform"
-                  style={getElementStyle(custCustom?.headerCustomerInfo)}
-                  title={isDesignMode ? "تحديد كبسولة الزبون" : "انقر لطي معلومات الزبون"}
-                >
-                  {custCustom?.headerCustomerInfo?.imageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={custCustom.headerCustomerInfo.imageUrl}
-                      alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none pointer-events-none"
-                    />
-                  ) : (
-                    <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
-                      <span className="text-xs sm:text-sm">👤</span>
-                      <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
-                        {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                      </span>
-                    </div>
-                  )}
-                </div>,
-                custCustom?.headerCustomerInfo
-              )}
+        <div className="relative rounded-[22px] bg-[#FFFEFB] border border-[#FDF6E3] shadow-[0_8px_24px_rgba(10,61,46,0.07),0_1px_3px_rgba(0,0,0,0.05),inset_0_1px_0_white] overflow-hidden">
+          {/* لمسات وزخارف إسلامية هندسية */}
+          <div className="absolute inset-[3px] rounded-[19px] border border-[#115740]/[0.06] pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[62%] h-[18px] bg-gradient-to-b from-[#E6F4EF]/70 to-transparent rounded-b-[18px] border-x border-b border-[#115740]/10 pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="w-[28px] h-[14px] bg-[#FFFEFB] border border-[#115740]/20 rounded-b-full flex items-end justify-center pb-[2px] shadow-sm">
+              <div className="w-[5px] h-[5px] rotate-45 bg-[#115740]/60" />
+            </div>
+          </div>
+          <div className="absolute top-[10px] right-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_0_4px_rgba(201,168,106,0.5)] pointer-events-none" />
+          <div className="absolute top-[10px] left-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_0_4px_rgba(201,168,106,0.5)] pointer-events-none" />
 
-              {/* قائمة البيانات الأربع بأيقوناتها المجسمة */}
-              <div className="space-y-1.5 sm:space-y-2.5 py-0.5 w-full">
-                {/* سطر 1: اسم الزبون */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {wrapInteractive(
-                    "iconCustomerName",
-                    "أيقونة اسم الزبون",
-                    <div className="shrink-0 w-fit inline-flex">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.iconCustomerName?.imageUrl || "/images/order-luxury/shop-card/icon-customer-name.webp"}
-                        alt="اسم الزبون"
-                        style={getElementStyle(custCustom?.iconCustomerName)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                      />
-                    </div>,
-                    custCustom?.iconCustomerName
-                  )}
-                  {wrapInteractive(
-                    "textCustomerName",
-                    "نص اسم الزبون",
-                    <div className="min-w-0 w-fit inline-flex">
-                      <span
-                        style={getElementStyle(custCustom?.textCustomerName)}
-                        className="font-black text-xs sm:text-sm md:text-base text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                      >
-                        {customerName || order.customer?.name || "الزبون"}
-                      </span>
-                    </div>,
-                    custCustom?.textCustomerName
-                  )}
-                </div>
-
-                {/* سطر 2: اسم المنطقة */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {wrapInteractive(
-                    "iconRegion",
-                    "أيقونة المنطقة",
-                    <div className="shrink-0 w-fit inline-flex">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.iconRegion?.imageUrl || "/images/order-luxury/shop-card/icon-region.webp"}
-                        alt="المنطقة"
-                        style={getElementStyle(custCustom?.iconRegion)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                      />
-                    </div>,
-                    custCustom?.iconRegion
-                  )}
-                  {wrapInteractive(
-                    "textRegion",
-                    "نص المنطقة",
-                    <div className="min-w-0 w-fit inline-flex">
-                      <span
-                        style={getElementStyle(custCustom?.textRegion)}
-                        className="font-bold text-xs sm:text-sm md:text-base text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                      >
-                        {order.customerRegion?.name || "—"}
-                      </span>
-                    </div>,
-                    custCustom?.textRegion
-                  )}
-                </div>
-
-                {/* سطر 3: رقم هاتف الزبون */}
-                <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-                  {wrapInteractive(
-                    "iconPhone",
-                    "أيقونة رقم الهاتف",
-                    <div className="shrink-0 w-fit inline-flex">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.iconPhone?.imageUrl || "/images/order-luxury/shop-card/icon-phone.webp"}
-                        alt="رقم الهاتف"
-                        style={getElementStyle(custCustom?.iconPhone)}
-                        className="w-6 h-6 sm:w-7.5 sm:h-7.5 md:w-8.5 md:h-8.5 object-contain shrink-0 drop-shadow-sm transition-transform"
-                      />
-                    </div>,
-                    custCustom?.iconPhone
-                  )}
-                  {wrapInteractive(
-                    "textPhone",
-                    "نص رقم الهاتف",
-                    <div className="min-w-0 w-fit inline-flex">
-                      <span
-                        style={getElementStyle(custCustom?.textPhone)}
-                        className="font-mono font-black text-xs sm:text-sm md:text-base text-[#F5D77F] tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate inline-block transition-transform"
-                      >
-                        {cleanPhone || "—"}
-                      </span>
-                    </div>,
-                    custCustom?.textPhone
-                  )}
-                </div>
+          <div className="relative p-3.5 pt-5">
+            {/* عنوان الكارت */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#E6F4EF] to-[#CDE7DC] flex items-center justify-center shadow-[0_2px_8px_rgba(17,87,64,0.15)] border border-[#115740]/10">
+                <svg className="w-[15px] h-[15px] text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
               </div>
-
-              {/* زر موقع الزبون على الخريطة */}
-              {wrapInteractive(
-                "btnLocation",
-                "زر موقع الزبون",
-                <div
-                  className="pt-0.5 w-fit inline-flex self-start origin-center"
-                  style={getElementStyle(custCustom?.btnLocation)}
-                >
-                  {hasLocation ? (
-                    <a
-                      href={isDesignMode ? "#" : order.customerLocationUrl}
-                      target={isDesignMode ? "_self" : "_blank"}
-                      rel="noopener noreferrer"
-                      className="inline-block transition-transform hover:scale-[1.02] active:scale-95 cursor-pointer"
-                      title="فتح موقع الزبون على الخريطة"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/btn-open-location.webp"}
-                        alt="موقع الزبون"
-                        className="h-7 sm:h-9 md:h-10 w-auto max-w-none object-contain drop-shadow-lg transition-transform"
-                      />
-                    </a>
-                  ) : (
-                    <div
-                      className="inline-block opacity-60 cursor-not-allowed"
-                      title="لا يوجد موقع جغرافي مسجل للزبون"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.btnLocation?.imageUrl || "/images/order-luxury/btn-no-location.webp"}
-                        alt="موقع الزبون غير متوفر"
-                        className="h-7 sm:h-9 md:h-10 w-auto max-w-none object-contain grayscale transition-transform"
-                      />
-                    </div>
-                  )}
-                </div>,
-                custCustom?.btnLocation
-              )}
-
-              {/* أزرار التواصل للزبون (اتصال + واتساب) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
-              <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
-                {/* 1. زر اتصال 📞 */}
-                <div className="w-full flex justify-center min-w-0">
-                  {wrapInteractive(
-                    "btnCall",
-                    "زر الاتصال (الزبون)",
-                    <div style={getElementStyle(custCustom?.btnCall)} className="w-fit inline-flex origin-center">
-                      {cleanPhone ? (
-                        <a
-                          href={isDesignMode ? "#" : telHref(cleanPhone)}
-                          className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
-                          title={`اتصال هاتفي: ${cleanPhone}`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                            alt="اتصال"
-                            className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
-                          />
-                        </a>
-                      ) : (
-                        <div className="opacity-50 cursor-not-allowed block" title="لا يوجد رقم هاتف">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.btnCall?.imageUrl || "/images/order-luxury/shop-card/btn-call.webp"}
-                            alt="اتصال"
-                            className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain grayscale transition-transform block"
-                          />
-                        </div>
-                      )}
-                    </div>,
-                    custCustom?.btnCall
-                  )}
-                </div>
-
-                {/* 2. زر واتس اب 💬 */}
-                <div className="w-full flex justify-center min-w-0">
-                  {wrapInteractive(
-                    "btnWhatsapp",
-                    "زر الواتساب (الزبون)",
-                    <div style={getElementStyle(custCustom?.btnWhatsapp)} className="w-fit inline-flex origin-center">
-                      {cleanPhone ? (
-                        <a
-                          href={isDesignMode ? "#" : whatsappMeUrl(cleanPhone)}
-                          target={isDesignMode ? "_self" : "_blank"}
-                          rel="noopener noreferrer"
-                          className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
-                          title="مراسلة الزبون عبر واتساب"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                            alt="واتس اب"
-                            className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
-                          />
-                        </a>
-                      ) : (
-                        <div className="opacity-50 cursor-not-allowed block" title="لا يوجد رقم هاتف">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={custCustom?.btnWhatsapp?.imageUrl || "/images/order-luxury/shop-card/btn-whatsapp.webp"}
-                            alt="واتس اب"
-                            className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain grayscale transition-transform block"
-                          />
-                        </div>
-                      )}
-                    </div>,
-                    custCustom?.btnWhatsapp
-                  )}
-                </div>
+              <div>
+                <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none">
+                  {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                </h2>
+                <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#115740]/60 to-transparent rounded-full" />
               </div>
             </div>
 
-            {/* ================= 2. الجانب الأيسر: كبسولة صورة باب الزبون + مربع الصورة + أزرار (كاميرا ومعرض) ================= */}
-            <div className="flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 min-w-0 h-full">
-              {/* الرأس: كبسولة صورة باب الزبون */}
-              {wrapInteractive(
-                "headerDoorPhoto",
-                "كبسولة صورة الباب",
-                <div
-                  className="flex justify-center w-fit mx-auto shrink-0"
-                  style={getElementStyle(custCustom?.headerDoorPhoto)}
-                >
-                  {custCustom?.headerDoorPhoto?.imageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={custCustom.headerDoorPhoto.imageUrl}
-                      alt="صورة الباب"
-                      className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-md select-none transition-transform"
-                    />
-                  ) : (
-                    <div className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
-                      <span className="text-xs sm:text-sm">🚪</span>
-                      <span className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-md tracking-wide">
-                        صورة باب الزبون
-                      </span>
+            {isExpanded && (
+              <>
+                {/* محتوى بيانات الزبون + صورة الباب المذهبة */}
+                <div className="flex gap-3 items-start">
+                  <div className="flex-1 min-w-0 space-y-2.5">
+                    {/* منطقة الزبون */}
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDF6E3] border border-[#C9A86A]/20 shadow-[inset_0_1px_0_white]">
+                        <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shrink-0">
+                          <svg className="w-[9px] h-[9px] text-[#9C7D46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                        </span>
+                        <span className="text-[12px] font-bold text-[#3A2E1A] truncate">
+                          {order.customerRegion?.name || "منطقة الزبون"}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>,
-                custCustom?.headerDoorPhoto
-              )}
 
-              {/* مساحة عرض صورة باب الزبون أو الـ Placeholder */}
-              {wrapInteractive(
-                "photoContainer",
-                "إطار صورة باب الزبون",
-                <div
-                  className="w-fit inline-flex flex-col mx-auto justify-center items-center py-0.5 relative"
-                  style={getElementStyle(custCustom?.placeholderNoPhoto)}
-                >
-                  {imgCustomerDoor ? (
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-[82px] sm:w-[105px] md:w-[125px] h-[54px] sm:h-[70px] md:h-[82px] overflow-hidden rounded-xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative group shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={imgCustomerDoor}
-                          alt="باب الزبون"
-                          className="h-full w-full object-cover cursor-zoom-in group-hover:scale-105 transition duration-300"
-                          onClick={() => !isDesignMode && setZoomOpen(true)}
+                    {/* هاتف الزبون */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-[18px] h-[18px] rounded-full bg-[#0A3D2E] flex items-center justify-center shrink-0">
+                        <svg className="w-[10px] h-[10px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                      </span>
+                      {cleanPhone ? (
+                        <AdminCustomerPhoneInteractive
+                          phone={customerPhone || order.customerPhone}
+                          formattedPhone={cleanPhone}
+                          regionId={order.customerRegionId}
+                          currentOrderId={order.id}
+                          customerName={customerName || order.customer?.name}
+                          customerRegionName={order.customerRegion?.name}
+                          alternatePhone={order.alternatePhone}
+                          customerLocationUrl={order.customerLocationUrl || undefined}
+                          customerLandmark={order.customerLandmark || undefined}
+                          customerProfileId={order.customerProfileId}
                         />
-                        {!isDesignMode && (
-                          <div
-                            onClick={() => setZoomOpen(true)}
-                            className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-black text-[10px] cursor-zoom-in"
-                          >
-                            🔍 تكبير
-                          </div>
+                      ) : (
+                        <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E]">—</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* إطار صورة باب الزبون الملكي الفاخر */}
+                  <div className="shrink-0 relative">
+                    <div className="relative w-[96px] h-[96px] rounded-[20px] p-[3px] bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] shadow-[0_4px_18px_rgba(201,168,106,0.3)]">
+                      <div className="w-full h-full rounded-[17px] bg-gradient-to-br from-[#E8E0C8] via-[#D8CCB0] to-[#C9B997] relative overflow-hidden border border-white/50 flex flex-col items-center justify-center">
+                        {imgCustomerDoor ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={imgCustomerDoor}
+                            alt="صورة باب الزبون"
+                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300"
+                            onClick={() => {
+                              setPreviewImageUrl(imgCustomerDoor);
+                              setZoomOpen(true);
+                            }}
+                          />
+                        ) : (
+                          <>
+                            <div
+                              className="absolute inset-0 opacity-[0.15]"
+                              style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15 0 L16 12 L28 8 L18 15 L28 22 L16 18 L15 30 L14 18 L2 22 L12 15 L2 8 L14 12 Z' fill='%230A3D2E'/%3E%3C/svg%3E")`,
+                              }}
+                            />
+                            <div className="relative z-10 text-center">
+                              <div className="w-[32px] h-[32px] mx-auto rounded-[9px] bg-[#0A3D2E]/10 border border-[#0A3D2E]/15 flex items-center justify-center mb-1">
+                                <svg className="w-4 h-4 text-[#0A3D2E]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                </svg>
+                              </div>
+                              <span className="text-[10px] font-bold text-[#3A2E1A]/80 leading-none">صورة الباب</span>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* أزرار العمليات والتواصل للزبون */}
+                <div className="mt-3.5 space-y-2">
+                  {/* زر موقع الزبون الكبير الزمردي */}
+                  {hasLocation ? (
+                    <a
+                      href={order.customerLocationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-[40px] rounded-full bg-[#115740] text-white relative overflow-hidden shadow-[0_4px_14px_rgba(17,87,64,0.3),inset_0_1px_0_rgba(255,255,255,0.12)] border border-[#0A3D2E]/20 active:scale-[0.99] transition-transform flex items-center justify-center gap-1.5"
+                    >
+                      <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span className="text-[13px] font-bold">موقع الزبون</span>
+                    </a>
                   ) : (
-                    <div className="w-fit inline-flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={custCustom?.placeholderNoPhoto?.imageUrl || "/images/order-luxury/shop-card/placeholder-no-photo.webp"}
-                        alt="لا توجد صورة باب"
-                        className="w-[82px] sm:w-[105px] md:w-[125px] h-auto max-h-[54px] sm:max-h-[70px] md:max-h-[82px] object-contain drop-shadow-xl opacity-95 select-none transition-transform"
-                      />
+                    <div className="w-full h-[40px] rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center gap-1.5 text-xs font-bold">
+                      <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      </svg>
+                      <span>لا يوجد موقع للزبون</span>
                     </div>
                   )}
-                </div>,
-                custCustom?.placeholderNoPhoto
-              )}
 
-              {/* أزرار رفع صورة باب الزبون (كاميرا + معرض) - مقفلة جنباً إلى جنب دائماً بدون كسر سطر */}
-              <div className="grid grid-cols-2 gap-1 sm:gap-2 pt-1 w-full items-center">
-                {/* 3. زر كاميرا 📷 */}
-                <div className="w-full flex justify-center min-w-0">
-                  {wrapInteractive(
-                    "btnCamera",
-                    "زر كاميرا الباب",
-                    <div style={getElementStyle(custCustom?.btnCamera)} className="w-fit inline-flex origin-center">
-                      <button
-                        type="button"
-                        onClick={() => !isDesignMode && cameraFileRef.current?.click()}
-                        disabled={pending}
-                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
-                        title="تصوير باب الزبون بالكاميرا"
+                  {/* زري واتس واتصال الزبون */}
+                  {cleanPhone && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={whatsappMeUrl(cleanPhone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-[38px] rounded-full bg-[#115740] text-white flex items-center justify-center gap-1.5 shadow-[0_3px_12px_rgba(17,87,64,0.25)] border border-white/10 active:scale-[0.98] transition-transform"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnCamera?.imageUrl || "/images/order-luxury/shop-card/btn-camera.webp"}
-                          alt="كاميرا"
-                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
-                        />
-                      </button>
-                    </div>,
-                    custCustom?.btnCamera
+                        <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                        </svg>
+                        <span className="text-[12px] font-bold">واتس</span>
+                      </a>
+
+                      <a
+                        href={telHref(cleanPhone)}
+                        className="h-[38px] rounded-full bg-[#0A3D2E] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_12px_rgba(10,61,46,0.3)] border border-[#C9A86A]/40 active:scale-[0.98] transition-transform"
+                      >
+                        <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        <span className="text-[12px] font-bold">اتصال</span>
+                      </a>
+                    </div>
                   )}
+
+                  {/* زري كاميرا ومعرض صور باب الزبون */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => cameraFileRef.current?.click()}
+                      className="h-[32px] rounded-full bg-white border border-[#115740]/20 text-[#115740] flex items-center justify-center gap-1 text-[11px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                    >
+                      <svg className="w-3 h-3 text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>كاميرا</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => galleryFileRef.current?.click()}
+                      className="h-[32px] rounded-full bg-white border border-[#115740]/20 text-[#115740] flex items-center justify-center gap-1 text-[11px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                    >
+                      <svg className="w-3 h-3 text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>معرض</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 4. زر معرض 🖼️ */}
-                <div className="w-full flex justify-center min-w-0">
-                  {wrapInteractive(
-                    "btnGallery",
-                    "زر معرض الباب",
-                    <div style={getElementStyle(custCustom?.btnGallery)} className="w-fit inline-flex origin-center">
-                      <button
-                        type="button"
-                        onClick={() => !isDesignMode && galleryFileRef.current?.click()}
-                        disabled={pending}
-                        className="transition-transform hover:scale-105 active:scale-95 cursor-pointer block"
-                        title="اختيار صورة باب الزبون من المعرض"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={custCustom?.btnGallery?.imageUrl || "/images/order-luxury/shop-card/btn-gallery.webp"}
-                          alt="معرض"
-                          className="h-7 sm:h-8.5 md:h-10 w-auto max-w-[160px] object-contain drop-shadow-xl transition-transform block"
-                        />
-                      </button>
-                    </div>,
-                    custCustom?.btnGallery
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* ================= 3. قسم البلوكات المدمجة (أقرب نقطة دالة + الاستدلال الذكي + أزرار الموقع) ================= */}
-            {children && (
-              <div className="col-span-2 mt-2 pt-2.5 border-t border-[#C9A86A]/40 w-full space-y-2.5 relative z-10">
-                {children}
-              </div>
-            )}
-
-          </div>
-        ) : (
-          /* ================= محتوى الكارت المطوي: سطر مصغر أنيق وفخم ================= */
-          <div className="flex items-center justify-between gap-2 min-w-0 relative z-10">
-            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-              {/* الرأس: كبسولة الزبون (المستلم) - النقر عليها يفتح الكارت */}
-              <div
-                onClick={() => setIsExpanded(true)}
-                className="flex justify-start cursor-pointer hover:scale-105 active:scale-95 transition-transform shrink-0"
-                style={getElementStyle(custCustom?.headerCustomerInfo)}
-                title="انقر لعرض تفاصيل الزبون"
-              >
-                {custCustom?.headerCustomerInfo?.imageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={custCustom.headerCustomerInfo.imageUrl}
-                    alt={isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
-                    className="h-8.5 sm:h-10 md:h-11 w-auto object-contain drop-shadow-md select-none transition-transform pointer-events-none"
-                  />
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0A3D2E] border-2 border-[#C9A86A] rounded-2xl shadow-lg">
-                    <span className="text-xs">👤</span>
-                    <span className="font-black text-xs text-[#F5D77F] drop-shadow-md">
-                      {isDoubleRoute ? "المرسل" : "الزبون"}
-                    </span>
+                {/* قسم الدالة المباشرة والاستدلال والأزرار المخصصة */}
+                {children && (
+                  <div className="mt-4 space-y-2.5">
+                    {children}
                   </div>
                 )}
-              </div>
+              </>
+            )}
 
-              {/* تفاصيل مختصرة في السطر المطوي */}
-              <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => setIsExpanded(true)}>
-                <span className="font-black text-xs sm:text-sm text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] truncate">
-                  {customerName || order.customer?.name || "الزبون"}
-                </span>
-                {order.customerRegion?.name && (
-                  <span className="text-[11px] sm:text-xs text-[#FFF8F0]/80 truncate hidden sm:inline">
-                    • {order.customerRegion.name}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* أزرار سريعة مصغرة إذا كان هناك هاتف وموقع */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {cleanPhone && (
-                <a
-                  href={telHref(cleanPhone)}
-                  className="p-1.5 bg-[#0F4D3A] hover:bg-[#164E3D] border border-[#C9A86A]/60 rounded-xl text-emerald-300 text-xs shadow-md transition hover:scale-110 active:scale-95"
-                  title="اتصال سريع"
-                >
-                  📞
-                </a>
-              )}
-              {hasLocation && (
-                <a
-                  href={order.customerLocationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 bg-[#0F4D3A] hover:bg-[#164E3D] border border-[#C9A86A]/60 rounded-xl text-amber-300 text-xs shadow-md transition hover:scale-110 active:scale-95"
-                  title="موقع الزبون"
-                >
-                  📍
-                </a>
-              )}
+            {/* شريط طي / فتح تفاصيل الزبون */}
+            <div className="mt-3.5 -mx-3.5 border-t border-[#115740]/10 bg-gradient-to-b from-[#E6F4EF]/60 to-transparent">
               <button
                 type="button"
-                onClick={() => setIsExpanded(true)}
-                className="text-[#F5D77F] text-xs font-black p-1 hover:scale-110 transition cursor-pointer"
-                title="توسيع الكارت"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full h-[36px] flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#5A7A6E] hover:text-[#0A3D2E] transition-colors cursor-pointer"
               >
-                ▼
+                <span>{isExpanded ? "إغلاق تفاصيل الزبون" : "عرض تفاصيل الزبون"}</span>
+                <svg
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? "" : "rotate-180"}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
               </button>
             </div>
           </div>
-        )}
-
-        {/* مؤشر رفع صورة الباب إذا كان هناك رفع جاري */}
-        {pending && (
-          <div className="absolute top-2 left-2 z-30 bg-black/80 px-2.5 py-1 rounded-xl border border-amber-400 text-xs font-black text-[#F5D77F] animate-pulse flex items-center gap-1 shadow-lg">
-            <span>⏳</span> جاري رفع صورة الباب...
-          </div>
-        )}
+        </div>
       </div>
 
       {/* مودال معاينة وتكبير صورة باب الزبون مع زر المسح */}
