@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
+import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
 import {
   assignFileToInput,
   compressImageForMandoubUpload,
@@ -204,10 +205,17 @@ export function AdminLuxuryOrderInfoCard({
               </div>
             </div>
 
-            {/* صورة الطلب يسار 110px */}
+            {/* صورة الطلب يسار 110px قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
             <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
-              <div
-                onClick={() => {
+              <SwipeableLuxuryPhotoBox
+                size={110}
+                variant="order"
+                imageUrl={orderImageUrl}
+                label="صورة الطلب"
+                isBusy={busy}
+                onSwipeRight={() => cameraFileRef.current?.click()}
+                onSwipeLeft={() => galleryFileRef.current?.click()}
+                onClickPreview={() => {
                   if (orderImageUrl) {
                     setPreviewImageUrl(orderImageUrl);
                     setZoomOpen(true);
@@ -215,51 +223,13 @@ export function AdminLuxuryOrderInfoCard({
                     cameraFileRef.current?.click();
                   }
                 }}
-                className="relative w-[110px] h-[110px] rounded-[24px] border-[3px] border-[#C9A86A] bg-[#FDF6E3] shadow-[0_4px_15px_rgba(201,168,106,0.3),inset_0_1px_0_white,0_0_0_1px_rgba(232,213,163,0.5)_inset] cursor-pointer active:scale-95 transition-all overflow-hidden flex flex-col items-center justify-center"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 0 L26 21 L48 24 L26 27 L24 48 L22 27 L0 24 L22 21 Z' fill='%23C9A86A' fill-opacity='0.07'/%3E%3C/svg%3E"), linear-gradient(135deg, #FDF6E3 0%, #F5E6C0 50%, #E8D5A3 100%)`,
-                  backgroundRepeat: "repeat, no-repeat",
-                }}
-              >
-                {orderImageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={orderImageUrl}
-                    alt="صورة الطلب"
-                    className="w-full h-full object-cover rounded-[21px] hover:scale-105 transition duration-300"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-1">
-                    <div className="w-[44px] h-[44px] rounded-[14px] bg-[#E6EEDB] border-[1.5px] border-[rgba(168,184,154,0.6)] flex items-center justify-center mb-1 shadow-[inset_0_1px_0_white,0_2px_6px_rgba(10,61,46,0.08)]">
-                      <svg className="w-[24px] h-[24px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                      </svg>
-                    </div>
-                    <span className="text-[12px] font-black text-[#5A4A2A] leading-none">صورة الطلب</span>
-                  </div>
-                )}
-              </div>
-
-              {/* أزرار كاميرا ومعرض */}
-              <div className="flex items-center gap-1 mt-1.5 w-full justify-center">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => cameraFileRef.current?.click()}
-                  className="px-2 py-0.5 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[9.5px] font-bold shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer"
-                >
-                  كاميرا
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => galleryFileRef.current?.click()}
-                  className="px-2 py-0.5 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[9.5px] font-bold shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer"
-                >
-                  معرض
-                </button>
-              </div>
+                fallbackIcon={
+                  <svg className="w-[24px] h-[24px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                  </svg>
+                }
+              />
             </div>
           </div>
         </div>

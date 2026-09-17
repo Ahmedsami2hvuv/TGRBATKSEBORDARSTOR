@@ -16,6 +16,7 @@ import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
+import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -259,61 +260,30 @@ export function AdminLuxuryCustomerCard({
               </div>
             </div>
 
-            {/* كادر صورة باب الزبون الملكي المتطابق مع التصميم (130px) */}
-            <div className="shrink-0 flex flex-col items-center gap-1.5">
-              <div
-                onClick={() => {
-                  if (imgCustomerDoor) {
-                    setPreviewImageUrl(imgCustomerDoor);
-                    setZoomOpen(true);
-                  } else {
-                    cameraFileRef.current?.click();
-                  }
-                }}
-                className="relative w-[115px] h-[115px] sm:w-[130px] sm:h-[130px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-gradient-to-br from-[#FBF6E9] via-[#F6EED8] to-[#EFE2C2] p-[3px] shadow-[0_4px_14px_rgba(201,168,106,0.2),inset_0_1px_0_white] cursor-pointer active:scale-95 transition-all overflow-hidden flex flex-col items-center justify-center"
-              >
-                {imgCustomerDoor ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={imgCustomerDoor}
-                    alt="صورة باب الزبون"
-                    className="w-full h-full object-cover rounded-[13px] hover:scale-105 transition duration-300"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-2">
-                    <div className="w-[42px] h-[42px] rounded-[12px] bg-[#E6F4EF] border border-[#115740]/20 flex items-center justify-center mb-1.5 shadow-xs">
-                      <svg className="w-[22px] h-[22px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                      </svg>
-                    </div>
-                    <span className="text-[11px] font-black text-[#0A3D2E] leading-none">صورة الباب</span>
-                  </div>
-                )}
-              </div>
-
-              {/* أزرار كاميرا ومعرض مصغرة أسفل الصورة للسهولة */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => cameraFileRef.current?.click()}
-                  className="px-2 py-0.5 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[9.5px] font-black shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer"
-                  title="التقاط بالكاميرا"
-                >
-                  📷 كاميرا
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => galleryFileRef.current?.click()}
-                  className="px-2 py-0.5 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[9.5px] font-black shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer"
-                  title="رفع من المعرض"
-                >
-                  🖼️ معرض
-                </button>
-              </div>
-            </div>
+            {/* صورة باب الزبون 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            <SwipeableLuxuryPhotoBox
+              size={130}
+              variant="customer"
+              imageUrl={imgCustomerDoor}
+              label="صورة الباب"
+              isBusy={pending}
+              onSwipeRight={() => cameraFileRef.current?.click()}
+              onSwipeLeft={() => galleryFileRef.current?.click()}
+              onClickPreview={() => {
+                if (imgCustomerDoor) {
+                  setPreviewImageUrl(imgCustomerDoor);
+                  setZoomOpen(true);
+                } else {
+                  cameraFileRef.current?.click();
+                }
+              }}
+              fallbackIcon={
+                <svg className="w-[28px] h-[28px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              }
+            />
           </div>
 
           {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر كما في التصميم */}

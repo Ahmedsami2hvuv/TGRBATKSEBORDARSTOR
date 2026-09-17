@@ -13,6 +13,7 @@ import {
   assignFileToInput,
 } from "@/lib/client-image-compress";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
+import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -185,74 +186,32 @@ export function AdminLuxuryShopCard({
               </div>
             </div>
 
-            {/* صورة المحل 130x130 بخلفية زمردية غامقة ونجمة إسلامية وحد 3px ذهبي */}
-            <div className="shrink-0 flex flex-col items-center gap-1.5">
-              <div
-                onClick={() => {
-                  if (imgShopDoor) {
-                    setPreviewImageUrl(imgShopDoor);
-                    setZoomOpen(true);
-                  } else {
-                    cameraFileRef.current?.click();
-                  }
-                }}
-                className="relative w-[130px] h-[130px] rounded-[24px] border-[3px] border-[#C9A86A] bg-[#0E3D2B] shadow-[0_4px_15px_rgba(201,168,106,0.4),inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(232,213,163,0.3)_inset] cursor-pointer active:scale-95 transition-all overflow-hidden flex flex-col items-center justify-center"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='56' height='56' viewBox='0 0 56 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 0 L30.5 25.5 L56 28 L30.5 30.5 L28 56 L25.5 30.5 L0 28 L25.5 25.5 Z' fill='%231A4D3A' fill-opacity='0.28'/%3E%3Ccircle cx='28' cy='28' r='1.8' fill='%232A6A55' fill-opacity='0.22'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: "repeat",
-                }}
-              >
-                {imgShopDoor ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={imgShopDoor}
-                    alt="صورة المحل"
-                    className="w-full h-full object-cover rounded-[21px] hover:scale-105 transition duration-300"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-2">
-                    <div className="w-[60px] h-[60px] rounded-[18px] bg-[rgba(201,168,106,0.15)] border-[1.5px] border-[#C9A86A] flex items-center justify-center mb-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_8px_rgba(0,0,0,0.15)]">
-                      <svg className="w-[32px] h-[32px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                        <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-                        <path d="M2 7l4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-                        <path d="M2 7h20" />
-                      </svg>
-                    </div>
-                    <span className="text-[15px] font-black tracking-wide text-[#FFFEF8] drop-shadow-sm">صورة المحل</span>
-                  </div>
-                )}
-              </div>
-
-              {/* أزرار كاميرا ومعرض */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => cameraFileRef.current?.click()}
-                  className="px-2.5 py-1 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[10px] font-bold shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer flex items-center gap-1"
-                >
-                  <svg className="w-3 h-3 text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                  <span>كاميرا</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => galleryFileRef.current?.click()}
-                  className="px-2.5 py-1 rounded-full bg-white border border-[#C9A86A]/40 text-[#8B6A2A] text-[10px] font-bold shadow-xs hover:bg-[#FDF6E3] active:scale-95 transition cursor-pointer flex items-center gap-1"
-                >
-                  <svg className="w-3 h-3 text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span>معرض</span>
-                </button>
-              </div>
-            </div>
+            {/* صورة المحل 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            <SwipeableLuxuryPhotoBox
+              size={130}
+              variant="shop"
+              imageUrl={imgShopDoor}
+              label="صورة المحل"
+              isBusy={pending}
+              onSwipeRight={() => cameraFileRef.current?.click()}
+              onSwipeLeft={() => galleryFileRef.current?.click()}
+              onClickPreview={() => {
+                if (imgShopDoor) {
+                  setPreviewImageUrl(imgShopDoor);
+                  setZoomOpen(true);
+                } else {
+                  cameraFileRef.current?.click();
+                }
+              }}
+              fallbackIcon={
+                <svg className="w-[32px] h-[32px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                  <path d="M2 7l4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                  <path d="M2 7h20" />
+                </svg>
+              }
+            />
           </div>
 
           {/* أزرار موقع المحل وواتس واتصال */}
