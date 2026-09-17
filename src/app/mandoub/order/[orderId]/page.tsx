@@ -229,21 +229,21 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
   ]);
 
     return (
-      <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
-        <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 text-base sm:px-4 sm:text-lg">
+      <div dir="rtl" lang="ar" className="min-h-screen bg-[#F7F2E8] text-base leading-relaxed text-[#0A3D2E]">
+        <div className="mx-auto max-w-6xl px-2.5 py-3 pb-24 text-base sm:px-4 sm:py-4 sm:text-lg">
           {!modalOnly ? (
             <>
-              <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
-                <Link href={`/mandoub?${baseQuery.toString()}`} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+              <header className="mb-3 flex items-center gap-2 rounded-2xl border-[1.5px] border-[#C9A86A]/50 bg-gradient-to-r from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] px-3.5 py-2.5 shadow-[0_4px_15px_rgba(201,168,106,0.12)]">
+                <Link href={`/mandoub?${baseQuery.toString()}`} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white border border-[#C9A86A]/40 text-[#0A3D2E] hover:bg-[#FDF6E3] shadow-sm transition active:scale-95">
                   <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
                 </Link>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
-                  <p className="text-[10px] font-bold text-slate-500 sm:text-xs">{courier.phone}</p>
+                  <p className="truncate text-base font-black text-[#0A3D2E] sm:text-lg">{courier.name}</p>
+                  <p className="text-[10px] font-bold text-[#8B6A2A] sm:text-xs">{courier.phone}</p>
                 </div>
                 <Link
                   href={`/mandoub/settings?${baseQuery.toString()}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#C9A86A]/40 text-lg shadow-sm transition hover:bg-[#FDF6E3] active:scale-95"
                   title="الإعدادات"
                 >
                   ⚙️
@@ -251,7 +251,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
                 <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
                 <FullscreenWalletLauncher
                   href={`/mandoub/wallet?${baseQuery.toString()}`}
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0A3D2E] to-[#124B3A] px-3 py-2 text-center text-sm font-black text-[#F5D77F] shadow-md hover:brightness-110 active:scale-95 sm:px-4 sm:text-base"
                   title="محفظة المندوب"
                 >
                   المحفظة
