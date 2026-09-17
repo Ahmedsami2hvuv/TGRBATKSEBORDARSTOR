@@ -126,6 +126,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/badge-preparer-ward.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-pickup.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-delivery.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-istilam.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-tasleem.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign-empty.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-open-location.webp" as="image" type="image/webp" />
@@ -177,6 +179,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/badge-preparer-ward.webp',
                     '/images/order-luxury/btn-pickup.webp',
                     '/images/order-luxury/btn-delivery.webp',
+                    '/images/order-luxury/btn-istilam.webp',
+                    '/images/order-luxury/btn-tasleem.webp',
                     '/images/order-luxury/btn-assign.webp',
                     '/images/order-luxury/btn-assign-empty.webp',
                     '/images/order-luxury/btn-open-location.webp',

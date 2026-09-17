@@ -212,10 +212,10 @@ export function AdminOrderMoneyEvents({
         </div>
 
         <div className="relative p-3.5 bg-[#FFFEF8] space-y-3.5">
-          {/* زري أعطيت وأخذت */}
+          {/* زري استلام وتسليم (أعطيت وأخذت) الفاخرين بالصور */}
           {orderId && (
-            <div className="flex gap-[8px]">
-              {/* زر أعطيت */}
+            <div className="flex items-center justify-center gap-4 py-1">
+              {/* زر استلام (صادر / أعطيت) */}
               <button
                 type="button"
                 onClick={() => {
@@ -223,19 +223,17 @@ export function AdminOrderMoneyEvents({
                   setPickupOpen(true);
                   setDeliveryOpen(false);
                 }}
-                className="flex-1 h-[48px] rounded-[14px] flex items-center justify-center gap-2 border-[1.5px] border-[#0A3D2E] shadow-[0_4px_12px_rgba(10,61,46,0.15),inset_0_1px_0_white,0_0_0_1px_#C9A86A_inset] active:scale-[0.98] transition-transform cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #E6F4EF 0%, #D1E7D6 100%)" }}
+                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(10,61,46,0.2)] hover:shadow-[0_6px_20px_rgba(10,61,46,0.35)]"
+                title="استلام الطلب وتسجيل الصادر (أعطيت للمحل)"
               >
-                <span className="w-[26px] h-[26px] rounded-full bg-[#0A3D2E] border border-[#C9A86A]/30 flex items-center justify-center shadow-[0_2px_6px_rgba(10,61,46,0.2)] shrink-0">
-                  <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="7" y1="17" x2="17" y2="7" />
-                    <polyline points="7 7 17 7 17 17" />
-                  </svg>
-                </span>
-                <span className="text-[14px] font-black text-[#0A3D2E]">أعطيت</span>
+                <img
+                  src="/images/order-luxury/btn-istilam.webp"
+                  alt="استلام (أعطيت)"
+                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
+                />
               </button>
 
-              {/* زر أخذت */}
+              {/* زر تسليم (وارد / أخذت) */}
               <button
                 type="button"
                 onClick={() => {
@@ -243,16 +241,14 @@ export function AdminOrderMoneyEvents({
                   setDeliveryOpen(true);
                   setPickupOpen(false);
                 }}
-                className="flex-1 h-[48px] rounded-[14px] flex items-center justify-center gap-2 border-[1.5px] border-[#E65100]/60 shadow-[0_4px_12px_rgba(230,81,0,0.15),inset_0_1px_0_white,0_0_0_1px_#E8D5A3_inset] active:scale-[0.98] transition-transform cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)" }}
+                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(197,48,48,0.2)] hover:shadow-[0_6px_20px_rgba(197,48,48,0.35)]"
+                title="تسليم الطلب وتسجيل الوارد (أخذت من الزبون)"
               >
-                <span className="w-[26px] h-[26px] rounded-full bg-white border border-[#FF8A65] flex items-center justify-center shadow-[0_2px_6px_rgba(230,81,0,0.15)] shrink-0">
-                  <svg className="w-[14px] h-[14px] text-[#BF360C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="7" y1="7" x2="17" y2="17" />
-                    <polyline points="17 7 17 17 7 17" />
-                  </svg>
-                </span>
-                <span className="text-[14px] font-black text-[#BF360C]">أخذت</span>
+                <img
+                  src="/images/order-luxury/btn-tasleem.webp"
+                  alt="تسليم (أخذت)"
+                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
+                />
               </button>
             </div>
           )}
