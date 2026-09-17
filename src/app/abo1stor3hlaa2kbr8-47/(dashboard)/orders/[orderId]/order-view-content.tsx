@@ -40,6 +40,7 @@ import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
+import { FloatingOrderActionButton } from "@/components/floating-order-action-button";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -930,6 +931,14 @@ export function OrderViewContent({
           onClose={() => setShowAssignCourierModal(false)}
         />
       )}
+
+      {/* الزر العائم القابل للتحريك لعمليتي الاستلام والتسليم مع الترقية التلقائية للحالة في الإدارة */}
+      <FloatingOrderActionButton
+        orderId={order.id}
+        status={order.status}
+        isMandoub={false}
+        storageKeyPrefix="admin_floating_action_btn"
+      />
 
     </div>
 

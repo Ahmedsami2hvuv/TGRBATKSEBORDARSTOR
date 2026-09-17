@@ -27,6 +27,7 @@ import { AdminCustomerLocationQuick } from "@/app/abo1stor3hlaa2kbr8-47/(dashboa
 import { QuickOrderCardsDesignerModal } from "@/components/quick-order-cards-designer-modal";
 import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 import { MANDOUB_ORDER_EDIT_TOGGLE } from "./mandoub-order-detail-actions";
+import { FloatingOrderActionButton } from "@/components/floating-order-action-button";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المجهز",
@@ -842,6 +843,13 @@ export function OrderDetailSection({
             setDesignerConfig(savedConfig);
           }}
           orderSample={order}
+        />
+
+        {/* الزر العائم القابل للتحريك لعمليتي الاستلام والتسليم الفاخر مع الترقية التلقائية للحالة */}
+        <FloatingOrderActionButton
+          orderId={order.id}
+          status={order.status}
+          isMandoub={true}
         />
       </div>
     </>

@@ -139,6 +139,29 @@ export function AdminOrderMoneyEvents({
     }
   }, [hardState, router]);
 
+  // الاستماع لحدث النقر من الزر العائم للاستلام والتسليم في الإدارة
+  useEffect(() => {
+    const handlePickupEvent = (e: any) => {
+      if (!orderId || (e.detail?.orderId && e.detail.orderId !== orderId)) return;
+      setPickupAdvanceToDelivering(true);
+      setPickupOpen(true);
+      setDeliveryOpen(false);
+    };
+    const handleDeliveryEvent = (e: any) => {
+      if (!orderId || (e.detail?.orderId && e.detail.orderId !== orderId)) return;
+      setDeliveryAdvanceToDelivered(true);
+      setDeliveryOpen(true);
+      setPickupOpen(false);
+    };
+
+    window.addEventListener("OPEN_ADMIN_PICKUP_MODAL", handlePickupEvent);
+    window.addEventListener("OPEN_ADMIN_DELIVERY_MODAL", handleDeliveryEvent);
+    return () => {
+      window.removeEventListener("OPEN_ADMIN_PICKUP_MODAL", handlePickupEvent);
+      window.removeEventListener("OPEN_ADMIN_DELIVERY_MODAL", handleDeliveryEvent);
+    };
+  }, [orderId]);
+
   const activeEvents = useMemo(
     () => events.filter((e) => e.deletedAt == null),
     [events],
@@ -219,7 +242,7 @@ export function AdminOrderMoneyEvents({
               <button
                 type="button"
                 onClick={() => {
-                  setPickupAdvanceToDelivering(false);
+                  setPickupAdvanceToDelivering(true);
                   setPickupOpen(true);
                   setDeliveryOpen(false);
                 }}
@@ -237,7 +260,7 @@ export function AdminOrderMoneyEvents({
               <button
                 type="button"
                 onClick={() => {
-                  setDeliveryAdvanceToDelivered(false);
+                  setDeliveryAdvanceToDelivered(true);
                   setDeliveryOpen(true);
                   setPickupOpen(false);
                 }}
@@ -383,7 +406,7 @@ export function AdminOrderMoneyEvents({
             <form action={pickupAction} className="space-y-3">
               <input type="hidden" name="orderId" value={orderId} />
               <input type="hidden" name="next" value={nextPath} />
-              <input type="hidden" name="advanceStatus" value={pickupAdvanceToDelivering ? "delivering" : ""} />
+              <input type="hidden" name="advanceStatus" value={pickupAdvanceToDelivering || orderStatus === "assigned" || orderStatus === "pending" ? "delivering" : ""} />
 
               <div>
                 <label className="text-xs font-bold text-[#0A3D2E] block mb-1">المبلغ (ألف دينار):</label>
@@ -449,7 +472,7 @@ export function AdminOrderMoneyEvents({
             <form action={deliveryAction} className="space-y-3">
               <input type="hidden" name="orderId" value={orderId} />
               <input type="hidden" name="next" value={nextPath} />
-              <input type="hidden" name="advanceStatus" value={deliveryAdvanceToDelivered ? "delivered" : ""} />
+              <input type="hidden" name="advanceStatus" value={deliveryAdvanceToDelivered || orderStatus === "delivering" || orderStatus === "assigned" ? "delivered" : ""} />
 
               <div>
                 <label className="text-xs font-bold text-[#0A3D2E] block mb-1">المبلغ (ألف دينار):</label>
