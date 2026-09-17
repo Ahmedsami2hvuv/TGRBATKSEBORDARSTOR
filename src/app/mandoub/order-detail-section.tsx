@@ -44,6 +44,7 @@ import { PhoneActionModal, type PhoneActionModalProps } from "@/components/phone
 import { AdminLuxuryShopCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/admin-luxury-order-info-card";
+import { QuickOrderCardsDesignerModal } from "@/components/quick-order-cards-designer-modal";
 import { type OrderCardDesignerConfig } from "@/lib/order-card-customizer";
 
 const STATUS_AR: Record<string, string> = {
@@ -146,10 +147,11 @@ export function OrderDetailSection({
 
   const [isMounted, setIsMounted] = useState(false);
   const [designerConfig, setDesignerConfig] = useState<OrderCardDesignerConfig | null>(null);
+  const [showMandoubStudioModal, setShowMandoubStudioModal] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    fetch("/api/order-cards-designer-config", { cache: "no-store" })
+    fetch("/api/order-cards-designer-config?scope=mandoub", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setDesignerConfig(data);
@@ -401,6 +403,17 @@ export function OrderDetailSection({
         if (designerConfig?.enabledPortals?.mandoub !== false) {
           return (
             <div key="luxury_cards_group_mandoub" className="flex flex-col gap-0 w-full -mt-2 sm:-mt-2.5">
+              <div className="mb-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowMandoubStudioModal(true)}
+                  className="px-3 py-1.5 bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition active:scale-95"
+                >
+                  <span>🎨</span>
+                  <span>تعديل ترتيب الكروت</span>
+                  <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.5 rounded-md font-bold">تزامن المندوبين</span>
+                </button>
+              </div>
               <AdminLuxuryShopCard
                 order={order}
                 submitterName={submitterName}
@@ -1775,6 +1788,19 @@ export function OrderDetailSection({
 
       {/* النافذة العائمة لاختيار الرقم الأول أو الثاني للمكالمة والواتساب */}
       {phoneModal && <PhoneActionModal {...phoneModal} />}
+
+      {/* استوديو ترتيب وتخصيص الكروت السريع للمندوب */}
+      <QuickOrderCardsDesignerModal
+        isOpen={showMandoubStudioModal}
+        onClose={() => setShowMandoubStudioModal(false)}
+        currentScope="mandoub"
+        canSwitchScope={false}
+        initialConfig={designerConfig}
+        onConfigSaved={(savedConfig) => {
+          setDesignerConfig(savedConfig);
+        }}
+        orderSample={order}
+      />
     </section>
   );
 }

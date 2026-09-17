@@ -41,6 +41,7 @@ import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
+import { QuickOrderCardsDesignerModal } from "@/components/quick-order-cards-designer-modal";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -155,11 +156,20 @@ export function OrderViewContent({
   initialCustomerDebt?: number | null;
 }) {
   const router = useRouter();
+  const [designerConfigState, setDesignerConfigState] = useState(designerConfig);
+  const [showDesignerModal, setShowDesignerModal] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
   const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
   const [isSenderExpanded, setIsSenderExpanded] = useState(false);
+
+  // تحديث حالة التصميم إذا تغيرت الخصائص القادمة
+  useEffect(() => {
+    if (designerConfig) {
+      setDesignerConfigState(designerConfig);
+    }
+  }, [designerConfig]);
 
   // حالات مودال تغيير المندوب المباشر
   const [showAssignCourierModal, setShowAssignCourierModal] = useState(false);
@@ -376,6 +386,21 @@ export function OrderViewContent({
             </div>
           )}
 
+          {/* زر استوديو ترتيب وتخصيص الكروت السريع من داخل الطلب */}
+          <div className="mb-3.5 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowDesignerModal(true)}
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] hover:from-[#165c47] hover:to-[#165c47] border-2 border-[#C9A86A] text-[#F5D77F] rounded-2xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 active:scale-98 transition group"
+            >
+              <span className="text-lg group-hover:rotate-12 transition">🎨</span>
+              <span>استوديو ترتيب وتخصيص كروت الطلب</span>
+              <span className="text-[10px] bg-[#C9A86A] text-[#06281D] px-2 py-0.5 rounded-full font-black">
+                تزامن فوري
+              </span>
+            </button>
+          </div>
+
           {/* السطر الثاني: كبسولة رقم الطلب + اسم المندوب + حالة الطلب + الشارات الخاصة */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#C9A86A]/40 pt-3.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -514,7 +539,7 @@ export function OrderViewContent({
               imgShopDoor={imgShopDoor}
               setPreviewImageUrl={setPreviewImageUrl}
               isSystemAdminOrder={isSystemAdminOrder}
-              designerConfig={designerConfig}
+              designerConfig={designerConfigState}
             />
           )}
 
@@ -549,7 +574,7 @@ export function OrderViewContent({
                 imgCustomerDoor={imgCustDoor}
                 setPreviewImageUrl={setPreviewImageUrl}
                 isDoubleRoute={isDoubleRoute}
-                designerConfig={designerConfig}
+                designerConfig={designerConfigState}
                 phoneProfile={phoneProfile}
               >
                 {/* دالة الزبون وموقعه الإضافي */}
@@ -591,7 +616,7 @@ export function OrderViewContent({
                         shop_phone: submitterPhone || "",
                       }}
                       customButtons={waButtonSettings}
-                      designerConfig={designerConfig}
+                      designerConfig={designerConfigState}
                     />
                   ) : (
                     <AdminCustomerLocationQuick
@@ -613,7 +638,7 @@ export function OrderViewContent({
                         shop_phone: submitterPhone || "",
                       }}
                       customButtons={waButtonSettings}
-                      designerConfig={designerConfig}
+                      designerConfig={designerConfigState}
                     />
                   )}
 
@@ -623,7 +648,7 @@ export function OrderViewContent({
                     currentRegionName={order.customerRegion?.name}
                     orderId={order.id}
                     isSecondDestination={false}
-                    designerConfig={designerConfig}
+                    designerConfig={designerConfigState}
                   />
                 </div>
 
@@ -648,12 +673,12 @@ export function OrderViewContent({
           )}
 
           {/* كارت معلومات الطلب مدمج ومترابط مباشرة مع كارت الزبون بدون أي فجوة أو فراغ */}
-          {!isDoubleRoute && designerConfig?.enabledPortals?.admin !== false && (
+          {!isDoubleRoute && designerConfigState?.enabledPortals?.admin !== false && (
             <div className="-mt-4 sm:-mt-5.5">
               <AdminLuxuryOrderInfoCard
                 order={order}
                 setPreviewImageUrl={setPreviewImageUrl}
-                designerConfig={designerConfig || undefined}
+                designerConfig={designerConfigState || undefined}
                 hideSubtotalInfo={false}
                 isMandoubPortal={false}
               />
@@ -1095,6 +1120,21 @@ export function OrderViewContent({
           onClose={() => setShowAssignCourierModal(false)}
         />
       )}
+
+      {/* --- استوديو ترتيب وتخصيص الكروت السريع التفاعلي من داخل الطلب --- */}
+      <QuickOrderCardsDesignerModal
+        isOpen={showDesignerModal}
+        onClose={() => setShowDesignerModal(false)}
+        currentScope="admin"
+        canSwitchScope={true}
+        initialConfig={designerConfigState}
+        onConfigSaved={(savedConfig, savedScope) => {
+          if (savedScope === "admin") {
+            setDesignerConfigState(savedConfig);
+          }
+        }}
+        orderSample={order}
+      />
 
     </div>
 

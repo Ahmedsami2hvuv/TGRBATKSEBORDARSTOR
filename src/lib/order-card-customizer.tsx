@@ -545,31 +545,46 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
 };
 
 const DESIGNER_SETTING_TARGET = "global";
-const DESIGNER_SETTING_SECTION = "order_cards_designer";
+const DESIGNER_SECTION_ADMIN = "order_cards_designer";
+const DESIGNER_SECTION_MANDOUB = "order_cards_designer_mandoub";
 
-let cachedConfig: OrderCardDesignerConfig | null = null;
-let lastFetchTime = 0;
-const CACHE_TTL_MS = 1000; // ثانية واحدة فقط لتقليل الضغط وضمان التحديث اللحظي الفوري
+const cachedConfigs: Record<string, { config: OrderCardDesignerConfig; time: number }> = {};
+const CACHE_TTL_MS = 1000; // ثانية واحدة لتقليل الضغط وضمان التحديث اللحظي الفوري
 
-export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerConfig> {
+export async function getOrderCardsDesignerConfig(
+  scope: "admin" | "mandoub" = "admin"
+): Promise<OrderCardDesignerConfig> {
+  const section = scope === "mandoub" ? DESIGNER_SECTION_MANDOUB : DESIGNER_SECTION_ADMIN;
   const now = Date.now();
-  if (cachedConfig && now - lastFetchTime < CACHE_TTL_MS) {
-    return cachedConfig;
+  const cached = cachedConfigs[section];
+  if (cached && now - cached.time < CACHE_TTL_MS) {
+    return cached.config;
   }
 
   try {
-    const row = await prisma.uISystemSetting.findUnique({
+    let row = await prisma.uISystemSetting.findUnique({
       where: {
         target_section: {
           target: DESIGNER_SETTING_TARGET,
-          section: DESIGNER_SETTING_SECTION,
+          section,
         },
       },
     });
 
+    // إذا كان المندوب ولم يتم تخصيص إعدادات خاصة به بعد، نحاول قراءة إعدادات الإدارة كافتراضي
+    if (!row?.config && scope === "mandoub") {
+      row = await prisma.uISystemSetting.findUnique({
+        where: {
+          target_section: {
+            target: DESIGNER_SETTING_TARGET,
+            section: DESIGNER_SECTION_ADMIN,
+          },
+        },
+      });
+    }
+
     if (!row || !row.config) {
-      cachedConfig = DEFAULT_DESIGNER_CONFIG;
-      lastFetchTime = now;
+      cachedConfigs[section] = { config: DEFAULT_DESIGNER_CONFIG, time: now };
       return DEFAULT_DESIGNER_CONFIG;
     }
 
@@ -602,21 +617,22 @@ export async function getOrderCardsDesignerConfig(): Promise<OrderCardDesignerCo
       waButtonsConfig: saved.waButtonsConfig || {},
     };
 
-    cachedConfig = result;
-    lastFetchTime = now;
+    cachedConfigs[section] = { config: result, time: now };
     return result;
   } catch (error) {
-    console.error("Error reading order cards designer config:", error);
-    if (cachedConfig) return cachedConfig;
+    console.error(`Error reading order cards designer config (${scope}):`, error);
+    if (cachedConfigs[section]?.config) return cachedConfigs[section].config;
     return DEFAULT_DESIGNER_CONFIG;
   }
 }
 
 export async function saveOrderCardsDesignerConfig(
-  config: Partial<OrderCardDesignerConfig>
+  config: Partial<OrderCardDesignerConfig>,
+  scope: "admin" | "mandoub" = "admin"
 ): Promise<boolean> {
+  const section = scope === "mandoub" ? DESIGNER_SECTION_MANDOUB : DESIGNER_SECTION_ADMIN;
   try {
-    const current = await getOrderCardsDesignerConfig();
+    const current = await getOrderCardsDesignerConfig(scope);
     const merged: OrderCardDesignerConfig = {
       enabledPortals: {
         ...current.enabledPortals,
@@ -650,14 +666,13 @@ export async function saveOrderCardsDesignerConfig(
       },
     };
 
-    cachedConfig = merged;
-    lastFetchTime = Date.now();
+    cachedConfigs[section] = { config: merged, time: Date.now() };
 
     await prisma.uISystemSetting.upsert({
       where: {
         target_section: {
           target: DESIGNER_SETTING_TARGET,
-          section: DESIGNER_SETTING_SECTION,
+          section,
         },
       },
       update: {
@@ -665,14 +680,14 @@ export async function saveOrderCardsDesignerConfig(
       },
       create: {
         target: DESIGNER_SETTING_TARGET,
-        section: DESIGNER_SETTING_SECTION,
+        section,
         config: merged as any,
       },
     });
 
     return true;
   } catch (error) {
-    console.error("Error saving order cards designer config:", error);
+    console.error(`Error saving order cards designer config (${scope}):`, error);
     return false;
   }
 }

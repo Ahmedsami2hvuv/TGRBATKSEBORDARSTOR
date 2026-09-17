@@ -43,10 +43,49 @@ type ElementDefinition = {
 export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("shop_card");
+  const [designerScope, setDesignerScope] = useState<"admin" | "mandoub">("admin");
   const [config, setConfig] = useState<OrderCardDesignerConfig>(initialConfig);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("saved");
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+
+  const switchDesignerScope = async (targetScope: "admin" | "mandoub") => {
+    if (targetScope === designerScope) return;
+    setSaveStatus("saving");
+    try {
+      const res = await fetch(`/api/order-cards-designer-config?scope=${targetScope}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setDesignerScope(targetScope);
+        setConfig(data);
+        setSaveStatus("saved");
+      }
+    } catch (e) {
+      console.error("Scope switch error:", e);
+      setSaveStatus("error");
+    }
+  };
+
+  const copyScopeToAnother = async (from: "admin" | "mandoub", to: "admin" | "mandoub") => {
+    const fromName = from === "admin" ? "كروت الإدارة 🖥️" : "كروت المندوبين 📱";
+    const toName = to === "admin" ? "كروت الإدارة 🖥️" : "كروت المندوبين 📱";
+    if (!confirm(`هل أنت متأكد من نسخ كامل إعدادات (${fromName}) وتطبيقها وتزامنها فوراً على (${toName})؟`)) return;
+
+    setSaveStatus("saving");
+    try {
+      const res = await updateOrderCardsDesignerAction(config, to);
+      if (res.ok) {
+        alert(`تم بنجاح نسخ تصميم ${fromName} وتطبيقه على ${toName}! ✅`);
+        setSaveStatus("saved");
+      } else {
+        alert("فشل الحفظ: " + res.error);
+        setSaveStatus("error");
+      }
+    } catch (e) {
+      alert("حدث خطأ أثناء نسخ التنسيق.");
+      setSaveStatus("error");
+    }
+  };
 
   // إعدادات المعاينة الحية
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
@@ -230,10 +269,10 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
   const uploadCallbackRef = useRef<((url: string) => void) | null>(null);
 
   // دالة الحفظ الفعلي بالسيرفر
-  const performSave = useCallback(async (currentConfig: OrderCardDesignerConfig) => {
+  const performSave = useCallback(async (currentConfig: OrderCardDesignerConfig, scopeToSave: "admin" | "mandoub") => {
     setSaveStatus("saving");
     try {
-      const res = await updateOrderCardsDesignerAction(currentConfig);
+      const res = await updateOrderCardsDesignerAction(currentConfig, scopeToSave);
       if (res.ok) {
         setSaveStatus("saved");
       } else {
@@ -259,7 +298,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      void performSave(config);
+      void performSave(config, designerScope);
     }, 450); // 450ms بعد توقف المستخدم عن التعديل
 
     return () => {
@@ -267,7 +306,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [config, performSave]);
+  }, [config, designerScope, performSave]);
 
   // دالة رفع الصور والتحويل التلقائي لـ WEBP
   const triggerImageUpload = (onUploaded: (url: string) => void) => {
@@ -1919,6 +1958,43 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               <h1 className="text-base sm:text-lg font-black text-[#F5D77F] flex items-center gap-2">
                 <span>🎨</span> استوديو تصميم كروت الطلبات
               </h1>
+              <p className="text-[11px] font-bold text-emerald-200">
+                أنت الآن تعدل: <span className="text-amber-300 font-black">{designerScope === "admin" ? "كروت الإدارة 🖥️ (تتزامن للإدارة فقط)" : "كروت المندوبين 📱 (تتزامن للمندوبين فقط)"}</span>
+              </p>
+            </div>
+
+            {/* أداة التبديل الفاخرة بين تزامن كروت الإدارة وتزامن كروت المندوبين */}
+            <div className="flex items-center gap-1.5 bg-[#06281D] p-1.5 rounded-2xl border border-[#C9A86A] flex-wrap">
+              <button
+                type="button"
+                onClick={() => void switchDesignerScope("admin")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                  designerScope === "admin"
+                    ? "bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] text-[#06281D] shadow-lg scale-105"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <span>🖥️ كروت الإدارة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void switchDesignerScope("mandoub")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                  designerScope === "mandoub"
+                    ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-[#06281D] shadow-lg scale-105"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <span>📱 كروت المندوبين</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyScopeToAnother(designerScope, designerScope === "admin" ? "mandoub" : "admin")}
+                className="px-2 py-1.5 bg-[#0A3D2E] hover:bg-[#0F4D3A] text-[#F5D77F] border border-[#C9A86A]/40 rounded-xl text-[11px] font-bold transition flex items-center gap-1"
+                title="نسخ هذا التصميم وتطبيقه على الجهة الأخرى"
+              >
+                <span>📋 نسخ لـ {designerScope === "admin" ? "المندوبين" : "الإدارة"}</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -1929,13 +2005,13 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
               )}
               {saveStatus === "saved" && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-black shadow-sm">
-                  <span>✅</span> تم الحفظ تلقائياً
+                  <span>✅</span> تم الحفظ ({designerScope === "admin" ? "إدارة" : "مندوب"})
                 </div>
               )}
               {saveStatus === "error" && (
                 <button
                   type="button"
-                  onClick={() => void performSave(config)}
+                  onClick={() => void performSave(config, designerScope)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700/40 border border-rose-400 text-rose-300 rounded-xl text-xs font-black cursor-pointer hover:bg-rose-700/60"
                 >
                   <span>❌</span> فشل الحفظ - انقر لإعادة المحاولة
@@ -1944,7 +2020,7 @@ export function OrderCardsDesignerClient({ initialConfig, waButtons }: Props) {
 
               <button
                 type="button"
-                onClick={() => void performSave(config)}
+                onClick={() => void performSave(config, designerScope)}
                 className="px-3.5 py-1.5 bg-[#0F4D3A] text-[#F5D77F] rounded-xl text-xs font-black border border-[#C9A86A] hover:scale-105 active:scale-95 transition cursor-pointer"
               >
                 💾 حفظ يدوي
