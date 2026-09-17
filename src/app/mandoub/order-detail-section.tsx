@@ -361,17 +361,17 @@ export function OrderDetailSection({
         )}
 
         {/* --- بطاقة ترويسة الطلبية الملكية الثابتة في الأعلى (Sticky Header) --- */}
-        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB]/95 backdrop-blur-md p-3.5 shadow-[0_8px_25px_rgba(201,168,106,0.22)] select-none mb-3.5" dir="rtl">
+        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB]/95 backdrop-blur-md px-3.5 py-2.5 shadow-[0_6px_20px_rgba(201,168,106,0.18)] select-none mb-3" dir="rtl">
           {/* معينات الزوايا الذهبية الأربعة */}
           <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
           <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
           <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
           <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
 
-          {/* السطر الأول: رقم الطلب والحالة (يمين) | المندوب والإغلاق (يسار) */}
+          {/* سطر موحد نظيف وأنيق: رقم الطلب + شارة الحالة */}
           <div className="flex items-center justify-between gap-2">
             {/* جهة اليمين: رقم الطلب + شارة الحالة */}
-            <div className="flex items-center gap-[6px] flex-nowrap shrink-0">
+            <div className="flex items-center gap-[8px] flex-nowrap shrink-0">
               {/* صندوق رقم الطلب الذهبي */}
               <div
                 className="inline-flex items-center justify-center rounded-[10px] border-[2px] border-[#C9A86A] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] shrink-0"
@@ -394,18 +394,8 @@ export function OrderDetailSection({
               </div>
             </div>
 
-            {/* جهة اليسار: شارة المندوب + زر الإغلاق X */}
-            <div className="flex items-center gap-[6px] shrink-0 flex-nowrap">
-              {currentCourierName && (
-                <div
-                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#C9A86A] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(10,61,46,0.15)] shrink-0"
-                  style={{ height: "28px", background: "#0A3D2E", color: "#E8C77E", whiteSpace: "nowrap" }}
-                >
-                  مندوب: {currentCourierName}
-                </div>
-              )}
-
-              {/* زر الإغلاق الدائري الوردي X */}
+            {/* جهة اليسار: زر الإغلاق يظهر فقط عند فتح الطلب في صفحة مستقلة وليس داخل المودال */}
+            {!isModal && (
               <button
                 type="button"
                 onClick={handleClose}
@@ -417,55 +407,7 @@ export function OrderDetailSection({
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-            </div>
-          </div>
-
-          {/* الفاصل الأرابيسك المذهب في المنتصف */}
-          <div className="relative my-[10px] flex items-center justify-center w-full">
-            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-[#E8D5A3] w-full" />
-            <div className="relative z-10 w-[12px] h-[12px] bg-[#FFFEFB] border border-[#E8D5A3] rotate-45 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.2)]">
-              <div className="w-[4px] h-[4px] bg-[#C9A86A] rotate-45" />
-            </div>
-          </div>
-
-          {/* السطر الثاني: زر التعديل + التاريخ + الوقت */}
-          <div className="flex items-center justify-center gap-[8px] w-full flex-nowrap">
-            {/* زر تعديل الطلب */}
-            <button
-              type="button"
-              id={`edit-order-btn-${order.id}`}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
-              }}
-              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition cursor-pointer"
-            >
-              <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل</span>
-              <span
-                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
-                style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
-              >
-                <svg className="w-[10px] h-[10px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-              </span>
-            </button>
-
-            {/* شارة وقت الطلب (فوري أو الدقائق) */}
-            <div
-              className="px-[8px] rounded-full bg-[#FFF5F5] border border-[#C9A86A]/30 text-[#C53030] text-[11px] font-black flex items-center gap-1.5 whitespace-nowrap shadow-[inset_0_1px_0_white] shrink-0"
-              style={{ height: "32px" }}
-            >
-              <span className="font-mono text-[#C53030] text-[12px] font-black">
-                {order.orderNoteTime || "فوري"}
-              </span>
-              <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#FFB4B4]/50 flex items-center justify-center shrink-0">
-                <svg className="w-[10px] h-[10px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </span>
-            </div>
+            )}
           </div>
         </div>
 
