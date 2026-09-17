@@ -42,6 +42,7 @@ import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
 import { QuickOrderCardsDesignerModal } from "@/components/quick-order-cards-designer-modal";
+import { OnPageCardsDesignerToolbar } from "@/components/on-page-cards-designer-toolbar";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -158,6 +159,43 @@ export function OrderViewContent({
   const router = useRouter();
   const [designerConfigState, setDesignerConfigState] = useState(designerConfig);
   const [showDesignerModal, setShowDesignerModal] = useState(false);
+  const [isDesignModeActive, setIsDesignModeActive] = useState(false);
+  const [selectedDesignCard, setSelectedDesignCard] = useState<"shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard">("shopCard");
+  const [selectedDesignElementKey, setSelectedDesignElementKey] = useState<string>("btnCall");
+  const [designerScope, setDesignerScope] = useState<"admin" | "mandoub">("admin");
+  const [isSavingDesigner, setIsSavingDesigner] = useState(false);
+  const [designerSaveSuccessMsg, setDesignerSaveSuccessMsg] = useState<string | null>(null);
+
+  const handleSelectDesignElement = (key: string, cardType?: "shopCard" | "customerCard" | "orderInfoCard" | "moneyFlowCard") => {
+    setSelectedDesignElementKey(key);
+    if (cardType) {
+      setSelectedDesignCard(cardType);
+    }
+  };
+
+  const handleSaveDesignerConfig = async () => {
+    setIsSavingDesigner(true);
+    setDesignerSaveSuccessMsg(null);
+    try {
+      const res = await fetch("/api/order-cards-designer-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope: designerScope,
+          config: designerConfigState,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "فشل الحفظ");
+      setDesignerSaveSuccessMsg(`✅ تم حفظ وتزامن التعديلات بنجاح لحسابات (${designerScope === "admin" ? "الإدارة" : "المندوبين"})!`);
+      setTimeout(() => setDesignerSaveSuccessMsg(null), 4000);
+    } catch (err: any) {
+      alert("حدث خطأ أثناء حفظ التصميم: " + (err.message || err));
+    } finally {
+      setIsSavingDesigner(false);
+    }
+  };
+
   const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
@@ -386,17 +424,23 @@ export function OrderViewContent({
             </div>
           )}
 
-          {/* زر استوديو ترتيب وتخصيص الكروت السريع من داخل الطلب */}
-          <div className="mb-3.5 flex justify-center">
+          {/* زر استوديو ترتيب وتخصيص الكروت الفوري والتعديل الحي من داخل الطلب الحقيقي */}
+          <div className="mb-3.5 flex flex-col sm:flex-row items-center gap-2">
             <button
               type="button"
-              onClick={() => setShowDesignerModal(true)}
-              className="w-full py-2.5 px-4 bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] hover:from-[#165c47] hover:to-[#165c47] border-2 border-[#C9A86A] text-[#F5D77F] rounded-2xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 active:scale-98 transition group"
+              onClick={() => setIsDesignModeActive((prev) => !prev)}
+              className={`w-full py-2.5 px-4 border-2 rounded-2xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 active:scale-98 transition group ${
+                isDesignModeActive
+                  ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 border-amber-300 text-slate-950 ring-4 ring-amber-400/40"
+                  : "bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] hover:from-[#165c47] hover:to-[#165c47] border-[#C9A86A] text-[#F5D77F]"
+              }`}
             >
-              <span className="text-lg group-hover:rotate-12 transition">🎨</span>
-              <span>استوديو ترتيب وتخصيص كروت الطلب</span>
-              <span className="text-[10px] bg-[#C9A86A] text-[#06281D] px-2 py-0.5 rounded-full font-black">
-                تزامن فوري
+              <span className="text-lg group-hover:rotate-12 transition">{isDesignModeActive ? "🛑" : "🎨"}</span>
+              <span>{isDesignModeActive ? "إيقاف وضع تحريك وتعديل الأيقونات الحقيقي" : "تعديل وتحريك الأيقونات والكروت مباشرة"}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                isDesignModeActive ? "bg-slate-950 text-amber-300 animate-pulse" : "bg-[#C9A86A] text-[#06281D]"
+              }`}>
+                {isDesignModeActive ? "وضع التعديل الحي نشط" : "تحريك وتكبير فوري"}
               </span>
             </button>
           </div>
@@ -540,6 +584,9 @@ export function OrderViewContent({
               setPreviewImageUrl={setPreviewImageUrl}
               isSystemAdminOrder={isSystemAdminOrder}
               designerConfig={designerConfigState}
+              isDesignMode={isDesignModeActive}
+              selectedElementKey={selectedDesignCard === "shopCard" ? selectedDesignElementKey : undefined}
+              onSelectElement={(key) => handleSelectDesignElement(key, "shopCard")}
             />
           )}
 
@@ -576,6 +623,9 @@ export function OrderViewContent({
                 isDoubleRoute={isDoubleRoute}
                 designerConfig={designerConfigState}
                 phoneProfile={phoneProfile}
+                isDesignMode={isDesignModeActive}
+                selectedElementKey={selectedDesignCard === "customerCard" ? selectedDesignElementKey : undefined}
+                onSelectElement={(key) => handleSelectDesignElement(key, "customerCard")}
               >
                 {/* دالة الزبون وموقعه الإضافي */}
                 <div className="flex flex-col gap-1">
@@ -681,6 +731,9 @@ export function OrderViewContent({
                 designerConfig={designerConfigState || undefined}
                 hideSubtotalInfo={false}
                 isMandoubPortal={false}
+                isDesignMode={isDesignModeActive}
+                selectedElementKey={selectedDesignCard === "orderInfoCard" ? selectedDesignElementKey : undefined}
+                onSelectElement={(key) => handleSelectDesignElement(key, "orderInfoCard")}
               />
             </div>
           )}
@@ -1135,6 +1188,23 @@ export function OrderViewContent({
         }}
         orderSample={order}
       />
+
+      {/* --- شريط أدوات التحريك والتصميم الحي داخل صفحة الطلب الحقيقية --- */}
+      {isDesignModeActive && (
+        <OnPageCardsDesignerToolbar
+          config={designerConfigState || {}}
+          onChangeConfig={(newCfg) => setDesignerConfigState(newCfg)}
+          selectedCard={selectedDesignCard}
+          selectedElementKey={selectedDesignElementKey}
+          onSelectElement={handleSelectDesignElement}
+          currentScope={designerScope}
+          onScopeChange={(scope) => setDesignerScope(scope)}
+          onSave={handleSaveDesignerConfig}
+          onClose={() => setIsDesignModeActive(false)}
+          isSaving={isSavingDesigner}
+          saveSuccessMsg={designerSaveSuccessMsg}
+        />
+      )}
 
     </div>
 
