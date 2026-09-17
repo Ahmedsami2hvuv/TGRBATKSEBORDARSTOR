@@ -471,36 +471,6 @@ export function OrderViewContent({
         )}
 
       <div className="mt-1.5 space-y-3 sm:space-y-4">
-        
-        {/* --- ⇄ TWO WAY ORDER ACTION BUTTONS (أزرار الطلب ذو الوجهتين) --- */}
-        {isDoubleRoute && (
-          <div className="mb-4">
-            <TwoWayOrderActionButtons
-              orderId={order.id}
-              orderNumber={order.orderNumber}
-              orderStatus={order.status}
-              routeMode={order.routeMode || "double"}
-              senderName="المرسل"
-              senderPhone={order.customerPhone}
-              senderAlternatePhone={order.alternatePhone}
-              senderRegionName={order.customerRegion?.name}
-              senderHasLocation={Boolean(order.customerLocationUrl)}
-              senderGpsUploaded={Boolean(order.customerLocationSetByCourierAt)}
-              recipientName="المستلم"
-              recipientPhone={order.secondCustomerPhone || order.customerPhone}
-              recipientAlternatePhone={order.secondCustomerAlternatePhone}
-              recipientRegionName={order.secondCustomerRegion?.name}
-              recipientHasLocation={Boolean(order.secondCustomerLocationUrl)}
-              subtotal={order.orderSubtotal ? String(order.orderSubtotal) : "0"}
-              delivery={order.deliveryPrice ? String(order.deliveryPrice) : "0"}
-              total={order.totalAmount ? String(order.totalAmount) : "0"}
-              notes={order.summary}
-              twoWayTemplates={twoWayTemplates}
-              deliveryName={order.courier?.name || "المندوب"}
-            />
-          </div>
-        )}
-        
         {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة شبه ملاصق ومترابط) --- */}
         <div className="flex flex-col gap-0 w-full">
           {!isDoubleRoute && (

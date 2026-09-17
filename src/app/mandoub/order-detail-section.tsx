@@ -512,35 +512,6 @@ export function OrderDetailSection({
         )}
 
         <div className="mt-1.5 space-y-3 sm:space-y-4">
-          
-          {/* --- ⇄ TWO WAY ORDER ACTION BUTTONS (أزرار الطلب ذو الوجهتين) --- */}
-          {isDoubleRoute && (
-            <div className="mb-4">
-              <TwoWayOrderActionButtons
-                orderId={order.id}
-                orderNumber={order.orderNumber}
-                orderStatus={order.status}
-                routeMode={order.routeMode || "double"}
-                senderName="المرسل"
-                senderPhone={order.customerPhone}
-                senderAlternatePhone={mergedAlternate}
-                senderRegionName={order.customerRegion?.name}
-                senderHasLocation={Boolean(mergedCustomerLocationUrl)}
-                senderGpsUploaded={Boolean(order.customerLocationSetByCourierAt)}
-                recipientName="المستلم"
-                recipientPhone={order.secondCustomerPhone || order.customerPhone}
-                recipientAlternatePhone={mergedSecondAlternate}
-                recipientRegionName={order.secondCustomerRegion?.name}
-                recipientHasLocation={Boolean(secondLocMerged)}
-                subtotal={order.orderSubtotal ? String(order.orderSubtotal) : "0"}
-                delivery={order.deliveryPrice ? String(order.deliveryPrice) : "0"}
-                total={order.totalAmount ? String(order.totalAmount) : "0"}
-                notes={order.summary}
-                deliveryName={currentCourierName}
-              />
-            </div>
-          )}
-
           {/* --- بطاقات الطلب الفاخرة --- */}
           <div className="flex flex-col gap-0 w-full">
             {!isDoubleRoute && (
