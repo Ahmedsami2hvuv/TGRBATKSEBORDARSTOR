@@ -1787,21 +1787,9 @@ export function MandoubOrderTable({
         createPortal(
           <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
             {/* الهيدر العلوي المثبت للطلب */}
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-2.5 sm:p-3.5 shadow-sm">
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-2.5 sm:p-3.5 shadow-sm" dir="rtl">
               <div className="flex items-center justify-between gap-3">
-                {/* معلومات الوقت والتاريخ لرفع الطلب ووقت التوصيل */}
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 flex-wrap">
-                  {activeOrderData.createdAt && (
-                    <span className="inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800/60 font-black text-[11px]">
-                      📅 {formatBaghdadDateTime(activeOrderData.createdAt)}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-800/60 font-black text-[11px]">
-                    ⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}
-                  </span>
-                </div>
-
-                {/* زر الإغلاق الأحمر الدائري في الأعلى */}
+                {/* زر الإغلاق الأحمر الدائري في جهة اليمين */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1816,6 +1804,18 @@ export function MandoubOrderTable({
                 >
                   <span className="text-lg font-black leading-none">✕</span>
                 </button>
+
+                {/* معلومات الوقت والتاريخ لرفع الطلب ووقت التوصيل في جهة اليسار */}
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 flex-wrap justify-end">
+                  {activeOrderData.createdAt && (
+                    <span className="inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800/60 font-black text-[11px]">
+                      📅 {formatBaghdadDateTime(activeOrderData.createdAt)}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-800/60 font-black text-[11px]">
+                    ⏰ {activeOrderData.orderNoteTime || activeOrderData.timeLine || "فوري"}
+                  </span>
+                </div>
               </div>
             </div>
 
