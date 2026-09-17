@@ -599,6 +599,9 @@ export function OrderViewContent({
                     customerPhone2={order.customerPhone2 || undefined}
                     shopPhone={submitterPhone || undefined}
                     orderStatus={order.status}
+                    hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                    hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                    userRole="admin"
                     templateVars={{
                       clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
                       city: order.customerRegion?.name || "—",
@@ -715,6 +718,8 @@ export function OrderViewContent({
                       customerPhone2={order.customerPhone2 || undefined}
                       shopPhone={submitterPhone || undefined}
                       orderStatus={order.status}
+                      hasCustomerLocation={Boolean(order.secondCustomerLocationUrl)}
+                      userRole="admin"
                       templateVars={{
                         clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
                         city: order.secondCustomerRegion?.name || "—",

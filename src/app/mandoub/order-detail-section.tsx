@@ -637,6 +637,9 @@ export function OrderDetailSection({
                       customerPhone2={order.customerPhone2 || undefined}
                       shopPhone={shopContactPhone || undefined}
                       orderStatus={order.status}
+                      hasCustomerLocation={Boolean(mergedCustomerLocationUrl)}
+                      hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                      userRole="mandoub"
                       templateVars={{
                         clientshop: effectiveShopName,
                         city: order.customerRegion?.name || "—",
@@ -727,6 +730,8 @@ export function OrderDetailSection({
                         customerPhone2={order.customerPhone2 || undefined}
                         shopPhone={shopContactPhone || undefined}
                         orderStatus={order.status}
+                        hasCustomerLocation={Boolean(secondLocMerged)}
+                        userRole="mandoub"
                         templateVars={{
                           clientshop: effectiveShopName,
                           city: order.secondCustomerRegion?.name || "—",

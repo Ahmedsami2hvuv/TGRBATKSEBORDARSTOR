@@ -187,11 +187,18 @@ export function WaLocationCustomButtons({
             <button
               type="button"
               onClick={() => handleButtonClick(btn)}
-              className={`flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-amber-400/90 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-3 py-2 text-xs font-black text-white shadow-md shadow-amber-500/25 transition hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 active:scale-95 ${
-                compact ? "text-[11px] py-1.5 px-2" : ""
+              className={`group relative flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 text-[#0A3D2E] font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] active:scale-[0.97] cursor-pointer overflow-hidden ${
+                compact ? "text-[11px] py-1.5 px-2" : "text-[13px] px-3 py-2"
               }`}
               title={btn.label}
             >
+              <div
+                className="absolute inset-0 opacity-[0.09] pointer-events-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
+                }}
+              />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
               {customImg ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -200,7 +207,7 @@ export function WaLocationCustomButtons({
                   className="w-5 h-5 object-contain shrink-0 drop-shadow-sm pointer-events-none"
                 />
               ) : (
-                <span className="text-sm shrink-0">{btn.iconKey || "⚡"}</span>
+                <span className="text-sm shrink-0">{btn.iconKey || "💬"}</span>
               )}
               <span className="truncate">{btn.label}</span>
             </button>
