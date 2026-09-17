@@ -322,155 +322,156 @@ export function OrderViewContent({
           </div>
         )}
 
-        {/* --- بطاقة ترويسة الطلبية الملكية الإسلامية المذهبة --- */}
-        <div className="mb-5 rounded-[26px] border-2 border-[#C9A86A]/80 bg-[#FFFEFB] p-3.5 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.35),0_0_0_1px_rgba(201,168,106,0.3),inset_0_1px_0_rgba(255,255,255,0.8)] relative overflow-hidden text-slate-900">
-          
-          {/* شريط الأرابيسك العلوي الدقيق */}
-          <div className="relative h-[22px] -mx-3.5 -mt-3.5 sm:-mx-5 sm:-mt-5 mb-3 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] flex items-center justify-center overflow-hidden border-b border-[#C9A86A]/20">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#C9A86A]/60 to-transparent" />
-            </div>
-            <div className="relative flex items-center gap-[10px]">
-              <div className="w-[14px] h-[1px] bg-[#C9A86A]/50" />
-              <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A] shadow-[0_0_6px_rgba(201,168,106,0.6)]" />
-              <div className="w-[10px] h-[10px] rotate-45 border border-[#C9A86A]/60 flex items-center justify-center">
-                <div className="w-[4px] h-[4px] bg-[#C9A86A]/80 rotate-45" />
-              </div>
-              <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A] shadow-[0_0_6px_rgba(201,168,106,0.6)]" />
-              <div className="w-[14px] h-[1px] bg-[#C9A86A]/50" />
-            </div>
-          </div>
+        {/* --- بطاقة ترويسة الطلبية الملكية المتطابقة 100% مع التصميم والصور --- */}
+        <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] p-3.5 shadow-[0_6px_20px_rgba(201,168,106,0.12)] select-none overflow-hidden mb-3.5" dir="rtl">
+          {/* معينات الزوايا الذهبية الأربعة */}
+          <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
 
-          {/* سطر رقم الطلب والشارة وزر الإغلاق والرجوع */}
+          {/* السطر الأول: رقم الطلب والحالة (يمين) | الإسناد والإغلاق (يسار) */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-black tracking-[0.08em] text-[#9C7D46]">ORDER</span>
-                <span className="text-[24px] sm:text-[28px] font-black gold-foil leading-none">#{order.orderNumber}</span>
+            {/* جهة اليمين: رقم الطلب + شارة الحالة */}
+            <div className="flex items-center gap-[6px] flex-nowrap shrink-0">
+              {/* صندوق رقم الطلب الذهبي */}
+              <div
+                className="inline-flex items-center justify-center rounded-[10px] border-[2px] border-[#C9A86A] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] shrink-0"
+                style={{ background: "linear-gradient(135deg, #FDF6E3 0%, #F7E9B0 100%)", height: "32px", minWidth: "64px" }}
+              >
+                <span className="font-mono text-[18px] font-black leading-none text-[#8B6A2A] tracking-wide [direction:ltr]">
+                  #{order.orderNumber}
+                </span>
               </div>
-              <div className="h-5 w-[1px] bg-[#C9A86A]/30" />
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F4EF] border border-[#115740]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                <div className="w-[7px] h-[7px] rounded-full bg-[#115740] shadow-[0_0_6px_rgba(17,87,64,0.5)] animate-pulse" />
-                <span className="text-[11.5px] font-black text-[#115740] tracking-wide">
+
+              {/* شارة حالة الطلب */}
+              <div
+                className="inline-flex items-center gap-1.5 px-[10px] rounded-full bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A] font-black shadow-[inset_0_1px_0_white] shrink-0"
+                style={{ whiteSpace: "nowrap", height: "30px", fontSize: "11px" }}
+              >
+                <div className="w-[6px] h-[6px] rounded-full bg-[#D4A017] animate-pulse shadow-[0_0_6px_#E8C77E] shrink-0" />
+                <span style={{ whiteSpace: "nowrap" }}>
                   {STATUS_AR[order.status] ?? order.status}
                 </span>
               </div>
-              {order.courier ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C9A86A]/40 bg-[#0A3D2E] px-3 py-1 text-xs font-black text-[#E8C77E] shadow-sm">
-                  <span>🛵</span>
-                  <span>{order.courier.name}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                  <span>🛵</span>
-                  <span>غير مسند</span>
-                </span>
-              )}
-              {isReversePickup && (
-                <span className="rounded-full border border-amber-400/40 bg-amber-100 text-amber-900 px-2.5 py-0.5 text-xs font-black shadow-xs">
-                  📦⤺ طلب عكسي
-                </span>
-              )}
-              {isDoubleRoute && (
-                <span className="rounded-full border border-purple-400/40 bg-purple-100 text-purple-900 px-2.5 py-0.5 text-xs font-black shadow-xs">
-                  📦➔ وجهتين
-                </span>
-              )}
-              {order.prepaidAll && (
-                <span className="rounded-full border border-emerald-500 bg-emerald-100 text-emerald-900 px-3 py-0.5 text-xs font-black shadow-xs animate-pulse">
-                  ✓ كلشي واصل
-                </span>
-              )}
             </div>
 
-            {/* زر الإغلاق الدائري الأحمر الفاخر */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/tracking`}
-              className="w-[32px] h-[32px] rounded-full bg-gradient-to-b from-[#FFF1F1] to-[#FFE0E0] border border-[#E85D5D]/30 flex items-center justify-center shadow-[0_2px_6px_rgba(232,93,93,0.15),inset_0_1px_0_rgba(255,255,255,0.9)] active:scale-95 transition-transform"
-              title="إغلاق والرجوع"
-            >
-              <svg className="w-[14px] h-[14px] text-[#C13C3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </Link>
-          </div>
-
-          {/* سطر الإجراءات: زر تعديل الطلب + تغيير المندوب + بصمة المدير + التواريخ */}
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#C9A86A]/20 pt-2.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-                className="group flex items-center gap-1.5 pl-1 pr-3 py-[6px] rounded-full bg-white border border-[#C9A86A]/50 shadow-[0_2px_10px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.98] transition-all"
-              >
-                <span className="w-[22px] h-[22px] rounded-full gold-grad flex items-center justify-center shadow-[0_1px_4px_rgba(201,168,106,0.4)]">
-                  <svg className="w-[11px] h-[11px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                  </svg>
-                </span>
-                <span className="text-[12px] font-bold text-[#0A3D2E]">تعديل الطلب</span>
-              </Link>
-
-              {order.status !== "cancelled" && order.status !== "archived" && (
+            {/* جهة اليسار: زر الإسناد + زر الإغلاق X */}
+            <div className="flex items-center gap-[6px] shrink-0 flex-nowrap">
+              {order.courier ? (
                 <button
                   type="button"
+                  id="assignBtnTop"
                   onClick={() => setShowAssignCourierModal(true)}
-                  className="group flex items-center gap-1.5 pl-1 pr-3 py-[6px] rounded-full bg-white border border-[#C9A86A]/50 shadow-[0_2px_10px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.98] transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#C9A86A] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(10,61,46,0.15)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "#0A3D2E", color: "#E8C77E", whiteSpace: "nowrap" }}
                 >
-                  <span className="w-[22px] h-[22px] rounded-full bg-[#0A3D2E] flex items-center justify-center text-xs">
-                    🛵
-                  </span>
-                  <span className="text-[12px] font-bold text-[#0A3D2E]">تغيير المندوب</span>
+                  مسند: {order.courier.name}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id="assignBtnTop"
+                  onClick={() => setShowAssignCourierModal(true)}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(201,168,106,0.25)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "linear-gradient(180deg, #E8C77E 0%, #C9A86A 100%)", borderColor: "#0A3D2E", color: "#0A3D2E", whiteSpace: "nowrap" }}
+                >
+                  إسناد
                 </button>
               )}
 
+              {/* زر الإغلاق الدائري الوردي X */}
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+                className="w-[28px] h-[28px] rounded-full bg-white border border-[#FF8A8A]/50 flex items-center justify-center shadow-[0_1px_4px_rgba(197,48,48,0.12)] active:scale-90 shrink-0 cursor-pointer hover:bg-rose-50 transition"
+                title="إغلاق عرض الطلب"
+              >
+                <svg className="w-[13px] h-[13px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* الفاصل الأرابيسك المذهب في المنتصف */}
+          <div className="relative my-[10px] flex items-center justify-center w-full">
+            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-[#E8D5A3] w-full" />
+            <div className="relative z-10 w-[12px] h-[12px] bg-[#FFFEFB] border border-[#E8D5A3] rotate-45 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.2)]">
+              <div className="w-[4px] h-[4px] bg-[#C9A86A] rotate-45" />
+            </div>
+          </div>
+
+          {/* السطر الثاني: زر التعديل + زر البصمة + التاريخ + الوقت */}
+          <div className="flex items-center justify-center gap-[8px] w-full flex-nowrap">
+            {/* زر تعديل الطلب */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition"
+            >
+              <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل</span>
+              <span
+                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+              >
+                <svg className="w-[10px] h-[10px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              </span>
+            </Link>
+
+            {/* زر البصمة الدائري الأحمر المشع */}
+            <div className="shrink-0">
               <AdminVoiceNoteSection
-                variant="button"
+                variant="royal_circular"
                 orderId={order.id}
                 defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
               />
             </div>
 
-            <div className="flex items-center gap-1.5 text-[11px] text-[#6B7D77] flex-wrap">
-              <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
-                <span>📅</span>
-                <span className="font-mono">{(() => { try { return order.createdAt ? formatBaghdadDateTime(new Date(order.createdAt)) : "—"; } catch { return "—"; } })()}</span>
+            {/* شارة التاريخ */}
+            <div
+              className="px-[8px] rounded-full bg-[#FFFEF8] border border-[#C9A86A]/30 text-[#3A2E1A] text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap shadow-[inset_0_1px_0_white] shrink-0"
+              style={{ height: "32px" }}
+            >
+              <span className="text-[11px] font-mono">
+                {(() => {
+                  try {
+                    if (!order.createdAt) return "—";
+                    const d = new Date(order.createdAt);
+                    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+                  } catch {
+                    return "—";
+                  }
+                })()}
               </span>
-              <span className="flex items-center gap-1 bg-[#0A3D2E]/5 px-2.5 py-1 rounded-full border border-[#0A3D2E]/5 font-bold">
-                <span>⏰</span>
-                <span className="text-rose-600 font-black">{order.orderNoteTime || "فوري"}</span>
+              <span className="w-[16px] h-[16px] rounded-full bg-[#FDF6E3] border border-[#C9A86A]/30 flex items-center justify-center shrink-0">
+                <svg className="w-[10px] h-[10px] text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </span>
+            </div>
+
+            {/* شارة وقت الطلب (فوري أو الدقائق) */}
+            <div
+              className="px-[8px] rounded-full bg-[#FFF5F5] border border-[#C9A86A]/30 text-[#C53030] text-[11px] font-black flex items-center gap-1.5 whitespace-nowrap shadow-[inset_0_1px_0_white] shrink-0"
+              style={{ height: "32px" }}
+            >
+              <span className="font-mono text-[#C53030] text-[12px] font-black">
+                {order.orderNoteTime || "فوري"}
+              </span>
+              <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#FFB4B4]/50 flex items-center justify-center shrink-0">
+                <svg className="w-[10px] h-[10px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
               </span>
             </div>
           </div>
-
-          {/* سطر زر تعديل التسعير التكميلي إن وجد */}
-          {parsedShoppingJson !== null && (
-            <div className="mt-2.5 flex justify-center">
-              <Link
-                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                className="relative group transition-transform active:scale-95 inline-flex items-center justify-center p-1"
-                title="تعديل تفاصيل وأسعار التجهيز"
-              >
-                <img
-                  src="/images/order-luxury/btn-admin-pricing.webp"
-                  alt="تعديل التسعير"
-                  className="h-11 sm:h-12 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                />
-              </Link>
-            </div>
-          )}
-
-          {/* فاصل أرابيسك داخلي */}
-          <div className="mt-3 flex items-center gap-2">
-            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#C9A86A]/50 to-transparent" />
-            <div className="w-4 h-4 relative flex items-center justify-center">
-              <div className="absolute w-4 h-4 rotate-45 border border-[#C9A86A]/60" />
-              <div className="w-1.5 h-1.5 rotate-45 bg-[#C9A86A]" />
-            </div>
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#C9A86A]/50 to-transparent" />
-          </div>
-
         </div>
 
         {/* بصمات الصوت المسجلة إن وجدت بتصميم دمشقي مذهب */}

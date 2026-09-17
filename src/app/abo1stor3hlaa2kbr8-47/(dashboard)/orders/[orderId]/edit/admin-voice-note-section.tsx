@@ -45,7 +45,7 @@ export function AdminVoiceNoteSection({
 }: {
   orderId: string;
   defaultAdminVoiceNoteUrl: string | null;
-  variant?: "embedded" | "standalone" | "button";
+  variant?: "embedded" | "standalone" | "button" | "royal_circular";
 }) {
   const router = useRouter();
   const src = resolvePublicAssetSrc(defaultAdminVoiceNoteUrl);
@@ -379,7 +379,7 @@ export function AdminVoiceNoteSection({
     </div>
   );
 
-  if (variant === "button") {
+  if (variant === "royal_circular" || variant === "button") {
     return (
       <form
         ref={standaloneFormRef}
@@ -391,7 +391,7 @@ export function AdminVoiceNoteSection({
           }
           router.refresh();
         }}
-        className="inline-block w-full"
+        className="inline-flex items-center shrink-0"
       >
         <input type="hidden" name="orderId" value={orderId} />
         <input
@@ -408,40 +408,37 @@ export function AdminVoiceNoteSection({
           <button
             type="button"
             onClick={() => void startRecording()}
-            className={`inline-flex w-full items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95 min-h-[40px] text-center ${
-              src ? "bg-rose-700 hover:bg-rose-800" : "bg-rose-600 hover:bg-rose-700"
-            }`}
-            title={src ? "استبدال البصمة" : "تسجيل البصمة"}
+            className="w-[36px] h-[36px] rounded-full bg-[#E11D48] border border-[#BE123C] text-white flex items-center justify-center shadow-[0_3px_10px_rgba(225,29,72,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.95] shrink-0 cursor-pointer hover:bg-[#D0153D] transition-transform"
+            title={src ? "استبدال بصمة الصوت" : "تسجيل بصمة صوتية"}
           >
-            <span>🎙️</span>
-            <span className="truncate">بصمة</span>
+            <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 11c0 2.21-1.79 4-4 4s-4-1.79-4-4 1.79-4 4-4 4 1.79 4 4z" />
+              <path d="M12 7c0-2.21 1.79-4 4-4s4 1.79 4 4v4c0 4.42-3.58 8-8 8s-8-3.58-8-8" />
+              <path d="M8 15c0 2.21 1.79 4 4 4s4-1.79 4-4" />
+              <path d="M12 3v1" />
+              <path d="M16 11v2" />
+            </svg>
           </button>
         ) : (
-          <div className="flex w-full items-center justify-center gap-1">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={finishRecording}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-600 px-1.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 min-h-[40px] text-center"
+              className="h-[36px] px-2.5 rounded-full bg-emerald-600 text-white font-black text-[11px] flex items-center gap-1 shadow-md hover:bg-emerald-700 active:scale-95 cursor-pointer"
               title="حفظ التسجيل"
             >
               <span>✔</span>
-              <span className="truncate">حفظ ({sec}ث)</span>
+              <span>({sec}ث)</span>
             </button>
             <button
               type="button"
               onClick={cancelRecording}
-              className="inline-flex items-center justify-center rounded-xl bg-rose-100 border border-rose-300 px-2 py-2 text-xs font-bold text-rose-700 hover:bg-rose-200 active:scale-95 min-h-[40px] whitespace-nowrap"
-              title="إلغاء التسجيل وعدم الحفظ"
+              className="w-[28px] h-[28px] rounded-full bg-rose-100 text-rose-700 font-black text-xs flex items-center justify-center border border-rose-300 cursor-pointer"
+              title="إلغاء"
             >
-              <span>❌ إلغاء</span>
+              ✕
             </button>
           </div>
-        )}
-
-        {error && (
-          <span className="block text-[10px] font-bold text-rose-600 mt-1 text-center">
-            {error}
-          </span>
         )}
       </form>
     );
