@@ -194,15 +194,12 @@ export function OrderDetailSection({
   const shopContactPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : order.shop.phone?.trim() || "");
 
   const isPreparerOrAdminOrder =
-    Boolean(order.submittedByCompanyPreparer?.name) ||
-    Boolean(order.submittedByCompanyPreparerId) ||
-    order.submissionSource === "company_preparer" ||
     (order.shop?.name && (order.shop.name.trim() === "الإدارة" || order.shop.name.trim() === "طلبات الإدارة العامة")) ||
-    (Boolean(order.submittedByCompanyPreparer?.name) && Boolean(order.shop?.name) && order.shop.name.trim() === order.submittedByCompanyPreparer.name.trim());
+    (isAdminPortal && (!order.shop?.name || order.shop.name.trim() === "الإدارة"));
 
   const effectiveShopName = isPreparerOrAdminOrder
     ? "الإدارة"
-    : order.shop.name;
+    : (order.shop?.name || "المحل");
 
   const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
   const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");

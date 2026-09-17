@@ -210,10 +210,7 @@ export function OrderViewContent({
   const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);
   const isSystemAdminOrder =
     isAdminShopName(order.shop?.name) ||
-    order.submissionSource === "admin_portal" ||
-    order.submissionSource === "company_preparer" ||
-    Boolean(order.submittedByCompanyPreparerId) ||
-    (Boolean(order.submittedByCompanyPreparer?.name) && Boolean(order.shop?.name) && order.shop.name.trim() === order.submittedByCompanyPreparer.name.trim());
+    (!order.shop?.name && order.submissionSource === "admin_portal");
   const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
 
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);

@@ -85,9 +85,31 @@ export function AdminLuxuryShopCard({
     }
   }
 
-  const cleanPhone = contactLine(submitterPhone || order.shop?.phone || "");
-  const shopName = submitterName || order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل");
-  const ownerName = order.shop?.ownerName || (isSystemAdminOrder ? "المسؤول" : "");
+  const cleanPhone = contactLine(order.shop?.phone || submitterPhone || "");
+  const rawShopName = order.shop?.name?.trim() || "";
+  const rawOwnerName = order.shop?.ownerName?.trim() || "";
+  const rawSubmitterName = submitterName?.trim() || "";
+
+  // اسم المحل الأساسي يظهر دائماً كاسم المحل الفعلي
+  let shopName = rawShopName;
+  if (!shopName || shopName === "—" || shopName === "المحل") {
+    if (rawSubmitterName && rawSubmitterName !== "—" && rawSubmitterName !== "المسؤول") {
+      shopName = rawSubmitterName;
+    } else {
+      shopName = isSystemAdminOrder ? "الإدارة" : "المحل";
+    }
+  }
+
+  // اسم صاحب المحل أو المسؤول يظهر تحته إن وجد وكان مختلفاً
+  let ownerName = "";
+  if (rawOwnerName && rawOwnerName !== shopName) {
+    ownerName = rawOwnerName;
+  } else if (rawSubmitterName && rawSubmitterName !== shopName && rawSubmitterName !== "—" && rawSubmitterName !== "الإدارة") {
+    ownerName = rawSubmitterName;
+  } else if (isSystemAdminOrder && shopName === "الإدارة") {
+    ownerName = rawSubmitterName || "المسؤول";
+  }
+
   const regionName = order.shop?.region?.name || "السوق";
   const hasLocation = Boolean(order.shop?.locationUrl && order.shop.locationUrl.trim());
 
