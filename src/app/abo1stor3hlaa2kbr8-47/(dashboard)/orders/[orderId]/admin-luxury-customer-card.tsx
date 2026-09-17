@@ -33,16 +33,34 @@ export function AdminLuxuryCustomerCard({
   imgCustomerDoor,
   setPreviewImageUrl,
   isDoubleRoute = false,
+  isSecondDestination = false,
+  cardTitle,
+  customerRegionName,
+  customerRegionId,
+  landmark,
+  locationUrl,
+  alternatePhone,
+  customerProfileId,
+  doorPhotoUploadedByName,
   designerConfig,
   phoneProfile,
   children,
 }: {
   order: any;
-  customerName: string;
-  customerPhone: string;
-  imgCustomerDoor: string | null;
+  customerName?: string;
+  customerPhone?: string;
+  imgCustomerDoor?: string | null;
   setPreviewImageUrl: (url: string | null) => void;
   isDoubleRoute?: boolean;
+  isSecondDestination?: boolean;
+  cardTitle?: string;
+  customerRegionName?: string;
+  customerRegionId?: string | null;
+  landmark?: string;
+  locationUrl?: string;
+  alternatePhone?: string | null;
+  customerProfileId?: string | null;
+  doorPhotoUploadedByName?: string | null;
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
   children?: React.ReactNode;
@@ -50,18 +68,76 @@ export function AdminLuxuryCustomerCard({
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
 
+  // القيم الفعالة للبيانات
+  const effectiveName =
+    customerName ??
+    (isSecondDestination ? order.secondCustomerName || "المستلم" : order.customerName || order.customer?.name || "الزبون");
+  const effectivePhone =
+    customerPhone ?? (isSecondDestination ? order.secondCustomerPhone : order.customerPhone) ?? "";
+  const effectiveRegionName =
+    customerRegionName ??
+    (isSecondDestination ? order.secondCustomerRegion?.name : order.customerRegion?.name) ??
+    (isSecondDestination ? "منطقة المستلم" : "منطقة الزبون");
+  const effectiveRegionId =
+    customerRegionId !== undefined
+      ? customerRegionId
+      : isSecondDestination
+      ? order.secondCustomerRegionId
+      : order.customerRegionId;
+  const rawLandmark =
+    landmark !== undefined
+      ? landmark
+      : isSecondDestination
+      ? order.secondCustomerLandmark
+      : order.customerLandmark || phoneProfile?.landmark;
+  const effectiveLocationUrl =
+    locationUrl !== undefined
+      ? locationUrl
+      : isSecondDestination
+      ? order.secondCustomerLocationUrl
+      : order.customerLocationUrl;
+  const effectiveDoorPhoto =
+    imgCustomerDoor !== undefined
+      ? imgCustomerDoor
+      : isSecondDestination
+      ? order.secondCustomerDoorPhotoUrl || null
+      : order.customerDoorPhotoUrl || null;
+  const effectiveAlternatePhone =
+    alternatePhone !== undefined
+      ? alternatePhone
+      : isSecondDestination
+      ? order.secondCustomerAlternatePhone
+      : order.alternatePhone;
+  const effectiveProfileId =
+    customerProfileId !== undefined
+      ? customerProfileId
+      : isSecondDestination
+      ? order.secondCustomerProfileId
+      : order.customerProfileId;
+  const effectiveUploaderName =
+    doorPhotoUploadedByName ??
+    (isSecondDestination
+      ? order.secondCustomerDoorPhotoUploadedByName
+      : order.customerDoorPhotoUploadedByName);
+
+  const displayTitle =
+    cardTitle ||
+    (isDoubleRoute
+      ? isSecondDestination
+        ? "المستلم (الوجهة الثانية)"
+        : "المرسل (الوجهة الأولى)"
+      : "الزبون (المستلم)");
+
   // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت
   const [landmarkModalOpen, setLandmarkModalOpen] = useState(false);
-  const [landmarkTextState, setLandmarkTextState] = useState(
-    (order.customerLandmark || phoneProfile?.landmark || "").trim()
-  );
+  const [landmarkTextState, setLandmarkTextState] = useState((rawLandmark || "").trim());
   const [landmarkLoading, setLandmarkLoading] = useState(false);
   const [landmarkError, setLandmarkError] = useState<string | null>(null);
   const landmarkInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setLandmarkTextState((order.customerLandmark || phoneProfile?.landmark || "").trim());
-  }, [order.customerLandmark, phoneProfile?.landmark]);
+    setLandmarkTextState((rawLandmark || "").trim());
+  }, [rawLandmark]);
 
   useEffect(() => {
     if (landmarkModalOpen) {
@@ -80,7 +156,11 @@ export function AdminLuxuryCustomerCard({
     setLandmarkLoading(true);
     setLandmarkError(null);
     try {
-      const res = await updateOrderLandmarkAction(order.id, landmarkTextState.trim(), false);
+      const res = await updateOrderLandmarkAction(
+        order.id,
+        landmarkTextState.trim(),
+        isSecondDestination
+      );
       if (res.error) {
         setLandmarkError(res.error);
       } else {
@@ -117,6 +197,11 @@ export function AdminLuxuryCustomerCard({
 
     const fd = new FormData();
     fd.set("customerDoorPhoto", photoToUpload);
+    if (isSecondDestination) {
+      fd.set("target", "second");
+    } else {
+      fd.set("target", "first");
+    }
     await formAction(fd);
 
     if (inputEl) {
@@ -126,10 +211,11 @@ export function AdminLuxuryCustomerCard({
   }
 
   async function handleDelete() {
-    if (!confirm("هل أنت متأكد من مسح صورة باب الزبون؟")) return;
+    const photoTitle = isSecondDestination ? "صورة باب المستلم" : "صورة باب الزبون";
+    if (!confirm(`هل أنت متأكد من مسح ${photoTitle}؟`)) return;
     setDeleting(true);
     try {
-      await deleteCustomerDoorPhotoAction(order.id);
+      await deleteCustomerDoorPhotoAction(order.id, isSecondDestination);
       setZoomOpen(false);
       router.refresh();
     } finally {
@@ -137,8 +223,8 @@ export function AdminLuxuryCustomerCard({
     }
   }
 
-  const hasLocation = Boolean(order.customerLocationUrl && order.customerLocationUrl.trim());
-  const cleanPhone = contactLine(customerPhone || order.customerPhone);
+  const hasLocation = Boolean(effectiveLocationUrl && effectiveLocationUrl.trim());
+  const cleanPhone = contactLine(effectivePhone);
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
@@ -146,7 +232,7 @@ export function AdminLuxuryCustomerCard({
       <input
         ref={cameraFileRef}
         type="file"
-        name="customerDoorPhotoCamera"
+        name={isSecondDestination ? "secondCustomerDoorPhotoCamera" : "customerDoorPhotoCamera"}
         accept="image/*"
         capture="environment"
         className="sr-only hidden"
@@ -158,7 +244,7 @@ export function AdminLuxuryCustomerCard({
       <input
         ref={galleryFileRef}
         type="file"
-        name="customerDoorPhotoGallery"
+        name={isSecondDestination ? "secondCustomerDoorPhotoGallery" : "customerDoorPhotoGallery"}
         accept="image/*"
         className="sr-only hidden"
         onChange={(e) => {
@@ -180,7 +266,7 @@ export function AdminLuxuryCustomerCard({
             </div>
             <div>
               <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none">
-                {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                {displayTitle}
               </h2>
               <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#115740]/60 to-transparent rounded-full" />
             </div>
@@ -200,7 +286,7 @@ export function AdminLuxuryCustomerCard({
                   </svg>
                 </span>
                 <span className="text-[12px] font-bold text-[#3A2E1A] truncate">
-                  {order.customerRegion?.name || "منطقة الزبون"}
+                  {effectiveRegionName}
                 </span>
               </div>
 
@@ -213,16 +299,16 @@ export function AdminLuxuryCustomerCard({
                 </span>
                 {cleanPhone ? (
                   <AdminCustomerPhoneInteractive
-                    phone={customerPhone || order.customerPhone}
+                    phone={effectivePhone}
                     formattedPhone={cleanPhone}
-                    regionId={order.customerRegionId}
+                    regionId={effectiveRegionId}
                     currentOrderId={order.id}
-                    customerName={customerName || order.customer?.name}
-                    customerRegionName={order.customerRegion?.name}
-                    alternatePhone={order.alternatePhone}
-                    customerLocationUrl={order.customerLocationUrl || undefined}
-                    customerLandmark={order.customerLandmark || undefined}
-                    customerProfileId={order.customerProfileId}
+                    customerName={effectiveName}
+                    customerRegionName={effectiveRegionName}
+                    alternatePhone={effectiveAlternatePhone}
+                    customerLocationUrl={effectiveLocationUrl || undefined}
+                    customerLandmark={landmarkTextState || undefined}
+                    customerProfileId={effectiveProfileId}
                   />
                 ) : (
                   <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E]">—</span>
@@ -260,18 +346,18 @@ export function AdminLuxuryCustomerCard({
               </div>
             </div>
 
-            {/* صورة باب الزبون 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            {/* صورة باب الزبون/المستلم 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="customer"
-              imageUrl={imgCustomerDoor}
-              label="صورة الباب"
+              imageUrl={effectiveDoorPhoto}
+              label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
               onSwipeRight={() => cameraFileRef.current?.click()}
               onSwipeLeft={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
-                if (imgCustomerDoor) {
-                  setPreviewImageUrl(imgCustomerDoor);
+                if (effectiveDoorPhoto) {
+                  setPreviewImageUrl(effectiveDoorPhoto);
                   setZoomOpen(true);
                 } else {
                   cameraFileRef.current?.click();
@@ -286,21 +372,30 @@ export function AdminLuxuryCustomerCard({
             />
           </div>
 
-          {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر كما في التصميم */}
+          {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر أو مكونات الـ children */}
           <div className="space-y-2.5 pt-1">
             {hasLocation ? (
-              <a
-                href={order.customerLocationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-[44px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
-              >
-                <svg className="w-4 h-4 text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span>فتح لوكيشن الزبون</span>
-              </a>
+              <div className="space-y-2">
+                <a
+                  href={effectiveLocationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-[44px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+                >
+                  <svg className="w-4 h-4 text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span>
+                    {isSecondDestination
+                      ? "فتح لوكيشن المستلم"
+                      : isDoubleRoute
+                      ? "فتح لوكيشن المرسل"
+                      : "فتح لوكيشن الزبون"}
+                  </span>
+                </a>
+                {children && <div className="w-full">{children}</div>}
+              </div>
             ) : (
               <div className="w-full">
                 {children}
@@ -352,7 +447,7 @@ export function AdminLuxuryCustomerCard({
             <div className="flex items-center justify-between border-b border-[#C9A86A]/20 pb-3 mb-3">
               <h4 className="text-sm sm:text-base font-black text-[#0A3D2E] flex items-center gap-2">
                 <span>📍</span>
-                <span>تعديل أقرب نقطة دالة</span>
+                <span>تعديل أقرب نقطة دالة ({isSecondDestination ? "المستلم" : "المرسل"})</span>
               </h4>
               <button
                 type="button"
@@ -404,15 +499,15 @@ export function AdminLuxuryCustomerCard({
         </div>
       )}
 
-      {/* مودال معاينة وتكبير صورة باب الزبون مع زر المسح */}
-      {zoomOpen && imgCustomerDoor && (
+      {/* مودال معاينة وتكبير صورة باب الزبون/المستلم مع زر المسح */}
+      {zoomOpen && effectiveDoorPhoto && (
         <ImageZoomModal
-          imageUrl={imgCustomerDoor}
+          imageUrl={effectiveDoorPhoto}
           onClose={() => setZoomOpen(false)}
-          title="صورة باب الزبون"
-          uploadedByName={order.customerDoorPhotoUploadedByName}
+          title={isSecondDestination ? "صورة باب المستلم" : "صورة باب الزبون"}
+          uploadedByName={effectiveUploaderName}
           onDelete={handleDelete}
-          deleteLabel="مسح صورة باب الزبون"
+          deleteLabel={isSecondDestination ? "مسح صورة باب المستلم" : "مسح صورة باب الزبون"}
           isDeleting={deleting}
         />
       )}

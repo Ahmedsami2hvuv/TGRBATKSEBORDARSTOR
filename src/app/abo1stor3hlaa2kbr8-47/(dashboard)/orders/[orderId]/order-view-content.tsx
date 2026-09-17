@@ -652,7 +652,7 @@ export function OrderViewContent({
             </div>
           )}
 
-          {/* كارت معلومات الطلب مدمج ومترابط مع فاصل أرابيسك مذهب */}
+          {/* كارت معلومات الطلب مدمج ومترابط مع فاصل أرابيسك مذهب في الطلب العادي */}
           {!isDoubleRoute && designerConfigState?.enabledPortals?.admin !== false && (
             <>
               <div className="flex items-center justify-center gap-2 py-2 my-0.5">
@@ -676,238 +676,124 @@ export function OrderViewContent({
               </div>
             </>
           )}
-        </div>
 
-          {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين --- */}
-          {order.routeMode === "double" && (
-            <div className="relative overflow-hidden rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#1E1B4B] via-[#0F172A] to-[#06281D] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md mt-3">
-              <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
-
-              <div className="relative z-10 flex flex-row gap-4 items-start justify-between">
-                <div className="flex-1 space-y-3 text-right">
-                  <div className="flex items-center gap-2 border-b border-[#C9A86A]/30 pb-2">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#312E81] to-[#0F172A] border border-[#C9A86A] flex items-center justify-center text-lg shadow-inner">
-                      👥
-                    </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-black text-[#F5D77F] drop-shadow-sm">
-                        المستلم (الوجهة الثانية)
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-xs sm:text-sm">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-[#F5D77F]" title="منطقة المستلم">📍</span>
-                      <span className="font-black text-white text-sm sm:text-base">{order.secondCustomerRegion?.name ?? "—"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-[#F5D77F]" title="هاتف المستلم">📞</span>
-                      {order.secondCustomerPhone ? (
-                        <AdminCustomerPhoneInteractive
-                          phone={order.secondCustomerPhone}
-                          formattedPhone={contactLine(order.secondCustomerPhone)}
-                          regionId={order.secondCustomerRegionId}
-                          currentOrderId={order.id}
-                          customerName={order.secondCustomerName}
-                          customerRegionName={order.secondCustomerRegion?.name}
-                          alternatePhone={order.secondCustomerAlternatePhone}
-                          customerLocationUrl={order.secondCustomerLocationUrl || undefined}
-                          customerLandmark={order.secondCustomerLandmark || undefined}
-                          customerProfileId={order.secondCustomerProfileId}
-                        />
-                      ) : (
-                        <span className="font-mono font-black text-white/50">—</span>
-                      )}
-                    </div>
-
-                    {order.secondCustomerAlternatePhone && (
-                      <div className="flex items-center gap-1.5 bg-[#06281D]/90 px-2 py-0.5 rounded-lg border border-[#C9A86A]/50 w-fit">
-                        <span className="font-bold text-amber-300 text-[10px]">رقم بديل / أرشيف:</span>
-                        <span className="font-mono font-black text-[#F5D77F] ml-1">{order.secondCustomerAlternatePhone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-2 space-y-2.5 w-full">
-                    <div className="max-w-full">
-                      {order.secondCustomerLocationUrl?.trim() ? (
-                        <div className="flex flex-wrap items-center gap-2 w-full">
-                          <a
-                            href={order.secondCustomerLocationUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative transition-transform active:scale-95 flex items-center justify-center w-full"
-                            title="موقع المستلم على الخريطة"
-                          >
-                            <img
-                              src="/images/order-luxury/btn-open-location.webp"
-                              alt="موقع المستلم على الخريطة"
-                              className="h-11 sm:h-12 w-full max-w-[280px] object-contain drop-shadow-lg group-hover:scale-105 transition"
-                            />
-                          </a>
-                          <WaLocationCustomButtons
-                            userRole="admin"
-                            customerPhone={order.secondCustomerPhone || order.customerPhone}
-                            customerPhone2={order.customerPhone2 || undefined}
-                            shopPhone={submitterPhone || undefined}
-                            orderStatus={order.status}
-                            hasCustomerLocation={Boolean(order.secondCustomerLocationUrl)}
-                            hasCourierUploadedLocation={Boolean(order.secondCustomerLocationSetByCourierAt)}
-                            templateVars={{
-                              clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                              city: order.secondCustomerRegion?.name || "—",
-                              total_price: currentTotalPriceStr,
-                              total: currentTotalPriceStr,
-                              delivery: currentCourierName,
-                              courier: currentCourierName,
-                              courierName: currentCourierName,
-                              deliveryName: currentCourierName,
-                              location_url: order.secondCustomerLocationUrl || "",
-                              landmark: order.secondCustomerLandmark || "",
-                              order_number: String(order.orderNumber || ""),
-                              customer_phone: order.secondCustomerPhone || order.customerPhone || "",
-                              customer_phone2: order.customerPhone2 || "",
-                              shop_phone: submitterPhone || "",
-                            }}
-                            customButtons={waButtonSettings}
-                            designerConfig={designerConfig}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2 w-full">
-                          <AdminCustomerLocationQuick
-                            orderId={order.id}
-                            target="second"
-                            customerPhone={order.secondCustomerPhone || order.customerPhone}
-                            customerPhone2={order.customerPhone2 || undefined}
-                            shopPhone={submitterPhone || undefined}
-                            orderStatus={order.status}
-                            templateVars={{
-                              clientshop: order.shop?.name || "",
-                              city: order.secondCustomerRegion?.name || "",
-                              total_price: String(order.totalAmount || ""),
-                              delivery: order.courier?.name || "",
-                              location_url: order.secondCustomerLocationUrl || "",
-                              landmark: order.secondCustomerLandmark || "",
-                              order_number: String(order.orderNumber || ""),
-                              customer_phone: order.secondCustomerPhone || order.customerPhone || "",
-                              customer_phone2: order.customerPhone2 || "",
-                              shop_phone: submitterPhone || "",
-                            }}
-                            customButtons={waButtonSettings}
-                            designerConfig={designerConfig}
-                          />
-                        </div>
-                      )}
-
-                      <div className="mt-2">
-                        <OtherRegionsCustomerDetails
-                          phone={order.secondCustomerPhone || order.customerPhone}
-                          currentRegionId={order.secondCustomerRegionId}
-                          currentRegionName={order.secondCustomerRegion?.name}
-                          orderId={order.id}
-                          isSecondDestination={true}
-                          designerConfig={designerConfig}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full">
-                      {(order.secondCustomerPhone || order.customerPhone) && (
-                        <div className="flex items-center gap-2 w-full">
-                          <a
-                            href={telHref(order.secondCustomerPhone || order.customerPhone!)}
-                            className="flex-1 group relative transition-transform active:scale-95 flex items-center justify-center"
-                            title="اتصال بالمستلم"
-                          >
-                            <img
-                              src="/images/order-luxury/shop-card/btn-call.webp"
-                              alt="اتصال"
-                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                            />
-                          </a>
-                          <a
-                            href={whatsappMeUrl(order.secondCustomerPhone || order.customerPhone!)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 group relative transition-transform active:scale-95 flex items-center justify-center"
-                            title="مراسلة المستلم واتساب"
-                          >
-                            <img
-                              src="/images/order-luxury/shop-card/btn-whatsapp.webp"
-                              alt="واتس"
-                              className="h-12 sm:h-14 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition"
-                            />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+          {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين بنفس كارت الزبون الملكي الفاخر كلياً --- */}
+          {isDoubleRoute && (
+            <>
+              {/* فاصل أرابيسك مذهب ملكي بين المرسل والمستلم */}
+              <div className="flex items-center justify-center gap-2 py-2.5 my-1">
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-l from-[#C9A86A] to-transparent" />
+                <div className="px-3 py-1 rounded-full border border-[#C9A86A]/40 bg-gradient-to-r from-[#FFF8E1] via-[#FFFEF8] to-[#FFF8E1] shadow-[0_2px_8px_rgba(201,168,106,0.18)] flex items-center gap-1.5">
+                  <span className="text-[11px] font-black text-[#8B6A2A]">⮯ الوجهة الثانية للتسليم (المستلم)</span>
                 </div>
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-r from-[#C9A86A] to-transparent" />
+              </div>
 
-                {/* صورة باب المستلم */}
-                <div className="w-[170px] xs:w-[195px] sm:w-[240px] md:w-[270px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                  <span className="text-xs font-black text-[#F5D77F]">صورة باب المستلم</span>
-                  {imgCustDoor2 ? (
-                    <div className="w-full flex flex-col items-center gap-1">
-                      <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40 relative">
-                        <img
-                          src={imgCustDoor2}
-                          alt=""
-                          className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
-                          onClick={() => {
-                            setPreviewImageUrl(imgCustDoor2);
-                            setPreviewUploadedByName(order.secondCustomerDoorPhotoUploadedByName || null);
-                          }}
-                        />
-                      </div>
+              <div className="w-full">
+                <AdminLuxuryCustomerCard
+                  order={order}
+                  customerName={order.secondCustomerName || "المستلم"}
+                  customerPhone={order.secondCustomerPhone}
+                  imgCustomerDoor={imgCustDoor2}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isDoubleRoute={true}
+                  isSecondDestination={true}
+                  cardTitle="المستلم (الوجهة الثانية)"
+                  customerRegionName={order.secondCustomerRegion?.name}
+                  customerRegionId={order.secondCustomerRegionId}
+                  landmark={order.secondCustomerLandmark}
+                  locationUrl={order.secondCustomerLocationUrl}
+                  alternatePhone={order.secondCustomerAlternatePhone}
+                  customerProfileId={order.secondCustomerProfileId}
+                  doorPhotoUploadedByName={order.secondCustomerDoorPhotoUploadedByName}
+                  designerConfig={designerConfigState}
+                >
+                  <div className="w-full pt-1">
+                    <AdminCustomerLocationQuick
+                      orderId={order.id}
+                      target="second"
+                      customerPhone={order.secondCustomerPhone || order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      templateVars={{
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                        city: order.secondCustomerRegion?.name || "—",
+                        total_price: currentTotalPriceStr,
+                        total: currentTotalPriceStr,
+                        delivery: currentCourierName,
+                        courier: currentCourierName,
+                        courierName: currentCourierName,
+                        deliveryName: currentCourierName,
+                        location_url: order.secondCustomerLocationUrl || "",
+                        landmark: order.secondCustomerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                      }}
+                      customButtons={waButtonSettings}
+                      designerConfig={designerConfigState}
+                    />
+
+                    <div className="mt-2">
+                      <OtherRegionsCustomerDetails
+                        phone={order.secondCustomerPhone || order.customerPhone}
+                        currentRegionId={order.secondCustomerRegionId}
+                        currentRegionName={order.secondCustomerRegion?.name}
+                        orderId={order.id}
+                        isSecondDestination={true}
+                        designerConfig={designerConfigState}
+                      />
                     </div>
-                  ) : (
-                    <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
-                      لا توجد صورة
+                  </div>
+
+                  {/* بلوك الاستدلال الذكي للوجهة الثانية */}
+                  {isSmartHintValid(order.secondSmartHintLine) && (
+                    <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
+                      <div className="flex-1 text-right">
+                        <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                          <span>💡 الاستدلال الذكي (المستلم)</span>
+                        </p>
+                        <p className="text-xs font-black text-white mt-1">
+                          {order.secondSmartHintLine!.trim()}
+                        </p>
+                      </div>
+                      <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                        💡
+                      </div>
                     </div>
                   )}
-                  <div className="w-full">
-                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.secondCustomerDoorPhotoUrl} isSecondCustomer />
-                  </div>
-                </div>
+                </AdminLuxuryCustomerCard>
               </div>
 
-              <div className="relative z-10 mt-3 space-y-2">
-                <div className="flex flex-col gap-1">
-                  <InlineLandmarkEditor
-                    orderId={order.id}
-                    initialLandmark={order.secondCustomerLandmark}
-                    isSecondDestination={true}
-                    label="📍 دالة:"
-                    uploadedByName={order.secondCustomerDoorPhotoUploadedByName || order.customerLocationUploadedByName}
-                  />
-                </div>
-
-                {isSmartHintValid(order.secondSmartHintLine) && (
-                  <div className="flex flex-row items-center gap-1.5 rounded-xl bg-[#06281D]/80 p-2 border border-[#C9A86A]/40">
-                    <span className="text-[11px] font-black text-[#F5D77F]">
-                      💡 {order.secondSmartHintLine!.trim()}
-                    </span>
+              {/* فاصل أرابيسك مذهب بين المستلم وكارت تفاصيل الطلب */}
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
                   </div>
-                )}
+                </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
               </div>
-            </div>
+
+              <div className="w-full">
+                <AdminLuxuryOrderInfoCard
+                  order={order}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  designerConfig={designerConfigState || undefined}
+                  hideSubtotalInfo={false}
+                  isMandoubPortal={false}
+                />
+              </div>
+            </>
           )}
-        {/* --- تفاصيل الطلب والأسعار وصورة الطلب (في حالة الوجهتين أو التصميم القديم) --- */}
-        {isDoubleRoute && designerConfig?.enabledPortals?.admin !== false ? (
-          <div className="w-full mb-3 -mt-2 sm:-mt-2.5">
-            <AdminLuxuryOrderInfoCard
-              order={order}
-              setPreviewImageUrl={setPreviewImageUrl}
-              designerConfig={designerConfig || undefined}
-              hideSubtotalInfo={false}
-              isMandoubPortal={false}
-            />
-          </div>
-        ) : designerConfig?.enabledPortals?.admin === false ? (
+        </div>
+
+        {/* --- تفاصيل الطلب والأسعار وصورة الطلب (في حالة التصميم القديم أو عدم تفعيل الواجهة الفاخرة) --- */}
+        {designerConfigState?.enabledPortals?.admin === false ? (
           <div className={gridInfoPhoto}>
             <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
               <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
