@@ -17,19 +17,23 @@ export function PreparerDetailPhotoUploadRow({
   auth,
   orderId,
   field,
+  onUploaded,
 }: {
   auth: Auth;
   orderId: string;
   field: "orderImage" | "shopDoorPhoto";
+  onUploaded?: (newUrl: string, uploaderName?: string) => void;
 }) {
   const router = useRouter();
   const galRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   async function submitFile(file: File) {
     setError(null);
+    setSuccess(null);
     setBusy(true);
     try {
       let toSend = file;
@@ -51,8 +55,19 @@ export function PreparerDetailPhotoUploadRow({
           ? await uploadPreparerPortalOrderImage({}, fd)
           : await uploadPreparerPortalShopDoorPhoto({}, fd);
 
-      if (res?.error) setError(res.error);
-      else router.refresh();
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        const uploadedUrl = res?.imageUrl || res?.shopDoorPhotoUrl;
+        if (uploadedUrl && onUploaded) {
+          onUploaded(uploadedUrl, res?.uploaderName);
+        }
+        setSuccess(field === "orderImage" ? "تم رفع صورة الطلبية بنجاح ✓" : "تم رفع صورة باب المحل بنجاح ✓");
+        router.refresh();
+      }
+    } catch (err) {
+      console.error(err);
+      setError("تعذر رفع الصورة، يرجى المحاولة مجدداً.");
     } finally {
       setBusy(false);
       if (galRef.current) galRef.current.value = "";
@@ -139,7 +154,8 @@ export function PreparerDetailPhotoUploadRow({
           <span>جارٍ رفع الصورة...</span>
         </div>
       ) : null}
-      {error ? <p className="text-center text-xs font-bold text-rose-600">{error}</p> : null}
+      {error ? <p className="text-center text-xs font-bold text-rose-600 bg-rose-50 py-1 px-2 rounded-lg border border-rose-200">{error}</p> : null}
+      {success ? <p className="text-center text-xs font-black text-emerald-700 bg-emerald-50 py-1 px-2 rounded-lg border border-emerald-300 animate-in fade-in">{success}</p> : null}
 
       {/* نافذة الكاميرا الحية المباشرة */}
       <LiveCameraModal

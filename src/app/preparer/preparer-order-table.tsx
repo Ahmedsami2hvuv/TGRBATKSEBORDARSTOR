@@ -1042,6 +1042,10 @@ export function PreparerOrderTable({
                 <PreparerOrderDetailSection
                   order={{
                     ...activeOrderData as any,
+                    imageUrl: (activeOrderData as any).imageUrl || null,
+                    orderImageUploadedByName: (activeOrderData as any).orderImageUploadedByName || null,
+                    shopDoorPhotoUrl: (activeOrderData as any).shopDoorPhotoUrl || null,
+                    shopDoorPhotoUploadedByName: (activeOrderData as any).shopDoorPhotoUploadedByName || null,
                     orderNoteTime: activeOrderData.orderNoteTime || activeOrderData.timeLine,
                     orderSubtotal: activeOrderData.orderSubtotalDinar,
                     deliveryPrice: activeOrderData.deliveryPriceDinar,

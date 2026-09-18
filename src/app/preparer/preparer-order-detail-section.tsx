@@ -148,6 +148,10 @@ export function PreparerOrderDetailSection({
   couriers?: { id: string; name: string }[];
 }) {
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+  const [localOrderImageUrl, setLocalOrderImageUrl] = useState<string | null>(order.imageUrl || null);
+  const [localOrderImageUploader, setLocalOrderImageUploader] = useState<string | null>(order.orderImageUploadedByName || null);
+  const [localShopDoorUrl, setLocalShopDoorUrl] = useState<string | null>(order.shopDoorPhotoUrl || null);
+  const [localShopDoorUploader, setLocalShopDoorUploader] = useState<string | null>(order.shopDoorPhotoUploadedByName || null);
 
   // حالات فتح نوافذ الدفع والاستلام المنبثقة
   const [payState, payAction, payPending] = useActionState(submitPreparerPickupMoney, {});
@@ -335,11 +339,12 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_shop_door": {
-        const doorRaw = order.shopDoorPhotoUrl?.trim() || "";
+        const doorRaw = localShopDoorUrl?.trim() || "";
         const doorSrc = doorRaw ? imgSrc(doorRaw) : null;
-        const shopPhotoRaw = order.shop.photoUrl?.trim() || "";
+        const shopPhotoRaw = order.shop?.photoUrl?.trim() || "";
         const fallbackSrc = !doorSrc && shopPhotoRaw ? imgSrc(shopPhotoRaw) : null;
         const displaySrc = doorSrc || fallbackSrc;
+        const uploader = localShopDoorUploader || order.shopDoorPhotoUploadedByName;
         return (
           <div
             key="preparer_shop_door"
@@ -355,8 +360,8 @@ export function PreparerOrderDetailSection({
                 <div className={`${squarePhotoFrame} dark:border-emerald-800 dark:bg-slate-900`}>
                   <img src={displaySrc} alt="" className={squarePhotoCover} />
                 </div>
-                {doorSrc && order.shopDoorPhotoUploadedByName?.trim() ? (
-                  <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
+                {doorSrc && uploader?.trim() ? (
+                  <ImageUploaderCaption name={uploader} />
                 ) : null}
                 {!doorSrc && fallbackSrc ? (
                   <p className="mt-2 text-center text-xs font-semibold text-slate-600 dark:text-slate-400">
@@ -367,7 +372,15 @@ export function PreparerOrderDetailSection({
             ) : (
               <p className="mb-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">لا توجد صورة باب محل بعد</p>
             )}
-            <PreparerDetailPhotoUploadRow auth={auth} orderId={order.id} field="shopDoorPhoto" />
+            <PreparerDetailPhotoUploadRow
+              auth={auth}
+              orderId={order.id}
+              field="shopDoorPhoto"
+              onUploaded={(newUrl, uploaderName) => {
+                setLocalShopDoorUrl(newUrl);
+                if (uploaderName) setLocalShopDoorUploader(uploaderName);
+              }}
+            />
           </div>
         );
       }
@@ -498,7 +511,9 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_order_image": {
-        const src = order.imageUrl?.trim() ? imgSrc(order.imageUrl.trim()) : null;
+        const orderImgRaw = localOrderImageUrl?.trim() || "";
+        const src = orderImgRaw ? imgSrc(orderImgRaw) : null;
+        const uploader = localOrderImageUploader || order.orderImageUploadedByName;
         return (
           <div
             key="preparer_order_img"
@@ -511,12 +526,20 @@ export function PreparerOrderDetailSection({
                 <div className={`${squarePhotoFrame} dark:border-slate-600 dark:bg-slate-950`}>
                   <img src={src} alt="" className={squarePhotoContain} />
                 </div>
-                {order.orderImageUploadedByName?.trim() ? <ImageUploaderCaption name={order.orderImageUploadedByName} /> : null}
+                {uploader?.trim() ? <ImageUploaderCaption name={uploader} /> : null}
               </div>
             ) : (
               <p className="mb-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">لم تُرفع صورة للطلبية بعد</p>
             )}
-            <PreparerDetailPhotoUploadRow auth={auth} orderId={order.id} field="orderImage" />
+            <PreparerDetailPhotoUploadRow
+              auth={auth}
+              orderId={order.id}
+              field="orderImage"
+              onUploaded={(newUrl, uploaderName) => {
+                setLocalOrderImageUrl(newUrl);
+                if (uploaderName) setLocalOrderImageUploader(uploaderName);
+              }}
+            />
           </div>
         );
       }

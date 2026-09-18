@@ -33,7 +33,15 @@ import {
 } from "@/lib/db-self-heal-employee-location";
 import { getIraqTime } from "@/lib/baghdad-time";
 
-export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
+export type PreparerActionState = {
+  error?: string;
+  ok?: boolean;
+  orderNumber?: number;
+  draftId?: string;
+  imageUrl?: string;
+  shopDoorPhotoUrl?: string;
+  uploaderName?: string;
+};
 
 const PREPARER_PORTAL_LABEL = "بوابة المجهز";
 
@@ -71,22 +79,22 @@ async function assertPreparerLinkedToOrderShop(
   preparerId: string,
   orderId: string,
 ): Promise<
-  | { ok: true; order: { id: string; imageUrl: string | null; shopDoorPhotoUrl: string | null } }
+  | { ok: true; order: { id: string; imageUrl: string | null; shopDoorPhotoUrl: string | null; shopId: string } }
   | { ok: false; error: string }
 > {
+  const prep = await prisma.companyPreparer.findFirst({
+    where: { id: preparerId, active: true },
+    select: { id: true, name: true },
+  });
+  if (!prep) return { ok: false, error: "حساب المجهز غير نشط أو غير موجود." };
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: { id: true, shopId: true, imageUrl: true, shopDoorPhotoUrl: true },
   });
   if (!order) return { ok: false, error: "الطلب غير موجود." };
 
-  const link = await prisma.preparerShop.findUnique({
-    where: { preparerId_shopId: { preparerId, shopId: order.shopId } },
-    select: { preparerId: true },
-  });
-  if (!link) return { ok: false, error: "ليس لديك صلاحية على طلبات هذا المحل." };
-
-  return { ok: true, order: { id: order.id, imageUrl: order.imageUrl, shopDoorPhotoUrl: order.shopDoorPhotoUrl } };
+  return { ok: true, order: { id: order.id, imageUrl: order.imageUrl, shopDoorPhotoUrl: order.shopDoorPhotoUrl, shopId: order.shopId } };
 }
 
 async function upsertCustomerByPhone(opts: {
@@ -1417,7 +1425,11 @@ export async function uploadPreparerPortalOrderImage(
 
     revalidatePath("/preparer");
     revalidatePath(`/preparer/order/${orderId}`);
-    return { ok: true };
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders`);
+    revalidatePath(`/mandoub/order/${orderId}`);
+    revalidatePath(`/mandoub`);
+    return { ok: true, imageUrl: url, uploaderName: preparerLabel };
   } catch (e) {
     console.error("uploadPreparerPortalOrderImage", e);
     return { error: "فشل رفع الصورة." };
@@ -1470,7 +1482,11 @@ export async function uploadPreparerPortalShopDoorPhoto(
 
     revalidatePath("/preparer");
     revalidatePath(`/preparer/order/${orderId}`);
-    return { ok: true };
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders`);
+    revalidatePath(`/mandoub/order/${orderId}`);
+    revalidatePath(`/mandoub`);
+    return { ok: true, shopDoorPhotoUrl: url, uploaderName: preparerLabel };
   } catch (e) {
     console.error("uploadPreparerPortalShopDoorPhoto", e);
     return { error: "فشل رفع الصورة." };
