@@ -6,6 +6,7 @@ import { formatDinarAsAlf } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+import { LiveCameraModal } from "@/components/live-camera-modal";
 import {
   assignFileToInput,
   compressImageForMandoubUpload,
@@ -31,6 +32,7 @@ export function AdminLuxuryOrderInfoCard({
 }) {
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [compressing, setCompressing] = useState(false);
 
   const cameraFileRef = useRef<HTMLInputElement>(null);
@@ -210,7 +212,7 @@ export function AdminLuxuryOrderInfoCard({
               </div>
             </div>
 
-            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض الفاخرين المباشرين */}
+            {/* صورة الطلب يسار 110px مع زري الكاميرا الحية والمعرض الفاخرين */}
             <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
               <SwipeableLuxuryPhotoBox
                 size={110}
@@ -218,16 +220,15 @@ export function AdminLuxuryOrderInfoCard({
                 imageUrl={orderImageUrl}
                 label="صورة الطلب"
                 isBusy={busy}
-                cameraInputId={cameraInputUniqueId}
                 galleryInputId={galleryInputUniqueId}
-                onCameraClick={() => cameraFileRef.current?.click()}
+                onCameraClick={() => setCameraModalOpen(true)}
                 onGalleryClick={() => galleryFileRef.current?.click()}
                 onClickPreview={() => {
                   if (orderImageUrl) {
                     setPreviewImageUrl(orderImageUrl);
                     setZoomOpen(true);
                   } else {
-                    cameraFileRef.current?.click();
+                    setCameraModalOpen(true);
                   }
                 }}
                 fallbackIcon={
@@ -250,6 +251,14 @@ export function AdminLuxuryOrderInfoCard({
           onClose={() => setZoomOpen(false)}
         />
       )}
+
+      {/* نافذة الكاميرا الحية المباشرة الفاخرة للالتقاط المباشر للطلبية */}
+      <LiveCameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={(file) => void handleFileSelected(file, cameraFileRef.current)}
+        title="التقاط صورة الطلبية"
+      />
     </div>
   );
 }

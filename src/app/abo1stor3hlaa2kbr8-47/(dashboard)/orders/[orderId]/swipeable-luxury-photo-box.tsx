@@ -8,7 +8,6 @@ type SwipeableLuxuryPhotoBoxProps = {
   imageUrl?: string | null;
   label?: string;
   fallbackIcon?: React.ReactNode;
-  cameraInputId?: string;
   galleryInputId?: string;
   onCameraClick?: () => void;
   onGalleryClick?: () => void;
@@ -26,7 +25,6 @@ export function SwipeableLuxuryPhotoBox({
   imageUrl,
   label = "الصورة",
   fallbackIcon,
-  cameraInputId,
   galleryInputId,
   onCameraClick,
   onGalleryClick,
@@ -83,18 +81,6 @@ export function SwipeableLuxuryPhotoBox({
 
   const iconCircleSize = size <= 110 ? 44 : 54;
   const isSmall = size <= 110;
-
-  const btnCameraClass = `w-full ${
-    isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-  } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none ${
-    isBusy ? "opacity-50 pointer-events-none" : ""
-  }`;
-
-  const btnGalleryClass = `w-full ${
-    isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-  } rounded-[9px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none ${
-    isBusy ? "opacity-50 pointer-events-none" : ""
-  }`;
 
   return (
     <div
@@ -162,70 +148,41 @@ export function SwipeableLuxuryPhotoBox({
       {/* زري الكاميرا والمعرض المذهبين الفاخرين تحت الصورة مباشرة */}
       {showButtons && (
         <div className="w-full grid grid-cols-2 gap-1.5 mt-2">
-          {/* زر الكاميرا الملكي المباشر */}
-          {cameraInputId ? (
-            <label
-              htmlFor={cameraInputId}
-              onClick={(e) => {
-                if (isBusy) e.preventDefault();
-              }}
-              title="فتح الكاميرا والتقاط صورة مباشرة"
-              className={btnCameraClass}
+          {/* زر الكاميرا الملكي الزمردي المباشر */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCamera();
+            }}
+            disabled={isBusy}
+            title="فتح الكاميرا والتقاط صورة مباشرة"
+            className={`w-full ${
+              isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
+            } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
+          >
+            <svg
+              className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#E8C77E]`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#E8C77E]`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                <circle cx="12" cy="13" r="3.2" />
-              </svg>
-              <span
-                className={`font-black tracking-tight leading-none truncate ${
-                  isSmall ? "text-[10px]" : "text-[11px]"
-                }`}
-              >
-                كاميرا
-              </span>
-            </label>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCamera();
-              }}
-              disabled={isBusy}
-              title="فتح الكاميرا والتقاط صورة مباشرة"
-              className={btnCameraClass}
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+              <circle cx="12" cy="13" r="3.2" />
+            </svg>
+            <span
+              className={`font-black tracking-tight leading-none truncate ${
+                isSmall ? "text-[10px]" : "text-[11px]"
+              }`}
             >
-              <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#E8C77E]`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                <circle cx="12" cy="13" r="3.2" />
-              </svg>
-              <span
-                className={`font-black tracking-tight leading-none truncate ${
-                  isSmall ? "text-[10px]" : "text-[11px]"
-                }`}
-              >
-                كاميرا
-              </span>
-            </button>
-          )}
+              كاميرا
+            </span>
+          </button>
 
-          {/* زر المعرض الملكي المباشر */}
+          {/* زر المعرض الملكي العاجي المذهب */}
           {galleryInputId ? (
             <label
               htmlFor={galleryInputId}
@@ -233,7 +190,11 @@ export function SwipeableLuxuryPhotoBox({
                 if (isBusy) e.preventDefault();
               }}
               title="اختيار صورة من المعرض أو الاستوديو"
-              className={btnGalleryClass}
+              className={`w-full ${
+                isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
+              } rounded-[9px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none ${
+                isBusy ? "opacity-50 pointer-events-none" : ""
+              }`}
             >
               <svg
                 className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#8B6A2A]`}
@@ -265,7 +226,9 @@ export function SwipeableLuxuryPhotoBox({
               }}
               disabled={isBusy}
               title="اختيار صورة من المعرض أو الاستوديو"
-              className={btnGalleryClass}
+              className={`w-full ${
+                isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
+              } rounded-[9px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
             >
               <svg
                 className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#8B6A2A]`}

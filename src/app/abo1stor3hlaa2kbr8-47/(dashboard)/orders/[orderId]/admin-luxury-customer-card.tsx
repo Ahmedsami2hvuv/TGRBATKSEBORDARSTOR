@@ -18,6 +18,7 @@ import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+import { LiveCameraModal } from "@/components/live-camera-modal";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -74,6 +75,7 @@ export function AdminLuxuryCustomerCard({
 }) {
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   // القيم الفعالة للبيانات
   const effectiveName =
@@ -444,23 +446,22 @@ export function AdminLuxuryCustomerCard({
               </div>
             </div>
 
-            {/* صورة باب الزبون/المستلم 130x130 مع زري الكاميرا والمعرض الفاخرين المباشرين */}
+            {/* صورة باب الزبون/المستلم 130x130 مع زري الكاميرا الحية والمعرض الفاخرين */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="customer"
               imageUrl={effectiveDoorPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
-              cameraInputId={cameraInputUniqueId}
               galleryInputId={galleryInputUniqueId}
-              onCameraClick={() => cameraFileRef.current?.click()}
+              onCameraClick={() => setCameraModalOpen(true)}
               onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
                 if (effectiveDoorPhoto) {
                   setPreviewImageUrl(effectiveDoorPhoto);
                   setZoomOpen(true);
                 } else {
-                  cameraFileRef.current?.click();
+                  setCameraModalOpen(true);
                 }
               }}
               fallbackIcon={
@@ -638,6 +639,14 @@ export function AdminLuxuryCustomerCard({
           onClose={() => setActivePhoneModal(null)}
         />
       )}
+
+      {/* نافذة الكاميرا الحية المباشرة الفاخرة للالتقاط المباشر */}
+      <LiveCameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={(file) => void handleFileSelected(file, cameraFileRef.current)}
+        title={isSecondDestination ? "التقاط صورة باب المستلم" : "التقاط صورة باب الزبون"}
+      />
     </div>
   );
 }

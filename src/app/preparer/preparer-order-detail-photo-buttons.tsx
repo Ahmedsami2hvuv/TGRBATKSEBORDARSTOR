@@ -7,6 +7,7 @@ import {
   uploadPreparerPortalOrderImage,
   uploadPreparerPortalShopDoorPhoto,
 } from "./actions";
+import { LiveCameraModal } from "@/components/live-camera-modal";
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
@@ -22,10 +23,10 @@ export function PreparerDetailPhotoUploadRow({
   field: "orderImage" | "shopDoorPhoto";
 }) {
   const router = useRouter();
-  const camRef = useRef<HTMLInputElement>(null);
   const galRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   async function submitFile(file: File) {
     setError(null);
@@ -54,7 +55,6 @@ export function PreparerDetailPhotoUploadRow({
       else router.refresh();
     } finally {
       setBusy(false);
-      if (camRef.current) camRef.current.value = "";
       if (galRef.current) galRef.current.value = "";
     }
   }
@@ -66,21 +66,10 @@ export function PreparerDetailPhotoUploadRow({
   }
 
   const fieldLabel = field === "orderImage" ? "صورة الطلبية" : "صورة باب المحل";
-  const camInputId = `prep-cam-${orderId}-${field}`;
   const galInputId = `prep-gal-${orderId}-${field}`;
 
   return (
     <div className="mt-3 space-y-2 select-none" dir="rtl">
-      <input
-        id={camInputId}
-        ref={camRef}
-        type="file"
-        accept={ACCEPT}
-        capture="environment"
-        className="sr-only"
-        disabled={busy}
-        onChange={onPick}
-      />
       <input
         id={galInputId}
         ref={galRef}
@@ -92,11 +81,10 @@ export function PreparerDetailPhotoUploadRow({
       />
       <div className="grid grid-cols-2 gap-2">
         {/* زر الكاميرا الملكي الزمردي المباشر */}
-        <label
-          htmlFor={camInputId}
-          onClick={(e) => {
-            if (busy) e.preventDefault();
-          }}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setCameraModalOpen(true)}
           aria-label={`التقاط ${fieldLabel} بالكاميرا`}
           className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
             busy ? "opacity-50 pointer-events-none" : ""
@@ -115,7 +103,7 @@ export function PreparerDetailPhotoUploadRow({
             <circle cx="12" cy="13" r="3.2" />
           </svg>
           <span>كاميرا</span>
-        </label>
+        </button>
 
         {/* زر المعرض الملكي العاجي المذهب المباشر */}
         <label
@@ -152,6 +140,14 @@ export function PreparerDetailPhotoUploadRow({
         </div>
       ) : null}
       {error ? <p className="text-center text-xs font-bold text-rose-600">{error}</p> : null}
+
+      {/* نافذة الكاميرا الحية المباشرة */}
+      <LiveCameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={(file) => void submitFile(file)}
+        title={`التقاط ${fieldLabel}`}
+      />
     </div>
   );
 }

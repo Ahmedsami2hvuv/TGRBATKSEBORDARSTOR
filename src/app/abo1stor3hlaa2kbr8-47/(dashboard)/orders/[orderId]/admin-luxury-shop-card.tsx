@@ -14,6 +14,7 @@ import {
 } from "@/lib/client-image-compress";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+import { LiveCameraModal } from "@/components/live-camera-modal";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -42,6 +43,7 @@ export function AdminLuxuryShopCard({
 }) {
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
@@ -214,23 +216,22 @@ export function AdminLuxuryShopCard({
               </div>
             </div>
 
-            {/* صورة المحل 130x130 مع زري الكاميرا والمعرض الفاخرين المباشرين */}
+            {/* صورة المحل 130x130 مع زري الكاميرا الحية والمعرض الفاخرين */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="shop"
               imageUrl={imgShopDoor}
               label="صورة المحل"
               isBusy={pending}
-              cameraInputId={cameraInputUniqueId}
               galleryInputId={galleryInputUniqueId}
-              onCameraClick={() => cameraFileRef.current?.click()}
+              onCameraClick={() => setCameraModalOpen(true)}
               onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
                 if (imgShopDoor) {
                   setPreviewImageUrl(imgShopDoor);
                   setZoomOpen(true);
                 } else {
-                  cameraFileRef.current?.click();
+                  setCameraModalOpen(true);
                 }
               }}
               fallbackIcon={
@@ -301,6 +302,14 @@ export function AdminLuxuryShopCard({
           isDeleting={deleting}
         />
       )}
+
+      {/* نافذة الكاميرا الحية المباشرة الفاخرة للالتقاط المباشر لباب المحل */}
+      <LiveCameraModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={(file) => void handleFileSelected(file, cameraFileRef.current)}
+        title="التقاط صورة المحل"
+      />
     </div>
   );
 }
