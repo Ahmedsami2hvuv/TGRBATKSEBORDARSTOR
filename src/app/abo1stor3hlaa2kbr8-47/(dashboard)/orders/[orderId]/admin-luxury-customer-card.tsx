@@ -283,27 +283,32 @@ export function AdminLuxuryCustomerCard({
     }
   };
 
+  const cameraInputUniqueId = `cust-door-cam-${order.id}-${isSecondDestination ? "second" : "first"}`;
+  const galleryInputUniqueId = `cust-door-gal-${order.id}-${isSecondDestination ? "second" : "first"}`;
+
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      {/* مدخلات الملفات المخفية للكاميرا والمعرض - خارج الشاشة لضمان دعم capture للكاميرا */}
+      {/* مدخلات الملفات للكاميرا والمعرض المربوطة بالأزرار مباشرة كـ Hardware Trigger */}
       <input
+        id={cameraInputUniqueId}
         ref={cameraFileRef}
         type="file"
         name={isSecondDestination ? "secondCustomerDoorPhotoCamera" : "customerDoorPhotoCamera"}
         accept="image/*"
         capture="environment"
-        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, cameraFileRef.current);
         }}
       />
       <input
+        id={galleryInputUniqueId}
         ref={galleryFileRef}
         type="file"
         name={isSecondDestination ? "secondCustomerDoorPhotoGallery" : "customerDoorPhotoGallery"}
         accept="image/*"
-        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, galleryFileRef.current);
@@ -439,13 +444,15 @@ export function AdminLuxuryCustomerCard({
               </div>
             </div>
 
-            {/* صورة باب الزبون/المستلم 130x130 مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
+            {/* صورة باب الزبون/المستلم 130x130 مع زري الكاميرا والمعرض الفاخرين المباشرين */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="customer"
               imageUrl={effectiveDoorPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
+              cameraInputId={cameraInputUniqueId}
+              galleryInputId={galleryInputUniqueId}
               onCameraClick={() => cameraFileRef.current?.click()}
               onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {

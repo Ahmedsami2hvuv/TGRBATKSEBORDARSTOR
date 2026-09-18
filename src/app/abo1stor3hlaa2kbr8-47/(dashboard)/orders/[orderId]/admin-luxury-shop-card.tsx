@@ -113,27 +113,32 @@ export function AdminLuxuryShopCard({
   const regionName = order.shop?.region?.name || "السوق";
   const hasLocation = Boolean(order.shop?.locationUrl && order.shop.locationUrl.trim());
 
+  const cameraInputUniqueId = `shop-door-cam-${order.id}`;
+  const galleryInputUniqueId = `shop-door-gal-${order.id}`;
+
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      {/* مدخلات الملفات المخفية للكاميرا والمعرض - خارج الشاشة لضمان تشغيل capture الكاميرا المباشرة */}
+      {/* مدخلات الملفات للكاميرا والمعرض المربوطة بالأزرار مباشرة كـ Hardware Trigger */}
       <input
+        id={cameraInputUniqueId}
         ref={cameraFileRef}
         type="file"
         name="shopDoorPhotoCamera"
         accept="image/*"
         capture="environment"
-        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, cameraFileRef.current);
         }}
       />
       <input
+        id={galleryInputUniqueId}
         ref={galleryFileRef}
         type="file"
         name="shopDoorPhotoGallery"
         accept="image/*"
-        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, galleryFileRef.current);
@@ -209,13 +214,15 @@ export function AdminLuxuryShopCard({
               </div>
             </div>
 
-            {/* صورة المحل 130x130 مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
+            {/* صورة المحل 130x130 مع زري الكاميرا والمعرض الفاخرين المباشرين */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="shop"
               imageUrl={imgShopDoor}
               label="صورة المحل"
               isBusy={pending}
+              cameraInputId={cameraInputUniqueId}
+              galleryInputId={galleryInputUniqueId}
               onCameraClick={() => cameraFileRef.current?.click()}
               onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {

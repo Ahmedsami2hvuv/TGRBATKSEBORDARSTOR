@@ -75,9 +75,12 @@ export function AdminLuxuryOrderInfoCard({
   const busy = compressing || pending;
   const orderTitle = order.orderType || order.summary || "أدوية";
 
+  const cameraInputUniqueId = `order-img-cam-${order.id}`;
+  const galleryInputUniqueId = `order-img-gal-${order.id}`;
+
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      <form ref={formRef} action={formAction} className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]">
+      <form ref={formRef} action={formAction} className="sr-only">
         <input type="hidden" name="orderId" value={order.id} />
         {nextUrl && <input type="hidden" name="nextUrl" value={nextUrl} />}
         {auth && (
@@ -88,6 +91,7 @@ export function AdminLuxuryOrderInfoCard({
           </>
         )}
         <input
+          id={cameraInputUniqueId}
           ref={cameraFileRef}
           type="file"
           name="orderImageCamera"
@@ -99,6 +103,7 @@ export function AdminLuxuryOrderInfoCard({
           }}
         />
         <input
+          id={galleryInputUniqueId}
           ref={galleryFileRef}
           type="file"
           name="orderImageGallery"
@@ -205,7 +210,7 @@ export function AdminLuxuryOrderInfoCard({
               </div>
             </div>
 
-            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
+            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض الفاخرين المباشرين */}
             <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
               <SwipeableLuxuryPhotoBox
                 size={110}
@@ -213,6 +218,8 @@ export function AdminLuxuryOrderInfoCard({
                 imageUrl={orderImageUrl}
                 label="صورة الطلب"
                 isBusy={busy}
+                cameraInputId={cameraInputUniqueId}
+                galleryInputId={galleryInputUniqueId}
                 onCameraClick={() => cameraFileRef.current?.click()}
                 onGalleryClick={() => galleryFileRef.current?.click()}
                 onClickPreview={() => {

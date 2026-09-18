@@ -66,38 +66,41 @@ export function PreparerDetailPhotoUploadRow({
   }
 
   const fieldLabel = field === "orderImage" ? "صورة الطلبية" : "صورة باب المحل";
+  const camInputId = `prep-cam-${orderId}-${field}`;
+  const galInputId = `prep-gal-${orderId}-${field}`;
 
   return (
     <div className="mt-3 space-y-2 select-none" dir="rtl">
       <input
+        id={camInputId}
         ref={camRef}
         type="file"
         accept={ACCEPT}
         capture="environment"
         className="sr-only"
-        tabIndex={-1}
-        aria-hidden
         disabled={busy}
         onChange={onPick}
       />
       <input
+        id={galInputId}
         ref={galRef}
         type="file"
         accept={ACCEPT}
         className="sr-only"
-        tabIndex={-1}
-        aria-hidden
         disabled={busy}
         onChange={onPick}
       />
       <div className="grid grid-cols-2 gap-2">
-        {/* زر الكاميرا الملكي الزمردي */}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => camRef.current?.click()}
+        {/* زر الكاميرا الملكي الزمردي المباشر */}
+        <label
+          htmlFor={camInputId}
+          onClick={(e) => {
+            if (busy) e.preventDefault();
+          }}
           aria-label={`التقاط ${fieldLabel} بالكاميرا`}
-          className="h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] disabled:opacity-50"
+          className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
+            busy ? "opacity-50 pointer-events-none" : ""
+          }`}
         >
           <svg
             className="w-4 h-4 shrink-0 text-[#E8C77E]"
@@ -112,15 +115,18 @@ export function PreparerDetailPhotoUploadRow({
             <circle cx="12" cy="13" r="3.2" />
           </svg>
           <span>كاميرا</span>
-        </button>
+        </label>
 
-        {/* زر المعرض الملكي العاجي المذهب */}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => galRef.current?.click()}
+        {/* زر المعرض الملكي العاجي المذهب المباشر */}
+        <label
+          htmlFor={galInputId}
+          onClick={(e) => {
+            if (busy) e.preventDefault();
+          }}
           aria-label={`اختيار ${fieldLabel} من المعرض`}
-          className="h-[38px] rounded-[11px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] disabled:opacity-50"
+          className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
+            busy ? "opacity-50 pointer-events-none" : ""
+          }`}
         >
           <svg
             className="w-4 h-4 shrink-0 text-[#8B6A2A]"
@@ -136,7 +142,7 @@ export function PreparerDetailPhotoUploadRow({
             <path d="m21 15-5-5L5 21" />
           </svg>
           <span>المعرض</span>
-        </button>
+        </label>
       </div>
 
       {busy ? (
