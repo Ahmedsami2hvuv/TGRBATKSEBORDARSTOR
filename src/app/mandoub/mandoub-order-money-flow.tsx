@@ -538,6 +538,92 @@ export function MandoubOrderMoneyFlow({
   );
 }
 
+/* مكونات المربعات التفاعلية 120x120 للمندوب */
+function MandoubAmountSquareBtn({
+  value,
+  selected,
+  onClick,
+  color = "emerald",
+}: {
+  value: string;
+  selected: boolean;
+  onClick: () => void;
+  color?: "emerald" | "orange";
+}) {
+  const isEmerald = color === "emerald";
+  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const inactiveBg = "#E8E0D0";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex items-center justify-center
+        text-[48px] font-black leading-none tracking-tight
+        transition-all duration-200 active:scale-[0.97]
+        select-none cursor-pointer
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+      `}
+      style={{
+        backgroundColor: selected ? activeBg : inactiveBg,
+        borderColor: "#C9A86A",
+        color: textColor,
+      }}
+    >
+      {value}
+    </button>
+  );
+}
+
+function MandoubZeroSquareBtn({
+  label,
+  activeLabel = "0",
+  selected,
+  onClick,
+  color = "emerald",
+}: {
+  label: string;
+  activeLabel?: string;
+  selected: boolean;
+  onClick: () => void;
+  color?: "emerald" | "orange";
+}) {
+  const isEmerald = color === "emerald";
+  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        transition-all duration-200 active:scale-[0.97]
+        select-none cursor-pointer
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+      `}
+      style={{
+        backgroundColor: selected ? activeBg : "#E8E0D0",
+        borderColor: "#C9A86A",
+        color: textColor,
+      }}
+    >
+      <span className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}>
+        {selected ? activeLabel : label}
+      </span>
+      {selected && (
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+          {label}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function PickupMoneyForm({
   orderId,
   auth,
@@ -569,94 +655,29 @@ export function PickupMoneyForm({
   onClose: () => void;
   noRedirect?: boolean;
 }) {
-  const [amount, setAmount] = useState("");
+  const targetValue = remainingAlfHint || expectedAlfHint || "";
+  const [amount, setAmount] = useState(targetValue);
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
   const [note, setNote] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const pickupSubmitModeRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const mainSubmitRef = useRef<HTMLButtonElement>(null);
-  const mountTimeRef = useRef(Date.now());
-
-  const parsedDinar = parseAlfInputToDinarDecimalRequired(amount);
-  const projectedTotal = pickupSumDinar + (parsedDinar.ok ? parsedDinar.value : 0);
-  const isMismatch =
-    orderStatusMatchClient(orderSubtotalDinar, projectedTotal) === false &&
-    (amount.trim() !== "" || (advanceToDelivering && pickupSumDinar > 0));
-
-  function orderStatusMatchClient(expected: number | null, actual: number): boolean {
-    if (expected == null) return true;
-    return Math.abs(expected - actual) < 0.01;
-  }
-
-  function requestPickupMainSubmit() {
-    if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
-    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-  }
-
-  function onPickupAmountKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
-    e.preventDefault();
-    const parsed = parseAlfInputToDinarDecimalRequired(amount);
-    if (!parsed.ok || parsed.value <= 0) {
-      noteRef.current?.focus();
-      return;
-    }
-    const nextPaid = pickupSumDinar + parsed.value;
-    const needNote =
-      orderSubtotalDinar != null &&
-      !dinarTotalsMatchClient(nextPaid, orderSubtotalDinar) &&
-      !note.trim();
-    if (needNote) {
-      noteRef.current?.focus();
-      return;
-    }
-    requestPickupMainSubmit();
-  }
-
-  function onPickupNoteKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
-    e.preventDefault();
-    requestPickupMainSubmit();
-  }
 
   useEffect(() => {
-    mountTimeRef.current = Date.now();
-    amountRef.current?.focus();
-  }, [advanceToDelivering, orderId]);
+    const val = remainingAlfHint || expectedAlfHint || "";
+    setAmount(val);
+    setSelectedBox(val ? "num" : null);
+  }, [remainingAlfHint, expectedAlfHint, orderId]);
 
-  useEffect(() => {
-    const err = (error ?? "").trim();
-    if (!err) return;
-    if (err.includes("ملاحظة") || err.includes("المبلغ مختلف")) {
-      noteRef.current?.focus();
-    }
-  }, [error]);
+  const isMismatch = amount.trim() !== "" && amount.trim() !== targetValue;
 
   return (
-    <div className="space-y-3 select-none">
-      <p className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5">
-        <span>💸</span> اكتب المبلغ الذي سلّمته للعميل (صادر)
-      </p>
-      {!advanceToDelivering ? (
-        <p className="text-[11px] font-bold text-emerald-200/90">
-          تسجيل صادر فقط — دون تغيير حالة الطلب.
-        </p>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 text-xs shadow-lg text-[#FFF8F0]">
-        <span className="min-w-0 flex-1 sm:flex-none font-bold">
-          سعر الطلب:{" "}
-          <span className="font-mono text-sm sm:text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{expectedAlfHint || "—"}</span>
-        </span>
-        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start font-bold">
-          المتبقي للصادر:{" "}
-          <span className="font-mono text-sm sm:text-base font-black text-emerald-300 bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{remainingAlfHint || "—"}</span>
-        </span>
-      </div>
+    <div className="space-y-4 select-none" dir="rtl">
       <form
         ref={formRef}
         action={formAction}
-        className="space-y-3"
+        className="space-y-4"
       >
         <input
           ref={pickupSubmitModeRef}
@@ -675,115 +696,93 @@ export function PickupMoneyForm({
           name="advanceStatus"
           value={advanceToDelivering ? "delivering" : ""}
         />
-        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
-        <div className="flex items-center justify-between gap-3 pt-2">
-          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً بتصميم إسلامي مذهب */}
-          <div className="w-28 sm:w-32 shrink-0 space-y-1">
-            <label className="text-[10px] font-black text-[#F5D77F] block text-center truncate">سعر آخر يدوياً:</label>
-            <input
-              ref={amountRef}
-              name="amountAlf"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={onPickupAmountKeyDown}
-              className="w-full text-center text-xs sm:text-sm h-11 rounded-xl border-2 border-[#C9A86A] bg-[#06281D] text-[#F5D77F] placeholder-[#F5D77F]/40 font-black shadow-inner focus:ring-2 focus:ring-[#F5D77F] outline-none"
-              placeholder="اكتب السعر"
-              inputMode="decimal"
-              enterKeyHint="done"
+        <input type="hidden" name="mismatchReason" value="" />
+
+        {error ? <p className="text-xs font-bold text-rose-900 bg-rose-100 p-2.5 rounded-xl border border-rose-300">{error}</p> : null}
+
+        <div className="text-right">
+          <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+        </div>
+
+        {/* مربعات الاختيار السريع 120x120 */}
+        <div className="flex gap-4 justify-center" dir="ltr">
+          <MandoubAmountSquareBtn
+            value={targetValue || "0"}
+            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "0")}
+            onClick={() => {
+              setAmount(targetValue);
+              setSelectedBox("num");
+            }}
+            color="emerald"
+          />
+          <MandoubZeroSquareBtn
+            label="لم أدفع"
+            activeLabel="0"
+            selected={selectedBox === "zero" || amount === "0"}
+            onClick={() => {
+              setAmount("0");
+              setSelectedBox("zero");
+            }}
+            color="emerald"
+          />
+        </div>
+
+        {/* حقل إدخال المبلغ المركزي */}
+        <div>
+          <input
+            ref={amountRef}
+            name="amountAlf"
+            required
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => {
+              const v = e.target.value;
+              setAmount(v);
+              if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+              else if (v === "0") setSelectedBox("zero");
+              else setSelectedBox(null);
+            }}
+            placeholder={targetValue || "0"}
+            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          />
+        </div>
+
+        {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+        {isMismatch ? (
+          <div className="space-y-1.5 animate-in fade-in duration-200">
+            <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
+              سبب اختلاف الصادر <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              ref={noteRef}
+              name="mismatchNote"
               required
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+              placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
-
-          {/* اليسار: زر مربع كبيييييير جداً وضخم بتصميم ملكي إسلامي زمردي مذهب */}
-          {remainingAlfHint && (
-            <div className="relative flex-1 flex justify-end min-w-0">
-              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-              <span className="pointer-events-none absolute -top-4 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
-              <span className="pointer-events-none absolute -bottom-3 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (amountRef.current) {
-                    amountRef.current.value = remainingAlfHint;
-                  }
-                  if (pickupSubmitModeRef.current) {
-                    pickupSubmitModeRef.current.value = "";
-                  }
-                  if (noteRef.current) {
-                    noteRef.current.value = "";
-                  }
-                  setAmount(remainingAlfHint);
-                  setNote("");
-                  setTimeout(() => {
-                    if (formRef.current) {
-                      formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
-                    }
-                  }, 40);
-                }}
-                className="w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-[#F5D77F] bg-gradient-to-r from-[#0F4D3A] via-[#165B45] to-[#0F4D3A] p-2 font-black text-[#F5D77F] shadow-[0_0_20px_rgba(201,168,106,0.35)] active:scale-95 transition-all cursor-pointer select-none group"
-                title="اضغط لتأكيد وإرسال المبلغ مباشرة"
-              >
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-tighter leading-none text-[#F5D77F]">
-                    {remainingAlfHint}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none text-emerald-200">
-                    ألف
-                  </span>
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
-        <input type="hidden" name="mismatchReason" value="" />
-        {isMismatch && (
-          <textarea
-            ref={noteRef}
-            name="mismatchNote"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={onPickupNoteKeyDown}
-            rows={2}
-            required
-            className="w-full rounded-xl border-2 border-amber-400 bg-[#06281D] text-amber-200 px-3 py-2 text-xs sm:text-sm shadow-inner placeholder-amber-400/60 focus:ring-2 focus:ring-amber-400 outline-none"
-            placeholder="المبلغ مختلف — اكتب السبب"
-          />
+        ) : (
+          <input type="hidden" name="mismatchNote" value="" />
         )}
-        {error ? <p className="text-sm font-bold text-rose-300">{error}</p> : null}
-        <div className="flex flex-wrap gap-2 pt-1">
+
+        {/* الأزرار السفلية */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#C9A86A]/20">
           <button
-            ref={mainSubmitRef}
             type="submit"
             disabled={pending}
-            onClick={() => {
-              if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
-            }}
-            className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black border border-[#C9A86A] px-4 py-2.5 text-xs sm:text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
           >
-            {pending ? "جارٍ الحفظ…" : advanceToDelivering ? "✓ تسجيل وتحويل الحالة" : "✓ تأكيد"}
+            <span>💾</span>
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الصادر"}</span>
           </button>
-          {advanceToDelivering ? (
-            <button
-              type="submit"
-              formNoValidate
-              disabled={pending}
-              onClick={() => {
-                if (pickupSubmitModeRef.current) {
-                  pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
-                }
-              }}
-              className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-2.5 text-xs sm:text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
-              title="تحويل الحالة إلى «عند المندوب» دون تسجيل مبلغ صادر في هذه الخطوة"
-            >
-              لم أدفع
-            </button>
-          ) : null}
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] px-4 py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer"
+            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -829,7 +828,9 @@ export function DeliveryMoneyForm({
   noRedirect?: boolean;
   prepaidAll?: boolean;
 }) {
-  const [amount, setAmount] = useState("");
+  const targetValue = remainingAlfHint || expectedAlfHint || "";
+  const [amount, setAmount] = useState(targetValue);
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
   const [note, setNote] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -843,68 +844,22 @@ export function DeliveryMoneyForm({
   const deliverySubmitModeRef = useRef<HTMLInputElement>(null);
   const pendingAfterLocationRef = useRef<"main" | "skip">("main");
   const mainSubmitRef = useRef<HTMLButtonElement>(null);
-  const mountTimeRef = useRef(Date.now());
 
   const [prepaidConfirmState, setPrepaidConfirmState] = useState<"ask" | "took_money" | null>(
     prepaidAll && advanceToDelivered ? "ask" : null
   );
 
-  const parsedDinar = parseAlfInputToDinarDecimalRequired(amount);
-  const projectedTotal = deliverySumDinar + (parsedDinar.ok ? parsedDinar.value : 0);
-  const isMismatch =
-    totalAmountDinar != null &&
-    !dinarTotalsMatchClient(projectedTotal, totalAmountDinar) &&
-    (amount.trim() !== "" || (advanceToDelivered && deliverySumDinar > 0));
-
-  function requestDeliveryMainSubmit() {
-    if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
-    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-  }
-
-  function onDeliveryAmountKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
-    e.preventDefault();
-    const parsed = parseAlfInputToDinarDecimalRequired(amount);
-    if (!parsed.ok || parsed.value <= 0) {
-      noteRef.current?.focus();
-      return;
-    }
-    const nextReceived = deliverySumDinar + parsed.value;
-    const needNote =
-      totalAmountDinar != null &&
-      !dinarTotalsMatchClient(nextReceived, totalAmountDinar) &&
-      !note.trim();
-    if (needNote) {
-      noteRef.current?.focus();
-      return;
-    }
-    requestDeliveryMainSubmit();
-  }
-
-  function onDeliveryNoteKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
-    e.preventDefault();
-    requestDeliveryMainSubmit();
-  }
+  useEffect(() => {
+    const val = remainingAlfHint || expectedAlfHint || "";
+    setAmount(val);
+    setSelectedBox(val ? "num" : null);
+  }, [remainingAlfHint, expectedAlfHint, orderId]);
 
   useEffect(() => {
-    mountTimeRef.current = Date.now();
     setPortalReady(true);
-    amountRef.current?.focus();
-  }, [advanceToDelivered, orderId]);
+  }, []);
 
-  useEffect(() => {
-    const err = (error ?? "").trim();
-    if (!err) return;
-    if (err.includes("ملاحظة") || err.includes("المبلغ مختلف")) {
-      noteRef.current?.focus();
-    }
-  }, [error]);
-
-  function clearGpsHidden() {
-    if (latRef.current) latRef.current.value = "";
-    if (lngRef.current) lngRef.current.value = "";
-  }
+  const isMismatch = (amount.trim() !== "" && amount.trim() !== targetValue) || prepaidConfirmState === "took_money";
 
   function submitDeliveryAfterLocationChoice() {
     const isSkip = pendingAfterLocationRef.current === "skip";
@@ -914,16 +869,7 @@ export function DeliveryMoneyForm({
     if (isSkip && amountRef.current) {
       amountRef.current.removeAttribute("required");
     }
-    if (isSkip) {
-      const skipBtn = formRef.current?.querySelector('button[data-mandoub-action="skip-no-amount"]') as HTMLButtonElement | null;
-      if (skipBtn) {
-        formRef.current?.requestSubmit(skipBtn);
-      } else {
-        formRef.current?.requestSubmit();
-      }
-    } else {
-      formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-    }
+    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
     if (isSkip && amountRef.current) {
       amountRef.current.setAttribute("required", "");
     }
@@ -962,136 +908,12 @@ export function DeliveryMoneyForm({
     submitDeliveryAfterLocationChoice();
   }
 
-  if (prepaidConfirmState === "ask") {
-    return (
-      <div className="space-y-4 p-4 text-right bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] rounded-2xl border-2 border-[#C9A86A] shadow-2xl text-[#FFF8F0]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md">
-            <svg className="size-6 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-          </div>
-          <h4 className="text-sm sm:text-base font-black text-[#F5D77F] text-center drop-shadow-sm">تأكد أنك لم تأخذ أي مبلغ من الزبون</h4>
-          <p className="text-xs font-bold text-white/90 text-center leading-relaxed">هذه الطلبية مسجلة بأنها "واصلة مسبقاً"، ويتم تحصيل أجور التوصيل فقط.</p>
-        </div>
-
-        <div className="flex gap-3 mt-2">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              if (deliverySubmitModeRef.current) {
-                deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
-              }
-              if (amountRef.current) {
-                amountRef.current.removeAttribute("required");
-              }
-              const skipBtn = formRef.current?.querySelector('button[data-mandoub-action="skip-no-amount"]') as HTMLButtonElement | null;
-              if (skipBtn) {
-                formRef.current?.requestSubmit(skipBtn);
-              } else {
-                formRef.current?.requestSubmit();
-              }
-            }}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black text-center shadow-lg active:scale-95 transition-all text-xs sm:text-sm disabled:opacity-50 cursor-pointer border border-[#C9A86A]"
-          >
-            {pending ? "جارٍ الحفظ…" : "✓ لا، لم آخذ"}
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              setPrepaidConfirmState("took_money");
-            }}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-700 to-rose-900 border border-[#C9A86A] text-[#F5D77F] font-black text-center shadow-md active:scale-95 transition-all text-xs sm:text-sm disabled:opacity-50 cursor-pointer"
-          >
-            نعم، أخذت مبلغاً
-          </button>
-        </div>
-
-        <div className="flex justify-center border-t border-[#C9A86A]/30 pt-3 mt-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs font-black text-[#F5D77F]/80 hover:text-white transition cursor-pointer"
-            disabled={pending}
-          >
-            إلغاء والرجوع
-          </button>
-        </div>
-
-        {/* نموذج مخفي في الخلفية ليتمكن requestSubmit من إرساله */}
-        <form
-          ref={formRef}
-          action={formAction}
-          className="hidden"
-          onSubmit={(e) => {
-            const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-            pendingAfterLocationRef.current =
-              sub?.dataset?.mandoubAction === "skip-no-amount" ? "skip" : "main";
-            if (missingCustomerLocation && !locationPromptDoneRef.current) {
-              e.preventDefault();
-              setGeoError("");
-              setLocationModalOpen(true);
-            }
-          }}
-        >
-          <input ref={deliverySubmitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="statusOnlyNoAmount" />
-          <input type="hidden" name="c" value={auth.c} />
-          <input type="hidden" name="exp" value={auth.exp} />
-          <input type="hidden" name="s" value={auth.s} />
-          <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="next" value={nextUrl} />
-          {noRedirect ? <input type="hidden" name="noRedirect" value="1" /> : null}
-          <input type="hidden" name="advanceStatus" value="delivered" />
-          <input ref={latRef} type="hidden" name="lat" value="" />
-          <input ref={lngRef} type="hidden" name="lng" value="" />
-        </form>
-
-        {portalReady && locationModalOpen && createPortal(
-          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" dir="rtl">
-            <div className="max-w-md w-full rounded-[24px] border-2 border-[#C9A86A] bg-gradient-to-b from-[#06281D] via-[#0A3D2E] to-[#06281D] p-5 shadow-2xl text-[#FFF8F0]">
-              <p className="text-base font-black text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5"><span>📍</span> هذا الطلب لا يحتوي على موقع للزبون</p>
-              <p className="mt-3 text-xs font-bold text-white/90 leading-relaxed">أتممت تسليم الطلب الآن؟ هل تريد رفع موقعك الحالي كـ موقع للزبون في الأرشيف؟</p>
-              {geoError && <p className="mt-3 text-xs font-bold text-rose-300 bg-rose-950/80 p-2 rounded-xl border border-rose-500/50">{geoError}</p>}
-              <div className="mt-5 flex flex-col gap-2">
-                <button type="button" onClick={onConfirmGps} className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] py-3 text-xs sm:text-sm font-black border border-[#C9A86A] shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer">✓ نعم، ارفع موقعي الحالي</button>
-                <button type="button" onClick={onSkipLocation} className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer">لا، لا ترفع موقعي</button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-3 select-none">
-      <p className="font-black text-xs sm:text-sm text-[#F5D77F] drop-shadow-sm flex items-center gap-1.5">
-        <span>🫴</span> {prepaidConfirmState === "took_money"
-          ? "الطلب واصل حسابه لكن يبدو أنك أخذت مبلغاً، اكتب المبلغ الذي أخذته واكتب السبب"
-          : "اكتب المبلغ الذي استلمته من الزبون (وارد)"}
-      </p>
-      {!advanceToDelivered ? (
-        <p className="text-[11px] font-bold text-rose-300/90">
-          تسجيل وارد فقط — دون تغيير حالة الطلب.
-        </p>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 text-xs shadow-lg text-[#FFF8F0]">
-        <span className="min-w-0 flex-1 sm:flex-none font-bold">
-          المبلغ الكلي:{" "}
-          <span className="font-mono text-sm sm:text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{expectedAlfHint || "—"}</span>
-        </span>
-        <span className="min-w-0 flex-1 text-end sm:flex-none sm:text-start font-bold">
-          المتبقي للوارد:{" "}
-          <span className="font-mono text-sm sm:text-base font-black text-rose-300 bg-[#0F4D3A] px-2.5 py-0.5 rounded-lg border border-[#C9A86A]/50 shadow-inner">{remainingAlfHint || "—"}</span>
-        </span>
-      </div>
+    <div className="space-y-4 select-none" dir="rtl">
       <form
         ref={formRef}
         action={formAction}
-        className="space-y-3"
+        className="space-y-4"
         onSubmit={(e) => {
           const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
           pendingAfterLocationRef.current =
@@ -1122,117 +944,97 @@ export function DeliveryMoneyForm({
         />
         <input ref={latRef} type="hidden" name="lat" value="" />
         <input ref={lngRef} type="hidden" name="lng" value="" />
-        {/* سطر الإدخال: باليمين خانة مصغرة جداً يدوياً ، وباليسار زر مربع كبيييير جداً للنقر السريع */}
-        <div className="flex items-center justify-between gap-3 pt-2">
-          {/* اليمين: خانة كتابة السعر يدوياً مصغرة ومضغوطة جداً بتصميم إسلامي مذهب */}
-          <div className="w-28 sm:w-32 shrink-0 space-y-1">
-            <label className="text-[10px] font-black text-[#F5D77F] block text-center truncate">سعر آخر يدوياً:</label>
-            <input
-              ref={amountRef}
-              name="amountAlf"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={onDeliveryAmountKeyDown}
-              className="w-full text-center text-xs sm:text-sm h-11 rounded-xl border-2 border-[#C9A86A] bg-[#06281D] text-[#F5D77F] placeholder-[#F5D77F]/40 font-black shadow-inner focus:ring-2 focus:ring-[#F5D77F] outline-none"
-              placeholder="اكتب السعر"
-              inputMode="decimal"
-              enterKeyHint="done"
+
+        {error && (
+          <div className="rounded-xl border border-rose-400 bg-rose-50 p-3 text-xs font-bold text-rose-900">
+            {error}
+          </div>
+        )}
+
+        <div className="text-right">
+          <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+        </div>
+
+        {/* مربعات الاختيار السريع 120x120 */}
+        <div className="flex gap-4 justify-center" dir="ltr">
+          <AmountSquareBtn
+            value={targetValue || "0"}
+            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "0")}
+            onClick={() => {
+              setAmount(targetValue);
+              setSelectedBox("num");
+            }}
+            color="orange"
+          />
+          <ZeroSquareBtn
+            label="لم استلم"
+            activeLabel="0"
+            selected={selectedBox === "zero" || amount === "0"}
+            onClick={() => {
+              setAmount("0");
+              setSelectedBox("zero");
+            }}
+            color="orange"
+          />
+        </div>
+
+        {/* حقل إدخال المبلغ المركزي */}
+        <div>
+          <input
+            ref={amountRef}
+            name="amountAlf"
+            required
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => {
+              const v = e.target.value;
+              setAmount(v);
+              if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+              else if (v === "0") setSelectedBox("zero");
+              else setSelectedBox(null);
+            }}
+            placeholder={targetValue || "0"}
+            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          />
+        </div>
+
+        {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+        {isMismatch ? (
+          <div className="space-y-1.5 animate-in fade-in duration-200">
+            <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
+              سبب اختلاف الوارد <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              ref={noteRef}
+              name="mismatchNote"
               required
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+              placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
-
-          {/* اليسار: زر مربع كبيييييير جداً وضخم بتصميم ملكي إسلامي زمردي مذهب */}
-          {remainingAlfHint && (
-            <div className="relative flex-1 flex justify-end min-w-0">
-              {/* النجوم المتلاشية السحرية الجاذبة للنظر */}
-              <span className="pointer-events-none absolute -top-4 -right-1 text-sm star-particle-1 z-10 select-none">✨</span>
-              <span className="pointer-events-none absolute -bottom-3 left-1 text-sm star-particle-2 z-10 select-none">💫</span>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (amountRef.current) {
-                    amountRef.current.value = remainingAlfHint;
-                  }
-                  if (deliverySubmitModeRef.current) {
-                    deliverySubmitModeRef.current.value = "";
-                  }
-                  if (noteRef.current) {
-                    noteRef.current.value = "";
-                  }
-                  setAmount(remainingAlfHint);
-                  setNote("");
-                  setTimeout(() => {
-                    if (formRef.current) {
-                      formRef.current.requestSubmit(mainSubmitRef.current ?? undefined);
-                    }
-                  }, 40);
-                }}
-                className="w-full max-w-[210px] h-20 flex items-center justify-center rounded-2xl border-2 border-[#F5D77F] bg-gradient-to-r from-[#0F4D3A] via-[#165B45] to-[#0F4D3A] p-2 font-black text-[#F5D77F] shadow-[0_0_20px_rgba(201,168,106,0.35)] active:scale-95 transition-all cursor-pointer select-none group"
-                title="اضغط لتأكيد وإرسال المبلغ مباشرة"
-              >
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-tighter leading-none text-[#F5D77F]">
-                    {remainingAlfHint}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold opacity-90 shrink-0 select-none text-emerald-200">
-                    ألف
-                  </span>
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
-        <input type="hidden" name="mismatchReason" value="" />
-        {(isMismatch || prepaidConfirmState === "took_money") && (
-          <textarea
-            ref={noteRef}
-            name="mismatchNote"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={onDeliveryNoteKeyDown}
-            rows={2}
-            required
-            className="w-full rounded-xl border-2 border-amber-400 bg-[#06281D] text-amber-200 px-3 py-2 text-xs sm:text-sm shadow-inner placeholder-amber-400/60 focus:ring-2 focus:ring-amber-400 outline-none"
-            placeholder={prepaidConfirmState === "took_money" ? "اكتب سبب أخذ المبلغ بالتفصيل (مثلاً: أخذت أجور التوصيل)" : "المبلغ مختلف — اكتب السبب"}
-          />
+        ) : (
+          <input type="hidden" name="mismatchNote" value="" />
         )}
-        {error ? <p className="text-sm font-bold text-rose-300">{error}</p> : null}
-        <div className="flex flex-wrap gap-2 pt-1">
+
+        {/* الأزرار السفلية */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#C9A86A]/20">
           <button
             ref={mainSubmitRef}
             type="submit"
             disabled={pending}
-            data-mandoub-action="with-amount"
-            onClick={() => {
-              if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
-            }}
-            className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] text-[#06281D] font-black border border-[#C9A86A] px-4 py-2.5 text-xs sm:text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
           >
-            {pending ? "جارٍ الحفظ…" : advanceToDelivered ? "✓ تسجيل وتحويل الحالة" : "✓ تأكيد"}
+            <span>💾</span>
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الوارد"}</span>
           </button>
-          {advanceToDelivered ? (
-            <button
-              type="submit"
-              formNoValidate
-              disabled={pending}
-              data-mandoub-action="skip-no-amount"
-              onClick={() => {
-                if (deliverySubmitModeRef.current) {
-                  deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
-                }
-              }}
-              className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-2.5 text-xs sm:text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
-              title="تحويل الحالة إلى «تم التسليم» دون تسجيل مبلغ وارد في هذه الخطوة"
-            >
-              لم أستلم
-            </button>
-          ) : null}
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#C9A86A]/60 bg-[#06281D] px-4 py-2.5 text-xs sm:text-sm font-black text-[#FFF8F0]/80 hover:bg-[#0A3D2E] active:scale-95 transition-all cursor-pointer"
+            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -1240,11 +1042,11 @@ export function DeliveryMoneyForm({
         </div>
       </form>
 
-      {portalReady && locationModalOpen
+      {/* نافذة رفع الموقع GPS المنبثقة إن لم يكن للزبون موقع */}
+      {portalReady && locationModalOpen && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
-              dir="rtl"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
               role="dialog"
               aria-modal="true"
               aria-labelledby="mandoub-delivery-loc-title"

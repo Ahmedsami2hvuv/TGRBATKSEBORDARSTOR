@@ -385,6 +385,92 @@ export function PreparerOrderMoneyFlow({
   );
 }
 
+/* مكونات المربعات التفاعلية 120x120 من التصميم الفاخر */
+function AmountSquareBtn({
+  value,
+  selected,
+  onClick,
+  color = "emerald",
+}: {
+  value: string;
+  selected: boolean;
+  onClick: () => void;
+  color?: "emerald" | "orange";
+}) {
+  const isEmerald = color === "emerald";
+  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const inactiveBg = "#E8E0D0";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex items-center justify-center
+        text-[48px] font-black leading-none tracking-tight
+        transition-all duration-200 active:scale-[0.97]
+        select-none cursor-pointer
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+      `}
+      style={{
+        backgroundColor: selected ? activeBg : inactiveBg,
+        borderColor: "#C9A86A",
+        color: textColor,
+      }}
+    >
+      {value}
+    </button>
+  );
+}
+
+function ZeroSquareBtn({
+  label,
+  activeLabel = "0",
+  selected,
+  onClick,
+  color = "emerald",
+}: {
+  label: string;
+  activeLabel?: string;
+  selected: boolean;
+  onClick: () => void;
+  color?: "emerald" | "orange";
+}) {
+  const isEmerald = color === "emerald";
+  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        transition-all duration-200 active:scale-[0.97]
+        select-none cursor-pointer
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+      `}
+      style={{
+        backgroundColor: selected ? activeBg : "#E8E0D0",
+        borderColor: "#C9A86A",
+        color: textColor,
+      }}
+    >
+      <span className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}>
+        {selected ? activeLabel : label}
+      </span>
+      {selected && (
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+          {label}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function PickupMoneyForm(props: {
   orderId: string;
   auth: { p: string; exp: string; s: string };
@@ -399,231 +485,146 @@ export function PickupMoneyForm(props: {
   pending: boolean;
   error?: string;
   onClose: () => void;
-  // إضافات جديدة للخيارات المتطورة
   couriers?: { id: string; name: string }[];
   currentCourierId?: string | null;
   orderStatus?: string;
-  /** نافذة دفع من قائمة المجهز ليلاً: نص أبيض وحقول واضحة */
   forDarkModalSurface?: boolean;
   hideContainer?: boolean;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
-  const mismatchRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const statusSubmitRef = useRef<HTMLButtonElement>(null);
-  const [amountAlf, setAmountAlf] = useState("");
-  const mountTimeRef = useRef(Date.now());
-
-  // حالات جديدة للخيارات
-  const [shouldAssign, setShouldAssign] = useState(true);
-  const [shouldMarkDelivered, setShouldMarkDelivered] = useState(true);
+  const targetValue = props.remainingAlfHint || props.expectedAlfHint || "";
+  const [amountAlf, setAmountAlf] = useState(targetValue);
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
 
   useEffect(() => {
-    mountTimeRef.current = Date.now();
-    if (!props.advanceToDelivering) {
-      window.setTimeout(() => amountRef.current?.focus(), 120);
-    }
-  }, [props.advanceToDelivering]);
+    const val = props.remainingAlfHint || props.expectedAlfHint || "";
+    setAmountAlf(val);
+    setSelectedBox(val ? "num" : null);
+  }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
-  useEffect(() => {
-    setAmountAlf("");
-  }, [props.advanceToDelivering, props.orderId]);
-
-  const showMismatch =
-    props.orderSubtotalDinar != null &&
-    !dinarTotalsMatchClient(props.pickupSumDinar, props.orderSubtotalDinar);
-
-  const parsedAmount = parseAlfInputToDinarDecimalRequired(amountAlf.trim());
-  const amountStepOk = parsedAmount.ok && parsedAmount.value > 0;
-  const nextPickupSum =
-    amountStepOk && props.orderSubtotalDinar != null
-      ? props.pickupSumDinar + parsedAmount.value
-      : props.pickupSumDinar;
-  const showMismatchAfterAmount =
-    !props.advanceToDelivering &&
-    props.orderSubtotalDinar != null &&
-    amountStepOk &&
-    !dinarTotalsMatchClient(nextPickupSum, props.orderSubtotalDinar);
-
+  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== targetValue;
   const canAssign = !props.currentCourierId && props.couriers && props.couriers.length > 0;
-  const dark = Boolean(props.forDarkModalSurface);
-  const saderInputClass = dark
-    ? "w-full rounded-xl border-2 border-white/50 bg-neutral-900 px-3 py-2.5 text-lg font-black tabular-nums text-white shadow-inner placeholder:text-white/45"
-    : moneySaderAmountInputClass;
-
-  const containerClass = props.hideContainer ? "space-y-3" : "space-y-3";
 
   return (
-    <form ref={formRef} action={props.formAction} className={containerClass}>
+    <form ref={formRef} action={props.formAction} className="space-y-4 select-none">
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
       <input type="hidden" name="orderId" value={props.orderId} />
       <input type="hidden" name="next" value={props.nextUrl} />
+      <input type="hidden" name="advanceStatus" value="delivering" />
 
-      {props.error ? (
-        <div
-          className={
-            dark
-              ? "rounded-lg border border-rose-400/80 bg-rose-950/50 px-3 py-2 text-sm font-bold text-rose-100"
-              : "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900"
-          }
-        >
+      {props.error && (
+        <div className="rounded-xl border border-rose-400 bg-rose-50 p-3 text-xs font-bold text-rose-900">
           {props.error}
         </div>
-      ) : null}
-
-      {props.advanceToDelivering ? (
-        <>
-          <input type="hidden" name="advanceStatus" value="delivering" />
-          <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>دفع للعميل (المحل) - بانتظار المندوب</p>
-          {showMismatch ? (
-            <div
-              className={
-                dark
-                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
-                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
-              }
-            >
-              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
-              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
-                سبب اختلاف الصادر *
-                <input
-                  ref={mismatchRef}
-                  name="mismatchNote"
-                  required
-                  className={
-                    dark
-                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
-                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  }
-                  placeholder="اكتب السبب…"
-                />
-              </label>
-            </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
-          <button
-            type="submit"
-            disabled={props.pending}
-            className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-base font-black text-white hover:bg-emerald-800 disabled:opacity-60"
-          >
-            {props.pending ? "..." : "تم الاستلام"}
-          </button>
-        </>
-      ) : (
-        <>
-
-
-          {/* إسناد المندوب إذا كان الطلب غير مسند */}
-          {canAssign ? (
-            <div
-              className={
-                dark
-                  ? "space-y-2 rounded-xl border border-neutral-600 bg-neutral-900/60 p-3"
-                  : "space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
-              }
-            >
-              <div className="space-y-1">
-                <span className={`text-xs font-bold ${dark ? "text-white" : "text-slate-500"}`}>
-                  اختر مندوباً (اختياري) لإسناد الطلب:
-                </span>
-                <select
-                  name="assignToCourierId"
-                  className={
-                    dark
-                      ? "w-full rounded-lg border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm font-semibold text-white"
-                      : "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
-                  }
-                >
-                  <option value="">— دفع بدون إسناد مندوب —</option>
-                  {props.couriers?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <input type="hidden" name="advanceStatus" value="delivering" />
-              </div>
-            </div>
-          ) : (
-            <input type="hidden" name="advanceStatus" value="delivering" />
-          )}
-
-
-
-          <div className="space-y-1">
-            <div className="flex gap-2">
-              <input
-                ref={amountRef}
-                name="amountAlf"
-                required
-                inputMode="decimal"
-                value={amountAlf}
-                onChange={(e) => setAmountAlf(e.target.value)}
-                className={`mt-1 ${saderInputClass}`}
-                placeholder="0"
-              />
-              {props.remainingAlfHint && (
-                <button
-                  type="submit"
-                  onClick={() => {
-                    if (Date.now() - mountTimeRef.current < 300) return;
-                    setAmountAlf(props.remainingAlfHint);
-                  }}
-                  className={
-                    dark
-                      ? "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-400 bg-emerald-800/90 px-4 font-black text-white shadow-sm"
-                      : "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-800 bg-emerald-100 px-4 font-black text-emerald-950 shadow-sm"
-                  }
-                  title="تعبئة وحفظ"
-                >
-                  {props.remainingAlfHint}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {showMismatchAfterAmount ? (
-            <div
-              className={
-                dark
-                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
-                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
-              }
-            >
-              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
-              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
-                سبب اختلاف الصادر *
-                <input
-                  name="mismatchNote"
-                  required
-                  className={
-                    dark
-                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
-                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  }
-                  placeholder="اكتب السبب…"
-                />
-              </label>
-            </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={props.pending}
-              className="flex-1 rounded-xl bg-emerald-700 px-4 py-3 text-base font-black text-white hover:bg-emerald-800 disabled:opacity-60"
-            >
-              {props.pending ? "..." : "تسجيل وحفظ"}
-            </button>
-          </div>
-        </>
       )}
+
+      {/* إسناد المندوب إذا كان الطلب غير مسند */}
+      {canAssign && (
+        <div className="space-y-1.5 rounded-xl border border-[#C9A86A]/40 bg-[#F0EAD8]/40 p-3">
+          <span className="text-xs font-bold text-[#0A3D2A] block">
+            اختر مندوباً (اختياري) لإسناد الطلب:
+          </span>
+          <select
+            name="assignToCourierId"
+            className="w-full rounded-xl border border-[#C9A86A] bg-white px-3 py-2 text-xs font-bold text-[#0A3D2A] focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          >
+            <option value="">— دفع بدون إسناد مندوب —</option>
+            {props.couriers?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="text-right">
+        <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+      </div>
+
+      {/* مربعات الاختيار السريع 120x120 */}
+      <div className="flex gap-4 justify-center" dir="ltr">
+        <AmountSquareBtn
+          value={targetValue || "0"}
+          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "0")}
+          onClick={() => {
+            setAmountAlf(targetValue);
+            setSelectedBox("num");
+          }}
+          color="emerald"
+        />
+        <ZeroSquareBtn
+          label="لم يدفع"
+          activeLabel="0"
+          selected={selectedBox === "zero" || amountAlf === "0"}
+          onClick={() => {
+            setAmountAlf("0");
+            setSelectedBox("zero");
+          }}
+          color="emerald"
+        />
+      </div>
+
+      {/* حقل إدخال المبلغ المركزي */}
+      <div>
+        <input
+          ref={amountRef}
+          name="amountAlf"
+          required
+          inputMode="numeric"
+          value={amountAlf}
+          onChange={(e) => {
+            const v = e.target.value;
+            setAmountAlf(v);
+            if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+            else if (v === "0") setSelectedBox("zero");
+            else setSelectedBox(null);
+          }}
+          placeholder={targetValue || "0"}
+          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+        />
+      </div>
+
+      {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+      {isMismatch ? (
+        <div className="space-y-1.5 animate-in fade-in duration-200">
+          <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
+            سبب اختلاف الصادر <span className="text-rose-600">*</span>
+          </label>
+          <textarea
+            name="mismatchNote"
+            required
+            rows={2}
+            className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+            placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+          />
+        </div>
+      ) : (
+        <input type="hidden" name="mismatchNote" value="" />
+      )}
+
+      {/* الأزرار السفلية */}
+      <div className="flex gap-3 pt-2 border-t border-[#C9A86A]/20">
+        <button
+          type="submit"
+          disabled={props.pending}
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+        >
+          <span>💾</span>
+          <span>{props.pending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={props.onClose}
+          className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+        >
+          إلغاء
+        </button>
+      </div>
     </form>
   );
 }
@@ -646,189 +647,129 @@ export function DeliveryMoneyForm(props: {
   hideContainer?: boolean;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
-  const mismatchRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const statusSubmitRef = useRef<HTMLButtonElement>(null);
-  const [amountAlf, setAmountAlf] = useState("");
-  const mountTimeRef = useRef(Date.now());
+  const targetValue = props.remainingAlfHint || props.expectedAlfHint || "";
+  const [amountAlf, setAmountAlf] = useState(targetValue);
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
 
   useEffect(() => {
-    mountTimeRef.current = Date.now();
-    if (!props.advanceToDelivered) {
-      window.setTimeout(() => amountRef.current?.focus(), 120);
-    }
-  }, [props.advanceToDelivered]);
+    const val = props.remainingAlfHint || props.expectedAlfHint || "";
+    setAmountAlf(val);
+    setSelectedBox(val ? "num" : null);
+  }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
-  useEffect(() => {
-    setAmountAlf("");
-  }, [props.advanceToDelivered, props.orderId]);
-
-  const showMismatch =
-    props.totalAmountDinar != null &&
-    !dinarTotalsMatchClient(props.deliverySumDinar, props.totalAmountDinar);
-
-  const parsedAmount = parseAlfInputToDinarDecimalRequired(amountAlf.trim());
-  const amountStepOk = parsedAmount.ok && parsedAmount.value > 0;
-  const nextDeliverySum =
-    amountStepOk && props.totalAmountDinar != null
-      ? props.deliverySumDinar + parsedAmount.value
-      : props.deliverySumDinar;
-  const showMismatchAfterAmount =
-    !props.advanceToDelivered &&
-    props.totalAmountDinar != null &&
-    amountStepOk &&
-    !dinarTotalsMatchClient(nextDeliverySum, props.totalAmountDinar);
-
-  const dark = Boolean(props.forDarkModalSurface);
-  const wardInputClass = dark
-    ? "w-full rounded-xl border-2 border-white/50 bg-neutral-900 px-3 py-2.5 text-lg font-black tabular-nums text-white shadow-inner placeholder:text-white/45"
-    : moneyWardAmountInputClass;
-
-  const containerClass = props.hideContainer ? "space-y-3" : "space-y-3";
+  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== targetValue;
 
   return (
-    <form ref={formRef} action={props.formAction} className={containerClass}>
+    <form ref={formRef} action={props.formAction} className="space-y-4 select-none">
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
       <input type="hidden" name="orderId" value={props.orderId} />
       <input type="hidden" name="next" value={props.nextUrl} />
 
-      {props.error ? (
-        <div
-          className={
-            dark
-              ? "rounded-lg border border-rose-400/80 bg-rose-950/50 px-3 py-2 text-sm font-bold text-rose-100"
-              : "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900"
-          }
-        >
+      {props.error && (
+        <div className="rounded-xl border border-rose-400 bg-rose-50 p-3 text-xs font-bold text-rose-900">
           {props.error}
         </div>
-      ) : null}
-
-      {props.advanceToDelivered ? (
-        <>
-          <input type="hidden" name="advanceStatus" value="delivered" />
-          <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>تم التسليم النهائي للزبون (تحويل حالة فقط)</p>
-          {showMismatch ? (
-            <div
-              className={
-                dark
-                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
-                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
-              }
-            >
-              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
-              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
-                سبب اختلاف الوارد *
-                <input
-                  ref={mismatchRef}
-                  name="mismatchNote"
-                  required
-                  className={
-                    dark
-                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
-                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  }
-                  placeholder="اكتب السبب…"
-                />
-              </label>
-            </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
-          <button
-            type="submit"
-            disabled={props.pending}
-            className="w-full rounded-xl bg-red-700 px-4 py-3 text-base font-black text-white hover:bg-red-800 disabled:opacity-60"
-          >
-            {props.pending ? "..." : "تم التسليم"}
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="space-y-1">
-            <div className="flex gap-2">
-              <input
-                ref={amountRef}
-                name="amountAlf"
-                required
-                inputMode="decimal"
-                value={amountAlf}
-                onChange={(e) => setAmountAlf(e.target.value)}
-                className={`mt-1 ${wardInputClass}`}
-                placeholder="0"
-              />
-              {props.remainingAlfHint && (
-                <button
-                  type="submit"
-                  onClick={() => {
-                    // منع النقرة التلقائية إذا حدثت خلال أقل من 300ms من ظهور النافذة
-                    if (Date.now() - mountTimeRef.current < 300) return;
-                    setAmountAlf(props.remainingAlfHint);
-                  }}
-                  className={
-                    dark
-                      ? "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-red-400 bg-red-800/90 px-4 font-black text-white shadow-sm"
-                      : "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-red-800 bg-red-100 px-4 font-black text-red-950 shadow-sm"
-                  }
-                  title="تعبئة وحفظ"
-                >
-                  {props.remainingAlfHint}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {showMismatchAfterAmount ? (
-            <div
-              className={
-                dark
-                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
-                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
-              }
-            >
-              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
-              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
-                سبب اختلاف الوارد من الزبون *
-                <input
-                  name="mismatchNote"
-                  required
-                  className={
-                    dark
-                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
-                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  }
-                  placeholder="اكتب السبب…"
-                />
-              </label>
-            </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={props.pending}
-              className="flex-1 rounded-xl bg-red-700 px-4 py-3 text-base font-black text-white hover:bg-red-800 disabled:opacity-60"
-            >
-              {props.pending ? "..." : "تسجيل الوارد من الزبون"}
-            </button>
-            <button
-              ref={statusSubmitRef}
-              type="submit"
-              name="advanceStatus"
-              value="delivered"
-              disabled={props.pending}
-              className="flex-1 rounded-xl bg-red-800 px-4 py-3 text-base font-black text-white hover:bg-red-900 disabled:opacity-60"
-            >
-              {props.pending ? "..." : "تسجيل + تم التسليم النهائي"}
-            </button>
-          </div>
-        </>
       )}
+
+      <div className="text-right">
+        <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+      </div>
+
+      {/* مربعات الاختيار السريع 120x120 */}
+      <div className="flex gap-4 justify-center" dir="ltr">
+        <AmountSquareBtn
+          value={targetValue || "0"}
+          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "0")}
+          onClick={() => {
+            setAmountAlf(targetValue);
+            setSelectedBox("num");
+          }}
+          color="orange"
+        />
+        <ZeroSquareBtn
+          label="لم استلم"
+          activeLabel="0"
+          selected={selectedBox === "zero" || amountAlf === "0"}
+          onClick={() => {
+            setAmountAlf("0");
+            setSelectedBox("zero");
+          }}
+          color="orange"
+        />
+      </div>
+
+      {/* حقل إدخال المبلغ المركزي */}
+      <div>
+        <input
+          ref={amountRef}
+          name="amountAlf"
+          required
+          inputMode="numeric"
+          value={amountAlf}
+          onChange={(e) => {
+            const v = e.target.value;
+            setAmountAlf(v);
+            if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+            else if (v === "0") setSelectedBox("zero");
+            else setSelectedBox(null);
+          }}
+          placeholder={targetValue || "0"}
+          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+        />
+      </div>
+
+      {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+      {isMismatch ? (
+        <div className="space-y-1.5 animate-in fade-in duration-200">
+          <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
+            سبب اختلاف الوارد <span className="text-rose-600">*</span>
+          </label>
+          <textarea
+            name="mismatchNote"
+            required
+            rows={2}
+            className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+            placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+          />
+        </div>
+      ) : (
+        <input type="hidden" name="mismatchNote" value="" />
+      )}
+
+      {/* الأزرار السفلية */}
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#C9A86A]/20">
+        <button
+          type="submit"
+          disabled={props.pending}
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
+        >
+          <span>💾</span>
+          <span>{props.pending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
+        </button>
+        <button
+          ref={statusSubmitRef}
+          type="submit"
+          name="advanceStatus"
+          value="delivered"
+          disabled={props.pending}
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[14px] text-white border border-[#C9A86A] bg-red-800 hover:bg-red-900 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-md"
+        >
+          <span>✅</span>
+          <span>{props.pending ? "..." : "تسجيل + تم التسليم"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={props.onClose}
+          className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+        >
+          إلغاء
+        </button>
+      </div>
     </form>
   );
 }
