@@ -556,11 +556,19 @@ export function OrderViewContent({
                 isDoubleRoute={isDoubleRoute}
                 designerConfig={designerConfigState}
                 phoneProfile={phoneProfile}
+                headerAction={
+                  <OtherRegionsCustomerDetails
+                    phone={order.customerPhone}
+                    currentRegionId={order.customerRegionId}
+                    currentRegionName={order.customerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={false}
+                    designerConfig={designerConfigState}
+                  />
+                }
               >
-
-
-                {/* أزرار اللوكيشن الملكية الثلاثة المذهبة من تحديث Meta AI (طلب لوكيشن - رفع لوكيشن - لصق لوكيشن) */}
-                <div className="w-full pt-1">
+                {/* أزرار اللوكيشن الملكية الثلاثة المذهبة أو زر تبليغ الزبون بجانب اللوكيشن */}
+                <div className="w-full">
                   <AdminCustomerLocationQuick
                     orderId={order.id}
                     customerPhone={order.customerPhone}
@@ -589,17 +597,6 @@ export function OrderViewContent({
                     customButtons={waButtonSettings}
                     designerConfig={designerConfigState}
                   />
-
-                  <div className="mt-2">
-                    <OtherRegionsCustomerDetails
-                      phone={order.customerPhone}
-                      currentRegionId={order.customerRegionId}
-                      currentRegionName={order.customerRegion?.name}
-                      orderId={order.id}
-                      isSecondDestination={false}
-                      designerConfig={designerConfigState}
-                    />
-                  </div>
                 </div>
 
                 {/* بلوك الاستدلال الذكي المضيء */}
@@ -677,8 +674,18 @@ export function OrderViewContent({
                   customerProfileId={order.secondCustomerProfileId}
                   doorPhotoUploadedByName={order.secondCustomerDoorPhotoUploadedByName}
                   designerConfig={designerConfigState}
+                  headerAction={
+                    <OtherRegionsCustomerDetails
+                      phone={order.secondCustomerPhone || order.customerPhone}
+                      currentRegionId={order.secondCustomerRegionId}
+                      currentRegionName={order.secondCustomerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={true}
+                      designerConfig={designerConfigState}
+                    />
+                  }
                 >
-                  <div className="w-full pt-1">
+                  <div className="w-full">
                     <AdminCustomerLocationQuick
                       orderId={order.id}
                       target="second"
@@ -707,17 +714,6 @@ export function OrderViewContent({
                       customButtons={waButtonSettings}
                       designerConfig={designerConfigState}
                     />
-
-                    <div className="mt-2">
-                      <OtherRegionsCustomerDetails
-                        phone={order.secondCustomerPhone || order.customerPhone}
-                        currentRegionId={order.secondCustomerRegionId}
-                        currentRegionName={order.secondCustomerRegion?.name}
-                        orderId={order.id}
-                        isSecondDestination={true}
-                        designerConfig={designerConfigState}
-                      />
-                    </div>
                   </div>
 
                   {/* بلوك الاستدلال الذكي للوجهة الثانية */}

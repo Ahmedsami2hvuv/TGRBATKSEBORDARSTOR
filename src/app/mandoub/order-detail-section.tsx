@@ -547,9 +547,19 @@ export function OrderDetailSection({
                   isDoubleRoute={isDoubleRoute}
                   designerConfig={designerConfig || undefined}
                   phoneProfile={phoneProfile}
+                  headerAction={
+                    <OtherRegionsCustomerDetails
+                      phone={order.customerPhone}
+                      currentRegionId={order.customerRegionId}
+                      currentRegionName={order.customerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={false}
+                      designerConfig={designerConfig || undefined}
+                    />
+                  }
                 >
                   {/* أزرار اللوكيشن السريعة المذهبة */}
-                  <div className="w-full pt-1">
+                  <div className="w-full">
                     <AdminCustomerLocationQuick
                       orderId={order.id}
                       customerPhone={order.customerPhone}
@@ -578,17 +588,6 @@ export function OrderDetailSection({
                       customButtons={customWaButtons}
                       designerConfig={designerConfig || undefined}
                     />
-
-                    <div className="mt-2">
-                      <OtherRegionsCustomerDetails
-                        phone={order.customerPhone}
-                        currentRegionId={order.customerRegionId}
-                        currentRegionName={order.customerRegion?.name}
-                        orderId={order.id}
-                        isSecondDestination={false}
-                        designerConfig={designerConfig || undefined}
-                      />
-                    </div>
                   </div>
 
                   {/* بلوك الاستدلال الذكي المضيء */}
@@ -640,8 +639,18 @@ export function OrderDetailSection({
                     alternatePhone={mergedSecondAlternate}
                     designerConfig={designerConfig || undefined}
                     phoneProfile={secondPhoneProfile}
+                    headerAction={
+                      <OtherRegionsCustomerDetails
+                        phone={order.secondCustomerPhone || order.customerPhone}
+                        currentRegionId={order.secondCustomerRegionId}
+                        currentRegionName={order.secondCustomerRegion?.name}
+                        orderId={order.id}
+                        isSecondDestination={true}
+                        designerConfig={designerConfig || undefined}
+                      />
+                    }
                   >
-                    <div className="w-full pt-1">
+                    <div className="w-full">
                       <AdminCustomerLocationQuick
                         orderId={order.id}
                         target="second"
@@ -670,17 +679,6 @@ export function OrderDetailSection({
                         customButtons={customWaButtons}
                         designerConfig={designerConfig || undefined}
                       />
-
-                      <div className="mt-2">
-                        <OtherRegionsCustomerDetails
-                          phone={order.secondCustomerPhone || order.customerPhone}
-                          currentRegionId={order.secondCustomerRegionId}
-                          currentRegionName={order.secondCustomerRegion?.name}
-                          orderId={order.id}
-                          isSecondDestination={true}
-                          designerConfig={designerConfig || undefined}
-                        />
-                      </div>
                     </div>
 
                     {/* بلوك الاستدلال الذكي للوجهة الثانية */}

@@ -174,7 +174,7 @@ export function AdminCustomerLocationQuick({
   });
 
   return (
-    <div className="mt-2 space-y-2 w-full" dir="rtl">
+    <div className={isExistingLocation ? "w-full" : "mt-2 space-y-2 w-full"} dir="rtl">
       {/* نموذج الـ GPS المخفي */}
       <form ref={gpsFormRef} action={gpsAction} className="hidden">
         <input ref={latRef} type="hidden" name="lat" />
@@ -184,7 +184,7 @@ export function AdminCustomerLocationQuick({
 
       {/* الحالة 1: يوجد لوكيشن للزبون -> لا تظهر أزرار طلب/رفع/لصق اللوكيشن، وتظهر فقط أزرار الواتساب المخصصة لوجود اللوكيشن مثل (تبليغ الزبون) */}
       {isExistingLocation ? (
-        <div className="w-full">
+        <div className="w-full flex items-center">
           <WaLocationCustomButtons
             userRole={userRole}
             customerPhone={customerPhone}

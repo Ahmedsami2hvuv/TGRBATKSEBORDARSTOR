@@ -44,6 +44,7 @@ export function AdminLuxuryCustomerCard({
   doorPhotoUploadedByName,
   designerConfig,
   phoneProfile,
+  headerAction,
   children,
 }: {
   order: any;
@@ -63,6 +64,7 @@ export function AdminLuxuryCustomerCard({
   doorPhotoUploadedByName?: string | null;
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
+  headerAction?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -256,21 +258,28 @@ export function AdminLuxuryCustomerCard({
       {/* كارت الزبون الملكي الزمردي الفاخر كما في التصميم 3 والصور */}
       <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
         {/* ترويسة الكارت الأرابيسكية */}
-        <div className="relative px-3.5 pt-3.5 pb-2.5 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] border-b border-[#C9A86A]/20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#E6F4EF] to-[#CDE7DC] flex items-center justify-center shadow-[0_2px_8px_rgba(17,87,64,0.15)] border border-[#115740]/10">
+        <div className="relative px-3.5 pt-3.5 pb-2.5 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] border-b border-[#C9A86A]/20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#E6F4EF] to-[#CDE7DC] flex items-center justify-center shadow-[0_2px_8px_rgba(17,87,64,0.15)] border border-[#115740]/10 shrink-0">
               <svg className="w-[15px] h-[15px] text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none">
+            <div className="min-w-0">
+              <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none truncate">
                 {displayTitle}
               </h2>
               <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#115740]/60 to-transparent rounded-full" />
             </div>
           </div>
+
+          {/* زر تفاصيل أخرى أو أي إجراءات بالترويسة */}
+          {headerAction ? (
+            <div className="shrink-0 flex items-center">
+              {headerAction}
+            </div>
+          ) : null}
         </div>
 
         {/* محتوى بيانات الزبون */}
@@ -372,21 +381,21 @@ export function AdminLuxuryCustomerCard({
             />
           </div>
 
-          {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر أو مكونات الـ children */}
+          {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر مع زر تبليغ الزبون بجانبه أو أزرار اللوكيشن */}
           <div className="space-y-2.5 pt-1">
             {hasLocation ? (
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2.5 items-stretch">
                 <a
                   href={effectiveLocationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-[44px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+                  className="w-full min-h-[44px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
                 >
-                  <svg className="w-4 h-4 text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="w-4 h-4 text-[#0A3D2E] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
-                  <span>
+                  <span className="truncate">
                     {isSecondDestination
                       ? "فتح لوكيشن المستلم"
                       : isDoubleRoute
@@ -394,7 +403,9 @@ export function AdminLuxuryCustomerCard({
                       : "فتح لوكيشن الزبون"}
                   </span>
                 </a>
-                {children && <div className="w-full">{children}</div>}
+                {children ? (
+                  <div className="w-full flex items-center">{children}</div>
+                ) : null}
               </div>
             ) : (
               <div className="w-full">

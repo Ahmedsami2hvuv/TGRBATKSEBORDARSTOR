@@ -78,20 +78,24 @@ export function OtherRegionsCustomerDetails({
             e.stopPropagation();
             setShowModal(true);
           }}
-          className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-100/90 hover:bg-amber-200 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 px-2.5 text-[11px] font-black text-amber-900 dark:text-amber-200 transition-all shadow-sm"
+          className="group relative inline-flex h-[28px] sm:h-[30px] items-center justify-center gap-1.5 rounded-[9px] border-[1.5px] border-[#C9A86A] bg-gradient-to-r from-[#FFF8E1] via-[#FFFEFB] to-[#F7EAC8] px-2.5 text-[11px] font-black text-[#0A3D2E] shadow-[0_2px_8px_rgba(201,168,106,0.22),inset_0_1px_0_white] hover:shadow-[0_4px_12px_rgba(201,168,106,0.38)] hover:border-[#8B6A2A] active:scale-[0.96] transition-all cursor-pointer"
           style={{
             fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-            height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+            height: fontSizeConfig ? `${Math.max(28, fontSizeConfig.locationBtnSize + 14)}px` : undefined
           }}
+          title="عرض تفاصيل الزبون المسجلة في مناطق أخرى وسحبها"
         >
           {btnCustom?.imageUrl ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={btnCustom.imageUrl} alt="تفاصيل أخرى" className="w-4 h-4 object-contain shrink-0 pointer-events-none" />
+            <img src={btnCustom.imageUrl} alt="تفاصيل أخرى" className="w-3.5 h-3.5 object-contain shrink-0 pointer-events-none" />
           ) : (
-            <span>🌍</span>
+            <span className="text-[12px] shrink-0">🌍</span>
           )}
-          <span style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined }}>
-            تفاصيل أخرى ({profiles.length})
+          <span className="leading-none text-[11px] font-black text-[#0A3D2E]">
+            تفاصيل أخرى
+          </span>
+          <span className="h-[18px] min-w-[18px] px-1 rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A]/40 text-[10px] font-black flex items-center justify-center shadow-sm leading-none">
+            {profiles.length}
           </span>
         </button>
       </div>
