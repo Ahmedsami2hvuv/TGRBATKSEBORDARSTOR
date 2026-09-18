@@ -1050,7 +1050,7 @@ export function PreparerOrderDetailSection({
           <span>استلام من الزبون</span>
         </button>
 
-        {/* زر يسار: تسليم للعميل */}
+        {/* زر يسار: دفع للعميل */}
         <button
           type="button"
           onClick={() => {
@@ -1071,7 +1071,7 @@ export function PreparerOrderDetailSection({
               <circle cx="7" cy="18" r="2" />
             </svg>
           </div>
-          <span>تسليم للعميل</span>
+          <span>دفع للعميل</span>
         </button>
       </div>
 
