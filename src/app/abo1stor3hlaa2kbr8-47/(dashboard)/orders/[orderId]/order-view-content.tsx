@@ -222,11 +222,17 @@ export function OrderViewContent({
   const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
   const shouldCollapseSender = isDoubleRoute && isSenderPickedUp && !isSenderExpanded;
 
-  const submitterPhone = order.submittedByCompanyPreparer?.phone?.trim()
-    || order.submittedBy?.phone?.trim()
-    || (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
-
   const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
+
+  const isPreparationOrder = Boolean(
+    order.submittedByCompanyPreparer ||
+    order.submissionSource === "company_preparer" ||
+    order.submissionSource === "preparer" ||
+    order.submissionSource === "staff_portal" ||
+    order.orderType === "preparation" ||
+    order.orderType?.includes("تجهيز") ||
+    parsedShoppingJson
+  );
 
   const isSmartHintValid = (s: string | null | undefined) => {
     if (!s) return false;
@@ -363,7 +369,7 @@ export function OrderViewContent({
                   className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#C9A86A] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(10,61,46,0.15)] active:scale-95 shrink-0 cursor-pointer"
                   style={{ height: "28px", background: "#0A3D2E", color: "#E8C77E", whiteSpace: "nowrap" }}
                 >
-                  مسند: {order.courier.name}
+                  {order.courier.name}
                 </button>
               ) : (
                 <button
@@ -399,8 +405,8 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* السطر الثاني: زر التعديل + زر البصمة + التاريخ + الوقت */}
-          <div className="flex items-center justify-center gap-[8px] w-full flex-nowrap">
+          {/* السطر الثاني: زر التعديل + زر تعديل التسعير + زر البصمة + التاريخ + الوقت */}
+          <div className="flex items-center justify-center gap-[8px] w-full flex-wrap sm:flex-nowrap">
             {/* زر تعديل الطلب */}
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
@@ -417,6 +423,23 @@ export function OrderViewContent({
                 </svg>
               </span>
             </Link>
+
+            {/* زر تعديل التسعير للطلبات القادمة من تجهيز الطلبات */}
+            {isPreparationOrder && (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                className="h-[34px] rounded-full bg-gradient-to-r from-[#0A3D2E] to-[#06281D] border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
+                title="تعديل أسعار ومواد التجهيز"
+              >
+                <span className="text-[12px] font-black text-[#F5D77F] leading-none whitespace-nowrap">تعديل التسعير</span>
+                <span
+                  className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#C9A86A]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                  style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                >
+                  <span className="text-[11px] leading-none">🏷️</span>
+                </span>
+              </Link>
+            )}
 
             {/* زر البصمة الدائري الأحمر المشع */}
             <div className="shrink-0">
@@ -851,10 +874,21 @@ export function OrderViewContent({
         if (!hasNotes && !hasCart) return null;
         return (
           <div className="mt-6 border-t-2 border-[#C9A86A]/30 pt-5">
-            <p className="text-xs font-black text-[#F5D77F] mb-3 uppercase tracking-widest flex items-center gap-2">
-              <span>📜</span>
-              <span>قائمة المواد والملاحظات</span>
-            </p>
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+              <p className="text-xs font-black text-[#F5D77F] uppercase tracking-widest flex items-center gap-2">
+                <span>📜</span>
+                <span>قائمة المواد والملاحظات</span>
+              </p>
+              {isPreparationOrder && (
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] text-[#06281D] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
+                >
+                  <span>🏷️</span>
+                  <span>تعديل التسعير والمواد</span>
+                </Link>
+              )}
+            </div>
 
             {hasCart && (
               <div className="mb-4 space-y-2.5">
