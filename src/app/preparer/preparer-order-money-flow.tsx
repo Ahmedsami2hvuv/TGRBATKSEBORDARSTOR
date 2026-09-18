@@ -633,7 +633,7 @@ export function PickupMoneyForm(props: {
   );
 }
 
-function DeliveryMoneyForm(props: {
+export function DeliveryMoneyForm(props: {
   orderId: string;
   auth: { p: string; exp: string; s: string };
   nextUrl: string;
@@ -647,6 +647,8 @@ function DeliveryMoneyForm(props: {
   pending: boolean;
   error?: string;
   onClose: () => void;
+  forDarkModalSurface?: boolean;
+  hideContainer?: boolean;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const mismatchRef = useRef<HTMLInputElement>(null);
@@ -682,8 +684,15 @@ function DeliveryMoneyForm(props: {
     amountStepOk &&
     !dinarTotalsMatchClient(nextDeliverySum, props.totalAmountDinar);
 
+  const dark = Boolean(props.forDarkModalSurface);
+  const wardInputClass = dark
+    ? "w-full rounded-xl border-2 border-white/50 bg-neutral-900 px-3 py-2.5 text-lg font-black tabular-nums text-white shadow-inner placeholder:text-white/45"
+    : moneyWardAmountInputClass;
+
+  const containerClass = props.hideContainer ? "space-y-3" : "space-y-3";
+
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-3">
+    <form ref={formRef} action={props.formAction} className={containerClass}>
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
@@ -691,7 +700,13 @@ function DeliveryMoneyForm(props: {
       <input type="hidden" name="next" value={props.nextUrl} />
 
       {props.error ? (
-        <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900">
+        <div
+          className={
+            dark
+              ? "rounded-lg border border-rose-400/80 bg-rose-950/50 px-3 py-2 text-sm font-bold text-rose-100"
+              : "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900"
+          }
+        >
           {props.error}
         </div>
       ) : null}
@@ -700,17 +715,27 @@ function DeliveryMoneyForm(props: {
         <>
           <input type="hidden" name="advanceStatus" value="delivered" />
           <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className="text-sm font-bold text-slate-900">تم التسليم النهائي للزبون (تحويل حالة فقط)</p>
+          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>تم التسليم النهائي للزبون (تحويل حالة فقط)</p>
           {showMismatch ? (
-            <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
-              <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
-              <label className="block text-sm font-bold text-slate-800">
+            <div
+              className={
+                dark
+                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
+                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
+              }
+            >
+              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
+              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
                 سبب اختلاف الوارد *
                 <input
                   ref={mismatchRef}
                   name="mismatchNote"
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={
+                    dark
+                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
+                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  }
                   placeholder="اكتب السبب…"
                 />
               </label>
@@ -737,22 +762,23 @@ function DeliveryMoneyForm(props: {
                 inputMode="decimal"
                 value={amountAlf}
                 onChange={(e) => setAmountAlf(e.target.value)}
-                className={`mt-1 ${moneyWardAmountInputClass}`}
+                className={`mt-1 ${wardInputClass}`}
                 placeholder="0"
               />
               {props.remainingAlfHint && (
                 <button
-                  type="button"
+                  type="submit"
                   onClick={() => {
                     // منع النقرة التلقائية إذا حدثت خلال أقل من 300ms من ظهور النافذة
                     if (Date.now() - mountTimeRef.current < 300) return;
                     setAmountAlf(props.remainingAlfHint);
-                    setTimeout(() => {
-                      formRef.current?.requestSubmit(statusSubmitRef.current ?? undefined);
-                    }, 10);
                   }}
-                  className="mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-red-800 bg-red-100 px-4 font-black text-red-950 shadow-sm"
-                  title="تعبئة المتبقي"
+                  className={
+                    dark
+                      ? "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-red-400 bg-red-800/90 px-4 font-black text-white shadow-sm"
+                      : "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-red-800 bg-red-100 px-4 font-black text-red-950 shadow-sm"
+                  }
+                  title="تعبئة وحفظ"
                 >
                   {props.remainingAlfHint}
                 </button>
@@ -761,14 +787,24 @@ function DeliveryMoneyForm(props: {
           </div>
 
           {showMismatchAfterAmount ? (
-            <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
-              <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
-              <label className="block text-sm font-bold text-slate-800">
+            <div
+              className={
+                dark
+                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
+                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
+              }
+            >
+              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
+              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
                 سبب اختلاف الوارد من الزبون *
                 <input
                   name="mismatchNote"
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={
+                    dark
+                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
+                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  }
                   placeholder="اكتب السبب…"
                 />
               </label>

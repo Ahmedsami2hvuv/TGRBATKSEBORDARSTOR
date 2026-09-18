@@ -23,12 +23,17 @@ import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { type GlobalIconsConfig } from "@/lib/icon-settings";
-import { useState, useRef } from "react";
-import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { useState, useRef, useActionState } from "react";
+import { createPortal } from "react-dom";
 import {
   uploadPreparerPortalOrderImage,
   uploadPreparerPortalShopDoorPhoto,
 } from "./actions";
+import {
+  submitPreparerDeliveryMoney,
+  submitPreparerPickupMoney,
+} from "./preparer-cash-actions";
+import { PickupMoneyForm, DeliveryMoneyForm } from "./preparer-order-money-flow";
 
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
@@ -143,6 +148,28 @@ export function PreparerOrderDetailSection({
   couriers?: { id: string; name: string }[];
 }) {
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
+  // حالات فتح نوافذ الدفع والاستلام المنبثقة
+  const [payState, payAction, payPending] = useActionState(submitPreparerPickupMoney, {});
+  const [receiveState, receiveAction, receivePending] = useActionState(submitPreparerDeliveryMoney, {});
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+
+  const effectivePickupDinar =
+    (order.purchasePrice != null ? Number(order.purchasePrice) : null) ??
+    (order.orderSubtotal != null ? Number(order.orderSubtotal) : null);
+  const pickupSum = (order.moneyEvents || [])
+    .filter((e) => e.kind === "pickup" && e.deletedAt == null)
+    .reduce((acc, e) => acc + Number(e.amountDinar), 0);
+  const pickupRemainingDinar =
+    effectivePickupDinar != null ? effectivePickupDinar - pickupSum : null;
+
+  const totalAmountDinar = order.totalAmount != null ? Number(order.totalAmount) : null;
+  const deliverySum = (order.moneyEvents || [])
+    .filter((e) => e.kind === "delivery" && e.deletedAt == null)
+    .reduce((acc, e) => acc + Number(e.amountDinar), 0);
+  const deliveryRemainingDinar =
+    totalAmountDinar != null ? totalAmountDinar - deliverySum : null;
 
   // الستايل الديناميكي
   const customStyle = uiSettings ? {
@@ -1033,10 +1060,7 @@ export function PreparerOrderDetailSection({
         {/* زر يمين: استلام من الزبون */}
         <button
           type="button"
-          onClick={() => {
-            const el = document.getElementById("preparer-order-money");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
+          onClick={() => setShowReceiveModal(true)}
           className="flex-1 h-[52px] rounded-[28px] bg-[#FDF6E3] border-2 border-[#C9A86A] text-[#0A3D2E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(201,168,106,0.35)] active:scale-95 transition-transform cursor-pointer"
         >
           <div className="w-[26px] h-[26px] rounded-full bg-white border border-[#C9A86A] flex items-center justify-center text-[#0A3D2E]">
@@ -1053,10 +1077,7 @@ export function PreparerOrderDetailSection({
         {/* زر يسار: دفع للعميل */}
         <button
           type="button"
-          onClick={() => {
-            const el = document.getElementById("preparer-order-money");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
+          onClick={() => setShowPayModal(true)}
           className="flex-1 h-[52px] rounded-[28px] bg-[#0A3D2E] border-2 border-[#C9A86A] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_18px_rgba(10,61,46,0.45)] active:scale-95 transition-transform cursor-pointer"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16 0 L18 8 L26 6 L22 14 L30 16 L22 18 L26 26 L18 24 L16 32 L14 24 L6 26 L10 18 L2 16 L10 14 L6 6 L14 8 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
@@ -1239,6 +1260,97 @@ export function PreparerOrderDetailSection({
           </div>
         </div>
       )}
+
+      {/* نافذة تسجيل الدفع للعميل (المحل) */}
+      {showPayModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm overflow-y-auto sm:p-6"
+            dir="rtl"
+            onClick={() => setShowPayModal(false)}
+          >
+            <div
+              className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-5 text-[#0A3D2E] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/40 pb-3">
+                <h3 className="text-lg font-black text-[#0A3D2E]">دفع للعميل (المحل) - طلب #{order.orderNumber}</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowPayModal(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFE4CF] text-[#6D4C1D] hover:bg-rose-100 hover:text-rose-700 font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+              <PickupMoneyForm
+                orderId={order.id}
+                auth={auth}
+                nextUrl={nextUrl}
+                forDarkModalSurface
+                expectedAlfHint={effectivePickupDinar != null ? dinarDecimalToAlfInputString(effectivePickupDinar) : ""}
+                remainingAlfHint={pickupRemainingDinar != null ? dinarDecimalToAlfInputString(pickupRemainingDinar) : ""}
+                advanceToDelivering={false}
+                pickupRemainingDinar={pickupRemainingDinar}
+                pickupSumDinar={pickupSum}
+                orderSubtotalDinar={effectivePickupDinar}
+                formAction={payAction}
+                pending={payPending}
+                error={payState.error}
+                onClose={() => setShowPayModal(false)}
+                couriers={couriers}
+                currentCourierId={order.assignedCourierId}
+                orderStatus={order.status}
+                hideContainer={true}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* نافذة تسجيل الاستلام من الزبون */}
+      {showReceiveModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm overflow-y-auto sm:p-6"
+            dir="rtl"
+            onClick={() => setShowReceiveModal(false)}
+          >
+            <div
+              className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-5 text-[#0A3D2E] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/40 pb-3">
+                <h3 className="text-lg font-black text-[#0A3D2E]">استلام من الزبون (وارد) - طلب #{order.orderNumber}</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowReceiveModal(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFE4CF] text-[#6D4C1D] hover:bg-rose-100 hover:text-rose-700 font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+              <DeliveryMoneyForm
+                orderId={order.id}
+                auth={auth}
+                nextUrl={nextUrl}
+                forDarkModalSurface
+                expectedAlfHint={totalAmountDinar != null ? dinarDecimalToAlfInputString(totalAmountDinar) : ""}
+                remainingAlfHint={deliveryRemainingDinar != null ? dinarDecimalToAlfInputString(deliveryRemainingDinar) : ""}
+                advanceToDelivered={false}
+                deliveryRemainingDinar={deliveryRemainingDinar}
+                deliverySumDinar={deliverySum}
+                totalAmountDinar={totalAmountDinar}
+                formAction={receiveAction}
+                pending={receivePending}
+                error={receiveState.error}
+                onClose={() => setShowReceiveModal(false)}
+                hideContainer={true}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
