@@ -209,15 +209,15 @@ export function AdminLuxuryShopCard({
               </div>
             </div>
 
-            {/* صورة المحل 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            {/* صورة المحل 130x130 مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="shop"
               imageUrl={imgShopDoor}
               label="صورة المحل"
               isBusy={pending}
-              onSwipeRight={() => cameraFileRef.current?.click()}
-              onSwipeLeft={() => galleryFileRef.current?.click()}
+              onCameraClick={() => cameraFileRef.current?.click()}
+              onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
                 if (imgShopDoor) {
                   setPreviewImageUrl(imgShopDoor);

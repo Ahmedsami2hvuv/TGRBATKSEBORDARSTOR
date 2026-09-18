@@ -65,11 +65,10 @@ export function PreparerDetailPhotoUploadRow({
     await submitFile(f);
   }
 
+  const fieldLabel = field === "orderImage" ? "صورة الطلبية" : "صورة باب المحل";
+
   return (
-    <div className="mt-3 space-y-2">
-      <p className="text-center text-xs font-semibold text-slate-600 dark:text-slate-400">
-        كاميرا أو معرض لرفع {field === "orderImage" ? "صورة الطلبية" : "صورة باب المحل"}
-      </p>
+    <div className="mt-3 space-y-2 select-none" dir="rtl">
       <input
         ref={camRef}
         type="file"
@@ -91,34 +90,62 @@ export function PreparerDetailPhotoUploadRow({
         disabled={busy}
         onChange={onPick}
       />
-      <div className="flex flex-wrap items-stretch gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        {/* زر الكاميرا الملكي الزمردي */}
         <button
           type="button"
           disabled={busy}
           onClick={() => camRef.current?.click()}
-          aria-label="التقاط صورة بالكاميرا"
-          className="inline-flex min-h-[44px] min-w-[8rem] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-sky-400 bg-sky-50 px-3 py-2.5 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100 disabled:opacity-50 dark:border-sky-600 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-900/50"
+          aria-label={`التقاط ${fieldLabel} بالكاميرا`}
+          className="h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] disabled:opacity-50"
         >
-          <span className="text-lg" aria-hidden>
-            📷
-          </span>
-          كاميرا
+          <svg
+            className="w-4 h-4 shrink-0 text-[#E8C77E]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+            <circle cx="12" cy="13" r="3.2" />
+          </svg>
+          <span>كاميرا</span>
         </button>
+
+        {/* زر المعرض الملكي العاجي المذهب */}
         <button
           type="button"
           disabled={busy}
           onClick={() => galRef.current?.click()}
-          aria-label="اختيار صورة من المعرض"
-          className="inline-flex min-h-[44px] min-w-[8rem] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-sky-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+          aria-label={`اختيار ${fieldLabel} من المعرض`}
+          className="h-[38px] rounded-[11px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] disabled:opacity-50"
         >
-          <span className="text-lg" aria-hidden>
-            🖼
-          </span>
-          المعرض
+          <svg
+            className="w-4 h-4 shrink-0 text-[#8B6A2A]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="18" height="18" x="3" y="3" rx="3" ry="3" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="m21 15-5-5L5 21" />
+          </svg>
+          <span>المعرض</span>
         </button>
       </div>
-      {busy ? <p className="text-center text-xs font-bold text-sky-700 dark:text-sky-300">جارٍ الرفع…</p> : null}
-      {error ? <p className="text-center text-sm font-bold text-rose-600 dark:text-rose-400">{error}</p> : null}
+
+      {busy ? (
+        <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#8B6A2A] pt-1">
+          <div className="w-3.5 h-3.5 border-2 border-[#C9A86A] border-t-transparent rounded-full animate-spin" />
+          <span>جارٍ رفع الصورة...</span>
+        </div>
+      ) : null}
+      {error ? <p className="text-center text-xs font-bold text-rose-600">{error}</p> : null}
     </div>
   );
 }

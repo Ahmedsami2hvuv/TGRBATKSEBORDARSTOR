@@ -205,7 +205,7 @@ export function AdminLuxuryOrderInfoCard({
               </div>
             </div>
 
-            {/* صورة الطلب يسار 110px قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
             <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
               <SwipeableLuxuryPhotoBox
                 size={110}
@@ -213,8 +213,8 @@ export function AdminLuxuryOrderInfoCard({
                 imageUrl={orderImageUrl}
                 label="صورة الطلب"
                 isBusy={busy}
-                onSwipeRight={() => cameraFileRef.current?.click()}
-                onSwipeLeft={() => galleryFileRef.current?.click()}
+                onCameraClick={() => cameraFileRef.current?.click()}
+                onGalleryClick={() => galleryFileRef.current?.click()}
                 onClickPreview={() => {
                   if (orderImageUrl) {
                     setPreviewImageUrl(orderImageUrl);

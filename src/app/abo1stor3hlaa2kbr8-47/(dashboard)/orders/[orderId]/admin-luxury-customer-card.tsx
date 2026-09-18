@@ -439,15 +439,15 @@ export function AdminLuxuryCustomerCard({
               </div>
             </div>
 
-            {/* صورة باب الزبون/المستلم 130x130 قابلة للسحب لليمين للكاميرا ولليسار للمعرض والنقر للتكبير */}
+            {/* صورة باب الزبون/المستلم 130x130 مع زري الكاميرا والمعرض الفاخرين والنقر للتكبير */}
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="customer"
               imageUrl={effectiveDoorPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
-              onSwipeRight={() => cameraFileRef.current?.click()}
-              onSwipeLeft={() => galleryFileRef.current?.click()}
+              onCameraClick={() => cameraFileRef.current?.click()}
+              onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
                 if (effectiveDoorPhoto) {
                   setPreviewImageUrl(effectiveDoorPhoto);
