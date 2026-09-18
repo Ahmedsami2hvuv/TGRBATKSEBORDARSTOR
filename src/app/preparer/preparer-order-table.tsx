@@ -456,8 +456,15 @@ export function PreparerOrderTable({
     }
   });
 
+  // الاستماع لحدث فتح/إغلاق التحديد السريع من ترويسة الصفحة
+  useEffect(() => {
+    const handler = () => setShowQuickSelect((v) => !v);
+    window.addEventListener("preparer:toggle-quick-select", handler);
+    return () => window.removeEventListener("preparer:toggle-quick-select", handler);
+  }, []);
+
   const prepQuickBtn =
-    "min-h-[38px] shrink-0 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-red-950 hover:bg-red-50 sm:text-xs";
+    "min-h-[38px] shrink-0 rounded-xl border-2 border-[#C9A86A] bg-[#0A3D2E] px-3.5 py-1.5 text-xs font-black text-white shadow-[0_2px_8px_rgba(10,61,46,0.3)] hover:bg-[#104D3B] active:scale-95 transition cursor-pointer";
 
   return (
     <div className="w-full">
@@ -467,47 +474,38 @@ export function PreparerOrderTable({
         </div>
       ) : null}
 
-      {showBulkRow && (
-        <div className="mb-3 px-2 sm:px-4">
-          <button
-            type="button"
-            onClick={() => setShowQuickSelect((v) => !v)}
-            className="mb-1.5 flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-900 hover:bg-red-100"
-          >
-            <DynamicIcon
-              iconKey="ui_flash"
-              config={icons}
-              className="h-4 w-4"
-              fallback={<span>⚡</span>}
-            />
-            تحديد سريع
-            <DynamicIcon
-              iconKey={showQuickSelect ? "ui_chevron_up" : "ui_chevron_down"}
-              config={icons}
-              className="h-3 w-3 text-red-400"
-              fallback={<span>{showQuickSelect ? "▲" : "▼"}</span>}
-            />
-          </button>
-
-          {showQuickSelect && (
-            <div className="rounded-xl border border-red-100 bg-red-50/40 px-2 py-2 sm:px-3">
-              <p className="mb-1.5 text-[11px] font-bold text-red-900/90 sm:text-xs">
-                تحديد سريع — جديد أو بانتظار المندوب فقط
+      {showBulkRow && showQuickSelect && (
+        <div className="mb-3 px-2 sm:px-4 animate-in slide-in-from-top-2 duration-200" dir="rtl">
+          <div className="rounded-[18px] border-2 border-[#C9A86A] bg-[#FFFEFB] p-3 sm:p-3.5 shadow-[0_4px_16px_rgba(201,168,106,0.2)]">
+            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#C9A86A]/25">
+              <p className="text-xs font-black text-[#0A3D2E] flex items-center gap-1.5">
+                <span className="text-amber-500">⚡</span>
+                <span>تحديد سريع — للطلبات الجديدة وبانتظار المندوب</span>
               </p>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <button type="button" onClick={toggleAllPending} className={prepQuickBtn}>
-                  تحديد كل القابل للإسناد
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="min-h-[38px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 sm:text-xs"
-                >
-                  إفراغ التحديد
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickSelect(false)}
+                className="w-6 h-6 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center cursor-pointer hover:bg-rose-100"
+              >
+                ✕
+              </button>
             </div>
-          )}
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={toggleAllPending} className={prepQuickBtn}>
+                {allPendingSelected ? "إلغاء تحديد الكل" : "تحديد كل القابل للإسناد"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="min-h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-[#FDF6E3] px-3.5 py-1.5 text-xs font-bold text-[#8B6A2A] hover:bg-[#FAF0D7] active:scale-95 transition cursor-pointer"
+              >
+                إفراغ التحديد
+              </button>
+              <span className="mr-auto text-xs font-bold text-slate-500">
+                المحدد: <strong className="text-[#0A3D2E] font-black">{selectedIds.size}</strong> من {pendingIds.length}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

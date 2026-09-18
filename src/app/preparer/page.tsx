@@ -10,6 +10,7 @@ import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-ta
 import { prisma } from "@/lib/prisma";
 import { PreparerOrdersSection } from "./preparer-orders-client";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
+import { PreparerQuickSelectTrigger } from "./preparer-quick-select-trigger";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
@@ -186,24 +187,40 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const safePreparer = safeDeepSanitize(preparer) ?? { shopLinks: [], authorizedBranches: [], availableForAssignment: false, name: "" };
 
   return (
-    <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
+    <div className="mx-auto max-w-6xl px-2 py-2.5 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg" dir="rtl">
       <PortalAuthCookieSetter auth={baseAuth} />
-      <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
-        <div className="min-w-0 flex-1 flex items-center gap-3">
-          <Link prefetch={false}
-            href={preparerPath("/preparer/settings", baseAuth)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
-            title="إعدادات الخلفية والمظهر"
-          >
-            ⚙️
-          </Link>
-          <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{safePreparer.name}</p>
-          <div className="mr-auto flex items-center gap-2">
+      
+      {/* 1. الترويسة الملكية الفاخرة لواجهة المجهز */}
+      <header className="rounded-[22px] border-2 border-[#C9A86A] bg-[#FFFEFB] px-3 sm:px-4 py-3 shadow-[0_6px_22px_rgba(201,168,106,0.18)] mb-3.5 select-none">
+        {/* السطر الأول: زر الإعدادات + اسم المجهز + زر التحديد السريع + البحث وتسعير المتجر */}
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          {/* اليمين: زر الإعدادات + اسم المجهز + زر تحديد سريع */}
+          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+            <Link prefetch={false}
+              href={preparerPath("/preparer/settings", baseAuth)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FDF6E3] border-[1.5px] border-[#C9A86A] text-lg shadow-[0_2px_8px_rgba(201,168,106,0.15)] transition hover:bg-[#FAF0D7] hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
+              title="إعدادات الخلفية والمظهر"
+            >
+              ⚙️
+            </Link>
+
+            {/* كبسولة اسم المجهز الملكية الزمردية */}
+            <div className="bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] rounded-xl px-3 py-2 text-white font-black text-sm flex items-center gap-1.5 shadow-[0_2px_8px_rgba(10,61,46,0.25)] shrink-0">
+              <span className="text-[#F5D77F] text-xs">👤</span>
+              <span className="truncate max-w-[120px] sm:max-w-none">{safePreparer.name || "المجهز"}</span>
+            </div>
+
+            {/* زر التحديد السريع بجانب اسم المجهز مباشرة */}
+            <PreparerQuickSelectTrigger icons={safeIcons} />
+          </div>
+
+          {/* اليسار: البحث وتسعير المتجر */}
+          <div className="flex items-center gap-2 mr-auto shrink-0">
             <PreparerSearchTrigger icons={safeIcons} />
             {canSubmitAny && canPriceStore && (
               <Link prefetch={false}
                 href={preparerPath("/preparer/store-pricing", baseAuth)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-250 dark:hover:bg-emerald-900/50"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#C9A86A] bg-[#0A3D2E] text-[#F5D77F] text-lg shadow-[0_2px_8px_rgba(10,61,46,0.25)] transition hover:bg-[#104D3B] hover:scale-105 active:scale-95 cursor-pointer"
                 title="تسعير المتجر"
               >
                 🏪
@@ -211,64 +228,68 @@ export default async function PreparerHomePage({ searchParams }: Props) {
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-2">
-          {/* زر استلام الراتب */}
+
+        {/* السطر الثاني: أزرار العمليات السريعة بتصميم ملكي متناسق */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full mt-3 pt-2.5 border-t border-[#C9A86A]/25">
+          {/* 1. زر استلام الراتب */}
           <Link prefetch={false}
             href={preparerPath("/preparer/salary", baseAuth)}
-            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-650 shadow-sm transition hover:bg-sky-100 hover:scale-105 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-800"
+            className="h-11 flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.15)] transition hover:scale-105 active:scale-95 cursor-pointer"
             title="استلام الراتب"
           >
-            <span className="text-xl">💸</span>
-            <span className="text-[10px] font-black bg-sky-100 px-1.5 py-0.5 rounded-lg text-sky-900 leading-none">
+            <span className="text-lg">💸</span>
+            <span className="text-[11px] font-black bg-[#F5E6BE] px-1.5 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono">
               {withdrawableSalaryStr}
             </span>
           </Link>
 
-          {/* زر الديون */}
+          {/* 2. زر الديون */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/debts", baseAuth)}
-            className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-rose-500 bg-rose-600 text-white shadow-sm hover:bg-rose-700 transition hover:scale-105"
+            className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#E11D48]/50 bg-gradient-to-b from-[#FEF2F2] to-[#FEE2E2] text-[#991B1B] shadow-[0_2px_6px_rgba(225,29,72,0.15)] hover:bg-rose-100 transition hover:scale-105 active:scale-95 cursor-pointer"
             title="الديون"
           >
             <span className="text-xl">💳</span>
           </FullscreenWalletLauncher>
 
-          {/* زر تجهيز الطلبات */}
-          {canSubmitAny && (
+          {/* 3. زر تجهيز الطلبات */}
+          {canSubmitAny ? (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/preparation", baseAuth)}
-              className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 text-white shadow-sm hover:bg-violet-700 transition hover:scale-105"
+              className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#7C3AED]/50 bg-gradient-to-b from-[#F5F3FF] to-[#EDE9FE] text-[#5B21B6] shadow-[0_2px_6px_rgba(124,58,237,0.15)] hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="تجهيز الطلبات"
             >
               <span className="text-xl">📦</span>
             </FullscreenWalletLauncher>
-          )}
+          ) : <div />}
 
-          {/* زر طلب جديد */}
-          {canSubmitAny && (
+          {/* 4. زر طلب جديد */}
+          {canSubmitAny ? (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/order/new", baseAuth)}
-              className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 text-white shadow-sm hover:bg-sky-700 transition hover:scale-105"
+              className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#059669]/50 bg-gradient-to-b from-[#ECFDF5] to-[#D1FAE5] text-[#065F46] shadow-[0_2px_6px_rgba(5,150,105,0.15)] hover:bg-emerald-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="طلب جديد"
             >
               <span className="text-xl">➕</span>
             </FullscreenWalletLauncher>
-          )}
+          ) : <div />}
 
-          {/* زر محفظتي */}
+          {/* 5. زر محفظتي */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/wallet", baseAuth)}
-            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-violet-400 bg-violet-50 text-violet-955 shadow-sm hover:bg-violet-100 transition hover:scale-105"
+            className="h-11 flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.15)] hover:scale-105 active:scale-95 transition cursor-pointer"
             title="محفظتي"
           >
-            <span className="text-xl">💰</span>
-            <span className="text-[10px] font-black bg-violet-100 px-1.5 py-0.5 rounded-lg text-violet-900 leading-none">
+            <span className="text-lg">💰</span>
+            <span className="text-[11px] font-black bg-[#F5E6BE] px-1.5 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono">
               {walletRemainStr}
             </span>
           </FullscreenWalletLauncher>
         </div>
       </header>
-      <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
+
+      {/* 2. قسم جدول الطلبات الملكي */}
+      <section className="rounded-[22px] border-2 border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_22px_rgba(201,168,106,0.12)] overflow-hidden p-2 sm:p-3">
         <PreparerOrdersSection
           allRows={safeTableRows}
           searchFields={safeSearchFields}
