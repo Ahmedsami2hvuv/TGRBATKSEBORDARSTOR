@@ -385,7 +385,7 @@ export function PreparerOrderMoneyFlow({
   );
 }
 
-/* مكونات المربعات التفاعلية 120x120 من التصميم الفاخر */
+/* مكونات المربعات التفاعلية الفاخرة المطابقة لـ Mnt-Data-Photo3607594841302210502-Jpeg.html */
 function AmountSquareBtn({
   value,
   selected,
@@ -400,18 +400,19 @@ function AmountSquareBtn({
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
   const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
-        rounded-[20px] border-[2.5px] flex items-center justify-center
-        transition-all duration-200 active:scale-[0.95]
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex items-center justify-center
+        text-[48px] font-black leading-none tracking-tight
+        transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
@@ -419,15 +420,7 @@ function AmountSquareBtn({
         color: textColor,
       }}
     >
-      <span
-        style={{
-          fontSize: "56px",
-          fontWeight: "900",
-          lineHeight: "1",
-          fontFamily: "monospace, system-ui, sans-serif",
-          display: "block",
-        }}
-      >
+      <span style={{ fontSize: "48px", fontWeight: "900", lineHeight: "1" }}>
         {value}
       </span>
     </button>
@@ -449,18 +442,18 @@ function ZeroSquareBtn({
 }) {
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : "#0A3D2A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
-        rounded-[20px] border-[2.5px] flex flex-col items-center justify-center
-        transition-all duration-200 active:scale-[0.95]
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : "#E8E0D0",
@@ -469,17 +462,13 @@ function ZeroSquareBtn({
       }}
     >
       <span
-        style={{
-          fontSize: selected ? "56px" : "24px",
-          fontWeight: "900",
-          lineHeight: "1",
-          fontFamily: selected ? "monospace, system-ui, sans-serif" : "inherit",
-        }}
+        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}
+        style={{ fontSize: selected ? "48px" : "22px", fontWeight: "900", lineHeight: "1" }}
       >
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[12px] font-bold mt-1 tracking-wide" style={{ color: "#F5D77F" }}>
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
           {label}
         </span>
       )}
@@ -523,7 +512,7 @@ export function PickupMoneyForm(props: {
   const canAssign = !props.currentCourierId && props.couriers && props.couriers.length > 0;
 
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-4 select-none">
+    <form ref={formRef} action={props.formAction} className="space-y-4 select-none" dir="rtl">
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
@@ -532,7 +521,7 @@ export function PickupMoneyForm(props: {
       <input type="hidden" name="advanceStatus" value="delivering" />
 
       {props.error && (
-        <div className="rounded-xl border border-rose-400 bg-rose-50 p-3 text-xs font-bold text-rose-900">
+        <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
           {props.error}
         </div>
       )}
@@ -561,7 +550,7 @@ export function PickupMoneyForm(props: {
         <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
       </div>
 
-      {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
+      {/* مربعات الاختيار السريع 120x120 */}
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetValue || "0"}
@@ -569,7 +558,6 @@ export function PickupMoneyForm(props: {
           onClick={() => {
             setAmountAlf(targetValue);
             setSelectedBox("num");
-            // تأكيد فوري بنقرة واحدة
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -577,7 +565,7 @@ export function PickupMoneyForm(props: {
           color="emerald"
         />
         <ZeroSquareBtn
-          label="لم يدفع"
+          label="لم أدفع"
           activeLabel="0"
           selected={selectedBox === "zero" || amountAlf === "0"}
           onClick={() => {
@@ -588,7 +576,7 @@ export function PickupMoneyForm(props: {
         />
       </div>
 
-      {/* حقل إدخال المبلغ المركزي */}
+      {/* حقل إدخال المبلغ */}
       <div>
         <input
           ref={amountRef}
@@ -604,17 +592,18 @@ export function PickupMoneyForm(props: {
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
-          style={{ fontSize: "28px", fontWeight: "900" }}
+          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
         />
       </div>
 
       {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
       {isMismatch ? (
         <div className="space-y-1.5 animate-in fade-in duration-200">
-          <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
-            سبب اختلاف الصادر <span className="text-rose-600">*</span>
-          </label>
+          <div className="text-right">
+            <span className="text-[13px] font-bold text-[#0A3D2A]">
+              سبب اختلاف الصادر <span className="text-rose-600">*</span>
+            </span>
+          </div>
           <textarea
             name="mismatchNote"
             required
@@ -627,8 +616,10 @@ export function PickupMoneyForm(props: {
         <input type="hidden" name="mismatchNote" value="" />
       )}
 
+      <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+
       {/* الأزرار السفلية */}
-      <div className="flex gap-3 pt-2 border-t border-[#C9A86A]/20">
+      <div className="flex gap-3">
         <button
           type="submit"
           disabled={props.pending}
@@ -669,7 +660,6 @@ export function DeliveryMoneyForm(props: {
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const statusSubmitRef = useRef<HTMLButtonElement>(null);
   const targetValue = props.remainingAlfHint || props.expectedAlfHint || "";
   const [amountAlf, setAmountAlf] = useState(targetValue);
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
@@ -683,7 +673,7 @@ export function DeliveryMoneyForm(props: {
   const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== targetValue;
 
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-4 select-none">
+    <form ref={formRef} action={props.formAction} className="space-y-4 select-none" dir="rtl">
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
@@ -691,7 +681,7 @@ export function DeliveryMoneyForm(props: {
       <input type="hidden" name="next" value={props.nextUrl} />
 
       {props.error && (
-        <div className="rounded-xl border border-rose-400 bg-rose-50 p-3 text-xs font-bold text-rose-900">
+        <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
           {props.error}
         </div>
       )}
@@ -700,7 +690,7 @@ export function DeliveryMoneyForm(props: {
         <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
       </div>
 
-      {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
+      {/* مربعات الاختيار السريع 120x120 */}
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetValue || "0"}
@@ -708,7 +698,6 @@ export function DeliveryMoneyForm(props: {
           onClick={() => {
             setAmountAlf(targetValue);
             setSelectedBox("num");
-            // تأكيد فوري بنقرة واحدة
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -727,7 +716,7 @@ export function DeliveryMoneyForm(props: {
         />
       </div>
 
-      {/* حقل إدخال المبلغ المركزي */}
+      {/* حقل إدخال المبلغ */}
       <div>
         <input
           ref={amountRef}
@@ -743,17 +732,18 @@ export function DeliveryMoneyForm(props: {
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
-          style={{ fontSize: "28px", fontWeight: "900" }}
+          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
         />
       </div>
 
       {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
       {isMismatch ? (
         <div className="space-y-1.5 animate-in fade-in duration-200">
-          <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
-            سبب اختلاف الوارد <span className="text-rose-600">*</span>
-          </label>
+          <div className="text-right">
+            <span className="text-[13px] font-bold text-[#0A3D2A]">
+              سبب اختلاف الوارد <span className="text-rose-600">*</span>
+            </span>
+          </div>
           <textarea
             name="mismatchNote"
             required
@@ -766,8 +756,10 @@ export function DeliveryMoneyForm(props: {
         <input type="hidden" name="mismatchNote" value="" />
       )}
 
+      <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+
       {/* الأزرار السفلية */}
-      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#C9A86A]/20">
+      <div className="flex flex-wrap gap-2">
         <button
           type="submit"
           disabled={props.pending}
@@ -778,7 +770,6 @@ export function DeliveryMoneyForm(props: {
           <span>{props.pending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
         </button>
         <button
-          ref={statusSubmitRef}
           type="submit"
           name="advanceStatus"
           value="delivered"

@@ -164,7 +164,11 @@ export async function submitPreparerPickupMoney(
       if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
 
       const nextPaid = paidSoFar.plus(amountDinar);
-      const matches = dinarAmountsMatchExpected(nextPaid, expected);
+      const matches =
+        dinarAmountsMatchExpected(nextPaid, expected) ||
+        dinarAmountsMatchExpected(amountDinar, expected) ||
+        (a.order.orderSubtotal != null && dinarAmountsMatchExpected(amountDinar, a.order.orderSubtotal)) ||
+        (a.order.purchasePrice != null && dinarAmountsMatchExpected(amountDinar, a.order.purchasePrice));
       if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
 
       await prisma.$transaction(async (tx) => {
@@ -295,7 +299,10 @@ export async function submitPreparerDeliveryMoney(
       if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
 
       const nextReceived = receivedSoFar.plus(amountDinar);
-      const matches = dinarAmountsMatchExpected(nextReceived, expected);
+      const matches =
+        dinarAmountsMatchExpected(nextReceived, expected) ||
+        dinarAmountsMatchExpected(amountDinar, expected) ||
+        (a.order.totalAmount != null && dinarAmountsMatchExpected(amountDinar, a.order.totalAmount));
       if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
 
       await prisma.$transaction(async (tx) => {

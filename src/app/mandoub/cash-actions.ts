@@ -166,7 +166,11 @@ export async function submitMandoubPickupMoney(
 
 
   const nextPaid = paidSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextPaid, expected);
+  const matches =
+    dinarAmountsMatchExpected(nextPaid, expected) ||
+    dinarAmountsMatchExpected(amountDinar, expected) ||
+    (order.orderSubtotal != null && dinarAmountsMatchExpected(amountDinar, order.orderSubtotal)) ||
+    (order.purchasePrice != null && dinarAmountsMatchExpected(amountDinar, order.purchasePrice));
   if (!matches && !mismatchNote.trim()) {
     return mismatchNoteRequiredError();
   }
@@ -353,7 +357,10 @@ export async function submitMandoubDeliveryMoney(
 
 
   const nextReceived = receivedSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextReceived, expected);
+  const matches =
+    dinarAmountsMatchExpected(nextReceived, expected) ||
+    dinarAmountsMatchExpected(amountDinar, expected) ||
+    (order.totalAmount != null && dinarAmountsMatchExpected(amountDinar, order.totalAmount));
   if (!matches && !mismatchNote.trim()) {
     return mismatchNoteRequiredError();
   }

@@ -1703,88 +1703,104 @@ export function MandoubOrderTable({
 
       {pickupOrder &&
         createPortal(
-          <MandoubModalContainer onClose={() => setPickupOrder(null)}>
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right" dir="rtl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/20 pb-3">
-                <h4 className="text-base font-black text-[#0A3D2E] flex items-center gap-1.5">
-                  <span>💸</span>
-                  <span>تسجيل استلام - طلب #{pickupOrder.shortId}</span>
-                </h4>
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={() => setPickupOrder(null)}>
+            <div
+              className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95 my-auto"
+              dir="rtl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[18px]">💸</span>
+                  <h2 className="text-[18px] font-black text-[#0A3D2A]">تسجيل استلام - طلب #{pickupOrder.shortId}</h2>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setPickupOrder(null)}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
-              <PickupMoneyForm
-                orderId={pickupOrder.id}
-                auth={auth}
-                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
-                expectedAlfHint={pickupOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar) : ""}
-                remainingAlfHint={
-                  pickupOrder.orderSubtotalDinar != null
-                    ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0))
-                    : ""
-                }
-                advanceToDelivering={true}
-                pickupRemainingDinar={
-                  pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
-                }
-                pickupSumDinar={pickupOrder.pickupSumDinar || 0}
-                orderSubtotalDinar={pickupOrder.orderSubtotalDinar ?? null}
-                formAction={(fd) => pickupAction(fd)}
-                pending={pickupPending || localPending}
-                error={pickupState.error}
-                onClose={() => setPickupOrder(null)}
-                noRedirect
-              />
+              <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
+              <div className="p-6">
+                <PickupMoneyForm
+                  orderId={pickupOrder.id}
+                  auth={auth}
+                  nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                  expectedAlfHint={pickupOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar) : ""}
+                  remainingAlfHint={
+                    pickupOrder.orderSubtotalDinar != null
+                      ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0))
+                      : ""
+                  }
+                  advanceToDelivering={true}
+                  pickupRemainingDinar={
+                    pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
+                  }
+                  pickupSumDinar={pickupOrder.pickupSumDinar || 0}
+                  orderSubtotalDinar={pickupOrder.orderSubtotalDinar ?? null}
+                  formAction={(fd) => pickupAction(fd)}
+                  pending={pickupPending || localPending}
+                  error={pickupState.error}
+                  onClose={() => setPickupOrder(null)}
+                  noRedirect
+                />
+              </div>
             </div>
-          </MandoubModalContainer>,
+          </div>,
           document.body,
         )}
 
       {deliveryOrder &&
         createPortal(
-          <MandoubModalContainer onClose={() => setDeliveryOrder(null)}>
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right" dir="rtl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/20 pb-3">
-                <h4 className="text-base font-black text-[#BF360C] flex items-center gap-1.5">
-                  <span>🫴</span>
-                  <span>تسجيل تسليم - طلب #{deliveryOrder.shortId}</span>
-                </h4>
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={() => setDeliveryOrder(null)}>
+            <div
+              className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95 my-auto"
+              dir="rtl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[18px]">🫴</span>
+                  <h2 className="text-[18px] font-black text-[#8B2E1A]">تسجيل تسليم - طلب #{deliveryOrder.shortId}</h2>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setDeliveryOrder(null)}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
-              <DeliveryMoneyForm
-                orderId={deliveryOrder.id}
-                auth={auth}
-                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
-                expectedAlfHint={deliveryOrder.totalAmountDinar != null ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar) : ""}
-                remainingAlfHint={
-                  deliveryOrder.totalAmountDinar != null
-                    ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0))
-                    : ""
-                }
-                advanceToDelivered={true}
-                deliveryRemainingDinar={
-                  deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
-                }
-                deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
-                totalAmountDinar={deliveryOrder.totalAmountDinar ?? null}
-                formAction={(fd) => deliveryAction(fd)}
-                pending={deliveryPending || localPending}
-                error={deliveryState.error}
-                onClose={() => setDeliveryOrder(null)}
-                missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
-                noRedirect
-              />
+              <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
+              <div className="p-6">
+                <DeliveryMoneyForm
+                  orderId={deliveryOrder.id}
+                  auth={auth}
+                  nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                  expectedAlfHint={deliveryOrder.totalAmountDinar != null ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar) : ""}
+                  remainingAlfHint={
+                    deliveryOrder.totalAmountDinar != null
+                      ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0))
+                      : ""
+                  }
+                  advanceToDelivered={true}
+                  deliveryRemainingDinar={
+                    deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
+                  }
+                  deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
+                  totalAmountDinar={deliveryOrder.totalAmountDinar ?? null}
+                  formAction={(fd) => deliveryAction(fd)}
+                  pending={deliveryPending || localPending}
+                  error={deliveryState.error}
+                  onClose={() => setDeliveryOrder(null)}
+                  missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
+                  noRedirect
+                />
+              </div>
             </div>
-          </MandoubModalContainer>,
+          </div>,
           document.body,
         )}
 

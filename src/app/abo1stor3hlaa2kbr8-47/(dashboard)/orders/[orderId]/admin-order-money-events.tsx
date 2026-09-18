@@ -414,7 +414,7 @@ export function AdminOrderMoneyEvents({
   );
 }
 
-/* مكونات المربعات التفاعلية 120x120 من التصميم الفاخر */
+/* مكونات المربعات التفاعلية الفاخرة المطابقة لـ Mnt-Data-Photo3607594841302210502-Jpeg.html */
 function AmountSquareBtn({
   value,
   selected,
@@ -429,18 +429,19 @@ function AmountSquareBtn({
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
   const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
-        rounded-[20px] border-[2.5px] flex items-center justify-center
-        transition-all duration-200 active:scale-[0.95]
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex items-center justify-center
+        text-[48px] font-black leading-none tracking-tight
+        transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
@@ -448,15 +449,7 @@ function AmountSquareBtn({
         color: textColor,
       }}
     >
-      <span
-        style={{
-          fontSize: "56px",
-          fontWeight: "900",
-          lineHeight: "1",
-          fontFamily: "monospace, system-ui, sans-serif",
-          display: "block",
-        }}
-      >
+      <span style={{ fontSize: "48px", fontWeight: "900", lineHeight: "1" }}>
         {value}
       </span>
     </button>
@@ -478,18 +471,18 @@ function ZeroSquareBtn({
 }) {
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#C9A86A" : "#0A3D2A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
-        rounded-[20px] border-[2.5px] flex flex-col items-center justify-center
-        transition-all duration-200 active:scale-[0.95]
+        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
+        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : "#E8E0D0",
@@ -498,17 +491,13 @@ function ZeroSquareBtn({
       }}
     >
       <span
-        style={{
-          fontSize: selected ? "56px" : "24px",
-          fontWeight: "900",
-          lineHeight: "1",
-          fontFamily: selected ? "monospace, system-ui, sans-serif" : "inherit",
-        }}
+        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}
+        style={{ fontSize: selected ? "48px" : "22px", fontWeight: "900", lineHeight: "1" }}
       >
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[12px] font-bold mt-1 tracking-wide" style={{ color: "#F5D77F" }}>
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
           {label}
         </span>
       )}
@@ -539,115 +528,124 @@ function AdminPickupModal({
   const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-md rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#C9A86A]/20 pb-3 mb-3">
-          <h4 className="text-base font-black text-[#0A3D2E] flex items-center gap-1.5">
-            <span>💸</span>
-            <span>تسجيل صادر (أعطيت للمحل/العميل)</span>
-          </h4>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+      <div
+        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[18px]">💸</span>
+            <h2 className="text-[18px] font-black text-[#0A3D2A]">تسجيل صادر</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
           >
-            ✕
+            ×
           </button>
         </div>
+        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
-        <form ref={formRef} action={pickupAction} className="space-y-4">
-          <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="next" value={nextPath} />
-          <input type="hidden" name="advanceStatus" value={advanceStatus} />
+        <div className="p-6">
+          <form ref={formRef} action={pickupAction} className="space-y-4">
+            <input type="hidden" name="orderId" value={orderId} />
+            <input type="hidden" name="next" value={nextPath} />
+            <input type="hidden" name="advanceStatus" value={advanceStatus} />
 
-          <div className="text-right">
-            <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-          </div>
+            <div className="text-right">
+              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+            </div>
 
-          {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
-          <div className="flex gap-4 justify-center" dir="ltr">
-            <AmountSquareBtn
-              value={defaultAlf || "0"}
-              selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
-              onClick={() => {
-                setAmountAlf(defaultAlf);
-                setSelectedBox("num");
-                // تأكيد فوري بنقرة واحدة
-                setTimeout(() => {
-                  formRef.current?.requestSubmit();
-                }, 30);
-              }}
-              color="emerald"
-            />
-            <ZeroSquareBtn
-              label="لم يدفع"
-              activeLabel="0"
-              selected={selectedBox === "zero" || amountAlf === "0"}
-              onClick={() => {
-                setAmountAlf("0");
-                setSelectedBox("zero");
-              }}
-              color="emerald"
-            />
-          </div>
-
-          {/* حقل إدخال المبلغ المركزي */}
-          <div>
-            <input
-              name="amountAlf"
-              required
-              inputMode="numeric"
-              value={amountAlf}
-              onChange={(e) => {
-                const v = e.target.value;
-                setAmountAlf(v);
-                if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
-                else if (v === "0") setSelectedBox("zero");
-                else setSelectedBox(null);
-              }}
-              placeholder={defaultAlf || "0"}
-              className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
-              style={{ fontSize: "28px", fontWeight: "900" }}
-            />
-          </div>
-
-          {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
-          {isMismatch ? (
-            <div className="space-y-1.5 animate-in fade-in duration-200">
-              <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
-                سبب اختلاف الصادر <span className="text-rose-600">*</span>
-              </label>
-              <textarea
-                name="mismatchNote"
-                required
-                rows={2}
-                className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
-                placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+            {/* مربعات الاختيار السريع 120x120 */}
+            <div className="flex gap-4 justify-center" dir="ltr">
+              <AmountSquareBtn
+                value={defaultAlf || "0"}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                onClick={() => {
+                  setAmountAlf(defaultAlf);
+                  setSelectedBox("num");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit();
+                  }, 30);
+                }}
+                color="emerald"
+              />
+              <ZeroSquareBtn
+                label="لم يدفع"
+                activeLabel="0"
+                selected={selectedBox === "zero" || amountAlf === "0"}
+                onClick={() => {
+                  setAmountAlf("0");
+                  setSelectedBox("zero");
+                }}
+                color="emerald"
               />
             </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
 
-          <div className="flex gap-3 pt-2 border-t border-[#C9A86A]/20">
-            <button
-              type="submit"
-              disabled={pickupPending}
-              className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
-            >
-              <span>💾</span>
-              <span>{pickupPending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
-            >
-              إلغاء
-            </button>
-          </div>
-        </form>
+            {/* حقل إدخال المبلغ */}
+            <div>
+              <input
+                name="amountAlf"
+                required
+                inputMode="numeric"
+                value={amountAlf}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setAmountAlf(v);
+                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  else if (v === "0") setSelectedBox("zero");
+                  else setSelectedBox(null);
+                }}
+                placeholder={defaultAlf || "0"}
+                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              />
+            </div>
+
+            {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+            {isMismatch ? (
+              <div className="space-y-1.5 animate-in fade-in duration-200">
+                <div className="text-right">
+                  <span className="text-[13px] font-bold text-[#0A3D2A]">
+                    سبب اختلاف الصادر <span className="text-rose-600">*</span>
+                  </span>
+                </div>
+                <textarea
+                  name="mismatchNote"
+                  required
+                  rows={2}
+                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+                />
+              </div>
+            ) : (
+              <input type="hidden" name="mismatchNote" value="" />
+            )}
+
+            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={pickupPending}
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+              >
+                <span>💾</span>
+                <span>{pickupPending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -676,115 +674,124 @@ function AdminDeliveryModal({
   const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-md rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#C9A86A]/20 pb-3 mb-3">
-          <h4 className="text-base font-black text-[#BF360C] flex items-center gap-1.5">
-            <span>🫴</span>
-            <span>تسجيل وارد (أخذت من الزبون)</span>
-          </h4>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+      <div
+        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[18px]">🫴</span>
+            <h2 className="text-[18px] font-black text-[#8B2E1A]">تسجيل وارد</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
           >
-            ✕
+            ×
           </button>
         </div>
+        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
-        <form ref={formRef} action={deliveryAction} className="space-y-4">
-          <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="next" value={nextPath} />
-          <input type="hidden" name="advanceStatus" value={advanceStatus} />
+        <div className="p-6">
+          <form ref={formRef} action={deliveryAction} className="space-y-4">
+            <input type="hidden" name="orderId" value={orderId} />
+            <input type="hidden" name="next" value={nextPath} />
+            <input type="hidden" name="advanceStatus" value={advanceStatus} />
 
-          <div className="text-right">
-            <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-          </div>
+            <div className="text-right">
+              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+            </div>
 
-          {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
-          <div className="flex gap-4 justify-center" dir="ltr">
-            <AmountSquareBtn
-              value={defaultAlf || "0"}
-              selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
-              onClick={() => {
-                setAmountAlf(defaultAlf);
-                setSelectedBox("num");
-                // تأكيد فوري بنقرة واحدة
-                setTimeout(() => {
-                  formRef.current?.requestSubmit();
-                }, 30);
-              }}
-              color="orange"
-            />
-            <ZeroSquareBtn
-              label="لم استلم"
-              activeLabel="0"
-              selected={selectedBox === "zero" || amountAlf === "0"}
-              onClick={() => {
-                setAmountAlf("0");
-                setSelectedBox("zero");
-              }}
-              color="orange"
-            />
-          </div>
-
-          {/* حقل إدخال المبلغ المركزي */}
-          <div>
-            <input
-              name="amountAlf"
-              required
-              inputMode="numeric"
-              value={amountAlf}
-              onChange={(e) => {
-                const v = e.target.value;
-                setAmountAlf(v);
-                if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
-                else if (v === "0") setSelectedBox("zero");
-                else setSelectedBox(null);
-              }}
-              placeholder={defaultAlf || "0"}
-              className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
-              style={{ fontSize: "28px", fontWeight: "900" }}
-            />
-          </div>
-
-          {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
-          {isMismatch ? (
-            <div className="space-y-1.5 animate-in fade-in duration-200">
-              <label className="text-[13px] font-bold text-[#0A3D2A] block text-right">
-                سبب اختلاف الوارد <span className="text-rose-600">*</span>
-              </label>
-              <textarea
-                name="mismatchNote"
-                required
-                rows={2}
-                className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
-                placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+            {/* مربعات الاختيار السريع 120x120 */}
+            <div className="flex gap-4 justify-center" dir="ltr">
+              <AmountSquareBtn
+                value={defaultAlf || "0"}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                onClick={() => {
+                  setAmountAlf(defaultAlf);
+                  setSelectedBox("num");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit();
+                  }, 30);
+                }}
+                color="orange"
+              />
+              <ZeroSquareBtn
+                label="لم استلم"
+                activeLabel="0"
+                selected={selectedBox === "zero" || amountAlf === "0"}
+                onClick={() => {
+                  setAmountAlf("0");
+                  setSelectedBox("zero");
+                }}
+                color="orange"
               />
             </div>
-          ) : (
-            <input type="hidden" name="mismatchNote" value="" />
-          )}
 
-          <div className="flex gap-3 pt-2 border-t border-[#C9A86A]/20">
-            <button
-              type="submit"
-              disabled={deliveryPending}
-              className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
-            >
-              <span>💾</span>
-              <span>{deliveryPending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
-            >
-              إلغاء
-            </button>
-          </div>
-        </form>
+            {/* حقل إدخال المبلغ */}
+            <div>
+              <input
+                name="amountAlf"
+                required
+                inputMode="numeric"
+                value={amountAlf}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setAmountAlf(v);
+                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  else if (v === "0") setSelectedBox("zero");
+                  else setSelectedBox(null);
+                }}
+                placeholder={defaultAlf || "0"}
+                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              />
+            </div>
+
+            {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
+            {isMismatch ? (
+              <div className="space-y-1.5 animate-in fade-in duration-200">
+                <div className="text-right">
+                  <span className="text-[13px] font-bold text-[#0A3D2A]">
+                    سبب اختلاف الوارد <span className="text-rose-600">*</span>
+                  </span>
+                </div>
+                <textarea
+                  name="mismatchNote"
+                  required
+                  rows={2}
+                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+                />
+              </div>
+            ) : (
+              <input type="hidden" name="mismatchNote" value="" />
+            )}
+
+            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={deliveryPending}
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
+              >
+                <span>💾</span>
+                <span>{deliveryPending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
