@@ -647,15 +647,6 @@ export function PreparerOrderTable({
                               </span>
                             </div>
 
-                            {/* اسم المندوب المسند إن وجد */}
-                            {o.assignedCourierName?.trim() && o.assignedCourierName !== "—" && (
-                              <div className="absolute -bottom-2 right-4 z-20 select-none">
-                                <span className="inline-flex items-center gap-1 bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                  👤 {o.assignedCourierName}
-                                </span>
-                              </div>
-                            )}
-
                             {/* أيقونة زر الطلب العكسي */}
                             {isReverse && (
                               <div
@@ -777,131 +768,22 @@ export function PreparerOrderTable({
                           </div>
                         </div>
 
-                        {/* 3. القسم السفلي: كبسولة هاتف وأزرار الزبون + أزرار المجهز */}
+                        {/* 3. القسم السفلي: زر التعديل باليمين + أزرار المجهز (دفع للعميل والإسناد) باليسار */}
                         <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-2 sm:-mt-3 pt-0 w-full">
-                          {/* الجهة اليمنى: كبسولة هاتف الزبون وحاملة الأزرار */}
-                          <div
-                            className="flex items-center gap-0.5 sm:gap-1.5 rounded-full px-1.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-8.5 sm:h-10 shrink min-w-0 mr-0.5"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                            }}
-                          >
-                            {/* 1. زر الاتصال 📞 */}
-                            {o.shopPhone || o.secondCustomerPhone ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenActionModal(o, "call");
-                                }}
-                                className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
-                                title="خيارات الاتصال الهاتفي 📞"
-                              />
-                            ) : o.customerPhone ? (
-                              <a
-                                href={`tel:${o.customerPhone}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
-                                title={`اتصال بالزبون: ${o.customerPhone}`}
-                              />
-                            ) : (
-                              <div className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
-                            )}
-
-                            {/* 2. رقم هاتف الزبون */}
-                            <div className="flex items-center px-0.5 min-w-0 truncate">
-                              <span className="text-[10px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all truncate">
-                                {o.customerPhone || "—"}
-                              </span>
-                            </div>
-
-                            {/* 3. زر اللوكيشن 📍 */}
-                            {((o.customerLocationUrl && o.shopLocationUrl) || o.secondCustomerLocationUrl) ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenActionModal(o, "location");
-                                }}
-                                className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
-                                }}
-                                title="خيارات الموقع على الخريطة 📍"
-                              />
-                            ) : hasGps ? (
-                              <RedGlassOrbButton3D
-                                href={o.customerLocationUrl || "#"}
-                                title="فتح موقع الزبون 📍"
-                              />
-                            ) : (
-                              <div
-                                className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
-                                }}
-                                title="الزبون لا يملك لوكيشن ⚠️"
-                              />
-                            )}
-
-                            {/* 4. زر تعديل التجهيز 💰 (لطلبات التجهيز) */}
-                            {isPrepOrder && (
-                              <Link
-                                href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
-                                }}
-                                title="تعديل تفاصيل وأسعار التجهيز 💰"
-                              />
-                            )}
-
-                            {/* 5. زر تعديل الطلب ✏️ */}
+                          {/* الجهة اليمنى: زر تعديل الطلب للمجهز الملكي */}
+                          <div className="flex items-center -translate-y-1 mr-0.5 shrink-0">
                             <Link
                               href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
-                              }}
+                              className="h-10 sm:h-11 px-3.5 sm:px-5 rounded-full bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.3)] hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
                               title="تعديل الطلب ✏️"
-                            />
-
-                            {/* 6. زر الواتساب 💬 */}
-                            {(o.customerPhone || o.shopPhone || o.secondCustomerPhone) && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenActionModal(o, "chat");
-                                }}
-                                className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/btn-chat.webp')",
-                                }}
-                                title="خيارات المراسلة عبر واتساب 💬"
-                              />
-                            )}
-
-                            {/* 7. زر صورة الباب 🚪 */}
-                            {(o.customerDoorPhotoUrl || o.shopDoorPhotoUrl || o.secondCustomerDoorPhotoUrl) && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenActionModal(o, "door");
-                                }}
-                                className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/btn-door.webp')",
-                                }}
-                                title="معاينة صور الأبواب 🚪"
-                              />
-                            )}
+                            >
+                              <span className="text-sm">✏️</span>
+                              <span>تعديل</span>
+                            </Link>
                           </div>
 
-                          {/* الجهة اليسرى: أزرار المجهز (الإسناد وتسجيل الدفع) */}
+                          {/* الجهة اليسرى: أزرار المجهز (دفع للعميل وإسناد لمندوب مع اسم المندوب المسند) */}
                           <div className="flex items-center gap-1 sm:gap-1.5 -translate-y-1 ml-0.5 shrink-0">
                             {/* زر تسجيل دفع للعميل ⚡ */}
                             {showPay && !isCancelled && !isDelivered && (
@@ -911,15 +793,16 @@ export function PreparerOrderTable({
                                   e.stopPropagation();
                                   setPayOrder(o);
                                 }}
-                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-md"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
-                                }}
+                                className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition bg-gradient-to-b from-[#104D3B] via-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_3px_12px_rgba(10,61,46,0.4),inset_0_1px_0_rgba(245,215,127,0.4)] cursor-pointer shrink-0 p-1 select-none text-center"
                                 title="تسجيل دفع للعميل (المحل) ⚡"
-                              />
+                              >
+                                <span className="text-[10px] sm:text-[11px] font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] text-[#F5D77F]">
+                                  دفع للعميل
+                                </span>
+                              </button>
                             )}
 
-                            {/* زر إسناد لمندوب 👤 */}
+                            {/* زر إسناد لمندوب 👤 (يظهر اسم المندوب المسند في المنتصف إذا كان مسنداً) */}
                             {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
                               <button
                                 type="button"
@@ -927,14 +810,20 @@ export function PreparerOrderTable({
                                   e.stopPropagation();
                                   setAssignOrder(o);
                                 }}
-                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md"
+                                className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black flex flex-col items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md overflow-hidden p-1 text-center"
                                 style={{
                                   backgroundImage: hasAssignedCourier
                                     ? "url('/images/order-luxury/btn-assign-empty.webp')"
                                     : "url('/images/order-luxury/btn-assign.webp')",
                                 }}
-                                title="إسناد الطلب لمندوب 👤"
-                              />
+                                title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر لتعديل الإسناد)` : "إسناد الطلب لمندوب 👤"}
+                              >
+                                {hasAssignedCourier ? (
+                                  <span className="text-[10px] sm:text-[11px] font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] truncate max-w-full px-0.5 block leading-tight">
+                                    {o.assignedCourierName}
+                                  </span>
+                                ) : null}
+                              </button>
                             )}
                           </div>
                         </div>
