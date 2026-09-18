@@ -451,6 +451,7 @@ function MandoubPickupModal({
 }) {
   const [amountAlf, setAmountAlf] = useState(defaultAlf);
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
+  const formRef = useRef<HTMLFormElement>(null);
   const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
 
   return (
@@ -470,7 +471,7 @@ function MandoubPickupModal({
           </button>
         </div>
 
-        <form action={pickupAction} className="space-y-4">
+        <form ref={formRef} action={pickupAction} className="space-y-4">
           <input type="hidden" name="c" value={auth.c} />
           <input type="hidden" name="exp" value={auth.exp} />
           <input type="hidden" name="s" value={auth.s} />
@@ -482,7 +483,7 @@ function MandoubPickupModal({
             <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
           </div>
 
-          {/* مربعات الاختيار السريع 120x120 */}
+          {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
           <div className="flex gap-4 justify-center" dir="ltr">
             <MandoubAmountSquareBtn
               value={defaultAlf || "0"}
@@ -490,6 +491,10 @@ function MandoubPickupModal({
               onClick={() => {
                 setAmountAlf(defaultAlf);
                 setSelectedBox("num");
+                // تأكيد فوري وتغيير الحالة بنقرة واحدة
+                setTimeout(() => {
+                  formRef.current?.requestSubmit();
+                }, 30);
               }}
               color="emerald"
             />
@@ -520,7 +525,8 @@ function MandoubPickupModal({
                 else setSelectedBox(null);
               }}
               placeholder={defaultAlf || "0"}
-              className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              style={{ fontSize: "28px", fontWeight: "900" }}
             />
           </div>
 
@@ -675,7 +681,7 @@ function MandoubDeliveryModal({
             <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
           </div>
 
-          {/* مربعات الاختيار السريع 120x120 */}
+          {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
           <div className="flex gap-4 justify-center" dir="ltr">
             <MandoubAmountSquareBtn
               value={defaultAlf || "0"}
@@ -683,6 +689,15 @@ function MandoubDeliveryModal({
               onClick={() => {
                 setAmountAlf(defaultAlf);
                 setSelectedBox("num");
+                // تأكيد فوري وتغيير الحالة بنقرة واحدة
+                setTimeout(() => {
+                  if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                    setGeoError("");
+                    setLocationModalOpen(true);
+                  } else {
+                    formRef.current?.requestSubmit();
+                  }
+                }, 30);
               }}
               color="orange"
             />
@@ -713,7 +728,8 @@ function MandoubDeliveryModal({
                 else setSelectedBox(null);
               }}
               placeholder={defaultAlf || "0"}
-              className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+              style={{ fontSize: "28px", fontWeight: "900" }}
             />
           </div>
 
@@ -812,7 +828,7 @@ function MandoubDeliveryModal({
   );
 }
 
-/* مكونات المربعات التفاعلية 120x120 للمندوب */
+/* مكونات المربعات التفاعلية الفاخرة بحجم خط ضخم جداً */
 function MandoubAmountSquareBtn({
   value,
   selected,
@@ -827,19 +843,18 @@ function MandoubAmountSquareBtn({
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
   const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex items-center justify-center
-        text-[48px] font-black leading-none tracking-tight
-        transition-all duration-200 active:scale-[0.97]
+        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
+        rounded-[20px] border-[2.5px] flex items-center justify-center
+        transition-all duration-200 active:scale-[0.95]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
@@ -847,7 +862,17 @@ function MandoubAmountSquareBtn({
         color: textColor,
       }}
     >
-      {value}
+      <span
+        style={{
+          fontSize: "56px",
+          fontWeight: "900",
+          lineHeight: "1",
+          fontFamily: "monospace, system-ui, sans-serif",
+          display: "block",
+        }}
+      >
+        {value}
+      </span>
     </button>
   );
 }
@@ -867,18 +892,18 @@ function MandoubZeroSquareBtn({
 }) {
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#F5D77F" : isEmerald ? "#0A3D2A" : "#8B2E1A";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
-        transition-all duration-200 active:scale-[0.97]
+        w-[125px] h-[125px] min-w-[125px] min-h-[125px]
+        rounded-[20px] border-[2.5px] flex flex-col items-center justify-center
+        transition-all duration-200 active:scale-[0.95]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A66,0_8px_24px_rgba(0,0,0,0.2)] scale-[1.03]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : "#E8E0D0",
@@ -886,11 +911,18 @@ function MandoubZeroSquareBtn({
         color: textColor,
       }}
     >
-      <span className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}>
+      <span
+        style={{
+          fontSize: selected ? "56px" : "24px",
+          fontWeight: "900",
+          lineHeight: "1",
+          fontFamily: selected ? "monospace, system-ui, sans-serif" : "inherit",
+        }}
+      >
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+        <span className="text-[12px] font-bold mt-1 tracking-wide" style={{ color: "#F5D77F" }}>
           {label}
         </span>
       )}
@@ -978,7 +1010,7 @@ export function PickupMoneyForm({
           <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
         </div>
 
-        {/* مربعات الاختيار السريع 120x120 */}
+        {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
         <div className="flex gap-4 justify-center" dir="ltr">
           <MandoubAmountSquareBtn
             value={targetValue || "0"}
@@ -986,6 +1018,10 @@ export function PickupMoneyForm({
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
+              // تأكيد فوري بنقرة واحدة
+              setTimeout(() => {
+                formRef.current?.requestSubmit();
+              }, 30);
             }}
             color="emerald"
           />
@@ -1017,7 +1053,8 @@ export function PickupMoneyForm({
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            style={{ fontSize: "28px", fontWeight: "900" }}
           />
         </div>
 
@@ -1229,18 +1266,27 @@ export function DeliveryMoneyForm({
           <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
         </div>
 
-        {/* مربعات الاختيار السريع 120x120 */}
+        {/* مربعات الاختيار السريع 120x120 مع النقر للتأكيد الفوري */}
         <div className="flex gap-4 justify-center" dir="ltr">
-          <AmountSquareBtn
+          <MandoubAmountSquareBtn
             value={targetValue || "0"}
             selected={selectedBox === "num" || (amount === targetValue && targetValue !== "0")}
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
+              // تأكيد فوري بنقرة واحدة
+              setTimeout(() => {
+                if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                  setGeoError("");
+                  setLocationModalOpen(true);
+                } else {
+                  formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                }
+              }, 30);
             }}
             color="orange"
           />
-          <ZeroSquareBtn
+          <MandoubZeroSquareBtn
             label="لم استلم"
             activeLabel="0"
             selected={selectedBox === "zero" || amount === "0"}
@@ -1268,7 +1314,8 @@ export function DeliveryMoneyForm({
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            className="w-full h-[58px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[28px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            style={{ fontSize: "28px", fontWeight: "900" }}
           />
         </div>
 
