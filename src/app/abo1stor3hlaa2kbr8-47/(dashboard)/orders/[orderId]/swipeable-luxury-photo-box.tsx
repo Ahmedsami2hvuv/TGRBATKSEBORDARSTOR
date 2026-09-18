@@ -45,10 +45,10 @@ export function SwipeableLuxuryPhotoBox({
     if (!isDragging || isBusy) return;
     const touch = e.touches[0];
     const diff = touch.clientX - startXRef.current;
-    if (Math.abs(diff) > 6) {
+    if (Math.abs(diff) > 4) {
       hasMovedRef.current = true;
     }
-    const dampened = diff * 0.45;
+    const dampened = diff * 0.55;
     currentOffsetRef.current = diff;
     setOffsetX(dampened);
   };
@@ -59,10 +59,10 @@ export function SwipeableLuxuryPhotoBox({
     const diff = currentOffsetRef.current;
     setOffsetX(0);
 
-    if (diff > 25) {
+    if (diff > 18) {
       // سحب لليمين -> فتح الكاميرا 📷
       onSwipeRight();
-    } else if (diff < -25) {
+    } else if (diff < -18) {
       // سحب لليسار -> فتح المعرض / الاستوديو 🖼️
       onSwipeLeft();
     } else if (!hasMovedRef.current) {
@@ -83,10 +83,10 @@ export function SwipeableLuxuryPhotoBox({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || isBusy) return;
     const diff = e.clientX - startXRef.current;
-    if (Math.abs(diff) > 5) {
+    if (Math.abs(diff) > 4) {
       hasMovedRef.current = true;
     }
-    const dampened = diff * 0.45;
+    const dampened = diff * 0.55;
     currentOffsetRef.current = diff;
     setOffsetX(dampened);
   };
@@ -97,10 +97,10 @@ export function SwipeableLuxuryPhotoBox({
     const diff = currentOffsetRef.current;
     setOffsetX(0);
 
-    if (diff > 25) {
+    if (diff > 18) {
       // سحب لليمين -> فتح الكاميرا 📷
       onSwipeRight();
-    } else if (diff < -25) {
+    } else if (diff < -18) {
       // سحب لليسار -> فتح المعرض 🖼️
       onSwipeLeft();
     } else if (!hasMovedRef.current) {
@@ -197,6 +197,7 @@ export function SwipeableLuxuryPhotoBox({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

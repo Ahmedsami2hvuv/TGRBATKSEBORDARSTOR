@@ -859,7 +859,37 @@ export function PreparerOrderDetailSection({
   const [shopDragStart, setShopDragStart] = useState<number | null>(null);
   const [orderDragStart, setOrderDragStart] = useState<number | null>(null);
 
-  const THRESHOLD = 35;
+  const THRESHOLD = 18;
+
+  const handleShopTouchEnd = () => {
+    if (shopDragStart !== null) {
+      if (shopSwipeOffset > THRESHOLD) {
+        shopDoorCamRef.current?.click();
+      } else if (shopSwipeOffset < -THRESHOLD) {
+        shopDoorGalRef.current?.click();
+      } else if (Math.abs(shopSwipeOffset) < 5) {
+        if (shopDoorDisplay) setZoomImage({ url: shopDoorDisplay, title: "باب المحل" });
+        else shopDoorCamRef.current?.click();
+      }
+    }
+    setShopSwipeOffset(0);
+    setShopDragStart(null);
+  };
+
+  const handleOrderTouchEnd = () => {
+    if (orderDragStart !== null) {
+      if (orderSwipeOffset > THRESHOLD) {
+        orderImgCamRef.current?.click();
+      } else if (orderSwipeOffset < -THRESHOLD) {
+        orderImgGalRef.current?.click();
+      } else if (Math.abs(orderSwipeOffset) < 5) {
+        if (orderImageDisplay) setZoomImage({ url: orderImageDisplay, title: "الطلبية" });
+        else orderImgCamRef.current?.click();
+      }
+    }
+    setOrderSwipeOffset(0);
+    setOrderDragStart(null);
+  };
 
   return (
     <div className="w-full max-w-[440px] mx-auto flex flex-col gap-3 text-right" dir="rtl">
@@ -1049,7 +1079,7 @@ export function PreparerOrderDetailSection({
       <div className="flex gap-3 w-full">
         {/* يمين: باب المحل */}
         <div
-          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-[#0E3D2B] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none"
+          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-[#0E3D2B] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none touch-pan-y"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='36' height='36' viewBox='0 0 36 36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 0 L20 10 L30 8 L24 16 L34 18 L24 20 L30 28 L20 26 L18 36 L16 26 L6 28 L12 20 L2 18 L12 16 L6 8 L16 10 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
             transform: `translateX(${shopSwipeOffset}px)`,
@@ -1059,21 +1089,11 @@ export function PreparerOrderDetailSection({
           onTouchMove={(e) => {
             if (shopDragStart !== null) {
               const delta = e.touches[0].clientX - shopDragStart;
-              setShopSwipeOffset(delta * 0.45);
+              setShopSwipeOffset(delta * 0.55);
             }
           }}
-          onTouchEnd={() => {
-            if (shopSwipeOffset > THRESHOLD) {
-              shopDoorCamRef.current?.click();
-            } else if (shopSwipeOffset < -THRESHOLD) {
-              shopDoorGalRef.current?.click();
-            } else if (Math.abs(shopSwipeOffset) < 5) {
-              if (shopDoorDisplay) setZoomImage({ url: shopDoorDisplay, title: "باب المحل" });
-              else shopDoorCamRef.current?.click();
-            }
-            setShopSwipeOffset(0);
-            setShopDragStart(null);
-          }}
+          onTouchEnd={handleShopTouchEnd}
+          onTouchCancel={handleShopTouchEnd}
           onClick={() => {
             if (shopDoorDisplay) setZoomImage({ url: shopDoorDisplay, title: "باب المحل" });
             else shopDoorCamRef.current?.click();
@@ -1096,7 +1116,7 @@ export function PreparerOrderDetailSection({
           )}
 
           {/* طبقة السحب التفاعلية */}
-          {Math.abs(shopSwipeOffset) > 5 && (
+          {Math.abs(shopSwipeOffset) > 4 && (
             <div className="absolute inset-0 bg-[#C9A86A]/30 z-[5] flex items-center justify-center pointer-events-none">
               <div className="w-11 h-11 rounded-full bg-[#0A3D2E] border-2 border-[#F5D77F] text-[#F5D77F] flex items-center justify-center shadow-lg">
                 {shopSwipeOffset > 0 ? (
@@ -1118,7 +1138,7 @@ export function PreparerOrderDetailSection({
 
         {/* يسار: الطلبية */}
         <div
-          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-gradient-to-br from-[#FDF6E3] to-[#E8D5A3] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none"
+          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-gradient-to-br from-[#FDF6E3] to-[#E8D5A3] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none touch-pan-y"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='36' height='36' viewBox='0 0 36 36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 0 L20 10 L30 8 L24 16 L34 18 L24 20 L30 28 L20 26 L18 36 L16 26 L6 28 L12 20 L2 18 L12 16 L6 8 L16 10 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
             transform: `translateX(${orderSwipeOffset}px)`,
@@ -1128,21 +1148,11 @@ export function PreparerOrderDetailSection({
           onTouchMove={(e) => {
             if (orderDragStart !== null) {
               const delta = e.touches[0].clientX - orderDragStart;
-              setOrderSwipeOffset(delta * 0.45);
+              setOrderSwipeOffset(delta * 0.55);
             }
           }}
-          onTouchEnd={() => {
-            if (orderSwipeOffset > THRESHOLD) {
-              orderImgCamRef.current?.click();
-            } else if (orderSwipeOffset < -THRESHOLD) {
-              orderImgGalRef.current?.click();
-            } else if (Math.abs(orderSwipeOffset) < 5) {
-              if (orderImageDisplay) setZoomImage({ url: orderImageDisplay, title: "الطلبية" });
-              else orderImgCamRef.current?.click();
-            }
-            setOrderSwipeOffset(0);
-            setOrderDragStart(null);
-          }}
+          onTouchEnd={handleOrderTouchEnd}
+          onTouchCancel={handleOrderTouchEnd}
           onClick={() => {
             if (orderImageDisplay) setZoomImage({ url: orderImageDisplay, title: "الطلبية" });
             else orderImgCamRef.current?.click();
@@ -1165,7 +1175,7 @@ export function PreparerOrderDetailSection({
           )}
 
           {/* طبقة السحب التفاعلية */}
-          {Math.abs(orderSwipeOffset) > 5 && (
+          {Math.abs(orderSwipeOffset) > 4 && (
             <div className="absolute inset-0 bg-[#C9A86A]/30 z-[5] flex items-center justify-center pointer-events-none">
               <div className="w-11 h-11 rounded-full bg-[#0A3D2E] border-2 border-[#F5D77F] text-[#F5D77F] flex items-center justify-center shadow-lg">
                 {orderSwipeOffset > 0 ? (
@@ -1187,10 +1197,10 @@ export function PreparerOrderDetailSection({
       </div>
 
       {/* عناصر الرفع المخفية */}
-      <input ref={shopDoorCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
-      <input ref={shopDoorGalRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
-      <input ref={orderImgCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
-      <input ref={orderImgGalRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
+      <input ref={shopDoorCamRef} type="file" accept="image/*" capture="environment" className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
+      <input ref={shopDoorGalRef} type="file" accept="image/*" className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
+      <input ref={orderImgCamRef} type="file" accept="image/*" capture="environment" className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
+      <input ref={orderImgGalRef} type="file" accept="image/*" className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
 
       {/* 5. الأقسام الإضافية الخاصة بالمجهز (المتجر، الصوتيات، الفاتورة، تدفق الأموال) */}
       <div className="mt-2 space-y-4">
