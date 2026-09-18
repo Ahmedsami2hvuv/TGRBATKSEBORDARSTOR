@@ -568,6 +568,23 @@ export function OrderViewContent({
                     designerConfig={designerConfigState}
                   />
                 }
+                smartHintNode={
+                  isSmartHintValid(order.smartHintLine) ? (
+                    <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                      <div className="flex-1 text-right">
+                        <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                          <span>💡 الاستدلال الذكي</span>
+                        </p>
+                        <p className="text-xs font-black text-white mt-1">
+                          {order.smartHintLine!.trim()}
+                        </p>
+                      </div>
+                      <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                        💡
+                      </div>
+                    </div>
+                  ) : null
+                }
               >
                 {/* أزرار اللوكيشن الملكية الثلاثة المذهبة أو زر تبليغ الزبون بجانب اللوكيشن */}
                 <div className="w-full">
@@ -600,23 +617,6 @@ export function OrderViewContent({
                     designerConfig={designerConfigState}
                   />
                 </div>
-
-                {/* بلوك الاستدلال الذكي المضيء */}
-                {isSmartHintValid(order.smartHintLine) && (
-                  <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
-                    <div className="flex-1 text-right">
-                      <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
-                        <span>💡 الاستدلال الذكي</span>
-                      </p>
-                      <p className="text-xs font-black text-white mt-1">
-                        {order.smartHintLine!.trim()}
-                      </p>
-                    </div>
-                    <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
-                      💡
-                    </div>
-                  </div>
-                )}
               </AdminLuxuryCustomerCard>
             </div>
           )}
@@ -687,6 +687,23 @@ export function OrderViewContent({
                       designerConfig={designerConfigState}
                     />
                   }
+                  smartHintNode={
+                    isSmartHintValid(order.secondSmartHintLine) ? (
+                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
+                        <div className="flex-1 text-right">
+                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                            <span>💡 الاستدلال الذكي (المستلم)</span>
+                          </p>
+                          <p className="text-xs font-black text-white mt-1">
+                            {order.secondSmartHintLine!.trim()}
+                          </p>
+                        </div>
+                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                          💡
+                        </div>
+                      </div>
+                    ) : null
+                  }
                 >
                   <div className="w-full">
                     <AdminCustomerLocationQuick
@@ -718,23 +735,6 @@ export function OrderViewContent({
                       designerConfig={designerConfigState}
                     />
                   </div>
-
-                  {/* بلوك الاستدلال الذكي للوجهة الثانية */}
-                  {isSmartHintValid(order.secondSmartHintLine) && (
-                    <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
-                      <div className="flex-1 text-right">
-                        <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
-                          <span>💡 الاستدلال الذكي (المستلم)</span>
-                        </p>
-                        <p className="text-xs font-black text-white mt-1">
-                          {order.secondSmartHintLine!.trim()}
-                        </p>
-                      </div>
-                      <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
-                        💡
-                      </div>
-                    </div>
-                  )}
                 </AdminLuxuryCustomerCard>
               </div>
 

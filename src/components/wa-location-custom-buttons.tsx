@@ -53,7 +53,6 @@ export function WaLocationCustomButtons({
   designerConfig,
 }: Props) {
   const [buttons, setButtons] = useState<WaButtonNextItem[]>(customButtons || []);
-  const [openModalBtnId, setOpenModalBtnId] = useState<string | null>(null);
   const [activePhoneModal, setActivePhoneModal] = useState<{
     phone1: string;
     phone2?: string | null;
@@ -61,7 +60,7 @@ export function WaLocationCustomButtons({
   } | null>(null);
 
   useEffect(() => {
-    if (customButtons) {
+    if (customButtons && customButtons.length > 0) {
       setButtons(customButtons);
       return;
     }
@@ -79,8 +78,8 @@ export function WaLocationCustomButtons({
     };
   }, [customButtons]);
 
-  // تصفية الأزرار المخصصة المفعّلة لخيار "بجانب زر اللوكيشن"
-  const locationButtons = buttons.filter((btn) => {
+  // 1. تصفية الأزرار المخصصة المفعّلة لخيار "بجانب زر اللوكيشن"
+  let locationButtons = buttons.filter((btn) => {
     if (!btn.showNextToLocation) return false;
 
     // فحص الصلاحية
@@ -120,24 +119,39 @@ export function WaLocationCustomButtons({
     return true;
   });
 
+  // 2. إذا لم يكن هناك زر محدد بـ showNextToLocation صراحة، نبحث عن أول زر مخصص متاح في صفحة أزرار الواتساب
+  if (locationButtons.length === 0 && buttons.length > 0) {
+    const candidate = buttons.find((b) => b.label?.includes("تبليغ") || b.label?.includes("مراسلة") || b.recipient !== "shop") || buttons[0];
+    if (candidate) {
+      locationButtons = [candidate];
+    }
+  }
+
+  // 3. إذا لم تكن هناك أزرار إطلاقاً مسجلة، نضع زر تبليغ الزبون الافتراضي الفاخر
   if (locationButtons.length === 0) {
-    return null;
+    locationButtons = [
+      {
+        id: "default-notify-customer",
+        label: "تبليغ الزبون",
+        iconKey: "💬",
+        templateText: "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
+        recipient: "customer",
+        showNextToLocation: true,
+      },
+    ];
   }
 
   const handleButtonClick = (btn: WaButtonNextItem) => {
     const variants = splitMandoubWaTemplateVariants(btn.templateText || "");
     if (variants.length === 0) {
-      sendWaMessage(btn, "");
+      sendWaMessage(btn, btn.templateText || "السلام عليكم بخصوص طلبكم 📦");
     } else {
-      // اختيار صيغة عشوائية فوراً في كل ضغطة
       const randomIndex = Math.floor(Math.random() * variants.length);
       sendWaMessage(btn, variants[randomIndex]);
     }
   };
 
   const sendWaMessage = (btn: WaButtonNextItem, rawTemplate: string) => {
-    setOpenModalBtnId(null);
-
     const text = applyMandoubWaTemplate(rawTemplate, {
       ...templateVars,
       customer_phone: customerPhone || templateVars.customer_phone || "",
@@ -163,7 +177,7 @@ export function WaLocationCustomButtons({
         ? customerPhone2
         : btn.recipient === "shop" && shopPhone
         ? shopPhone
-        : p1;
+        : p1 || p2;
 
     const url = whatsappMeUrl(targetPhone, text);
     if (url && url !== "#") {
@@ -175,7 +189,7 @@ export function WaLocationCustomButtons({
 
   return (
     <>
-      {locationButtons.map((btn) => {
+      {locationButtons.slice(0, 1).map((btn) => {
         const btnCustom = designerConfig?.waButtonsConfig?.[btn.id];
         if (btnCustom?.hidden) return null;
 
@@ -187,8 +201,8 @@ export function WaLocationCustomButtons({
             <button
               type="button"
               onClick={() => handleButtonClick(btn)}
-              className={`group relative flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 text-[#0A3D2E] font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] active:scale-[0.97] cursor-pointer overflow-hidden ${
-                compact ? "text-[11px] py-1.5 px-2" : "text-[13px] px-3 py-2"
+              className={`group relative flex w-full h-[42px] max-h-[42px] items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 text-[#0A3D2E] font-black text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] active:scale-[0.97] cursor-pointer overflow-hidden px-3 ${
+                compact ? "text-[11px] py-1 px-2" : "text-[13px]"
               }`}
               title={btn.label}
             >
@@ -204,7 +218,7 @@ export function WaLocationCustomButtons({
                 <img
                   src={customImg}
                   alt={btn.label}
-                  className="w-5 h-5 object-contain shrink-0 drop-shadow-sm pointer-events-none"
+                  className="w-4 h-4 object-contain shrink-0 drop-shadow-sm pointer-events-none"
                 />
               ) : (
                 <span className="text-sm shrink-0">{btn.iconKey || "💬"}</span>
@@ -227,3 +241,4 @@ export function WaLocationCustomButtons({
     </>
   );
 }
+

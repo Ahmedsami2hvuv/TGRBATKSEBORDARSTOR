@@ -47,6 +47,7 @@ export function AdminLuxuryCustomerCard({
   designerConfig,
   phoneProfile,
   headerAction,
+  smartHintNode,
   children,
 }: {
   order: any;
@@ -68,6 +69,7 @@ export function AdminLuxuryCustomerCard({
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
   headerAction?: React.ReactNode;
+  smartHintNode?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -463,15 +465,15 @@ export function AdminLuxuryCustomerCard({
             />
           </div>
 
-          {/* زر فتح لوكيشن الزبون الذهبي الكبير الفاخر مع زر تبليغ الزبون بجانبه أو أزرار اللوكيشن */}
+          {/* زر فتح لوكيشن الزبون الذهبي الفاخر بارتفاع متناسق مع زر تبليغ الزبون بجانبه أو أزرار اللوكيشن */}
           <div className="space-y-2.5 pt-1">
             {hasLocation ? (
-              <div className="grid grid-cols-2 gap-2.5 items-stretch">
+              <div className="grid grid-cols-2 gap-2.5 items-center">
                 <a
                   href={effectiveLocationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full min-h-[44px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+                  className="w-full h-[42px] max-h-[42px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform overflow-hidden px-2"
                 >
                   <svg className="w-4 h-4 text-[#0A3D2E] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -485,9 +487,7 @@ export function AdminLuxuryCustomerCard({
                       : "فتح لوكيشن الزبون"}
                   </span>
                 </a>
-                {children ? (
-                  <div className="w-full flex items-center">{children}</div>
-                ) : null}
+                <div className="w-full flex items-center">{children}</div>
               </div>
             ) : (
               <div className="w-full">
@@ -531,6 +531,13 @@ export function AdminLuxuryCustomerCard({
                 </button>
               </div>
             )}
+
+            {/* بلوك الاستدلال الذكي المضيء في موقعه المستقل بكامل العرض */}
+            {smartHintNode ? (
+              <div className="pt-1 w-full">
+                {smartHintNode}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
