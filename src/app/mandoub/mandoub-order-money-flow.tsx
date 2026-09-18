@@ -488,6 +488,7 @@ function MandoubPickupModal({
             <input type="hidden" name="orderId" value={orderId} />
             <input type="hidden" name="next" value={nextUrl} />
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
+            <input type="hidden" name="mandoubMoneySubmitMode" value="" />
 
             <div className="text-right">
               <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
@@ -501,6 +502,8 @@ function MandoubPickupModal({
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
+                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
+                  if (modeInput) modeInput.value = "";
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -514,6 +517,10 @@ function MandoubPickupModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
+                  if (modeInput) modeInput.value = "statusOnlyNoAmount";
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.removeAttribute("required");
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -700,6 +707,7 @@ function MandoubDeliveryModal({
             <input type="hidden" name="orderId" value={orderId} />
             <input type="hidden" name="next" value={nextUrl} />
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
+            <input type="hidden" name="mandoubMoneySubmitMode" value="" />
             <input ref={latRef} type="hidden" name="lat" value="" />
             <input ref={lngRef} type="hidden" name="lng" value="" />
 
@@ -715,6 +723,8 @@ function MandoubDeliveryModal({
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
+                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
+                  if (modeInput) modeInput.value = "";
                   setTimeout(() => {
                     if (missingCustomerLocation && !locationPromptDoneRef.current) {
                       setGeoError("");
@@ -733,6 +743,10 @@ function MandoubDeliveryModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
+                  if (modeInput) modeInput.value = "statusOnlyNoAmount";
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.removeAttribute("required");
                   setTimeout(() => {
                     if (missingCustomerLocation && !locationPromptDoneRef.current) {
                       setGeoError("");
@@ -1048,6 +1062,7 @@ export function PickupMoneyForm({
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
+              if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
               setTimeout(() => {
                 formRef.current?.requestSubmit();
               }, 30);
@@ -1061,6 +1076,15 @@ export function PickupMoneyForm({
             onClick={() => {
               setAmount("0");
               setSelectedBox("zero");
+              if (pickupSubmitModeRef.current) {
+                pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
+              }
+              if (amountRef.current) {
+                amountRef.current.removeAttribute("required");
+              }
+              setTimeout(() => {
+                formRef.current?.requestSubmit();
+              }, 30);
             }}
             color="emerald"
           />
@@ -1305,6 +1329,7 @@ export function DeliveryMoneyForm({
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
+              if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
               setTimeout(() => {
                 if (missingCustomerLocation && !locationPromptDoneRef.current) {
                   setGeoError("");
@@ -1323,6 +1348,20 @@ export function DeliveryMoneyForm({
             onClick={() => {
               setAmount("0");
               setSelectedBox("zero");
+              if (deliverySubmitModeRef.current) {
+                deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
+              }
+              if (amountRef.current) {
+                amountRef.current.removeAttribute("required");
+              }
+              setTimeout(() => {
+                if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                  setGeoError("");
+                  setLocationModalOpen(true);
+                } else {
+                  formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+                }
+              }, 30);
             }}
             color="orange"
           />

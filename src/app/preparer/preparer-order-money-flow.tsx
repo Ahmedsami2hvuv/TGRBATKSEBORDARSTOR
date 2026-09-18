@@ -575,6 +575,12 @@ export function PickupMoneyForm(props: {
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            if (submitModeRef.current) {
+              submitModeRef.current.value = "statusOnlyNoAmount";
+            }
+            if (amountRef.current) {
+              amountRef.current.removeAttribute("required");
+            }
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);

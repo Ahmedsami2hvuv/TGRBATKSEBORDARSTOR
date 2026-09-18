@@ -127,29 +127,27 @@ export async function submitMandoubPickupMoney(
   });
   const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  const pickupStatusOnly =
-    advanceStatus === "delivering" &&
-    order.status === "assigned" &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+  const isZeroAmount = amountRaw === "0" || amountRaw === "٠" || submitMode === "statusOnlyNoAmount" || statusAdvanceOnly;
 
-  if (pickupStatusOnly) {
-    if (!paidSoFar.greaterThan(0)) {
-      /* تحويل دون تسجيل صادر — مسموح */
-    } else if (!dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
-    }
-    await prisma.$transaction(async (tx) => {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "assigned", "delivering");
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: "delivering" },
+  if (isZeroAmount) {
+    if (advanceStatus === "delivering" || order.status === "assigned" || order.status === "pending") {
+      await prisma.$transaction(async (tx) => {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: "delivering" },
+        });
       });
-    });
-    void notifyStaffOrderPickedUp(orderId).catch(() => {});
-    revalidateAdminTrackingForStatusChange();
+      void notifyStaffOrderPickedUp(orderId).catch(() => {});
+      revalidateAdminTrackingForStatusChange();
+    }
     revalidateMandoubPaths(nextRaw);
+    revalidatePath("/mandoub");
+    revalidatePath(`/mandoub/order/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders`);
     if (noRedirect) {
-      return { ok: true };
+      return { ok: true, success: true };
     }
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -286,50 +284,53 @@ export async function submitMandoubDeliveryMoney(
   });
   const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  const deliveryStatusOnly =
-    advanceStatus === "delivered" &&
-    order.status === "delivering" &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+  const isZeroAmount = amountRaw === "0" || amountRaw === "٠" || submitMode === "statusOnlyNoAmount" || statusAdvanceOnly;
 
-  if (deliveryStatusOnly) {
-    if (!receivedSoFar.greaterThan(0)) {
-      /* تحويل دون تسجيل وارد — مسموح */
-    } else if (!dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
-    }
+  if (isZeroAmount) {
+    const courierRow = await prisma.courier.findUnique({
+      where: { id: order.assignedCourierId },
+      select: { vehicleType: true, zeroEarning: true },
+    });
+    const hadLocationBefore = hasCustomerLocationUrl(
+      order.customerLocationUrl,
+      undefined,
+    );
+    const coordsOk =
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat !== 0 &&
+      lng !== 0;
+
+    const attachCourierGpsAsCustomer = !hadLocationBefore && coordsOk;
+    const mapsUrl = attachCourierGpsAsCustomer ? `https://www.google.com/maps?q=${lat},${lng}` : null;
+    const uploadedBy = attachCourierGpsAsCustomer ? await courierUploaderLabelForLocation(v.courierId) : null;
+
     await prisma.$transaction(async (tx) => {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-      const deliveryEv = await tx.orderCourierMoneyEvent.findFirst({
-        where: { orderId, kind: MONEY_KIND_DELIVERY, deletedAt: null },
-        orderBy: { createdAt: "desc" },
-      });
-      const earningCourierId = deliveryEv?.courierId ?? order.assignedCourierId;
+      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, "delivered");
       let earning: Decimal | null = null;
       let earningFor: string | null = null;
-      if (earningCourierId && order.deliveryPrice != null) {
-        const cr = await tx.courier.findUnique({ where: { id: earningCourierId } });
-        if (cr) {
-          earning = computeCourierDeliveryEarningDinar(cr.vehicleType, order.deliveryPrice, cr.zeroEarning);
-          earningFor = earning != null ? earningCourierId : null;
-        }
+      if (courierRow && order.deliveryPrice != null) {
+        earning = computeCourierDeliveryEarningDinar(courierRow.vehicleType, order.deliveryPrice, courierRow.zeroEarning);
+        earningFor = earning != null ? order.assignedCourierId : null;
       }
-      
-      if (!deliveryEv && earningCourierId && !order.prepaidAll) {
-        await tx.orderCourierMoneyEvent.create({
-          data: {
-            orderId,
-            courierId: earningCourierId,
-            kind: MONEY_KIND_DELIVERY,
-            amountDinar: new Decimal(0),
-            expectedDinar: order.deliveryPrice ?? new Decimal(0),
-            matchesExpected: true
-          }
+
+      if (attachCourierGpsAsCustomer && mapsUrl && order.customerId) {
+        await tx.customer.update({
+          where: { id: order.customerId },
+          data: { customerLocationUrl: mapsUrl },
         });
       }
 
       await tx.order.update({
         where: { id: orderId },
         data: {
+          ...(attachCourierGpsAsCustomer && mapsUrl && uploadedBy
+            ? {
+                customerLocationUrl: mapsUrl,
+                customerLocationUploadedByName: uploadedBy,
+                customerLocationSetByCourierAt: new Date(),
+              }
+            : {}),
           status: "delivered",
           courierEarningDinar: earning,
           courierEarningForCourierId: earningFor,
@@ -339,11 +340,16 @@ export async function submitMandoubDeliveryMoney(
       const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
       await handleOrderDelivered(orderId, tx);
     });
+
     void notifyStaffOrderDelivered(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
+    revalidatePath("/mandoub");
+    revalidatePath(`/mandoub/order/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders`);
     if (noRedirect) {
-      return { ok: true };
+      return { ok: true, success: true };
     }
     redirect(safeMandoubReturn(nextRaw));
   }

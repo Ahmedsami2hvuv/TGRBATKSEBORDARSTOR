@@ -133,10 +133,11 @@ export async function submitPreparerPickupMoney(
     });
     const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
+    const isZeroAmount = amountRaw === "0" || amountRaw === "٠" || submitMode === "statusOnlyNoAmount" || statusAdvanceOnly;
     const pickupStatusOnly =
       advanceStatus === "delivering" &&
       (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId)) &&
-      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+      isZeroAmount;
 
     if (pickupStatusOnly) {
       if (paidSoFar.greaterThan(0) && !dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
@@ -250,10 +251,11 @@ export async function submitPreparerDeliveryMoney(
     });
     const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
+    const isZeroAmount = amountRaw === "0" || amountRaw === "٠" || submitMode === "statusOnlyNoAmount" || statusAdvanceOnly;
     const deliveryStatusOnly =
       advanceStatus === "delivered" &&
-      a.order.status === "delivering" &&
-      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+      (a.order.status === "delivering" || a.order.status === "assigned") &&
+      isZeroAmount;
 
     if (deliveryStatusOnly) {
       if (receivedSoFar.greaterThan(0) && !dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
