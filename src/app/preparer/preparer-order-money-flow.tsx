@@ -517,18 +517,18 @@ export function PickupMoneyForm(props: {
         <>
 
 
-          {/* إسناد المندوب مباشرة */}
-          <div
-            className={
-              dark
-                ? "space-y-2 rounded-xl border border-neutral-600 bg-neutral-900/60 p-3"
-                : "space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
-            }
-          >
-            {canAssign ? (
+          {/* إسناد المندوب إذا كان الطلب غير مسند */}
+          {canAssign ? (
+            <div
+              className={
+                dark
+                  ? "space-y-2 rounded-xl border border-neutral-600 bg-neutral-900/60 p-3"
+                  : "space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
+              }
+            >
               <div className="space-y-1">
                 <span className={`text-xs font-bold ${dark ? "text-white" : "text-slate-500"}`}>
-                  اختر مندوباً (اختياري) لإسناد الطلب ودفع المبلغ للمحل:
+                  اختر مندوباً (اختياري) لإسناد الطلب:
                 </span>
                 <select
                   name="assignToCourierId"
@@ -547,15 +547,10 @@ export function PickupMoneyForm(props: {
                 </select>
                 <input type="hidden" name="advanceStatus" value="delivering" />
               </div>
-            ) : (
-              <div className="py-1">
-                <p className={`text-xs font-bold ${dark ? "text-white/70" : "text-slate-500"}`}>
-                  سيتم تسجيل المبلغ للصادر {props.currentCourierId ? "للمندوب الحالي" : "كحركة مالية عامة"}.
-                </p>
-                <input type="hidden" name="advanceStatus" value="delivering" />
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <input type="hidden" name="advanceStatus" value="delivering" />
+          )}
 
 
 
