@@ -522,8 +522,8 @@ function AdminPickupModal({
   pickupPending: boolean;
   onClose: () => void;
 }) {
-  const [amountAlf, setAmountAlf] = useState(defaultAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const isMismatch =
     amountAlf.trim() !== "" &&
@@ -554,7 +554,17 @@ function AdminPickupModal({
         <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
         <div className="p-6">
-          <form ref={formRef} action={pickupAction} className="space-y-4">
+          <form
+            ref={formRef}
+            action={pickupAction}
+            className="space-y-4"
+            onSubmit={(e) => {
+              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
+                amtInput.value = defaultAlf || "0";
+              }
+            }}
+          >
             <input type="hidden" name="orderId" value={orderId} />
             <input type="hidden" name="next" value={nextPath} />
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
@@ -567,10 +577,12 @@ function AdminPickupModal({
             <div className="flex gap-4 justify-center" dir="ltr">
               <AmountSquareBtn
                 value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = defaultAlf;
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -584,6 +596,8 @@ function AdminPickupModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = "0";
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -596,13 +610,12 @@ function AdminPickupModal({
             <div>
               <input
                 name="amountAlf"
-                required
                 inputMode="numeric"
                 value={amountAlf}
                 onChange={(e) => {
                   const v = e.target.value;
                   setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                   else if (v === "0") setSelectedBox("zero");
                   else setSelectedBox(null);
                 }}
@@ -675,8 +688,8 @@ function AdminDeliveryModal({
   deliveryPending: boolean;
   onClose: () => void;
 }) {
-  const [amountAlf, setAmountAlf] = useState(defaultAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const isMismatch =
     amountAlf.trim() !== "" &&
@@ -707,7 +720,17 @@ function AdminDeliveryModal({
         <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
         <div className="p-6">
-          <form ref={formRef} action={deliveryAction} className="space-y-4">
+          <form
+            ref={formRef}
+            action={deliveryAction}
+            className="space-y-4"
+            onSubmit={(e) => {
+              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
+                amtInput.value = defaultAlf || "0";
+              }
+            }}
+          >
             <input type="hidden" name="orderId" value={orderId} />
             <input type="hidden" name="next" value={nextPath} />
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
@@ -720,10 +743,12 @@ function AdminDeliveryModal({
             <div className="flex gap-4 justify-center" dir="ltr">
               <AmountSquareBtn
                 value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = defaultAlf;
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -737,6 +762,8 @@ function AdminDeliveryModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = "0";
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -749,13 +776,12 @@ function AdminDeliveryModal({
             <div>
               <input
                 name="amountAlf"
-                required
                 inputMode="numeric"
                 value={amountAlf}
                 onChange={(e) => {
                   const v = e.target.value;
                   setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                   else if (v === "0") setSelectedBox("zero");
                   else setSelectedBox(null);
                 }}

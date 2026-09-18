@@ -498,14 +498,14 @@ export function PickupMoneyForm(props: {
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const submitModeRef = useRef<HTMLInputElement>(null);
   const targetValue = props.remainingAlfHint || props.expectedAlfHint || "";
-  const [amountAlf, setAmountAlf] = useState(targetValue);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
 
   useEffect(() => {
-    const val = props.remainingAlfHint || props.expectedAlfHint || "";
-    setAmountAlf(val);
-    setSelectedBox(val ? "num" : null);
+    setAmountAlf("");
+    setSelectedBox(null);
   }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
   const isMismatch =
@@ -516,7 +516,18 @@ export function PickupMoneyForm(props: {
   const canAssign = !props.currentCourierId && props.couriers && props.couriers.length > 0;
 
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-4 select-none" dir="rtl">
+    <form
+      ref={formRef}
+      action={props.formAction}
+      className="space-y-4 select-none"
+      dir="rtl"
+      onSubmit={(e) => {
+        if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+          amountRef.current.value = targetValue || "0";
+        }
+      }}
+    >
+      <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
@@ -558,10 +569,12 @@ export function PickupMoneyForm(props: {
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetValue || "0"}
-          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "0")}
+          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "" && targetValue !== "0")}
           onClick={() => {
             setAmountAlf(targetValue);
             setSelectedBox("num");
+            if (submitModeRef.current) submitModeRef.current.value = "";
+            if (amountRef.current) amountRef.current.value = targetValue;
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -579,7 +592,7 @@ export function PickupMoneyForm(props: {
               submitModeRef.current.value = "statusOnlyNoAmount";
             }
             if (amountRef.current) {
-              amountRef.current.removeAttribute("required");
+              amountRef.current.value = "0";
             }
             setTimeout(() => {
               formRef.current?.requestSubmit();
@@ -594,13 +607,12 @@ export function PickupMoneyForm(props: {
         <input
           ref={amountRef}
           name="amountAlf"
-          required
           inputMode="numeric"
           value={amountAlf}
           onChange={(e) => {
             const v = e.target.value;
             setAmountAlf(v);
-            if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+            if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}
@@ -673,14 +685,14 @@ export function DeliveryMoneyForm(props: {
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const submitModeRef = useRef<HTMLInputElement>(null);
   const targetValue = props.remainingAlfHint || props.expectedAlfHint || "";
-  const [amountAlf, setAmountAlf] = useState(targetValue);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
 
   useEffect(() => {
-    const val = props.remainingAlfHint || props.expectedAlfHint || "";
-    setAmountAlf(val);
-    setSelectedBox(val ? "num" : null);
+    setAmountAlf("");
+    setSelectedBox(null);
   }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
   const isMismatch =
@@ -690,7 +702,18 @@ export function DeliveryMoneyForm(props: {
     selectedBox !== "zero";
 
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-4 select-none" dir="rtl">
+    <form
+      ref={formRef}
+      action={props.formAction}
+      className="space-y-4 select-none"
+      dir="rtl"
+      onSubmit={(e) => {
+        if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+          amountRef.current.value = targetValue || "0";
+        }
+      }}
+    >
+      <input ref={submitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="" />
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />
@@ -712,10 +735,12 @@ export function DeliveryMoneyForm(props: {
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetValue || "0"}
-          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "0")}
+          selected={selectedBox === "num" || (amountAlf === targetValue && targetValue !== "" && targetValue !== "0")}
           onClick={() => {
             setAmountAlf(targetValue);
             setSelectedBox("num");
+            if (submitModeRef.current) submitModeRef.current.value = "";
+            if (amountRef.current) amountRef.current.value = targetValue;
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -729,6 +754,12 @@ export function DeliveryMoneyForm(props: {
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            if (submitModeRef.current) {
+              submitModeRef.current.value = "statusOnlyNoAmount";
+            }
+            if (amountRef.current) {
+              amountRef.current.value = "0";
+            }
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -742,13 +773,12 @@ export function DeliveryMoneyForm(props: {
         <input
           ref={amountRef}
           name="amountAlf"
-          required
           inputMode="numeric"
           value={amountAlf}
           onChange={(e) => {
             const v = e.target.value;
             setAmountAlf(v);
-            if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+            if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}

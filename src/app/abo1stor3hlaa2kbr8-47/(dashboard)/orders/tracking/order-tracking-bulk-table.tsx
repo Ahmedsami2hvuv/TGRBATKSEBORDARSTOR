@@ -192,8 +192,8 @@ function AdminPickupFormModal({
   onClose: () => void;
 }) {
   const targetAlf = remainingAlfHint || expectedAlfHint || "";
-  const [amountAlf, setAmountAlf] = useState(targetAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -210,6 +210,10 @@ function AdminPickupFormModal({
     setPending(true);
     setError(null);
     try {
+      const amtVal = String(fd.get("amountAlf") ?? "").trim();
+      if (!amtVal && selectedBox !== "zero") {
+        fd.set("amountAlf", targetAlf || "0");
+      }
       const res = await submitAdminPickupMoney({}, fd);
       if (res.error) {
         setError(res.error);
@@ -246,10 +250,12 @@ function AdminPickupFormModal({
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetAlf || "0"}
-          selected={selectedBox === "num" || (amountAlf === targetAlf && targetAlf !== "0")}
+          selected={selectedBox === "num" || (amountAlf === targetAlf && targetAlf !== "" && targetAlf !== "0")}
           onClick={() => {
             setAmountAlf(targetAlf);
             setSelectedBox("num");
+            const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+            if (amtInput) amtInput.value = targetAlf;
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -263,6 +269,8 @@ function AdminPickupFormModal({
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+            if (amtInput) amtInput.value = "0";
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -275,13 +283,12 @@ function AdminPickupFormModal({
       <div>
         <input
           name="amountAlf"
-          required
           inputMode="numeric"
           value={amountAlf}
           onChange={(e) => {
             const v = e.target.value;
             setAmountAlf(v);
-            if (v === targetAlf && targetAlf !== "0") setSelectedBox("num");
+            if (v === targetAlf && targetAlf !== "" && targetAlf !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}
@@ -356,8 +363,8 @@ function AdminDeliveryFormModal({
   prepaidAll?: boolean;
 }) {
   const targetAlf = prepaidAll ? "0" : (remainingAlfHint || expectedAlfHint || "");
-  const [amountAlf, setAmountAlf] = useState(targetAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -374,6 +381,10 @@ function AdminDeliveryFormModal({
     setPending(true);
     setError(null);
     try {
+      const amtVal = String(fd.get("amountAlf") ?? "").trim();
+      if (!amtVal && selectedBox !== "zero") {
+        fd.set("amountAlf", targetAlf || "0");
+      }
       const res = await submitAdminDeliveryMoney({}, fd);
       if (res.error) {
         setError(res.error);
@@ -410,10 +421,12 @@ function AdminDeliveryFormModal({
       <div className="flex gap-4 justify-center" dir="ltr">
         <AmountSquareBtn
           value={targetAlf || "0"}
-          selected={selectedBox === "num" || (amountAlf === targetAlf && targetAlf !== "0")}
+          selected={selectedBox === "num" || (amountAlf === targetAlf && targetAlf !== "" && targetAlf !== "0")}
           onClick={() => {
             setAmountAlf(targetAlf);
             setSelectedBox("num");
+            const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+            if (amtInput) amtInput.value = targetAlf;
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -427,6 +440,8 @@ function AdminDeliveryFormModal({
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+            if (amtInput) amtInput.value = "0";
             setTimeout(() => {
               formRef.current?.requestSubmit();
             }, 30);
@@ -439,13 +454,12 @@ function AdminDeliveryFormModal({
       <div>
         <input
           name="amountAlf"
-          required
           inputMode="numeric"
           value={amountAlf}
           onChange={(e) => {
             const v = e.target.value;
             setAmountAlf(v);
-            if (v === targetAlf && targetAlf !== "0") setSelectedBox("num");
+            if (v === targetAlf && targetAlf !== "" && targetAlf !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}

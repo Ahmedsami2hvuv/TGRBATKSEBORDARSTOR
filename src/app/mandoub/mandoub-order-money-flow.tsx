@@ -449,8 +449,8 @@ function MandoubPickupModal({
   pickupPending: boolean;
   onClose: () => void;
 }) {
-  const [amountAlf, setAmountAlf] = useState(defaultAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const isMismatch =
     amountAlf.trim() !== "" &&
@@ -481,7 +481,17 @@ function MandoubPickupModal({
         <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
         <div className="p-6">
-          <form ref={formRef} action={pickupAction} className="space-y-4">
+          <form
+            ref={formRef}
+            action={pickupAction}
+            className="space-y-4"
+            onSubmit={(e) => {
+              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
+                amtInput.value = defaultAlf || "0";
+              }
+            }}
+          >
             <input type="hidden" name="c" value={auth.c} />
             <input type="hidden" name="exp" value={auth.exp} />
             <input type="hidden" name="s" value={auth.s} />
@@ -498,12 +508,14 @@ function MandoubPickupModal({
             <div className="flex gap-4 justify-center" dir="ltr">
               <MandoubAmountSquareBtn
                 value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
                   const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
                   if (modeInput) modeInput.value = "";
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = defaultAlf;
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -520,7 +532,7 @@ function MandoubPickupModal({
                   const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.removeAttribute("required");
+                  if (amtInput) amtInput.value = "0";
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 30);
@@ -533,13 +545,12 @@ function MandoubPickupModal({
             <div>
               <input
                 name="amountAlf"
-                required
                 inputMode="numeric"
                 value={amountAlf}
                 onChange={(e) => {
                   const v = e.target.value;
                   setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                   else if (v === "0") setSelectedBox("zero");
                   else setSelectedBox(null);
                 }}
@@ -616,8 +627,8 @@ function MandoubDeliveryModal({
   onClose: () => void;
   missingCustomerLocation: boolean;
 }) {
-  const [amountAlf, setAmountAlf] = useState(defaultAlf);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
+  const [amountAlf, setAmountAlf] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [geoError, setGeoError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -694,6 +705,10 @@ function MandoubDeliveryModal({
             action={deliveryAction}
             className="space-y-4"
             onSubmit={(e) => {
+              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
+                amtInput.value = defaultAlf || "0";
+              }
               if (missingCustomerLocation && !locationPromptDoneRef.current) {
                 e.preventDefault();
                 setGeoError("");
@@ -719,12 +734,14 @@ function MandoubDeliveryModal({
             <div className="flex gap-4 justify-center" dir="ltr">
               <MandoubAmountSquareBtn
                 value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "0")}
+                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
                   const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
                   if (modeInput) modeInput.value = "";
+                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
+                  if (amtInput) amtInput.value = defaultAlf;
                   setTimeout(() => {
                     if (missingCustomerLocation && !locationPromptDoneRef.current) {
                       setGeoError("");
@@ -746,7 +763,7 @@ function MandoubDeliveryModal({
                   const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.removeAttribute("required");
+                  if (amtInput) amtInput.value = "0";
                   setTimeout(() => {
                     if (missingCustomerLocation && !locationPromptDoneRef.current) {
                       setGeoError("");
@@ -764,13 +781,12 @@ function MandoubDeliveryModal({
             <div>
               <input
                 name="amountAlf"
-                required
                 inputMode="numeric"
                 value={amountAlf}
                 onChange={(e) => {
                   const v = e.target.value;
                   setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "0") setSelectedBox("num");
+                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                   else if (v === "0") setSelectedBox("zero");
                   else setSelectedBox(null);
                 }}
@@ -1002,8 +1018,8 @@ export function PickupMoneyForm({
   noRedirect?: boolean;
 }) {
   const targetValue = remainingAlfHint || expectedAlfHint || "";
-  const [amount, setAmount] = useState(targetValue);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
+  const [amount, setAmount] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [note, setNote] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -1011,12 +1027,11 @@ export function PickupMoneyForm({
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    const val = remainingAlfHint || expectedAlfHint || "";
-    setAmount(val);
-    setSelectedBox(val ? "num" : null);
+    setAmount("");
+    setSelectedBox(null);
   }, [remainingAlfHint, expectedAlfHint, orderId]);
 
-  const isMismatch = amount.trim() !== "" && amount.trim() !== targetValue;
+  const isMismatch = amount.trim() !== "" && amount.trim() !== targetValue && amount.trim() !== "0" && selectedBox !== "zero";
 
   return (
     <div className="space-y-4 select-none" dir="rtl">
@@ -1024,6 +1039,11 @@ export function PickupMoneyForm({
         ref={formRef}
         action={formAction}
         className="space-y-4"
+        onSubmit={(e) => {
+          if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+            amountRef.current.value = targetValue || "0";
+          }
+        }}
       >
         <input
           ref={pickupSubmitModeRef}
@@ -1058,11 +1078,12 @@ export function PickupMoneyForm({
         <div className="flex gap-4 justify-center" dir="ltr">
           <MandoubAmountSquareBtn
             value={targetValue || "0"}
-            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "0")}
+            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "" && targetValue !== "0")}
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
               if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
+              if (amountRef.current) amountRef.current.value = targetValue;
               setTimeout(() => {
                 formRef.current?.requestSubmit();
               }, 30);
@@ -1080,7 +1101,7 @@ export function PickupMoneyForm({
                 pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
               }
               if (amountRef.current) {
-                amountRef.current.removeAttribute("required");
+                amountRef.current.value = "0";
               }
               setTimeout(() => {
                 formRef.current?.requestSubmit();
@@ -1095,13 +1116,12 @@ export function PickupMoneyForm({
           <input
             ref={amountRef}
             name="amountAlf"
-            required
             inputMode="numeric"
             value={amount}
             onChange={(e) => {
               const v = e.target.value;
               setAmount(v);
-              if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+              if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
@@ -1195,8 +1215,8 @@ export function DeliveryMoneyForm({
   prepaidAll?: boolean;
 }) {
   const targetValue = remainingAlfHint || expectedAlfHint || "";
-  const [amount, setAmount] = useState(targetValue);
-  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(targetValue ? "num" : null);
+  const [amount, setAmount] = useState("");
+  const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [note, setNote] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -1216,16 +1236,15 @@ export function DeliveryMoneyForm({
   );
 
   useEffect(() => {
-    const val = remainingAlfHint || expectedAlfHint || "";
-    setAmount(val);
-    setSelectedBox(val ? "num" : null);
+    setAmount("");
+    setSelectedBox(null);
   }, [remainingAlfHint, expectedAlfHint, orderId]);
 
   useEffect(() => {
     setPortalReady(true);
   }, []);
 
-  const isMismatch = (amount.trim() !== "" && amount.trim() !== targetValue) || prepaidConfirmState === "took_money";
+  const isMismatch = (amount.trim() !== "" && amount.trim() !== targetValue && amount.trim() !== "0" && selectedBox !== "zero") || prepaidConfirmState === "took_money";
 
   function submitDeliveryAfterLocationChoice() {
     const isSkip = pendingAfterLocationRef.current === "skip";
@@ -1233,12 +1252,11 @@ export function DeliveryMoneyForm({
       deliverySubmitModeRef.current.value = isSkip ? "statusOnlyNoAmount" : "";
     }
     if (isSkip && amountRef.current) {
-      amountRef.current.removeAttribute("required");
+      amountRef.current.value = "0";
+    } else if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+      amountRef.current.value = targetValue || "0";
     }
     formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-    if (isSkip && amountRef.current) {
-      amountRef.current.setAttribute("required", "");
-    }
   }
 
   function onConfirmGps() {
@@ -1281,6 +1299,9 @@ export function DeliveryMoneyForm({
         action={formAction}
         className="space-y-4"
         onSubmit={(e) => {
+          if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+            amountRef.current.value = targetValue || "0";
+          }
           const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
           pendingAfterLocationRef.current =
             sub?.dataset?.mandoubAction === "skip-no-amount" ? "skip" : "main";
@@ -1325,11 +1346,12 @@ export function DeliveryMoneyForm({
         <div className="flex gap-4 justify-center" dir="ltr">
           <MandoubAmountSquareBtn
             value={targetValue || "0"}
-            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "0")}
+            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "" && targetValue !== "0")}
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
               if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
+              if (amountRef.current) amountRef.current.value = targetValue;
               setTimeout(() => {
                 if (missingCustomerLocation && !locationPromptDoneRef.current) {
                   setGeoError("");
@@ -1352,7 +1374,7 @@ export function DeliveryMoneyForm({
                 deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
               }
               if (amountRef.current) {
-                amountRef.current.removeAttribute("required");
+                amountRef.current.value = "0";
               }
               setTimeout(() => {
                 if (missingCustomerLocation && !locationPromptDoneRef.current) {
@@ -1372,13 +1394,12 @@ export function DeliveryMoneyForm({
           <input
             ref={amountRef}
             name="amountAlf"
-            required
             inputMode="numeric"
             value={amount}
             onChange={(e) => {
               const v = e.target.value;
               setAmount(v);
-              if (v === targetValue && targetValue !== "0") setSelectedBox("num");
+              if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
