@@ -1704,14 +1704,17 @@ export function MandoubOrderTable({
       {pickupOrder &&
         createPortal(
           <MandoubModalContainer onClose={() => setPickupOrder(null)}>
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-center justify-between border-b pb-3">
-                <h3 className="text-lg font-bold text-slate-900">تسجيل استلام - طلب #{pickupOrder.shortId}</h3>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/20 pb-3">
+                <h4 className="text-base font-black text-[#0A3D2E] flex items-center gap-1.5">
+                  <span>💸</span>
+                  <span>تسجيل استلام - طلب #{pickupOrder.shortId}</span>
+                </h4>
                 <button
                   onClick={() => setPickupOrder(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
                 >
-                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
+                  ✕
                 </button>
               </div>
               <PickupMoneyForm
@@ -1744,14 +1747,17 @@ export function MandoubOrderTable({
       {deliveryOrder &&
         createPortal(
           <MandoubModalContainer onClose={() => setDeliveryOrder(null)}>
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-center justify-between border-b pb-3">
-                <h3 className="text-lg font-bold text-slate-900">تسجيل تسليم - طلب #{deliveryOrder.shortId}</h3>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-5 shadow-2xl text-right" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/20 pb-3">
+                <h4 className="text-base font-black text-[#BF360C] flex items-center gap-1.5">
+                  <span>🫴</span>
+                  <span>تسجيل تسليم - طلب #{deliveryOrder.shortId}</span>
+                </h4>
                 <button
                   onClick={() => setDeliveryOrder(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer"
                 >
-                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
+                  ✕
                 </button>
               </div>
               <DeliveryMoneyForm
