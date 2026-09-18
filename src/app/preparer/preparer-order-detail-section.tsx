@@ -139,24 +139,6 @@ export function PreparerOrderDetailSection({
 }) {
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
-  const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
-  const shopContactPhone = order.shop.phone?.trim() || order.submittedBy?.phone?.trim() || "";
-  const customerDoorDisplay = order.customerDoorPhotoUrl?.trim() || phoneProfile?.photoUrl?.trim() || "";
-  const customerDoorCaptionName = customerDoorDisplay && order.customerDoorPhotoUploadedByName?.trim() ? order.customerDoorPhotoUploadedByName : null;
-  const mergedCustomerLocationUrl = order.customerLocationUrl?.trim() || phoneProfile?.locationUrl?.trim() || "";
-  const mergedLandmark = order.customerLandmark?.trim() || phoneProfile?.landmark?.trim() || "";
-  const mergedAlternate = order.alternatePhone?.trim() || phoneProfile?.alternatePhone?.trim() || "";
-  const visibleCustomerPhone = order.customerPhone?.trim() || "";
-  const visibleMergedAlternate = visibleCustomerPhone ? mergedAlternate : "";
-  const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
-  const hasCustomerLocation = !missingCustomerLocation;
-  const hasCourierUploadedLocation = Boolean(order.customerLocationSetByCourierAt);
-  const routeMode = order.routeMode ?? "single";
-  const secondLocMerged = order.secondCustomerLocationUrl?.trim() || secondPhoneProfile?.locationUrl?.trim() || "";
-  const secondDoorMerged = order.secondCustomerDoorPhotoUrl?.trim() || secondPhoneProfile?.photoUrl?.trim() || "";
-  const secondLandmarkMerged = order.secondCustomerLandmark?.trim() || secondPhoneProfile?.landmark?.trim() || "";
-  const reversePickup = isReversePickupOrderType(order.orderType);
-
   // الستايل الديناميكي
   const customStyle = uiSettings ? {
     backgroundColor: uiSettings.statusStyles?.[order.status]?.backgroundColor || uiSettings.backgroundColor,
@@ -809,81 +791,442 @@ export function PreparerOrderDetailSection({
     }
   };
 
-  /** دائماً تخطيط المجهز الجديد — لا نقرأ layoutOrder من الإعدادات (قد يُعيد الشكل القديم من لوحة التصميم) */
-  const layout = [...PREPARER_ORDER_DETAIL_LAYOUT];
+  const [editPanelOpen, setEditPanelOpen] = useState(false);
+  const shopDoorCamRef = useRef<HTMLInputElement>(null);
+  const shopDoorGalRef = useRef<HTMLInputElement>(null);
+  const orderImgCamRef = useRef<HTMLInputElement>(null);
+  const orderImgGalRef = useRef<HTMLInputElement>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+
+  async function handlePhotoUpload(file: File, field: "orderImage" | "shopDoorPhoto") {
+    if (!file) return;
+    setUploadBusy(true);
+    try {
+      let toSend = file;
+      try {
+        toSend = await compressImageFileForUpload(file);
+      } catch {}
+      const fd = new FormData();
+      fd.set("p", auth.p);
+      fd.set("exp", auth.exp);
+      fd.set("s", auth.s);
+      fd.set("orderId", order.id);
+      if (field === "orderImage") fd.set("orderImage", toSend);
+      else fd.set("shopDoorPhoto", toSend);
+
+      if (field === "orderImage") {
+        await uploadPreparerPortalOrderImage({}, fd);
+      } else {
+        await uploadPreparerPortalShopDoorPhoto({}, fd);
+      }
+      window.location.reload();
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
+  const shopDoorDisplay = order.shopDoorPhotoUrl?.trim() || "";
+  const orderImageDisplay = order.imageUrl?.trim() || "";
+  const destRegionName = order.customerRegion?.name?.trim() || "جيكور";
+  const shopName = order.shop.name || "الإدارة";
+  const orderTimeStr = order.orderNoteTime || "هسه";
+  
+  const rawType = order.orderType && order.orderType !== "عام" && order.orderType !== "—"
+    ? order.orderType
+    : order.summary && order.summary.trim()
+    ? order.summary
+    : order.orderType || destRegionName;
+
+  const displayOrderType = rawType.length > 15 ? rawType.slice(0, 14) + "…" : rawType;
+
+  const priceVal = order.orderSubtotal != null
+    ? formatDinarAsAlf(order.orderSubtotal)
+    : order.purchasePrice != null
+    ? formatDinarAsAlf(order.purchasePrice)
+    : order.totalAmount != null
+    ? formatDinarAsAlf(order.totalAmount)
+    : "15";
+
+  const numOnlyPrice = String(priceVal).replace(/[^\d.]/g, "") || "15";
+
+  // حالة السحب للصور
+  const [shopSwipeOffset, setShopSwipeOffset] = useState(0);
+  const [orderSwipeOffset, setOrderSwipeOffset] = useState(0);
+  const [shopDragStart, setShopDragStart] = useState<number | null>(null);
+  const [orderDragStart, setOrderDragStart] = useState<number | null>(null);
+
+  const THRESHOLD = 35;
 
   return (
-    <section
-      style={customStyle}
-      className={`kse-glass-dark relative mt-4 border p-4 pb-32 text-base leading-relaxed sm:p-5 sm:pb-36 ${!uiSettings ? orderStatusStartStripeClass(order.status) : ''} ${
-        !uiSettings && order.prepaidAll ? "border-emerald-300/85 bg-gradient-to-b from-emerald-50/70 via-white/90 to-teal-50/40 ring-2 ring-emerald-200/55 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]" :
-        !uiSettings && reversePickup ? "border-violet-400 bg-violet-100 shadow-md" :
-        !uiSettings && missingCustomerLocation ? "border-sky-200 bg-rose-50/30 ring-2 ring-rose-200" : (!uiSettings ? `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}` : "")
-      }`}
-    >
-      {reversePickup ? null : null}
-      <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-2">
-        <div className="min-w-0">
-          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 sm:text-2xl">
-            رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-200">#{order.orderNumber}</span>
-          </h2>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30">
-              ⏰ وقت الطلب (المطلوب): {order.orderNoteTime || "فوري"}
-            </span>
+    <div className="w-full max-w-[440px] mx-auto flex flex-col gap-3 text-right" dir="rtl">
+      {/* 1. الهيدر الملكي الفاخر (سطر واحد فقط ارتفاع 52px) */}
+      <header className="h-[52px] bg-[#FFFEF8] border-2 border-[#C9A86A] rounded-[16px] flex items-center justify-between px-2.5 shadow-[0_4px_16px_rgba(201,168,106,0.2)]">
+        {/* اليمين: رقم الطلب + حالة الطلب */}
+        <div className="flex items-center gap-2">
+          <div className="bg-[#FDF6E3] border-2 border-[#C9A86A] rounded-[10px] px-2 py-0.5 text-[#8B6A2A] font-extrabold text-[15px] font-mono leading-none shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
+            #{order.orderNumber}
+          </div>
+          <div className={`rounded-[10px] px-2 py-1 text-[11px] font-black flex items-center gap-1 leading-none ${orderStatusBadgeClass(order.status)}`}>
+            <span>{STATUS_AR[order.status] ?? order.status}</span>
           </div>
         </div>
-        <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">
-          <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} onCloseModal={onCloseModal} />
-          {canEditPricing && pricingEditHref ? (
-            <Link href={pricingEditHref} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors">
-              <DynamicIcon
-                iconKey="admin_pricing"
-                config={icons}
-                className="h-4 w-4"
-                fallback={<span>💰</span>}
-              />
-              <span className="mr-2">تعديل التسعير</span>
+
+        {/* اليسار: زر تعديل + زر إغلاق */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditPanelOpen(!editPanelOpen)}
+            className="bg-white border-[1.5px] border-[#C9A86A] rounded-[10px] px-2.5 py-1 text-[#0A3D2E] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-[0_2px_6px_rgba(201,168,106,0.15)] hover:bg-[#FAF5E8] active:scale-95 transition-all"
+          >
+            <div className="w-4 h-4 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A]">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path d="m15 5 4 4" />
+              </svg>
+            </div>
+            <span>تعديل</span>
+          </button>
+
+          {onCloseModal ? (
+            <button
+              type="button"
+              onClick={onCloseModal}
+              className="w-7 h-7 rounded-full bg-[#FEF2F2] border-[1.5px] border-[#E11D48] text-[#E11D48] flex items-center justify-center cursor-pointer active:scale-90 transition-transform font-bold text-xs"
+              title="إغلاق"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          ) : (
+            <Link
+              href={closeHref}
+              className="w-7 h-7 rounded-full bg-[#FEF2F2] border-[1.5px] border-[#E11D48] text-[#E11D48] flex items-center justify-center cursor-pointer active:scale-90 transition-transform font-bold text-xs"
+              title="إغلاق"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </Link>
-          ) : null}
-          <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
+          )}
+        </div>
+      </header>
+
+      {/* لوحة تعديل الطلب السريع القابلة للفتح والطي */}
+      {editPanelOpen && (
+        <div className="rounded-[20px] border-2 border-[#C9A86A] bg-[#FFFEF8] p-3 shadow-lg animate-in slide-in-from-top-2 duration-200">
+          <PreparerOrderEditPanel
+            auth={auth}
+            orderId={order.id}
+            defaults={{
+              orderType: order.orderType,
+              customerPhone: "",
+              orderSubtotalAlf: order.orderSubtotal != null ? dinarDecimalToAlfInputString(order.orderSubtotal) : "",
+            }}
+          />
+        </div>
+      )}
+
+      {/* 2. كارت المعلومات الرئيسي المدمج */}
+      <section className="bg-[#FFFEF8] border-[2.5px] border-[#C9A86A] rounded-[20px] p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(201,168,106,0.25)] flex flex-col gap-2.5">
+        {/* السطر الأول: اسم المحل إلى منطقة الزبون */}
+        <div className="flex items-center justify-between">
+          {/* يمين: المحل */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-[#FDF6E3] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-[#0A3D2E] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                <path d="M2 7h20" />
+                <path d="M22 7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-sm text-[#0A3D2E]">{shopName}</span>
+          </div>
+
+          {/* يسار: منطقة الزبون */}
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-sm text-[#0A3D2E]">{destRegionName}</span>
+            <div className="w-8 h-8 rounded-full bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-white shadow-[0_2px_6px_rgba(10,61,46,0.3)]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* فاصل ذهبي متقطع */}
+        <div className="border-t border-dashed border-[#C9A86A]/45 w-full my-0.5" />
+
+        {/* السطر الثاني: نوع الطلب + السعر + وقت الطلب */}
+        <div className="flex items-center justify-between">
+          {/* يمين: نوع الطلب */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+                <path d="M7 7h.01" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-[13px] text-[#0A3D2E]">{displayOrderType}</span>
+          </div>
+
+          {/* وسط: السعر بدون توصيل */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="8" r="6" />
+                <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+                <path d="M7 6h1v4" />
+                <path d="m16.71 13.88.7.71-2.82 2.82" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-[13px] text-[#0A3D2E] font-mono">{numOnlyPrice}</span>
+          </div>
+
+          {/* يسار: وقت الطلب */}
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-[13px] text-[#E11D48]">{orderTimeStr}</span>
+            <div className="w-7 h-7 rounded-full bg-[#FEF2F2] border border-[#E11D48]/30 flex items-center justify-center text-[#E11D48]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. زري الإجراء أسفل كارت المعلومات */}
+      <div className="flex gap-3 w-full">
+        {/* زر يمين: استلام من الزبون */}
+        <button
+          type="button"
+          onClick={() => alert("استلام من الزبون")}
+          className="flex-1 h-[52px] rounded-[28px] bg-[#FDF6E3] border-2 border-[#C9A86A] text-[#0A3D2E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(201,168,106,0.35)] active:scale-95 transition-transform cursor-pointer"
+        >
+          <div className="w-[26px] h-[26px] rounded-full bg-white border border-[#C9A86A] flex items-center justify-center text-[#0A3D2E]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m7.5 4.27 9 5.15" />
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+              <path d="m3.3 7 8.7 5 8.7-5" />
+              <path d="M12 22V12" />
+            </svg>
+          </div>
+          <span>استلام من الزبون</span>
+        </button>
+
+        {/* زر يسار: تسليم للعميل */}
+        <button
+          type="button"
+          onClick={() => alert("تسليم للعميل")}
+          className="flex-1 h-[52px] rounded-[28px] bg-[#0A3D2E] border-2 border-[#C9A86A] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_18px_rgba(10,61,46,0.45)] active:scale-95 transition-transform cursor-pointer"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16 0 L18 8 L26 6 L22 14 L30 16 L22 18 L26 26 L18 24 L16 32 L14 24 L6 26 L10 18 L2 16 L10 14 L6 6 L14 8 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
+          }}
+        >
+          <div className="w-[26px] h-[26px] rounded-full bg-[#E8C77E]/25 border border-[#E8C77E] flex items-center justify-center text-[#F5D77F]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+              <path d="M15 18H9" />
+              <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+              <circle cx="17" cy="18" r="2" />
+              <circle cx="7" cy="18" r="2" />
+            </svg>
+          </div>
+          <span>تسليم للعميل</span>
+        </button>
+      </div>
+
+      {/* 4. صورتين بجانب بعض مع دعم السحب التفاعلي */}
+      <div className="flex gap-3 w-full">
+        {/* يمين: باب المحل */}
+        <div
+          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-[#0E3D2B] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='36' height='36' viewBox='0 0 36 36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 0 L20 10 L30 8 L24 16 L34 18 L24 20 L30 28 L20 26 L18 36 L16 26 L6 28 L12 20 L2 18 L12 16 L6 8 L16 10 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
+            transform: `translateX(${shopSwipeOffset}px)`,
+            transition: shopDragStart !== null ? "none" : "transform 0.25s ease",
+          }}
+          onTouchStart={(e) => setShopDragStart(e.touches[0].clientX)}
+          onTouchMove={(e) => {
+            if (shopDragStart !== null) {
+              const delta = e.touches[0].clientX - shopDragStart;
+              setShopSwipeOffset(delta * 0.45);
+            }
+          }}
+          onTouchEnd={() => {
+            if (shopSwipeOffset > THRESHOLD) {
+              shopDoorCamRef.current?.click();
+            } else if (shopSwipeOffset < -THRESHOLD) {
+              shopDoorGalRef.current?.click();
+            } else if (Math.abs(shopSwipeOffset) < 5) {
+              if (shopDoorDisplay) setZoomImage({ url: shopDoorDisplay, title: "باب المحل" });
+              else shopDoorCamRef.current?.click();
+            }
+            setShopSwipeOffset(0);
+            setShopDragStart(null);
+          }}
+          onClick={() => {
+            if (shopDoorDisplay) setZoomImage({ url: shopDoorDisplay, title: "باب المحل" });
+            else shopDoorCamRef.current?.click();
+          }}
+        >
+          <span className="absolute top-2.5 right-2.5 rounded-[12px] px-2.5 py-1 text-[11px] font-black bg-[#FDF6E3] text-[#0A3D2E] border border-[#C9A86A] shadow-md z-10">
+            باب المحل
+          </span>
+
+          {shopDoorDisplay ? (
+            <img src={resolvePublicAssetSrc(shopDoorDisplay)!} alt="باب المحل" className="absolute inset-0 w-full h-full object-cover z-[1]" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-[#E8C77E]/20 border-[1.5px] border-[#E8C77E] flex items-center justify-center text-[#F5D77F] z-[2]">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </div>
+          )}
+
+          {/* طبقة السحب التفاعلية */}
+          {Math.abs(shopSwipeOffset) > 5 && (
+            <div className="absolute inset-0 bg-[#C9A86A]/30 z-[5] flex items-center justify-center pointer-events-none">
+              <div className="w-11 h-11 rounded-full bg-[#0A3D2E] border-2 border-[#F5D77F] text-[#F5D77F] flex items-center justify-center shadow-lg">
+                {shopSwipeOffset > 0 ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* يسار: الطلبية */}
+        <div
+          className="flex-1 h-[150px] rounded-[20px] border-[2.5px] border-[#C9A86A] bg-gradient-to-br from-[#FDF6E3] to-[#E8D5A3] shadow-[0_4px_20px_rgba(201,168,106,0.25)] relative overflow-hidden flex flex-col items-center justify-center cursor-pointer select-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='36' height='36' viewBox='0 0 36 36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 0 L20 10 L30 8 L24 16 L34 18 L24 20 L30 28 L20 26 L18 36 L16 26 L6 28 L12 20 L2 18 L12 16 L6 8 L16 10 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,
+            transform: `translateX(${orderSwipeOffset}px)`,
+            transition: orderDragStart !== null ? "none" : "transform 0.25s ease",
+          }}
+          onTouchStart={(e) => setOrderDragStart(e.touches[0].clientX)}
+          onTouchMove={(e) => {
+            if (orderDragStart !== null) {
+              const delta = e.touches[0].clientX - orderDragStart;
+              setOrderSwipeOffset(delta * 0.45);
+            }
+          }}
+          onTouchEnd={() => {
+            if (orderSwipeOffset > THRESHOLD) {
+              orderImgCamRef.current?.click();
+            } else if (orderSwipeOffset < -THRESHOLD) {
+              orderImgGalRef.current?.click();
+            } else if (Math.abs(orderSwipeOffset) < 5) {
+              if (orderImageDisplay) setZoomImage({ url: orderImageDisplay, title: "الطلبية" });
+              else orderImgCamRef.current?.click();
+            }
+            setOrderSwipeOffset(0);
+            setOrderDragStart(null);
+          }}
+          onClick={() => {
+            if (orderImageDisplay) setZoomImage({ url: orderImageDisplay, title: "الطلبية" });
+            else orderImgCamRef.current?.click();
+          }}
+        >
+          <span className="absolute top-2.5 right-2.5 rounded-[12px] px-2.5 py-1 text-[11px] font-black bg-[#0A3D2E] text-white border border-[#C9A86A] shadow-md z-10">
+            الطلبية
+          </span>
+
+          {orderImageDisplay ? (
+            <img src={resolvePublicAssetSrc(orderImageDisplay)!} alt="الطلبية" className="absolute inset-0 w-full h-full object-cover z-[1]" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-[#FDF6E3] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-[#0A3D2E] z-[2]">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </div>
+          )}
+
+          {/* طبقة السحب التفاعلية */}
+          {Math.abs(orderSwipeOffset) > 5 && (
+            <div className="absolute inset-0 bg-[#C9A86A]/30 z-[5] flex items-center justify-center pointer-events-none">
+              <div className="w-11 h-11 rounded-full bg-[#0A3D2E] border-2 border-[#F5D77F] text-[#F5D77F] flex items-center justify-center shadow-lg">
+                {orderSwipeOffset > 0 ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <PreparerOrderEditPanel auth={auth} orderId={order.id} defaults={{ orderType: order.orderType, customerPhone: "", orderSubtotalAlf: order.orderSubtotal != null ? dinarDecimalToAlfInputString(order.orderSubtotal) : "" }} />
+      {/* عناصر الرفع المخفية */}
+      <input ref={shopDoorCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
+      <input ref={shopDoorGalRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "shopDoorPhoto")} />
+      <input ref={orderImgCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
+      <input ref={orderImgGalRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], "orderImage")} />
 
-      <div className="mt-5 space-y-6">
-        {layout.map(id => renderBlock(id))}
+      {/* 5. الأقسام الإضافية الخاصة بالمجهز (المتجر، الصوتيات، الفاتورة، تدفق الأموال) */}
+      <div className="mt-2 space-y-4">
+        {renderBlock("preparer_voice_notes")}
+        {renderBlock("preparer_site_products")}
+        {renderBlock("preparer_notes")}
+        {renderBlock("money_flow")}
       </div>
 
+      {/* مودال تكبير الصور */}
       {zoomImage && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setZoomImage(null)}
         >
           <div
-            className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-300"
+            className="relative w-full max-w-lg overflow-hidden rounded-[24px] bg-[#FFFEF8] border-2 border-[#C9A86A] shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b bg-slate-50 p-4">
-              <span className="text-base font-bold text-slate-800">{zoomImage.title}</span>
+            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 bg-[#FDF6E3] p-3.5">
+              <span className="text-sm font-black text-[#0A3D2E]">{zoomImage.title}</span>
               <button
                 onClick={() => setZoomImage(null)}
-                className="flex size-10 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-600 transition-all hover:bg-slate-300"
+                className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm"
               >
                 ✕
               </button>
             </div>
-            <div className="bg-slate-200 p-1">
+            <div className="p-2 bg-black/95 flex items-center justify-center">
               <img
                 src={resolvePublicAssetSrc(zoomImage.url)!}
                 alt={zoomImage.title}
-                className="h-auto max-h-[75vh] w-full rounded-2xl object-contain shadow-inner"
+                className="max-h-[70vh] w-auto rounded-xl object-contain shadow-inner"
               />
             </div>
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

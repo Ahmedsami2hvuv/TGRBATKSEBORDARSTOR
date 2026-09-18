@@ -1038,31 +1038,9 @@ export function PreparerOrderTable({
       {/* نافذة تفاصيل الطلب السريعة عند النقر على الكارت */}
       {activeOrderData &&
         createPortal(
-          <div className="fixed inset-0 z-[140] flex flex-col bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
-            <div className="sticky top-0 z-[150] flex items-center justify-between border-b border-[#C9A86A]/60 bg-[#FAF6EE] px-4 py-3 shadow-md backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveOrderId(null);
-                    const p = new URLSearchParams(window.location.search);
-                    p.delete("activeOrderId");
-                    const newUrl = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
-                    window.history.pushState({}, "", newUrl);
-                  }}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-slate-700 transition hover:bg-rose-100 hover:text-rose-700 active:scale-95 font-bold"
-                  title="إغلاق النافذة"
-                >
-                  ✕
-                </button>
-                <div>
-                  <p className="text-base font-black text-[#0A3D2E]">تفاصيل طلب #{activeOrderData.shortId}</p>
-                  <p className="text-xs font-bold text-slate-500">{activeOrderData.shopName}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 sm:p-5">
-              <div className="mx-auto max-w-2xl bg-white p-4 rounded-3xl border border-[#C9A86A]/40 shadow-xl">
+          <div className="fixed inset-0 z-[140] flex flex-col bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5 flex items-center justify-center">
+              <div className="w-full max-w-[480px] bg-[#FDF6E3] p-3 sm:p-4 rounded-[28px] border-2 border-[#C9A86A] shadow-2xl animate-in zoom-in-95 duration-200">
                 <PreparerOrderDetailSection
                   order={{
                     ...activeOrderData as any,
@@ -1104,7 +1082,6 @@ export function PreparerOrderTable({
                   preparerId={auth.p}
                   icons={icons}
                   couriers={couriers}
-                  isModal={true}
                 />
               </div>
             </div>
