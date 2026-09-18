@@ -23,7 +23,12 @@ import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { type GlobalIconsConfig } from "@/lib/icon-settings";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import {
+  uploadPreparerPortalOrderImage,
+  uploadPreparerPortalShopDoorPhoto,
+} from "./actions";
 
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
