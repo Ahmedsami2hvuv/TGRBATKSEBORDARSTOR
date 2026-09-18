@@ -508,7 +508,11 @@ export function PickupMoneyForm(props: {
     setSelectedBox(val ? "num" : null);
   }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== targetValue;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== targetValue &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
   const canAssign = !props.currentCourierId && props.couriers && props.couriers.length > 0;
 
   return (
@@ -571,6 +575,9 @@ export function PickupMoneyForm(props: {
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            setTimeout(() => {
+              formRef.current?.requestSubmit();
+            }, 30);
           }}
           color="emerald"
         />
@@ -670,7 +677,11 @@ export function DeliveryMoneyForm(props: {
     setSelectedBox(val ? "num" : null);
   }, [props.remainingAlfHint, props.expectedAlfHint, props.orderId]);
 
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== targetValue;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== targetValue &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
 
   return (
     <form ref={formRef} action={props.formAction} className="space-y-4 select-none" dir="rtl">
@@ -679,6 +690,7 @@ export function DeliveryMoneyForm(props: {
       <input type="hidden" name="s" value={props.auth.s} />
       <input type="hidden" name="orderId" value={props.orderId} />
       <input type="hidden" name="next" value={props.nextUrl} />
+      <input type="hidden" name="advanceStatus" value="delivered" />
 
       {props.error && (
         <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
@@ -711,6 +723,9 @@ export function DeliveryMoneyForm(props: {
           onClick={() => {
             setAmountAlf("0");
             setSelectedBox("zero");
+            setTimeout(() => {
+              formRef.current?.requestSubmit();
+            }, 30);
           }}
           color="orange"
         />

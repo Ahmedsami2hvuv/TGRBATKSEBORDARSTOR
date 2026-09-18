@@ -525,7 +525,11 @@ function AdminPickupModal({
   const [amountAlf, setAmountAlf] = useState(defaultAlf);
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
   const formRef = useRef<HTMLFormElement>(null);
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== defaultAlf &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
@@ -574,12 +578,15 @@ function AdminPickupModal({
                 color="emerald"
               />
               <ZeroSquareBtn
-                label="لم يدفع"
+                label="لم أدفع"
                 activeLabel="0"
                 selected={selectedBox === "zero" || amountAlf === "0"}
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit();
+                  }, 30);
                 }}
                 color="emerald"
               />
@@ -671,7 +678,11 @@ function AdminDeliveryModal({
   const [amountAlf, setAmountAlf] = useState(defaultAlf);
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
   const formRef = useRef<HTMLFormElement>(null);
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== defaultAlf &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
@@ -726,6 +737,9 @@ function AdminDeliveryModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit();
+                  }, 30);
                 }}
                 color="orange"
               />

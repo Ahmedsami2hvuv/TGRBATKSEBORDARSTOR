@@ -452,7 +452,11 @@ function MandoubPickupModal({
   const [amountAlf, setAmountAlf] = useState(defaultAlf);
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(defaultAlf ? "num" : null);
   const formRef = useRef<HTMLFormElement>(null);
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== defaultAlf &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
@@ -510,6 +514,9 @@ function MandoubPickupModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  setTimeout(() => {
+                    formRef.current?.requestSubmit();
+                  }, 30);
                 }}
                 color="emerald"
               />
@@ -611,7 +618,11 @@ function MandoubDeliveryModal({
   const lngRef = useRef<HTMLInputElement>(null);
   const locationPromptDoneRef = useRef(false);
 
-  const isMismatch = amountAlf.trim() !== "" && amountAlf.trim() !== defaultAlf;
+  const isMismatch =
+    amountAlf.trim() !== "" &&
+    amountAlf.trim() !== defaultAlf &&
+    amountAlf.trim() !== "0" &&
+    selectedBox !== "zero";
 
   function submitAfterLocation() {
     formRef.current?.requestSubmit();
@@ -722,6 +733,14 @@ function MandoubDeliveryModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
+                  setTimeout(() => {
+                    if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                      setGeoError("");
+                      setLocationModalOpen(true);
+                    } else {
+                      formRef.current?.requestSubmit();
+                    }
+                  }, 30);
                 }}
                 color="orange"
               />

@@ -167,13 +167,16 @@ export async function submitMandoubPickupMoney(
 
   const nextPaid = paidSoFar.plus(amountDinar);
   const matches =
+    amountDinar.isZero() ||
     dinarAmountsMatchExpected(nextPaid, expected) ||
     dinarAmountsMatchExpected(amountDinar, expected) ||
     (order.orderSubtotal != null && dinarAmountsMatchExpected(amountDinar, order.orderSubtotal)) ||
     (order.purchasePrice != null && dinarAmountsMatchExpected(amountDinar, order.purchasePrice));
-  if (!matches && !mismatchNote.trim()) {
+  if (!matches && !amountDinar.isZero() && !mismatchNote.trim()) {
     return mismatchNoteRequiredError();
   }
+
+  const finalMismatchNote = mismatchNote.trim() || (amountDinar.isZero() ? "لم أدفع (0)" : "");
 
   await prisma.$transaction(async (tx) => {
     await tx.orderCourierMoneyEvent.create({
@@ -185,11 +188,11 @@ export async function submitMandoubPickupMoney(
         expectedDinar: expected,
         matchesExpected: matches,
         mismatchReason: "",
-        mismatchNote,
+        mismatchNote: finalMismatchNote,
       },
     });
-    if (advanceStatus === "delivering" && order.status === "assigned") {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "assigned", "delivering");
+    if (advanceStatus === "delivering" && (order.status === "assigned" || order.status === "pending")) {
+      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, "delivering");
       await tx.order.update({
         where: { id: orderId },
         data: { status: "delivering" },
@@ -358,12 +361,15 @@ export async function submitMandoubDeliveryMoney(
 
   const nextReceived = receivedSoFar.plus(amountDinar);
   const matches =
+    amountDinar.isZero() ||
     dinarAmountsMatchExpected(nextReceived, expected) ||
     dinarAmountsMatchExpected(amountDinar, expected) ||
     (order.totalAmount != null && dinarAmountsMatchExpected(amountDinar, order.totalAmount));
-  if (!matches && !mismatchNote.trim()) {
+  if (!matches && !amountDinar.isZero() && !mismatchNote.trim()) {
     return mismatchNoteRequiredError();
   }
+
+  const finalMismatchNote = mismatchNote.trim() || (amountDinar.isZero() ? "لم استلم (0)" : "");
 
   const courierRow = await prisma.courier.findUnique({
     where: { id: order.assignedCourierId },
@@ -405,7 +411,7 @@ export async function submitMandoubDeliveryMoney(
           expectedDinar: expected,
           matchesExpected: matches,
           mismatchReason: "",
-          mismatchNote,
+          mismatchNote: finalMismatchNote,
         },
       });
       if (attachCourierGpsAsCustomer && mapsUrl && order.customerId) {

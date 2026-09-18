@@ -161,15 +161,18 @@ export async function submitPreparerPickupMoney(
       const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
       if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
       const amountDinar = new Decimal(parsed.value);
-      if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+      if (amountDinar.lt(0)) return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
 
       const nextPaid = paidSoFar.plus(amountDinar);
       const matches =
+        amountDinar.isZero() ||
         dinarAmountsMatchExpected(nextPaid, expected) ||
         dinarAmountsMatchExpected(amountDinar, expected) ||
         (a.order.orderSubtotal != null && dinarAmountsMatchExpected(amountDinar, a.order.orderSubtotal)) ||
         (a.order.purchasePrice != null && dinarAmountsMatchExpected(amountDinar, a.order.purchasePrice));
-      if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+      if (!matches && !amountDinar.isZero() && !mismatchNote.trim()) return mismatchNoteRequiredError();
+
+      const finalMismatchNote = mismatchNote.trim() || (amountDinar.isZero() ? "لم أدفع (0)" : "");
 
       await prisma.$transaction(async (tx) => {
         // إسناد المندوب إذا تم اختياره
@@ -186,7 +189,7 @@ export async function submitPreparerPickupMoney(
             expectedDinar: expected,
             matchesExpected: matches,
             mismatchReason: "",
-            mismatchNote,
+            mismatchNote: finalMismatchNote,
             recordedByCompanyPreparerId: a.preparer.id,
           },
         });
@@ -296,14 +299,17 @@ export async function submitPreparerDeliveryMoney(
       const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
       if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
       const amountDinar = new Decimal(parsed.value);
-      if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+      if (amountDinar.lt(0)) return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
 
       const nextReceived = receivedSoFar.plus(amountDinar);
       const matches =
+        amountDinar.isZero() ||
         dinarAmountsMatchExpected(nextReceived, expected) ||
         dinarAmountsMatchExpected(amountDinar, expected) ||
         (a.order.totalAmount != null && dinarAmountsMatchExpected(amountDinar, a.order.totalAmount));
-      if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+      if (!matches && !amountDinar.isZero() && !mismatchNote.trim()) return mismatchNoteRequiredError();
+
+      const finalMismatchNote = mismatchNote.trim() || (amountDinar.isZero() ? "لم استلم (0)" : "");
 
       await prisma.$transaction(async (tx) => {
         await tx.orderCourierMoneyEvent.create({
@@ -315,7 +321,7 @@ export async function submitPreparerDeliveryMoney(
             expectedDinar: expected,
             matchesExpected: matches,
             mismatchReason: "",
-            mismatchNote,
+            mismatchNote: finalMismatchNote,
             recordedByCompanyPreparerId: a.preparer.id,
           },
         });
