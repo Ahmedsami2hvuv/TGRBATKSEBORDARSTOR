@@ -542,6 +542,8 @@ export function OrderDetailSection({
                   order={order}
                   customerName={(order as any).customerName || order.customer?.name || "الزبون"}
                   customerPhone={order.customerPhone}
+                  customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                  alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
                   imgCustomerDoor={imgCustDoor}
                   setPreviewImageUrl={setPreviewImageUrl}
                   isDoubleRoute={isDoubleRoute}
@@ -627,6 +629,7 @@ export function OrderDetailSection({
                     order={order}
                     customerName={order.secondCustomerName || "المستلم"}
                     customerPhone={order.secondCustomerPhone || order.customerPhone}
+                    customerPhone2={order.secondCustomerPhone2 || order.secondCustomerAlternatePhone || order.customerPhone2}
                     imgCustomerDoor={imgCustDoor2}
                     setPreviewImageUrl={setPreviewImageUrl}
                     isDoubleRoute={true}
@@ -636,7 +639,7 @@ export function OrderDetailSection({
                     customerRegionId={order.secondCustomerRegionId}
                     landmark={secondLandmarkMerged}
                     locationUrl={secondLocMerged}
-                    alternatePhone={mergedSecondAlternate}
+                    alternatePhone={mergedSecondAlternate || order.secondCustomerAlternatePhone || order.secondCustomerPhone2}
                     designerConfig={designerConfig || undefined}
                     phoneProfile={secondPhoneProfile}
                     headerAction={

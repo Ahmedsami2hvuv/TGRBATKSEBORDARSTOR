@@ -2,7 +2,8 @@
 
 import React, { useRef, useState, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
+import { telHref, whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
+import { PhoneActionModal } from "@/components/phone-action-modal";
 import {
   uploadCustomerDoorPhotoFromView,
   deleteCustomerDoorPhotoAction,
@@ -30,6 +31,7 @@ export function AdminLuxuryCustomerCard({
   order,
   customerName,
   customerPhone,
+  customerPhone2,
   imgCustomerDoor,
   setPreviewImageUrl,
   isDoubleRoute = false,
@@ -50,6 +52,7 @@ export function AdminLuxuryCustomerCard({
   order: any;
   customerName?: string;
   customerPhone?: string;
+  customerPhone2?: string | null;
   imgCustomerDoor?: string | null;
   setPreviewImageUrl: (url: string | null) => void;
   isDoubleRoute?: boolean;
@@ -105,11 +108,13 @@ export function AdminLuxuryCustomerCard({
       ? order.secondCustomerDoorPhotoUrl || null
       : order.customerDoorPhotoUrl || null;
   const effectiveAlternatePhone =
-    alternatePhone !== undefined
+    customerPhone2 !== undefined && customerPhone2 !== null
+      ? customerPhone2
+      : alternatePhone !== undefined && alternatePhone !== null
       ? alternatePhone
       : isSecondDestination
-      ? order.secondCustomerAlternatePhone
-      : order.alternatePhone;
+      ? order.secondCustomerPhone2 || order.secondCustomerAlternatePhone || null
+      : order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone || null;
   const effectiveProfileId =
     customerProfileId !== undefined
       ? customerProfileId
@@ -227,6 +232,54 @@ export function AdminLuxuryCustomerCard({
 
   const hasLocation = Boolean(effectiveLocationUrl && effectiveLocationUrl.trim());
   const cleanPhone = contactLine(effectivePhone);
+  const cleanPhone2 = contactLine(effectiveAlternatePhone || "");
+  const hasMultiplePhones = Boolean(
+    cleanPhone &&
+    cleanPhone2 &&
+    cleanPhone !== cleanPhone2 &&
+    cleanPhone.replace(/\D/g, "") !== cleanPhone2.replace(/\D/g, "")
+  );
+
+  const [activePhoneModal, setActivePhoneModal] = useState<{
+    type: "whatsapp" | "call";
+    phone1: string;
+    phone2: string;
+  } | null>(null);
+
+  const handleWhatsappClick = (e: React.MouseEvent) => {
+    if (hasMultiplePhones) {
+      e.preventDefault();
+      setActivePhoneModal({
+        type: "whatsapp",
+        phone1: cleanPhone,
+        phone2: cleanPhone2,
+      });
+      return;
+    }
+    const target = cleanPhone || cleanPhone2;
+    if (target) {
+      const url = whatsappMeUrl(target);
+      if (url && url !== "#") {
+        openUrlFromUserGesture(url);
+      }
+    }
+  };
+
+  const handleCallClick = (e: React.MouseEvent) => {
+    if (hasMultiplePhones) {
+      e.preventDefault();
+      setActivePhoneModal({
+        type: "call",
+        phone1: cleanPhone,
+        phone2: cleanPhone2,
+      });
+      return;
+    }
+    const target = cleanPhone || cleanPhone2;
+    if (target) {
+      window.location.href = telHref(target);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
@@ -299,28 +352,57 @@ export function AdminLuxuryCustomerCard({
                 </span>
               </div>
 
-              {/* رقم الهاتف */}
-              <div className="flex items-center gap-1.5">
-                <span className="w-[18px] h-[18px] rounded-full bg-[#0A3D2E] flex items-center justify-center shrink-0">
-                  <svg className="w-[10px] h-[10px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                </span>
-                {cleanPhone ? (
-                  <AdminCustomerPhoneInteractive
-                    phone={effectivePhone}
-                    formattedPhone={cleanPhone}
-                    regionId={effectiveRegionId}
-                    currentOrderId={order.id}
-                    customerName={effectiveName}
-                    customerRegionName={effectiveRegionName}
-                    alternatePhone={effectiveAlternatePhone}
-                    customerLocationUrl={effectiveLocationUrl || undefined}
-                    customerLandmark={landmarkTextState || undefined}
-                    customerProfileId={effectiveProfileId}
-                  />
-                ) : (
-                  <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E]">—</span>
+              {/* أرقام الهواتف (الأساسي والبديل إن وجد) */}
+              <div className="flex flex-col gap-1.5 w-full">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="w-[18px] h-[18px] rounded-full bg-[#0A3D2E] flex items-center justify-center shrink-0">
+                    <svg className="w-[10px] h-[10px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </span>
+                  {cleanPhone ? (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {hasMultiplePhones && (
+                        <span className="text-[10px] font-black text-[#0A3D2E] px-1.5 py-0.5 rounded-[6px] bg-[#E6F4EF] border border-[#115740]/20 shadow-xs">
+                          1️⃣ أساسي
+                        </span>
+                      )}
+                      <AdminCustomerPhoneInteractive
+                        phone={effectivePhone}
+                        formattedPhone={cleanPhone}
+                        regionId={effectiveRegionId}
+                        currentOrderId={order.id}
+                        customerName={effectiveName}
+                        customerRegionName={effectiveRegionName}
+                        alternatePhone={effectiveAlternatePhone}
+                        customerLocationUrl={effectiveLocationUrl || undefined}
+                        customerLandmark={landmarkTextState || undefined}
+                        customerProfileId={effectiveProfileId}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E]">—</span>
+                  )}
+                </div>
+
+                {hasMultiplePhones && (
+                  <div className="flex items-center gap-1.5 flex-wrap pr-[22px]">
+                    <span className="text-[10px] font-black text-[#8B6A2A] px-1.5 py-0.5 rounded-[6px] bg-[#FFF8E1] border border-[#C9A86A]/40 shadow-xs">
+                      2️⃣ بديل
+                    </span>
+                    <AdminCustomerPhoneInteractive
+                      phone={cleanPhone2}
+                      formattedPhone={cleanPhone2}
+                      regionId={effectiveRegionId}
+                      currentOrderId={order.id}
+                      customerName={effectiveName}
+                      customerRegionName={effectiveRegionName}
+                      alternatePhone={effectivePhone}
+                      customerLocationUrl={effectiveLocationUrl || undefined}
+                      customerLandmark={landmarkTextState || undefined}
+                      customerProfileId={effectiveProfileId}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -413,30 +495,40 @@ export function AdminLuxuryCustomerCard({
               </div>
             )}
 
-            {/* زري واتساب واتصال الزبون بالنمط الزمردي الكحلي والمذهب 2 cols */}
-            {cleanPhone && (
+            {/* زري واتساب واتصال الزبون بالنمط الزمردي الكحلي والمذهب 2 cols مع دعم الرقمين */}
+            {(cleanPhone || cleanPhone2) && (
               <div className="grid grid-cols-2 gap-2.5">
-                <a
-                  href={whatsappMeUrl(cleanPhone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B]"
+                <button
+                  type="button"
+                  onClick={handleWhatsappClick}
+                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B] cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                   </svg>
                   <span>واتساب</span>
-                </a>
+                  {hasMultiplePhones && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#E8C77E] text-[#0A3D2E] font-black leading-none shadow-xs">
+                      2
+                    </span>
+                  )}
+                </button>
 
-                <a
-                  href={telHref(cleanPhone)}
-                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B]"
+                <button
+                  type="button"
+                  onClick={handleCallClick}
+                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B] cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
                   <span>اتصال</span>
-                </a>
+                  {hasMultiplePhones && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#E8C77E] text-[#0A3D2E] font-black leading-none shadow-xs">
+                      2
+                    </span>
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -520,6 +612,16 @@ export function AdminLuxuryCustomerCard({
           onDelete={handleDelete}
           deleteLabel={isSecondDestination ? "مسح صورة باب المستلم" : "مسح صورة باب الزبون"}
           isDeleting={deleting}
+        />
+      )}
+
+      {/* نافذة اختيار الرقم عند الاتصال أو المراسلة للزبائن ذوي الرقمين */}
+      {activePhoneModal && (
+        <PhoneActionModal
+          type={activePhoneModal.type}
+          phone1={activePhoneModal.phone1}
+          phone2={activePhoneModal.phone2}
+          onClose={() => setActivePhoneModal(null)}
         />
       )}
     </div>

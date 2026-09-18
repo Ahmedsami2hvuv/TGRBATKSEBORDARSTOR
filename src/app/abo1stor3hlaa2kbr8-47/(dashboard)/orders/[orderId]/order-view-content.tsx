@@ -551,6 +551,8 @@ export function OrderViewContent({
                 order={order}
                 customerName={(order as any).customerName || order.customer?.name || "الزبون"}
                 customerPhone={order.customerPhone}
+                customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
                 imgCustomerDoor={imgCustDoor}
                 setPreviewImageUrl={setPreviewImageUrl}
                 isDoubleRoute={isDoubleRoute}
@@ -661,6 +663,7 @@ export function OrderViewContent({
                   order={order}
                   customerName={order.secondCustomerName || "المستلم"}
                   customerPhone={order.secondCustomerPhone}
+                  customerPhone2={order.secondCustomerPhone2 || order.secondCustomerAlternatePhone || order.customerPhone2}
                   imgCustomerDoor={imgCustDoor2}
                   setPreviewImageUrl={setPreviewImageUrl}
                   isDoubleRoute={true}
@@ -670,7 +673,7 @@ export function OrderViewContent({
                   customerRegionId={order.secondCustomerRegionId}
                   landmark={order.secondCustomerLandmark}
                   locationUrl={order.secondCustomerLocationUrl}
-                  alternatePhone={order.secondCustomerAlternatePhone}
+                  alternatePhone={order.secondCustomerAlternatePhone || order.secondCustomerPhone2 || order.alternatePhone}
                   customerProfileId={order.secondCustomerProfileId}
                   doorPhotoUploadedByName={order.secondCustomerDoorPhotoUploadedByName}
                   designerConfig={designerConfigState}
