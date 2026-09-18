@@ -217,6 +217,9 @@ export function OrderViewContent({
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
 
   const submitterName = order.submittedByCompanyPreparer?.name || order.submittedBy?.name || (isSystemAdminOrder ? "الإدارة" : order.shop?.name || "المسؤول");
+  const submitterPhone = order.submittedByCompanyPreparer?.phone?.trim()
+    || order.submittedBy?.phone?.trim()
+    || (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
   const currentTotalPriceStr = String(order.totalAmount || order.totalPrice || "");
   const currentCourierName = order.courier?.name || "المندوب";
   const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
