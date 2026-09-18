@@ -745,59 +745,97 @@ function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
  </p>
  </div>
 
- <div className="rounded-xl border border-sky-200 bg-white/70 p-3">
- <p className="text-sm font-bold text-slate-800">نوع المسار / الطلب</p>
- <div className="mt-2 flex flex-col gap-3">
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "admin_one_face"}
- onChange={() => setSubmissionMode("admin_one_face")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>وجهة واحدة (إداري)</strong> — طلبية مباشرة بدون محل.
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "two_faces"}
- onChange={() => setSubmissionMode("two_faces")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>وجهتان</strong> — مرسل ومستلم (رقم ومنطقة لكل وجهة).
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "from_shop"}
- onChange={() => setSubmissionMode("from_shop")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>رفع من محل</strong> — ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "prep_draft"}
- onChange={() => setSubmissionMode("prep_draft")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong className="text-violet-700">طلب تجهيز (تحليل رسالة)</strong> — إرسال مسودة تسوق للمجهزين من خلال نص رسالة.
- </span>
- </label>
- </div>
- </div>
+      <div className="rounded-2xl border border-sky-200 bg-white/80 p-3.5 shadow-sm backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-sm font-black text-slate-800 flex items-center gap-2">
+            <span>🧭</span>
+            <span>نوع المسار / الطلب</span>
+          </p>
+          <span className="text-[11px] font-bold text-slate-400">اختر مسار إدخال الطلبية</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {[
+            {
+              id: "admin_one_face" as const,
+              title: "وجهة واحدة (إداري)",
+              desc: "طلبية مباشرة بدون محل.",
+              icon: "📍",
+              activeBorder: "border-sky-500 bg-sky-50/70 text-sky-950 ring-2 ring-sky-500/20",
+              activeIconBg: "bg-sky-500 text-white",
+            },
+            {
+              id: "two_faces" as const,
+              title: "وجهتان",
+              desc: "مرسل ومستلم (رقم ومنطقة لكل وجهة).",
+              icon: "🔄",
+              activeBorder: "border-emerald-500 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20",
+              activeIconBg: "bg-emerald-500 text-white",
+            },
+            {
+              id: "from_shop" as const,
+              title: "رفع من محل",
+              desc: "ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».",
+              icon: "🏬",
+              activeBorder: "border-amber-500 bg-amber-50/70 text-amber-950 ring-2 ring-amber-500/20",
+              activeIconBg: "bg-amber-500 text-white",
+            },
+            {
+              id: "prep_draft" as const,
+              title: "طلب تجهيز (تحليل رسالة)",
+              desc: "إرسال مسودة تسوق للمجهزين من خلال نص رسالة.",
+              icon: "✨",
+              activeBorder: "border-violet-500 bg-violet-50/70 text-violet-950 ring-2 ring-violet-500/20",
+              activeIconBg: "bg-violet-500 text-white",
+            },
+          ].map((mode) => {
+            const isSelected = submissionMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => setSubmissionMode(mode.id)}
+                className={`relative flex flex-col justify-between p-3 rounded-xl border text-right transition-all duration-200 cursor-pointer group ${
+                  isSelected
+                    ? `${mode.activeBorder} shadow-sm font-bold`
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-2">
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-transform duration-200 group-hover:scale-105 ${
+                      isSelected ? mode.activeIconBg : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {mode.icon}
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors duration-200 ${
+                      isSelected
+                        ? "border-transparent bg-slate-800 text-white dark:bg-white dark:text-slate-900"
+                        : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg className="w-2.5 h-2.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className={`text-xs font-black leading-snug ${isSelected ? "text-slate-900" : "text-slate-800"}`}>
+                    {mode.title}
+                  </span>
+                  <span className="text-[10px] leading-relaxed text-slate-500 font-medium">
+                    {mode.desc}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
  {submissionMode === "prep_draft" ? (
  <div className="space-y-4">
