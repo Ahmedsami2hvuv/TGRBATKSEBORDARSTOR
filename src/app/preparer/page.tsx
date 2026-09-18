@@ -229,16 +229,16 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* السطر الثاني: أزرار العمليات السريعة بتصميم ملكي متناسق */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full mt-3 pt-2.5 border-t border-[#C9A86A]/25">
+        {/* السطر الثاني: أزرار العمليات السريعة بتصميم ملكي متناسق في سطر واحد */}
+        <div className="flex items-center justify-between gap-1.5 w-full mt-2.5 pt-2.5 border-t border-[#C9A86A]/25">
           {/* 1. زر استلام الراتب */}
           <Link prefetch={false}
             href={preparerPath("/preparer/salary", baseAuth)}
-            className="h-11 flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.15)] transition hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.12)] transition hover:scale-105 active:scale-95 cursor-pointer px-1"
             title="استلام الراتب"
           >
-            <span className="text-lg">💸</span>
-            <span className="text-[11px] font-black bg-[#F5E6BE] px-1.5 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono">
+            <span className="text-base sm:text-lg shrink-0">💸</span>
+            <span className="text-[10px] sm:text-[11px] font-black bg-[#F5E6BE] px-1 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono truncate">
               {withdrawableSalaryStr}
             </span>
           </Link>
@@ -246,42 +246,42 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           {/* 2. زر الديون */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/debts", baseAuth)}
-            className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#E11D48]/50 bg-gradient-to-b from-[#FEF2F2] to-[#FEE2E2] text-[#991B1B] shadow-[0_2px_6px_rgba(225,29,72,0.15)] hover:bg-rose-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#E11D48]/50 bg-gradient-to-b from-[#FEF2F2] to-[#FEE2E2] text-[#991B1B] shadow-[0_2px_6px_rgba(225,29,72,0.12)] hover:bg-rose-100 transition hover:scale-105 active:scale-95 cursor-pointer"
             title="الديون"
           >
-            <span className="text-xl">💳</span>
+            <span className="text-base sm:text-lg">💳</span>
           </FullscreenWalletLauncher>
 
           {/* 3. زر تجهيز الطلبات */}
-          {canSubmitAny ? (
+          {canSubmitAny && (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/preparation", baseAuth)}
-              className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#7C3AED]/50 bg-gradient-to-b from-[#F5F3FF] to-[#EDE9FE] text-[#5B21B6] shadow-[0_2px_6px_rgba(124,58,237,0.15)] hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#7C3AED]/50 bg-gradient-to-b from-[#F5F3FF] to-[#EDE9FE] text-[#5B21B6] shadow-[0_2px_6px_rgba(124,58,237,0.12)] hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="تجهيز الطلبات"
             >
-              <span className="text-xl">📦</span>
+              <span className="text-base sm:text-lg">📦</span>
             </FullscreenWalletLauncher>
-          ) : <div />}
+          )}
 
           {/* 4. زر طلب جديد */}
-          {canSubmitAny ? (
+          {canSubmitAny && (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/order/new", baseAuth)}
-              className="h-11 flex items-center justify-center rounded-xl border-[1.5px] border-[#059669]/50 bg-gradient-to-b from-[#ECFDF5] to-[#D1FAE5] text-[#065F46] shadow-[0_2px_6px_rgba(5,150,105,0.15)] hover:bg-emerald-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#059669]/50 bg-gradient-to-b from-[#ECFDF5] to-[#D1FAE5] text-[#065F46] shadow-[0_2px_6px_rgba(5,150,105,0.12)] hover:bg-emerald-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="طلب جديد"
             >
-              <span className="text-xl">➕</span>
+              <span className="text-base sm:text-lg">➕</span>
             </FullscreenWalletLauncher>
-          ) : <div />}
+          )}
 
           {/* 5. زر محفظتي */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/wallet", baseAuth)}
-            className="h-11 flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.15)] hover:scale-105 active:scale-95 transition cursor-pointer"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.12)] hover:scale-105 active:scale-95 transition cursor-pointer px-1"
             title="محفظتي"
           >
-            <span className="text-lg">💰</span>
-            <span className="text-[11px] font-black bg-[#F5E6BE] px-1.5 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono">
+            <span className="text-base sm:text-lg shrink-0">💰</span>
+            <span className="text-[10px] sm:text-[11px] font-black bg-[#F5E6BE] px-1 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono truncate">
               {walletRemainStr}
             </span>
           </FullscreenWalletLauncher>
