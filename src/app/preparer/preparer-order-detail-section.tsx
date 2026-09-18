@@ -843,8 +843,6 @@ export function PreparerOrderDetailSection({
     ? order.summary
     : order.orderType || destRegionName;
 
-  const displayOrderType = rawType.length > 15 ? rawType.slice(0, 14) + "…" : rawType;
-
   const priceVal = order.orderSubtotal != null
     ? formatDinarAsAlf(order.orderSubtotal)
     : order.purchasePrice != null
@@ -867,13 +865,17 @@ export function PreparerOrderDetailSection({
     <div className="w-full max-w-[440px] mx-auto flex flex-col gap-3 text-right" dir="rtl">
       {/* 1. الهيدر الملكي الفاخر (سطر واحد فقط ارتفاع 52px) */}
       <header className="h-[52px] bg-[#FFFEF8] border-2 border-[#C9A86A] rounded-[16px] flex items-center justify-between px-2.5 shadow-[0_4px_16px_rgba(201,168,106,0.2)]">
-        {/* اليمين: رقم الطلب + حالة الطلب */}
+        {/* اليمين: رقم الطلب + منطقة الزبون (بدلاً من حالة الطلب) */}
         <div className="flex items-center gap-2">
           <div className="bg-[#FDF6E3] border-2 border-[#C9A86A] rounded-[10px] px-2 py-0.5 text-[#8B6A2A] font-extrabold text-[15px] font-mono leading-none shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
             #{order.orderNumber}
           </div>
-          <div className={`rounded-[10px] px-2 py-1 text-[11px] font-black flex items-center gap-1 leading-none ${orderStatusBadgeClass(order.status)}`}>
-            <span>{STATUS_AR[order.status] ?? order.status}</span>
+          <div className="bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] rounded-[10px] px-2.5 py-1 text-white font-extrabold text-xs flex items-center gap-1.5 leading-none shadow-[0_2px_6px_rgba(10,61,46,0.25)]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F5D77F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span>{destRegionName}</span>
           </div>
         </div>
 
@@ -937,7 +939,7 @@ export function PreparerOrderDetailSection({
 
       {/* 2. كارت المعلومات الرئيسي المدمج */}
       <section className="bg-[#FFFEF8] border-[2.5px] border-[#C9A86A] rounded-[20px] p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(201,168,106,0.25)] flex flex-col gap-2.5">
-        {/* السطر الأول: اسم المحل إلى منطقة الزبون */}
+        {/* السطر الأول: اسم المحل + سعر الطلب بدون توصيل */}
         <div className="flex items-center justify-between">
           {/* يمين: المحل */}
           <div className="flex items-center gap-2">
@@ -953,13 +955,15 @@ export function PreparerOrderDetailSection({
             <span className="font-extrabold text-sm text-[#0A3D2E]">{shopName}</span>
           </div>
 
-          {/* يسار: منطقة الزبون */}
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-sm text-[#0A3D2E]">{destRegionName}</span>
-            <div className="w-8 h-8 rounded-full bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-white shadow-[0_2px_6px_rgba(10,61,46,0.3)]">
+          {/* يسار: السعر بدون توصيل */}
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-sm text-[#0A3D2E] font-mono">{numOnlyPrice} ألف</span>
+            <div className="w-8 h-8 rounded-full bg-[#FDF6E3] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                <circle cx="12" cy="10" r="3" />
+                <circle cx="8" cy="8" r="6" />
+                <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+                <path d="M7 6h1v4" />
+                <path d="m16.71 13.88.7.71-2.82 2.82" />
               </svg>
             </div>
           </div>
@@ -968,34 +972,21 @@ export function PreparerOrderDetailSection({
         {/* فاصل ذهبي متقطع */}
         <div className="border-t border-dashed border-[#C9A86A]/45 w-full my-0.5" />
 
-        {/* السطر الثاني: نوع الطلب + السعر + وقت الطلب */}
-        <div className="flex items-center justify-between">
-          {/* يمين: نوع الطلب */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-7 h-7 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
+        {/* السطر الثاني: نوع الطلب بالكامل + وقت الطلب */}
+        <div className="flex items-center justify-between gap-2">
+          {/* يمين: نوع الطلب كاملاً بدون قص */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="w-7 h-7 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)] shrink-0">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
                 <path d="M7 7h.01" />
               </svg>
             </div>
-            <span className="font-extrabold text-[13px] text-[#0A3D2E]">{displayOrderType}</span>
-          </div>
-
-          {/* وسط: السعر بدون توصيل */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-7 h-7 rounded-full bg-[#FDF6E3] border border-[#C9A86A] flex items-center justify-center text-[#8B6A2A] shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="8" r="6" />
-                <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
-                <path d="M7 6h1v4" />
-                <path d="m16.71 13.88.7.71-2.82 2.82" />
-              </svg>
-            </div>
-            <span className="font-extrabold text-[13px] text-[#0A3D2E] font-mono">{numOnlyPrice}</span>
+            <span className="font-extrabold text-[13px] text-[#0A3D2E] break-words">{rawType}</span>
           </div>
 
           {/* يسار: وقت الطلب */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="font-extrabold text-[13px] text-[#E11D48]">{orderTimeStr}</span>
             <div className="w-7 h-7 rounded-full bg-[#FEF2F2] border border-[#E11D48]/30 flex items-center justify-center text-[#E11D48]">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1012,7 +1003,10 @@ export function PreparerOrderDetailSection({
         {/* زر يمين: استلام من الزبون */}
         <button
           type="button"
-          onClick={() => alert("استلام من الزبون")}
+          onClick={() => {
+            const el = document.getElementById("preparer-order-money");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
           className="flex-1 h-[52px] rounded-[28px] bg-[#FDF6E3] border-2 border-[#C9A86A] text-[#0A3D2E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(201,168,106,0.35)] active:scale-95 transition-transform cursor-pointer"
         >
           <div className="w-[26px] h-[26px] rounded-full bg-white border border-[#C9A86A] flex items-center justify-center text-[#0A3D2E]">
@@ -1029,7 +1023,10 @@ export function PreparerOrderDetailSection({
         {/* زر يسار: تسليم للعميل */}
         <button
           type="button"
-          onClick={() => alert("تسليم للعميل")}
+          onClick={() => {
+            const el = document.getElementById("preparer-order-money");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
           className="flex-1 h-[52px] rounded-[28px] bg-[#0A3D2E] border-2 border-[#C9A86A] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-[0_4px_18px_rgba(10,61,46,0.45)] active:scale-95 transition-transform cursor-pointer"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16 0 L18 8 L26 6 L22 14 L30 16 L22 18 L26 26 L18 24 L16 32 L14 24 L6 26 L10 18 L2 16 L10 14 L6 6 L14 8 Z' fill='%23C9A86A' fill-opacity='0.08'/%3E%3C/svg%3E")`,

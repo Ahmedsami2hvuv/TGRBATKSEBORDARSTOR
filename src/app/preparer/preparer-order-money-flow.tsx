@@ -164,17 +164,16 @@ export function PreparerOrderMoneyFlow({
   const deliveryComplete =
     totalAmountDinar != null && Math.abs(deliverySum - totalAmountDinar) < AMOUNT_EPS;
 
-  /** أزرار عائمة واضحة (دفع للعميل / استلام من الزبون). */
-  // لطلبات التجهيز والتسعير لا نُظهر زر "دفع للعميل" لأنها مسددة بالمنتجات
-  const showPickupFab = hasOrderSubtotal && !pickupComplete && !isPreparationOrder;
-  const showDeliveryFab = hasTotalAmount && !deliveryComplete;
+  /** أزرار عائمة واضحة - تم إخفاؤها نهائياً بناءً على طلب المستخدم */
+  const showPickupFab = false;
+  const showDeliveryFab = false;
 
-  // حسب طلبك: إلغاء زر «استلام الطلب» من واجهة المجهز.
+  // إلغاء زر «استلام الطلب» من واجهة المجهز.
   const canMarkPickedUp = false;
-  const canMarkDelivered = orderStatus === "delivering" && hasTotalAmount;
+  const canMarkDelivered = false;
 
-  const pickupPanelOpen = pickupOpen && (showPickupFab || pickupAdvanceToDelivering);
-  const deliveryPanelOpen = deliveryOpen && (showDeliveryFab || deliveryAdvanceToDelivered);
+  const pickupPanelOpen = pickupOpen;
+  const deliveryPanelOpen = deliveryOpen;
 
   const closePanels = () => {
     setPickupOpen(false);
