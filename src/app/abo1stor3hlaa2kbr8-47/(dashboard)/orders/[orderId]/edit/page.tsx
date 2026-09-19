@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
 import { digitsOnly, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { AdminOrderFloatingBar } from "./admin-order-floating-bar";
 import { AdminOrderMoneyEvents } from "../admin-order-money-events";
 import { OrderEditForm } from "./order-edit-form";
 
@@ -195,28 +194,28 @@ export default async function EditOrderPage({ params }: Props) {
   }));
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-start p-2 pt-14 pb-8 sm:p-4 sm:justify-center bg-black/85 backdrop-blur-md overflow-y-auto overscroll-contain animate-in fade-in duration-200">
       <div
-        className="w-full max-w-3xl rounded-[24px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-4 sm:p-6 shadow-[0_16px_50px_rgba(0,0,0,0.4),inset_0_1px_0_white,0_0_0_1px_#E8D5A3_inset] text-right relative overflow-hidden my-auto max-h-[94vh] flex flex-col select-none"
+        className="w-full max-w-3xl rounded-[24px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_white,0_0_0_1px_#E8D5A3_inset] text-right relative overflow-hidden flex flex-col select-none my-auto sm:my-0 max-h-[86dvh] sm:max-h-[92vh] shrink-0"
         dir="rtl"
       >
         {/* معينات الزوايا المذهبة الملكية */}
-        <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none" />
-        <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none" />
-        <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none" />
-        <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none" />
+        <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none z-30" />
+        <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none z-30" />
+        <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none z-30" />
+        <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-gradient-to-br from-[#E8C77E] to-[#C9A86A] pointer-events-none z-30" />
 
-        {/* ترويسة المودال الملكية الفاخرة */}
-        <div className="flex items-center justify-between border-b-[1.5px] border-[#E8D5A3] pb-3 mb-4 bg-gradient-to-r from-[#FFFEF8] to-[#FDF6E3] -mx-4 -mt-4 p-3.5 sm:-mx-6 sm:-mt-6 sm:p-4.5 shrink-0">
+        {/* ترويسة المودال الملكية الفاخرة الثابتة في الأعلى */}
+        <div className="flex items-center justify-between border-b-[1.5px] border-[#E8D5A3] p-3.5 sm:p-4.5 bg-[#FFFEF8] shrink-0 z-20 shadow-xs">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-[34px] h-[34px] rounded-[10px] bg-gradient-to-b from-[#F1D99A] via-[#E8C77E] to-[#C9A86A] flex items-center justify-center shadow-sm border border-[#9C7D46]/30">
+            <div className="w-[34px] h-[34px] rounded-[10px] bg-gradient-to-b from-[#F1D99A] via-[#E8C77E] to-[#C9A86A] flex items-center justify-center shadow-sm border border-[#9C7D46]/30 shrink-0">
               <svg className="w-[16px] h-[16px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base sm:text-lg font-black text-[#0A3D2E] leading-none">
                   تعديل الطلب #{order.orderNumber}
                 </h1>
@@ -230,15 +229,15 @@ export default async function EditOrderPage({ params }: Props) {
           </div>
           <Link
             href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}`}
-            className="w-8 h-8 rounded-full bg-white border border-[#C9A86A]/40 text-slate-700 hover:text-[#0A3D2E] hover:bg-[#FDF6E3] font-bold flex items-center justify-center cursor-pointer text-sm shadow-xs transition"
+            className="w-8 h-8 rounded-full bg-white border border-[#C9A86A]/40 text-slate-700 hover:text-[#0A3D2E] hover:bg-[#FDF6E3] font-bold flex items-center justify-center cursor-pointer text-sm shadow-xs transition shrink-0"
             title="إغلاق والعودة لتفاصيل الطلب"
           >
             ✕
           </Link>
         </div>
 
-        {/* محتوى نموذج التعديل */}
-        <div className="overflow-y-auto pr-1 pl-0.5 space-y-5 max-h-[calc(94vh-120px)]">
+        {/* محتوى نموذج التعديل القابل للتمرير */}
+        <div className="overflow-y-auto p-3.5 sm:p-6 space-y-5 flex-1 overscroll-contain">
           <OrderEditForm
             orderId={order.id}
             orderNumber={order.orderNumber}

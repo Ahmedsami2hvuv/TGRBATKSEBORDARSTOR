@@ -22,7 +22,6 @@ import {
 } from "./actions";
 import { DeleteVoiceNoteButton } from "./delete-voice-note-button";
 import { AdminRegionSearchPicker } from "@/components/admin-region-search-picker";
-import { AdminOrderFloatingBar } from "./admin-order-floating-bar";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { ShopSearchPicker } from "@/components/shop-search-picker";
 
@@ -1300,11 +1299,6 @@ export function OrderEditForm({
       </button>
     </form>
     </div>
-
-    <AdminOrderFloatingBar
-      pending={pending}
-      hasCustomerImportChoice={!!state.pendingCustomerImport}
-    />
 
     {state.pendingCustomerImport ? (
       <div
