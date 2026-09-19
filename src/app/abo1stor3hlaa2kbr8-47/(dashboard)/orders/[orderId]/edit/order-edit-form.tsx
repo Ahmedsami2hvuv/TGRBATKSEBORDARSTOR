@@ -219,6 +219,8 @@ export function OrderEditForm({
   const router = useRouter();
   const [purchasePrice, setPurchasePrice] = useState(defaultPurchasePrice);
   const [orderSubtotal, setOrderSubtotal] = useState(defaultOrderSubtotal);
+  const [selectedStatus, setSelectedStatus] = useState(defaultStatus);
+  const [selectedCourierId, setSelectedCourierId] = useState(defaultAssignedCourierId);
 
   const calculatedProfit = useMemo(() => {
     const p = parseFloat(purchasePrice);
@@ -235,6 +237,19 @@ export function OrderEditForm({
   const [reversePickupEnabled, setReversePickupEnabled] = useState(isReversePickupOrderType(defaultOrderType));
   const formRef = useRef<HTMLFormElement>(null);
   const orderImgRef = useRef<HTMLInputElement>(null);
+
+  const adjustPurchasePrice = (delta: number) => {
+    const current = parseFloat(purchasePrice) || 0;
+    const next = Math.max(0, parseFloat((current + delta).toFixed(2)));
+    setPurchasePrice(next === 0 ? "" : next.toString());
+  };
+
+  const adjustOrderSubtotal = (delta: number) => {
+    const current = parseFloat(orderSubtotal) || 0;
+    const next = Math.max(0, parseFloat((current + delta).toFixed(2)));
+    const nextStr = next === 0 ? "0" : next.toString();
+    onOrderSubtotalChange(nextStr);
+  };
 
   const submitCustomerImportChoice = useCallback(
     (choice: "confirm" | "decline", pending: NonNullable<OrderEditState["pendingCustomerImport"]>) => {
@@ -521,11 +536,11 @@ export function OrderEditForm({
   return (
     <>
     <div
-      className={`relative pb-24 ${
+      className={`relative pb-6 ${
         prepaidAllEnabled || reversePickupEnabled
-          ? "rounded-2xl border-2 border-red-300/85 bg-gradient-to-b from-red-50/90 to-red-50/35 p-4 shadow-inner shadow-red-100/40 sm:p-5"
+          ? "rounded-2xl border-2 border-red-300/85 bg-gradient-to-b from-red-50/70 to-red-50/20 p-3 sm:p-4 shadow-inner"
           : ""
-      } ${!custLocationUrl.trim() && !prepaidAllEnabled ? "rounded-xl ring-2 ring-rose-300 ring-offset-2 ring-offset-white" : ""}`}
+      }`}
     >
     <form
       id="admin-order-edit-form"
@@ -533,34 +548,20 @@ export function OrderEditForm({
       action={formAction}
       encType="multipart/form-data"
       className="space-y-4"
+      dir="rtl"
     >
-      <p className={`text-sm ${ad.muted}`}>
-        رقم الطلب الظاهر:{" "}
-        <strong className="text-sky-800 tabular-nums">#{orderNumber}</strong>
-        <span className="mx-2 text-slate-500">|</span>
-        <span className="text-slate-600">
-          معرّف النظام (للإدارة):{" "}
-          <code
-            className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800"
-            dir="ltr"
-          >
-            {orderId}
-          </code>
-        </span>
-      </p>
-
       {!custLocationUrl.trim() ? (
         <div
-          className="rounded-xl border-2 border-rose-400 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-900"
+          className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs sm:text-sm font-bold text-rose-900"
           role="status"
         >
-          لا يوجد رابط لوكيشن للزبون — أضف الرابط في الحقل أدناه أو عيّنه عند الإسناد.
+          📍 لا يوجد رابط لوكيشن للزبون — أضف الرابط أدناه أو عيّنه عند الإسناد.
         </div>
       ) : null}
 
       {isBlocked && (
         <div
-          className="animate-pulse rounded-xl border-4 border-red-600 bg-red-100 px-4 py-3 text-center text-base font-black text-red-950 shadow-md flex items-center justify-center gap-2"
+          className="animate-pulse rounded-xl border-2 border-red-600 bg-red-100 px-3.5 py-2.5 text-center text-xs sm:text-sm font-black text-red-950 shadow-sm flex items-center justify-center gap-2"
           role="alert"
         >
           <span>🛑</span>
@@ -570,7 +571,7 @@ export function OrderEditForm({
 
       {!isBlocked && isShopBlocked && (
         <div
-          className="rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2.5 text-center text-sm font-black text-amber-950 shadow-sm flex items-center justify-center gap-2"
+          className="rounded-xl border-2 border-amber-500 bg-amber-50 px-3.5 py-2 text-center text-xs sm:text-sm font-black text-amber-950 shadow-xs flex items-center justify-center gap-2"
           role="alert"
         >
           <span>⚠️</span>
@@ -578,68 +579,90 @@ export function OrderEditForm({
         </div>
       )}
 
-      {routeMode !== "double" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/abo1stor3hlaa2kbr8-47/shops/${shopId}/edit`}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100"
-          >
-            تعديل بيانات المحل
-          </Link>
-          <span className="text-sm text-slate-500">هذه الصفحة: تعديل الطلب</span>
-        </div>
-      )}
-
-      <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4">
-        <span className={ad.label}>بصمة مُدخل الطلب</span>
-        <p className={`mt-1 text-xs ${ad.muted}`}>
-          ما سجّله موظف المحل (أو مُدخل الطلب) أثناء الإنشاء. يمكن للمندوب الاستماع من صفحة الطلب.
-        </p>
-        {voiceSrc ? (
-          <div className="mt-3 space-y-2">
-            <VoiceNoteAudio
-              src={voiceSrc}
-              streamKey={`${orderId}-submitter-voice`}
-              className="w-full max-w-md rounded-lg"
-            />
-            <DeleteVoiceNoteButton orderId={orderId} />
-          </div>
-        ) : (
-          <p className="mt-2 text-xs text-slate-500">لا يوجد تسجيل صوتي لهذا الطلب.</p>
-        )}
-      </div>
-
+      {/* بصمة الإدارة الصوتي */}
       <AdminVoiceNoteSection
         orderId={orderId}
         defaultAdminVoiceNoteUrl={defaultAdminVoiceNoteUrl}
       />
 
-      <OrderStatusRadioGroup
-        name="assignedCourierId"
-        defaultValue={defaultAssignedCourierId}
-        options={courierRadioOptions}
-        legend="المندوب"
-        legendClassName={ad.label}
-      />
+      {/* 1. اختيار المندوب */}
+      <div className="space-y-1.5">
+        <label className="text-[12px] font-black text-[#0A3D2E] block">المندوب:</label>
+        <div className="flex flex-wrap items-stretch gap-1.5" dir="rtl">
+          {courierRadioOptions.map((o) => {
+            const isSelected = selectedCourierId === o.value;
+            return (
+              <label
+                key={o.value}
+                className={`min-h-[36px] px-3 py-1 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
+                  isSelected
+                    ? "bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border-[#C9A86A] text-[#E8C77E] shadow-[0_2px_8px_rgba(10,46,32,0.35),inset_0_1px_0_rgba(232,199,126,0.3)] font-black text-xs sm:text-sm"
+                    : "bg-[#FFFEF8] border-[#E8D5A3] text-[#0A3D2E] hover:border-[#C9A86A] hover:bg-[#FDF6E3] font-bold text-xs sm:text-sm"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="assignedCourierId"
+                  value={o.value}
+                  checked={isSelected}
+                  onChange={() => setSelectedCourierId(o.value)}
+                  className="sr-only"
+                />
+                <span className="truncate leading-none">{o.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
-      <OrderStatusRadioGroup
-        name="status"
-        defaultValue={defaultStatus}
-        options={STATUS_OPTIONS}
-        legend="حالة الطلبية"
-        legendClassName={ad.label}
-      />
+      {/* 2. اختيار حالة الطلبية بالألوان المعتمدة بالنظام */}
+      <div className="space-y-1.5">
+        <label className="text-[12px] font-black text-[#0A3D2E] block">حالة الطلبية:</label>
+        <div className="flex flex-wrap items-stretch gap-1.5" dir="rtl">
+          {STATUS_OPTIONS.map((o) => {
+            const isSelected = selectedStatus === o.value;
+            let selectedClass = "bg-[#0A3D2E] text-[#E8C77E] border-[#C9A86A]";
+            if (o.value === "pending") selectedClass = "bg-red-600 text-white border-red-700 shadow-sm font-black";
+            else if (o.value === "assigned") selectedClass = "bg-rose-600 text-white border-rose-700 shadow-sm font-black";
+            else if (o.value === "delivering") selectedClass = "bg-amber-500 text-slate-950 border-amber-600 shadow-sm font-black";
+            else if (o.value === "delivered") selectedClass = "bg-emerald-600 text-white border-emerald-700 shadow-sm font-black";
+            else if (o.value === "cancelled") selectedClass = "bg-slate-600 text-white border-slate-700 shadow-sm font-black";
+            else if (o.value === "archived") selectedClass = "bg-violet-600 text-white border-violet-700 shadow-sm font-black";
+
+            return (
+              <label
+                key={o.value}
+                className={`min-h-[36px] px-3 py-1 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
+                  isSelected
+                    ? `${selectedClass} shadow-md font-black text-xs sm:text-sm`
+                    : "bg-[#FFFEF8] border-[#E8D5A3] text-slate-700 hover:border-[#C9A86A] hover:bg-[#FDF6E3] font-bold text-xs sm:text-sm"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="status"
+                  value={o.value}
+                  checked={isSelected}
+                  onChange={() => setSelectedStatus(o.value)}
+                  className="sr-only"
+                />
+                <span className="truncate leading-none">{o.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       {routeMode === "double" ? (
-        <div className="rounded-2xl border-2 border-sky-400 bg-gradient-to-r from-sky-50 to-indigo-50 p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-xl font-bold text-white shadow">
+        <div className="rounded-2xl border-2 border-sky-400 bg-gradient-to-r from-sky-50 to-indigo-50 p-3.5 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-lg font-bold text-white shadow">
               ⇄
             </span>
             <div>
-              <h3 className="text-base font-black text-sky-950">طلب ذو وجهتين (بين زبونين فقط)</h3>
-              <p className="text-xs font-bold text-sky-800">
-                هذا الطلب هو عملية نقل مباشرة بين <strong className="text-emerald-900">الزبون المرسل (الجهة الأولى)</strong> و <strong className="text-sky-900">الزبون المستلم (الجهة الثانية)</strong> بدون ربط بمحل تجاري.
+              <h3 className="text-sm font-black text-sky-950">طلب ذو وجهتين (بين زبونين فقط)</h3>
+              <p className="text-[11px] font-bold text-sky-800">
+                عملية نقل مباشرة بين الزبون المرسل (الجهة الأولى) والزبون المستلم (الجهة الثانية).
               </p>
             </div>
           </div>
@@ -647,25 +670,23 @@ export function OrderEditForm({
           <input type="hidden" name="submittedByEmployeeId" value={submittedByEmployeeId} />
         </div>
       ) : (
-        <>
-          <div className="space-y-3">
-            <ShopSearchPicker
-              shops={shops}
-              fieldName="shopId"
-              label="المحل"
-              required
-              value={shopId}
-              onValueChange={onShopChange}
-            />
-          </div>
+        <div className="space-y-3">
+          <ShopSearchPicker
+            shops={shops}
+            fieldName="shopId"
+            label="المحل"
+            required
+            value={shopId}
+            onValueChange={onShopChange}
+          />
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>عميل المحل (موظف رفع الطلب)</span>
+            <span className="text-[12px] font-black text-[#0A3D2E] block">عميل المحل (موظف رفع الطلب)</span>
             <select
               name="submittedByEmployeeId"
               value={submittedByEmployeeId}
               onChange={(e) => setSubmittedByEmployeeId(e.target.value)}
-              className={ad.select}
+              className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
             >
               <option value="">— بدون ربط بموظف محدد (من رفع الطلب من داخل المحل) —</option>
               {employeesForShop.map((e) => (
@@ -674,50 +695,87 @@ export function OrderEditForm({
                 </option>
               ))}
             </select>
-            <span className={`text-xs ${ad.muted}`}>
-              يحدّد من داخل المحل المختار رفع هذا الطلب إلى النظام. منفصل عن «زبون التوصيل» (المستلم) أدناه.
-              عند اختيار موظف يُلغى ارتباط «مُدخل شركة التجهيز» إن وُجد لأن المصدر يصبح موظف المحل.
-            </span>
           </label>
-        </>
+        </div>
       )}
 
       <input type="hidden" name="customerId" value={customerId} />
 
+      {/* نوع الطلب */}
       <label className="flex flex-col gap-1 text-sm">
-        <span className={ad.label}>نوع الطلب</span>
+        <span className="text-[12px] font-black text-[#0A3D2E] block">نوع الطلب</span>
         <input
           name="orderType"
           defaultValue={defaultOrderType}
-          className={ad.input}
+          className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
         />
       </label>
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-3.5">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm w-28 sm:w-36">
-            <span className="text-xs font-bold text-slate-700">سعر الشراء (للمحل)</span>
+      {/* أسعار الشراء والبيع والتوصيل والمجموع */}
+      <div className="flex flex-wrap items-end gap-2 sm:gap-2.5 rounded-2xl border-[1.5px] border-[#C9A86A]/40 bg-[#FDF6E3]/30 p-3 sm:p-3.5 shadow-xs">
+        {/* سعر الشراء للمحل */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] sm:text-[12px] font-black text-[#0A3D2E]">سعر الشراء (للمحل)</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => adjustPurchasePrice(-0.25)}
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-rose-300 bg-rose-50 text-xl font-black text-rose-700 transition shadow-xs hover:bg-rose-100 active:scale-90"
+              title="إنقاص 0.25"
+            >
+              -
+            </button>
             <input
               name="purchasePrice"
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
               placeholder="0"
-              className={`${ad.input} font-mono tabular-nums text-center`}
+              className="w-16 sm:w-20 h-[36px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-1 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums text-center focus:border-[#0A3D2E] focus:outline-none"
             />
-          </label>
+            <button
+              type="button"
+              onClick={() => adjustPurchasePrice(0.25)}
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 text-xl font-black text-emerald-700 transition shadow-xs hover:bg-emerald-100 active:scale-90"
+              title="زيادة 0.25"
+            >
+              +
+            </button>
+          </div>
+        </div>
 
-          <label className="flex flex-col gap-1 text-sm w-28 sm:w-36">
-            <span className="text-xs font-bold text-slate-700">سعر البيع (للزبون)</span>
+        {/* سعر البيع للزبون */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] sm:text-[12px] font-black text-[#0A3D2E]">سعر البيع (للزبون)</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => adjustOrderSubtotal(-0.25)}
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-rose-300 bg-rose-50 text-xl font-black text-rose-700 transition shadow-xs hover:bg-rose-100 active:scale-90"
+              title="إنقاص 0.25"
+            >
+              -
+            </button>
             <input
               name="orderSubtotal"
               value={orderSubtotal}
               onChange={(e) => onOrderSubtotalChange(e.target.value)}
-              className={`${ad.input} font-mono tabular-nums text-center`}
+              className="w-16 sm:w-20 h-[36px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-1 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums text-center focus:border-[#0A3D2E] focus:outline-none"
             />
-          </label>
-        <div className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-bold text-slate-700 text-center">التوصيل</span>
-          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => adjustOrderSubtotal(0.25)}
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 text-xl font-black text-emerald-700 transition shadow-xs hover:bg-emerald-100 active:scale-90"
+              title="زيادة 0.25"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* التوصيل */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] sm:text-[12px] font-black text-[#0A3D2E]">التوصيل</span>
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => {
@@ -725,7 +783,8 @@ export function OrderEditForm({
                 const next = Math.max(0, current - 1);
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-rose-300 bg-rose-50 text-2xl font-black text-rose-700 transition shadow-sm hover:bg-rose-100 active:scale-90"
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-rose-300 bg-rose-50 text-xl font-black text-rose-700 transition shadow-xs hover:bg-rose-100 active:scale-90"
+              title="إنقاص 1 ألف"
             >
               -
             </button>
@@ -733,7 +792,7 @@ export function OrderEditForm({
               name="deliveryPrice"
               value={deliveryPrice}
               onChange={(e) => onDeliveryChange(e.target.value)}
-              className={`${ad.input} w-16 sm:w-20 text-center font-mono font-bold tabular-nums`}
+              className="w-14 sm:w-16 h-[36px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-1 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums text-center focus:border-[#0A3D2E] focus:outline-none"
             />
             <button
               type="button"
@@ -742,30 +801,33 @@ export function OrderEditForm({
                 const next = current + 1;
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-emerald-300 bg-emerald-50 text-2xl font-black text-emerald-700 transition shadow-sm hover:bg-emerald-100 active:scale-90"
+              className="flex h-[36px] w-[34px] items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 text-xl font-black text-emerald-700 transition shadow-xs hover:bg-emerald-100 active:scale-90"
+              title="زيادة 1 ألف"
             >
               +
             </button>
           </div>
         </div>
-        <label className="flex flex-col gap-1 text-sm w-28 sm:w-32">
-          <span className="text-xs font-bold text-slate-700">المجموع</span>
+
+        {/* المجموع */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] sm:text-[12px] font-black text-[#0A3D2E]">المجموع</span>
           <input
             name="totalAmount"
             value={totalAmount}
             readOnly
-            className={`${ad.input} bg-slate-100 font-mono font-black tabular-nums text-center text-sky-900`}
+            className="w-20 sm:w-24 h-[36px] rounded-xl border-[1.5px] border-[#C9A86A]/80 bg-[#FFF8E0] font-mono font-black tabular-nums text-center text-[#8B6A2A] text-xs sm:text-sm shadow-inner"
           />
-        </label>
-      </div>
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* زرا كل شي واصل وطلب عكسي جنب بعض */}
+      <div className="grid grid-cols-2 gap-2">
         <label
-          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm text-slate-800 ${
+          className={`min-h-[40px] px-3 py-1.5 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
             prepaidAllEnabled
-              ? "border-red-400 bg-red-50/90"
-              : "border-slate-200 bg-slate-50/80"
+              ? "bg-red-600 border-red-700 text-white font-black text-xs sm:text-sm shadow-sm"
+              : "bg-[#FFFEF8] border-[#E8D5A3] text-slate-700 hover:border-[#C9A86A] hover:bg-[#FDF6E3] font-bold text-xs sm:text-sm"
           }`}
         >
           <input
@@ -774,23 +836,16 @@ export function OrderEditForm({
             value="on"
             checked={prepaidAllEnabled}
             onChange={(e) => setPrepaidAllEnabled(e.target.checked)}
-            className="mt-1 h-5 w-5 shrink-0 rounded border-red-400 accent-red-600"
+            className="sr-only"
           />
-          <span>
-            <span className={`font-bold ${prepaidAllEnabled ? "text-red-950" : "text-slate-900"}`}>
-              كل شي واصل
-            </span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-700">
-              المندوب لا يستلم نقداً من الزبون (دفع مسبق).
-            </span>
-          </span>
+          <span>كل شي واصل</span>
         </label>
 
         <label
-          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm text-slate-800 ${
+          className={`min-h-[40px] px-3 py-1.5 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
             reversePickupEnabled
-              ? "border-amber-400 bg-amber-50/90"
-              : "border-slate-200 bg-slate-50/80"
+              ? "bg-amber-600 border-amber-700 text-white font-black text-xs sm:text-sm shadow-sm"
+              : "bg-[#FFFEF8] border-[#E8D5A3] text-slate-700 hover:border-[#C9A86A] hover:bg-[#FDF6E3] font-bold text-xs sm:text-sm"
           }`}
         >
           <input
@@ -799,95 +854,55 @@ export function OrderEditForm({
             value="on"
             checked={reversePickupEnabled}
             onChange={(e) => setReversePickupEnabled(e.target.checked)}
-            className="mt-1 h-5 w-5 shrink-0 rounded border-amber-400 accent-amber-600"
+            className="sr-only"
           />
-          <span>
-            <span className={`font-bold ${reversePickupEnabled ? "text-amber-950" : "text-slate-900"}`}>
-              طلب عكسي
-            </span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-700">
-              استلام من الزبون وتسليم للعميل.
-            </span>
-          </span>
+          <span>طلب عكسي</span>
         </label>
       </div>
 
-      {/* خيارات حظر الزبون (عام وخاص بالمحل) */}
-      <div className="space-y-3 rounded-2xl border-2 border-red-200 bg-gradient-to-b from-red-50/40 to-slate-50/60 p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-red-200/80 pb-2">
-          <span className="text-sm font-black text-red-950 flex items-center gap-1.5">
-            🚫 خيارات حظر الزبون
-          </span>
-          <span className="text-xs font-semibold text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
-            تحكم بالحظر
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {/* 1. حظر الزبون عاماً (كل المحلات) */}
-          <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 transition-all ${
+      {/* خيارات حظر الزبون (عام وخاص بالمحل) بدون شرح تحتي */}
+      <div className="grid grid-cols-2 gap-2">
+        <label
+          className={`min-h-[40px] px-2.5 py-1.5 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
             isBlocked
-              ? "border-red-600 bg-red-50/90 shadow-sm"
-              : "border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/30"
-          }`}>
-            <input
-              type="checkbox"
-              name="isBlocked"
-              checked={isBlocked}
-              onChange={(e) => setIsBlocked(e.target.checked)}
-              className="mt-1 h-5 w-5 rounded border-red-400 text-red-600 focus:ring-red-500"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-extrabold text-red-950 flex items-center gap-1">
-                🛑 حظر الزبون عاماً (كل المحلات)
-              </span>
-              <span className="mt-1 text-xs leading-relaxed text-red-800">
-                يمنع أي محل أو عميل في النظام من رفع أي طلب لهذا الزبون كلياً.
-              </span>
-            </div>
-          </label>
+              ? "bg-red-600 border-red-700 text-white font-black text-xs sm:text-sm shadow-sm"
+              : "bg-[#FFFEF8] border-[#E8D5A3] text-red-900 hover:border-red-400 hover:bg-red-50/40 font-bold text-xs sm:text-sm"
+          }`}
+        >
+          <input
+            type="checkbox"
+            name="isBlocked"
+            checked={isBlocked}
+            onChange={(e) => setIsBlocked(e.target.checked)}
+            className="sr-only"
+          />
+          <span>🛑 حظر عام (كل المحلات)</span>
+        </label>
 
-          {/* 2. حظر الزبون من هذا المحل فقط */}
-          <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 transition-all ${
+        <label
+          className={`min-h-[40px] px-2.5 py-1.5 rounded-[12px] border-[1.5px] flex items-center justify-center text-center cursor-pointer transition-all active:scale-95 select-none ${
             isShopBlocked
-              ? "border-amber-600 bg-amber-50/90 shadow-sm"
-              : "border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/30"
-          }`}>
-            <input
-              type="checkbox"
-              name="isShopBlocked"
-              checked={isShopBlocked}
-              onChange={(e) => setIsShopBlocked(e.target.checked)}
-              className="mt-1 h-5 w-5 rounded border-amber-500 text-amber-600 focus:ring-amber-500"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-extrabold text-amber-950 flex items-center gap-1">
-                ⚠️ حظر الزبون من ({shops.find((s) => s.id === shopId)?.name || "هذا المحل"}) فقط
-              </span>
-              <span className="mt-1 text-xs leading-relaxed text-amber-800">
-                يمنع هذا المحل تحديداً من رفع طلب له، بينما تستطيع باقي المحلات رفع طلبات له بشكل طبيعي.
-              </span>
-            </div>
-          </label>
-        </div>
+              ? "bg-amber-600 border-amber-700 text-white font-black text-xs sm:text-sm shadow-sm"
+              : "bg-[#FFFEF8] border-[#E8D5A3] text-amber-900 hover:border-amber-400 hover:bg-amber-50/40 font-bold text-xs sm:text-sm"
+          }`}
+        >
+          <input
+            type="checkbox"
+            name="isShopBlocked"
+            checked={isShopBlocked}
+            onChange={(e) => setIsShopBlocked(e.target.checked)}
+            className="sr-only"
+          />
+          <span>⚠️ حظر من (الإدارة) فقط</span>
+        </label>
       </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className={ad.label}>وقت الطلب</span>
-        <input
-          name="orderNoteTime"
-          defaultValue={defaultOrderNoteTime}
-          required
-          className={ad.input}
-          placeholder="إجباري"
-        />
-      </label>
-
-      <div className="space-y-1.5">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>
+      {/* منطقة الزبون ووقت الطلب جنباً إلى جنب */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="space-y-1">
+          <label className="text-[12px] font-black text-[#0A3D2E] block">
             {routeMode === "double" ? "منطقة الزبون المرسل (الجهة الأولى)" : "منطقة الزبون"}
-          </span>
+          </label>
           <AdminRegionSearchPicker
             name="customerRegionId"
             regions={regions.map((r) => ({ id: r.id, name: r.name }))}
@@ -896,58 +911,60 @@ export function OrderEditForm({
             allowEmpty
             placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
           />
-        </label>
-        <p className={`text-xs leading-relaxed ${ad.muted}`}>
-          {routeMode === "double"
-            ? "يُحسب أجر التوصيل بناءً على مناطق التوصيل للوجهتين."
-            : "يُحسب أجر التوصيل كأعلى قيمة بين أجر توصيل منطقة المحل ومنطقة الزبون."}
-          {selectedRegionName ? (
-            <>
-              {" "}
-              المنطقة الحالية: <strong className="text-slate-900">{selectedRegionName}</strong>.
-            </>
-          ) : null}
-        </p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[12px] font-black text-[#0A3D2E] block">وقت الطلب</label>
+          <input
+            name="orderNoteTime"
+            defaultValue={defaultOrderNoteTime}
+            required
+            className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+            placeholder="إجباري"
+          />
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>
+      {/* رقم الزبون الأول والثاني جنباً إلى جنب */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="text-[12px] font-black text-[#0A3D2E] block">
             {routeMode === "double" ? "رقم الزبون المرسل (الجهة الأولى)" : "رقم الزبون (الأول)"}
-          </span>
+          </label>
           <div className="relative">
             <input
               name="customerPhone"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
               onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
-              className={ad.input}
+              className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
               dir="ltr"
             />
             {firstPrefillLoading && (
               <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-600 border-t-transparent"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A3D2E] border-t-transparent"></div>
               </div>
             )}
           </div>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[12px] font-black text-[#0A3D2E] block">
             {routeMode === "double" ? "رقم ثانٍ للمرسل (اختياري)" : "رقم الزبون (الثاني)"}
-          </span>
+          </label>
           <input
             name="alternatePhone"
             value={alternatePhone}
             onChange={(e) => setAlternatePhone(sanitizePhone(e.target.value))}
             onBlur={(e) => handlePhoneBlur(e.target.value, setAlternatePhone)}
-            className={ad.input}
+            placeholder="إن وجد"
+            className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
             dir="ltr"
           />
-        </label>
+        </div>
       </div>
 
       {firstPrefill && (
-        <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm">
+        <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-xs">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-bold text-emerald-900">بيانات محفوظة لهذا الرقم والمنطقة</span>
@@ -958,7 +975,7 @@ export function OrderEditForm({
             <button
               type="button"
               onClick={applyFirstPrefill}
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
             >
               تطبيق البيانات المحفوظة
             </button>
@@ -966,160 +983,160 @@ export function OrderEditForm({
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* لوكيشن الزبون والنقطة الدالة */}
+      <div className="grid gap-2.5 sm:grid-cols-2">
         <div className="flex flex-col gap-1 text-sm">
           <label className="flex flex-col gap-1">
-            <span className={ad.label}>
-              {routeMode === "double" ? "موقع الزبون المرسل (رابط خرائط)" : "موقع الزبون (رابط خرائط) — اختياري"}
+            <span className="text-[12px] font-black text-[#0A3D2E]">
+              {routeMode === "double" ? "موقع الزبون المرسل (رابط خرائط)" : "موقع الزبون (رابط خرائط)"}
             </span>
             <input
               name="customerLocationUrl"
               value={custLocationUrl}
               onChange={(e) => setCustLocationUrl(e.target.value)}
-              className={ad.input}
+              className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs font-bold text-[#0A3D2E] font-mono focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+              placeholder="رابط اللوكيشن..."
               dir="ltr"
             />
           </label>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <div className="flex flex-col gap-1">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onReplaceCustomerLocationGps}
+              disabled={locBusy || pending}
+              className={`px-2.5 py-1 rounded-lg border text-xs font-black transition cursor-pointer ${
+                confirmReplaceLoc
+                  ? "bg-sky-600 text-white border-sky-700 animate-pulse"
+                  : "bg-sky-50 text-sky-900 border-sky-300 hover:bg-sky-100"
+              }`}
+            >
+              {confirmReplaceLoc ? "تأكيد أخذ الموقع؟" : "أخذ موقعي الحالي"}
+            </button>
+            {confirmReplaceLoc && (
               <button
                 type="button"
-                onClick={onReplaceCustomerLocationGps}
-                disabled={locBusy || pending}
-                className={`${ad.btnSecondary} ${confirmReplaceLoc ? "animate-pulse ring-2 ring-sky-600" : ""}`}
+                onClick={() => setConfirmReplaceLoc(false)}
+                className="text-[10px] font-bold text-sky-600 underline cursor-pointer"
               >
-                {confirmReplaceLoc ? "تأكيد أخذ الموقع؟" : "أخذ موقعي الحالي"}
+                إلغاء
               </button>
-              {confirmReplaceLoc && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmReplaceLoc(false)}
-                  className="text-[10px] font-bold text-sky-600 underline"
-                >
-                  إلغاء
-                </button>
-              )}
-            </div>
-            <div className="flex flex-col gap-1">
+            )}
+
+            <button
+              type="button"
+              onClick={onClearCustomerLocation}
+              disabled={locBusy || pending || !custLocationUrl.trim()}
+              className={`px-2.5 py-1 rounded-lg border text-xs font-black transition cursor-pointer ${
+                confirmClearLoc
+                  ? "bg-rose-600 text-white border-rose-700 animate-pulse"
+                  : "bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100 disabled:opacity-50"
+              }`}
+            >
+              {confirmClearLoc ? "تأكيد المسح؟" : "مسح اللوكيشن"}
+            </button>
+            {confirmClearLoc && (
               <button
                 type="button"
-                onClick={onClearCustomerLocation}
-                disabled={locBusy || pending || !custLocationUrl.trim()}
-                className={`${ad.btnDanger} ${confirmClearLoc ? "animate-pulse ring-2 ring-rose-600" : ""}`}
+                onClick={() => setConfirmClearLoc(false)}
+                className="text-[10px] font-bold text-rose-600 underline cursor-pointer"
               >
-                {confirmClearLoc ? "تأكيد المسح؟" : "مسح اللوكيشن"}
+                إلغاء
               </button>
-              {confirmClearLoc && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmClearLoc(false)}
-                  className="text-[10px] font-bold text-rose-600 underline"
-                >
-                  إلغاء
-                </button>
-              )}
-            </div>
+            )}
           </div>
           <ImageUploaderCaption name={defaultCustomerLocationUploadedByName} />
-          <p className={`text-xs ${ad.muted}`}>
-            يطلب مسح أو استبدال الموقع تأكيداً قبل التنفيذ. الاستبدال يستخدم موقعك الحالي من المتصفح.
-          </p>
         </div>
+
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>
-            {routeMode === "double" ? "نقطة دالة للزبون المرسل" : "أقرب نقطة دالة — اختياري"}
+          <span className="text-[12px] font-black text-[#0A3D2E]">
+            {routeMode === "double" ? "نقطة دالة للزبون المرسل" : "أقرب نقطة دالة"}
           </span>
           <input
             name="customerLandmark"
             value={custLandmark}
             onChange={(e) => setCustLandmark(e.target.value)}
-            className={ad.input}
+            className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+            placeholder="أقرب نقطة دالة..."
           />
         </label>
       </div>
 
-      <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+      {/* صورة باب الزبون */}
+      <div className="rounded-xl border border-[#C9A86A]/40 bg-[#FDF6E3]/30 p-3 sm:p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={ad.label}>
+          <span className="text-[12px] font-black text-[#0A3D2E]">
             {routeMode === "double" ? "صورة باب الزبون المرسل (الجهة الأولى)" : "صورة باب الزبون (المستلم/الوجهة الأولى)"}
           </span>
           <CustomerDoorPhotoQuick orderId={orderId} hasImage={!!defaultCustomerDoorPhotoUrl} />
         </div>
         {customerDoorSrc ? (
-          <div className="mt-3">
+          <div className="mt-2.5">
             <a href={customerDoorSrc} target="_blank" rel="noopener noreferrer" className="block">
-              <div className="aspect-square max-w-xs overflow-hidden rounded-lg border border-sky-200 bg-slate-50">
+              <div className="aspect-square max-w-[140px] overflow-hidden rounded-lg border border-[#C9A86A]/40 bg-white shadow-xs">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={customerDoorSrc} alt="صورة باب الزبون" className="h-full w-full object-cover" />
               </div>
             </a>
             <ImageUploaderCaption name={defaultCustomerDoorPhotoUploadedByName} />
           </div>
-        ) : (
-          <p className="mt-2 text-xs text-slate-500">لا توجد صورة باب زبون مرفوعة حالياً.</p>
-        )}
+        ) : null}
       </div>
 
+      {/* في حالة المسار المزدوج */}
       {routeMode === "double" && (
-        <div className="space-y-6 rounded-2xl border-2 border-dashed border-sky-300 bg-sky-50/20 p-4 shadow-sm">
+        <div className="space-y-4 rounded-2xl border-2 border-dashed border-sky-300 bg-sky-50/20 p-3 sm:p-4 shadow-xs">
           <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">2</div>
-            <h2 className="text-sm font-black text-sky-900">بيانات الوجهة الثانية (المستلم الثاني)</h2>
+            <h2 className="text-xs sm:text-sm font-black text-sky-900">بيانات الوجهة الثانية (المستلم الثاني)</h2>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>منطقة الوجهة الثانية</span>
-              <AdminRegionSearchPicker
-                name="secondCustomerRegionId"
-                regions={regions.map((r) => ({ id: r.id, name: r.name }))}
-                value={secondCustomerRegionId}
-                onValueChange={setSecondCustomerRegionId}
-                allowEmpty
-                placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
-              />
-            </label>
-            {secondSelectedRegionName && (
-              <p className={`text-xs leading-relaxed ${ad.muted}`}>
-                المنطقة المختارة: <strong className="text-slate-900">{secondSelectedRegionName}</strong>.
-              </p>
-            )}
+          <div className="space-y-1">
+            <label className="text-[12px] font-black text-[#0A3D2E] block">منطقة الوجهة الثانية</label>
+            <AdminRegionSearchPicker
+              name="secondCustomerRegionId"
+              regions={regions.map((r) => ({ id: r.id, name: r.name }))}
+              value={secondCustomerRegionId}
+              onValueChange={setSecondCustomerRegionId}
+              allowEmpty
+              placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
+            />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>رقم المستلم الثاني</span>
+              <span className="text-[12px] font-black text-[#0A3D2E] block">رقم المستلم الثاني</span>
               <div className="relative">
                 <input
                   name="secondCustomerPhone"
                   value={secondCustomerPhone}
                   onChange={(e) => setSecondCustomerPhone(sanitizePhone(e.target.value))}
                   onBlur={(e) => handlePhoneBlur(e.target.value, setSecondCustomerPhone)}
-                  className={ad.input}
+                  className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums focus:border-[#0A3D2E] focus:outline-none"
                   dir="ltr"
                 />
                 {secondPrefillLoading && (
                   <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-600 border-t-transparent"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A3D2E] border-t-transparent"></div>
                   </div>
                 )}
               </div>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>رقم ثانٍ للمستلم</span>
+              <span className="text-[12px] font-black text-[#0A3D2E] block">رقم ثانٍ للمستلم</span>
               <input
                 name="secondCustomerAlternatePhone"
                 value={secondAlternatePhone}
                 onChange={(e) => setSecondAlternatePhone(sanitizePhone(e.target.value))}
                 onBlur={(e) => handlePhoneBlur(e.target.value, setSecondAlternatePhone)}
-                className={ad.input}
+                placeholder="إن وجد"
+                className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] font-mono tabular-nums focus:border-[#0A3D2E] focus:outline-none"
                 dir="ltr"
               />
             </label>
           </div>
 
           {secondPrefill && (
-            <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-sky-200 bg-sky-50 p-3 shadow-sm">
+            <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-sky-200 bg-sky-50 p-3 shadow-xs">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs font-bold text-sky-900">بيانات محفوظة للوجهة الثانية</span>
@@ -1130,7 +1147,7 @@ export function OrderEditForm({
                 <button
                   type="button"
                   onClick={applySecondPrefill}
-                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition-colors"
+                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-sky-700 transition-colors cursor-pointer"
                 >
                   تطبيق البيانات المحفوظة
                 </button>
@@ -1138,72 +1155,69 @@ export function OrderEditForm({
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>موقع الوجهة الثانية (رابط)</span>
+              <span className="text-[12px] font-black text-[#0A3D2E] block">موقع الوجهة الثانية (رابط)</span>
               <input
                 name="secondCustomerLocationUrl"
                 value={secondCustLocationUrl}
                 onChange={(e) => setSecondCustLocationUrl(e.target.value)}
-                className={ad.input}
+                className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs font-bold text-[#0A3D2E] font-mono focus:border-[#0A3D2E] focus:outline-none"
                 dir="ltr"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>نقطة دالة للوجهة الثانية</span>
+              <span className="text-[12px] font-black text-[#0A3D2E] block">نقطة دالة للوجهة الثانية</span>
               <input
                 name="secondCustomerLandmark"
                 value={secondCustLandmark}
                 onChange={(e) => setSecondCustLandmark(e.target.value)}
-                className={ad.input}
+                className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none"
               />
             </label>
           </div>
 
-          <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+          <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 sm:p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className={ad.label}>صورة باب الوجهة الثانية</span>
+              <span className="text-[12px] font-black text-[#0A3D2E]">صورة باب الوجهة الثانية</span>
               <CustomerDoorPhotoQuick orderId={orderId} hasImage={!!defaultSecondCustomerDoorPhotoUrl} isSecondCustomer />
             </div>
             {secondCustomerDoorSrc ? (
-              <div className="mt-3">
+              <div className="mt-2.5">
                 <a href={secondCustomerDoorSrc} target="_blank" rel="noopener noreferrer" className="block">
-                  <div className="aspect-square max-w-xs overflow-hidden rounded-lg border border-sky-200 bg-slate-50">
+                  <div className="aspect-square max-w-[140px] overflow-hidden rounded-lg border border-sky-200 bg-white shadow-xs">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={secondCustomerDoorSrc} alt="صورة باب الوجهة الثانية" className="h-full w-full object-cover" />
                   </div>
                 </a>
               </div>
-            ) : (
-              <p className="mt-2 text-xs text-slate-500">لا توجد صورة باب مرفوعة حالياً.</p>
-            )}
+            ) : null}
           </div>
         </div>
       )}
 
+      {/* ملاحظة مُدخل الطلب */}
       <label className="flex flex-col gap-1 text-sm">
-        <span className={summaryText.trim() ? "text-sm font-bold text-rose-800" : ad.label}>
+        <span className={summaryText.trim() ? "text-[12px] font-black text-rose-800" : "text-[12px] font-black text-[#0A3D2E]"}>
           ملاحظة مُدخل الطلب
-        </span>
-        <span className={`text-xs ${ad.muted}`}>
-          ما كتبه موظف المحل أو مُدخل الطلب في خانة الملاحظات؛ تبقى فارغة إن لم يُكتب.
         </span>
         <textarea
           name="summary"
-          rows={5}
+          rows={3}
           value={summaryText}
           onChange={(e) => setSummaryText(e.target.value)}
           className={
             summaryText.trim()
-              ? `${ad.input} border-rose-400 bg-rose-50/90 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-300`
-              : ad.input
+              ? "w-full rounded-xl border-[1.5px] border-rose-400 bg-rose-50/80 p-3 text-xs sm:text-sm font-bold text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:outline-none"
+              : "w-full rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white p-3 text-xs sm:text-sm font-bold text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
           }
         />
       </label>
 
-      <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+      {/* صورة الطلب */}
+      <div className="rounded-xl border border-[#C9A86A]/40 bg-[#FDF6E3]/30 p-3 sm:p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={ad.label}>صورة الطلب</span>
+          <span className="text-[12px] font-black text-[#0A3D2E]">صورة الطلب</span>
           <div className="flex flex-wrap gap-1.5">
             <input
               ref={orderImgRef}
@@ -1218,7 +1232,7 @@ export function OrderEditForm({
             <button
               type="button"
               disabled={pending}
-              className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-200 disabled:opacity-60"
+              className="rounded-xl border border-[#C9A86A] bg-white px-3 py-1 text-xs font-black text-[#0A3D2E] hover:bg-[#FDF6E3] transition cursor-pointer shadow-xs disabled:opacity-60"
               onClick={() => {
                 const el = orderImgRef.current;
                 if (!el) return;
@@ -1226,12 +1240,12 @@ export function OrderEditForm({
                 el.click();
               }}
             >
-              {pending ? "جارٍ الرفع..." : "كاميرا"}
+              {pending ? "جارٍ الرفع..." : "📷 كاميرا"}
             </button>
             <button
               type="button"
               disabled={pending}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-xl border border-[#C9A86A] bg-white px-3 py-1 text-xs font-black text-[#0A3D2E] hover:bg-[#FDF6E3] transition cursor-pointer shadow-xs disabled:opacity-60"
               onClick={() => {
                 const el = orderImgRef.current;
                 if (!el) return;
@@ -1239,17 +1253,13 @@ export function OrderEditForm({
                 el.click();
               }}
             >
-              {pending ? "جارٍ الرفع..." : "معرض"}
+              {pending ? "جارٍ الرفع..." : "🖼️ معرض"}
             </button>
           </div>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
-          JPG أو PNG أو Webp — حتى 10 ميجابايت. عند اختيار صورة يُحفظ الطلب تلقائياً.
-        </p>
         {imgSrc ? (
-          <div className="mt-3">
-            <p className="text-xs font-medium text-slate-600">الصورة الحالية:</p>
-            <div className="mt-2 aspect-square max-w-sm overflow-hidden rounded-lg border border-sky-200 bg-slate-50">
+          <div className="mt-2.5">
+            <div className="aspect-square max-w-[160px] overflow-hidden rounded-lg border border-[#C9A86A]/40 bg-white shadow-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imgSrc}
@@ -1259,19 +1269,17 @@ export function OrderEditForm({
             </div>
             <ImageUploaderCaption name={defaultOrderImageUploadedByName} />
           </div>
-        ) : (
-          <p className="mt-2 text-xs text-slate-500">لا توجد صورة مرفوعة لهذا الطلب.</p>
-        )}
+        ) : null}
       </div>
 
       {state.error ? (
-        <p className={ad.error} role="alert">
+        <p className="rounded-xl border border-rose-300 bg-rose-50 p-2.5 text-xs sm:text-sm font-black text-rose-900" role="alert">
           {state.error}
         </p>
       ) : null}
 
       {state.pendingCustomerImport ? (
-        <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950">
+        <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs sm:text-sm font-bold text-amber-950">
           يوجد طلب تأكيد أدناه — اختر أحد الخيارات لإكمال الحفظ.
         </p>
       ) : null}
@@ -1279,13 +1287,16 @@ export function OrderEditForm({
       <button
         type="submit"
         disabled={pending || !!state.pendingCustomerImport}
-        className={ad.btnPrimary}
+        className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#06281D] text-[#F5D77F] border border-[#C9A86A] font-black text-base shadow-lg hover:brightness-110 active:scale-[0.98] transition cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
       >
-        {pending
-          ? "جارٍ التحديث…"
-          : state.pendingCustomerImport
-            ? "أكمل من النافذة أعلاه"
-            : "تحديث"}
+        <span>✏️</span>
+        <span>
+          {pending
+            ? "جارٍ التحديث…"
+            : state.pendingCustomerImport
+              ? "أكمل من النافذة أعلاه"
+              : "تحديث"}
+        </span>
       </button>
     </form>
     </div>

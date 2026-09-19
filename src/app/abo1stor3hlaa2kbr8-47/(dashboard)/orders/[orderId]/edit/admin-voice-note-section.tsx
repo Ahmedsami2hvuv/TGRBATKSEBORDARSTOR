@@ -346,11 +346,6 @@ export function AdminVoiceNoteSection({
           ) : null}
           {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
           <p className="text-xs text-slate-500">أقصى مدة 10 ثوانٍ.</p>
-          {variant === "embedded" ? (
-            <p className="text-xs font-semibold text-amber-900">
-              سيتم رفع التسجيل عند الضغط على «تحديث» في أسفل الصفحة.
-            </p>
-          ) : null}
         </div>
       ) : (
         <p className="text-xs text-amber-900">هذا المتصفح لا يدعم التسجيل الصوتي من المايك.</p>
