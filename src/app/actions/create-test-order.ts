@@ -105,7 +105,7 @@ export async function createTestOrderAction(): Promise<{
     }
 
     // جلب موظف/عميل تابع لمحل الإدارة
-    const shopEmployee = await prisma.shopEmployee.findFirst({
+    const shopEmployee = await prisma.employee.findFirst({
       where: { shopId: shop.id },
     });
 

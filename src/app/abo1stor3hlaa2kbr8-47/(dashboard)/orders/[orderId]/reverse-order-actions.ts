@@ -47,7 +47,7 @@ export async function createReverseOrderFromExisting(orderId: string): Promise<{
 
     let submittedByEmployeeId = originalOrder.submittedByEmployeeId || null;
     if (originalOrder.shopId) {
-      const firstEmp = await prisma.shopEmployee.findFirst({
+      const firstEmp = await prisma.employee.findFirst({
         where: { shopId: originalOrder.shopId },
         select: { id: true, phone: true },
       });
