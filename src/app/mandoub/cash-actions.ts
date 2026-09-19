@@ -336,18 +336,22 @@ export async function submitMandoubDeliveryMoney(
           courierEarningForCourierId: earningFor,
         },
       });
-
-      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-      await handleOrderDelivered(orderId, tx);
     });
+
+    void (async () => {
+      try {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(orderId);
+      } catch (err) {
+        console.error("[Background handleOrderDelivered error]:", err);
+      }
+    })();
 
     void notifyStaffOrderDelivered(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
     revalidatePath("/mandoub");
     revalidatePath(`/mandoub/order/${orderId}`);
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders`);
     if (noRedirect) {
       return { ok: true, success: true };
     }
@@ -459,12 +463,18 @@ export async function submitMandoubDeliveryMoney(
             : {}),
         },
       });
-
-      if (order.status === "delivered" || (advanceStatus === "delivered" && order.status === "delivering")) {
-        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-        await handleOrderDelivered(orderId, tx);
-      }
     });
+
+    if (order.status === "delivered" || (advanceStatus === "delivered" && order.status === "delivering")) {
+      void (async () => {
+        try {
+          const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+          await handleOrderDelivered(orderId);
+        } catch (err) {
+          console.error("[Background handleOrderDelivered error]:", err);
+        }
+      })();
+    }
   } catch (e: any) {
     return { error: "فشل الحفظ في قاعدة البيانات: " + e.message };
   }

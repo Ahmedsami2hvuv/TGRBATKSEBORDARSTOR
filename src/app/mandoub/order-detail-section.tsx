@@ -416,9 +416,9 @@ export function OrderDetailSection({
               </div>
             </div>
 
-            {/* جهة اليسار: زر تعديل الطلب الفاخر (يظهر فقط في حالة بانتظار المندوب أو الاستلام) وزر الإغلاق عند الحاجة */}
+            {/* جهة اليسار: زر تعديل الطلب الفاخر (متاح دائماً للمندوب لتعديل البيانات أو التراجع عن التسليم في حال الخطأ) وزر الإغلاق عند الحاجة */}
             <div className="flex items-center gap-2 shrink-0">
-              {(order.status === "assigned" || order.status === "delivering") && (
+              {(order.status === "assigned" || order.status === "delivering" || order.status === "delivered") && (
                 <button
                   type="button"
                   id={`edit-order-btn-${order.id}`}

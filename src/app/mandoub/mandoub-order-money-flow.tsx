@@ -517,9 +517,10 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = defaultAlf;
+                  onClose();
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
-                  }, 30);
+                  }, 10);
                 }}
                 color="emerald"
               />
@@ -534,9 +535,10 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = "0";
+                  onClose();
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
-                  }, 30);
+                  }, 10);
                 }}
                 color="emerald"
               />
@@ -585,12 +587,16 @@ function MandoubPickupModal({
             <div className="flex gap-3">
               <button
                 type="submit"
+                onClick={() => {
+                  // إغلاق المودال فوراً عند الضغط
+                  setTimeout(() => onClose(), 10);
+                }}
                 disabled={pickupPending}
                 className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
               >
                 <span>💾</span>
-                <span>{pickupPending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
+                <span>تأكيد الصادر ⚡</span>
               </button>
               <button
                 type="button"
@@ -644,7 +650,10 @@ function MandoubDeliveryModal({
     selectedBox !== "zero";
 
   function submitAfterLocation() {
-    formRef.current?.requestSubmit();
+    onClose();
+    setTimeout(() => {
+      formRef.current?.requestSubmit();
+    }, 10);
   }
 
   function onConfirmGps() {
@@ -743,14 +752,15 @@ function MandoubDeliveryModal({
                   if (modeInput) modeInput.value = "";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = defaultAlf;
-                  setTimeout(() => {
-                    if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                      setGeoError("");
-                      setLocationModalOpen(true);
-                    } else {
+                  if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                    setGeoError("");
+                    setLocationModalOpen(true);
+                  } else {
+                    onClose();
+                    setTimeout(() => {
                       formRef.current?.requestSubmit();
-                    }
-                  }, 30);
+                    }, 10);
+                  }
                 }}
                 color="orange"
               />
@@ -765,14 +775,15 @@ function MandoubDeliveryModal({
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = "0";
-                  setTimeout(() => {
-                    if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                      setGeoError("");
-                      setLocationModalOpen(true);
-                    } else {
+                  if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                    setGeoError("");
+                    setLocationModalOpen(true);
+                  } else {
+                    onClose();
+                    setTimeout(() => {
                       formRef.current?.requestSubmit();
-                    }
-                  }, 30);
+                    }, 10);
+                  }
                 }}
                 color="orange"
               />
@@ -821,12 +832,17 @@ function MandoubDeliveryModal({
             <div className="flex gap-3">
               <button
                 type="submit"
+                onClick={() => {
+                  if (!missingCustomerLocation || locationPromptDoneRef.current) {
+                    setTimeout(() => onClose(), 10);
+                  }
+                }}
                 disabled={deliveryPending}
                 className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
               >
                 <span>💾</span>
-                <span>{deliveryPending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
+                <span>تأكيد الوارد ⚡</span>
               </button>
               <button
                 type="button"
