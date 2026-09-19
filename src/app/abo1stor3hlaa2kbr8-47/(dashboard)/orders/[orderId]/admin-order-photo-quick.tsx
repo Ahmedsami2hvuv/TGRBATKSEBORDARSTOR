@@ -98,7 +98,6 @@ export function AdminOrderPhotoQuick({
           type="file"
           name={`${inputName}Camera`}
           accept="image/*"
-          capture="environment"
           className="sr-only hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

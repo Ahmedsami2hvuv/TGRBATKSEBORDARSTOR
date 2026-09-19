@@ -854,7 +854,6 @@ export function CustomerProfileUpsertForm({
             ref={cameraInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handlePhotoChange}
             className="hidden"
           />

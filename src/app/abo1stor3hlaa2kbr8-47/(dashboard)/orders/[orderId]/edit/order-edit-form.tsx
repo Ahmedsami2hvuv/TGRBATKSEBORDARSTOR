@@ -1222,7 +1222,7 @@ export function OrderEditForm({
               onClick={() => {
                 const el = orderImgRef.current;
                 if (!el) return;
-                el.setAttribute("capture", "environment");
+                el.removeAttribute("capture");
                 el.click();
               }}
             >

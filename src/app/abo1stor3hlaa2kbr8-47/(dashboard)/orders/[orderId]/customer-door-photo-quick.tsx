@@ -72,12 +72,12 @@ export function CustomerDoorPhotoQuick({
       <div className="flex flex-wrap items-center gap-2">
         {/* مدخل الكاميرا المباشر */}
         <input
+          id={`admin-cust-door-cam-${orderId}`}
           ref={cameraFileRef}
           type="file"
           name="customerDoorPhotoCamera"
           accept="image/*"
-          capture="environment"
-          className="sr-only hidden"
+          className="sr-only fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, cameraFileRef.current);
@@ -85,24 +85,23 @@ export function CustomerDoorPhotoQuick({
         />
         {/* مدخل المعرض المباشر */}
         <input
+          id={`admin-cust-door-gal-${orderId}`}
           ref={galleryFileRef}
           type="file"
           name="customerDoorPhotoGallery"
           accept="image/*"
-          className="sr-only hidden"
+          className="sr-only fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, galleryFileRef.current);
           }}
         />
 
-        <button
-          type="button"
-          disabled={pending || deleting}
-          className="group relative transition-transform active:scale-90 flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer disabled:opacity-60"
-          onClick={() => {
-            cameraFileRef.current?.click();
-          }}
+        <label
+          htmlFor={`admin-cust-door-cam-${orderId}`}
+          className={`group relative transition-transform active:scale-90 flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer ${
+            pending || deleting ? "opacity-60 pointer-events-none" : ""
+          }`}
           title="التقاط صورة بالكاميرا"
         >
           <img
@@ -110,7 +109,7 @@ export function CustomerDoorPhotoQuick({
             alt="كاميرا"
             className="h-9 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition"
           />
-        </button>
+        </label>
         <button
           type="button"
           disabled={pending || deleting}

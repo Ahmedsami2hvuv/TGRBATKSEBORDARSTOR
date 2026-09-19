@@ -125,7 +125,6 @@ export function AdminLuxuryShopCard({
         type="file"
         name="shopDoorPhotoCamera"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -221,6 +220,7 @@ export function AdminLuxuryShopCard({
               imageUrl={imgShopDoor}
               label="صورة المحل"
               isBusy={pending}
+              cameraInputId={cameraInputUniqueId}
               galleryInputId={galleryInputUniqueId}
               onCameraClick={() => cameraFileRef.current?.click()}
               onGalleryClick={() => galleryFileRef.current?.click()}

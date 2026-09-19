@@ -2703,7 +2703,6 @@ export function PendingAssignPanel({
                         type="file"
                         name="doorPhoto"
                         accept="image/*"
-                        capture="environment"
                         ref={cameraInputRef}
                         onChange={(e) => handleDoorPhotoChange(e, true)}
                         className="sr-only"
@@ -2796,7 +2795,6 @@ export function PendingAssignPanel({
                         type="file"
                         name="secondDoorPhoto"
                         accept="image/*"
-                        capture="environment"
                         ref={secondCameraInputRef}
                         onChange={(e) => handleSecondDoorPhotoChange(e, true)}
                         className="sr-only"
@@ -2902,7 +2900,6 @@ export function PendingAssignPanel({
                     type="file"
                     name="doorPhoto"
                     accept="image/*"
-                    capture="environment"
                     ref={cameraInputRef}
                     onChange={(e) => handleDoorPhotoChange(e, true)}
                     className="sr-only"

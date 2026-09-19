@@ -96,7 +96,6 @@ export function AdminLuxuryOrderInfoCard({
           type="file"
           name="orderImageCamera"
           accept="image/*"
-          capture="environment"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, cameraFileRef.current);
@@ -218,6 +217,7 @@ export function AdminLuxuryOrderInfoCard({
                 imageUrl={orderImageUrl}
                 label="صورة الطلب"
                 isBusy={busy}
+                cameraInputId={cameraInputUniqueId}
                 galleryInputId={galleryInputUniqueId}
                 onCameraClick={() => cameraFileRef.current?.click()}
                 onGalleryClick={() => galleryFileRef.current?.click()}

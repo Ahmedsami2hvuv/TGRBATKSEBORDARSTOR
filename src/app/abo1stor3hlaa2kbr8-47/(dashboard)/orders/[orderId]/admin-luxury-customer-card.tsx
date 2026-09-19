@@ -294,7 +294,6 @@ export function AdminLuxuryCustomerCard({
         type="file"
         name={isSecondDestination ? "secondCustomerDoorPhotoCamera" : "customerDoorPhotoCamera"}
         accept="image/*"
-        capture="environment"
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -450,6 +449,7 @@ export function AdminLuxuryCustomerCard({
               imageUrl={effectiveDoorPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
+              cameraInputId={cameraInputUniqueId}
               galleryInputId={galleryInputUniqueId}
               onCameraClick={() => cameraFileRef.current?.click()}
               onGalleryClick={() => galleryFileRef.current?.click()}
