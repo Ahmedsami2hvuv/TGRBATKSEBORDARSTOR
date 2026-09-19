@@ -724,7 +724,7 @@ function RedGlassOrbButton3D({
         title={title || "فتح موقع الزبون 📍"}
         className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
         style={{
-          backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
+          backgroundImage: "url('/images/order-luxury/btn-open-location.webp?v=royal3D')",
         }}
       />
     );
@@ -1185,7 +1185,7 @@ function TrackingCardsView({
                             onClick={(e) => e.stopPropagation()}
                             className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
+                              backgroundImage: "url('/images/order-luxury/1789252908710.webp?v=royal3D')",
                             }}
                             title="تعديل تفاصيل وأسعار التجهيز 💰"
                           />
@@ -1197,7 +1197,7 @@ function TrackingCardsView({
                           onClick={(e) => e.stopPropagation()}
                           className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                           style={{
-                            backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
+                            backgroundImage: "url('/images/order-luxury/btn-edit.webp?v=royal3D')",
                           }}
                           title="تعديل الطلب ✏️"
                         />
@@ -1212,7 +1212,7 @@ function TrackingCardsView({
                             }}
                             className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-reject.webp?v=royal3D')",
                             }}
                             title="رفض الطلب ❌"
                           />
@@ -1226,7 +1226,7 @@ function TrackingCardsView({
                             }}
                             className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-restore.webp?v=royal3D')",
                             }}
                             title="إرجاع الطلب المرفوض إلى جديد 🔄"
                           />

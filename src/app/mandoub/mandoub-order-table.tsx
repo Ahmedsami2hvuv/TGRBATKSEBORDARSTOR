@@ -379,7 +379,7 @@ function RedGlassOrbButton3D({
         title={title || "فتح موقع الزبون 📍"}
         className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
         style={{
-          backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
+          backgroundImage: "url('/images/order-luxury/btn-open-location.webp?v=royal3D')",
         }}
       />
     );
@@ -1061,7 +1061,7 @@ function MandoubFullBlockCardGrid({
                             }}
                             className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-open-location.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-open-location.webp?v=royal3D')",
                             }}
                             title="خيارات الموقع على الخريطة 📍"
                           />
@@ -1090,7 +1090,7 @@ function MandoubFullBlockCardGrid({
                             }}
                             className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-chat.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-chat.webp?v=royal3D')",
                             }}
                             title="خيارات المراسلة عبر واتساب 💬"
                           />
@@ -1106,7 +1106,7 @@ function MandoubFullBlockCardGrid({
                             }}
                             className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-door.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-door.webp?v=royal3D')",
                             }}
                             title="عرض صور الأبواب 🚪"
                           />

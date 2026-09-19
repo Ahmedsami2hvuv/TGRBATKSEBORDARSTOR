@@ -130,15 +130,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/btn-tasleem.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign-empty.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-open-location.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-open-location.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-no-location.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-edit.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-reject.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-restore.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-edit.webp?v=royal3D" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-reject.webp?v=royal3D" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-restore.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/icon-reverse.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/1789252908710.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-chat.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-door.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/1789252908710.webp?v=royal3D" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-chat.webp?v=royal3D" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-door.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/modal-luxury-frame.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/shop-card/shop-card-frame.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/shop-card/header-shop-info.webp" as="image" type="image/webp" />
@@ -183,15 +183,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/btn-tasleem.webp',
                     '/images/order-luxury/btn-assign.webp',
                     '/images/order-luxury/btn-assign-empty.webp',
-                    '/images/order-luxury/btn-open-location.webp',
+                    '/images/order-luxury/btn-open-location.webp?v=royal3D',
                     '/images/order-luxury/btn-no-location.webp',
-                    '/images/order-luxury/btn-edit.webp',
-                    '/images/order-luxury/btn-reject.webp',
-                    '/images/order-luxury/btn-restore.webp',
+                    '/images/order-luxury/btn-edit.webp?v=royal3D',
+                    '/images/order-luxury/btn-reject.webp?v=royal3D',
+                    '/images/order-luxury/btn-restore.webp?v=royal3D',
                     '/images/order-luxury/icon-reverse.webp',
-                    '/images/order-luxury/1789252908710.webp',
-                    '/images/order-luxury/btn-chat.webp',
-                    '/images/order-luxury/btn-door.webp',
+                    '/images/order-luxury/1789252908710.webp?v=royal3D',
+                    '/images/order-luxury/btn-chat.webp?v=royal3D',
+                    '/images/order-luxury/btn-door.webp?v=royal3D',
                     '/images/order-luxury/modal-luxury-frame.webp',
                     '/images/order-luxury/shop-card/shop-card-frame.webp',
                     '/images/order-luxury/shop-card/header-shop-info.webp',
