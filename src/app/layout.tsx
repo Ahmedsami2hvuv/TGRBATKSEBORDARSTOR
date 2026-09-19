@@ -130,8 +130,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/btn-tasleem.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-assign-empty.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-open-location.webp?v=royal3D" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-no-location.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-open-location.webp?v=royalLocV2" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-no-location.webp?v=royalLocV2" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-edit.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-reject.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-restore.webp?v=royal3D" as="image" type="image/webp" />
@@ -183,8 +183,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/btn-tasleem.webp',
                     '/images/order-luxury/btn-assign.webp',
                     '/images/order-luxury/btn-assign-empty.webp',
-                    '/images/order-luxury/btn-open-location.webp?v=royal3D',
-                    '/images/order-luxury/btn-no-location.webp',
+                    '/images/order-luxury/btn-open-location.webp?v=royalLocV2',
+                    '/images/order-luxury/btn-no-location.webp?v=royalLocV2',
                     '/images/order-luxury/btn-edit.webp?v=royal3D',
                     '/images/order-luxury/btn-reject.webp?v=royal3D',
                     '/images/order-luxury/btn-restore.webp?v=royal3D',

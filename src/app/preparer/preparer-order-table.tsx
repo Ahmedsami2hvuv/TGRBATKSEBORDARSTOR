@@ -150,7 +150,7 @@ function RedGlassOrbButton3D({
         title={title || "فتح موقع الزبون 📍"}
         className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
         style={{
-          backgroundImage: "url('/images/order-luxury/btn-open-location.webp?v=royal3D')",
+          backgroundImage: "url('/images/order-luxury/btn-open-location.webp?v=royalLocV2')",
         }}
       />
     );
@@ -162,7 +162,7 @@ function RedGlassOrbButton3D({
       title={title || "بدون لوكيشن"}
       className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 opacity-80 cursor-default"
       style={{
-        backgroundImage: "url('/images/order-luxury/btn-no-location.webp')",
+        backgroundImage: "url('/images/order-luxury/btn-no-location.webp?v=royalLocV2')",
       }}
     />
   );
