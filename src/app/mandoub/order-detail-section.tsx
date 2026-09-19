@@ -405,28 +405,30 @@ export function OrderDetailSection({
               </div>
             </div>
 
-            {/* جهة اليسار: زر تعديل الطلب الفاخر وزر الإغلاق عند الحاجة */}
+            {/* جهة اليسار: زر تعديل الطلب الفاخر (يظهر فقط في حالة بانتظار المندوب أو الاستلام) وزر الإغلاق عند الحاجة */}
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                id={`edit-order-btn-${order.id}`}
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
-                }}
-                className="h-[32px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.15),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition cursor-pointer"
-                title="تعديل بيانات الطلب"
-              >
-                <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل الطلب</span>
-                <span
-                  className="w-[18px] h-[18px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
-                  style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+              {(order.status === "assigned" || order.status === "delivering") && (
+                <button
+                  type="button"
+                  id={`edit-order-btn-${order.id}`}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
+                  }}
+                  className="h-[32px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.15),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition cursor-pointer"
+                  title="تعديل بيانات الطلب"
                 >
-                  <svg className="w-[9px] h-[9px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                  </svg>
-                </span>
-              </button>
+                  <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل الطلب</span>
+                  <span
+                    className="w-[18px] h-[18px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                    style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                  >
+                    <svg className="w-[9px] h-[9px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                  </span>
+                </button>
+              )}
 
               {/* زر الإغلاق يظهر فقط عند فتح الطلب في صفحة مستقلة وليس داخل المودال */}
               {!isModal && (

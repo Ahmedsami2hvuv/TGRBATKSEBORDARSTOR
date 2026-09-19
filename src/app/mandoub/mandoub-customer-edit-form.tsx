@@ -73,11 +73,9 @@ export function MandoubCustomerEditForm({
   }, [editState.success, editPending, router]);
 
   const MANDOUB_STATUS_OPTIONS = [
-    { value: "assigned", label: "بانتظار المندوب" },
+    { value: "assigned", label: "بانتظار" },
     { value: "delivering", label: "استلام" },
-    ...(defaultOrderStatus === "delivered"
-      ? [{ value: "delivered", label: "تسليم" }]
-      : []),
+    { value: "delivered", label: "تسليم" },
   ];
 
   if (!editOpen) return null;
@@ -138,11 +136,7 @@ export function MandoubCustomerEditForm({
           <div className="space-y-1.5">
             <label className="text-[12px] font-black text-[#0A3D2E] block">حالة الطلبية:</label>
             <div
-              className={`grid gap-1.5 ${
-                MANDOUB_STATUS_OPTIONS.length === 3
-                  ? "grid-cols-[1.3fr_1fr_1fr]"
-                  : "grid-cols-2"
-              }`}
+              className="grid grid-cols-3 gap-1.5"
               dir="rtl"
             >
               {MANDOUB_STATUS_OPTIONS.map((opt) => {
