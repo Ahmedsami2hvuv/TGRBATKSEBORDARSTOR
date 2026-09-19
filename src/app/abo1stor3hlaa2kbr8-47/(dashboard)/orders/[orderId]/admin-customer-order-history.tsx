@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { DeliveryLoading } from "@/components/delivery-loading";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
+import { createReverseOrderFromExisting } from "./reverse-order-actions";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -61,6 +63,9 @@ export function AdminCustomerPhoneInteractive({
   const [showMenu, setShowMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isCreatingReverse, setIsCreatingReverse] = useState(false);
+  const [reverseError, setReverseError] = useState<string | null>(null);
+  const router = useRouter();
 
   const displayPhone = formattedPhone || phone;
 
@@ -74,11 +79,33 @@ export function AdminCustomerPhoneInteractive({
     }
   };
 
+  const handleCreateReverseOrder = async () => {
+    if (isCreatingReverse) return;
+    setIsCreatingReverse(true);
+    setReverseError(null);
+    try {
+      const res = await createReverseOrderFromExisting(currentOrderId);
+      if (res.ok && res.newOrderId) {
+        setShowMenu(false);
+        router.push(`${SECRET_ADMIN_PATH}/orders/${res.newOrderId}`);
+      } else {
+        setReverseError(res.error || "تعذر إنشاء الطلب العكسي");
+      }
+    } catch (err: any) {
+      setReverseError(err?.message || "حدث خطأ غير متوقع");
+    } finally {
+      setIsCreatingReverse(false);
+    }
+  };
+
   return (
     <>
       <button
         type="button"
-        onClick={() => setShowMenu(true)}
+        onClick={() => {
+          setReverseError(null);
+          setShowMenu(true);
+        }}
         className="group inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/80 hover:bg-sky-100/80 active:scale-95 px-2.5 py-1 text-sm font-black text-sky-950 transition-all cursor-pointer shadow-2xs"
         title="انقر لعرض ملف الزبون أو طلباته السابقة"
       >
@@ -100,12 +127,21 @@ export function AdminCustomerPhoneInteractive({
               </div>
               <button
                 type="button"
-                onClick={() => setShowMenu(false)}
-                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                onClick={() => {
+                  if (!isCreatingReverse) setShowMenu(false);
+                }}
+                disabled={isCreatingReverse}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-50"
               >
                 ✕
               </button>
             </div>
+
+            {reverseError && (
+              <div className="mb-3 rounded-2xl bg-rose-50 border border-rose-200 p-2.5 text-center text-xs font-bold text-rose-700 shadow-2xs">
+                ⚠️ {reverseError}
+              </div>
+            )}
 
             <div className="space-y-2.5">
               {/* خيار: ملف الزبون */}
@@ -149,6 +185,22 @@ export function AdminCustomerPhoneInteractive({
                   <span>طلبات الزبون السابقة</span>
                 </span>
                 <span className="text-xs font-bold text-emerald-700">عرض السجل ⬅️</span>
+              </button>
+
+              {/* خيار: إنشاء طلب عكسي */}
+              <button
+                type="button"
+                disabled={isCreatingReverse}
+                onClick={handleCreateReverseOrder}
+                className="flex w-full items-center justify-between rounded-2xl border-2 border-amber-300 bg-amber-50/80 hover:bg-amber-100/95 p-3.5 text-sm font-black text-amber-950 shadow-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className={`text-lg ${isCreatingReverse ? "animate-spin" : ""}`}>🔄</span>
+                  <span>{isCreatingReverse ? "جاري إنشاء الطلب العكسي..." : "طلب عكسي"}</span>
+                </span>
+                <span className="text-xs font-bold text-amber-800">
+                  {isCreatingReverse ? "⏳ يرجى الانتظار" : "إنشاء فوري ⬅️"}
+                </span>
               </button>
 
               {/* أزرار سريعة: نسخ + اتصال + واتساب */}
