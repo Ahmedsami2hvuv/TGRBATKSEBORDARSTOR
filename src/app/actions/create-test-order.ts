@@ -66,7 +66,11 @@ export async function createTestOrderAction(): Promise<{
     // 3. جلب المندوب "boos"
     const courier = await prisma.courier.findFirst({
       where: {
-        name: { contains: "boos", mode: "insensitive" },
+        OR: [
+          { name: { contains: "boos", mode: "insensitive" } },
+          { name: { contains: "boss", mode: "insensitive" } },
+          { name: { contains: "بوس", mode: "insensitive" } },
+        ],
       },
     });
 
@@ -100,6 +104,11 @@ export async function createTestOrderAction(): Promise<{
       });
     }
 
+    // جلب موظف/عميل تابع لمحل الإدارة
+    const shopEmployee = await prisma.shopEmployee.findFirst({
+      where: { shopId: shop.id },
+    });
+
     // 5. حساب رقم الطلب الجديد
     const lastOrder = await prisma.order.findFirst({
       orderBy: { orderNumber: "desc" },
@@ -120,6 +129,7 @@ export async function createTestOrderAction(): Promise<{
         orderType: "تيست",
         status: courier ? "assigned" : "pending",
         shopId: shop.id,
+        submittedByEmployeeId: shopEmployee?.id ?? null,
         customerId: customer.id,
         customerPhone: testPhone,
         customerRegionId: region.id,
@@ -130,7 +140,6 @@ export async function createTestOrderAction(): Promise<{
         deliveryPrice: deliveryPrice,
         totalAmount: totalAmount,
         assignedCourierId: courier?.id ?? null,
-        assignedCourierAt: courier ? new Date() : null,
         submissionSource: "admin_portal",
         createdAt: new Date(),
         updatedAt: new Date(),
