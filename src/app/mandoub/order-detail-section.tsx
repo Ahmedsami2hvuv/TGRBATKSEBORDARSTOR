@@ -215,6 +215,23 @@ export function OrderDetailSection({
   const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
   const shouldCollapseSender = isDoubleRoute && isSenderPickedUp && !isSenderExpanded;
 
+  const [optimisticStatus, setOptimisticStatus] = useState(order.status);
+  useEffect(() => {
+    setOptimisticStatus(order.status);
+  }, [order.status]);
+
+  useEffect(() => {
+    const handleOptimisticStatus = (e: any) => {
+      if (e.detail?.orderId === order.id && e.detail?.status) {
+        setOptimisticStatus(e.detail.status);
+      }
+    };
+    window.addEventListener("MANDOUB_ORDER_STATUS_OPTIMISTIC", handleOptimisticStatus);
+    return () => {
+      window.removeEventListener("MANDOUB_ORDER_STATUS_OPTIMISTIC", handleOptimisticStatus);
+    };
+  }, [order.id]);
+
   const mergedCustomerLocationUrl = getCleanValue(
     order.customerLocationUrl,
     order.customer?.customerLocationUrl,
@@ -400,7 +417,7 @@ export function OrderDetailSection({
               {/* شارة حالة الطلب (أخضر زمردي فاخر عند التسليم) */}
               <div
                 className={`inline-flex items-center gap-1.5 px-[10px] rounded-full font-black shadow-[inset_0_1px_0_white] shrink-0 ${
-                  order.status === "delivered"
+                  optimisticStatus === "delivered"
                     ? "bg-[#E6F4EF] border border-[#0A3D2E]/30 text-[#0A3D2E]"
                     : "bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A]"
                 }`}
@@ -408,13 +425,13 @@ export function OrderDetailSection({
               >
                 <div
                   className={`w-[6px] h-[6px] rounded-full animate-pulse shrink-0 ${
-                    order.status === "delivered"
+                    optimisticStatus === "delivered"
                       ? "bg-[#0A3D2E] shadow-[0_0_6px_#0A3D2E]"
                       : "bg-[#D4A017] shadow-[0_0_6px_#E8C77E]"
                   }`}
                 />
                 <span style={{ whiteSpace: "nowrap" }}>
-                  {STATUS_AR[order.status] ?? order.status}
+                  {STATUS_AR[optimisticStatus] ?? optimisticStatus}
                 </span>
               </div>
             </div>

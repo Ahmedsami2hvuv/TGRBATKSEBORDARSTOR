@@ -1534,6 +1534,18 @@ export function MandoubOrderTable({
     setDeliveryOrder(null);
   }, [deliveryPending, deliveryState.ok, deliveryOrder]);
 
+  useEffect(() => {
+    const handleOptimistic = (e: any) => {
+      if (e.detail?.orderId && e.detail?.status) {
+        setRowStatusOverrides((prev) => ({ ...prev, [e.detail.orderId]: e.detail.status }));
+      }
+    };
+    window.addEventListener("MANDOUB_ORDER_STATUS_OPTIMISTIC", handleOptimistic);
+    return () => {
+      window.removeEventListener("MANDOUB_ORDER_STATUS_OPTIMISTIC", handleOptimistic);
+    };
+  }, []);
+
   const allSelected = useMemo(() => rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id)), [rowIds, selectedIds]);
 
   useEffect(() => {

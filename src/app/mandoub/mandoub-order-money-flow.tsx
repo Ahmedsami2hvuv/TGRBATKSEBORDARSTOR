@@ -83,6 +83,11 @@ export function MandoubOrderMoneyFlow({
   prepaidAll?: boolean;
   designerConfig?: any;
 }) {
+  const [localEvents, setLocalEvents] = useState<MandoubMoneyEventUi[]>(moneyEvents);
+  useEffect(() => {
+    setLocalEvents(moneyEvents);
+  }, [moneyEvents]);
+
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [deliverySession, setDeliverySession] = useState(0);
@@ -113,27 +118,79 @@ export function MandoubOrderMoneyFlow({
     setDeliveryAdvanceToDelivered(false);
   };
 
+  const handleInstantDeliveryOptimistic = (amtAlf: string, note?: string) => {
+    const numAlf = Number(amtAlf || 0);
+    const amountDinar = Number.isFinite(numAlf) ? numAlf * 1000 : 0;
+    const optimisticEv: MandoubMoneyEventUi = {
+      id: "opt-del-" + Date.now(),
+      kind: MONEY_KIND_DELIVERY,
+      amountDinar,
+      expectedDinar: totalAmountDinar,
+      matchesExpected: true,
+      mismatchReason: "",
+      mismatchNote: note || (amountDinar === 0 ? "لم استلم (0)" : ""),
+      recordedAt: new Date().toISOString(),
+      deletedAt: null,
+      deletedReason: null,
+      courierName: courierName || "أنت",
+    };
+    setLocalEvents((prev) => [optimisticEv, ...prev.filter((e) => e.kind !== MONEY_KIND_DELIVERY || e.deletedAt != null)]);
+    window.dispatchEvent(
+      new CustomEvent("MANDOUB_ORDER_STATUS_OPTIMISTIC", {
+        detail: { orderId, status: "delivered" },
+      }),
+    );
+    closePanels();
+  };
+
+  const handleInstantPickupOptimistic = (amtAlf: string, note?: string) => {
+    const numAlf = Number(amtAlf || 0);
+    const amountDinar = Number.isFinite(numAlf) ? numAlf * 1000 : 0;
+    const optimisticEv: MandoubMoneyEventUi = {
+      id: "opt-pic-" + Date.now(),
+      kind: MONEY_KIND_PICKUP,
+      amountDinar,
+      expectedDinar: orderSubtotalDinar,
+      matchesExpected: true,
+      mismatchReason: "",
+      mismatchNote: note || "",
+      recordedAt: new Date().toISOString(),
+      deletedAt: null,
+      deletedReason: null,
+      courierName: courierName || "أنت",
+    };
+    setLocalEvents((prev) => [optimisticEv, ...prev.filter((e) => e.kind !== MONEY_KIND_PICKUP || e.deletedAt != null)]);
+    window.dispatchEvent(
+      new CustomEvent("MANDOUB_ORDER_STATUS_OPTIMISTIC", {
+        detail: { orderId, status: "delivering" },
+      }),
+    );
+    closePanels();
+  };
+
   useEffect(() => {
     if (pickupState.error) {
       setToastMsg({ text: pickupState.error, type: "error" });
+      setLocalEvents(moneyEvents); // تراجع في حال الخطأ
     } else if (pickupState.success || pickupState.ok) {
       setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح! ⚡", type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
     }
-  }, [pickupState, router]);
+  }, [pickupState, moneyEvents, router]);
 
   useEffect(() => {
     if (deliveryState.error) {
       setToastMsg({ text: deliveryState.error, type: "error" });
+      setLocalEvents(moneyEvents); // تراجع في حال الخطأ
     } else if (deliveryState.success || deliveryState.ok) {
       setToastMsg({ text: "تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉", type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
     }
-  }, [deliveryState, router]);
+  }, [deliveryState, moneyEvents, router]);
 
   useEffect(() => {
     if (deleteState.ok) {
@@ -169,8 +226,8 @@ export function MandoubOrderMoneyFlow({
   }, [orderId]);
 
   const activeEvents = useMemo(
-    () => moneyEvents.filter((e) => e.deletedAt == null),
-    [moneyEvents],
+    () => localEvents.filter((e) => e.deletedAt == null),
+    [localEvents],
   );
 
   const pickupSum = useMemo(
@@ -410,6 +467,7 @@ export function MandoubOrderMoneyFlow({
           pickupAction={pickupAction}
           pickupPending={pickupPending}
           onClose={closePanels}
+          onInstantOptimistic={handleInstantPickupOptimistic}
         />
       )}
 
@@ -425,6 +483,7 @@ export function MandoubOrderMoneyFlow({
           deliveryPending={deliveryPending}
           onClose={closePanels}
           missingCustomerLocation={missingCustomerLocation}
+          onInstantOptimistic={handleInstantDeliveryOptimistic}
         />
       )}
     </div>
@@ -440,6 +499,7 @@ function MandoubPickupModal({
   pickupAction,
   pickupPending,
   onClose,
+  onInstantOptimistic,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -449,6 +509,7 @@ function MandoubPickupModal({
   pickupAction: (formData: FormData) => void | Promise<void>;
   pickupPending: boolean;
   onClose: () => void;
+  onInstantOptimistic?: (amtAlf: string, note?: string) => void;
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
@@ -517,6 +578,7 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = defaultAlf;
+                  onInstantOptimistic?.(defaultAlf);
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 10);
@@ -534,6 +596,7 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = "0";
+                  onInstantOptimistic?.("0");
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 10);
@@ -586,8 +649,7 @@ function MandoubPickupModal({
               <button
                 type="submit"
                 onClick={() => {
-                  // إغلاق المودال فوراً عند الضغط
-                  setTimeout(() => onClose(), 10);
+                  onInstantOptimistic?.(amountAlf || defaultAlf || "0");
                 }}
                 disabled={pickupPending}
                 className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
@@ -621,6 +683,7 @@ function MandoubDeliveryModal({
   deliveryPending,
   onClose,
   missingCustomerLocation,
+  onInstantOptimistic,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -631,6 +694,7 @@ function MandoubDeliveryModal({
   deliveryPending: boolean;
   onClose: () => void;
   missingCustomerLocation: boolean;
+  onInstantOptimistic?: (amtAlf: string, note?: string) => void;
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
@@ -649,6 +713,7 @@ function MandoubDeliveryModal({
 
   function submitAfterLocation() {
     setLocationModalOpen(false);
+    onInstantOptimistic?.(amountAlf || defaultAlf || "0");
     setTimeout(() => {
       formRef.current?.requestSubmit();
     }, 10);
@@ -754,6 +819,7 @@ function MandoubDeliveryModal({
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
+                    onInstantOptimistic?.(defaultAlf);
                     setTimeout(() => {
                       formRef.current?.requestSubmit();
                     }, 10);
@@ -776,6 +842,7 @@ function MandoubDeliveryModal({
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
+                    onInstantOptimistic?.("0");
                     setTimeout(() => {
                       formRef.current?.requestSubmit();
                     }, 10);
@@ -830,7 +897,7 @@ function MandoubDeliveryModal({
                 type="submit"
                 onClick={() => {
                   if (!missingCustomerLocation || locationPromptDoneRef.current) {
-                    setTimeout(() => onClose(), 10);
+                    onInstantOptimistic?.(amountAlf || defaultAlf || "0");
                   }
                 }}
                 disabled={deliveryPending}
