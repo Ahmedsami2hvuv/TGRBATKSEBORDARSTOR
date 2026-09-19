@@ -16,6 +16,7 @@ import {
 } from "@/lib/money-alf";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
+import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 
 const initialCash: MandoubCashState = {};
 
@@ -276,6 +277,14 @@ export function MandoubOrderMoneyFlow({
                   className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
                 />
               </button>
+
+              {/* زر طلب عكسي 🔄 */}
+              <LuxuryReverseOrderButton
+                orderId={orderId}
+                orderNumber={orderNumber}
+                role="mandoub"
+                size="lg"
+              />
             </div>
           )}
 

@@ -149,6 +149,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/btn-reject.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-restore.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/icon-reverse.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-reverse-order.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/1789252908710.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-chat.webp?v=royal3D" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-door.webp?v=royal3D" as="image" type="image/webp" />

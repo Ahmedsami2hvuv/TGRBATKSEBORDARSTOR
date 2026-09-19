@@ -28,6 +28,7 @@ import { formatBaghdadDateTime, formatBaghdadDateFriendly, getBaghdadDateString 
 import { orderStatusBadgeClass } from "@/lib/order-status-style";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { MandoubActionMenuModal } from "./mandoub-action-menu-modal";
+import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -1004,6 +1005,15 @@ function MandoubFullBlockCardGrid({
                             title="تسليم الشحنة للزبون 🫴"
                           />
                         )}
+
+                        {/* زر طلب عكسي 🔄 */}
+                        <LuxuryReverseOrderButton
+                          orderId={o.id}
+                          orderNumber={o.shortId}
+                          customerPhone={o.customerPhone || o.phoneLine}
+                          role="mandoub"
+                          size="lg"
+                        />
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRouteOrder && (

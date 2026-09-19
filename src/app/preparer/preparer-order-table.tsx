@@ -18,6 +18,7 @@ import { PreparerOrderDetailSection } from "./preparer-order-detail-section";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 
 function getHeaderBannerWebp(orderStatus?: string) {
   switch (orderStatus) {
@@ -823,6 +824,15 @@ export function PreparerOrderTable({
                                 ) : null}
                               </button>
                             )}
+
+                            {/* زر طلب عكسي 🔄 */}
+                            <LuxuryReverseOrderButton
+                              orderId={o.id}
+                              orderNumber={o.shortId}
+                              customerPhone={o.customerPhone || o.phoneLine}
+                              role="preparer"
+                              size="md"
+                            />
                           </div>
                         </div>
                       </div>

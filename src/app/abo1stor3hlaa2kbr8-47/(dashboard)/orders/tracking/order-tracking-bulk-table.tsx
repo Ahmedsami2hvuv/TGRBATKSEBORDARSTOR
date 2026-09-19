@@ -15,6 +15,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { formatDinarAsAlf, dinarDecimalToAlfInputString, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 import {
   submitAdminPickupMoney,
   submitAdminDeliveryMoney,
@@ -1290,6 +1291,14 @@ function TrackingCardsView({
                             )}
                           </button>
                         )}
+
+                        {/* زر طلب عكسي 🔄 */}
+                        <LuxuryReverseOrderButton
+                          orderId={o.id}
+                          orderNumber={o.orderNumber}
+                          customerPhone={o.customerPhone}
+                          role="admin"
+                        />
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (
