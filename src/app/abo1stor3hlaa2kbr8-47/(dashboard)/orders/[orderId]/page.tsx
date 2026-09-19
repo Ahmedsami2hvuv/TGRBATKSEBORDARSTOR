@@ -124,18 +124,15 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
     const secondCustomerLocationUrlEffective = (order.secondCustomerLocationUrl || secondProfile?.locationUrl || "").trim();
 
     const isSystemAdminOrder = Boolean(
-      order.submissionSource === "admin_portal" ||
-      order.submissionSource === "company_preparer" ||
-      !order.shop ||
-      order.shop?.name === "الإدارة" ||
-      order.shop?.name === "طلبات الإدارة العامة" ||
-      order.submittedByCompanyPreparerId
+      (!order.shop || order.shop.name === "الإدارة" || order.shop.name === "طلبات الإدارة العامة") &&
+      (order.submissionSource === "admin_portal" || order.submissionSource === "company_preparer" || order.submittedByCompanyPreparerId)
     );
 
     const submitterPhone =
+      order.shop?.phone ||
       order.submittedByCompanyPreparer?.phone ||
       order.submittedBy?.phone ||
-      (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : order.shop?.phone || SYSTEM_ADMIN_PHONE);
+      (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : SYSTEM_ADMIN_PHONE);
 
     const getCustomerDoorUrl = () => {
       if (order.customerDoorPhotoUrl) {

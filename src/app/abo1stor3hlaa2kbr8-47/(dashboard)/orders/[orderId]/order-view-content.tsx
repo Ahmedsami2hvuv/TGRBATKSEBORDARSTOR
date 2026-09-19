@@ -217,10 +217,12 @@ export function OrderViewContent({
 
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
 
-  const submitterName = order.submittedByCompanyPreparer?.name || order.submittedBy?.name || (isSystemAdminOrder ? "الإدارة" : order.shop?.name || "المسؤول");
-  const submitterPhone = order.submittedByCompanyPreparer?.phone?.trim()
-    || order.submittedBy?.phone?.trim()
-    || (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
+  const submitterName = order.shop?.name || order.submittedByCompanyPreparer?.name || order.submittedBy?.name || (isSystemAdminOrder ? "الإدارة" : "المحل");
+  const submitterPhone =
+    order.shop?.phone?.trim() ||
+    order.submittedByCompanyPreparer?.phone?.trim() ||
+    order.submittedBy?.phone?.trim() ||
+    (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : "");
   const currentTotalPriceStr = String(order.totalAmount || order.totalPrice || "");
   const currentCourierName = order.courier?.name || "المندوب";
   const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
@@ -498,128 +500,237 @@ export function OrderViewContent({
       <div className="mt-1.5 space-y-3 sm:space-y-4">
         {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة شبه ملاصق ومترابط) --- */}
         <div className="flex flex-col gap-0 w-full">
-          {!isDoubleRoute && (
-            <AdminLuxuryShopCard
-              order={order}
-              submitterName={submitterName}
-              submitterPhone={submitterPhone}
-              imgShopDoor={imgShopDoor}
-              setPreviewImageUrl={setPreviewImageUrl}
-              isSystemAdminOrder={isSystemAdminOrder}
-              designerConfig={designerConfigState}
-            />
-          )}
-
-          {/* الفاصل الأرابيسك المذهب بين كارت المحل وكارت الزبون */}
-          {!isDoubleRoute && !shouldCollapseSender && (
-            <div className="flex items-center justify-center gap-2 py-2 my-0.5">
-              <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-              <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
-                <div className="w-[12px] h-[12px] relative">
-                  <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
-                  <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
-                </div>
+          {!isDoubleRoute && isReversePickup && !shouldCollapseSender ? (
+            <>
+              {/* في الطلب العكسي: بطاقة الزبون بالأعلى للاستلام */}
+              <div className="w-full">
+                <AdminLuxuryCustomerCard
+                  order={order}
+                  customerName={(order as any).customerName || order.customer?.name || "الزبون"}
+                  customerPhone={order.customerPhone}
+                  customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                  alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
+                  imgCustomerDoor={imgCustDoor}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isDoubleRoute={isDoubleRoute}
+                  cardTitle="الزبون (استلام الطلب العكسي)"
+                  designerConfig={designerConfigState}
+                  phoneProfile={phoneProfile}
+                  userRole="admin"
+                  headerAction={
+                    <OtherRegionsCustomerDetails
+                      phone={order.customerPhone}
+                      currentRegionId={order.customerRegionId}
+                      currentRegionName={order.customerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={false}
+                      designerConfig={designerConfigState}
+                    />
+                  }
+                  smartHintNode={
+                    isSmartHintValid(order.smartHintLine) ? (
+                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                        <div className="flex-1 text-right">
+                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                            <span>💡 الاستدلال الذكي</span>
+                          </p>
+                          <p className="text-xs font-black text-white mt-1">
+                            {order.smartHintLine!.trim()}
+                          </p>
+                        </div>
+                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                          💡
+                        </div>
+                      </div>
+                    ) : null
+                  }
+                >
+                  <div className="w-full">
+                    <AdminCustomerLocationQuick
+                      orderId={order.id}
+                      customerPhone={order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                      hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                      userRole="admin"
+                      templateVars={{
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                        city: order.customerRegion?.name || "—",
+                        total_price: currentTotalPriceStr,
+                        total: currentTotalPriceStr,
+                        delivery: currentCourierName,
+                        courier: currentCourierName,
+                        courierName: currentCourierName,
+                        deliveryName: currentCourierName,
+                        location_url: order.customerLocationUrl || "",
+                        landmark: order.customerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                      }}
+                      customButtons={waButtonSettings}
+                      designerConfig={designerConfigState}
+                    />
+                  </div>
+                </AdminLuxuryCustomerCard>
               </div>
-              <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
-            </div>
-          )}
 
-          {shouldCollapseSender && (
-            <div
-              onClick={() => setIsSenderExpanded(true)}
-              className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-1 active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] flex items-center justify-center font-black text-sm shadow-md">✓</span>
-                <div>
-                  <h4 className="text-sm font-black text-[#F5D77F]">
-                    المرسل (الوجهة الأولى) - تم الاستلام بنجاح ✅
-                  </h4>
-                  <p className="text-xs font-bold text-emerald-200">
-                    📍 {order.customerRegion?.name || "منطقة المرسل"} {order.customerPhone ? `| 📞 ${contactLine(order.customerPhone)}` : ""}
-                  </p>
+              {/* الفاصل الأرابيسك المذهب */}
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                  </div>
                 </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
               </div>
-              <button type="button" className="px-3.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] rounded-xl text-xs font-black text-[#F5D77F] shadow-sm border border-[#C9A86A]">
-                عرض التفاصيل 🔽
-              </button>
-            </div>
-          )}
 
-          {!shouldCollapseSender && (
-            <div className="w-full">
-              <AdminLuxuryCustomerCard
+              {/* بطاقة المحل / العميل بالأسفل للتسليم */}
+              <AdminLuxuryShopCard
                 order={order}
-                customerName={(order as any).customerName || order.customer?.name || "الزبون"}
-                customerPhone={order.customerPhone}
-                customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
-                alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
-                imgCustomerDoor={imgCustDoor}
+                submitterName={submitterName}
+                submitterPhone={submitterPhone}
+                imgShopDoor={imgShopDoor}
                 setPreviewImageUrl={setPreviewImageUrl}
-                isDoubleRoute={isDoubleRoute}
+                isSystemAdminOrder={isSystemAdminOrder}
+                isReverseOrder={true}
                 designerConfig={designerConfigState}
-                phoneProfile={phoneProfile}
-                headerAction={
-                  <OtherRegionsCustomerDetails
-                    phone={order.customerPhone}
-                    currentRegionId={order.customerRegionId}
-                    currentRegionName={order.customerRegion?.name}
-                    orderId={order.id}
-                    isSecondDestination={false}
-                    designerConfig={designerConfigState}
-                  />
-                }
-                smartHintNode={
-                  isSmartHintValid(order.smartHintLine) ? (
-                    <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
-                      <div className="flex-1 text-right">
-                        <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
-                          <span>💡 الاستدلال الذكي</span>
-                        </p>
-                        <p className="text-xs font-black text-white mt-1">
-                          {order.smartHintLine!.trim()}
-                        </p>
-                      </div>
-                      <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
-                        💡
-                      </div>
+              />
+            </>
+          ) : (
+            <>
+              {/* في الطلب العادي: بطاقة المحل أولاً */}
+              {!isDoubleRoute && (
+                <AdminLuxuryShopCard
+                  order={order}
+                  submitterName={submitterName}
+                  submitterPhone={submitterPhone}
+                  imgShopDoor={imgShopDoor}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isSystemAdminOrder={isSystemAdminOrder}
+                  isReverseOrder={false}
+                  designerConfig={designerConfigState}
+                />
+              )}
+
+              {/* الفاصل الأرابيسك المذهب بين كارت المحل وكارت الزبون */}
+              {!isDoubleRoute && !shouldCollapseSender && (
+                <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                  <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                  <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                    <div className="w-[12px] h-[12px] relative">
+                      <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                      <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
                     </div>
-                  ) : null
-                }
-              >
-                {/* أزرار اللوكيشن الملكية الثلاثة المذهبة أو زر تبليغ الزبون بجانب اللوكيشن */}
-                <div className="w-full">
-                  <AdminCustomerLocationQuick
-                    orderId={order.id}
-                    customerPhone={order.customerPhone}
-                    customerPhone2={order.customerPhone2 || undefined}
-                    shopPhone={submitterPhone || undefined}
-                    orderStatus={order.status}
-                    hasCustomerLocation={Boolean(order.customerLocationUrl)}
-                    hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-                    userRole="admin"
-                    templateVars={{
-                      clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-                      city: order.customerRegion?.name || "—",
-                      total_price: currentTotalPriceStr,
-                      total: currentTotalPriceStr,
-                      delivery: currentCourierName,
-                      courier: currentCourierName,
-                      courierName: currentCourierName,
-                      deliveryName: currentCourierName,
-                      location_url: order.customerLocationUrl || "",
-                      landmark: order.customerLandmark || "",
-                      order_number: String(order.orderNumber || ""),
-                      customer_phone: order.customerPhone || "",
-                      customer_phone2: order.customerPhone2 || "",
-                      shop_phone: submitterPhone || "",
-                    }}
-                    customButtons={waButtonSettings}
-                    designerConfig={designerConfigState}
-                  />
+                  </div>
+                  <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
                 </div>
-              </AdminLuxuryCustomerCard>
-            </div>
+              )}
+
+              {shouldCollapseSender && (
+                <div
+                  onClick={() => setIsSenderExpanded(true)}
+                  className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-1 active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] flex items-center justify-center font-black text-sm shadow-md">✓</span>
+                    <div>
+                      <h4 className="text-sm font-black text-[#F5D77F]">
+                        المرسل (الوجهة الأولى) - تم الاستلام بنجاح ✅
+                      </h4>
+                      <p className="text-xs font-bold text-emerald-200">
+                        📍 {order.customerRegion?.name || "منطقة المرسل"} {order.customerPhone ? `| 📞 ${contactLine(order.customerPhone)}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <button type="button" className="px-3.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] rounded-xl text-xs font-black text-[#F5D77F] shadow-sm border border-[#C9A86A]">
+                    عرض التفاصيل 🔽
+                  </button>
+                </div>
+              )}
+
+              {!shouldCollapseSender && (
+                <div className="w-full">
+                  <AdminLuxuryCustomerCard
+                    order={order}
+                    customerName={(order as any).customerName || order.customer?.name || "الزبون"}
+                    customerPhone={order.customerPhone}
+                    customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                    alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
+                    imgCustomerDoor={imgCustDoor}
+                    setPreviewImageUrl={setPreviewImageUrl}
+                    isDoubleRoute={isDoubleRoute}
+                    designerConfig={designerConfigState}
+                    phoneProfile={phoneProfile}
+                    userRole="admin"
+                    headerAction={
+                      <OtherRegionsCustomerDetails
+                        phone={order.customerPhone}
+                        currentRegionId={order.customerRegionId}
+                        currentRegionName={order.customerRegion?.name}
+                        orderId={order.id}
+                        isSecondDestination={false}
+                        designerConfig={designerConfigState}
+                      />
+                    }
+                    smartHintNode={
+                      isSmartHintValid(order.smartHintLine) ? (
+                        <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                          <div className="flex-1 text-right">
+                            <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                              <span>💡 الاستدلال الذكي</span>
+                            </p>
+                            <p className="text-xs font-black text-white mt-1">
+                              {order.smartHintLine!.trim()}
+                            </p>
+                          </div>
+                          <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                            💡
+                          </div>
+                        </div>
+                      ) : null
+                    }
+                  >
+                    {/* أزرار اللوكيشن الملكية الثلاثة المذهبة أو زر تبليغ الزبون بجانب اللوكيشن */}
+                    <div className="w-full">
+                      <AdminCustomerLocationQuick
+                        orderId={order.id}
+                        customerPhone={order.customerPhone}
+                        customerPhone2={order.customerPhone2 || undefined}
+                        shopPhone={submitterPhone || undefined}
+                        orderStatus={order.status}
+                        hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                        hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                        userRole="admin"
+                        templateVars={{
+                          clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                          city: order.customerRegion?.name || "—",
+                          total_price: currentTotalPriceStr,
+                          total: currentTotalPriceStr,
+                          delivery: currentCourierName,
+                          courier: currentCourierName,
+                          courierName: currentCourierName,
+                          deliveryName: currentCourierName,
+                          location_url: order.customerLocationUrl || "",
+                          landmark: order.customerLandmark || "",
+                          order_number: String(order.orderNumber || ""),
+                          customer_phone: order.customerPhone || "",
+                          customer_phone2: order.customerPhone2 || "",
+                          shop_phone: submitterPhone || "",
+                        }}
+                        customButtons={waButtonSettings}
+                        designerConfig={designerConfigState}
+                      />
+                    </div>
+                  </AdminLuxuryCustomerCard>
+                </div>
+              )}
+            </>
           )}
 
           {/* كارت معلومات الطلب مدمج ومترابط مع فاصل أرابيسك مذهب في الطلب العادي */}

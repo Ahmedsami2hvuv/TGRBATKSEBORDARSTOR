@@ -30,6 +30,7 @@ export function AdminLuxuryShopCard({
   imgShopDoor,
   setPreviewImageUrl,
   isSystemAdminOrder = false,
+  isReverseOrder = false,
   designerConfig,
 }: {
   order: any;
@@ -38,6 +39,7 @@ export function AdminLuxuryShopCard({
   imgShopDoor: string | null;
   setPreviewImageUrl: (url: string | null) => void;
   isSystemAdminOrder?: boolean;
+  isReverseOrder?: boolean;
   designerConfig?: any;
 }) {
   const router = useRouter();
@@ -163,7 +165,9 @@ export function AdminLuxuryShopCard({
               </svg>
             </div>
             <div>
-              <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none">المحل (المرسل)</h2>
+              <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none">
+                {isReverseOrder ? "المحل / العميل (المستلم للطلب العكسي)" : "المحل (المرسل)"}
+              </h2>
               <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#C9A86A] to-transparent rounded-full" />
             </div>
           </div>
