@@ -1012,21 +1012,6 @@ function TrackingCardsView({
                             {headerTextStr}
                           </span>
                         </div>
-
-                        {/* أيقونة زر الطلب العكسي المفرغة من الخلفية بدقة تامة */}
-                        {isReverse && (
-                          <div
-                            className="absolute -bottom-2 right-3 sm:right-5 z-20 select-none transition-transform hover:scale-110 cursor-pointer pointer-events-auto"
-                            title="طلب عكسي 📦⤺"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src="/images/order-luxury/icon-reverse.webp"
-                              alt="طلب عكسي"
-                              className="w-7 h-7 sm:w-8.5 sm:h-8.5 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-                            />
-                          </div>
-                        )}
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب المكيشة + مربع الاختيار في أقصى اليسار */}
@@ -1292,13 +1277,15 @@ function TrackingCardsView({
                           </button>
                         )}
 
-                        {/* زر طلب عكسي 🔄 */}
-                        <LuxuryReverseOrderButton
-                          orderId={o.id}
-                          orderNumber={o.orderNumber}
-                          customerPhone={o.customerPhone}
-                          role="admin"
-                        />
+                        {/* زر/شارة طلب عكسي 🔄 يظهر فقط للطلبات العكسية */}
+                        {isReverse && (
+                          <LuxuryReverseOrderButton
+                            orderId={o.id}
+                            orderNumber={o.orderNumber}
+                            customerPhone={o.customerPhone}
+                            role="admin"
+                          />
+                        )}
 
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (

@@ -274,14 +274,6 @@ export function AdminOrderMoneyEvents({
                   className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
                 />
               </button>
-
-              {/* زر طلب عكسي 🔄 */}
-              <LuxuryReverseOrderButton
-                orderId={orderId}
-                orderNumber={orderNumber}
-                role="admin"
-                size="lg"
-              />
             </div>
           )}
 

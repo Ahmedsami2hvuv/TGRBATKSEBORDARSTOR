@@ -709,21 +709,6 @@ export function PreparerOrderTable({
                                 {headerTextStr}
                               </span>
                             </div>
-
-                            {/* أيقونة زر الطلب العكسي */}
-                            {isReverse && (
-                              <div
-                                className="absolute -bottom-2 left-3 sm:left-5 z-20 select-none transition-transform hover:scale-110 cursor-pointer pointer-events-auto"
-                                title="طلب عكسي 📦⤺"
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src="/images/order-luxury/icon-reverse.webp"
-                                  alt="طلب عكسي"
-                                  className="w-7 h-7 sm:w-8.5 sm:h-8.5 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-                                />
-                              </div>
-                            )}
                           </div>
 
                           {/* اليسار: كبسولة رقم الطلب + مربع الاختيار */}
@@ -889,14 +874,16 @@ export function PreparerOrderTable({
                               </button>
                             )}
 
-                            {/* زر طلب عكسي 🔄 */}
-                            <LuxuryReverseOrderButton
-                              orderId={o.id}
-                              orderNumber={o.shortId}
-                              customerPhone={o.customerPhone || o.phoneLine}
-                              role="preparer"
-                              size="md"
-                            />
+                            {/* زر/شارة طلب عكسي 🔄 يظهر فقط للطلبات العكسية */}
+                            {isReverse && (
+                              <LuxuryReverseOrderButton
+                                orderId={o.id}
+                                orderNumber={o.shortId}
+                                customerPhone={o.customerPhone || o.phoneLine}
+                                role="preparer"
+                                size="md"
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
