@@ -236,6 +236,15 @@ export function OrderEditForm({
   const [reversePickupEnabled, setReversePickupEnabled] = useState(isReversePickupOrderType(defaultOrderType));
   const formRef = useRef<HTMLFormElement>(null);
   const orderImgRef = useRef<HTMLInputElement>(null);
+  const summaryTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = summaryTextareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = `${Math.max(90, el.scrollHeight + 4)}px`;
+    }
+  }, [summaryText]);
 
   const adjustPurchasePrice = (delta: number) => {
     const current = parseFloat(purchasePrice) || 0;
@@ -897,10 +906,10 @@ export function OrderEditForm({
       </div>
 
       {/* منطقة الزبون ووقت الطلب جنباً إلى جنب */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2 items-start">
         <div className="space-y-1">
           <label className="text-[12px] font-black text-[#0A3D2E] block">
-            {routeMode === "double" ? "منطقة الزبون المرسل (الجهة الأولى)" : "منطقة الزبون"}
+            {routeMode === "double" ? "منطقة الزبون (1)" : "منطقة الزبون"}
           </label>
           <AdminRegionSearchPicker
             name="customerRegionId"
@@ -908,7 +917,7 @@ export function OrderEditForm({
             value={customerRegionId}
             onValueChange={onCustomerRegionChange}
             allowEmpty
-            placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
+            placeholder="بحث عن منطقة…"
           />
         </div>
 
@@ -1201,14 +1210,15 @@ export function OrderEditForm({
           ملاحظة مُدخل الطلب
         </span>
         <textarea
+          ref={summaryTextareaRef}
           name="summary"
-          rows={3}
           value={summaryText}
           onChange={(e) => setSummaryText(e.target.value)}
+          placeholder="ملاحظات وتفاصيل المنتجات المكتوبة..."
           className={
             summaryText.trim()
-              ? "w-full rounded-xl border-[1.5px] border-rose-400 bg-rose-50/80 p-3 text-xs sm:text-sm font-bold text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:outline-none"
-              : "w-full rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white p-3 text-xs sm:text-sm font-bold text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+              ? "w-full min-h-[90px] rounded-xl border-[1.5px] border-rose-400 bg-rose-50/80 p-3 text-xs sm:text-sm font-bold text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:outline-none transition-[height] duration-150 resize-y overflow-y-auto"
+              : "w-full min-h-[90px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white p-3 text-xs sm:text-sm font-bold text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10 transition-[height] duration-150 resize-y overflow-y-auto"
           }
         />
       </label>
