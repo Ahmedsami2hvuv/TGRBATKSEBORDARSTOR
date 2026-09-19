@@ -151,76 +151,81 @@ export function MandoubLocationManageButtons({
   const err = clearState.error ?? gpsState.error ?? geoError;
 
   return (
-    <div className="mt-2 flex w-full max-w-md flex-col gap-2" dir="rtl">
+    <div className="flex w-full flex-col gap-1.5" dir="rtl">
       {err ? (
-        <p className="rounded-xl border border-rose-300/90 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900 shadow-sm">
+        <p className="rounded-xl border border-rose-300/90 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900 shadow-xs">
           {err}
         </p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <div className="flex flex-1 flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex flex-col gap-0.5">
           <button
             type="button"
             onClick={onClear}
             disabled={pending}
             aria-busy={clearPending}
-            className={`min-h-[44px] w-full rounded-xl border-2 px-3 py-2 text-sm font-black transition disabled:cursor-wait disabled:opacity-70 ${
+            className={`h-[34px] w-full rounded-xl border px-2.5 text-xs font-black transition active:scale-95 disabled:cursor-wait disabled:opacity-70 flex items-center justify-center gap-1 cursor-pointer ${
               confirmClear
                 ? "border-rose-600 bg-rose-600 text-white animate-pulse"
-                : "border-rose-300 bg-white text-rose-900 hover:bg-rose-50"
+                : "border-rose-300 bg-rose-50/70 text-rose-900 hover:bg-rose-100 shadow-xs"
             }`}
           >
-            {clearPending
-              ? "جارٍ المسح…"
-              : confirmClear
-                ? "تأكيد المسح؟"
-                : "مسح اللوكيشن"}
+            <span>🗑️</span>
+            <span>
+              {clearPending
+                ? "جارٍ المسح…"
+                : confirmClear
+                  ? "تأكيد المسح؟"
+                  : "مسح اللوكيشن"}
+            </span>
           </button>
           {confirmClear && (
             <button
               onClick={() => setConfirmClear(false)}
-              className="text-[10px] font-bold text-rose-600 underline"
+              className="text-[10px] font-bold text-rose-600 underline text-center"
             >
               إلغاء
             </button>
           )}
         </div>
 
-        <div className="flex flex-[1.2] flex-col gap-1">
+        <div className="flex-[1.4] flex flex-col gap-0.5">
           <button
             type="button"
             onClick={onReplace}
             disabled={pending}
             aria-busy={locating || gpsPending}
-            className={`flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-black shadow-md ring-2 ring-white/30 transition disabled:cursor-wait disabled:opacity-70 ${
+            className={`h-[34px] w-full rounded-xl border border-[#C9A86A] px-2.5 text-xs font-black shadow-xs transition active:scale-95 disabled:cursor-wait disabled:opacity-70 flex items-center justify-center gap-1.5 cursor-pointer ${
               confirmReplace
-                ? "border-orange-600 bg-orange-600 text-white animate-pulse"
-                : "border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700"
+                ? "border-amber-600 bg-amber-600 text-white animate-pulse"
+                : "bg-gradient-to-r from-[#0E3D2B] via-[#0A3525] to-[#07281C] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E]"
             }`}
             title="استبدال الرابط الحالي بموقعك GPS — يطلب إذن الموقع"
           >
             <DynamicIcon
               iconKey="ui_gps"
               config={icons}
-              className="h-5 w-5 shrink-0"
+              className="h-4 w-4 shrink-0 text-[#E8C77E]"
               fallback={
-                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <svg className="h-4 w-4 shrink-0 text-[#E8C77E]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                 </svg>
               }
             />
-            {locating
-              ? "جارٍ جلب الموقع…"
-              : gpsPending
-                ? "جارٍ الحفظ…"
-                : confirmReplace
-                  ? "تأكيد التبديل؟"
-                  : "تبديل الموقع (GPS)"}
+            <span>
+              {locating
+                ? "جارٍ جلب GPS…"
+                : gpsPending
+                  ? "جارٍ الحفظ…"
+                  : confirmReplace
+                    ? "تأكيد التبديل؟"
+                    : "تبديل الموقع (GPS)"}
+            </span>
           </button>
           {confirmReplace && (
             <button
               onClick={() => setConfirmReplace(false)}
-              className="text-[10px] font-bold text-orange-700 underline"
+              className="text-[10px] font-bold text-amber-700 underline text-center"
             >
               إلغاء
             </button>
