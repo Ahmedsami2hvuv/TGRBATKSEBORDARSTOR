@@ -42,24 +42,37 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getOrderCardsDesignerConfig().catch(() => null),
   ]);
 
-  // استخراج روابط كافة الصور والأصول المخصصة للتكييش والتحميل المسبق
+  // استخراج روابط كافة الصور والأصول المخصصة للتكييش والتحميل المسبق بأمان تام
   const customAssetUrls: string[] = [];
+  const isValidPreloadImg = (u: any): boolean => {
+    if (typeof u !== "string") return false;
+    const t = u.trim();
+    if (!t || t.length < 4 || t.length > 500) return false;
+    if (t.includes(" ") || t.includes('"') || t.includes("{") || t.includes("}")) return false;
+    if (t.includes("maps.google") || t.includes("maps.app.goo.gl") || t.includes("goo.gl")) return false;
+    return t.startsWith("/images/") || t.startsWith("/uploads/") || t.startsWith("/api/image/") || t.startsWith("https://");
+  };
+
   if (designerConfig) {
     if (designerConfig.shopCard?.frameBgUrl && !designerConfig.shopCard.frameBgUrl.startsWith("/images/")) {
-      customAssetUrls.push(designerConfig.shopCard.frameBgUrl);
+      if (isValidPreloadImg(designerConfig.shopCard.frameBgUrl)) customAssetUrls.push(designerConfig.shopCard.frameBgUrl.trim());
     }
-    Object.values(designerConfig.shopCard).forEach((elem: any) => {
-      if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
-    });
+    if (designerConfig.shopCard) {
+      Object.values(designerConfig.shopCard).forEach((elem: any) => {
+        if (elem?.imageUrl && isValidPreloadImg(elem.imageUrl)) customAssetUrls.push(elem.imageUrl.trim());
+      });
+    }
     if (designerConfig.customerCard?.frameBgUrl) {
-      customAssetUrls.push(designerConfig.customerCard.frameBgUrl);
+      if (isValidPreloadImg(designerConfig.customerCard.frameBgUrl)) customAssetUrls.push(designerConfig.customerCard.frameBgUrl.trim());
     }
-    Object.values(designerConfig.customerCard).forEach((elem: any) => {
-      if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
-    });
+    if (designerConfig.customerCard) {
+      Object.values(designerConfig.customerCard).forEach((elem: any) => {
+        if (elem?.imageUrl && isValidPreloadImg(elem.imageUrl)) customAssetUrls.push(elem.imageUrl.trim());
+      });
+    }
     if (designerConfig.waButtonsConfig) {
       Object.values(designerConfig.waButtonsConfig).forEach((elem: any) => {
-        if (elem?.imageUrl) customAssetUrls.push(elem.imageUrl);
+        if (elem?.imageUrl && isValidPreloadImg(elem.imageUrl)) customAssetUrls.push(elem.imageUrl.trim());
       });
     }
   }
@@ -208,7 +221,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     '/images/order-luxury/shop-card/btn-gallery.webp'
                   ].concat(${JSON.stringify(customAssetUrls)});
                   luxuryImages.forEach(function(src) {
-                    if (src) {
+                    if (src && typeof src === 'string' && src.indexOf('maps.google') === -1 && src.indexOf('goo.gl') === -1 && src.indexOf('{') === -1 && src.indexOf('"') === -1) {
                       var img = new Image();
                       img.src = src;
                     }

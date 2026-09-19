@@ -35,20 +35,19 @@ export async function computeSmartHint(
   orderId: string,
   type: "primary" | "secondary" = "primary"
 ): Promise<string> {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: {
-        customerLocationUrl: true,
-        customerRegionId: true,
-        customerPhone: true,
-        secondCustomerLocationUrl: true,
-        secondCustomerRegionId: true,
-        secondCustomerPhone: true,
-      },
-    });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      customerLocationUrl: true,
+      customerRegionId: true,
+      customerPhone: true,
+      secondCustomerLocationUrl: true,
+      secondCustomerRegionId: true,
+      secondCustomerPhone: true,
+    },
+  });
 
-    if (!order) return "—";
+  if (!order) return "— الطلب غير موجود";
 
   let locationUrl = type === "primary" ? order.customerLocationUrl : order.secondCustomerLocationUrl;
 
@@ -181,11 +180,8 @@ export async function computeSmartHint(
     // الفرز: إعطاء الأولوية للنقاط داخل المضلع (مسافة 0)، ثم للمسافات الدائرية الأقرب
     .sort((a, b) => a.distanceM - b.distanceM);
 
-    if (validWaypoints.length === 0) return "—";
+  if (validWaypoints.length === 0) return "—";
 
-    const nearest = validWaypoints[0];
-    return `في (${nearest.name})`;
-  } catch {
-    return "—";
-  }
+  const nearest = validWaypoints[0];
+  return `في (${nearest.name})`;
 }
