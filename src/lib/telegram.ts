@@ -40,8 +40,9 @@ export function normalizeTelegramGroupChatId(raw: string): string {
   return t;
 }
 
-export function escapeTelegramHtml(s: string): string {
-  return s
+export function escapeTelegramHtml(s: string | null | undefined): string {
+  if (s == null) return "";
+  return String(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");

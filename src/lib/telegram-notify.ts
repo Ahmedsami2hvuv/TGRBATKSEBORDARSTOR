@@ -427,60 +427,71 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
     if (!order) return;
 
     const baseUrl = getPublicAppUrl();
-    const isPickup = input.kind === "pickup_out";
+    const isPickup = input.kind === "pickup_out" || input.kind === "pickup";
     const header = isPickup ? "💸 للعميل (المحل) 💸" : "💸 من الزبون (المستلم) 💸";
     
-    let shopDisplayName = "المحل";
-    if (order.routeMode === "double" && order.submissionSource === "staff_portal") {
-      shopDisplayName = "طلب وجهتين";
-    } else if (order.shop?.name) {
-      shopDisplayName = order.shop.name;
-    }
+    const shopName = (order.routeMode === "double" && order.submissionSource === "staff_portal")
+      ? "طلب وجهتين"
+      : (order.shop?.name || "المحل");
+    const customerName = order.customer?.name || "—";
+    const regionName = order.customerRegion?.name || "—";
+    const customerPhone = order.customerPhone || order.customer?.phone || "—";
+    const courierDisplayName = input.courierName || order.courier?.name || "المندوب";
 
     const body = await formatOrderBodyLines({
       ...order,
-      shopName: shopDisplayName,
-      customerName: order.customer?.name ?? "—",
-      regionName: order.customerRegion?.name ?? "—"
+      shopName,
+      customerName,
+      regionName,
+      customerPhone,
+      orderType: order.orderType || "—",
+      orderNumber: order.orderNumber,
+      orderSubtotal: order.orderSubtotal,
+      deliveryPrice: order.deliveryPrice,
+      totalAmount: order.totalAmount,
+      orderNoteTime: order.orderNoteTime || order.timeLine,
+      vehiclePreference: order.vehiclePreference,
     });
 
-    const courierDisplayName = input.courierName?.trim() || order.courier?.name?.trim() || "المندوب";
-    const amountVal = input.amountDinar != null ? input.amountDinar : 0;
+    const amountAlfFormatted = formatDinarAsAlf(input.amountDinar ?? 0);
 
     const textBase = [
       `\u200F${escapeTelegramHtml(header)}`,
       `\u200F👤 ${escapeTelegramHtml(courierDisplayName)}`,
-      alfLine("💰", formatDinarAsAlf(amountVal)),
+      alfLine("💰", amountAlfFormatted),
       ...body
     ].join("\n");
 
-    // 1. إرسال للإدارة
+    // 1. إرسال للإدارة (مجموعة الإشعارات)
     const notificationBotToken = await getBotTokenByPurpose("notification");
     if (notificationBotToken) {
-      await sendTelegramMessage(textBase, { botToken: notificationBotToken });
+      await sendTelegramMessage(textBase, { botToken: notificationBotToken }).catch((err) => {
+        console.error("[notifyTelegramMoneyEvent] sendTelegramMessage admin error:", err);
+      });
     }
 
-    // 2. إرسال للمندوب (في محادثته الخاصة مع البوت)
-    const courierObj = order.courier || (order.assignedCourierId ? await prisma.courier.findUnique({ where: { id: order.assignedCourierId } }) : null);
-    if (courierObj?.telegramUserId) {
-      const courierUrl = buildDelegatePortalUrl(courierObj.id, baseUrl);
+    // 2. إرسال للمندوب في المحادثة الخاصة
+    if (order.courier?.telegramUserId) {
+      const courierUrl = buildDelegatePortalUrl(order.courier.id, baseUrl);
       const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
 
       // إضافة المبلغ الكلي للمندوب "💵 عندي"
-      const walletTotal = await computeMandoubWalletRemainAllTimeDinar(courierObj.id);
+      const walletTotal = await computeMandoubWalletRemainAllTimeDinar(order.courier.id).catch(() => 0);
       const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
 
       const courierText = textBase +
         `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
         `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
 
-      const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
+      const courierBotToken = input.botToken || (await getBotTokenByPurpose("courier"));
       if (courierBotToken) {
-        await sendTelegramHtmlToChat(courierObj.telegramUserId, courierText, courierBotToken, { disable_notification: false });
+        await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken, { disable_notification: false }).catch((err) => {
+          console.error("[notifyTelegramMoneyEvent] sendTelegramHtmlToChat courier error:", err);
+        });
       }
     }
   } catch (err) {
-    console.error("[notifyTelegramMoneyEvent exception]:", err);
+    console.error("[notifyTelegramMoneyEvent] Error processing notification:", err);
   }
 }
 
