@@ -125,7 +125,8 @@ export function AdminLuxuryShopCard({
         type="file"
         name="shopDoorPhotoCamera"
         accept="image/*"
-        className="sr-only"
+        capture="environment"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, cameraFileRef.current);
@@ -137,7 +138,7 @@ export function AdminLuxuryShopCard({
         type="file"
         name="shopDoorPhotoGallery"
         accept="image/*"
-        className="sr-only"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         onChange={(e) => {
           const file = e.target.files?.[0];
           void handleFileSelected(file, galleryFileRef.current);

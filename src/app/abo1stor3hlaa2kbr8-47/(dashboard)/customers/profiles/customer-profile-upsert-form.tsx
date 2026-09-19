@@ -854,8 +854,9 @@ export function CustomerProfileUpsertForm({
             ref={cameraInputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handlePhotoChange}
-            className="hidden"
+            className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           />
           <input
             ref={fileInputRef}
@@ -863,7 +864,7 @@ export function CustomerProfileUpsertForm({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handlePhotoChange}
-            className="hidden"
+            className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           />
           <input
             type="hidden"

@@ -93,7 +93,7 @@ export function PreparerDetailPhotoUploadRow({
         type="file"
         accept={ACCEPT}
         capture="environment"
-        className="sr-only"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         disabled={busy}
         onChange={onPick}
       />
@@ -102,16 +102,14 @@ export function PreparerDetailPhotoUploadRow({
         ref={galRef}
         type="file"
         accept={ACCEPT}
-        className="sr-only"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
         disabled={busy}
         onChange={onPick}
       />
       <div className="grid grid-cols-2 gap-2">
         {/* زر الكاميرا الملكي الزمردي المباشر */}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => camRef.current?.click()}
+        <label
+          htmlFor={camInputId}
           aria-label={`التقاط ${fieldLabel} بالكاميرا`}
           className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
             busy ? "opacity-50 pointer-events-none" : ""
@@ -130,13 +128,11 @@ export function PreparerDetailPhotoUploadRow({
             <circle cx="12" cy="13" r="3.2" />
           </svg>
           <span>كاميرا</span>
-        </button>
+        </label>
 
         {/* زر المعرض الملكي العاجي المذهب المباشر */}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => galRef.current?.click()}
+        <label
+          htmlFor={galInputId}
           aria-label={`اختيار ${fieldLabel} من المعرض`}
           className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
             busy ? "opacity-50 pointer-events-none" : ""
@@ -156,7 +152,7 @@ export function PreparerDetailPhotoUploadRow({
             <path d="m21 15-5-5L5 21" />
           </svg>
           <span>المعرض</span>
-        </button>
+        </label>
       </div>
 
       {busy ? (

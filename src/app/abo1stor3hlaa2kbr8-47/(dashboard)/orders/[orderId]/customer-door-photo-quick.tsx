@@ -77,7 +77,8 @@ export function CustomerDoorPhotoQuick({
           type="file"
           name="customerDoorPhotoCamera"
           accept="image/*"
-          className="sr-only fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+          capture="environment"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, cameraFileRef.current);
@@ -90,7 +91,7 @@ export function CustomerDoorPhotoQuick({
           type="file"
           name="customerDoorPhotoGallery"
           accept="image/*"
-          className="sr-only fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, galleryFileRef.current);
@@ -110,18 +111,16 @@ export function CustomerDoorPhotoQuick({
             className="h-9 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition"
           />
         </label>
-        <button
-          type="button"
-          disabled={pending || deleting}
-          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
-          onClick={() => {
-            galleryFileRef.current?.click();
-          }}
+        <label
+          htmlFor={`admin-cust-door-gal-${orderId}`}
+          className={`rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer flex items-center gap-1.5 ${
+            pending || deleting ? "opacity-60 pointer-events-none" : ""
+          }`}
           title="رفع من المعرض"
         >
           <span>🖼️</span>
           <span>{pending ? "جارٍ الرفع..." : "معرض"}</span>
-        </button>
+        </label>
       </div>
       {pending ? (
         <p className="text-xs font-bold text-[#F5D77F] bg-[#0A3D2E]/80 p-1.5 rounded-lg border border-[#C9A86A]/40 text-center animate-pulse">جارٍ رفع صورة الباب…</p>

@@ -66,14 +66,15 @@ export function MandoubDoorPhotoForm({
         <input type="hidden" name="exp" value={exp} />
         <input type="hidden" name="s" value={s} />
 
-        {/* مدخل الكاميرا */}
+        {/* مدخل الكاميرا المباشر */}
         <input
+          id={`mandoub-door-cam-${orderId}-${fileFieldName}`}
           ref={inputRef}
           type="file"
           name={fileFieldName}
           accept="image/*"
           capture="environment"
-          className="sr-only hidden"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             const form = formRef.current;
@@ -91,13 +92,14 @@ export function MandoubDoorPhotoForm({
           }}
         />
 
-        {/* مدخل المعرض */}
+        {/* مدخل المعرض المباشر */}
         <input
+          id={`mandoub-door-gal-${orderId}-${fileFieldName}`}
           ref={galleryInputRef}
           type="file"
           name={`${fileFieldName}Gallery`}
           accept="image/*"
-          className="sr-only hidden"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             const form = formRef.current;
@@ -116,28 +118,20 @@ export function MandoubDoorPhotoForm({
         />
 
         <div className="grid grid-cols-2 gap-2 pt-0.5">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              inputRef.current?.click();
-            }}
-            className={btnCam}
+          <label
+            htmlFor={`mandoub-door-cam-${orderId}-${fileFieldName}`}
+            className={`${btnCam} ${busy ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
           >
             <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="h-3.5 w-3.5" />
             كاميرا
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              galleryInputRef.current?.click();
-            }}
-            className={btnGal}
+          </label>
+          <label
+            htmlFor={`mandoub-door-gal-${orderId}-${fileFieldName}`}
+            className={`${btnGal} ${busy ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
           >
             <DynamicIcon iconKey="ui_gallery" config={icons} fallback="🖼️" className="h-3.5 w-3.5" />
             معرض
-          </button>
+          </label>
         </div>
       </form>
 

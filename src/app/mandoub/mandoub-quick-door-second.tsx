@@ -78,25 +78,26 @@ export function MandoubQuickDoorSecondCapture({
       >
         {hidden}
         <input
+          id={`mandoub-quick-cam2-${orderId}`}
           ref={camInputRef}
           name="secondCustomerDoorPhoto"
           type="file"
           accept="image/jpeg,image/png,image/webp"
           capture="environment"
-          className="sr-only"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={() => {
             void handleFile(camInputRef.current, camFormRef.current);
           }}
         />
-        <button
-          type="button"
-          onClick={handleCamClick}
-          disabled={compressing}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100 disabled:opacity-60"
+        <label
+          htmlFor={`mandoub-quick-cam2-${orderId}`}
+          className={`inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100 ${
+            compressing || uploading ? "opacity-60 pointer-events-none" : "cursor-pointer"
+          }`}
         >
           <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="h-5 w-5 shrink-0" />
           كاميرا الزبون 2
-        </button>
+        </label>
       </form>
 
       <form
@@ -107,24 +108,25 @@ export function MandoubQuickDoorSecondCapture({
       >
         {hidden}
         <input
+          id={`mandoub-quick-gal2-${orderId}`}
           ref={galInputRef}
           name="secondCustomerDoorPhoto"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={() => {
             void handleFile(galInputRef.current, galFormRef.current);
           }}
         />
-        <button
-          type="button"
-          onClick={handleGalClick}
-          disabled={compressing}
-          className="inline-flex w-full items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+        <label
+          htmlFor={`mandoub-quick-gal2-${orderId}`}
+          className={`inline-flex w-full items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 ${
+            compressing || uploading ? "opacity-60 pointer-events-none" : "cursor-pointer"
+          }`}
         >
           <DynamicIcon iconKey="ui_gallery" config={icons} fallback="🖼️" className="h-5 w-5 shrink-0" />
           معرض الزبون 2
-        </button>
+        </label>
       </form>
       {compressing ? (
         <p className="col-span-2 text-right text-[11px] font-bold text-sky-800">جارٍ تصغير الصورة…</p>

@@ -94,11 +94,13 @@ export function AdminOrderPhotoQuick({
       <div className="flex flex-wrap items-center gap-2">
         {/* مدخل الكاميرا المباشر */}
         <input
+          id={`admin-quick-cam-${orderId}-${inputName}`}
           ref={cameraFileRef}
           type="file"
           name={`${inputName}Camera`}
           accept="image/*"
-          className="sr-only hidden"
+          capture="environment"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, cameraFileRef.current);
@@ -106,24 +108,23 @@ export function AdminOrderPhotoQuick({
         />
         {/* مدخل المعرض المباشر */}
         <input
+          id={`admin-quick-gal-${orderId}-${inputName}`}
           ref={galleryFileRef}
           type="file"
           name={`${inputName}Gallery`}
           accept="image/*"
-          className="sr-only hidden"
+          className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
           onChange={(e) => {
             const file = e.target.files?.[0];
             void handleFileSelected(file, galleryFileRef.current);
           }}
         />
 
-        <button
-          type="button"
-          disabled={pending || deleting}
-          className="group relative transition-transform active:scale-90 flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer disabled:opacity-60"
-          onClick={() => {
-            cameraFileRef.current?.click();
-          }}
+        <label
+          htmlFor={`admin-quick-cam-${orderId}-${inputName}`}
+          className={`group relative transition-transform active:scale-90 flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer ${
+            pending || deleting ? "opacity-60 pointer-events-none" : ""
+          }`}
           title="التقاط صورة بالكاميرا"
         >
           <img
@@ -131,19 +132,17 @@ export function AdminOrderPhotoQuick({
             alt="كاميرا"
             className="h-9 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition"
           />
-        </button>
-        <button
-          type="button"
-          disabled={pending || deleting}
-          className="rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
-          onClick={() => {
-            galleryFileRef.current?.click();
-          }}
+        </label>
+        <label
+          htmlFor={`admin-quick-gal-${orderId}-${inputName}`}
+          className={`rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer flex items-center gap-1.5 ${
+            pending || deleting ? "opacity-60 pointer-events-none" : ""
+          }`}
           title="رفع من المعرض"
         >
           <span>🖼️</span>
           <span>{pending ? "جارٍ الرفع..." : "معرض"}</span>
-        </button>
+        </label>
 
         {kind === "shop" && hasImage && (
           <button

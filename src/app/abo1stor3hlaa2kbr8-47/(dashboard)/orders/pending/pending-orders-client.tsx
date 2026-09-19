@@ -2703,9 +2703,10 @@ export function PendingAssignPanel({
                         type="file"
                         name="doorPhoto"
                         accept="image/*"
+                        capture="environment"
                         ref={cameraInputRef}
                         onChange={(e) => handleDoorPhotoChange(e, true)}
-                        className="sr-only"
+                        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                       />
                       <input
                         type="file"
@@ -2713,7 +2714,7 @@ export function PendingAssignPanel({
                         accept="image/*"
                         ref={galleryInputRef}
                         onChange={(e) => handleDoorPhotoChange(e, false)}
-                        className="sr-only"
+                        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                       />
                     </div>
                   </div>
@@ -2795,9 +2796,10 @@ export function PendingAssignPanel({
                         type="file"
                         name="secondDoorPhoto"
                         accept="image/*"
+                        capture="environment"
                         ref={secondCameraInputRef}
                         onChange={(e) => handleSecondDoorPhotoChange(e, true)}
-                        className="sr-only"
+                        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                       />
                       <input
                         type="file"
@@ -2805,7 +2807,7 @@ export function PendingAssignPanel({
                         accept="image/*"
                         ref={secondGalleryInputRef}
                         onChange={(e) => handleSecondDoorPhotoChange(e, false)}
-                        className="sr-only"
+                        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                       />
                     </div>
                   </div>
@@ -2900,9 +2902,10 @@ export function PendingAssignPanel({
                     type="file"
                     name="doorPhoto"
                     accept="image/*"
+                    capture="environment"
                     ref={cameraInputRef}
                     onChange={(e) => handleDoorPhotoChange(e, true)}
-                    className="sr-only"
+                    className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                   />
                   <input
                     type="file"
@@ -2910,7 +2913,7 @@ export function PendingAssignPanel({
                     accept="image/*"
                     ref={galleryInputRef}
                     onChange={(e) => handleDoorPhotoChange(e, false)}
-                    className="sr-only"
+                    className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
                   />
                 </div>
               </div>
