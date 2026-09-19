@@ -169,6 +169,18 @@ function ClientOrderFormInner({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
 
+  // حالة رصد كتابة وتفاعل العميل مع تفاصيل الطلب
+  const [isUserTyping, setIsUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIsUserTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsUserTyping(false);
+    }, 1500);
+  }, [customerPhone, q, orderType, orderPrice, orderTime, isPrepaidAll, isReverse, notes, alternatePhone, vehiclePreference, deliveryPriceOverride]);
+
   // إعداد موضع الزر العائم
   const STORAGE_KEY_BTN = "kse_client_submit_btn_pos_v2";
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number } | null>(null);
@@ -1205,7 +1217,7 @@ function ClientOrderFormInner({
           </section>
         </form>
 
-        {/* الزر العائم الملكي لرفع الطلب للإدارة */}
+        {/* الزر العائم الملكي المشرق والذكي لرفع الطلب للإدارة */}
         {floatingPos && !state.ok && (
           <div
             style={{
@@ -1214,7 +1226,9 @@ function ClientOrderFormInner({
               top: `${floatingPos.y}px`,
               zIndex: 9999,
             }}
-            className="touch-none select-none cursor-grab active:cursor-grabbing"
+            className={`touch-none select-none cursor-grab active:cursor-grabbing transition-transform duration-200 ${
+              isUserTyping ? "animate-typing-dance" : "animate-royal-float"
+            }`}
             onTouchStart={(e) => {
               const t = e.touches[0];
               if (t) handlePointerDown(t.clientX, t.clientY);
@@ -1250,23 +1264,41 @@ function ClientOrderFormInner({
               window.addEventListener("mouseup", onMouseUp);
             }}
           >
-            <button
-              type="button"
-              disabled={pending}
-              className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_8px_20px_rgba(10,61,46,0.5)] ring-4 ring-[#C9A86A]/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-              title="رفع الطلب للإدارة (يمكنك سحب وتحريك الزر)"
-            >
-              {pending ? (
-                <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#F5D77F] border-t-transparent" />
-              ) : (
-                <>
-                  <span className="text-lg leading-none mb-0.5">🚀</span>
-                  <span className="text-[9px] font-black leading-tight text-center px-1">
-                    رفع الطلب<br />للإدارة
-                  </span>
-                </>
+            <div className="relative group">
+              {/* موجة التوهج النبضية لجذب النظر */}
+              <div className="absolute inset-0 -m-1.5 rounded-full bg-gradient-to-r from-[#C9A86A] via-[#10B981] to-[#F5D77F] opacity-75 blur-md animate-glow-wave pointer-events-none" />
+
+              {/* شارة تفاعلية عند الكتابة */}
+              {isUserTyping && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] border border-white px-2 py-0.5 text-[8px] font-black text-[#06281D] shadow-md animate-bounce">
+                  جاهز للرفع ✨
+                </span>
               )}
-            </button>
+
+              {/* الزر الرئيسي المشرق والفاخر */}
+              <button
+                type="button"
+                disabled={pending}
+                className="relative flex h-18 w-18 sm:h-20 sm:w-20 flex-col items-center justify-center rounded-full bg-gradient-to-br from-[#10B981] via-[#059669] to-[#0A3D2E] border-2 border-[#F5D77F] text-[#FFF8F0] shadow-[0_10px_28px_rgba(16,185,129,0.5)] ring-4 ring-[#C9A86A]/50 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 overflow-hidden"
+                title="رفع الطلب للإدارة (يمكنك سحب وتحريك الزر لأي مكان)"
+              >
+                {/* تأثير لمعان شعاع الضوء الذهبي */}
+                <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/35 to-transparent animate-gold-shimmer pointer-events-none" />
+
+                {pending ? (
+                  <span className="h-6 w-6 animate-spin rounded-full border-3 border-[#F5D77F] border-t-transparent" />
+                ) : (
+                  <>
+                    <span className="text-xl sm:text-2xl leading-none mb-0.5 filter drop-shadow">
+                      🚀
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] font-black leading-tight text-center px-1 text-[#FFF8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                      رفع الطلب<br />للإدارة
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
