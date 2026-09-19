@@ -1183,7 +1183,7 @@ function TrackingCardsView({
                           <Link
                             href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/1789252908710.webp')",
                             }}
@@ -1195,7 +1195,7 @@ function TrackingCardsView({
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                           style={{
                             backgroundImage: "url('/images/order-luxury/btn-edit.webp')",
                           }}
@@ -1210,7 +1210,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onRejectOrder(o);
                             }}
-                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-reject.webp')",
                             }}
@@ -1224,7 +1224,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onRestoreOrder(o);
                             }}
-                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer"
+                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-restore.webp')",
                             }}
