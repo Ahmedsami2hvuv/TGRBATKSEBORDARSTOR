@@ -41,18 +41,35 @@ export async function createReverseOrderFromExisting(orderId: string): Promise<{
     const subtotalDecimal = new Decimal(0); // سعر الطلب 0 كما طُلب
     const totalDecimal = subtotalDecimal.plus(deliveryPriceDecimal);
 
-    // 3. تحديد المندوب المسند والحالة
+    // 3. تحديد المندوب المسند والحالة والعميل التابع للمحل
     const assignedCourierId = originalOrder.assignedCourierId || null;
     const initialStatus = assignedCourierId ? "assigned" : "pending";
+
+    let submittedByEmployeeId = originalOrder.submittedByEmployeeId || null;
+    if (originalOrder.shopId) {
+      const firstEmp = await prisma.shopEmployee.findFirst({
+        where: { shopId: originalOrder.shopId },
+        select: { id: true, phone: true },
+      });
+      if (firstEmp) {
+        if (!submittedByEmployeeId) submittedByEmployeeId = firstEmp.id;
+        if (!originalOrder.shop?.phone && firstEmp.phone) {
+          await prisma.shop.update({
+            where: { id: originalOrder.shopId },
+            data: { phone: firstEmp.phone },
+          }).catch(() => {});
+        }
+      }
+    }
 
     // 4. إنشاء الطلب العكسي
     const newOrder = await prisma.order.create({
       data: {
         shopId: originalOrder.shopId,
         customerId: originalOrder.customerId,
-        submittedByEmployeeId: originalOrder.submittedByEmployeeId || null,
+        submittedByEmployeeId: submittedByEmployeeId,
         submittedByCompanyPreparerId: originalOrder.submittedByCompanyPreparerId || null,
-        shopDoorPhotoUrl: originalOrder.shopDoorPhotoUrl || null,
+        shopDoorPhotoUrl: originalOrder.shopDoorPhotoUrl || originalOrder.shop?.photoUrl || null,
         shopDoorPhotoUploadedByName: originalOrder.shopDoorPhotoUploadedByName || null,
         status: initialStatus,
         routeMode: "single",

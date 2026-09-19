@@ -12,12 +12,16 @@ export const mandoubOrderDetailInclude = {
       regionId: true,
       region: true,
       ownerName: true,
+      employees: {
+        select: { id: true, name: true, phone: true },
+        take: 5,
+      },
     }
   },
   customerRegion: true,
   secondCustomerRegion: true,
-  submittedBy: { select: { phone: true, name: true } },
-  submittedByCompanyPreparer: { select: { phone: true, name: true } },
+  submittedBy: { select: { id: true, phone: true, name: true } },
+  submittedByCompanyPreparer: { select: { id: true, phone: true, name: true } },
   customer: {
     select: {
       id: true,
@@ -60,12 +64,16 @@ export const mandoubOrderListInclude = {
       regionId: true,
       region: true,
       ownerName: true,
+      employees: {
+        select: { id: true, name: true, phone: true },
+        take: 5,
+      },
     },
   },
   customerRegion: true,
   secondCustomerRegion: true,
-  submittedBy: { select: { phone: true, name: true } },
-  submittedByCompanyPreparer: { select: { phone: true, name: true } },
+  submittedBy: { select: { id: true, phone: true, name: true } },
+  submittedByCompanyPreparer: { select: { id: true, phone: true, name: true } },
   customer: {
     select: {
       id: true,

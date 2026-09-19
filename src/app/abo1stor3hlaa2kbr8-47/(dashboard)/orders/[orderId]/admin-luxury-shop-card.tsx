@@ -93,8 +93,10 @@ export function AdminLuxuryShopCard({
     }
   }
 
+  const rawShopEmployeePhone = (order.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone || "";
   const effectivePhone = contactLine(
     order.shop?.phone ||
+    rawShopEmployeePhone ||
     submitterPhone ||
     order.submittedBy?.phone ||
     order.submittedByCompanyPreparer?.phone ||

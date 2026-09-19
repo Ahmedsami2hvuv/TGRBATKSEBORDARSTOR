@@ -188,18 +188,21 @@ export function OrderDetailSection({
 
   const isAdminPortal = order.submissionSource === "admin_portal";
   const rawShopPhone = order.shop?.phone?.trim() || "";
+  const rawShopEmployeePhone = (order.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone?.trim() || "";
   const rawSubmitterPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || "";
   
-  const shopContactPhone = rawShopPhone || rawSubmitterPhone || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : "");
+  const shopContactPhone = rawShopPhone || rawShopEmployeePhone || rawSubmitterPhone || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : "");
 
   const isPreparerOrAdminOrder = Boolean(
     (!order.shop || order.shop.name?.trim() === "الإدارة" || order.shop.name?.trim() === "طلبات الإدارة العامة") &&
     (isAdminPortal || order.submissionSource === "company_preparer")
   );
 
+  const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
   const submitterName =
     order.shop?.name?.trim() ||
     order.shop?.ownerName?.trim() ||
+    rawShopEmployeeName ||
     order.submittedByCompanyPreparer?.name?.trim() ||
     order.submittedBy?.name?.trim() ||
     (isPreparerOrAdminOrder ? "الإدارة" : "المحل");
