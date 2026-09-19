@@ -907,8 +907,8 @@ export function OrderEditForm({
 
       {/* منطقة الزبون ووقت الطلب جنباً إلى جنب */}
       <div className="grid grid-cols-2 gap-2 items-start">
-        <div className="space-y-1">
-          <label className="text-[12px] font-black text-[#0A3D2E] block">
+        <div className="space-y-1 min-w-0">
+          <label className="text-[12px] font-black text-[#0A3D2E] block truncate">
             {routeMode === "double" ? "منطقة الزبون (1)" : "منطقة الزبون"}
           </label>
           <AdminRegionSearchPicker
@@ -918,11 +918,13 @@ export function OrderEditForm({
             onValueChange={onCustomerRegionChange}
             allowEmpty
             placeholder="بحث عن منطقة…"
+            className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+            hideDetails
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[12px] font-black text-[#0A3D2E] block">وقت الطلب</label>
+        <div className="space-y-1 min-w-0">
+          <label className="text-[12px] font-black text-[#0A3D2E] block truncate">وقت الطلب</label>
           <input
             name="orderNoteTime"
             defaultValue={defaultOrderNoteTime}
@@ -1098,15 +1100,17 @@ export function OrderEditForm({
             <h2 className="text-xs sm:text-sm font-black text-sky-900">بيانات الوجهة الثانية (المستلم الثاني)</h2>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[12px] font-black text-[#0A3D2E] block">منطقة الوجهة الثانية</label>
+          <div className="space-y-1 min-w-0">
+            <label className="text-[12px] font-black text-[#0A3D2E] block truncate">منطقة الوجهة الثانية</label>
             <AdminRegionSearchPicker
               name="secondCustomerRegionId"
               regions={regions.map((r) => ({ id: r.id, name: r.name }))}
               value={secondCustomerRegionId}
               onValueChange={setSecondCustomerRegionId}
               allowEmpty
-              placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
+              placeholder="اكتب اسم المنطقة للبحث…"
+              className="w-full h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-white px-3 text-xs sm:text-sm font-black text-[#0A3D2E] focus:border-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/10"
+              hideDetails
             />
           </div>
 
