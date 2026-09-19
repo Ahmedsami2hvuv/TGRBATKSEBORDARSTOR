@@ -28,6 +28,7 @@ import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
 import { Decimal } from "@prisma/client/runtime/library";
 import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -490,6 +491,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
                 {formatDinarAsAlfWithUnit(todayTotalProfit)}
               </span>
             </Link>
+
+            {/* زر طلب تيست التجريبي السريع */}
+            <QuickTestOrderButton variant="tracking" />
 
             {/* زر إضافة طلب من الإدارة */}
             <Link

@@ -9,6 +9,8 @@ import { courierAssignableWhere } from "@/lib/courier-assignable";
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { getOrCreateSystemAdminShop } from "../pending/pricing-actions";
 
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
+
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export const dynamic = "force-dynamic";
@@ -63,11 +65,14 @@ export default async function AdminCreateOrderPage() {
 
     return (
       <div className="space-y-4">
-        <p className={ad.muted}>
-          <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className={ad.link}>
-            ← الرجوع إلى الطلبات الجديدة
-          </Link>
-        </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className={ad.muted}>
+            <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className={ad.link}>
+              ← الرجوع إلى الطلبات الجديدة
+            </Link>
+          </p>
+          <QuickTestOrderButton variant="page" />
+        </div>
         <header className="space-y-1">
           <h1 className={ad.h1}>إضافة طلب من الإدارة</h1>
           <p className={ad.lead}>

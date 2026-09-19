@@ -13,6 +13,7 @@ import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { FloatingAdminMenu } from "@/components/floating-admin-menu";
 import { AdminGestureHandler } from "./admin-gesture-handler";
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -513,26 +514,36 @@ export function AdminShell({
                   ? "grid-cols-2" 
                   : "grid-cols-3"
           }`}>
-            <Link
-              href={SECRET_ADMIN_PATH}
-              prefetch={false}
-              title="الرئيسية"
-              onClick={handleLinkClick}
-              className={`inline-flex items-center gap-2 px-3 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full ${
-                navItemActive(pathname, SECRET_ADMIN_PATH)
-                  ? "bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md shadow-[#0A3D2E]/20 ring-1 ring-[#F5D77F]/30 font-black"
-                  : "bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] shadow-2xs font-bold"
-              }`}
-              style={{
-                height: 38 * itemScale,
-                fontSize: 12 * itemScale
-              }}
-            >
-              <span className="shrink-0 text-base" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
-                <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-5 h-5" />
-              </span>
-              {isCompact ? null : <span className="leading-snug font-black block whitespace-nowrap">الرئيسية</span>}
-            </Link>
+            {/* صف الأزرار العلوية: الرئيسية + طلب تيست */}
+            <div className="col-span-full grid grid-cols-2 gap-2">
+              <Link
+                href={SECRET_ADMIN_PATH}
+                prefetch={false}
+                title="الرئيسية"
+                onClick={handleLinkClick}
+                className={`inline-flex items-center gap-2 px-3 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full ${
+                  navItemActive(pathname, SECRET_ADMIN_PATH)
+                    ? "bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md shadow-[#0A3D2E]/20 ring-1 ring-[#F5D77F]/30 font-black"
+                    : "bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] shadow-2xs font-bold"
+                }`}
+                style={{
+                  height: 38 * itemScale,
+                  fontSize: 12 * itemScale
+                }}
+              >
+                <span className="shrink-0 text-base" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
+                  <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-5 h-5" />
+                </span>
+                {isCompact ? null : <span className="leading-snug font-black block whitespace-nowrap">الرئيسية</span>}
+              </Link>
+
+              <QuickTestOrderButton
+                variant="sidebar"
+                itemScale={itemScale}
+                isCompact={isCompact}
+                className="w-full"
+              />
+            </div>
 
             {isCompact ? null : (
               <div className="col-span-full mt-2 mb-1 flex items-center gap-2 px-1">
