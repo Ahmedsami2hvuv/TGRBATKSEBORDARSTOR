@@ -430,8 +430,13 @@ export async function submitMandoubDeliveryMoney(
           data: { customerLocationUrl: mapsUrl },
         });
       }
-      if (advanceStatus === "delivered" && order.status === "delivering") {
-        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
+      const shouldAdvanceToDelivered =
+        advanceStatus === "delivered" ||
+        order.status === "delivering" ||
+        order.status === "assigned";
+
+      if (shouldAdvanceToDelivered && order.status !== "delivered") {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, order.status as any, "delivered");
       }
       await tx.order.update({
         where: { id: orderId },
@@ -443,7 +448,7 @@ export async function submitMandoubDeliveryMoney(
                 customerLocationUploadedByName: uploadedBy,
               }
             : {}),
-          ...(advanceStatus === "delivered" && order.status === "delivering"
+          ...(shouldAdvanceToDelivered
             ? (() => {
                 const earningCourierId = v.courierId;
                 const earning =
@@ -465,7 +470,7 @@ export async function submitMandoubDeliveryMoney(
       });
     });
 
-    if (order.status === "delivered" || (advanceStatus === "delivered" && order.status === "delivering")) {
+    if (order.status === "delivered" || advanceStatus === "delivered" || order.status === "delivering" || order.status === "assigned") {
       void (async () => {
         try {
           const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
@@ -474,13 +479,11 @@ export async function submitMandoubDeliveryMoney(
           console.error("[Background handleOrderDelivered error]:", err);
         }
       })();
+      void notifyStaffOrderDelivered(orderId).catch(() => {});
+      revalidateAdminTrackingForStatusChange();
     }
   } catch (e: any) {
     return { error: "فشل الحفظ في قاعدة البيانات: " + e.message };
-  }
-  if (advanceStatus === "delivered" && order.status === "delivering") {
-    void notifyStaffOrderDelivered(orderId).catch(() => {});
-    revalidateAdminTrackingForStatusChange();
   }
 
   const courierForNotify = await prisma.courier.findUnique({

@@ -116,7 +116,7 @@ export function MandoubOrderMoneyFlow({
   useEffect(() => {
     if (pickupState.error) {
       setToastMsg({ text: pickupState.error, type: "error" });
-    } else if (pickupState.success) {
+    } else if (pickupState.success || pickupState.ok) {
       setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح! ⚡", type: "success" });
       closePanels();
       router.refresh();
@@ -127,7 +127,7 @@ export function MandoubOrderMoneyFlow({
   useEffect(() => {
     if (deliveryState.error) {
       setToastMsg({ text: deliveryState.error, type: "error" });
-    } else if (deliveryState.success) {
+    } else if (deliveryState.success || deliveryState.ok) {
       setToastMsg({ text: "تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉", type: "success" });
       closePanels();
       router.refresh();
@@ -517,7 +517,6 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = defaultAlf;
-                  onClose();
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 10);
@@ -535,7 +534,6 @@ function MandoubPickupModal({
                   if (modeInput) modeInput.value = "statusOnlyNoAmount";
                   const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
                   if (amtInput) amtInput.value = "0";
-                  onClose();
                   setTimeout(() => {
                     formRef.current?.requestSubmit();
                   }, 10);
@@ -650,7 +648,7 @@ function MandoubDeliveryModal({
     selectedBox !== "zero";
 
   function submitAfterLocation() {
-    onClose();
+    setLocationModalOpen(false);
     setTimeout(() => {
       formRef.current?.requestSubmit();
     }, 10);
@@ -756,7 +754,6 @@ function MandoubDeliveryModal({
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
-                    onClose();
                     setTimeout(() => {
                       formRef.current?.requestSubmit();
                     }, 10);
@@ -779,7 +776,6 @@ function MandoubDeliveryModal({
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
-                    onClose();
                     setTimeout(() => {
                       formRef.current?.requestSubmit();
                     }, 10);
