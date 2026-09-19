@@ -269,10 +269,9 @@ export function AdminLuxuryShopCard({
                         setPhoneModalOpen(true);
                       }}
                       className="group inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50/90 hover:bg-amber-100 active:scale-95 px-2.5 py-0.5 text-xs font-black text-amber-950 transition-all cursor-pointer shadow-2xs"
-                      title="انقر لخيارات هاتف العميل (المحل) أو تعديله"
+                      title="انقر لخيارات هاتف العميل (المحل)"
                     >
                       <span className="font-mono text-slate-900 font-extrabold" dir="ltr">{effectivePhone}</span>
-                      <span className="text-[10px] text-amber-700">✏️</span>
                     </button>
                   ) : (
                     <button
