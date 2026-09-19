@@ -212,7 +212,6 @@ export function ClientVoiceNoteField({
 
   return (
     <div className={`${wrapperClassName} flex flex-col gap-2`}>
-      <span className="text-sm font-medium text-slate-800">{title}</span>
       <input
         ref={fileRef}
         type="file"
@@ -227,14 +226,14 @@ export function ClientVoiceNoteField({
           <button
             type="button"
             onClick={() => void startRecording()}
-            className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-900 shadow-sm hover:bg-rose-100"
+            className="rounded-xl border border-[#C9A86A]/50 bg-[#FFF8F0] px-3.5 py-2 text-xs font-black text-[#0A3D2E] shadow-2xs hover:bg-[#FDF8EE] active:scale-95 transition"
           >
-            🎤 تسجيل صوتي
+            🎤 بدء تسجيل صوتي
           </button>
         ) : (
           <>
             <span
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-400 bg-rose-100 px-3 py-2 text-sm font-bold text-rose-900 tabular-nums"
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-800 tabular-nums"
               aria-live="polite"
             >
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-rose-600" />
@@ -243,14 +242,14 @@ export function ClientVoiceNoteField({
             <button
               type="button"
               onClick={finishRecording}
-              className="rounded-xl border border-emerald-500 bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+              className="rounded-xl border border-[#C9A86A] bg-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:bg-[#06281D] active:scale-95 transition"
             >
-              إيقاف وحفظ
+              حفظ
             </button>
             <button
               type="button"
               onClick={cancelRecording}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition"
             >
               إلغاء
             </button>
@@ -260,18 +259,18 @@ export function ClientVoiceNoteField({
           <button
             type="button"
             onClick={clearFile}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 active:scale-95 transition"
           >
-            حذف التسجيل
+            حذف التسجيل ✕
           </button>
         ) : null}
       </div>
-      {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+      {error ? <p className="text-xs font-bold text-rose-600">{error}</p> : null}
       {previewBlob && !recording ? (
-        <VoiceNotePreviewBlob key={`preview-${recordingId}`} blob={previewBlob} className={`${inputClass} max-w-full`} />
+        <VoiceNotePreviewBlob key={`preview-${recordingId}`} blob={previewBlob} className="w-full rounded-xl border border-[#C9A86A]/40 bg-[#FFF8F0] p-2 text-xs" />
       ) : null}
-      <p className="text-xs text-slate-500">
-        أقصى مدة <strong className="text-slate-700">10 ثوانٍ</strong>. يُرفَع مع الطلب ويستمع له المندوب والإدارة.
+      <p className="text-[10px] font-bold text-slate-400">
+        أقصى مدة 10 ثوانٍ. يُرفَع مع الطلب للمندوب والإدارة.
       </p>
     </div>
   );

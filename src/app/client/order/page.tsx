@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { ClientOrderForm } from "./client-order-form";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getActiveBotByPurpose } from "@/lib/telegram-bots";
 import { randomBytes } from "crypto";
 import Link from "next/link";
@@ -281,11 +280,8 @@ export default async function ClientOrderPage(props: Props) {
     }
 
     return (
-      <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
-        <div className="absolute top-4 left-4 z-50">
-          <ThemeSwitcher />
-        </div>
-        <div className="kse-app-inner">
+      <div className="min-h-screen bg-[#FDF8EE] relative px-4 py-8 pb-24 text-slate-800" dir="rtl">
+        <div className="mx-auto max-w-lg">
           <ClientOrderForm
             shopId={shop.id}
             shopName={shop.name}

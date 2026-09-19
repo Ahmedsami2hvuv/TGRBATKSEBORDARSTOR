@@ -7,20 +7,12 @@ import { resolvePublicImageSrc } from "@/lib/image-url";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
 import "leaflet/dist/leaflet.css";
-import { submitOrder, updateCustomerUiMode, sendNoCarsAlertTelegram, type ClientOrderState } from "./actions";
-import { clientOrderAccountPath } from "@/lib/client-order-portal-nav";
+import { submitOrder, sendNoCarsAlertTelegram, type ClientOrderState } from "./actions";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
-import { whatsappMeUrl } from "@/lib/whatsapp";
-
-const inputClass =
-  "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200";
-
-const inputErrorClass = "border-rose-500 ring-2 ring-rose-200 focus:border-rose-600 focus:ring-rose-300";
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
 
 const initial: ClientOrderState = {};
-const OWNER_WHATSAPP_PHONE = "+9647733921468";
 
 function sanitizePhone(value: string): string {
   const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
@@ -56,26 +48,6 @@ function formatMatchingRegionsCountText(count: number): string {
   if (count === 2) return "منطقتين متطابقتين";
   if (count >= 3 && count <= 10) return `${count} مناطق مطابقة`;
   return `${count} منطقة مطابقة`;
-}
-
-
-function buildCustomerCheckoutMessage(productsText: string): string {
-  const productLines = productsText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const orderedProducts =
-    productLines.length > 0
-      ? productLines.map((line, index) => `${index + 1}- ${line}`).join("\n")
-      : "1- (لم يتم إدخال تفاصيل المنتجات)";
-  return [
-    "مرحبا لقد طلبت من خصيب ستور",
-    "منتجاتي هي",
-    orderedProducts,
-    "",
-    "ارجو تجهيز الطلب",
-    "شكرا لكم",
-  ].join("\n");
 }
 
 type PropsInner = {
@@ -124,29 +96,17 @@ function ClientOrderFormInner({
   employeeName,
   photoUrl,
   shopRegionName,
-  shopDeliveryAlf,
   viewerName,
   botUsername,
-  portalUrl,
   botStartParam,
   shopId,
   noCarsMode = "off",
   employeePhone = "",
   initialOrder,
   onResetForNewOrder,
-  initialUiMode = "learn",
 }: PropsInner) {
   const [state, formAction, pending] = useActionState(submitOrder, initial);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const [uiMode, setUiMode] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("kse_ui_mode") || initialUiMode;
-    }
-    return initialUiMode;
-  });
-
-  const [learnStep, setLearnStep] = useState(0);
 
   const [waRedirectEnabled, setWaRedirectEnabled] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -156,40 +116,11 @@ function ClientOrderFormInner({
     return true;
   });
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const [isOtherDetailsOpen, setIsOtherDetailsOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("kse_wa_redirect_enabled", String(waRedirectEnabled));
   }, [waRedirectEnabled]);
-
-  useEffect(() => {
-    const click = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", click);
-    return () => document.removeEventListener("mousedown", click);
-  }, []);
-
-  const handleUiModeChange = async (mode: string) => {
-    setUiMode(mode);
-    if (mode === "learn") setLearnStep(0);
-    localStorage.setItem("kse_ui_mode", mode);
-
-    if (customerPhone.trim()) {
-      const fd = new FormData();
-      fd.append("phone", customerPhone);
-      fd.append("shopId", shopId);
-      fd.append("uiMode", mode);
-      await updateCustomerUiMode(fd);
-    }
-  };
-
-  useEffect(() => {
-    localStorage.setItem("kse_ui_mode", uiMode);
-  }, [uiMode]);
 
   const orderTypeRef = useRef<HTMLInputElement>(null);
   const orderPriceRef = useRef<HTMLInputElement>(null);
@@ -238,7 +169,7 @@ function ClientOrderFormInner({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
 
-  // إعداد مفتاح التخزين وموقع الزر العائم الساحب
+  // إعداد موضع الزر العائم
   const STORAGE_KEY_BTN = "kse_client_submit_btn_pos_v2";
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number } | null>(null);
   const isDraggingRef = useRef(false);
@@ -268,42 +199,19 @@ function ClientOrderFormInner({
     } catch (e) {
       console.error("Failed to load submit button position:", e);
     }
-    // الموقع الافتراضي: أسفل يسار الشاشة للموبايل والتابلت
     const defaultX = Math.max(15, window.innerWidth - 85);
     const defaultY = Math.max(15, window.innerHeight - 110);
     setFloatingPos({ x: defaultX, y: defaultY });
   }, []);
 
-  // إشعار الزر العائم الجديد لإبلاغ العميل عند فتح حسابه
-  const FLOATING_BTN_NOTICE_KEY = "kse_client_floating_btn_notice_dismissed";
-  const [showFloatingBtnNotice, setShowFloatingBtnNotice] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const dismissed = localStorage.getItem(FLOATING_BTN_NOTICE_KEY);
-      if (!dismissed) {
-        setShowFloatingBtnNotice(true);
-      }
-    }
-  }, []);
-
-  const handleDismissFloatingBtnNotice = () => {
-    setShowFloatingBtnNotice(false);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(FLOATING_BTN_NOTICE_KEY, "true");
-    }
-  };
-
-  // حالة تنبيه منتصف الشاشة للحقول الناقصة أو الخاطئة
+  // تنبيه الحقول الناقصة أو الخاطئة
   const [fieldErrorModal, setFieldErrorModal] = useState<{
     title: string;
     message: string;
     targetRef: React.RefObject<HTMLInputElement | null>;
   } | null>(null);
 
-  // دالة الفحص والتوجيه المباشر للحقل الناقص أو الخاطئ
   const validateAndScrollToMissingField = (): boolean => {
-    // 1. فحص رقم الزبون
     const phoneClean = sanitizePhone(customerPhone);
     if (!customerPhone.trim() || phoneClean.length < 10) {
       setFieldErrorModal({
@@ -314,7 +222,6 @@ function ClientOrderFormInner({
       return false;
     }
 
-    // 2. فحص منطقة الزبون
     if (!selected || q !== selected.name) {
       setFieldErrorModal({
         title: "منطقة الزبون غير محددة 📍",
@@ -324,7 +231,6 @@ function ClientOrderFormInner({
       return false;
     }
 
-    // 3. فحص نوع الطلب
     if (!orderType.trim()) {
       setFieldErrorModal({
         title: "نوع الطلب مطلوب 📦",
@@ -334,7 +240,6 @@ function ClientOrderFormInner({
       return false;
     }
 
-    // 4. فحص سعر الطلب إن وجد إدخال خاطئ
     if (orderPrice.trim() && !isPriceValid) {
       setFieldErrorModal({
         title: "سعر الطلب غير صالح 💰",
@@ -344,10 +249,18 @@ function ClientOrderFormInner({
       return false;
     }
 
+    if (!orderTime.trim()) {
+      setFieldErrorModal({
+        title: "وقت استلام الطلب مطلوب ⏰",
+        message: "يرجى تحديد متى تحب أن نستلم ونسلم الطلب (مثال: الآن، بعد الظهر، بـ 4...)",
+        targetRef: orderTimeRef,
+      });
+      return false;
+    }
+
     return true;
   };
 
-  // أحداث السحب والتحريك للزر العائم
   const handlePointerDown = (clientX: number, clientY: number) => {
     if (!floatingPos) return;
     isDraggingRef.current = false;
@@ -386,7 +299,6 @@ function ClientOrderFormInner({
     }
   };
 
-  // قراءة الهاتف والاسم من التخزين المحلي في البداية لتسهيل ملء البيانات
   useEffect(() => {
     if (typeof window !== "undefined" && !customerPhone) {
       const storedPhone = localStorage.getItem("kse_customer_phone");
@@ -394,9 +306,7 @@ function ClientOrderFormInner({
     }
   }, [customerPhone]);
 
-  // حالة التحكم في الـ Modal لتنبيه عدم وجود سيارات
   const [showCarAlert, setShowCarAlert] = useState(() => {
-    // تفعيل التنبيه إذا كانت وضعية السيارات مفعلة وليست off
     return noCarsMode !== "off";
   });
   const [alertSending, setAlertSending] = useState(false);
@@ -412,8 +322,8 @@ function ClientOrderFormInner({
     }
     const timer = setTimeout(() => {
       fetch(`/api/customers/regions-by-phone?phone=${encodeURIComponent(customerPhone)}`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.regions && data.regions.length > 0) {
             setPreviousRegions(data.regions);
             setIsOldCustomer(true);
@@ -422,7 +332,7 @@ function ClientOrderFormInner({
             setIsOldCustomer(false);
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Failed to fetch previous regions", err);
           setPreviousRegions([]);
           setIsOldCustomer(false);
@@ -436,7 +346,6 @@ function ClientOrderFormInner({
   };
 
   const handleCarAlertNo = async () => {
-    // نستخدم هاتف الموظف المفتوح حسابه كخيار أول، أو هاتف الزبون المدخل كخيار ثانٍ
     const activePhone = employeePhone.trim() || customerPhone.trim() || "07700000000";
     const activeName = employeeName.trim() || "موظف المحل";
 
@@ -458,7 +367,11 @@ function ClientOrderFormInner({
     }
   };
 
-  const [suggestions, setSuggestions] = useState<{ types: string[], subtotals: string[], times: string[] }>({ types: [], subtotals: [], times: [] });
+  const [suggestions, setSuggestions] = useState<{ types: string[]; subtotals: string[]; times: string[] }>({
+    types: [],
+    subtotals: [],
+    times: [],
+  });
 
   useEffect(() => {
     if (!shopId) return;
@@ -512,8 +425,6 @@ function ClientOrderFormInner({
         try {
           const r = await fetch(`/api/regions/search?q=${encodeURIComponent(query)}`);
           const j = (await r.json()) as { regions?: RegionHit[] };
-          // إذا كانت نتيجة قديمة رجعت بعد ما غيّر المستخدم الكتابة/اختيار المنطقة
-          // نمنعها من إعادة فتح القائمة.
           if (requestId !== latestRegionSearchRequestIdRef.current) return;
           const res = j.regions ?? [];
           setHits(res);
@@ -527,7 +438,6 @@ function ClientOrderFormInner({
     return () => clearTimeout(t);
   }, [q, selected]);
 
-  // بعد نجاح رفع الطلب الجديد: التحويل التلقائي إلى واتساب مع رسالة جاهزة
   useEffect(() => {
     if (state.ok && !initialOrder && state.waUrl && waRedirectEnabled) {
       if (state.waUrl !== "#") {
@@ -537,7 +447,6 @@ function ClientOrderFormInner({
     }
   }, [state.ok, initialOrder, state.waUrl, waRedirectEnabled]);
 
-  // غلق الصفحة تلقائياً بعد نجاح الإرسال بـ 3 ثواني (كتحويل احتياطي)
   useEffect(() => {
     if (state.ok && (initialOrder || waRedirectEnabled)) {
       const t = setTimeout(() => {
@@ -551,7 +460,6 @@ function ClientOrderFormInner({
     }
   }, [state.ok, initialOrder, waRedirectEnabled]);
 
-  // التركيز التلقائي والتمرير للحقل الناقص عند وجود خطأ
   useEffect(() => {
     if (state.error) {
       const err = state.error;
@@ -560,7 +468,7 @@ function ClientOrderFormInner({
       else if (err.includes("نوع الطلب")) target = orderTypeRef.current;
       else if (err.includes("سعر الطلب")) target = orderPriceRef.current;
       else if (err.includes("منطقة")) target = regionSearchRef.current;
-      else if (err.includes("وقت الطلب") || err.includes("وقت التوصيل")) target = orderTimeRef.current;
+      else if (err.includes("وقت الطلب") || err.includes("وقت التوصيل") || err.includes("شوكت")) target = orderTimeRef.current;
 
       if (target) {
         target.focus();
@@ -573,14 +481,7 @@ function ClientOrderFormInner({
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;
   const subtotal = hasOrderPrice && !Number.isNaN(parsedPrice) ? parsedPrice : null;
-  const dPrice = selected ? (parseFloat(selected.deliveryPrice) / ALF_PER_DINAR) : 0;
-  const totalPrice = (subtotal || 0) + dPrice;
-
-  const isPhoneErr = state.error?.includes("رقم الزبون");
-  const isOrderTypeErr = state.error?.includes("نوع الطلب");
-  const isPriceErr = state.error?.includes("سعر الطلب");
-  const isRegionErr = state.error?.includes("منطقة");
-  const isTimeErr = state.error?.includes("وقت الطلب") || state.error?.includes("وقت التوصيل");
+  const dPrice = selected ? parseFloat(selected.deliveryPrice) / ALF_PER_DINAR : 0;
 
   const isPriceValid = !orderPrice || /^\d+(\.\d+)?$/.test(orderPrice.replace(/,/g, "."));
 
@@ -590,32 +491,34 @@ function ClientOrderFormInner({
   if (state.ok) {
     return (
       <div className="mx-auto max-w-lg" role="status" aria-live="polite">
-        <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-          <p className="text-4xl">✓</p>
-          <h2 className="mt-3 text-xl font-bold text-emerald-800">
+        <div className="rounded-3xl border-2 border-[#C9A86A] bg-[#FFFEFB] p-8 text-center shadow-xl">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#0A3D2E] text-[#F5D77F] text-4xl shadow-md">
+            ✓
+          </div>
+          <h2 className="text-2xl font-black text-[#0A3D2E]">
             {initialOrder ? "تم تعديل الطلب بنجاح" : "تم رفع الطلب بنجاح"}
           </h2>
-          <p className="mt-2 text-sm text-slate-500 italic">
+          <p className="mt-3 text-sm font-bold text-slate-600 leading-relaxed">
             {initialOrder
-              ? "سيتم غلق هذه الصفحة تلقائياً خلال ثوانٍ..."
+              ? "سيتم غلق هذه الصفحة تلقائياً خلال لحظات..."
               : waRedirectEnabled
-                ? "سيتم تحويلك تلقائياً إلى واتساب خلال لحظات..."
-                : "تم إرسال وحفظ تفاصيل طلبك بنجاح."}
+                ? "سيتم تحويلك تلقائياً إلى واتساب..."
+                : "تم حفظ وإرسال تفاصيل طلبك للإدارة بنجاح."}
           </p>
-          <div className="mt-5 flex flex-col gap-2">
+          <div className="mt-6 flex flex-col gap-3">
             <button
               type="button"
               onClick={onResetForNewOrder || (() => window.location.reload())}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-200/40 transition hover:bg-emerald-700 active:scale-[0.99]"
+              className="w-full rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] border border-[#C9A86A] px-4 py-4 text-base font-black text-[#F5D77F] shadow-lg transition active:scale-[0.98]"
             >
-              رفع طلب جديد
+              رفع طلب جديد ✨
             </button>
             <Link
               href={historyHrefNav}
               prefetch={false}
-              className="flex w-full items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-50 px-4 py-3.5 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100"
+              className="flex w-full items-center justify-center rounded-2xl border-2 border-[#C9A86A]/40 bg-[#FFF8F0] px-4 py-3.5 text-sm font-black text-[#0A3D2E] shadow-sm transition hover:bg-[#FDF8EE] active:scale-[0.98]"
             >
-              سجل الطلبات
+              📜 سجل الطلبات
             </Link>
           </div>
         </div>
@@ -650,25 +553,21 @@ function ClientOrderFormInner({
 
   return (
     <>
-      {/* مودال تنبيه منتصف الشاشة للحقول الناقصة أو الخاطئة */}
+      {/* مودال تنبيه الحقول الناقصة */}
       {fieldErrorModal && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/75 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
-          <div className="relative bg-white rounded-3xl border-2 border-rose-200 shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-4xl shadow-inner animate-bounce">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
+          <div className="relative bg-[#FFFEFB] rounded-3xl border-2 border-[#C9A86A] shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] text-4xl shadow-inner animate-bounce">
               ⚠️
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-rose-700">
+              <h3 className="text-xl font-black text-[#0A3D2E]">
                 {fieldErrorModal.title}
               </h3>
-              <p className="text-base font-bold text-slate-800 leading-relaxed px-2">
+              <p className="text-sm font-bold text-slate-700 leading-relaxed px-2">
                 {fieldErrorModal.message}
               </p>
-            </div>
-
-            <div className="rounded-2xl bg-rose-50 border border-rose-100 p-3 text-xs font-bold text-rose-800">
-              💡 اضغط الزر أدناه وسينقلك الموقع فوراً للحقل المطلوب.
             </div>
 
             <button
@@ -680,14 +579,14 @@ function ClientOrderFormInner({
                   setTimeout(() => {
                     target.focus();
                     target.scrollIntoView({ behavior: "smooth", block: "center" });
-                    target.classList.add("ring-4", "ring-rose-500", "border-rose-600");
+                    target.classList.add("ring-4", "ring-[#C9A86A]", "border-[#0A3D2E]");
                     setTimeout(() => {
-                      target.classList.remove("ring-4", "ring-rose-500", "border-rose-600");
+                      target.classList.remove("ring-4", "ring-[#C9A86A]", "border-[#0A3D2E]");
                     }, 2500);
                   }, 100);
                 }
               }}
-              className="w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white py-4 font-black text-base shadow-lg shadow-rose-200 active:scale-[0.98] transition-all"
+              className="w-full rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] border border-[#C9A86A] text-[#F5D77F] py-4 font-black text-base shadow-lg active:scale-[0.98] transition-all"
             >
               الانتقال للحقل وتعديله 🎯
             </button>
@@ -695,73 +594,33 @@ function ClientOrderFormInner({
         </div>
       )}
 
-      {showFloatingBtnNotice && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
-          <div className="relative bg-white rounded-3xl border-2 border-emerald-200 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 animate-in zoom-in-95 duration-300">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-4xl shadow-inner animate-bounce">
-              🚀
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-xl font-black text-slate-900">تحديث جديد بخصوص زر رفع الطلب!</h3>
-              <p className="text-sm font-bold text-slate-600 leading-relaxed">
-                أصبح زر <span className="text-emerald-700 font-black">"رفع الطلب للإدارة"</span> عائماً ومتحركاً في الشاشة، كما تم تطويره ليقوم بإرشادك تلقائياً عند وجود أي نقص!
-              </p>
-
-              <div className="text-xs font-bold text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-right space-y-2.5 leading-relaxed shadow-inner">
-                <p className="flex items-start gap-2">
-                  <span className="text-emerald-600 text-sm shrink-0">📍</span>
-                  <span><b>زر عائم ومتحرك:</b> يمكنك سحبه وتحريكه إلى أي زاوية تريدها وسيقوم الموقع بحفظ مكانه المفضل لك دائماً.</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <span className="text-emerald-600 text-sm shrink-0">🎯</span>
-                  <span><b>مرشد وذكيات التوجيه:</b> عند النقر عليه، إذا كان طلبك يحتوي على أي حقل ناقص أو خاطئ (مثل رقم الهاتف أو المنطقة)، سيرشدك الزر فوراً وينقل الشاشة تلقائياً للحقل الناقص لتنظيفه أو إكماله!</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-xs font-black text-emerald-800 flex items-center justify-center gap-2">
-              <span>💡</span>
-              <span>جرب سحب الزر العائم بإصبعك لتغيير مكانه فوراً!</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleDismissFloatingBtnNotice}
-              className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white py-4 font-black text-base shadow-lg shadow-emerald-200 active:scale-[0.98] transition-all"
-            >
-              حسناً، فهمت ذلك 👍
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* تنبيه السيارات */}
       {showCarAlert && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
-          <div className="relative bg-white dark:bg-[#09090b] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 animate-in zoom-in-95 duration-200">
-            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/30 text-5xl animate-bounce">
+          <div className="relative bg-[#FFFEFB] rounded-3xl border-2 border-[#C9A86A] shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-rose-50 text-5xl animate-bounce">
               🚫
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-rose-600 dark:text-rose-400">تنبيه بخصوص التوصيل</h3>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-[#0A3D2E]">تنبيه بخصوص التوصيل</h3>
+              <p className="text-sm font-bold text-slate-600">
                 مرحباً بك عزيزنا العميل
               </p>
             </div>
-            <div className="bg-rose-50/50 dark:bg-rose-950/10 rounded-2xl p-4 border border-rose-100/50 dark:border-rose-900/20 text-slate-700 dark:text-slate-300 font-bold text-sm leading-relaxed">
+            <div className="bg-[#FFF8F0] rounded-2xl p-4 border border-[#C9A86A]/40 text-slate-800 font-bold text-sm leading-relaxed">
               اليوم ليس لدينا سيارات للتوصيل
               {noCarsMode === "morning" && " (الفترة الصباحية)"}
               {noCarsMode === "evening" && " (الفترة المسائية)"}
               <br />
-              <span className="text-xs font-semibold text-slate-400 mt-1 block">هل تود توصيل طلبك بالدراجة النارية بدلاً من السيارة؟</span>
+              <span className="text-xs font-semibold text-slate-500 mt-1 block">هل تود توصيل طلبك بالدراجة النارية بدلاً من السيارة؟</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleCarAlertYes}
                 disabled={alertSending}
-                className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white py-4 font-black text-base shadow-lg shadow-emerald-100 dark:shadow-none active:scale-[0.98] transition-all disabled:opacity-50"
+                className="w-full rounded-2xl bg-[#0A3D2E] border border-[#C9A86A] text-[#F5D77F] py-3.5 font-black text-sm shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 👍 نعم، بالدراجة
               </button>
@@ -769,7 +628,7 @@ function ClientOrderFormInner({
                 type="button"
                 onClick={handleCarAlertNo}
                 disabled={alertSending}
-                className="w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white py-4 font-black text-base shadow-lg shadow-rose-100 dark:shadow-none active:scale-[0.98] transition-all disabled:opacity-50"
+                className="w-full rounded-2xl bg-rose-600 text-white py-3.5 font-black text-sm shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {alertSending ? "جاري الإرسال..." : "👎 لا، أحتاج سيارة"}
               </button>
@@ -779,207 +638,125 @@ function ClientOrderFormInner({
       )}
 
       <div className="mx-auto max-w-lg text-slate-800">
-      {/* settings button & dropdown */}
-      <div className="absolute top-4 right-4 z-50" ref={settingsRef}>
-        <button 
-          type="button"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105 active:scale-95"
-          title="الإعدادات"
-        >
-          ⚙️
-        </button>
-        
-        {settingsOpen && (
-          <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] shadow-2xl p-4 z-[9999]" dir="rtl">
-            <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 mb-3 flex items-center gap-2">
-              <span>⚙️</span> إعدادات الطلب
-            </h3>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                التوجيه للواتساب تلقائياً
+        <form ref={formRef} action={formAction} onSubmit={onFormSubmit} encType="multipart/form-data" className="space-y-4">
+          <input type="hidden" name="e" value={e} />
+          <input type="hidden" name="exp" value={exp} />
+          <input type="hidden" name="s" value={sig} />
+          <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
+          {initialOrder && <input type="hidden" name="editOrderNumber" value={initialOrder.orderNumber} />}
+          <input type="hidden" name="prepaidAll" value={isPrepaidAll ? "on" : "off"} />
+          <input type="hidden" name="reversePickup" value={isReverse ? "on" : "off"} />
+          <input type="hidden" name="customerName" value={customerName} />
+
+          {/* الهيدر العلوي الملكي الفاخر */}
+          <header className="rounded-3xl border-2 border-[#C9A86A]/40 bg-[#FFFEFB] p-5 text-center shadow-md relative overflow-hidden">
+            {/* الشعار واسم النظام */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#C9A86A]/20">
+              <span className="text-xs font-black text-[#0A3D2E] tracking-wider uppercase flex items-center gap-1.5">
+                <span>👑</span> أبو الأكبر للتوصيل
               </span>
-              <button
-                type="button"
-                onClick={() => setWaRedirectEnabled(!waRedirectEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  waRedirectEnabled ? "bg-emerald-600" : "bg-slate-300 dark:bg-slate-700"
-                }`}
-                dir="ltr"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    waRedirectEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black bg-[#FFF8F0] text-[#0A3D2E] border border-[#C9A86A]/40">
+                📍 {shopRegionName}
+              </span>
+            </div>
+
+            {/* صورة المحل واسمه */}
+            <div className="my-4 text-center">
+              {resolvePublicImageSrc(photoUrl) ? (
+                <img
+                  src={resolvePublicImageSrc(photoUrl)!}
+                  alt={shopName}
+                  className="mx-auto h-20 w-20 rounded-2xl object-cover ring-2 ring-[#C9A86A] shadow-md border-2 border-white mb-3"
                 />
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
-              عند التفعيل، سيتم تحويل الزبون تلقائياً للواتساب بعد إرسال الطلب لإرسال تفاصيله للمحل.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6 flex items-center justify-center gap-1 rounded-2xl bg-slate-100 p-1 shadow-inner">
-        <button
-          type="button"
-          onClick={() => handleUiModeChange("learn")}
-          className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
-            uiMode === "learn" ? "bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-100" : "text-slate-500 hover:bg-white/50"
-          }`}
-        >
-          🎓 وضع التعلم
-        </button>
-        <button
-          type="button"
-          onClick={() => handleUiModeChange("professional")}
-          className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
-            uiMode === "professional" ? "bg-white text-sky-700 shadow-sm ring-1 ring-sky-100" : "text-slate-500 hover:bg-white/50"
-          }`}
-        >
-          ⚡ وضع المحترف
-        </button>
-      </div>
-
-      <form ref={formRef} action={formAction} onSubmit={onFormSubmit} encType="multipart/form-data" className="space-y-5">
-        <input type="hidden" name="e" value={e} />
-        <input type="hidden" name="exp" value={exp} />
-        <input type="hidden" name="s" value={sig} />
-        <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
-        {initialOrder && <input type="hidden" name="editOrderNumber" value={initialOrder.orderNumber} />}
-        <input type="hidden" name="prepaidAll" value={isPrepaidAll ? "on" : "off"} />
-        <input type="hidden" name="reversePickup" value={isReverse ? "on" : "off"} />
-
-        {uiMode === "learn" && (
-          <>
-            <input type="hidden" name="customerPhone" value={customerPhone} />
-            <input type="hidden" name="orderType" value={orderType} />
-            <input type="hidden" name="orderSubtotal" value={orderPrice} />
-            <input type="hidden" name="orderTime" value={orderTime} />
-            <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
-            <input type="hidden" name="deliveryPrice" value={deliveryPriceOverride || dPrice.toFixed(0)} />
-            <input type="hidden" name="notes" value={notes} />
-            <input type="hidden" name="alternatePhone" value={alternatePhone} />
-          </>
-        )}
-
-        {uiMode === "professional" && (
-          <header className="kse-glass-dark rounded-3xl border border-sky-200 p-6 text-center shadow-sm">
-            <p className="text-xs font-black uppercase tracking-widest text-sky-800/60">أبو الأكبر للتوصيل</p>
-            {resolvePublicImageSrc(photoUrl) ? (
-              <img src={resolvePublicImageSrc(photoUrl)!} alt="" className="mx-auto mt-4 h-24 w-24 rounded-3xl object-cover ring-4 ring-white shadow-lg border border-sky-100" />
-            ) : null}
-
-            <div className="mt-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-center gap-2 text-2xl font-black text-slate-900">
-                <span className="opacity-80">أهلاً بك</span>
-                <span className="text-emerald-700 underline decoration-emerald-200 underline-offset-4">({greetingName})</span>
-                <input type="hidden" name="customerName" value={customerName} />
-              </div>
-              <p className="text-base font-bold text-slate-400">من محل <span className="text-slate-700">{shopName}</span></p>
-
-              <div className="mt-6 mx-auto max-w-[320px] relative">
-                <div className="absolute inset-0 bg-emerald-600 blur-xl opacity-10 animate-pulse"></div>
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 p-4 shadow-xl text-white ring-1 ring-emerald-400">
-                  <p className="relative z-10 text-center text-sm font-black italic tracking-wide">
-                    "خدمتكم تسعدنا وطلباتكم أمانة لدينا"
-                  </p>
+              ) : (
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF8F0] border-2 border-[#C9A86A]/40 text-3xl shadow-sm">
+                  🏪
                 </div>
-              </div>
-              <p className="mt-4 text-[10px] font-black text-slate-300 tracking-[0.2em] uppercase">{shopRegionName}</p>
+              )}
+
+              <h1 className="text-xl font-black text-[#0A3D2E]">{shopName}</h1>
+              <p className="text-xs font-bold text-slate-600 mt-1">
+                أهلاً بك يا <span className="text-[#0A3D2E] font-black underline decoration-[#C9A86A] underline-offset-4">{greetingName}</span>
+              </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-4">
-              <Link href={accountHrefNav} prefetch={false} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-emerald-100 py-3.5 text-sm font-black text-emerald-700 shadow-sm transition hover:bg-emerald-50 active:scale-95">
-                <span>📊</span> إحصائياتك
+            {/* العبارة الملكية الفاخرة */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 shadow-md text-[#F5D77F] border border-[#C9A86A]/50 mb-4">
+              <p className="text-center text-xs sm:text-sm font-black italic tracking-wide">
+                "خدمتكم تسعدنا وطلباتكم أمانة لدينا"
+              </p>
+            </div>
+
+            {/* الأزرار العلوية: سجل الديون + السجل */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href={accountHrefNav}
+                prefetch={false}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFF8F0] border-2 border-[#C9A86A]/40 py-3 text-xs font-black text-[#0A3D2E] shadow-xs transition hover:bg-[#FDF8EE] active:scale-95"
+              >
+                <span>📒</span> سجل الديون
               </Link>
-              <Link href={historyHrefNav} prefetch={false} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-sky-100 py-3.5 text-sm font-black text-sky-700 shadow-sm transition hover:bg-sky-50 active:scale-95">
+              <Link
+                href={historyHrefNav}
+                prefetch={false}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFF8F0] border-2 border-[#C9A86A]/40 py-3 text-xs font-black text-[#0A3D2E] shadow-xs transition hover:bg-[#FDF8EE] active:scale-95"
+              >
                 <span>📜</span> السجل
               </Link>
             </div>
 
+            {/* تفعيل البوت إذا كان موجوداً */}
             {botUsername && botStartParam && (
-              <div className="mt-4">
+              <div className="mt-3">
                 <a
                   href={`https://t.me/${botUsername.replace(/^https?:\/\/t\.me\//, "").replace(/^@/, "").trim()}?start=${botStartParam}`}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#0088cc] py-4 text-sm font-black text-white shadow-lg shadow-sky-200 transition-all hover:bg-[#0077b5] active:scale-95 animate-pulse"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0088cc] py-3 text-xs font-black text-white shadow-md transition-all hover:bg-[#0077b5] active:scale-95"
                 >
-                  <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.51-.46-.01-1.33-.26-1.98-.48-.8-.27-1.43-.42-1.37-.89.03-.25.38-.51 1.03-.78 4.04-1.76 6.74-2.92 8.09-3.48 3.85-1.6 4.64-1.88 5.17-1.89.11 0 .37.03.54.17.14.12.18.28.2.45-.02.07-.02.13-.03.2z" />
                   </svg>
                   تفعيل البوت الآن
                 </a>
-                <p className="mt-2 text-[10px] font-bold text-slate-400 text-center">
-                  سيفتح البوت مباشرة، اضغط <b>ابدأ (Start)</b> لتفعيل حسابك وظهور الأزرار.
-                </p>
               </div>
             )}
           </header>
-        )}
 
-        {uiMode === "professional" ? (
-          <section className="kse-glass-dark rounded-3xl border border-sky-100 p-6 shadow-sm">
-            <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-6">
-              <span className="h-3 w-3 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]"></span>
+          {/* بطاقة إدخال الطلب الأساسية */}
+          <section className="rounded-3xl border-2 border-[#C9A86A]/40 bg-[#FFFEFB] p-4 sm:p-5 shadow-md space-y-4">
+            <h2 className="text-sm font-black text-[#0A3D2E] flex items-center gap-2 pb-2 border-b border-[#C9A86A]/20">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0A3D2E] ring-2 ring-[#C9A86A]"></span>
               {initialOrder ? "تعديل تفاصيل الطلب" : "بيانات الطلبية الجديدة"}
             </h2>
 
-            <div className="space-y-5">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">رقم الزبون (المستلم) *</span>
-                <input ref={customerPhoneRef} name="customerPhone" required autoFocus={!initialOrder} value={customerPhone} onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))} onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums text-lg font-black ${isPhoneErr ? inputErrorClass : ""}`} placeholder="07XXXXXXXXX" />
-              </label>
+            {/* الصف 1: خانة منطقة الزبون بجانب خانة رقم الزبون */}
+            <div className="grid grid-cols-12 gap-2 sm:gap-3 items-end">
+              {/* خانة رقم الزبون (مصغرة بنسبة مناسبة لمنع التراكب) */}
+              <div className="col-span-5">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-black text-slate-700">رقم الزبون *</span>
+                  <input
+                    ref={customerPhoneRef}
+                    name="customerPhone"
+                    required
+                    autoFocus={!initialOrder}
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
+                    onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
+                    inputMode="numeric"
+                    className="w-full rounded-2xl border-2 border-[#C9A86A]/40 bg-white px-2.5 py-2.5 text-center font-mono text-xs sm:text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20"
+                    placeholder="07XXXXXXXXX"
+                  />
+                </label>
+              </div>
 
-              {isOldCustomer && previousRegions.length > 0 && (
-                <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200/80 p-3.5 shadow-sm">
-                  <div className="flex items-center gap-1.5 mb-2 text-sky-900">
-                    <span className="text-sm">🕒</span>
-                    <p className="text-xs font-black">مناطق هذا الزبون المسجلة سابقاً (اختيار سريع):</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {previousRegions.map((r, i) => {
-                      const isThisSelected = selected?.id === r.id || (selected && q === selected.name && q === r.name);
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setSelected(r);
-                            setQ(r.name);
-                            setHits([]);
-                            setShowRegionHits(false);
-                          }}
-                          className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition shadow-sm active:scale-95 ${
-                            isThisSelected
-                              ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-200"
-                              : "bg-white text-sky-800 border-sky-200 hover:bg-sky-100 hover:border-sky-300"
-                          }`}
-                        >
-                          <span>📍</span>
-                          <span>{r.name}</span>
-                          {r.deliveryPrice ? (
-                            <span className={`text-[10px] ${isThisSelected ? "text-emerald-100" : "text-sky-600 font-normal"}`}>
-                              ({formatDinarAsAlfWithUnit(r.deliveryPrice)})
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="relative" ref={regionContainerRef}>
-                <label className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between px-1">
-                    <span className={`text-sm font-black flex items-center gap-1.5 ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-700'}`}>
-                      <span>📍</span>
-                      <span>منطقة الزبون (المستلم) *</span>
-                    </span>
+              {/* خانة منطقة الزبون */}
+              <div className="col-span-7 relative" ref={regionContainerRef}>
+                <label className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-700">منطقة الزبون *</span>
                     {selected && q === selected.name && (
-                      <span className="text-xs font-bold text-emerald-600 bg-emerald-100/80 px-2 py-0.5 rounded-full animate-in fade-in">
-                        تم اختيار المنطقة ✅
+                      <span className="text-[10px] font-bold text-[#0A3D2E] bg-[#FFF8F0] px-1.5 py-0.5 rounded-md border border-[#C9A86A]/40">
+                        محددة ✓
                       </span>
                     )}
                   </div>
@@ -995,24 +772,16 @@ function ClientOrderFormInner({
                           setSelected(null);
                         }
                       }}
-                      className={`${inputClass} ${
-                        isRegionErr ? inputErrorClass : ""
-                      } ${
+                      className={`w-full rounded-2xl border-2 bg-white px-3 py-2.5 text-xs sm:text-sm font-bold text-slate-900 shadow-sm outline-none transition ${
                         selected && q === selected.name
-                          ? 'bg-emerald-50/90 border-emerald-400 text-emerald-950 font-black shadow-inner pr-10 pl-24 ring-2 ring-emerald-200/50'
-                          : 'focus:border-sky-500 focus:ring-4 focus:ring-sky-100 pr-10 pl-10'
+                          ? "border-[#0A3D2E] bg-[#FFF8F0] font-black text-[#0A3D2E] ring-2 ring-[#C9A86A]/30 pl-8"
+                          : "border-[#C9A86A]/40 focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 pl-8"
                       }`}
                       placeholder="ابحث عن المنطقة..."
                       required
                       autoComplete="off"
                     />
 
-                    {/* أيقونة موقع في اليمين */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">
-                      {selected && q === selected.name ? '📍' : '🔍'}
-                    </div>
-
-                    {/* زر مسح / تغيير في اليسار */}
                     {q && (
                       <button
                         type="button"
@@ -1022,34 +791,26 @@ function ClientOrderFormInner({
                           setHits([]);
                           regionSearchRef.current?.focus();
                         }}
-                        className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 text-xs font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                        title="إلغاء التحديد / إفراغ"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-5 w-5 rounded-full bg-slate-100 text-slate-400 hover:text-rose-600 text-xs font-bold"
+                        title="مسح"
                       >
-                        {selected && q === selected.name ? (
-                          <span className="text-rose-600 bg-rose-100/80 hover:bg-rose-200 px-2.5 py-1 rounded-lg text-xs font-black transition shadow-2xs">
-                            تغيير ✕
-                          </span>
-                        ) : (
-                          <span className="text-base leading-none">✕</span>
-                        )}
+                        ✕
                       </button>
                     )}
                   </div>
                 </label>
 
+                {/* قائمة نتائج البحث للمناطق */}
                 {hits.length > 0 && showRegionHits && !(selected && q === selected.name) && (
-                  <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border border-sky-200/80 bg-white/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-                    <div className="bg-gradient-to-r from-sky-50 to-emerald-50 px-3.5 py-2 border-b border-sky-100 flex items-center justify-between">
-                      <span className="text-[11px] font-black text-sky-800 flex items-center gap-1.5">
-                        <span>📍</span>
-                        <span>اختر منطقتك من القائمة التالية</span>
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-sky-100">
+                  <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] bg-[#FFFEFB] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                    <div className="bg-[#FFF8F0] px-3 py-1.5 border-b border-[#C9A86A]/30 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-[#0A3D2E]">اختر المنطقة:</span>
+                      <span className="text-[9px] font-bold text-slate-500">
                         {formatMatchingRegionsCountText(hits.length)}
                       </span>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                    <div className="max-h-48 overflow-y-auto divide-y divide-[#C9A86A]/10">
                       {hits.map((h) => (
                         <button
                           key={h.id}
@@ -1060,796 +821,519 @@ function ClientOrderFormInner({
                             setHits([]);
                             setShowRegionHits(false);
                           }}
-                          className="group flex w-full items-center justify-between px-4 py-3 text-right transition-all hover:bg-sky-50/80 active:bg-sky-100"
+                          className="group flex w-full items-center justify-between px-3 py-2 text-right transition-all hover:bg-[#FFF8F0] active:bg-[#FDF8EE]"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100/70 text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors shadow-2xs">
-                              <span className="text-base">📍</span>
-                            </div>
-                            <div className="flex flex-col text-right">
-                              <span className="text-sm font-black text-slate-900 group-hover:text-sky-900 transition-colors">
-                                {h.name}
+                          <div className="flex flex-col text-right">
+                            <span className="text-xs font-black text-slate-900 group-hover:text-[#0A3D2E]">
+                              {h.name}
+                            </span>
+                            {h.deliveryPrice ? (
+                              <span className="text-[10px] font-bold text-[#0A3D2E]">
+                                التوصيل: {formatDinarAsAlfWithUnit(h.deliveryPrice)}
                               </span>
-                              {h.deliveryPrice ? (
-                                <span className="text-[11px] font-bold text-emerald-600">
-                                  أجر التوصيل: {formatDinarAsAlfWithUnit(h.deliveryPrice)}
-                                </span>
-                              ) : null}
-                            </div>
+                            ) : null}
                           </div>
-                          <span className="text-xs font-bold text-sky-500 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all flex items-center gap-1">
-                            اختيار ⬅️
-                          </span>
+                          <span className="text-[10px] font-bold text-[#0A3D2E]">اختيار ⬅️</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
+            </div>
 
-              <label className="flex flex-col gap-1.5">
+            {/* مناطق الزبون السابقة إن وجدت */}
+            {isOldCustomer && previousRegions.length > 0 && (
+              <div className="rounded-2xl bg-[#FFF8F0] border border-[#C9A86A]/40 p-2.5 shadow-xs">
+                <p className="text-[11px] font-black text-[#0A3D2E] mb-1.5 flex items-center gap-1">
+                  <span>🕒</span> مناطق هذا الزبون المسجلة سابقاً:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {previousRegions.map((r, i) => {
+                    const isThisSelected = selected?.id === r.id || (selected && q === selected.name && q === r.name);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setSelected(r);
+                          setQ(r.name);
+                          setHits([]);
+                          setShowRegionHits(false);
+                        }}
+                        className={`px-2.5 py-1 text-xs font-bold rounded-xl border transition shadow-2xs active:scale-95 ${
+                          isThisSelected
+                            ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
+                            : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF8EE]"
+                        }`}
+                      >
+                        📍 {r.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                <span className="text-sm font-bold text-slate-600 px-1">نوع الطلب *</span>
+            {/* الصف 2: خانة نوع الطلب بجانب خانة سعر الطلب (اقتراحين فقط لكل منهما) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 items-start">
+              {/* خانة نوع الطلب */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-black text-slate-700">نوع الطلب *</span>
                 {suggestions.types.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
-                    {suggestions.types.map((type, idx) => (
+                  <div className="flex flex-wrap gap-1 mb-0.5">
+                    {suggestions.types.slice(0, 2).map((type, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setOrderType(type)}
-                        className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                        className="px-2 py-0.5 text-[10px] font-bold bg-[#FFF8F0] text-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-[#F5D77F] rounded-lg border border-[#C9A86A]/40 transition active:scale-95"
                       >
                         {type}
                       </button>
                     ))}
                   </div>
                 )}
-                <input ref={orderTypeRef} name="orderType" required value={orderType} onChange={(e) => setOrderType(e.target.value)} className={`${inputClass} ${isOrderTypeErr ? inputErrorClass : ""}`} placeholder="مثال: بضاعة، طعام، …" />
-              </label>
+                <input
+                  ref={orderTypeRef}
+                  name="orderType"
+                  required
+                  value={orderType}
+                  onChange={(e) => setOrderType(e.target.value)}
+                  className="w-full rounded-2xl border-2 border-[#C9A86A]/40 bg-white px-3 py-2.5 text-xs sm:text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20"
+                  placeholder="مثال: طعام، ملابس..."
+                />
+              </div>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">سعر الطلب </span>
+              {/* خانة سعر الطلب */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-black text-slate-700">سعر الطلب</span>
                 {suggestions.subtotals.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
-                    {suggestions.subtotals.map((sub, idx) => (
+                  <div className="flex flex-wrap gap-1 mb-0.5">
+                    {suggestions.subtotals.slice(0, 2).map((sub, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setOrderPrice(sub)}
-                        className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                        className="px-2 py-0.5 text-[10px] font-bold bg-[#FFF8F0] text-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-[#F5D77F] rounded-lg border border-[#C9A86A]/40 transition active:scale-95"
                       >
                         {sub}
                       </button>
                     ))}
                   </div>
                 )}
-                <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
-              </label>
-
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPrepaidAll(!isPrepaidAll)}
-                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
-                    isPrepaidAll ? "bg-emerald-600 border-emerald-400 text-white" : "bg-white border-slate-200 text-slate-600"
-                  }`}
-                >
-                  {isPrepaidAll ? "✓ " : ""}واصل كلشي
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsReverse(!isReverse)}
-                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
-                    isReverse ? "bg-violet-600 border-violet-400 text-white" : "bg-white border-slate-200 text-slate-600"
-                  }`}
-                >
-                  {isReverse ? "🔄 " : ""}طلب عكسي
-                </button>
+                <input
+                  ref={orderPriceRef}
+                  name="orderSubtotal"
+                  inputMode="decimal"
+                  value={orderPrice}
+                  onChange={(e) => setOrderPrice(e.target.value)}
+                  className="w-full rounded-2xl border-2 border-[#C9A86A]/40 bg-white px-3 py-2.5 font-mono text-center text-xs sm:text-sm font-black text-slate-900 shadow-sm outline-none transition focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20"
+                  placeholder="مثال: 15"
+                />
               </div>
+            </div>
 
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">وقت التوصيل المفضل *</span>
-                {suggestions.times.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
-                    {suggestions.times.map((time, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setOrderTime(time)}
-                        className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <input ref={orderTimeRef} name="orderTime" required value={orderTime} onChange={(e) => setOrderTime(e.target.value)} className={`${inputClass} ${isTimeErr ? inputErrorClass : ""}`} placeholder="مثال: بعد الظهر، الساعة 4، …" />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">نوع المركبة (اختياري)</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: "", label: "تلقائي", icon: "✨" },
-                    { id: "bike", label: "دراجة", icon: "🏍️" },
-                    { id: "car", label: "سيارة", icon: "🚗" },
-                  ].map((v) => (
+            {/* الصف 3: وقت استلام الطلب (مرفوع للأعلى قبل زري كلشي واصل وطلب عكسي) */}
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-black text-slate-700 flex items-center gap-1">
+                <span>⏰</span>
+                <span>شوكت تحب نستلم الطلب *</span>
+              </span>
+              {suggestions.times.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-0.5">
+                  {suggestions.times.slice(0, 2).map((time, idx) => (
                     <button
-                      key={v.id}
+                      key={idx}
                       type="button"
-                      onClick={() => setVehiclePreference(v.id)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
-                        vehiclePreference === v.id
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm"
-                          : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
-                      }`}
+                      onClick={() => setOrderTime(time)}
+                      className="px-2 py-0.5 text-[10px] font-bold bg-[#FFF8F0] text-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-[#F5D77F] rounded-lg border border-[#C9A86A]/40 transition active:scale-95"
                     >
-                      <span className="text-xl">{v.icon}</span>
-                      <span className="text-[10px] font-black">{v.label}</span>
+                      {time}
                     </button>
                   ))}
                 </div>
-                <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
-              </label>
+              )}
+              <input
+                ref={orderTimeRef}
+                name="orderTime"
+                required
+                value={orderTime}
+                onChange={(e) => setOrderTime(e.target.value)}
+                className="w-full rounded-2xl border-2 border-[#C9A86A]/40 bg-white px-3 py-2.5 text-xs sm:text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20"
+                placeholder="مثال: الآن، العصر بـ 4، غداً..."
+              />
+            </label>
 
-              <div className="flex flex-col gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-3 text-[11px] font-black text-slate-700 shadow-inner">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    <span>سعر الطلب:</span>
-                    <span className="text-slate-900">{subtotal ?? 0}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <span>التوصيل الأساسي:</span>
-                    <span className="text-slate-900">{dPrice}</span>
-                  </div>
-                </div>
-
-                {selected && (
-                  <div className="mt-1 pt-2 border-t border-slate-200/50">
-                    <span className="block mb-3 text-[11px] font-black text-sky-800 bg-sky-50 w-fit px-2 py-0.5 rounded-full shadow-sm">يمكنك رفع اجرة التوصيل ان اردت):</span>
-                    <div className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
-                          if (current > dPrice) {
-                            setDeliveryPriceOverride((current - 1).toString());
-                          }
-                        }}
-                        className="flex h-12 w-14 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white text-2xl font-bold text-slate-400 shadow-sm transition active:scale-95 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50"
-                      >
-                        −
-                      </button>
-
-                      <div className="flex-1 relative">
-                        <input
-                          name="deliveryPrice"
-                          type="hidden"
-                          value={deliveryPriceOverride || dPrice.toFixed(0)}
-                        />
-                        <div dir="ltr" className="w-full rounded-2xl border-2 border-sky-200 bg-white py-2.5 text-center font-mono text-2xl font-black text-sky-900 shadow-inner ring-4 ring-sky-50/50">
-                          {deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
-                          setDeliveryPriceOverride((current + 1).toString());
-                        }}
-                        className="flex h-12 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-3xl font-black text-white shadow-[0_4px_0_0_rgba(5,150,105,1)] transition-all active:translate-y-1 active:shadow-none hover:bg-emerald-500"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-1 pt-2 border-t border-slate-200 flex items-center justify-between text-emerald-700">
-                  <span>السعر الكلي:</span>
-                  <span dir="ltr" className="text-xl font-black font-mono">
-                    {(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <span className="text-sm font-bold text-slate-600 px-1 block mb-3">صورة الطلب (اختياري)</span>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/50 py-4 transition hover:bg-sky-50 hover:border-sky-300 group"
-                  >
-                    <span className="text-2xl group-active:scale-125 transition">📸</span>
-                    <span className="text-xs font-black text-sky-800">الكاميرا</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => galleryInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/50 py-4 transition hover:bg-sky-50 hover:border-sky-300 group"
-                  >
-                    <span className="text-2xl group-active:scale-125 transition">🖼️</span>
-                    <span className="text-xs font-black text-sky-800">المعرض</span>
-                  </button>
-                </div>
-
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  name="orderImage"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  name="orderImage"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-
-                {imagePreview && (
-                  <div className="mt-4 relative group">
-                    <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-2xl border-2 border-sky-100 shadow-sm" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview(null);
-                        if (cameraInputRef.current) cameraInputRef.current.value = "";
-                        if (galleryInputRef.current) galleryInputRef.current.value = "";
-                      }}
-                      className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-rose-500 text-white shadow-lg flex items-center justify-center font-bold"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <span className="text-sm font-bold text-slate-600 px-1 block mb-2">ملاحظة صوتية (اختياري)</span>
-                <ClientVoiceNoteField fieldName="voiceNote" />
-              </div>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (المستلم) - اختياري</span>
-                <input name="alternatePhone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums`} placeholder="07XXXXXXXXX" />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">ملاحظة كتابية</span>
-                <textarea name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className={`${inputClass} min-h-[100px] resize-none`} placeholder="اكتب تفاصيل المواد المطلوبة أو أي ملاحظات أخرى للمندوب..." />
-              </label>
+            {/* الصف 4: زري كلشي واصل وطلب عكسي */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setIsPrepaidAll(!isPrepaidAll)}
+                className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 text-xs font-black transition-all shadow-xs border-2 ${
+                  isPrepaidAll
+                    ? "bg-[#0A3D2E] border-[#C9A86A] text-[#F5D77F] shadow-sm"
+                    : "bg-[#FFF8F0] border-[#C9A86A]/40 text-slate-700 hover:bg-[#FDF8EE]"
+                }`}
+              >
+                {isPrepaidAll ? "✓ " : ""}كلشي واصل
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsReverse(!isReverse)}
+                className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 text-xs font-black transition-all shadow-xs border-2 ${
+                  isReverse
+                    ? "bg-purple-900 border-[#C9A86A] text-[#F5D77F] shadow-sm"
+                    : "bg-[#FFF8F0] border-[#C9A86A]/40 text-slate-700 hover:bg-[#FDF8EE]"
+                }`}
+              >
+                {isReverse ? "🔄 " : ""}طلب عكسي
+              </button>
             </div>
-          </section>
-        ) : (
-          <div className="space-y-6">
-            {learnStep === 0 && (
-              <div className="kse-glass-dark rounded-3xl border border-emerald-200 p-8 text-center animate-in fade-in zoom-in duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-4xl shadow-sm">📱</div>
-                <h3 className="text-xl font-black text-slate-900">هنا ضع رقم الزبون</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  وليس رقمك أنت، بل رقم الشخص الذي سوف يستلم الطلب.
-                  <br/>
-                  يمكنك كتابته أو لصقه بأي صيغة.
-                </p>
-                <div className="mt-6">
-                  <input
-                    ref={customerPhoneRef}
-                    autoFocus
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
-                    onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
-                    inputMode="numeric"
-                    className="w-full rounded-2xl border-2 border-emerald-200 bg-white px-4 py-4 text-center font-mono text-2xl font-black text-emerald-900 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition"
-                    placeholder="07XXXXXXXXX"
-                  />
-                </div>
-                {isOldCustomer && previousRegions.length > 0 && (
-                  <div className="mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-inner">
-                    <p className="text-sm font-black text-emerald-800 mb-3 text-center">هذا الزبون قديم، يرجى اختيار منطقته السابقة:</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {previousRegions.map((r, i) => (
+
+            {/* ملخص السعر والتوصيل */}
+            <div className="flex flex-col gap-1.5 rounded-2xl bg-[#FFF8F0] border border-[#C9A86A]/40 p-3 text-xs font-black text-slate-800 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">سعر الطلب: <strong className="text-slate-900 font-mono text-sm">{subtotal ?? 0}</strong></span>
+                <span className="text-slate-600">التوصيل: <strong className="text-slate-900 font-mono text-sm">{deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice}</strong></span>
+              </div>
+              <div className="pt-1.5 border-t border-[#C9A86A]/30 flex items-center justify-between text-[#0A3D2E]">
+                <span className="text-xs font-black">السعر الإجمالي:</span>
+                <span dir="ltr" className="text-base font-black font-mono text-[#0A3D2E]">
+                  {(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)} ألف
+                </span>
+              </div>
+            </div>
+
+            {/* تفاصيل أخرى (قائمة منسدلة قابلة للطي) */}
+            <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-white overflow-hidden shadow-xs transition-all">
+              <button
+                type="button"
+                onClick={() => setIsOtherDetailsOpen(!isOtherDetailsOpen)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[#FFF8F0] hover:bg-[#FDF8EE] transition-colors font-black text-xs text-[#0A3D2E]"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>تفاصيل أخرى (اختياري)</span>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#C9A86A]/40 text-[#0A3D2E]">
+                  {isOtherDetailsOpen ? "إخفاء التفاصيل ▲" : "عرض التفاصيل ▼"}
+                </span>
+              </button>
+
+              {isOtherDetailsOpen && (
+                <div className="p-3.5 space-y-3.5 border-t border-[#C9A86A]/20 bg-white animate-in slide-in-from-top-2 duration-200">
+                  {/* رفع أجر التوصيل إن رغب العميل */}
+                  {selected && (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-black text-slate-700 block">رفع أجر التوصيل (اختياري لتعجيل الطلب):</span>
+                      <div className="flex items-center gap-3">
                         <button
-                          key={i}
                           type="button"
                           onClick={() => {
-                            setSelected(r);
-                            setQ(r.name);
-                            setLearnStep(1);
+                            const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
+                            if (current > dPrice) {
+                              setDeliveryPriceOverride((current - 1).toString());
+                            }
                           }}
-                          className="px-4 py-2 text-sm font-bold bg-white text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 shadow-sm transition active:scale-95"
+                          className="flex h-9 w-11 items-center justify-center rounded-xl border border-[#C9A86A]/40 bg-[#FFF8F0] text-lg font-bold text-slate-600 shadow-2xs transition active:scale-95"
                         >
-                          {r.name}
+                          −
+                        </button>
+                        <div className="flex-1 text-center font-mono font-black text-sm text-[#0A3D2E] bg-[#FFF8F0] py-1.5 rounded-xl border border-[#C9A86A]/40">
+                          {deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice} ألف
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
+                            setDeliveryPriceOverride((current + 1).toString());
+                          }}
+                          className="flex h-9 w-11 items-center justify-center rounded-xl bg-[#0A3D2E] text-[#F5D77F] text-lg font-bold border border-[#C9A86A] shadow-2xs transition active:scale-95"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <input type="hidden" name="deliveryPrice" value={deliveryPriceOverride || dPrice.toFixed(0)} />
+
+                  {/* نوع المركبة */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black text-slate-700 block">نوع المركبة المفضلة</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "", label: "تلقائي", icon: "✨" },
+                        { id: "bike", label: "دراجة", icon: "🏍️" },
+                        { id: "car", label: "سيارة", icon: "🚗" },
+                      ].map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setVehiclePreference(v.id)}
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
+                            vehiclePreference === v.id
+                              ? "border-[#0A3D2E] bg-[#0A3D2E] text-[#F5D77F] shadow-2xs"
+                              : "border-[#C9A86A]/30 bg-[#FFF8F0] text-slate-600 hover:border-[#C9A86A]"
+                          }`}
+                        >
+                          <span className="text-sm">{v.icon}</span>
+                          <span className="text-[10px] font-black">{v.label}</span>
                         </button>
                       ))}
                     </div>
+                    <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
                   </div>
-                )}
-                <button type="button" onClick={() => customerPhone.trim() && setLearnStep(1)} className="mt-6 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
-              </div>
-            )}
 
-            {learnStep === 1 && (
-              <div className="kse-glass-dark rounded-3xl border border-sky-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-50 text-4xl shadow-sm">📦</div>
-                <h3 className="text-xl font-black text-slate-900">نوع الطلب</h3>
-                {suggestions.types.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
-                    {suggestions.types.map((type, idx) => (
+                  {/* صورة الطلب */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-black text-slate-700 block">صورة الطلب (اختياري)</span>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
-                        key={idx}
                         type="button"
-                        onClick={() => setOrderType(type)}
-                        className="px-3 py-1.5 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-xl border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#C9A86A] bg-[#FFF8F0] py-2 text-xs font-black text-[#0A3D2E] hover:bg-[#FDF8EE] transition active:scale-95"
                       >
-                        {type}
+                        <span>📸</span>
+                        <span>الكاميرا</span>
                       </button>
-                    ))}
-                  </div>
-                )}
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  عليك أن تكتب نوع الطلب لكي نعلم ما هي المركبة المناسبة لطلبيتك.
-                  <br/>
-                  مثال: كيك، ورد، كوزمتك، فراش، خضروات...
-                </p>
-                <div className="mt-6">
-                  <input
-                    ref={orderTypeRef}
-                    autoFocus
-                    value={orderType}
-                    onChange={(e) => setOrderType(e.target.value)}
-                    className="w-full rounded-2xl border-2 border-sky-200 bg-white px-4 py-4 text-center text-xl font-black text-sky-900 shadow-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition"
-                    placeholder="مثال: كيك، ملابس..."
-                  />
-                </div>
-                <button type="button" onClick={() => orderType.trim() && setLearnStep(2)} className="mt-6 w-full rounded-2xl bg-sky-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
-              </div>
-            )}
-
-            {learnStep === 2 && (
-              <div className="kse-glass-dark rounded-3xl border border-amber-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 text-4xl shadow-sm">💰</div>
-                <h3 className="text-xl font-black text-slate-900">سعر الطلب</h3>
-                {suggestions.subtotals.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
-                    {suggestions.subtotals.map((sub, idx) => (
                       <button
-                        key={idx}
                         type="button"
-                        onClick={() => setOrderPrice(sub)}
-                        className="px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#C9A86A] bg-[#FFF8F0] py-2 text-xs font-black text-[#0A3D2E] hover:bg-[#FDF8EE] transition active:scale-95"
                       >
-                        {sub}
+                        <span>🖼️</span>
+                        <span>المعرض</span>
                       </button>
-                    ))}
-                  </div>
-                )}
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  اكتب السعر هنا، لكن انتبه: إذا كان طلبك 10 آلاف اكتب <b>10</b> فقط.
-                  <br/>
-                  لا تكتب "10000" ولا كلمة "ألف".
-                </p>
-                {!isPriceValid && (
-                  <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm font-black text-rose-600 border border-rose-100">
-                    ⚠️ عليك إزالة الأحرف وكتابة رقم فقط.
-                  </div>
-                )}
-                <div className="mt-6">
-                  <input
-                    ref={orderPriceRef}
-                    autoFocus
-                    value={orderPrice}
-                    onChange={(e) => setOrderPrice(e.target.value)}
-                    inputMode="decimal"
-                    className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center font-mono text-3xl font-black shadow-sm outline-none transition ${!isPriceValid ? 'border-rose-400 text-rose-700 ring-4 ring-rose-50' : 'border-amber-200 text-amber-900 focus:border-amber-500 focus:ring-4 focus:ring-amber-100'}`}
-                    placeholder="10, 25.5, 50..."
-                  />
-                </div>
-                <p className="mt-4 text-[11px] font-bold text-slate-400">
-                  يمكنك كتابة كسور: 50.5 (خمسين ونص)، 10.25 (عشرة وربع)، 10.75 (عشرة إلا ربع).
-                </p>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsPrepaidAll(!isPrepaidAll)}
-                    className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
-                      isPrepaidAll ? "bg-emerald-600 border-emerald-400 text-white" : "bg-white border-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {isPrepaidAll ? "✓ " : ""}واصل كلشي
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsReverse(!isReverse)}
-                    className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
-                      isReverse ? "bg-violet-600 border-violet-400 text-white" : "bg-white border-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {isReverse ? "🔄 " : ""}طلب عكسي
-                  </button>
-                </div>
-                <button type="button" onClick={() => isPriceValid && orderPrice.trim() && setLearnStep(3)} className="mt-6 w-full rounded-2xl bg-amber-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition disabled:opacity-50" disabled={!isPriceValid}>تم</button>
-              </div>
-            )}
-
-            {learnStep === 3 && (
-              <div className="kse-glass-dark rounded-3xl border border-indigo-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 text-4xl shadow-sm">📍</div>
-                <h3 className={`text-xl font-black ${selected && q === selected.name ? 'text-emerald-700' : 'text-slate-900'}`}>المنطقة</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  لا حاجة لكتابة اسم المنطقة كاملاً، فأنا ذكي وسأعرفها من 3 أحرف.
-                  <br/>
-                  جرب كتابة "عوج" للعوجة أو "حمد" لحمدان.
-                </p>
-                <div className="mt-6 relative">
-                  <input
-                    ref={regionSearchRef}
-                    autoFocus
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center text-xl font-black shadow-sm outline-none transition ${selected && q === selected.name ? 'border-emerald-400 text-emerald-900 bg-emerald-50 ring-4 ring-emerald-100' : 'border-indigo-200 text-indigo-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'}`}
-                    placeholder="ابحث عن المنطقة..."
-                  />
-                  {selected && q === selected.name && (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl animate-in zoom-in duration-300 pointer-events-none">👍</div>
-                  )}
-                  {hits.length > 0 && !(selected && q === selected.name) && (
-                    <div className="absolute z-[100] mt-2 w-full overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                      <p className="bg-indigo-50 py-2 text-[11px] font-black text-indigo-600">هيا اختر إحدى هذه المناطق 👇</p>
-                      <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
-                        {hits.map((h) => (
-                          <button
-                            key={h.id}
-                            type="button"
-                            onClick={() => {
-                              setSelected(h);
-                              setQ(h.name);
-                              setHits([]);
-                              setLearnStep(4);
-                            }}
-                            className="group flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-indigo-50"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-base">📍</span>
-                              <div className="flex flex-col text-right">
-                                <span className="text-base font-black text-slate-900">{h.name}</span>
-                                {h.deliveryPrice ? (
-                                  <span className="text-xs font-bold text-emerald-600">
-                                    توصيل: {formatDinarAsAlfWithUnit(h.deliveryPrice)}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
-                            <span className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                              اختر ⬅️
-                            </span>
-                          </button>
-                        ))}
-                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {learnStep === 4 && (
-              <div className="kse-glass-dark rounded-3xl border border-rose-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-rose-50 text-4xl shadow-sm">⏰</div>
-                <h3 className="text-xl font-black text-slate-900">وقت التوصيل</h3>
-                {suggestions.times.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
-                    {suggestions.times.map((time, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setOrderTime(time)}
-                        className="px-3 py-1.5 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
-                      >
-                        {time}
-                      </button>
-                    ))}
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      name="orderImage"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      name="orderImage"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+
+                    {imagePreview && (
+                      <div className="relative mt-2">
+                        <img src={imagePreview} alt="Preview" className="w-full h-36 object-cover rounded-xl border border-[#C9A86A]/50 shadow-xs" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImagePreview(null);
+                            if (cameraInputRef.current) cameraInputRef.current.value = "";
+                            if (galleryInputRef.current) galleryInputRef.current.value = "";
+                          }}
+                          className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-rose-600 text-white shadow-md flex items-center justify-center font-bold text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  متى تحب أن يأتي المندوب؟
-                  <br/>
-                  مثال: الآن، غداً صباحاً، اليوم بـ 4 العصر... يمكنك كتابة أي شيء.
-                </p>
-                <div className="mt-6">
-                  <input
-                    ref={orderTimeRef}
-                    autoFocus
-                    value={orderTime}
-                    onChange={(e) => setOrderTime(e.target.value)}
-                    className="w-full rounded-2xl border-2 border-rose-200 bg-white px-4 py-4 text-center text-xl font-black text-rose-900 shadow-sm focus:border-rose-500 focus:ring-4 focus:ring-rose-100 outline-none transition"
-                    placeholder="متى نرسل الطلب؟"
-                  />
-                </div>
-                <button type="button" onClick={() => orderTime.trim() && setLearnStep(5)} className="mt-6 w-full rounded-2xl bg-rose-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
-              </div>
-            )}
 
-            <div className={learnStep === 5 ? "block" : "hidden"}>
-              <div className="kse-glass-dark rounded-3xl border border-blue-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-4xl shadow-sm">🎤</div>
-                <h3 className="text-xl font-black text-slate-900">ملاحظة صوتية</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  هل تريد تسجيل ملاحظة صوتية سوف يسمعها المندوب؟
-                  <br/>
-                  يمكنك تخطي هذا الأمر.
-                </p>
-                <div className="mt-6 flex flex-col gap-3">
-                  <div className="rounded-2xl border-2 border-blue-50 bg-white p-4 shadow-sm">
+                  {/* ملاحظة صوتية */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black text-slate-700 block">ملاحظة صوتية للمندوب</span>
                     <ClientVoiceNoteField fieldName="voiceNote" />
-                    <p className="mt-2 text-[10px] font-bold text-slate-400">لديك 30 ثانية مدة التسجيل</p>
                   </div>
-                  <button type="button" onClick={() => setLearnStep(6)} className="w-full rounded-2xl bg-blue-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
+
+                  {/* رقم ثاني */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black text-slate-700 block">رقم ثاني للزبون (اختياري)</span>
+                    <input
+                      name="alternatePhone"
+                      value={alternatePhone}
+                      onChange={(e) => setAlternatePhone(e.target.value)}
+                      inputMode="numeric"
+                      className="w-full rounded-xl border border-[#C9A86A]/40 bg-[#FFF8F0] px-3 py-2 text-xs font-mono font-bold text-slate-900 outline-none focus:border-[#0A3D2E]"
+                      placeholder="07XXXXXXXXX"
+                    />
+                  </div>
+
+                  {/* ملاحظة كتابية */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black text-slate-700 block">ملاحظة كتابية للمندوب</span>
+                    <textarea
+                      name="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-xl border border-[#C9A86A]/40 bg-[#FFF8F0] p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#0A3D2E] resize-none"
+                      placeholder="اكتب أي تعليمات إضافية للمندوب..."
+                    />
+                  </div>
+
+                  {/* التحويل للواتساب */}
+                  <div className="pt-2 border-t border-[#C9A86A]/20 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700">التحويل إلى واتساب تلقائياً</span>
+                    <button
+                      type="button"
+                      onClick={() => setWaRedirectEnabled(!waRedirectEnabled)}
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                        waRedirectEnabled ? "bg-[#0A3D2E]" : "bg-slate-300"
+                      }`}
+                      dir="ltr"
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          waRedirectEnabled ? "translate-x-5" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {learnStep === 6 && (
-              <div className="kse-glass-dark rounded-3xl border border-emerald-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-4xl shadow-sm">🏍️</div>
-                <h3 className="text-xl font-black text-slate-900">نوع المركبة</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  هل طلبك يمكن نقله بالدراجة أو السيارة؟
-                  <br/>
-                  يمكنك الاختيار أو تركه افتراضي (تلقائي).
-                </p>
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {[
-                    { id: "", label: "تلقائي", icon: "✨" },
-                    { id: "bike", label: "دراجة", icon: "🏍️" },
-                    { id: "car", label: "سيارة", icon: "🚗" },
-                  ].map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setVehiclePreference(v.id)}
-                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
-                        vehiclePreference === v.id
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-md"
-                          : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
-                      }`}
-                    >
-                      <span className="text-3xl mb-1">{v.icon}</span>
-                      <span className="text-xs font-black">{v.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <button type="button" onClick={() => setLearnStep(7)} className="mt-8 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
-              </div>
-            )}
-
-            {learnStep === 7 && (
-              <div className="kse-glass-dark rounded-3xl border border-sky-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-50 text-4xl shadow-sm">🚚</div>
-                <h3 className="text-xl font-black text-slate-900">كلفة التوصيل</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  كلفة التوصيل لهذه المنطقة هي <b>{dPrice}</b>.
-                  <br/>
-                  هل تريد زيادة كلفة التوصيل لتعجيل الطلب أم تخطي؟
-                </p>
-                {selected && (
-                  <div className="mt-6 flex items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
-                        if (current > dPrice) setDeliveryPriceOverride((current - 1).toString());
-                      }}
-                      className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white text-2xl font-bold text-slate-400 shadow-sm transition active:scale-95"
-                    >
-                      −
-                    </button>
-                    <div className="flex-1 relative">
-                      <div dir="ltr" className="w-full rounded-2xl border-2 border-sky-200 bg-white py-3 text-center font-mono text-3xl font-black text-sky-900 shadow-inner ring-4 ring-sky-50/50">
-                        {deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
-                        setDeliveryPriceOverride((current + 1).toString());
-                      }}
-                      className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-3xl font-black text-white shadow-lg active:scale-95 transition"
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
-                <button type="button" onClick={() => setLearnStep(8)} className="mt-8 w-full rounded-2xl bg-sky-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
-              </div>
-            )}
-
-            {learnStep === 8 && (
-              <div className="kse-glass-dark rounded-3xl border border-slate-200 p-8 text-center animate-in slide-in-from-left duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-4xl shadow-sm">📝</div>
-                <h3 className="text-xl font-black text-slate-900">الملاحظات الكتابية</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
-                  هل تريد كتابة ملاحظة ليقرأها المندوب أم تتخطى؟
-                </p>
-                <div className="mt-6">
-                  <textarea
-                    autoFocus
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={4}
-                    className="w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-right text-base font-bold text-slate-800 shadow-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition resize-none"
-                    placeholder="اكتب تفاصيل إضافية هنا..."
-                  />
-                </div>
-                <button type="button" onClick={() => setLearnStep(9)} className="mt-6 w-full rounded-2xl bg-slate-800 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
-              </div>
-            )}
-
-            {learnStep === 9 && (
-              <div className="kse-glass-dark rounded-3xl border border-emerald-300 p-8 text-center animate-in bounce-in duration-500 shadow-2xl ring-4 ring-emerald-50">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-5xl animate-bounce">🚀</div>
-                <h3 className="text-2xl font-black text-slate-900">أنت بطل!</h3>
-                <p className="mt-2 text-base font-bold text-slate-600">
-                  لقد أكملت جميع البيانات بنجاح.
-                  <br/>
-                  الآن انقر على زر رفع الطلب لنقوم بالمهمة.
-                </p>
-
-                <div className="mt-8 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-right space-y-2">
-                  <p className="text-xs font-black text-slate-400 border-b border-slate-200 pb-1 mb-2">مراجعة سريعة:</p>
-                  <div className="flex justify-between text-sm font-bold"><span>رقم الزبون:</span> <span className="font-mono">{customerPhone}</span></div>
-                  <div className="flex justify-between text-sm font-bold"><span>المنطقة:</span> <span>{selected?.name}</span></div>
-                  <div className="flex justify-between text-sm font-bold"><span>السعر الكلي:</span> <span className="text-emerald-700 font-black">{(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}</span></div>
-                  {isPrepaidAll && <div className="flex justify-between text-sm font-bold text-emerald-700"><span>الحالة:</span> <span>واصل كلشي ✓</span></div>}
-                  {isReverse && <div className="flex justify-between text-sm font-bold text-violet-700"><span>النوع:</span> <span>طلب عكسي 🔄</span></div>}
-                </div>
-
-                {state.error && !state.error.includes("محظور") ? (
-                  <div className="mt-4 rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-center text-sm font-black text-rose-800 animate-shake">
-                    ⚠️ {state.error}
-                  </div>
-                ) : null}
-
-                <p className="mt-6 text-sm font-black text-emerald-700 bg-emerald-50 p-3 rounded-2xl border border-emerald-100 animate-pulse">
-                  👇 انقر على زر رفع الطلب للإدارة العائم 🚀 الموجود في الشاشة لرفع طلبك!
-                </p>
-                <button type="button" onClick={() => setLearnStep(0)} className="mt-4 text-sm font-bold text-slate-400 hover:text-slate-600 underline">تعديل البيانات</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {uiMode === "professional" && (
-          <>
-            {state.error && !state.error.includes("محظور") ? (
-              <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-center text-sm font-black text-rose-800 animate-shake">
+            {state.error && !state.error.includes("محظور") && (
+              <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-center text-xs font-black text-rose-800 animate-shake">
                 ⚠️ {state.error}
               </div>
-            ) : null}
-          </>
-        )}
-      </form>
+            )}
+          </section>
+        </form>
 
-      {/* الزر العائم الدائري والقابل للتحريك لرفع الطلب للإدارة */}
-      {floatingPos && !state.ok && (
-        <div
-          style={{
-            position: "fixed",
-            left: `${floatingPos.x}px`,
-            top: `${floatingPos.y}px`,
-            zIndex: 9999,
-          }}
-          className="touch-none select-none cursor-grab active:cursor-grabbing"
-          onTouchStart={(e) => {
-            const t = e.touches[0];
-            if (t) handlePointerDown(t.clientX, t.clientY);
-          }}
-          onTouchMove={(e) => {
-            const t = e.touches[0];
-            if (t) handlePointerMove(t.clientX, t.clientY);
-          }}
-          onTouchEnd={() => {
-            const dragged = isDraggingRef.current;
-            handlePointerUp();
-            if (!dragged && !pending) {
-              if (validateAndScrollToMissingField()) {
-                formRef.current?.requestSubmit();
-              }
-            }
-          }}
-          onMouseDown={(e) => {
-            handlePointerDown(e.clientX, e.clientY);
-            const onMouseMove = (ev: MouseEvent) => handlePointerMove(ev.clientX, ev.clientY);
-            const onMouseUp = () => {
+        {/* الزر العائم الملكي لرفع الطلب للإدارة */}
+        {floatingPos && !state.ok && (
+          <div
+            style={{
+              position: "fixed",
+              left: `${floatingPos.x}px`,
+              top: `${floatingPos.y}px`,
+              zIndex: 9999,
+            }}
+            className="touch-none select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              if (t) handlePointerDown(t.clientX, t.clientY);
+            }}
+            onTouchMove={(e) => {
+              const t = e.touches[0];
+              if (t) handlePointerMove(t.clientX, t.clientY);
+            }}
+            onTouchEnd={() => {
               const dragged = isDraggingRef.current;
               handlePointerUp();
-              window.removeEventListener("mousemove", onMouseMove);
-              window.removeEventListener("mouseup", onMouseUp);
               if (!dragged && !pending) {
                 if (validateAndScrollToMissingField()) {
                   formRef.current?.requestSubmit();
                 }
               }
-            };
-            window.addEventListener("mousemove", onMouseMove);
-            window.addEventListener("mouseup", onMouseUp);
-          }}
-        >
-          <button
-            type="button"
-            disabled={pending}
-            className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-800 text-white shadow-[0_10px_25px_rgba(16,185,129,0.45)] border-2 border-white ring-4 ring-emerald-400/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-            title="رفع الطلب للإدارة (يمكنك سحب وتحريك الزر لأي مكان)"
+            }}
+            onMouseDown={(e) => {
+              handlePointerDown(e.clientX, e.clientY);
+              const onMouseMove = (ev: MouseEvent) => handlePointerMove(ev.clientX, ev.clientY);
+              const onMouseUp = () => {
+                const dragged = isDraggingRef.current;
+                handlePointerUp();
+                window.removeEventListener("mousemove", onMouseMove);
+                window.removeEventListener("mouseup", onMouseUp);
+                if (!dragged && !pending) {
+                  if (validateAndScrollToMissingField()) {
+                    formRef.current?.requestSubmit();
+                  }
+                }
+              };
+              window.addEventListener("mousemove", onMouseMove);
+              window.addEventListener("mouseup", onMouseUp);
+            }}
           >
-            {pending ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <>
-                <span className="text-lg leading-none mb-0.5">🚀</span>
-                <span className="text-[9px] font-black leading-tight text-center px-1">
-                  رفع الطلب<br />للإدارة
-                </span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {blockedPhone && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-3xl border-2 border-rose-100 bg-white p-6 shadow-2xl text-center animate-in zoom-in duration-300">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
-              <span className="text-3xl">🚫</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900">زبون محظور!</h3>
-            <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
-              عذراً، هذا الرقم محظور من التوصيل حالياً.
-              <br/>
-              <span className="font-mono text-rose-600 mt-1 block" dir="ltr">{blockedPhone}</span>
-            </p>
             <button
               type="button"
-              onClick={() => setBlockedPhone(null)}
-              className="mt-6 w-full rounded-2xl bg-slate-900 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition"
+              disabled={pending}
+              className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_8px_20px_rgba(10,61,46,0.5)] ring-4 ring-[#C9A86A]/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+              title="رفع الطلب للإدارة (يمكنك سحب وتحريك الزر)"
             >
-              فهمت ذلك
+              {pending ? (
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#F5D77F] border-t-transparent" />
+              ) : (
+                <>
+                  <span className="text-lg leading-none mb-0.5">🚀</span>
+                  <span className="text-[9px] font-black leading-tight text-center px-1">
+                    رفع الطلب<br />للإدارة
+                  </span>
+                </>
+              )}
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {showNoPriceConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600 mb-4">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        {/* تنبيه الزبون المحظور */}
+        {blockedPhone && (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm rounded-3xl border-2 border-rose-200 bg-white p-6 shadow-2xl text-center animate-in zoom-in duration-300">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                <span className="text-3xl">🚫</span>
               </div>
-              <h3 className="text-lg font-black text-slate-900">بدون سعر طلب؟</h3>
-              <p className="mt-2 text-sm font-medium text-slate-500 leading-relaxed">
-                لم تقم بإدخال سعر للطلب. هل تود الإرسال وترك السعر للمندوب؟
+              <h3 className="text-xl font-black text-slate-900">زبون محظور!</h3>
+              <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+                عذراً، هذا الرقم محظور من التوصيل حالياً.
+                <br />
+                <span className="font-mono text-rose-600 mt-1 block" dir="ltr">{blockedPhone}</span>
               </p>
-            </div>
-            <div className="mt-6 flex flex-col gap-2">
-              <button type="button" onClick={() => { setAllowNoPriceSubmit(true); setTimeout(() => formRef.current?.requestSubmit(), 0); setShowNoPriceConfirm(false); }} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white shadow-md transition hover:bg-emerald-700">
-                نعم، إرسال الطلب
-              </button>
-              <button type="button" onClick={() => { setShowNoPriceConfirm(false); orderPriceRef.current?.focus(); }} className="w-full rounded-2xl bg-slate-100 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-200">
-                تراجع، سأكتب السعر
+              <button
+                type="button"
+                onClick={() => setBlockedPhone(null)}
+                className="mt-6 w-full rounded-2xl bg-[#0A3D2E] border border-[#C9A86A] py-3 text-sm font-black text-[#F5D77F] shadow-lg active:scale-95 transition"
+              >
+                فهمت ذلك
               </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  </>
-);
+        )}
+
+        {/* تأكيد إرسال بدون سعر */}
+        {showNoPriceConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-sm rounded-3xl border-2 border-[#C9A86A] bg-[#FFFEFB] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] mb-4">
+                  <span className="text-2xl">💰</span>
+                </div>
+                <h3 className="text-lg font-black text-[#0A3D2E]">بدون سعر طلب؟</h3>
+                <p className="mt-2 text-sm font-bold text-slate-600 leading-relaxed">
+                  لم تقم بإدخال سعر للطلب. هل تود الإرسال وترك السعر للمندوب؟
+                </p>
+              </div>
+              <div className="mt-6 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAllowNoPriceSubmit(true);
+                    setTimeout(() => formRef.current?.requestSubmit(), 0);
+                    setShowNoPriceConfirm(false);
+                  }}
+                  className="w-full rounded-2xl bg-[#0A3D2E] border border-[#C9A86A] py-3.5 text-sm font-black text-[#F5D77F] shadow-md transition active:scale-95"
+                >
+                  نعم، إرسال الطلب
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNoPriceConfirm(false);
+                    orderPriceRef.current?.focus();
+                  }}
+                  className="w-full rounded-2xl bg-[#FFF8F0] border border-[#C9A86A]/40 py-3 text-sm font-black text-slate-700 transition hover:bg-[#FDF8EE]"
+                >
+                  تراجع، سأكتب السعر
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
