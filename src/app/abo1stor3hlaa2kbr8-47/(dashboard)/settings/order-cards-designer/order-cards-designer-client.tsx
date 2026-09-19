@@ -6008,7 +6008,7 @@ function OrderCardsLivePreview({
 
             {/* 2. كارت الزبون في المعاينة */}
             {showCustomerCard && (
-            <div className={showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
+            <div className="w-full">
               <div
                 onClick={(e) => handleElementClick(e, "cust_frame", "customer_card")}
                 className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${
@@ -6451,7 +6451,7 @@ function OrderCardsLivePreview({
 
             {/* 3. كارت تفاصيل ونوع الطلبية في المعاينة */}
             {showOrderInfoCard && (
-              <div className={showCustomerCard || showShopCard ? "-mt-4 sm:-mt-5.5" : "w-full"}>
+              <div className="w-full">
                 <div
                   onClick={(e) => handleElementClick(e, "orderInfo_frame", "order_info")}
                   className={`relative w-full rounded-[20px] sm:rounded-[26px] bg-no-repeat bg-[length:100%_100%] shadow-2xl overflow-hidden p-2 sm:p-3.5 md:p-4.5 transition-all mx-auto cursor-pointer ${

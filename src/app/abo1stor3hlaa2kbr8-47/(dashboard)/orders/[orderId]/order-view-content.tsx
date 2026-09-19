@@ -546,7 +546,7 @@ export function OrderViewContent({
           )}
 
           {!shouldCollapseSender && (
-            <div className="-mt-4 sm:-mt-5.5">
+            <div className="w-full">
               <AdminLuxuryCustomerCard
                 order={order}
                 customerName={(order as any).customerName || order.customer?.name || "الزبون"}
