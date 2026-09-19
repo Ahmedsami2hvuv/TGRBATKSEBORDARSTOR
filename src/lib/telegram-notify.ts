@@ -419,47 +419,68 @@ export async function formatNewOrderTelegramHtml(input: any, options?: any): Pro
 }
 
 export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: input.orderId },
-    include: { shop: true, customer: true, customerRegion: true, courier: true }
-  });
-  if (!order) return;
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: input.orderId },
+      include: { shop: true, customer: true, customerRegion: true, courier: true }
+    });
+    if (!order) return;
 
-  const baseUrl = getPublicAppUrl();
-  const header = input.kind === "pickup_out" ? "💸 للعميل (المحل) 💸" : "💸 من الزبون (المستلم) 💸";
-  const body = await formatOrderBodyLines({
-    ...order, 
-    shopName: (order.routeMode === "double" && order.submissionSource === "staff_portal") ? "طلب وجهتين" : order.shop.name, 
-    customerName: order.customer?.name ?? "",
-    regionName: order.customerRegion?.name ?? "" 
-  });
+    const baseUrl = getPublicAppUrl();
+    const isPickup = input.kind === "pickup_out";
+    const header = isPickup ? "💸 للعميل (المحل) 💸" : "💸 من الزبون (المستلم) 💸";
+    
+    let shopDisplayName = "المحل";
+    if (order.routeMode === "double" && order.submissionSource === "staff_portal") {
+      shopDisplayName = "طلب وجهتين";
+    } else if (order.shop?.name) {
+      shopDisplayName = order.shop.name;
+    }
 
-  const textBase = [
-    `\u200F${escapeTelegramHtml(header)}`,
-    `\u200F👤 ${escapeTelegramHtml(input.courierName)}`,
-    alfLine("💰", formatDinarAsAlf(input.amountDinar)),
-    ...body
-  ].join("\n");
+    const body = await formatOrderBodyLines({
+      ...order,
+      shopName: shopDisplayName,
+      customerName: order.customer?.name ?? "—",
+      regionName: order.customerRegion?.name ?? "—"
+    });
 
-  // إرسال للإدارة
-  const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(textBase, { botToken: notificationBotToken || "" });
+    const courierDisplayName = input.courierName?.trim() || order.courier?.name?.trim() || "المندوب";
+    const amountVal = input.amountDinar != null ? input.amountDinar : 0;
 
-  // إرسال للمندوب (رابط حسابه)
-  if (order.courier?.telegramUserId) {
-    const courierUrl = buildDelegatePortalUrl(order.courier.id, baseUrl);
-    const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
+    const textBase = [
+      `\u200F${escapeTelegramHtml(header)}`,
+      `\u200F👤 ${escapeTelegramHtml(courierDisplayName)}`,
+      alfLine("💰", formatDinarAsAlf(amountVal)),
+      ...body
+    ].join("\n");
 
-    // إضافة المبلغ الكلي للمندوب "💵 عندي"
-    const walletTotal = await computeMandoubWalletRemainAllTimeDinar(order.courier.id);
-    const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
+    // 1. إرسال للإدارة
+    const notificationBotToken = await getBotTokenByPurpose("notification");
+    if (notificationBotToken) {
+      await sendTelegramMessage(textBase, { botToken: notificationBotToken });
+    }
 
-    const courierText = textBase +
-      `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
-      `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
+    // 2. إرسال للمندوب (في محادثته الخاصة مع البوت)
+    const courierObj = order.courier || (order.assignedCourierId ? await prisma.courier.findUnique({ where: { id: order.assignedCourierId } }) : null);
+    if (courierObj?.telegramUserId) {
+      const courierUrl = buildDelegatePortalUrl(courierObj.id, baseUrl);
+      const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
 
-    const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
-    await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken, { disable_notification: false });
+      // إضافة المبلغ الكلي للمندوب "💵 عندي"
+      const walletTotal = await computeMandoubWalletRemainAllTimeDinar(courierObj.id);
+      const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
+
+      const courierText = textBase +
+        `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
+        `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
+
+      const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
+      if (courierBotToken) {
+        await sendTelegramHtmlToChat(courierObj.telegramUserId, courierText, courierBotToken, { disable_notification: false });
+      }
+    }
+  } catch (err) {
+    console.error("[notifyTelegramMoneyEvent exception]:", err);
   }
 }
 

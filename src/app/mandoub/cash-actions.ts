@@ -141,6 +141,19 @@ export async function submitMandoubPickupMoney(
       void notifyStaffOrderPickedUp(orderId).catch(() => {});
       revalidateAdminTrackingForStatusChange();
     }
+    const courierRow = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { name: true },
+    });
+    void notifyTelegramMoneyEvent({
+      orderId,
+      kind: MONEY_KIND_PICKUP,
+      amountDinar: new Decimal(0),
+      expectedDinar: expected,
+      matchesExpected: true,
+      courierName: courierRow?.name ?? "—",
+    }).catch(() => {});
+
     revalidateMandoubPaths(nextRaw);
     revalidatePath("/mandoub");
     revalidatePath(`/mandoub/order/${orderId}`);

@@ -106,6 +106,19 @@ export async function POST(req: NextRequest) {
           });
           void notifyStaffOrderPickedUp(cleanOrderId).catch(() => {});
         }
+        const courierRow = await prisma.courier.findUnique({
+          where: { id: v.courierId },
+          select: { name: true },
+        });
+        void notifyTelegramMoneyEvent({
+          orderId: cleanOrderId,
+          kind: MONEY_KIND_PICKUP,
+          amountDinar: new Decimal(0),
+          expectedDinar: expected,
+          matchesExpected: true,
+          courierName: courierRow?.name ?? "—",
+        }).catch((err) => console.error("[notifyTelegramMoneyEvent zero error]:", err));
+
         revalidateMandoubPaths(cleanOrderId);
         return NextResponse.json({ ok: true, success: true, status: "delivering" });
       }
