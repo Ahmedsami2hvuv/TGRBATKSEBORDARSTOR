@@ -29,6 +29,7 @@ import { orderStatusBadgeClass } from "@/lib/order-status-style";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { MandoubActionMenuModal } from "./mandoub-action-menu-modal";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
+import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -524,7 +525,7 @@ function MandoubFullBlockCardGrid({
     previewImageUrl: null,
   });
 
-  const handleOpenActionModal = (o: OrderTableRowData, type: "call" | "chat" | "location" | "door") => {
+  const handleOpenActionModal = (o: OrderTableRowData, type: "call" | "chat" | "location" | "door" | "customer") => {
     const custPhone = o.customerPhone || o.phoneLine || "";
     const shopPh = o.shopPhone || "";
     const secPhone = o.secondCustomerPhone || o.alternatePhone || "";
@@ -681,6 +682,69 @@ function MandoubFullBlockCardGrid({
         type: "door",
         options,
         previewImageUrl: options.length === 1 ? (custDoor || shopDoor || secDoor) : null,
+      });
+    } else if (type === "customer") {
+      const options: any[] = [];
+      // 1. خيار الطلب العكسي الفوري
+      options.push({
+        title: "🔄 إنشاء طلب عكسي فوري",
+        icon: "🔄",
+        colorVariant: "amber",
+        onClick: async () => {
+          toast.loading("جاري إنشاء الطلب العكسي...", { id: "reverse-mandoub-toast" });
+          try {
+            const res = await createReverseOrderFromExisting(o.id);
+            if (res.ok && res.newOrderId) {
+              toast.success(`تم إنشاء الطلب العكسي #${res.orderNumber || ""} بنجاح!`, { id: "reverse-mandoub-toast" });
+              router.refresh();
+            } else {
+              toast.error(res.error || "تعذر إنشاء الطلب العكسي", { id: "reverse-mandoub-toast" });
+            }
+          } catch (err: any) {
+            toast.error(err?.message || "حدث خطأ غير متوقع", { id: "reverse-mandoub-toast" });
+          }
+        },
+      });
+
+      // 2. اتصال
+      if (custPhone) {
+        options.push({
+          title: `اتصال: ${custPhone}`,
+          icon: "📞",
+          colorVariant: "emerald",
+          actionUrl: `tel:${custPhone}`,
+        });
+      }
+
+      // 3. مراسلة واتساب
+      if (custPhone) {
+        options.push({
+          title: "مراسلة عبر واتساب",
+          icon: "💬",
+          colorVariant: "emerald",
+          actionUrl: `https://wa.me/${custPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
+        });
+      }
+
+      // 4. نسخ الرقم
+      if (custPhone) {
+        options.push({
+          title: "نسخ رقم الهاتف",
+          icon: "📋",
+          colorVariant: "blue",
+          onClick: () => {
+            void navigator.clipboard.writeText(custPhone);
+            toast.success("تم نسخ رقم الهاتف بنجاح 📋");
+          },
+        });
+      }
+
+      setActionModalState({
+        isOpen: true,
+        title: `خيارات الزبون (${custPhone || "—"})`,
+        subtitle: `طلب رقم: ${o.shortId} - ${o.shopName || ""}`,
+        type: "customer",
+        options,
       });
     }
   };
@@ -1054,12 +1118,20 @@ function MandoubFullBlockCardGrid({
                           <div className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
                         )}
 
-                        {/* 2. رقم هاتف الزبون */}
-                        <div className="flex items-center px-0.5 min-w-0 truncate">
-                          <span className="text-[10px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all truncate">
+                        {/* 2. رقم هاتف الزبون (عند النقر يفتح خيارات الزبون والطلب العكسي) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenActionModal(o, "customer");
+                          }}
+                          className="flex items-center px-0.5 min-w-0 truncate hover:opacity-75 active:scale-95 transition cursor-pointer"
+                          title="خيارات الزبون والطلب العكسي 📱"
+                        >
+                          <span className="text-[10px] sm:text-xs font-mono font-black text-slate-900 tracking-tight truncate">
                             {o.customerPhone || o.phoneLine || "—"}
                           </span>
-                        </div>
+                        </button>
 
                         {/* 3. زر اللوكيشن 📍 */}
                         {((o.customerLocationUrl && o.shopLocationUrl) || o.secondCustomerLocationUrl) ? (

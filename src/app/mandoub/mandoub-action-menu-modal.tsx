@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 
-export type ModalActionType = "call" | "chat" | "location" | "door";
+export type ModalActionType = "call" | "chat" | "location" | "door" | "customer";
 
 export interface ModalActionOption {
   title: string;
@@ -155,7 +155,7 @@ export function MandoubActionMenuModal({
         {/* رأس النافذة المنبثقة الفاخر بدون أي إطار محيط بالأيقونة */}
         <div className="text-center pt-1 pb-1">
           <div className="text-3xl sm:text-4xl mb-1 flex items-center justify-center drop-shadow-md select-none">
-            {type === "chat" ? "💬" : type === "call" ? "📞" : type === "location" ? "📍" : "🚪"}
+            {type === "chat" ? "💬" : type === "call" ? "📞" : type === "location" ? "📍" : type === "door" ? "🚪" : "📱"}
           </div>
           <h3 className="text-base sm:text-lg font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {title}

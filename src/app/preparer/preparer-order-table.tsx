@@ -17,8 +17,9 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { PreparerOrderDetailSection } from "./preparer-order-detail-section";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
-import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { toast } from "sonner";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
+import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
 
 function getHeaderBannerWebp(orderStatus?: string) {
   switch (orderStatus) {
@@ -235,7 +236,7 @@ export function PreparerOrderTable({
     previewImageUrl: null,
   });
 
-  const handleOpenActionModal = (o: any, type: "call" | "chat" | "location" | "door") => {
+  const handleOpenActionModal = (o: any, type: "call" | "chat" | "location" | "door" | "customer") => {
     const custPhone = o.customerPhone || "";
     const shopPh = o.shopPhone || "";
     const secPhone = o.secondCustomerPhone || o.alternatePhone || "";
@@ -392,6 +393,69 @@ export function PreparerOrderTable({
         type: "door",
         options,
         previewImageUrl: options.length === 1 ? (custDoor || shopDoor || secDoor) : null,
+      });
+    } else if (type === "customer") {
+      const options: any[] = [];
+      // 1. خيار الطلب العكسي الفوري
+      options.push({
+        title: "🔄 إنشاء طلب عكسي فوري",
+        icon: "🔄",
+        colorVariant: "amber",
+        onClick: async () => {
+          toast.loading("جاري إنشاء الطلب العكسي...", { id: "reverse-preparer-toast" });
+          try {
+            const res = await createReverseOrderFromExisting(o.id);
+            if (res.ok && res.newOrderId) {
+              toast.success(`تم إنشاء الطلب العكسي #${res.orderNumber || ""} بنجاح!`, { id: "reverse-preparer-toast" });
+              router.refresh();
+            } else {
+              toast.error(res.error || "تعذر إنشاء الطلب العكسي", { id: "reverse-preparer-toast" });
+            }
+          } catch (err: any) {
+            toast.error(err?.message || "حدث خطأ غير متوقع", { id: "reverse-preparer-toast" });
+          }
+        },
+      });
+
+      // 2. اتصال
+      if (custPhone) {
+        options.push({
+          title: `اتصال: ${custPhone}`,
+          icon: "📞",
+          colorVariant: "emerald",
+          actionUrl: `tel:${custPhone}`,
+        });
+      }
+
+      // 3. مراسلة واتساب
+      if (custPhone) {
+        options.push({
+          title: "مراسلة عبر واتساب",
+          icon: "💬",
+          colorVariant: "emerald",
+          actionUrl: `https://wa.me/${custPhone.replace(/[^0-9]/g, "").replace(/^0/, "964")}`,
+        });
+      }
+
+      // 4. نسخ الرقم
+      if (custPhone) {
+        options.push({
+          title: "نسخ رقم الهاتف",
+          icon: "📋",
+          colorVariant: "blue",
+          onClick: () => {
+            void navigator.clipboard.writeText(custPhone);
+            toast.success("تم نسخ رقم الهاتف بنجاح 📋");
+          },
+        });
+      }
+
+      setActionModalState({
+        isOpen: true,
+        title: `خيارات الزبون (${custPhone || "—"})`,
+        subtitle: `طلب رقم: #${o.shortId} - ${o.shopName || ""}`,
+        type: "customer",
+        options,
       });
     }
   };
