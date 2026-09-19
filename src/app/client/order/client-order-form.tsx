@@ -692,11 +692,15 @@ function ClientOrderFormInner({
               </p>
             </div>
 
-            {/* العبارة الملكية الفاخرة */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] p-3 shadow-md text-[#F5D77F] border border-[#C9A86A]/50 mb-4">
-              <p className="text-center text-xs sm:text-sm font-black italic tracking-wide">
-                "خدمتكم تسعدنا وطلباتكم أمانة لدينا"
-              </p>
+            {/* العبارة الملكية الفاخرة المشرقة */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFF8F0] via-[#FFFEFA] to-[#FFF8F0] border-2 border-[#C9A86A]/50 p-3 shadow-xs mb-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-[#C9A86A] text-xs">✨</span>
+                <p className="text-center text-xs sm:text-sm font-black text-[#0A3D2E] tracking-wide">
+                  "خدمتكم تسعدنا وطلباتكم أمانة لدينا"
+                </p>
+                <span className="text-[#C9A86A] text-xs">✨</span>
+              </div>
             </div>
 
             {/* الأزرار العلوية: سجل الديون + السجل */}
