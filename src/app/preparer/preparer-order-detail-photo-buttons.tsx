@@ -7,7 +7,6 @@ import {
   uploadPreparerPortalOrderImage,
   uploadPreparerPortalShopDoorPhoto,
 } from "./actions";
-import { LiveCameraModal } from "@/components/live-camera-modal";
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
@@ -25,11 +24,11 @@ export function PreparerDetailPhotoUploadRow({
   onUploaded?: (newUrl: string, uploaderName?: string) => void;
 }) {
   const router = useRouter();
+  const camRef = useRef<HTMLInputElement>(null);
   const galRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   async function submitFile(file: File) {
     setError(null);
@@ -70,6 +69,7 @@ export function PreparerDetailPhotoUploadRow({
       setError("تعذر رفع الصورة، يرجى المحاولة مجدداً.");
     } finally {
       setBusy(false);
+      if (camRef.current) camRef.current.value = "";
       if (galRef.current) galRef.current.value = "";
     }
   }
@@ -81,10 +81,22 @@ export function PreparerDetailPhotoUploadRow({
   }
 
   const fieldLabel = field === "orderImage" ? "صورة الطلبية" : "صورة باب المحل";
+  const camInputId = `prep-cam-${orderId}-${field}`;
   const galInputId = `prep-gal-${orderId}-${field}`;
 
   return (
     <div className="mt-3 space-y-2 select-none" dir="rtl">
+      {/* مدخلات الكاميرا والمعرض المباشرة للجهاز */}
+      <input
+        id={camInputId}
+        ref={camRef}
+        type="file"
+        accept={ACCEPT}
+        capture="environment"
+        className="sr-only"
+        disabled={busy}
+        onChange={onPick}
+      />
       <input
         id={galInputId}
         ref={galRef}
@@ -99,7 +111,7 @@ export function PreparerDetailPhotoUploadRow({
         <button
           type="button"
           disabled={busy}
-          onClick={() => setCameraModalOpen(true)}
+          onClick={() => camRef.current?.click()}
           aria-label={`التقاط ${fieldLabel} بالكاميرا`}
           className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
             busy ? "opacity-50 pointer-events-none" : ""
@@ -121,11 +133,10 @@ export function PreparerDetailPhotoUploadRow({
         </button>
 
         {/* زر المعرض الملكي العاجي المذهب المباشر */}
-        <label
-          htmlFor={galInputId}
-          onClick={(e) => {
-            if (busy) e.preventDefault();
-          }}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => galRef.current?.click()}
           aria-label={`اختيار ${fieldLabel} من المعرض`}
           className={`h-[38px] rounded-[11px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer font-black text-[12px] sm:text-[13px] ${
             busy ? "opacity-50 pointer-events-none" : ""
@@ -145,7 +156,7 @@ export function PreparerDetailPhotoUploadRow({
             <path d="m21 15-5-5L5 21" />
           </svg>
           <span>المعرض</span>
-        </label>
+        </button>
       </div>
 
       {busy ? (
@@ -156,14 +167,6 @@ export function PreparerDetailPhotoUploadRow({
       ) : null}
       {error ? <p className="text-center text-xs font-bold text-rose-600 bg-rose-50 py-1 px-2 rounded-lg border border-rose-200">{error}</p> : null}
       {success ? <p className="text-center text-xs font-black text-emerald-700 bg-emerald-50 py-1 px-2 rounded-lg border border-emerald-300 animate-in fade-in">{success}</p> : null}
-
-      {/* نافذة الكاميرا الحية المباشرة */}
-      <LiveCameraModal
-        isOpen={cameraModalOpen}
-        onClose={() => setCameraModalOpen(false)}
-        onCapture={(file) => void submitFile(file)}
-        title={`التقاط ${fieldLabel}`}
-      />
     </div>
   );
 }
