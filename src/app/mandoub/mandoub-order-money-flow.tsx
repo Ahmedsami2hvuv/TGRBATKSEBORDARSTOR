@@ -118,7 +118,48 @@ export function MandoubOrderMoneyFlow({
     setDeliveryAdvanceToDelivered(false);
   };
 
-  const handleInstantDeliveryOptimistic = (amtAlf: string, note?: string) => {
+  const triggerBackgroundMoneyRecord = async (payload: {
+    type: "pickup" | "delivery";
+    amountAlf: string;
+    mismatchNote?: string;
+    advanceStatus?: string;
+    submitMode?: string;
+    lat?: string | number;
+    lng?: string | number;
+  }) => {
+    try {
+      const res = await fetch("/api/mandoub/record-money", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...payload,
+          orderId,
+          c: auth.c,
+          exp: auth.exp,
+          s: auth.s,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setToastMsg({ text: data.error || "حدث خطأ أثناء الحفظ بالسيرفر.", type: "error" });
+        setLocalEvents(moneyEvents); // تراجع في حال الخطأ
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      console.error("Background money record error:", err);
+      setToastMsg({ text: "تعذّر الاتصال بالسيرفر لحفظ المعاملة.", type: "error" });
+      setLocalEvents(moneyEvents);
+    }
+  };
+
+  const handleInstantDeliveryOptimistic = (
+    amtAlf: string,
+    note?: string,
+    lat?: string | number,
+    lng?: string | number,
+    submitMode?: string,
+  ) => {
     const numAlf = Number(amtAlf || 0);
     const amountDinar = Number.isFinite(numAlf) ? numAlf * 1000 : 0;
     const optimisticEv: MandoubMoneyEventUi = {
@@ -132,7 +173,9 @@ export function MandoubOrderMoneyFlow({
       recordedAt: new Date().toISOString(),
       deletedAt: null,
       deletedReason: null,
-      courierName: courierName || "أنت",
+      deletedByDisplayName: null,
+      performedByDisplayName: courierName || "المندوب",
+      recordedByCompanyPreparerId: null,
     };
     setLocalEvents((prev) => [optimisticEv, ...prev.filter((e) => e.kind !== MONEY_KIND_DELIVERY || e.deletedAt != null)]);
     window.dispatchEvent(
@@ -140,10 +183,26 @@ export function MandoubOrderMoneyFlow({
         detail: { orderId, status: "delivered" },
       }),
     );
+    setToastMsg({ text: "تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉", type: "success" });
     closePanels();
+    void triggerBackgroundMoneyRecord({
+      type: "delivery",
+      amountAlf: amtAlf,
+      mismatchNote: note,
+      advanceStatus:
+        deliveryAdvanceToDelivered ||
+        orderStatus === "delivering" ||
+        orderStatus === "assigned" ||
+        orderStatus === "pending"
+          ? "delivered"
+          : "",
+      submitMode: submitMode || (amtAlf === "0" ? "statusOnlyNoAmount" : ""),
+      lat,
+      lng,
+    });
   };
 
-  const handleInstantPickupOptimistic = (amtAlf: string, note?: string) => {
+  const handleInstantPickupOptimistic = (amtAlf: string, note?: string, submitMode?: string) => {
     const numAlf = Number(amtAlf || 0);
     const amountDinar = Number.isFinite(numAlf) ? numAlf * 1000 : 0;
     const optimisticEv: MandoubMoneyEventUi = {
@@ -153,11 +212,13 @@ export function MandoubOrderMoneyFlow({
       expectedDinar: orderSubtotalDinar,
       matchesExpected: true,
       mismatchReason: "",
-      mismatchNote: note || "",
+      mismatchNote: note || (amountDinar === 0 ? "لم أدفع (0)" : ""),
       recordedAt: new Date().toISOString(),
       deletedAt: null,
       deletedReason: null,
-      courierName: courierName || "أنت",
+      deletedByDisplayName: null,
+      performedByDisplayName: courierName || "المندوب",
+      recordedByCompanyPreparerId: null,
     };
     setLocalEvents((prev) => [optimisticEv, ...prev.filter((e) => e.kind !== MONEY_KIND_PICKUP || e.deletedAt != null)]);
     window.dispatchEvent(
@@ -165,7 +226,20 @@ export function MandoubOrderMoneyFlow({
         detail: { orderId, status: "delivering" },
       }),
     );
+    setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح! ⚡", type: "success" });
     closePanels();
+    void triggerBackgroundMoneyRecord({
+      type: "pickup",
+      amountAlf: amtAlf,
+      mismatchNote: note,
+      advanceStatus:
+        pickupAdvanceToDelivering ||
+        orderStatus === "assigned" ||
+        orderStatus === "pending"
+          ? "delivering"
+          : "",
+      submitMode: submitMode || (amtAlf === "0" ? "statusOnlyNoAmount" : ""),
+    });
   };
 
   useEffect(() => {
@@ -509,7 +583,7 @@ function MandoubPickupModal({
   pickupAction: (formData: FormData) => void | Promise<void>;
   pickupPending: boolean;
   onClose: () => void;
-  onInstantOptimistic?: (amtAlf: string, note?: string) => void;
+  onInstantOptimistic?: (amtAlf: string, note?: string, submitMode?: string) => void;
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
@@ -548,10 +622,12 @@ function MandoubPickupModal({
             action={pickupAction}
             className="space-y-4"
             onSubmit={(e) => {
+              e.preventDefault();
               const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
-                amtInput.value = defaultAlf || "0";
-              }
+              const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
+              const val = (amtInput?.value || amountAlf || defaultAlf || "0").trim();
+              const note = noteInput?.value || "";
+              onInstantOptimistic?.(val, note);
             }}
           >
             <input type="hidden" name="c" value={auth.c} />
@@ -574,14 +650,7 @@ function MandoubPickupModal({
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
-                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
-                  if (modeInput) modeInput.value = "";
-                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.value = defaultAlf;
                   onInstantOptimistic?.(defaultAlf);
-                  setTimeout(() => {
-                    formRef.current?.requestSubmit();
-                  }, 10);
                 }}
                 color="emerald"
               />
@@ -592,14 +661,7 @@ function MandoubPickupModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
-                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
-                  if (modeInput) modeInput.value = "statusOnlyNoAmount";
-                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.value = "0";
-                  onInstantOptimistic?.("0");
-                  setTimeout(() => {
-                    formRef.current?.requestSubmit();
-                  }, 10);
+                  onInstantOptimistic?.("0", undefined, "statusOnlyNoAmount");
                 }}
                 color="emerald"
               />
@@ -648,9 +710,6 @@ function MandoubPickupModal({
             <div className="flex gap-3">
               <button
                 type="submit"
-                onClick={() => {
-                  onInstantOptimistic?.(amountAlf || defaultAlf || "0");
-                }}
                 disabled={pickupPending}
                 className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
@@ -694,7 +753,7 @@ function MandoubDeliveryModal({
   deliveryPending: boolean;
   onClose: () => void;
   missingCustomerLocation: boolean;
-  onInstantOptimistic?: (amtAlf: string, note?: string) => void;
+  onInstantOptimistic?: (amtAlf: string, note?: string, lat?: string | number, lng?: string | number, submitMode?: string) => void;
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
@@ -711,12 +770,11 @@ function MandoubDeliveryModal({
     amountAlf.trim() !== "0" &&
     selectedBox !== "zero";
 
-  function submitAfterLocation() {
+  function submitAfterLocation(latVal?: string, lngVal?: string) {
     setLocationModalOpen(false);
-    onInstantOptimistic?.(amountAlf || defaultAlf || "0");
-    setTimeout(() => {
-      formRef.current?.requestSubmit();
-    }, 10);
+    const amt = amountAlf || defaultAlf || "0";
+    const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
+    onInstantOptimistic?.(amt, noteInput?.value || "", latVal, lngVal, amt === "0" ? "statusOnlyNoAmount" : "");
   }
 
   function onConfirmGps() {
@@ -727,13 +785,8 @@ function MandoubDeliveryModal({
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (latRef.current && lngRef.current) {
-          latRef.current.value = String(pos.coords.latitude);
-          lngRef.current.value = String(pos.coords.longitude);
-        }
         locationPromptDoneRef.current = true;
-        setLocationModalOpen(false);
-        submitAfterLocation();
+        submitAfterLocation(String(pos.coords.latitude), String(pos.coords.longitude));
       },
       () => {
         setGeoError("تعذّر قراءة موقعك. تأكد من تفعيل GPS والسماح للمتصفح بالموقع ثم أعد المحاولة.");
@@ -743,10 +796,7 @@ function MandoubDeliveryModal({
   }
 
   function onSkipLocation() {
-    if (latRef.current) latRef.current.value = "";
-    if (lngRef.current) lngRef.current.value = "";
     locationPromptDoneRef.current = true;
-    setLocationModalOpen(false);
     submitAfterLocation();
   }
 
@@ -778,14 +828,13 @@ function MandoubDeliveryModal({
             action={deliveryAction}
             className="space-y-4"
             onSubmit={(e) => {
-              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-              if (amtInput && !amtInput.value.trim() && selectedBox !== "zero") {
-                amtInput.value = defaultAlf || "0";
-              }
+              e.preventDefault();
               if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                e.preventDefault();
                 setGeoError("");
                 setLocationModalOpen(true);
+              } else {
+                const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
+                onInstantOptimistic?.(amountAlf || defaultAlf || "0", noteInput?.value || "", latRef.current?.value, lngRef.current?.value);
               }
             }}
           >
@@ -811,18 +860,11 @@ function MandoubDeliveryModal({
                 onClick={() => {
                   setAmountAlf(defaultAlf);
                   setSelectedBox("num");
-                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
-                  if (modeInput) modeInput.value = "";
-                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.value = defaultAlf;
                   if (missingCustomerLocation && !locationPromptDoneRef.current) {
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
                     onInstantOptimistic?.(defaultAlf);
-                    setTimeout(() => {
-                      formRef.current?.requestSubmit();
-                    }, 10);
                   }
                 }}
                 color="orange"
@@ -834,18 +876,11 @@ function MandoubDeliveryModal({
                 onClick={() => {
                   setAmountAlf("0");
                   setSelectedBox("zero");
-                  const modeInput = formRef.current?.querySelector('input[name="mandoubMoneySubmitMode"]') as HTMLInputElement;
-                  if (modeInput) modeInput.value = "statusOnlyNoAmount";
-                  const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-                  if (amtInput) amtInput.value = "0";
                   if (missingCustomerLocation && !locationPromptDoneRef.current) {
                     setGeoError("");
                     setLocationModalOpen(true);
                   } else {
-                    onInstantOptimistic?.("0");
-                    setTimeout(() => {
-                      formRef.current?.requestSubmit();
-                    }, 10);
+                    onInstantOptimistic?.("0", undefined, undefined, undefined, "statusOnlyNoAmount");
                   }
                 }}
                 color="orange"
@@ -895,11 +930,6 @@ function MandoubDeliveryModal({
             <div className="flex gap-3">
               <button
                 type="submit"
-                onClick={() => {
-                  if (!missingCustomerLocation || locationPromptDoneRef.current) {
-                    onInstantOptimistic?.(amountAlf || defaultAlf || "0");
-                  }
-                }}
                 disabled={deliveryPending}
                 className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
@@ -975,7 +1005,7 @@ function MandoubDeliveryModal({
   );
 }
 
-/* مكونات المربعات التفاعلية الفاخرة المطابقة لـ Mnt-Data-Photo3607594841302210502-Jpeg.html */
+/* مكونات المربعات التفاعلية الفاخرة المطابقة للتصميم الملكي */
 function MandoubAmountSquareBtn({
   value,
   selected,
@@ -1043,7 +1073,7 @@ function MandoubZeroSquareBtn({
         rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : "#E8E0D0",
@@ -1081,6 +1111,7 @@ export function PickupMoneyForm({
   error,
   onClose,
   noRedirect = false,
+  onInstantOptimistic,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -1096,6 +1127,7 @@ export function PickupMoneyForm({
   error?: string;
   onClose: () => void;
   noRedirect?: boolean;
+  onInstantOptimistic?: (amtAlf: string, note?: string, submitMode?: string) => void;
 }) {
   const targetValue = remainingAlfHint || expectedAlfHint || "";
   const [amount, setAmount] = useState("");
@@ -1113,6 +1145,28 @@ export function PickupMoneyForm({
 
   const isMismatch = amount.trim() !== "" && amount.trim() !== targetValue && amount.trim() !== "0" && selectedBox !== "zero";
 
+  const triggerDirect = (val: string, customNote?: string, submitMode?: string) => {
+    if (onInstantOptimistic) {
+      onInstantOptimistic(val, customNote || note, submitMode);
+    }
+    // إرسال مباشر بالخلفية لضمان الحفظ 100% في سوبابيس
+    void fetch("/api/mandoub/record-money", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "pickup",
+        orderId,
+        c: auth.c,
+        exp: auth.exp,
+        s: auth.s,
+        amountAlf: val,
+        mismatchNote: customNote || note,
+        advanceStatus: advanceToDelivering ? "delivering" : "",
+        submitMode: submitMode || (val === "0" ? "statusOnlyNoAmount" : ""),
+      }),
+    }).catch((err) => console.error("Pickup background error:", err));
+  };
+
   return (
     <div className="space-y-4 select-none" dir="rtl">
       <form
@@ -1120,8 +1174,14 @@ export function PickupMoneyForm({
         action={formAction}
         className="space-y-4"
         onSubmit={(e) => {
-          if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
-            amountRef.current.value = targetValue || "0";
+          if (onInstantOptimistic) {
+            e.preventDefault();
+            const val = amountRef.current?.value || amount || targetValue || "0";
+            triggerDirect(val, noteRef.current?.value || note);
+          } else {
+            if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
+              amountRef.current.value = targetValue || "0";
+            }
           }
         }}
       >
@@ -1164,9 +1224,7 @@ export function PickupMoneyForm({
               setSelectedBox("num");
               if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
               if (amountRef.current) amountRef.current.value = targetValue;
-              setTimeout(() => {
-                formRef.current?.requestSubmit();
-              }, 30);
+              triggerDirect(targetValue);
             }}
             color="emerald"
           />
@@ -1183,9 +1241,7 @@ export function PickupMoneyForm({
               if (amountRef.current) {
                 amountRef.current.value = "0";
               }
-              setTimeout(() => {
-                formRef.current?.requestSubmit();
-              }, 30);
+              triggerDirect("0", undefined, "statusOnlyNoAmount");
             }}
             color="emerald"
           />
@@ -1243,7 +1299,7 @@ export function PickupMoneyForm({
             style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
           >
             <span>💾</span>
-            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الصادر"}</span>
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الصادر ⚡"}</span>
           </button>
           <button
             type="button"
@@ -1276,6 +1332,7 @@ export function DeliveryMoneyForm({
   missingCustomerLocation,
   noRedirect = false,
   prepaidAll = false,
+  onInstantOptimistic,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -1293,6 +1350,7 @@ export function DeliveryMoneyForm({
   missingCustomerLocation: boolean;
   noRedirect?: boolean;
   prepaidAll?: boolean;
+  onInstantOptimistic?: (amtAlf: string, note?: string, lat?: string | number, lng?: string | number, submitMode?: string) => void;
 }) {
   const targetValue = remainingAlfHint || expectedAlfHint || "";
   const [amount, setAmount] = useState("");
@@ -1326,17 +1384,34 @@ export function DeliveryMoneyForm({
 
   const isMismatch = (amount.trim() !== "" && amount.trim() !== targetValue && amount.trim() !== "0" && selectedBox !== "zero") || prepaidConfirmState === "took_money";
 
-  function submitDeliveryAfterLocationChoice() {
+  const triggerDirect = (val: string, customNote?: string, latVal?: string | number, lngVal?: string | number, submitMode?: string) => {
+    if (onInstantOptimistic) {
+      onInstantOptimistic(val, customNote || note, latVal, lngVal, submitMode);
+    }
+    // إرسال مباشر بالخلفية لضمان الحفظ 100% في سوبابيس
+    void fetch("/api/mandoub/record-money", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "delivery",
+        orderId,
+        c: auth.c,
+        exp: auth.exp,
+        s: auth.s,
+        amountAlf: val,
+        mismatchNote: customNote || note,
+        advanceStatus: advanceToDelivered ? "delivered" : "",
+        submitMode: submitMode || (val === "0" ? "statusOnlyNoAmount" : ""),
+        lat: latVal,
+        lng: lngVal,
+      }),
+    }).catch((err) => console.error("Delivery background error:", err));
+  };
+
+  function submitDeliveryAfterLocationChoice(latVal?: string, lngVal?: string) {
     const isSkip = pendingAfterLocationRef.current === "skip";
-    if (deliverySubmitModeRef.current) {
-      deliverySubmitModeRef.current.value = isSkip ? "statusOnlyNoAmount" : "";
-    }
-    if (isSkip && amountRef.current) {
-      amountRef.current.value = "0";
-    } else if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
-      amountRef.current.value = targetValue || "0";
-    }
-    formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+    const amt = isSkip ? "0" : (amount || targetValue || "0");
+    triggerDirect(amt, note, latVal, lngVal, isSkip ? "statusOnlyNoAmount" : "");
   }
 
   function onConfirmGps() {
@@ -1347,13 +1422,9 @@ export function DeliveryMoneyForm({
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (latRef.current && lngRef.current) {
-          latRef.current.value = String(pos.coords.latitude);
-          lngRef.current.value = String(pos.coords.longitude);
-        }
         locationPromptDoneRef.current = true;
         setLocationModalOpen(false);
-        submitDeliveryAfterLocationChoice();
+        submitDeliveryAfterLocationChoice(String(pos.coords.latitude), String(pos.coords.longitude));
       },
       () => {
         setGeoError(
@@ -1365,8 +1436,6 @@ export function DeliveryMoneyForm({
   }
 
   function onSkipLocation() {
-    if (latRef.current) latRef.current.value = "";
-    if (lngRef.current) lngRef.current.value = "";
     locationPromptDoneRef.current = true;
     setLocationModalOpen(false);
     submitDeliveryAfterLocationChoice();
@@ -1379,16 +1448,17 @@ export function DeliveryMoneyForm({
         action={formAction}
         className="space-y-4"
         onSubmit={(e) => {
-          if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
-            amountRef.current.value = targetValue || "0";
-          }
-          const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+          const sub = (e.nativeEvent as SubmitEvent)?.submitter as HTMLButtonElement | null;
           pendingAfterLocationRef.current =
             sub?.dataset?.mandoubAction === "skip-no-amount" ? "skip" : "main";
           if (missingCustomerLocation && !locationPromptDoneRef.current) {
             e.preventDefault();
             setGeoError("");
             setLocationModalOpen(true);
+          } else if (onInstantOptimistic) {
+            e.preventDefault();
+            const val = amountRef.current?.value || amount || targetValue || "0";
+            triggerDirect(val, noteRef.current?.value || note, latRef.current?.value, lngRef.current?.value);
           }
         }}
       >
@@ -1430,16 +1500,12 @@ export function DeliveryMoneyForm({
             onClick={() => {
               setAmount(targetValue);
               setSelectedBox("num");
-              if (deliverySubmitModeRef.current) deliverySubmitModeRef.current.value = "";
-              if (amountRef.current) amountRef.current.value = targetValue;
-              setTimeout(() => {
-                if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                  setGeoError("");
-                  setLocationModalOpen(true);
-                } else {
-                  formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-                }
-              }, 30);
+              if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                setGeoError("");
+                setLocationModalOpen(true);
+              } else {
+                triggerDirect(targetValue);
+              }
             }}
             color="orange"
           />
@@ -1450,20 +1516,12 @@ export function DeliveryMoneyForm({
             onClick={() => {
               setAmount("0");
               setSelectedBox("zero");
-              if (deliverySubmitModeRef.current) {
-                deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
+              if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                setGeoError("");
+                setLocationModalOpen(true);
+              } else {
+                triggerDirect("0", undefined, undefined, undefined, "statusOnlyNoAmount");
               }
-              if (amountRef.current) {
-                amountRef.current.value = "0";
-              }
-              setTimeout(() => {
-                if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                  setGeoError("");
-                  setLocationModalOpen(true);
-                } else {
-                  formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
-                }
-              }, 30);
             }}
             color="orange"
           />
@@ -1522,7 +1580,7 @@ export function DeliveryMoneyForm({
             style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
           >
             <span>💾</span>
-            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الوارد"}</span>
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الوارد ⚡"}</span>
           </button>
           <button
             type="button"
@@ -1590,3 +1648,4 @@ export function DeliveryMoneyForm({
     </div>
   );
 }
+

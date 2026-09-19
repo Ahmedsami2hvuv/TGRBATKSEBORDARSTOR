@@ -1826,6 +1826,12 @@ export function MandoubOrderTable({
                   error={pickupState.error}
                   onClose={() => setPickupOrder(null)}
                   noRedirect
+                  onInstantOptimistic={(amt, note) => {
+                    const currentId = pickupOrder.id;
+                    setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivering" }));
+                    setPickupOrder(null);
+                    toast.success("تم استلام الطلب وتسجيل الصادر بنجاح! ⚡");
+                  }}
                 />
               </div>
             </div>
@@ -1878,6 +1884,12 @@ export function MandoubOrderTable({
                   onClose={() => setDeliveryOrder(null)}
                   missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
                   noRedirect
+                  onInstantOptimistic={(amt, note, lat, lng) => {
+                    const currentId = deliveryOrder.id;
+                    setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivered" }));
+                    setDeliveryOrder(null);
+                    toast.success("تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉");
+                  }}
                 />
               </div>
             </div>
