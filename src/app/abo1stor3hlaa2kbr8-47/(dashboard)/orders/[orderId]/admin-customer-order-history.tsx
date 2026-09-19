@@ -48,6 +48,7 @@ export function AdminCustomerPhoneInteractive({
   customerLocationUrl,
   customerLandmark,
   customerProfileId,
+  userRole = "admin",
 }: {
   phone: string;
   formattedPhone?: string;
@@ -59,6 +60,7 @@ export function AdminCustomerPhoneInteractive({
   customerLocationUrl?: string;
   customerLandmark?: string;
   customerProfileId?: string | null;
+  userRole?: "admin" | "mandoub" | "preparer" | string;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -67,6 +69,7 @@ export function AdminCustomerPhoneInteractive({
   const [reverseError, setReverseError] = useState<string | null>(null);
   const router = useRouter();
 
+  const isAdmin = userRole === "admin";
   const displayPhone = formattedPhone || phone;
 
   const copyPhone = async () => {
@@ -87,7 +90,12 @@ export function AdminCustomerPhoneInteractive({
       const res = await createReverseOrderFromExisting(currentOrderId);
       if (res.ok && res.newOrderId) {
         setShowMenu(false);
-        router.push(`${SECRET_ADMIN_PATH}/orders/${res.newOrderId}`);
+        if (userRole === "mandoub") {
+          const search = typeof window !== "undefined" ? window.location.search : "";
+          router.push(`/mandoub/order/${res.newOrderId}${search}`);
+        } else {
+          router.push(`${SECRET_ADMIN_PATH}/orders/${res.newOrderId}`);
+        }
       } else {
         setReverseError(res.error || "تعذر إنشاء الطلب العكسي");
       }
@@ -107,7 +115,7 @@ export function AdminCustomerPhoneInteractive({
           setShowMenu(true);
         }}
         className="group inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/80 hover:bg-sky-100/80 active:scale-95 px-2.5 py-1 text-sm font-black text-sky-950 transition-all cursor-pointer shadow-2xs"
-        title="انقر لعرض ملف الزبون أو طلباته السابقة"
+        title={isAdmin ? "انقر لعرض خيارات الزبون والطلب العكسي والسجل" : "انقر لخيارات الزبون والطلب العكسي"}
       >
         <span className="font-mono text-slate-900 font-extrabold">{displayPhone}</span>
         <span className="text-xs text-sky-600 group-hover:text-sky-800">⚡</span>
@@ -144,50 +152,54 @@ export function AdminCustomerPhoneInteractive({
             )}
 
             <div className="space-y-2.5">
-              {/* خيار: ملف الزبون */}
-              {customerProfileId ? (
-                <Link
-                  href={`${SECRET_ADMIN_PATH}/customers/profiles/${customerProfileId}/edit`}
-                  onClick={() => setShowMenu(false)}
-                  className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-lg">📁</span>
-                    <span>فتح ملف الزبون</span>
-                  </span>
-                  <span className="text-xs font-bold text-sky-700">تعديل الملف ⬅️</span>
-                </Link>
-              ) : (
-                <Link
-                  href={`${SECRET_ADMIN_PATH}/customers/info?phone=${encodeURIComponent(phone)}${regionId ? `&regionId=${encodeURIComponent(regionId)}` : ""}`}
-                  onClick={() => setShowMenu(false)}
-                  className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-lg">📁</span>
-                    <span>ملف وبيانات الزبون</span>
-                  </span>
-                  <span className="text-xs font-bold text-sky-700">عرض ⬅️</span>
-                </Link>
+              {/* خيار: ملف الزبون (للإدارة فقط) */}
+              {isAdmin && (
+                customerProfileId ? (
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/customers/profiles/${customerProfileId}/edit`}
+                    onClick={() => setShowMenu(false)}
+                    className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span className="text-lg">📁</span>
+                      <span>فتح ملف الزبون</span>
+                    </span>
+                    <span className="text-xs font-bold text-sky-700">تعديل الملف ⬅️</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/customers/info?phone=${encodeURIComponent(phone)}${regionId ? `&regionId=${encodeURIComponent(regionId)}` : ""}`}
+                    onClick={() => setShowMenu(false)}
+                    className="flex w-full items-center justify-between rounded-2xl border-2 border-sky-300 bg-sky-50/70 hover:bg-sky-100/90 p-3.5 text-sm font-black text-sky-950 shadow-xs transition-all active:scale-[0.98]"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span className="text-lg">📁</span>
+                      <span>ملف وبيانات الزبون</span>
+                    </span>
+                    <span className="text-xs font-bold text-sky-700">عرض ⬅️</span>
+                  </Link>
+                )
               )}
 
-              {/* خيار: عرض طلبات الزبون السابقة */}
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowHistory(true);
-                }}
-                className="flex w-full items-center justify-between rounded-2xl border-2 border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 p-3.5 text-sm font-black text-emerald-950 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <span className="flex items-center gap-2.5">
-                  <span className="text-lg">📜</span>
-                  <span>طلبات الزبون السابقة</span>
-                </span>
-                <span className="text-xs font-bold text-emerald-700">عرض السجل ⬅️</span>
-              </button>
+              {/* خيار: عرض طلبات الزبون السابقة (للإدارة فقط) */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowHistory(true);
+                  }}
+                  className="flex w-full items-center justify-between rounded-2xl border-2 border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 p-3.5 text-sm font-black text-emerald-950 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-lg">📜</span>
+                    <span>طلبات الزبون السابقة</span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-700">عرض السجل ⬅️</span>
+                </button>
+              )}
 
-              {/* خيار: إنشاء طلب عكسي */}
+              {/* خيار: إنشاء طلب عكسي (للجميع: مندوب وإدارة) */}
               <button
                 type="button"
                 disabled={isCreatingReverse}

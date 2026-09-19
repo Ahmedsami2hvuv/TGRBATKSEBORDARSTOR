@@ -46,6 +46,7 @@ export function AdminLuxuryCustomerCard({
   doorPhotoUploadedByName,
   designerConfig,
   phoneProfile,
+  userRole = "admin",
   headerAction,
   smartHintNode,
   children,
@@ -68,6 +69,7 @@ export function AdminLuxuryCustomerCard({
   doorPhotoUploadedByName?: string | null;
   designerConfig?: OrderCardDesignerConfig;
   phoneProfile?: any;
+  userRole?: "admin" | "mandoub" | "preparer" | string;
   headerAction?: React.ReactNode;
   smartHintNode?: React.ReactNode;
   children?: React.ReactNode;
@@ -385,6 +387,7 @@ export function AdminLuxuryCustomerCard({
                         customerLocationUrl={effectiveLocationUrl || undefined}
                         customerLandmark={landmarkTextState || undefined}
                         customerProfileId={effectiveProfileId}
+                        userRole={userRole}
                       />
                     </div>
                   ) : (
@@ -408,6 +411,7 @@ export function AdminLuxuryCustomerCard({
                       customerLocationUrl={effectiveLocationUrl || undefined}
                       customerLandmark={landmarkTextState || undefined}
                       customerProfileId={effectiveProfileId}
+                      userRole={userRole}
                     />
                   </div>
                 )}

@@ -551,6 +551,7 @@ export function OrderDetailSection({
                   isDoubleRoute={isDoubleRoute}
                   designerConfig={designerConfig || undefined}
                   phoneProfile={phoneProfile}
+                  userRole="mandoub"
                   headerAction={
                     <OtherRegionsCustomerDetails
                       phone={order.customerPhone}
@@ -644,6 +645,7 @@ export function OrderDetailSection({
                     alternatePhone={mergedSecondAlternate || order.secondCustomerAlternatePhone || order.secondCustomerPhone2}
                     designerConfig={designerConfig || undefined}
                     phoneProfile={secondPhoneProfile}
+                    userRole="mandoub"
                     headerAction={
                       <OtherRegionsCustomerDetails
                         phone={order.secondCustomerPhone || order.customerPhone}
