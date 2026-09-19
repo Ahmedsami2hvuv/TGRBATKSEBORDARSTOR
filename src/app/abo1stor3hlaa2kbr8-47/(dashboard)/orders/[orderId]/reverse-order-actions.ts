@@ -22,8 +22,10 @@ export async function createReverseOrderFromExisting(orderId: string): Promise<{
       where: { id: orderId },
       include: {
         customerRegion: { select: { id: true, name: true, deliveryPrice: true } },
-        shop: { select: { id: true, name: true } },
+        shop: { select: { id: true, name: true, phone: true, ownerName: true, locationUrl: true, photoUrl: true } },
         courier: { select: { id: true, name: true } },
+        submittedBy: { select: { id: true, phone: true, name: true } },
+        submittedByCompanyPreparer: { select: { id: true, phone: true, name: true } },
       },
     });
 
@@ -48,10 +50,14 @@ export async function createReverseOrderFromExisting(orderId: string): Promise<{
       data: {
         shopId: originalOrder.shopId,
         customerId: originalOrder.customerId,
+        submittedByEmployeeId: originalOrder.submittedByEmployeeId || null,
+        submittedByCompanyPreparerId: originalOrder.submittedByCompanyPreparerId || null,
+        shopDoorPhotoUrl: originalOrder.shopDoorPhotoUrl || null,
+        shopDoorPhotoUploadedByName: originalOrder.shopDoorPhotoUploadedByName || null,
         status: initialStatus,
         routeMode: "single",
         adminOrderCode: "",
-        submissionSource: "admin_portal",
+        submissionSource: originalOrder.submissionSource || "admin_portal",
         summary: `طلب عكسي مرتبط بالطلب #${originalOrder.orderNumber}`,
         orderType: "طلب عكسي: استرجاع",
         orderNoteTime: "الآن",
@@ -61,6 +67,7 @@ export async function createReverseOrderFromExisting(orderId: string): Promise<{
         customerLocationUrl: originalOrder.customerLocationUrl || "",
         customerLandmark: originalOrder.customerLandmark || "",
         customerDoorPhotoUrl: originalOrder.customerDoorPhotoUrl || null,
+        customerDoorPhotoUploadedByName: originalOrder.customerDoorPhotoUploadedByName || null,
         assignedCourierId: assignedCourierId,
         orderSubtotal: subtotalDecimal,
         deliveryPrice: deliveryPriceDecimal,

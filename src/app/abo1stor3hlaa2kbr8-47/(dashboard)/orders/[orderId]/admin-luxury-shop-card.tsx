@@ -14,12 +14,13 @@ import {
 } from "@/lib/client-image-compress";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+import { updateShopPhoneAction } from "@/app/actions/update-shop-phone";
 
 const initial: CustomerDoorPhotoState = {};
 
 function contactLine(phone: string): string {
   const t = (phone || "").trim();
-  if (!t || t === "—" || t === "undefined") return "";
+  if (!t || t === "—" || t === "undefined" || t === "null") return "";
   return t;
 }
 
@@ -44,6 +45,11 @@ export function AdminLuxuryShopCard({
 }) {
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [phoneModalOpen, setPhoneModalOpen] = useState(false);
+  const [newPhoneInput, setNewPhoneInput] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
@@ -87,7 +93,14 @@ export function AdminLuxuryShopCard({
     }
   }
 
-  const cleanPhone = contactLine(order.shop?.phone || submitterPhone || "");
+  const effectivePhone = contactLine(
+    order.shop?.phone ||
+    submitterPhone ||
+    order.submittedBy?.phone ||
+    order.submittedByCompanyPreparer?.phone ||
+    ""
+  );
+
   const rawShopName = order.shop?.name?.trim() || "";
   const rawOwnerName = order.shop?.ownerName?.trim() || "";
   const rawSubmitterName = submitterName?.trim() || "";
@@ -117,6 +130,39 @@ export function AdminLuxuryShopCard({
 
   const cameraInputUniqueId = `shop-door-cam-${order.id}`;
   const galleryInputUniqueId = `shop-door-gal-${order.id}`;
+
+  const copyPhone = async () => {
+    if (!effectivePhone) return;
+    try {
+      await navigator.clipboard.writeText(effectivePhone);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!newPhoneInput.trim()) {
+      setPhoneError("يرجى كتابة رقم الهاتف");
+      return;
+    }
+    setSavingPhone(true);
+    setPhoneError(null);
+    try {
+      const res = await updateShopPhoneAction(order.id, order.shopId, newPhoneInput.trim());
+      if (res.ok) {
+        setPhoneModalOpen(false);
+        router.refresh();
+      } else {
+        setPhoneError(res.error || "تعذر حفظ رقم الهاتف");
+      }
+    } catch (err: any) {
+      setPhoneError(err?.message || "حدث خطأ غير متوقع");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
@@ -205,15 +251,41 @@ export function AdminLuxuryShopCard({
                   <span className="font-medium">{regionName}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                {/* رقم هاتف المحل / العميل التفاعلي */}
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="w-[18px] h-[18px] rounded-full bg-[#0A3D2E] flex items-center justify-center shrink-0">
                     <svg className="w-[10px] h-[10px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   </span>
-                  <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E] font-mono [direction:ltr]">
-                    {cleanPhone || "—"}
-                  </span>
+                  {effectivePhone ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPhoneInput(effectivePhone);
+                        setPhoneError(null);
+                        setPhoneModalOpen(true);
+                      }}
+                      className="group inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50/90 hover:bg-amber-100 active:scale-95 px-2.5 py-0.5 text-xs font-black text-amber-950 transition-all cursor-pointer shadow-2xs"
+                      title="انقر لخيارات هاتف العميل (المحل) أو تعديله"
+                    >
+                      <span className="font-mono text-slate-900 font-extrabold" dir="ltr">{effectivePhone}</span>
+                      <span className="text-[10px] text-amber-700">✏️</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPhoneInput("");
+                        setPhoneError(null);
+                        setPhoneModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-xl border border-dashed border-amber-400 bg-amber-50/70 hover:bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 transition cursor-pointer"
+                      title="إضافة رقم هاتف العميل"
+                    >
+                      <span>➕ إضافة رقم هاتف العميل</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -265,34 +337,135 @@ export function AdminLuxuryShopCard({
               </a>
             ) : null}
 
-            {cleanPhone && (
-              <div className="grid grid-cols-2 gap-2">
-                <a
-                  href={whatsappMeUrl(cleanPhone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition hover:bg-[#104D3B]"
-                >
-                  <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  <span className="text-[12px] font-black">واتس</span>
-                </a>
+            {/* أزرار الواتس والاتصال بالعميل - تظهر دائماً وتعمل بمرونة تامة */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (effectivePhone) {
+                    const url = whatsappMeUrl(effectivePhone);
+                    if (url && url !== "#") window.open(url, "_blank");
+                  } else {
+                    setNewPhoneInput("");
+                    setPhoneError(null);
+                    setPhoneModalOpen(true);
+                  }
+                }}
+                className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition hover:bg-[#104D3B] cursor-pointer"
+                title="مراسلة العميل عبر الواتساب"
+              >
+                <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                </svg>
+                <span className="text-[12px] font-black">واتس العميل</span>
+              </button>
 
-                <a
-                  href={telHref(cleanPhone)}
-                  className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition hover:bg-[#104D3B]"
-                >
-                  <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <span className="text-[12px] font-black">اتصال</span>
-                </a>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (effectivePhone) {
+                    window.location.href = telHref(effectivePhone);
+                  } else {
+                    setNewPhoneInput("");
+                    setPhoneError(null);
+                    setPhoneModalOpen(true);
+                  }
+                }}
+                className="h-[40px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.2),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.98] transition hover:bg-[#104D3B] cursor-pointer"
+                title="اتصال بالعميل هاتفياً"
+              >
+                <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                <span className="text-[12px] font-black">اتصال بالعميل</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* نافذة خيارات وتعديل رقم هاتف العميل / المحل */}
+      {phoneModalOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-150 text-right">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>🏪</span>
+                  <span>هاتف العميل ({shopName})</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  {effectivePhone ? `الرقم الحالي: ${effectivePhone}` : "لا يوجد رقم مسجل للعميل"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhoneModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {phoneError && (
+              <div className="mb-3 rounded-2xl bg-rose-50 border border-rose-200 p-2.5 text-center text-xs font-bold text-rose-700 shadow-2xs">
+                ⚠️ {phoneError}
+              </div>
+            )}
+
+            {effectivePhone && (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={copyPhone}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 hover:bg-slate-200 p-2 text-xs font-black text-slate-800 transition-all cursor-pointer"
+                >
+                  <span>{copied ? "✅" : "📋"}</span>
+                  <span>{copied ? "تم النسخ" : "نسخ الرقم"}</span>
+                </button>
+                <a
+                  href={telHref(effectivePhone)}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>📞</span>
+                  <span>اتصال</span>
+                </a>
+                <a
+                  href={whatsappMeUrl(effectivePhone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>💬</span>
+                  <span>واتس</span>
+                </a>
+              </div>
+            )}
+
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <label className="block text-xs font-black text-slate-700">
+                {effectivePhone ? "تعديل أو تحديث رقم هاتف العميل:" : "أدخل رقم هاتف العميل لحفظه:"}
+              </label>
+              <input
+                type="tel"
+                value={newPhoneInput}
+                onChange={(e) => setNewPhoneInput(e.target.value)}
+                placeholder="مثال: 07701234567"
+                dir="ltr"
+                className="w-full text-center font-mono font-bold text-base px-3.5 py-2.5 rounded-2xl border-2 border-[#C9A86A]/50 focus:border-[#C9A86A] focus:outline-hidden bg-slate-50 text-slate-900 shadow-inner"
+              />
+              <button
+                type="button"
+                disabled={savingPhone}
+                onClick={handleSavePhone}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0A3D2E] to-[#115740] hover:bg-[#115740] text-[#E8C77E] font-black text-sm border border-[#C9A86A] shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              >
+                {savingPhone ? "جاري الحفظ..." : "💾 حفظ رقم هاتف العميل"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {zoomOpen && imgShopDoor && (
         <ImageZoomModal
