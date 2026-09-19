@@ -17,7 +17,6 @@ export async function createTestOrderAction(): Promise<{
   error?: string;
 }> {
   try {
-    // 1. جلب أو إنشاء محل الإدارة
     let shop = await prisma.shop.findFirst({
       where: { name: { in: ADMIN_SHOP_NAMES } },
       include: { region: true },
@@ -44,11 +43,8 @@ export async function createTestOrderAction(): Promise<{
       });
     }
 
-    // 2. جلب منطقة "جيكور"
     let region = await prisma.region.findFirst({
-      where: {
-        name: { contains: "جيكور", mode: "insensitive" },
-      },
+      where: { name: { contains: "جيكور", mode: "insensitive" } },
     });
 
     if (!region) {
@@ -63,7 +59,6 @@ export async function createTestOrderAction(): Promise<{
       }
     }
 
-    // 3. جلب المندوب "boos"
     const courier = await prisma.courier.findFirst({
       where: {
         OR: [
@@ -74,28 +69,21 @@ export async function createTestOrderAction(): Promise<{
       },
     });
 
-    // 4. رقم هاتف الزبون والعميل التابع لمحل الإدارة
     const testPhoneRaw = "07733921468";
     const testPhone = normalizeIraqMobileLocal11(testPhoneRaw) || testPhoneRaw;
 
-    // البحث عن عميل برقم الهاتف أو تابع لمحل الإدارة
     let customer = await prisma.customer.findFirst({
-      where: {
-        shopId: shop.id,
-        phone: testPhone,
-      },
+      where: { shopId: shop.id, phone: testPhone },
     });
 
     if (!customer) {
-      // محاولة العثور على أي عميل لمحل الإدارة أو إنشاء واحد
       const anyShopCustomer = await prisma.customer.findFirst({
         where: { shopId: shop.id },
       });
-
       customer = await prisma.customer.create({
         data: {
           shopId: shop.id,
-          name: anyShopCustomer?.name ? `${anyShopCustomer.name} (تيست)` : "زبون تجريبي",
+          name: anyShopCustomer?.name? `${anyShopCustomer.name} (تيست)` : "زبون تجريبي",
           phone: testPhone,
           customerRegionId: region.id,
           customerLocationUrl: "",
@@ -104,32 +92,29 @@ export async function createTestOrderAction(): Promise<{
       });
     }
 
-    // جلب موظف/عميل تابع لمحل الإدارة
     const shopEmployee = await prisma.employee.findFirst({
       where: { shopId: shop.id },
     });
 
-    // 5. حساب رقم الطلب الجديد
     const lastOrder = await prisma.order.findFirst({
       orderBy: { orderNumber: "desc" },
       select: { orderNumber: true },
     });
-    const nextOrderNumber = (lastOrder?.orderNumber ?? 0) + 1;
+    const nextOrderNumber = (lastOrder?.orderNumber?? 0) + 1;
 
-    // 6. المبالغ والأسعار: السعر 10.5 ألف دينار (10,500 د.ع)
-    const orderPriceAlf = 10.5;
-    const orderSubtotal = new Decimal(orderPriceAlf * 1000); // 10500
-    const deliveryPrice = region.deliveryPrice ?? new Decimal(0);
-    const totalAmount = orderSubtotal; // السعر الكلي للطلب 10.5
+    // ✅ التصليح هنا: السعر 10.5 مباشرة وليس 10500
+    const orderPrice = 10.5;
+    const orderSubtotal = new Decimal(orderPrice); // كان * 1000 وصار 10500
+    const deliveryPrice = region.deliveryPrice?? new Decimal(0);
+    const totalAmount = orderSubtotal; // 10.5 فقط
 
-    // 7. إنشاء الطلب
     const order = await prisma.order.create({
       data: {
         orderNumber: nextOrderNumber,
         orderType: "تيست",
-        status: courier ? "assigned" : "pending",
+        status: courier? "assigned" : "pending",
         shopId: shop.id,
-        submittedByEmployeeId: shopEmployee?.id ?? null,
+        submittedByEmployeeId: shopEmployee?.id?? null,
         customerId: customer.id,
         customerPhone: testPhone,
         customerRegionId: region.id,
@@ -139,33 +124,24 @@ export async function createTestOrderAction(): Promise<{
         purchasePrice: orderSubtotal,
         deliveryPrice: deliveryPrice,
         totalAmount: totalAmount,
-        assignedCourierId: courier?.id ?? null,
+        assignedCourierId: courier?.id?? null,
         submissionSource: "admin_portal",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     });
 
-    // 8. مزامنة ملف الهاتف
     void syncPhoneProfileFromOrder(order.id).catch(() => {});
 
-    // 9. إعادة التحقق من المسارات (Revalidation)
     revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
     revalidatePath("/abo1stor3hlaa2kbr8-47/orders/pending");
     revalidatePath("/abo1stor3hlaa2kbr8-47/orders");
     revalidatePath("/abo1stor3hlaa2kbr8-47");
     revalidatePath("/mandoub");
 
-    return {
-      ok: true,
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-    };
+    return { ok: true, orderId: order.id, orderNumber: order.orderNumber };
   } catch (error: any) {
     console.error("[createTestOrderAction] Error:", error);
-    return {
-      ok: false,
-      error: error?.message || "تعذر إنشاء طلب التيست",
-    };
+    return { ok: false, error: error?.message || "تعذر إنشاء طلب التيست" };
   }
 }
