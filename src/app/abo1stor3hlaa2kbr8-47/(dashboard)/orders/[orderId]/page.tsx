@@ -222,35 +222,39 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
     });
 
     const adminCustomWaButtons = (waButtonSettings || []).flatMap((r: any) => {
-      // 1. فحص الصلاحية (هل يظهر للإدارة؟)
-      const scopes = (r.visibilityScope || "all")
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
-      const canSeeAdmin = scopes.includes("all") || scopes.includes("admin");
-      if (!canSeeAdmin) return [];
+      try {
+        // 1. فحص الصلاحية (هل يظهر للإدارة؟)
+        const scopes = (r?.visibilityScope || "all")
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const canSeeAdmin = scopes.includes("all") || scopes.includes("admin");
+        if (!canSeeAdmin) return [];
 
-      // 2. فحص حالة الطلب
-      const statuses = parseStatusesCsv(r.statusesCsv || "");
-      if (statuses.length > 0 && !statuses.includes(order.status)) return [];
+        // 2. فحص حالة الطلب
+        const statuses = parseStatusesCsv(r?.statusesCsv || "");
+        if (statuses.length > 0 && !statuses.includes(order.status)) return [];
 
-      // 3. فحص شروط لوكيشن الزبون
-      const hasCustLoc = Boolean(customerLocationUrlEffective);
-      const hasCourierLoc = Boolean(order.customerLocationSetByCourierAt);
-      const locRules = parseCustomerLocationRules(r.customerLocationRule || "any");
-      if (!matchesCustomerLocationRules(locRules, hasCustLoc, hasCourierLoc)) return [];
+        // 3. فحص شروط لوكيشن الزبون
+        const hasCustLoc = Boolean(customerLocationUrlEffective);
+        const hasCourierLoc = Boolean(order.customerLocationSetByCourierAt);
+        const locRules = parseCustomerLocationRules(r?.customerLocationRule || "any");
+        if (!matchesCustomerLocationRules(locRules, hasCustLoc, hasCourierLoc)) return [];
 
-      const vars = {
-        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
-        city: order.customerRegion?.name || "",
-        total_price: view.totalAmount || "",
-        location_url: customerLocationUrlEffective,
-        order_number: String(order.orderNumber || ""),
-        customer_phone: order.customerPhone || "",
-        shop_phone: submitterPhone || "",
-      };
-      const messages = splitMandoubWaTemplateVariants(r.templateText || "").map((t) => applyMandoubWaTemplate(t, vars));
-      return messages.length > 0 ? [{ id: r.id, label: r.label, iconKey: r.iconKey, messages }] : [];
+        const vars = {
+          clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+          city: order.customerRegion?.name || "",
+          total_price: view.totalAmount || "",
+          location_url: customerLocationUrlEffective,
+          order_number: String(order.orderNumber || ""),
+          customer_phone: order.customerPhone || "",
+          shop_phone: submitterPhone || "",
+        };
+        const messages = splitMandoubWaTemplateVariants(r?.templateText || "").map((t) => applyMandoubWaTemplate(t, vars));
+        return messages.length > 0 ? [{ id: r.id, label: r.label, iconKey: r.iconKey, messages }] : [];
+      } catch {
+        return [];
+      }
     });
 
     const safeView = JSON.parse(JSON.stringify(view));

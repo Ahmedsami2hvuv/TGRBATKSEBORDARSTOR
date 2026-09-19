@@ -132,6 +132,7 @@ export async function resolveGoogleShortMapsUrl(raw: string | null | undefined):
         method: "GET",
         redirect: "manual",
         cache: "no-store",
+        signal: AbortSignal.timeout(1200),
         headers: {
           "user-agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -153,6 +154,7 @@ export async function resolveGoogleShortMapsUrl(raw: string | null | undefined):
       method: "GET",
       redirect: "follow",
       cache: "no-store",
+      signal: AbortSignal.timeout(1200),
       headers: {
         "user-agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
