@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
 
 type Props = {
-  orderId: string;
+  orderId?: string;
   orderNumber?: number | string;
   customerPhone?: string;
   role?: "admin" | "mandoub" | "preparer";
   size?: "sm" | "md" | "lg";
   className?: string;
+  interactive?: boolean;
 };
 
 export function LuxuryReverseOrderButton({
@@ -20,6 +21,7 @@ export function LuxuryReverseOrderButton({
   role = "admin",
   size = "md",
   className = "",
+  interactive = false,
 }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,7 @@ export function LuxuryReverseOrderButton({
   const router = useRouter();
 
   const handleCreate = async (e: React.MouseEvent) => {
+    if (!orderId) return;
     e.stopPropagation();
     if (loading) return;
     setLoading(true);
@@ -60,6 +63,20 @@ export function LuxuryReverseOrderButton({
       : size === "lg"
       ? "w-14 h-14 sm:w-16 sm:h-16"
       : "w-12 h-12 sm:w-14 sm:h-14";
+
+  if (!interactive) {
+    return (
+      <div
+        className={`relative ${sizeClasses} rounded-full bg-no-repeat bg-contain pointer-events-none shrink-0 drop-shadow-md select-none ${className}`}
+        style={{
+          backgroundImage: "url('/images/order-luxury/btn-reverse-order.webp')",
+        }}
+        title="طلب عكسي 🔄"
+      >
+        <span className="sr-only">طلب عكسي</span>
+      </div>
+    );
+  }
 
   return (
     <>
