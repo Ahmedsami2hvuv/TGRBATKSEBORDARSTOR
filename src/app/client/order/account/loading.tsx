@@ -1,42 +1,46 @@
 export default function Loading() {
   return (
-    <div className="kse-app-bg min-h-screen px-4 py-8 animate-pulse text-slate-800">
-      <div className="mx-auto max-w-lg space-y-5">
-        {/* Header Skeleton */}
-        <div className="kse-glass-dark rounded-2xl border border-slate-100 p-6 text-center shadow-sm">
-          <div className="mx-auto h-3 w-20 rounded bg-slate-200/50"></div>
-          <div className="mx-auto mt-4 h-6 w-48 rounded bg-slate-200/60"></div>
-          <div className="mx-auto mt-2 h-4 w-32 rounded bg-slate-100/50"></div>
-          <div className="mx-auto mt-4 h-16 w-16 rounded-2xl bg-slate-200/40"></div>
-          <div className="mx-auto mt-4 h-5 w-24 rounded bg-slate-200/50"></div>
-
-          <div className="mt-6 grid grid-cols-2 gap-2">
-            <div className="h-12 rounded-xl bg-slate-200/30"></div>
-            <div className="h-12 rounded-xl bg-slate-200/30"></div>
-          </div>
+    <div className="min-h-screen bg-[#FDF8EE] px-4 py-6 pb-24 text-slate-800 animate-pulse" dir="rtl">
+      <div className="mx-auto max-w-lg space-y-4">
+        {/* Nav Skeleton */}
+        <div className="flex justify-between">
+          <div className="h-9 w-32 rounded-2xl bg-slate-200/60"></div>
+          <div className="h-9 w-28 rounded-2xl bg-slate-200/60"></div>
         </div>
 
-        {/* Stats Grid Skeleton */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="kse-glass-dark rounded-2xl border border-slate-100 p-4 text-center">
-              <div className="mx-auto h-8 w-12 rounded bg-slate-200/50"></div>
-              <div className="mx-auto mt-2 h-3 w-16 rounded bg-slate-100/50"></div>
+        {/* 4 Stats Grid Skeleton */}
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-2xl border-2 border-[#C9A86A]/30 bg-white p-3 text-center">
+              <div className="mx-auto h-7 w-10 rounded bg-slate-200/70"></div>
+              <div className="mx-auto mt-1.5 h-3 w-14 rounded bg-slate-100"></div>
             </div>
           ))}
         </div>
 
-        {/* Recent Orders Skeleton */}
-        <div className="space-y-3">
-          <div className="h-4 w-32 rounded bg-slate-200/50"></div>
+        {/* Debt Block Skeleton */}
+        <div className="rounded-3xl border-2 border-[#C9A86A]/40 bg-white p-6 space-y-4">
+          <div className="flex justify-between">
+            <div className="h-4 w-36 rounded bg-slate-200/60"></div>
+            <div className="h-4 w-20 rounded bg-slate-100"></div>
+          </div>
+          <div className="h-28 rounded-2xl bg-slate-100/70"></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-12 rounded-xl bg-slate-100"></div>
+            <div className="h-12 rounded-xl bg-slate-100"></div>
+          </div>
+        </div>
+
+        {/* Transactions List Skeleton */}
+        <div className="space-y-2">
+          <div className="h-4 w-36 rounded bg-slate-200/60"></div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-slate-100 bg-white/80 p-4 space-y-3">
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
               <div className="flex justify-between">
-                <div className="h-5 w-16 rounded bg-slate-100"></div>
-                <div className="h-5 w-20 rounded-full bg-slate-50"></div>
+                <div className="h-4 w-24 rounded bg-slate-200/50"></div>
+                <div className="h-4 w-16 rounded bg-slate-200/50"></div>
               </div>
-              <div className="h-4 w-full rounded bg-slate-50"></div>
-              <div className="h-3 w-2/3 rounded bg-slate-50"></div>
+              <div className="h-3 w-full rounded bg-slate-100"></div>
             </div>
           ))}
         </div>
