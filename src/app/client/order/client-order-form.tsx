@@ -200,9 +200,11 @@ function ClientOrderFormInner({
   };
 
   // موضع الزر العائم مع السحب وتخزينه
-  const STORAGE_KEY_BTN = "kse_client_submit_nanobanana_pos";
+  const STORAGE_KEY_BTN = "kse_client_submit_ak_btn_pos";
+  const STORAGE_KEY_BTN_HINT = "kse_client_seen_ak_gold_btn_hint_v2";
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number }>({ x: 20, y: 500 });
   const [isDragging, setIsDragging] = useState(false);
+  const [showNewBtnHint, setShowNewBtnHint] = useState(false);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
 
@@ -218,16 +220,34 @@ function ClientOrderFormInner({
           const clampedX = Math.max(10, Math.min(parsed.x, maxX));
           const clampedY = Math.max(10, Math.min(parsed.y, maxY));
           setFloatingPos({ x: clampedX, y: clampedY });
-          return;
         }
+      } else {
+        const defaultX = Math.max(15, window.innerWidth - 105);
+        const defaultY = Math.max(15, window.innerHeight - 150);
+        setFloatingPos({ x: defaultX, y: defaultY });
+      }
+
+      // فحص التنبيه الإرشادي للزر الجديد
+      const seen = localStorage.getItem(STORAGE_KEY_BTN_HINT);
+      if (!seen) {
+        const timer = setTimeout(() => {
+          setShowNewBtnHint(true);
+        }, 500);
+        return () => clearTimeout(timer);
       }
     } catch {
       // fallback
     }
-    const defaultX = Math.max(15, window.innerWidth - 105);
-    const defaultY = Math.max(15, window.innerHeight - 150);
-    setFloatingPos({ x: defaultX, y: defaultY });
   }, []);
+
+  const handleAcknowledgeBtnHint = () => {
+    setShowNewBtnHint(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_BTN_HINT, "true");
+    } catch {
+      // ignore
+    }
+  };
 
   const handlePointerDown = (ev: React.PointerEvent<HTMLButtonElement>) => {
     if (pending) return;
@@ -1189,7 +1209,7 @@ function ClientOrderFormInner({
         </div>
       </div>
 
-      {/* الزر العائم لرفع الطلب بنمط نانو بنانا WEBP المشرق الفاخر بدون أي إطار أسود */}
+      {/* الزر العائم لرفع الطلب بالختم الملكي الذهبي الفاخر AK */}
       <button
         ref={fabRef}
         type="button"
@@ -1204,56 +1224,86 @@ function ClientOrderFormInner({
           touchAction: "none",
           animation: isDragging
             ? "none"
+            : showNewBtnHint
+            ? "fabGlow 1.2s ease-in-out infinite"
             : isUserTyping
             ? "typingDance 0.5s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite"
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
-        className={`fixed z-[60] w-[98px] h-[98px] sm:w-[104px] sm:h-[104px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
+        className={`fixed z-[60] w-[88px] h-[88px] sm:w-[96px] sm:h-[96px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
+          showNewBtnHint ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-[#0A3D2E] scale-105" : ""
+        } ${
           isDragging
             ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
             : "cursor-grab"
         }`}
       >
-        {/* صورة نانو بنانا WEBP المفرغة بدقة ووضوح */}
+        {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/images/order-luxury/nanobanana-submit-v4.webp?v=4"
+            src="/images/order-luxury/ak-gold-submit-btn.webp"
             alt="رفع الطلب"
             fill
             priority
             unoptimized
-            className="object-contain"
+            className="object-contain drop-shadow-[0_4px_14px_rgba(0,0,0,0.35)]"
           />
         </div>
 
-        {/* محتوى الزر العائم وكلمة رفع الطلب مكبرة جداً وواضحة وبارزة */}
-        <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none mt-[4px]">
-          {pending ? (
-            <Loader2 className="w-[34px] h-[34px] text-[#F5D77F] animate-spin" />
-          ) : (
-            <div className="flex flex-col items-center justify-center -space-y-0.5">
-              <span
-                className="text-white font-black text-[17px] sm:text-[19px] leading-[1.1] tracking-tight select-none"
-                style={{
-                  textShadow:
-                    "0 2px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.95), 0 0 3px #000000",
-                }}
-              >
-                رفع
-              </span>
-              <span
-                className="text-[#FFE885] font-black text-[17px] sm:text-[19px] leading-[1.1] tracking-tight select-none"
-                style={{
-                  textShadow:
-                    "0 2px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.95), 0 0 3px #000000",
-                }}
-              >
-                الطلب
-              </span>
-            </div>
-          )}
+        {/* كبسولة توضيحية لرفع الطلب أسفل الختم مباشرة */}
+        <div className="absolute -bottom-[4px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border-[1.5px] border-[#C9A86A] text-[#F5D77F] text-[10.5px] sm:text-[11.5px] font-black px-2.5 py-[2px] rounded-full shadow-[0_3px_10px_rgba(0,0,0,0.5)] flex items-center gap-1 select-none pointer-events-none whitespace-nowrap">
+          <span>رفع الطلب</span>
+          <span className="text-[10px]">🚀</span>
         </div>
+
+        {/* مؤشر التحميل أثناء الرفع */}
+        {pending && (
+          <div className="absolute inset-0 rounded-full bg-black/45 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
+            <Loader2 className="w-[36px] h-[36px] text-[#F5D77F] animate-spin" />
+          </div>
+        )}
       </button>
+
+      {/* نافذة التنبيه الإرشادية لزر رفع الطلب الجديد */}
+      {showNewBtnHint && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#05281C]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
+          <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFEFB] via-[#FFFDF7] to-[#FAF6EE] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+            {/* أيقونة الختم الملكي مع هالة ذهبية */}
+            <div className="relative mx-auto w-[84px] h-[84px] rounded-full p-1 bg-gradient-to-b from-[#FAF0D7] to-[#E8D39E] border-2 border-[#C9A86A] flex items-center justify-center shadow-lg mb-[14px]">
+              <div className="relative w-full h-full rounded-full overflow-hidden">
+                <Image
+                  src="/images/order-luxury/ak-gold-submit-btn.webp"
+                  alt="زر رفع الطلب"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0A3D2E] border border-[#F5D77F] text-white flex items-center justify-center text-xs shadow-md">
+                🚀
+              </div>
+            </div>
+
+            <h3 className="text-[17px] font-black text-[#0A3D2E] tracking-tight">
+              زر رفع الطلب الجديد 👑
+            </h3>
+            
+            <p className="text-[12.5px] font-bold text-[#475569] mt-[8px] leading-[1.6] px-2">
+              هذا هو زر رفع الطلبيات الجديد! يمكنك النقر عليه فور اكتمال البيانات، أو سحبه وتحريكه بحرية إلى أي مكان يريحك على الشاشة.
+            </p>
+
+            <div className="mt-[18px]">
+              <button
+                type="button"
+                onClick={handleAcknowledgeBtnHint}
+                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>حسناً، فهمت</span>
+                <span className="text-base">👍</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* نافذة تنبيه نقص الحقول */}
       {fieldErrorModal && (
