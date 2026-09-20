@@ -210,6 +210,13 @@ export async function submitPreparerPickupMoney(
 
       revalidatePreparerPaths(nextRaw);
     }
+
+    try {
+      const { recordPreparerWorkLog } = await import("./actions");
+      await recordPreparerWorkLog(a.preparer.id, "pickup_money");
+    } catch (e) {
+      console.error(e);
+    }
   } catch (err: any) {
     // إذا كان الخطأ هو توجيه من Next.js، نقوم برميه مجدداً للسماح للمتصفح بالانتقال
     if (err.digest?.startsWith("NEXT_REDIRECT")) throw err;
@@ -346,6 +353,14 @@ export async function submitPreparerDeliveryMoney(
 
       revalidatePreparerPaths(nextRaw);
     }
+
+    try {
+      const { recordPreparerWorkLog } = await import("./actions");
+      await recordPreparerWorkLog(a.preparer.id, "delivery_money");
+    } catch (e) {
+      console.error(e);
+    }
+
   } catch (err: any) {
     if (err.digest?.startsWith("NEXT_REDIRECT")) throw err;
     console.error("submitPreparerDeliveryMoney error:", err);

@@ -1363,8 +1363,7 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
     },
   });
 
-  void notifyTelegramOrderPrepared({ orderId });
-
+  // تسجيل الشفت أولاً
   const shiftName = await determineShiftName(v.preparerId, new Date());
   await prisma.companyPreparerWorkLog.create({
     data: {
@@ -1373,6 +1372,11 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
       shiftName
     },
   });
+
+  // تشغيل الإشعارات في الخلفية لتفادي بطء الاستجابة
+  setTimeout(() => {
+    notifyTelegramOrderPrepared({ orderId }).catch(console.error);
+  }, 100);
 
   revalidatePath("/preparer");
   revalidatePath(`/preparer/order/${orderId}`);
@@ -1884,7 +1888,9 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
         },
       });
 
-      void notifyTelegramOrderPrepared({ orderId });
+      setTimeout(() => {
+        notifyTelegramOrderPrepared({ orderId }).catch(console.error);
+      }, 50);
     }
 
     const shiftName = await determineShiftName(v.preparerId, new Date());

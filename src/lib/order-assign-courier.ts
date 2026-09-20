@@ -111,16 +111,19 @@ export async function transferOrderToCourierInternal(
     // - أو المندوب الحالي (المخزن سابقاً) يختلف
     order.status === "pending" || (oldCourierId && oldCourierId !== courierId);
   if (shouldNotifyMandoub) {
-    void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
-      console.error("[pushNotifyCourierNewAssignment] failed:", e);
-    });
-    // void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
+    setTimeout(() => {
+      pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
+        console.error("[pushNotifyCourierNewAssignment] failed:", e);
+      });
+    }, 50);
   }
 
   if (oldCourierId && oldCourierId !== courierId) {
-    void pushNotifyCourierAssignmentRemoved(oldCourierId, order.orderNumber, orderId).catch((e) => {
-      console.error("[pushNotifyCourierAssignmentRemoved] failed:", e);
-    });
+    setTimeout(() => {
+      pushNotifyCourierAssignmentRemoved(oldCourierId, order.orderNumber, orderId).catch((e) => {
+        console.error("[pushNotifyCourierAssignmentRemoved] failed:", e);
+      });
+    }, 50);
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
