@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { ad } from "@/lib/admin-ui";
 import {
   dinarDecimalToAlfInputString,
@@ -237,6 +239,70 @@ export function OrderEditForm({
   const formRef = useRef<HTMLFormElement>(null);
   const orderImgRef = useRef<HTMLInputElement>(null);
   const summaryTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+
+  // موضع زر التحديث العائم مع السحب وتخزينه
+  const STORAGE_KEY_UPDATE_BTN = "kse_admin_update_order_btn_pos";
+  const [floatingPos, setFloatingPos] = useState<{ x: number; y: number }>({ x: 20, y: 500 });
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_UPDATE_BTN);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          const maxX = Math.max(10, window.innerWidth - 100);
+          const maxY = Math.max(10, window.innerHeight - 100);
+          const clampedX = Math.max(10, Math.min(parsed.x, maxX));
+          const clampedY = Math.max(10, Math.min(parsed.y, maxY));
+          setFloatingPos({ x: clampedX, y: clampedY });
+          return;
+        }
+      }
+      const defaultX = Math.max(15, window.innerWidth - 110);
+      const defaultY = Math.max(15, window.innerHeight - 150);
+      setFloatingPos({ x: defaultX, y: defaultY });
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const handlePointerDown = (ev: React.PointerEvent<HTMLButtonElement>) => {
+    if (pending) return;
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    dragOffsetRef.current = {
+      offsetX: ev.clientX - floatingPos.x,
+      offsetY: ev.clientY - floatingPos.y,
+    };
+    (ev.target as HTMLElement).setPointerCapture(ev.pointerId);
+  };
+
+  const handlePointerMove = (ev: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current) return;
+    const newX = ev.clientX - dragOffsetRef.current.offsetX;
+    const newY = ev.clientY - dragOffsetRef.current.offsetY;
+    const maxX = Math.max(10, window.innerWidth - 100);
+    const maxY = Math.max(10, window.innerHeight - 100);
+    const clampedX = Math.max(10, Math.min(newX, maxX));
+    const clampedY = Math.max(10, Math.min(newY, maxY));
+    setFloatingPos({ x: clampedX, y: clampedY });
+  };
+
+  const handlePointerUp = (ev: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_UPDATE_BTN, JSON.stringify(floatingPos));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const el = summaryTextareaRef.current;
@@ -1308,11 +1374,54 @@ export function OrderEditForm({
             ? "جارٍ التحديث…"
             : state.pendingCustomerImport
               ? "أكمل من النافذة أعلاه"
-              : "تحديث"}
+              : "تحديث الطلب"}
         </span>
       </button>
     </form>
     </div>
+
+    {/* الزر العائم الملكي الفاخر لتحديث الطلب والقابل للتحريك والسحب */}
+    <button
+      ref={fabRef}
+      type="button"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onClick={() => {
+        if (!pending && !state.pendingCustomerImport) {
+          formRef.current?.requestSubmit();
+        }
+      }}
+      disabled={pending || !!state.pendingCustomerImport}
+      style={{
+        left: `${floatingPos.x}px`,
+        top: `${floatingPos.y}px`,
+        touchAction: "none",
+      }}
+      className={`fixed z-[90] w-[94px] h-[94px] sm:w-[102px] sm:h-[102px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
+        isDragging
+          ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
+          : "cursor-grab animate-[fabFloat_3s_ease-in-out_infinite,fabGlow_3s_ease-in-out_infinite]"
+      }`}
+      title="تحديث الطلب"
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <Image
+          src="/images/order-luxury/ak-update-order-btn.webp"
+          alt="تحديث الطلب"
+          fill
+          priority
+          unoptimized
+          className="object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
+        />
+      </div>
+
+      {pending && (
+        <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
+          <Loader2 className="w-[38px] h-[38px] text-[#F5D77F] animate-spin" />
+        </div>
+      )}
+    </button>
 
     {state.pendingCustomerImport ? (
       <div
