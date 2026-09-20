@@ -680,12 +680,12 @@ export function PreparerOrderTable({
                             window.history.pushState({ orderId: o.id }, "", `?${p.toString()}`);
                           }
                         }}
-                        className={`group relative rounded-[20px] px-4.5 sm:px-6 pt-3.5 pb-3 sm:pt-4 sm:pb-3.5 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full max-w-[420px] mx-auto md:max-w-none ${
+                        className={`group relative rounded-[22px] px-5 sm:px-6 pt-4 pb-3.5 sm:pt-4.5 sm:pb-4 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full max-w-[460px] sm:max-w-[480px] mx-auto md:max-w-none ${
                           selected ? "ring-2 ring-[#0A3D2E]" : ""
                         }`}
                         style={{
                           backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                          minHeight: "228px",
+                          minHeight: "248px",
                         }}
                       >
                         {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل */}
@@ -693,7 +693,7 @@ export function PreparerOrderTable({
                           {/* اليمين: بلوك اسم المحل */}
                           <div className="relative flex-1 min-w-0 max-w-[68%] sm:max-w-[74%]">
                             <div
-                              className="w-full h-10.5 sm:h-12 rounded-full flex items-center justify-center px-3 sm:px-6 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                              className="w-full h-11 sm:h-12.5 rounded-full flex items-center justify-center px-3 sm:px-6 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                               style={{
                                 backgroundImage: `url('${headerWebpBg}')`,
                               }}
@@ -725,7 +725,7 @@ export function PreparerOrderTable({
 
                             <div className="relative shrink-0">
                               <div
-                                className="min-w-[76px] sm:min-w-[90px] h-10 sm:h-11.5 px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
+                                className="min-w-[78px] sm:min-w-[94px] h-10.5 sm:h-12 px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
                                 style={{
                                   backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                                   color: "#F5D77F",
@@ -741,11 +741,11 @@ export function PreparerOrderTable({
                         </div>
 
                         {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع الصادر والوارد */}
-                        <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto py-1 px-1 sm:px-2 w-full min-h-[72px] sm:min-h-[80px]">
+                        <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto py-1 px-1 sm:px-2 w-full min-h-[76px] sm:min-h-[84px]">
                           {/* النص الأيمن: نوع البضاعة */}
                           <div className="flex items-center justify-start flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
-                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3 py-0.5 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/95 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                              <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
+                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3.5 py-1 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/95 border border-[#C9A86A]/40 shadow-xs max-w-full">
+                              <span className="text-[11.5px] sm:text-xs md:text-sm font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
                                 {displayGoodsType}
                               </span>
                             </div>
@@ -760,7 +760,7 @@ export function PreparerOrderTable({
 
                             {/* دائرة السعر المركزية */}
                             <div
-                              className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto shadow-sm"
+                              className="w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto shadow-sm"
                               style={{
                                 backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                               }}
@@ -808,8 +808,8 @@ export function PreparerOrderTable({
 
                           {/* النص الأيسر: وقت الطلب */}
                           <div className="flex items-center justify-end flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
-                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                              <span className="text-[10.5px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
+                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3.5 py-1 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
+                              <span className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
                                 {o.orderNoteTime || o.timeLine || "فوري"}
                               </span>
                             </div>
@@ -823,7 +823,7 @@ export function PreparerOrderTable({
                             <Link
                               href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="h-9 sm:h-10 px-3.5 sm:px-5 rounded-full bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.3)] hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
+                              className="h-10 sm:h-11 px-4 sm:px-5.5 rounded-full bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.3)] hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
                               title="تعديل الطلب ✏️"
                             >
                               <span className="text-sm">✏️</span>
@@ -841,10 +841,10 @@ export function PreparerOrderTable({
                                   e.stopPropagation();
                                   setPayOrder(o);
                                 }}
-                                className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition bg-gradient-to-b from-[#104D3B] via-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_3px_12px_rgba(10,61,46,0.4),inset_0_1px_0_rgba(245,215,127,0.4)] cursor-pointer shrink-0 p-1 select-none text-center"
+                                className="relative w-11.5 h-11.5 sm:w-13 sm:h-13 rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition bg-gradient-to-b from-[#104D3B] via-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_3px_12px_rgba(10,61,46,0.4),inset_0_1px_0_rgba(245,215,127,0.4)] cursor-pointer shrink-0 p-1 select-none text-center"
                                 title="تسجيل دفع للعميل (المحل) ⚡"
                               >
-                                <span className="text-[9.5px] sm:text-[10.5px] font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] text-[#F5D77F]">
+                                <span className="text-[9.5px] sm:text-[11px] font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] text-[#F5D77F]">
                                   دفع للعميل
                                 </span>
                               </button>
@@ -858,7 +858,7 @@ export function PreparerOrderTable({
                                   e.stopPropagation();
                                   setAssignOrder(o);
                                 }}
-                                className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full text-xs sm:text-sm font-black flex flex-col items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md overflow-hidden p-1 text-center"
+                                className="relative w-11.5 h-11.5 sm:w-13 sm:h-13 rounded-full text-xs sm:text-sm font-black flex flex-col items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md overflow-hidden p-1 text-center"
                                 style={{
                                   backgroundImage: hasAssignedCourier
                                     ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -867,7 +867,7 @@ export function PreparerOrderTable({
                                 title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر لتعديل الإسناد)` : "إسناد الطلب لمندوب 👤"}
                               >
                                 {hasAssignedCourier ? (
-                                  <span className="text-[9px] sm:text-[10.5px] font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] truncate max-w-full px-0.5 block leading-tight">
+                                  <span className="text-[9.5px] sm:text-[11px] font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] truncate max-w-full px-0.5 block leading-tight">
                                     {o.assignedCourierName}
                                   </span>
                                 ) : null}
