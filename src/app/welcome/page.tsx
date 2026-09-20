@@ -215,7 +215,7 @@ export default function WelcomePage() {
                     <span className="text-[#CCFF00] font-mono">←</span>
                     <span>نهر خوز</span>
                   </div>
-                  <div className="text-[11px] text-[#5FA8D3] whitespace-nowrap">سيارة مبردة • الوصول: 12 دقيقة</div>
+                  <div className="text-[11px] text-[#5FA8D3] whitespace-nowrap">سيارات مبردة ودراجات حديثة</div>
                 </div>
               </div>
               <div className="text-left shrink-0">
