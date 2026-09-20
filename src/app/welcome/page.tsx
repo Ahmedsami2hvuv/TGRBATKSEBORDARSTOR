@@ -251,56 +251,68 @@ export default function WelcomePage() {
         </div>
       </div>
 
-      {/* 3. قسم شلون نشتغل؟ (تم تقديمه ليكون أولاً قبل أوقات العمل مع الترقيم 1, 2, 3) */}
-      <section className="py-16 md:py-24 border-b border-white/10">
+      {/* 3. قسم شلون نشتغل؟ (مدمج وأنيق وبحجم متناسق) */}
+      <section className="py-8 md:py-12 border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
-          <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
-              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">WORKFLOW // خطوات الطلب</div>
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">شلون نشتغل؟ ⚡</h2>
+              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] font-bold">WORKFLOW // خطوات الطلب</div>
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white mt-1">شلون نشتغل؟ ⚡</h2>
             </div>
-            <div className="font-mono text-xs text-white/50 bg-white/[0.05] border border-white/10 px-4 py-2 rounded-full">
+            <div className="font-mono text-xs text-white/50 bg-white/[0.05] border border-white/10 px-3.5 py-1.5 rounded-full">
               3 خطوات بسيطة • بدون تطبيق
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             
             {/* 1. تطلب */}
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
-              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/30 transition-colors">1</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
-                <MessageCircle className="w-6 h-6" />
+            <div className="rounded-2xl border border-white/10 bg-[#0F171B] p-5 md:p-6 hover:border-[#CCFF00]/40 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black">
+                    <MessageCircle className="w-5 h-5" />
+                  </div>
+                  <span className="text-2xl font-black font-mono text-[#CCFF00]/40">1</span>
+                </div>
+                <h3 className="text-base md:text-lg font-black text-white mb-1.5">تطلب من الواتساب أو من المتجر</h3>
+                <p className="text-white/70 text-xs md:text-sm leading-relaxed">
+                  دز رسالة أو بصمة أو من المتجر أو بأي طريقة، ودزلنة موقعك مرة وحدة.
+                </p>
               </div>
-              <h3 className="text-xl md:text-2xl font-black text-white mb-3">تطلب من الواتساب أو من المتجر</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                دز رسالة أو بصمة أو من المتجر أو بأي طريقة، ودزلنة موقعك مرة وحدة.
-              </p>
             </div>
 
             {/* 2. نشتري إلك */}
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#5FA8D3]/40 transition-all group">
-              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#5FA8D3]/30 transition-colors">2</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#5FA8D3] text-black flex items-center justify-center text-xl font-black mb-6">
-                <ShoppingBag className="w-6 h-6" />
+            <div className="rounded-2xl border border-white/10 bg-[#0F171B] p-5 md:p-6 hover:border-[#5FA8D3]/40 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#5FA8D3] text-black flex items-center justify-center font-black">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <span className="text-2xl font-black font-mono text-[#5FA8D3]/40">2</span>
+                </div>
+                <h3 className="text-base md:text-lg font-black text-white mb-1.5">نشتري إلك</h3>
+                <p className="text-white/70 text-xs md:text-sm leading-relaxed">
+                  نشتري إلك كل اللي طلبته واللي ممتوفر نبلغك حتى نشوفلك البديل.
+                </p>
               </div>
-              <h3 className="text-xl md:text-2xl font-black text-white mb-3">نشتري إلك</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                نشتري إلك كل اللي طلبته واللي ممتوفر نبلغك حتى نشوفلك البديل.
-              </p>
             </div>
 
             {/* 3. نوصلك الطلب */}
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
-              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/30 transition-colors">3</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
-                <Truck className="w-6 h-6" />
+            <div className="rounded-2xl border border-white/10 bg-[#0F171B] p-5 md:p-6 hover:border-[#CCFF00]/40 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <span className="text-2xl font-black font-mono text-[#CCFF00]/40">3</span>
+                </div>
+                <h3 className="text-base md:text-lg font-black text-white mb-1.5">نوصلك الطلب</h3>
+                <p className="text-white/70 text-xs md:text-sm leading-relaxed">
+                  نوصلك الطلب لباب بيتك، وبراحتك تحب تدفع كاش أو ماستر كارد.
+                </p>
               </div>
-              <h3 className="text-xl md:text-2xl font-black text-white mb-3">نوصلك الطلب</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                نوصلك الطلب لباب بيتك، وبراحتك تحب تدفع كاش أو ماستر كارد.
-              </p>
             </div>
 
           </div>
