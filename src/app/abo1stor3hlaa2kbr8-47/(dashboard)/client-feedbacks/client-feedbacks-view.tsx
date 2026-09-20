@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   Filter,
 } from "lucide-react";
+import { whatsappMeUrl } from "@/lib/whatsapp";
 
 // واجهة تقييم الأكشاك والعملاء
 interface ClientFeedbackItem {
@@ -227,14 +228,7 @@ export function ClientFeedbacksView({
 
   // توليد رابط الواتساب المباشر
   const buildWaUrl = (phone: string, text = "") => {
-    let clean = (phone || "").replace(/\D/g, "");
-    if (clean.startsWith("0")) {
-      clean = "964" + clean.substring(1);
-    } else if (clean.startsWith("7")) {
-      clean = "964" + clean;
-    }
-    const encoded = encodeURIComponent(text);
-    return `https://wa.me/${clean}${encoded ? `?text=${encoded}` : ""}`;
+    return whatsappMeUrl(phone, text);
   };
 
   return (

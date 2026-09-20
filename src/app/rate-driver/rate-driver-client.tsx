@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Send,
+  UserCheck,
 } from "lucide-react";
 
 interface RateDriverClientProps {
@@ -36,17 +37,17 @@ export function RateDriverClient({
   alreadyRated = false,
   existingRating = null,
 }: RateDriverClientProps) {
-  // حالات التقييم
-  const [mannerRating, setMannerRating] = useState<number>(5);
-  const [mannerReason, setMannerReason] = useState<string>("");
+  // حالات التقييم (تبدأ من 0 حتى يختار الزبون بنفسه)
+  const [mannerRating, setMannerRating] = useState<number>(existingRating?.mannerRating || 0);
+  const [mannerReason, setMannerReason] = useState<string>(existingRating?.mannerReason || "");
 
-  const [speedRating, setSpeedRating] = useState<number>(5);
-  const [speedReason, setSpeedReason] = useState<string>("");
+  const [speedRating, setSpeedRating] = useState<number>(existingRating?.speedRating || 0);
+  const [speedReason, setSpeedReason] = useState<string>(existingRating?.speedReason || "");
 
-  const [overallRating, setOverallRating] = useState<number>(5);
-  const [overallReason, setOverallReason] = useState<string>("");
+  const [overallRating, setOverallRating] = useState<number>(existingRating?.overallRating || 0);
+  const [overallReason, setOverallReason] = useState<string>(existingRating?.overallReason || "");
 
-  const [notes, setNotes] = useState<string>("");
+  const [notes, setNotes] = useState<string>(existingRating?.notes || "");
 
   // حالات الإرسال والواجهة
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +63,12 @@ export function RateDriverClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderData) return;
+
+    // التحقق من أن الزبون حدد كل التقييمات
+    if (mannerRating === 0 || speedRating === 0 || overallRating === 0) {
+      setErrorMessage("يرجى تحديد عدد النجوم لجميع بنود التقييم قبل الإرسال ⭐");
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -121,8 +128,16 @@ export function RateDriverClient({
             {icon}
             {label}
           </span>
-          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#B45309]">
-            {value === 5
+          <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border transition-all ${
+            value === 0
+              ? "bg-slate-100 text-slate-500 border-slate-200"
+              : value === 5
+              ? "bg-[#FFF8F0] border-[#C9A86A]/40 text-[#B45309]"
+              : "bg-amber-100 border-amber-300 text-amber-900 font-black"
+          }`}>
+            {value === 0
+              ? "اضغط لتحديد النجوم"
+              : value === 5
               ? "ممتاز 🌟 (5/5)"
               : value === 4
               ? "جيد جداً (4/5)"
@@ -137,12 +152,15 @@ export function RateDriverClient({
         {/* النجوم */}
         <div className="flex items-center justify-center gap-2 py-2.5 bg-[#FFFDF9] rounded-[18px] border border-[#C9A86A]/30 shadow-inner" dir="ltr">
           {[1, 2, 3, 4, 5].map((star) => {
-            const isFilled = star <= value;
+            const isFilled = value > 0 && star <= value;
             return (
               <button
                 key={star}
                 type="button"
-                onClick={() => onChange(star)}
+                onClick={() => {
+                  onChange(star);
+                  setErrorMessage(null);
+                }}
                 className="p-1 hover:scale-125 active:scale-95 transition-all transform cursor-pointer"
                 title={`${star} نجوم`}
               >
@@ -179,7 +197,7 @@ export function RateDriverClient({
             شكراً جزيلاً لتقييمك! ❤️
           </h2>
           <p className="text-sm font-bold text-slate-600 mb-6 leading-relaxed">
-            تم استلام تقييمك للمندوب <span className="text-[#0A3D2E] font-black">{courierName}</span> بنجاح. رأيك وملاحظاتك تساهم دائماً في تطوير خدمتنا وتقديم أفضل تجربة توصيل تليق بكم.
+            تم استلام تقييمك للمندوب <span className="text-[#0A3D2E] font-black">{courierName}</span> بنجاح. سيقوم أحد مسؤولي مدينتك بمراجعة تقييمك والاهتمام به.
           </p>
 
           {/* بطاقة الدعوة لصفحة الترحيب والخدمات */}
@@ -191,7 +209,7 @@ export function RateDriverClient({
               </h3>
             </div>
             <p className="text-xs font-bold text-slate-700 leading-relaxed mb-4">
-              تعرف على كافة مميزات التوصيل، المتابعة، والخدمات الحصرية التي نقدمها لك وللمتاجر الشريكة في بغداد وجميع المناطق.
+              تعرف على كافة مميزات التوصيل، المتابعة، والخدمات الحصرية التي نقدمها لك وللمتاجر الشريكة في بغداد وجميع المحافظات.
             </p>
 
             <a
@@ -272,7 +290,7 @@ export function RateDriverClient({
         </div>
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-[16px] bg-red-50 border border-red-200 text-xs font-bold text-red-700 flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-[16px] bg-red-50 border-2 border-red-300 text-xs font-black text-red-700 flex items-center gap-2 animate-shake">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
             <span>{errorMessage}</span>
           </div>
@@ -281,7 +299,11 @@ export function RateDriverClient({
         {/* نموذج التقييم */}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 1. أسلوب وتعامل المندوب */}
-          <div className="bg-[#FAF6EE] p-4 rounded-[22px] border border-[#C9A86A]/30 shadow-sm space-y-3">
+          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
+            mannerRating > 0 && mannerRating < 5
+              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
+              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
+          }`}>
             <InteractiveStarGroup
               value={mannerRating}
               onChange={setMannerRating}
@@ -289,26 +311,30 @@ export function RateDriverClient({
               icon={<Heart className="w-4 h-4 text-[#C9A86A]" />}
             />
 
-            {/* يظهر الحقل إذا كان التقييم أقل من 5 نجوم */}
-            {mannerRating < 5 && (
-              <div className="pt-2 border-t border-[#C9A86A]/20 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="block text-xs font-black text-[#B45309] mb-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
+            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
+            {mannerRating > 0 && mannerRating < 5 && (
+              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
                   <span>لماذا أقل من 5 نجوم؟ يرجى إخبارنا بالسبب لنعالجه فوراً:</span>
-                </label>
+                </div>
                 <textarea
                   value={mannerReason}
                   onChange={(e) => setMannerReason(e.target.value)}
-                  placeholder="مثال: المندوب كان متعجلاً، أو لم يكن أسلوبه لائقاً..."
+                  placeholder="اكتب سبب التقييم هنا (مثال: أسلوب غير لائق، تعامل غير مريح...)"
                   rows={2}
-                  className="w-full p-2.5 rounded-[14px] bg-white border border-amber-300 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-1 focus:ring-[#0A3D2E]"
+                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
                 />
               </div>
             )}
           </div>
 
           {/* 2. سهولة وسرعة توصيل الطلب */}
-          <div className="bg-[#FAF6EE] p-4 rounded-[22px] border border-[#C9A86A]/30 shadow-sm space-y-3">
+          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
+            speedRating > 0 && speedRating < 5
+              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
+              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
+          }`}>
             <InteractiveStarGroup
               value={speedRating}
               onChange={setSpeedRating}
@@ -316,26 +342,30 @@ export function RateDriverClient({
               icon={<Truck className="w-4 h-4 text-[#C9A86A]" />}
             />
 
-            {/* يظهر الحقل إذا كان التقييم أقل من 5 نجوم */}
-            {speedRating < 5 && (
-              <div className="pt-2 border-t border-[#C9A86A]/20 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="block text-xs font-black text-[#B45309] mb-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
+            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
+            {speedRating > 0 && speedRating < 5 && (
+              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
                   <span>ما الذي سبب تأخير أو صعوبة التوصيل؟</span>
-                </label>
+                </div>
                 <textarea
                   value={speedReason}
                   onChange={(e) => setSpeedReason(e.target.value)}
-                  placeholder="مثال: تأخر في الوصول، صعوبة في معرفة العنوان..."
+                  placeholder="اكتب سبب التأخير أو صعوبة الوصول (مثال: تأخر في الوصول، صعوبة في معرفة العنوان...)"
                   rows={2}
-                  className="w-full p-2.5 rounded-[14px] bg-white border border-amber-300 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-1 focus:ring-[#0A3D2E]"
+                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
                 />
               </div>
             )}
           </div>
 
           {/* 3. التقييم العام للمندوب */}
-          <div className="bg-[#FAF6EE] p-4 rounded-[22px] border border-[#C9A86A]/30 shadow-sm space-y-3">
+          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
+            overallRating > 0 && overallRating < 5
+              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
+              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
+          }`}>
             <InteractiveStarGroup
               value={overallRating}
               onChange={setOverallRating}
@@ -343,19 +373,19 @@ export function RateDriverClient({
               icon={<Star className="w-4 h-4 text-[#C9A86A]" />}
             />
 
-            {/* يظهر الحقل إذا كان التقييم أقل من 5 نجوم */}
-            {overallRating < 5 && (
-              <div className="pt-2 border-t border-[#C9A86A]/20 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="block text-xs font-black text-[#B45309] mb-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
+            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
+            {overallRating > 0 && overallRating < 5 && (
+              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
                   <span>سبب تقييم الخدمة الإجمالية بأقل من 5 نجوم:</span>
-                </label>
+                </div>
                 <textarea
                   value={overallReason}
                   onChange={(e) => setOverallReason(e.target.value)}
-                  placeholder="اكتب تفاصيل إضافية حول التقييم العام..."
+                  placeholder="اكتب تفاصيل إضافية حول التقييم العام وما تقترحه علينا..."
                   rows={2}
-                  className="w-full p-2.5 rounded-[14px] bg-white border border-amber-300 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-1 focus:ring-[#0A3D2E]"
+                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
                 />
               </div>
             )}
@@ -374,6 +404,19 @@ export function RateDriverClient({
               rows={2}
               className="w-full p-2.5 rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/30 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E]"
             />
+          </div>
+
+          {/* بطاقة التنبيه والملاحظة الإدارية قبل زر الإرسال */}
+          <div className="p-3.5 rounded-[20px] bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-2 border-emerald-300 shadow-sm flex items-start gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+              <UserCheck className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-emerald-950 leading-relaxed">
+              <strong className="block text-emerald-900 font-black mb-0.5">
+                🛡️ ضمان المتابعة والاهتمام برأيك:
+              </strong>
+              سوف يراجع هذا التقييم أحد مسؤولي إدارتنا في منطقتك ويقرأ ملاحظاتك ويتواصل معك إذا كانت هناك أي مشكلة لضمان رضاك التام.
+            </div>
           </div>
 
           {/* زر الإرسال */}

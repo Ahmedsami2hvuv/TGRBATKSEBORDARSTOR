@@ -30,40 +30,52 @@ export function telHref(phone: string): string {
 }
 
 /**
- * يحوّل الإدخال إلى صيغة واتساب (رقم دولة + رقم وطني بدون +).
- * أمثلة مع العراق: 07733921468، +964 771 243 0593، 9647712430593
+ * يحوّل الإدخال إلى صيغة واتساب الدولية الدقيقة (رقم دولة + رقم وطني بدون + وبدون أصفار إضافية).
+ * يمنع تعليق واتساب وظهور "جاري البحث".
  */
-export function normalizePhoneDigits(raw: string): string {
+export function normalizePhoneDigits(raw: string | null | undefined): string {
+  if (!raw) return "";
   let d = digitsOnly(raw);
   if (!d) return "";
 
-  // إزالة الأصفار الدولية البادئة
+  // إزالة الأصفار الدولية البادئة (00)
   while (d.startsWith("00")) {
     d = d.slice(2);
   }
 
+  // معالجة الأرقام العراقية الشائعة
+  // 1. حالة كتابة كود الدولة مع صفر: 96407... -> 9647...
+  if (d.startsWith("96407")) {
+    d = "964" + d.slice(4);
+    return d;
+  }
+
+  // 2. إذا كان يبدأ بـ 964 ويحتوي 12 أو 13 خانة
+  if (d.startsWith("964") && d.length >= 12) {
+    return d;
+  }
+
+  // 3. إزالة أي أصفار بادئة محلية
+  while (d.startsWith("0")) {
+    d = d.slice(1);
+  }
+
+  // 4. إذا أصبح يبدأ بـ 7 (الرقم العراقي: آسيا، زين، كورك)
+  if (d.startsWith("7")) {
+    // إذا كان الطول 10 أرقام (وهو القياسي) نضيف 964
+    if (d.length === 10) {
+      return `964${d}`;
+    }
+    // إذا كان الطول أكثر من 10 (مثلاً دخل 11 رقماً بالخطأ) نأخذ أول 10 أرقام بعد الـ 7
+    if (d.length >= 10) {
+      return `964${d.slice(0, 10)}`;
+    }
+    return `964${d}`;
+  }
+
   const cc = defaultCountryDigits();
-
-  // إذا كان الرقم يبدأ بكود الدولة مسبقاً (مثل 96477...)
-  if (d.startsWith(cc) && d.length >= 12) {
-    return d;
-  }
-
-  // معالجة أرقام العراق
-  if (cc === "964") {
-    // إذا بدأ بـ 07 (11 رقم) نحذف الـ 0 ونضيف 964
-    if (d.length === 11 && d.startsWith("07")) {
-      return cc + d.slice(1);
-    }
-    // إذا بدأ بـ 7 (10 أرقام) نضيف 964 مباشرة
-    if (d.length === 10 && d.startsWith("7")) {
-      return cc + d;
-    }
-  }
-
-  // لأي دولة أخرى أو إذا كان الطول كبيراً نفترض أنه يحتوي الكود
-  if (d.length >= 11) {
-    return d;
+  if (d.length >= 9) {
+    return `${cc}${d}`;
   }
 
   return d;
