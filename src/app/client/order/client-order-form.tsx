@@ -707,6 +707,37 @@ function ClientOrderFormInner({
 
             <div className="h-[2px] w-full bg-gradient-to-r from-[#C9A86A] via-[#F5D77F]/60 to-transparent rounded-full mb-[14px]" />
 
+            {/* مناطق سابقة لهذا الزبون إن وجدت - بالأعلى */}
+            {previousRegions.length > 0 && (
+              <div className="mb-[12px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/40 p-[8px] animate-in fade-in slide-in-from-top-2">
+                <p className="text-[10px] font-black text-[#0A3D2E] mb-[6px] flex items-center gap-[4px]">
+                  <Sparkles className="w-[10px] h-[10px] text-[#C9A86A]" />
+                  مناطق سابقة لهذا الزبون:
+                </p>
+                <div className="flex flex-wrap gap-[6px]">
+                  {previousRegions.map((reg) => (
+                    <button
+                      key={reg.id}
+                      type="button"
+                      onClick={() => {
+                        setSelected(reg);
+                        setQ(reg.name);
+                        setShowRegionHits(false);
+                      }}
+                      className={`px-[10px] py-[5px] rounded-full text-[11px] font-black border transition flex items-center gap-[4px] ${
+                        selected?.id === reg.id
+                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
+                          : "bg-white text-[#1E293B] border-[#C9A86A]/40 hover:bg-[#FFF8F0]"
+                      }`}
+                    >
+                      <MapPin className="w-[10px] h-[10px]" />
+                      {reg.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* السطر الأول: رقم الزبون بجانب منطقة الزبون */}
             <div className="grid grid-cols-[135px_1fr] gap-[8px] items-end">
               {/* رقم الزبون (مكبر ومريح) */}
@@ -825,37 +856,6 @@ function ClientOrderFormInner({
                 )}
               </div>
             </div>
-
-            {/* مناطق سابقة لهذا الزبون إن وجدت */}
-            {previousRegions.length > 0 && (
-              <div className="mt-[10px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/30 p-[8px]">
-                <p className="text-[10px] font-black text-[#0A3D2E] mb-[6px] flex items-center gap-[4px]">
-                  <Sparkles className="w-[10px] h-[10px] text-[#C9A86A]" />
-                  مناطق سابقة لهذا الزبون:
-                </p>
-                <div className="flex flex-wrap gap-[6px]">
-                  {previousRegions.map((reg) => (
-                    <button
-                      key={reg.id}
-                      type="button"
-                      onClick={() => {
-                        setSelected(reg);
-                        setQ(reg.name);
-                        setShowRegionHits(false);
-                      }}
-                      className={`px-[10px] py-[5px] rounded-full text-[11px] font-black border transition flex items-center gap-[4px] ${
-                        selected?.id === reg.id
-                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                          : "bg-white text-[#1E293B] border-[#C9A86A]/40 hover:bg-[#FFF8F0]"
-                      }`}
-                    >
-                      <MapPin className="w-[10px] h-[10px]" />
-                      {reg.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* السطر الثاني: نوع الطلب وسعر الطلب بجانب بعضهما */}
             <div className="grid grid-cols-2 gap-[10px] mt-[14px]">
