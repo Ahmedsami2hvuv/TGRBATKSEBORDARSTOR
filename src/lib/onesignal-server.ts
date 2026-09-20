@@ -17,9 +17,9 @@ function cleanAppId(value: string | undefined, defaultValue: string): string {
 function cleanApiKey(value: string | undefined, defaultValue: string): string {
   if (!value) return defaultValue;
   const cleaned = value.replace(/['"\r\n\s]/g, "").trim();
-  // مفتاح ون سجنل يبدأ دائماً بـ os_v2_app_
-  if (!cleaned.startsWith("os_v2_app_") || cleaned.length < 50) {
-    console.warn(`[OneSignal] Provided API Key is not valid. Using default.`);
+  // قبول المفاتيح القديمة والجديدة (سواء بدأت بـ os_v2_app_ أو كانت سلسلة Base64/Hex عادية)
+  if (cleaned.length < 20) {
+    console.warn(`[OneSignal] Provided API Key is too short. Using default.`);
     return defaultValue;
   }
   return cleaned;
@@ -135,15 +135,25 @@ export async function sendOneSignalNotification(options: {
   try {
     const targetAppName = isAdmin ? 'Admin' : isPreparer ? 'Preparer' : isEmployee ? 'Employee' : 'Mandob';
     console.log(`[OneSignal] Sending notification to OneSignal API (${targetAppName})...`);
-    const response = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Key ${targetApiKey.trim()}`,
-      },
-      body: JSON.stringify(notification),
-      signal: AbortSignal.timeout(6000),
-    });
+
+    const sendRequest = async (authPrefix: string) => {
+      return await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `${authPrefix} ${targetApiKey.trim()}`,
+        },
+        body: JSON.stringify(notification),
+        signal: AbortSignal.timeout(6000),
+      });
+    };
+
+    // تجربة Basic أولاً (المعيار الأساسي لـ OneSignal API) ثم Key كخيار احتياطي
+    let response = await sendRequest("Basic");
+    if (response.status === 401) {
+      console.warn(`[OneSignal] Basic auth failed (401), attempting with 'Key' prefix...`);
+      response = await sendRequest("Key");
+    }
 
     const isOk = response.ok;
     const responseData = isOk ? await response.json() : await response.text();
@@ -159,9 +169,13 @@ export async function sendOneSignalNotification(options: {
       return { success: true, id: responseData.id };
     } else {
       console.error(`[OneSignal] API responded with error for ${targetAppName}:`, response.status, responseData);
+      let errorMsg = `OneSignal Error (Status ${response.status}): ${typeof responseData === "string" ? responseData : JSON.stringify(responseData)}`;
+      if (response.status === 401) {
+        errorMsg += ` - يرجى التأكد من صلاحية مفتاح REST API Key لتطبيق ${targetAppName} في لوحة OneSignal أو متغيرات Vercel.`;
+      }
       return { 
         success: false, 
-        error: `OneSignal Error (Status ${response.status}): ${typeof responseData === "string" ? responseData : JSON.stringify(responseData)}` 
+        error: errorMsg 
       };
     }
   } catch (e: any) {
