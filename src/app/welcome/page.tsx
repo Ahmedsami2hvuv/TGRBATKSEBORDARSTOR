@@ -1,225 +1,597 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { getSocialLinksAction, SocialLinksConfig } from "@/lib/social-links";
-import ScrollytellingHero from "@/components/scrollytelling-hero";
-import { motion } from "framer-motion";
-import {
-  Store, MessageCircle, Send, Users, Heart, Zap, MapPin, CheckCheck, Camera, Mic, Phone, Car, Clock, RotateCcw, Megaphone, Smartphone, ExternalLink, ArrowLeftRight, Banknote, ShoppingCart, UserPlus, Save
-} from "lucide-react";
+import React, { useState } from "react";
 import Link from "next/link";
+import {
+  MessageCircle,
+  Phone,
+  Send,
+  Zap,
+  CheckCircle2,
+  Clock,
+  Coffee,
+  Sun,
+  Moon,
+  Truck,
+  ShoppingBag,
+  ShoppingCart,
+  Users,
+  Instagram,
+  ArrowUpRight,
+  Handshake,
+  MapPin,
+  ShieldCheck,
+  RotateCcw,
+  Sparkles
+} from "lucide-react";
 
-const regions3k = ['الاسمدة', 'جيكور حزبه', 'جيكور', 'العصفورية', 'باب سليمان', 'باب طويل', 'باب العريض', 'باب عباس', 'كوت بازل', 'باب دباغ', 'باب ميدان', 'بلد سلطان', 'ام الصخر', 'باب رمانه', 'اهل عيد', 'الباني', 'نهر خوز', 'ابو مغيرة', 'مجيبرة', 'السبيليات', 'الصنگر', 'محيلة قبل دورة ام زباله', 'طريق الوسطي', 'العاگولية', 'الصحراء', 'ابو كوصرة', 'طريزاوية', 'العوجة', 'المقيمين', 'الابطاح', 'اللكطة', 'الشجرة الطيبة', 'شيخ ابراهيم', 'نزيلة', 'عميرية', 'بلد', 'كوت البلجاني', 'الحوطة', 'السوق', 'الصنكر', 'محيله الوسطي', 'محيله قرب الجسر', 'محيله بالسوق', 'محيله قرب السيطرة', 'محيله شارع المشروع'];
+// قائمة المناطق الكاملة لقضاء أبي الخصيب
+const regions3k = [
+  'الاسمدة', 'جيكور حزبه', 'جيكور', 'العصفورية', 'باب سليمان', 'باب طويل',
+  'باب العريض', 'باب عباس', 'كوت بازل', 'باب دباغ', 'باب ميدان', 'بلد سلطان',
+  'ام الصخر', 'باب رمانه', 'اهل عيد', 'الباني', 'نهر خوز', 'ابو مغيرة',
+  'مجيبرة', 'السبيليات', 'الصنگر', 'محيلة قبل دورة ام زباله', 'طريق الوسطي',
+  'العاگولية', 'الصحراء', 'ابو كوصرة', 'طريزاوية', 'العوجة', 'المقيمين',
+  'الابطاح', 'اللكطة', 'الشجرة الطيبة', 'شيخ ابراهيم', 'نزيلة', 'عميرية',
+  'بلد', 'كوت البلجاني', 'الحوطة', 'السوق', 'الصنكر', 'محيله الوسطي',
+  'محيله قرب الجسر', 'محيله بالسوق', 'محيله قرب السيطرة', 'محيله شارع المشروع'
+];
 
-const regions5k = ['محيله شارع سيد حامد', 'محيله شارع الاندلس', 'محيله الصكاروة', 'المعهد الصناعي', 'دورة ام زباله بعد الاستدارة', 'الاندلس', 'طريق سيد حامد بعد الاندلس', 'الجديدة', 'الرومية', 'الصكاروة', 'كوت الصلحي', 'كوت الفداغ', 'جامع الشهيد', 'يوسفان', 'حمدان', 'كوت ثويني', 'البهادرية', 'محولة الزهير', 'كوت الحمداني', 'عويسيان', 'مهيجران', 'السراجي'];
-
-function FadeInSection({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
-      className="w-full"
-    >
-      {children}
-    </motion.div>
-  );
-}
+const regions5k = [
+  'محيله شارع سيد حامد', 'محيله شارع الاندلس', 'محيله الصكاروة', 'المعهد الصناعي',
+  'دورة ام زباله بعد الاستدارة', 'الاندلس', 'طريق سيد حامد بعد الاندلس',
+  'الجديدة', 'الرومية', 'الصكاروة', 'كوت الصلحي', 'كوت الفداغ', 'جامع الشهيد',
+  'يوسفان', 'حمدان', 'كوت ثويني', 'البهادرية', 'محولة الزهير', 'كوت الحمداني',
+  'عويسيان', 'مهيجران', 'السراجي'
+];
 
 export default function WelcomePage() {
-  const [links, setLinks] = useState<SocialLinksConfig | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<3000 | 5000>(3000);
 
-  useEffect(() => {
-    getSocialLinksAction().then(data => setLinks(data));
-  }, []);
+  const currentRegions = selectedPrice === 3000 ? regions3k : regions5k;
 
   return (
-    <div className="min-h-screen bg-[#F6FAFD] text-[#22323F] font-['IBM_Plex_Sans_Arabic']  selection:bg-[#BFE0F2] selection:text-[#22323F]">
+    <div dir="rtl" className="min-h-screen bg-[#080C0F] text-white selection:bg-[#CCFF00] selection:text-black overflow-x-hidden font-sans">
       
-      {/* 1. السرد القصصي (Scrollytelling) بالبداية */}
-      <ScrollytellingHero />
+      {/* خلفيات التوهج النيوني */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-25">
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#CCFF00] rounded-full blur-[150px] opacity-15" />
+        <div className="absolute bottom-[20%] left-[-10%] w-[450px] h-[450px] bg-[#5FA8D3] rounded-full blur-[140px] opacity-15" />
+      </div>
 
-      {/* 2. تكملة الصفحة بحركات تفاعلية (Scroll Magic) */}
-      <div className="max-w-4xl mx-auto px-4 pb-24 relative z-10 pt-16">
-        
-        {/* زر حفظ الرقم بحركة ملفتة ومختصرة */}
-        <FadeInSection>
-          <div className="bg-[#5FA8D3] text-white rounded-[32px] p-8 md:p-10 text-center shadow-xl mb-12 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-32 h-32 bg-white blur-[80px] opacity-20 rounded-full" />
-            <h2 className="text-[26px] md:text-[30px] font-bold mb-4 leading-snug">السلام عليكم 👋 أهم شي... اخزن رقمنا!</h2>
-            <p className="text-[16px] md:text-[18px] text-white/90 mb-6 max-w-lg mx-auto leading-relaxed">
-              رقمنا لازم يكون بجهازك واسمنا (أبو الأكبر للتوصيل). ننشر يومياً حالات لمنتجات من شتى المحلات، فاحفظ الرقم حتى توصلك أقوى العروض.
-            </p>
-            <div className="bg-white/10 rounded-2xl p-4 mb-8 max-w-md mx-auto text-right">
-              <h4 className="font-bold text-[18px] mb-3 text-white">⏰ أوقات التوصيل:</h4>
-              <ul className="space-y-2 text-[15px] text-white/90">
-                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-white block"></span> <strong>الصباح:</strong> من الصبح لحد ساعة 12 الظهر</li>
-                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-300 block"></span> <strong>استراحة:</strong> الظهر 4 ساعات (من 12 لـ 4)</li>
-                <li className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-white block"></span> <strong>المساء:</strong> الشفت الثاني من 4 العصر لـ 8 بالليل</li>
-              </ul>
+      {/* الشريط العلوي */}
+      <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/10 backdrop-blur-xl bg-[#080C0F]/80">
+        <div className="mx-auto max-w-7xl px-4 md:px-8 h-[68px] flex items-center justify-between">
+          <div className="flex items-center gap-4 md:gap-6">
+            <Link href="/" className="text-2xl font-black tracking-tight flex items-center gap-1">
+              <span>أبو الأكبر</span>
+              <span className="text-[#CCFF00]">.</span>
+            </Link>
+            <div className="hidden sm:flex items-center gap-2 text-xs font-mono tracking-wider bg-white/[0.05] border border-white/10 rounded-full px-3.5 py-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+              <span className="opacity-80">14 مندوب متاح الآن</span>
+              <span className="w-px h-3 bg-white/20 mx-1" />
+              <span className="text-[#CCFF00] font-bold">أبي الخصيب</span>
             </div>
-            <a href="tel:+9647733921468" className="inline-flex items-center justify-center gap-3 bg-white text-[#5FA8D3] px-8 py-4 rounded-full font-bold text-[18px] hover:bg-gray-50 transition-colors shadow-lg active:scale-95 duration-200 w-full sm:w-auto">
-              <Phone className="w-5 h-5" />
-              احفظ الرقم (07733921468)
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="https://wa.me/9647733921468"
+              target="_blank"
+              rel="noreferrer"
+              className="h-10 px-5 rounded-full bg-[#CCFF00] text-black text-sm font-black hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(204,255,0,0.25)]"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>اطلب على واتساب</span>
             </a>
           </div>
-        </FadeInSection>
+        </div>
+      </nav>
 
-        {/* قسم البائعين وأصحاب المتاجر */}
-        <FadeInSection>
-          <div className="bg-[#22323F] text-white rounded-[32px] p-8 md:p-12 mb-12 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-orange-500 blur-[120px] rounded-full opacity-10 pointer-events-none" />
-            <h2 className="text-[28px] md:text-[32px] font-bold mb-8 flex items-center gap-4 text-orange-400">
-              <Zap className="w-8 h-8" />
-              يا هلا بأصحاب المحلات! 🚚
-            </h2>
-            <p className="text-white/90 mb-8 font-medium text-[18px]">استمتعوا بمزايا التوصيل المتوفرة لدينا:</p>
-            
-            <div className="grid sm:grid-cols-2 gap-y-8 gap-x-8 text-white/80">
-              <div className="flex gap-4">
-                <Banknote className="w-7 h-7 text-orange-400 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white mb-1 text-[18px]">الدفع نقدًا 💵</h4>
-                  <p className="text-[15px] leading-relaxed">يسلمكم المندوب الحساب قبل مغادرة المكان.</p>
-                </div>
+      {/* 1. القسم الرئيسي (Hero Section) */}
+      <section className="relative pt-[120px] md:pt-[150px] pb-16 md:pb-24">
+        <div className="mx-auto max-w-7xl px-4 md:px-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+          
+          {/* نصوص الهيرو */}
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 mb-6">
+              <span className="h-px w-10 bg-[#CCFF00]" />
+              <span className="font-mono text-xs tracking-[0.25em] text-[#CCFF00] font-bold">
+                نظام توصيل أبي الخصيب المطور v2.0
+              </span>
+            </div>
+
+            <h1 className="font-black leading-[1.05] tracking-tight text-4xl sm:text-6xl lg:text-7xl mb-6">
+              <span className="block text-white">كلشي تريده.</span>
+              <span className="block text-white/40">بأي وقت ومن أي مكان.</span>
+              <span className="block text-[#CCFF00]">يوصل لباب بيتك.</span>
+            </h1>
+
+            <p className="text-base md:text-lg leading-relaxed text-white/70 font-normal max-w-xl mb-8">
+              خدمة توصيل فورية وشاملة داخل قضاء أبي الخصيب، بدون الحاجة لتحميل تطبيق أو تسجيل حساب، بس دز رسالة بالواتساب واحنه نتكفل بالباقي.
+            </p>
+
+            {/* الأزرار الرئيسية */}
+            <div className="flex flex-wrap gap-4 mb-10">
+              <a
+                href="https://wa.me/9647733921468"
+                target="_blank"
+                rel="noreferrer"
+                className="h-14 px-8 rounded-full bg-[#CCFF00] text-black font-black text-base flex items-center gap-3 hover:bg-white transition-all shadow-[0_0_30px_rgba(204,255,0,0.35)] active:scale-95"
+              >
+                <Send className="w-5 h-5" />
+                <span>راسلنا واطلب الآن</span>
+                <span className="w-7 h-7 rounded-full bg-black text-[#CCFF00] flex items-center justify-center text-sm font-bold">
+                  ↗
+                </span>
+              </a>
+
+              <a
+                href="tel:07733921468"
+                className="h-14 px-7 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/[0.05] text-sm md:text-base font-bold transition-all flex items-center gap-2.5 text-white active:scale-95"
+              >
+                <Phone className="w-5 h-5 text-[#5FA8D3]" />
+                <span>اتصل: 07733921468</span>
+              </a>
+            </div>
+
+            {/* ميزات سريعة */}
+            <div className="flex items-center gap-6 pt-6 border-t border-white/10">
+              <div className="flex -space-x-2 space-x-reverse">
+                <div className="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-[#CCFF00] text-black font-black text-xs flex items-center justify-center">99%</div>
+                <div className="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-[#5FA8D3] text-black font-black text-xs flex items-center justify-center">4.9★</div>
+                <div className="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-white text-black font-black text-xs flex items-center justify-center">⚡</div>
               </div>
-              <div className="flex gap-4">
-                <Clock className="w-7 h-7 text-orange-400 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white mb-1 text-[18px]">توصيل فوري 🚀</h4>
-                  <p className="text-[15px] leading-relaxed">الصباحية تصل بالصباح🌅 والمسائية تصل العصر أو المغرب🌇. أقصى مدة للتأخير 3 ساعات في حال وجود مشكلة.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <CheckCheck className="w-7 h-7 text-orange-400 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white mb-1 text-[18px]">مواعيد ومندوبين 🕒</h4>
-                  <p className="text-[15px] leading-relaxed">احترام موعد الاستلام والتسليم، ومندوبين مختارين بعناية ومدربين على أعلى مستوى 🤵‍♂️.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <RotateCcw className="w-7 h-7 text-orange-400 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white mb-1 text-[18px]">مزايا أخرى 🔥</h4>
-                  <p className="text-[15px] leading-relaxed">إعادة مجانية للطلبات المرفوضة، ترويج مجاني لحساباتكم، سيارات حديثة مكيفة 🚗 ودراجات نارية 🏍️.</p>
-                </div>
+              <div className="text-xs md:text-sm leading-snug">
+                <div className="font-bold text-white">+1,200 طلب أسبوعياً</div>
+                <div className="text-white/40 font-mono">توصيل بسيارات مبردة ودراجات حديثة</div>
               </div>
             </div>
           </div>
-        </FadeInSection>
 
-        {/* مميزات التطبيق الجديد */}
-        <FadeInSection>
-          <div className="bg-[#E7F2FA] rounded-[32px] p-8 md:p-12 mb-12 shadow-inner">
-            <h2 className="text-[26px] font-bold text-[#5FA8D3] mb-4">🔥 مميزات جديدة بتطبيق الطلبات!</h2>
-            <p className="text-[#22323F]/80 mb-8 text-[18px]">موقع لطلباتكم يغنيك عن تحميل التطبيقات وغيرها:</p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 text-[16px]">
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> بدون تحميل تطبيق 📵</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> بدون يوزر أو رقم سري 🔡</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> تسجيل بصمة صوت 🎤</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> التقاط صور للطلبية 📸</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> زر الطلب العكسي 🔄</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> زر كلشي واصل</div>
-              <div className="flex items-center gap-3 text-[#22323F] font-medium bg-white/50 p-4 rounded-xl sm:col-span-2"><CheckCheck className="w-5 h-5 text-[#5FA8D3]"/> اختيار نوع المركبة (سيارة أم دراجة 👌)</div>
-            </div>
-            
-            <p className="text-[#22323F] font-bold text-[18px]">الآن يمكنك رفع طلبياتك بكل سهولة وسرعة! الموقع سيتعرف عليك مباشرة 🫵🏻.</p>
-          </div>
-        </FadeInSection>
+          {/* رادار التوصيل والخريطة */}
+          <div className="relative h-[480px] lg:h-[540px] rounded-[32px] border border-white/15 bg-[#0D1418] overflow-hidden shadow-2xl flex flex-col justify-between p-6">
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)", backgroundSize: "24px 24px" }} />
 
-        {/* الأسعار بشكل جميل وجديد */}
-        <FadeInSection>
-          <div className="mb-16">
-            <div className="text-center mb-10">
-              <h2 className="text-[28px] md:text-[32px] font-bold text-[#22323F] mb-4">علماً أن الأسعار للطلبية الواحدة ⭕</h2>
+            {/* الشريط العلوي في البطاقة */}
+            <div className="relative z-10 flex justify-between items-center bg-black/60 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#CCFF00] animate-pulse" />
+                <span className="font-mono text-xs font-bold text-white/90">قطاع أبي الخصيب - مباشر</span>
+              </div>
+              <div className="font-mono text-[11px] text-[#5FA8D3] bg-[#5FA8D3]/10 border border-[#5FA8D3]/30 px-3 py-1 rounded-full">
+                66+ منطقة مغطاة
+              </div>
             </div>
-            
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* 3000 IQD */}
-              <div className="flex-1 bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-emerald-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-emerald-400 blur-[80px] rounded-full opacity-20" />
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="font-bold text-[26px] text-[#22323F]">3,000 دينار</h3>
-                    <span className="text-emerald-600 text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full mt-2 inline-block">هذه المناطق على 3</span>
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
-                    <MapPin className="w-6 h-6" />
-                  </div>
+
+            {/* مسار دراجة التوصيل */}
+            <div className="relative flex-1 my-4 flex items-center justify-center">
+              <svg className="w-full h-full opacity-60" viewBox="0 0 400 300" fill="none">
+                <path id="routePath" d="M 40 240 Q 120 40 200 150 T 360 80" stroke="rgba(204,255,0,0.3)" strokeWidth="2" strokeDasharray="6 6"/>
+                <circle cx="40" cy="240" r="6" fill="#5FA8D3"/>
+                <text x="40" y="265" fill="#5FA8D3" fontSize="11" fontWeight="bold" textAnchor="middle">المركز</text>
+                
+                <circle cx="200" cy="150" r="6" fill="#CCFF00"/>
+                <text x="200" y="175" fill="#CCFF00" fontSize="11" fontWeight="bold" textAnchor="middle">المحيلة</text>
+                
+                <circle cx="360" cy="80" r="6" fill="#5FA8D3"/>
+                <text x="360" y="105" fill="#5FA8D3" fontSize="11" fontWeight="bold" textAnchor="middle">السراجي</text>
+
+                <g>
+                  <circle r="12" fill="#CCFF00" />
+                  <text textAnchor="middle" dy="4" fontSize="12">🛵</text>
+                  <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
+                    <mpath href="#routePath"/>
+                  </animateMotion>
+                </g>
+              </svg>
+            </div>
+
+            {/* بطاقة الطلب قيد التنفيذ */}
+            <div className="relative z-10 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black shrink-0">
+                  <Zap className="w-6 h-6" />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {regions3k.map(m => (
-                    <span key={m} className="px-2.5 py-1.5 bg-emerald-50/50 text-emerald-800 border border-emerald-100 rounded-lg text-sm font-medium">{m}</span>
-                  ))}
+                <div>
+                  <div className="font-mono text-[10px] text-white/40">طلب قيد التوصيل الآن</div>
+                  <div className="text-sm font-bold text-white">صيدلية النور ➔ كوت الصلحي</div>
+                  <div className="text-xs text-[#5FA8D3]">سيارة مبردة • الوصول المتوقع: 12 دقيقة</div>
+                </div>
+              </div>
+              <div className="text-left shrink-0">
+                <div className="font-mono text-xl font-black text-[#CCFF00] leading-none">3,000</div>
+                <div className="font-mono text-[10px] text-white/50">د.ع</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 2. شريط الكلمات المتحرك (Marquee Strip) */}
+      <div className="relative border-y border-white/10 bg-[#CCFF00] text-black overflow-hidden py-3">
+        <div className="flex whitespace-nowrap font-black font-mono text-xs md:text-sm tracking-wider gap-8 justify-center overflow-x-auto">
+          <span>💊 أدوية وصيدليات</span> <span>•</span>
+          <span>🍔 مطاعم ووجبات</span> <span>•</span>
+          <span>🛒 سوبرماركت ومخضر</span> <span>•</span>
+          <span>🎁 هدايا ومناسبات</span> <span>•</span>
+          <span>💄 كوزمتك ومكياج</span> <span>•</span>
+          <span>🧁 حلويات وكيك</span> <span>•</span>
+          <span>📚 قرطاسية ومستلزمات</span> <span>•</span>
+          <span>🔄 استبدال وإرجاع مجاني</span>
+        </div>
+      </div>
+
+      {/* 3. قسم أوقات الدوام والشفتات (معدل ومضبوط) */}
+      <section className="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">TIMETABLE // الشفتات اليومية</div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white">أوقات عمل وتوصيل الطلبات ⏰</h2>
+            <p className="text-white/60 text-sm md:text-base mt-2">نعمل بنظام الشفتات المنتظمة لضمان دقة المواعيد وسرعة التوصيل</p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-6">
+            {/* الصباح */}
+            <div className="bg-[#0F171B] border border-white/10 rounded-[28px] p-6 md:p-8 hover:border-[#CCFF00]/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00]/10 border border-[#CCFF00]/30 text-[#CCFF00] flex items-center justify-center mb-5 text-2xl">
+                <Sun className="w-6 h-6" />
+              </div>
+              <div className="text-[#CCFF00] font-mono text-xs font-bold">الشفت الأول</div>
+              <h3 className="text-xl font-black text-white mt-1 mb-2">الفترة الصباحية</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                من الصباح الباكر حتى الساعة <strong>12:00 ظهراً</strong> لاستلام وتوصيل كافة طلبيات الصباح والصيدليات.
+              </p>
+            </div>
+
+            {/* الاستراحة */}
+            <div className="bg-[#0F171B] border border-white/10 rounded-[28px] p-6 md:p-8 hover:border-orange-500/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-400 flex items-center justify-center mb-5 text-2xl">
+                <Coffee className="w-6 h-6" />
+              </div>
+              <div className="text-orange-400 font-mono text-xs font-bold">استراحة الكادر</div>
+              <h3 className="text-xl font-black text-white mt-1 mb-2">استراحة الظهيرة</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                استراحة لمدة <strong>4 ساعات</strong> (من الساعة 12:00 ظهراً إلى 4:00 عصراً) لإعادة شحن وترتيب الشفت التالي.
+              </p>
+            </div>
+
+            {/* المساء */}
+            <div className="bg-[#0F171B] border border-white/10 rounded-[28px] p-6 md:p-8 hover:border-[#5FA8D3]/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#5FA8D3]/10 border border-[#5FA8D3]/30 text-[#5FA8D3] flex items-center justify-center mb-5 text-2xl">
+                <Moon className="w-6 h-6" />
+              </div>
+              <div className="text-[#5FA8D3] font-mono text-xs font-bold">الشفت الثاني</div>
+              <h3 className="text-xl font-black text-white mt-1 mb-2">الفترة المسائية</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                من الساعة <strong>4:00 عصراً</strong> وحتى الساعة <strong>8:00 مساءً</strong> لتوصيل وجبات العشاء وطلبيات المساء.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. قسم كيفية عمل النظام (3 خطوات) */}
+      <section className="py-16 md:py-24 border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          
+          <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">WORKFLOW // خطوات الطلب</div>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">شلون نشتغل؟ ⚡</h2>
+            </div>
+            <div className="font-mono text-xs text-white/50 bg-white/[0.05] border border-white/10 px-4 py-2 rounded-full">
+              3 خطوات بسيطة • بدون تطبيق
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
+              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">01</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-3">تطلب بالواتساب</h3>
+              <p className="text-white/60 text-sm md:text-base leading-relaxed">
+                دز رسالة أو تسجيل صوتي أو حتى صورة من انستغرام باللي تريده وموقع بيتك.
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#5FA8D3]/40 transition-all group">
+              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#5FA8D3]/20 transition-colors">02</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#5FA8D3] text-black flex items-center justify-center text-xl font-black mb-6">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-3">نشتري ونفحص</h3>
+              <p className="text-white/60 text-sm md:text-base leading-relaxed">
+                المندوب يروح للمحل المفضل عندك، يشتري الغراض ويفحصها ويتأكد منها 100%.
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
+              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">03</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+                <Truck className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-3">نوصل لبابك</h3>
+              <p className="text-white/60 text-sm md:text-base leading-relaxed">
+                توصيل فوري بسيارة مبردة أو دراجة سريعة، وتدفع الحساب عند استلام طلبيتك.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 5. قسم المناطق والأسعار التفاعلي الكامل */}
+      <section className="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          
+          <div className="flex flex-wrap items-center justify-between gap-6 mb-10">
+            <div>
+              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">COVERAGE // دليل المناطق والأسعار</div>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">وين بيتكم بأبي الخصيب؟ 📍</h2>
+            </div>
+
+            {/* أزرار التبديل */}
+            <div className="flex items-center gap-2 bg-black border border-white/10 p-1.5 rounded-full">
+              <button
+                onClick={() => setSelectedPrice(3000)}
+                className={`h-11 px-6 rounded-full font-black text-xs md:text-sm transition-all ${
+                  selectedPrice === 3000
+                    ? "bg-[#CCFF00] text-black shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                مناطق الـ 3,000 د.ع (44 منطقة)
+              </button>
+              <button
+                onClick={() => setSelectedPrice(5000)}
+                className={`h-11 px-6 rounded-full font-black text-xs md:text-sm transition-all ${
+                  selectedPrice === 5000
+                    ? "bg-[#5FA8D3] text-black shadow-[0_0_20px_rgba(95,168,211,0.3)]"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                مناطق الـ 5,000 د.ع (22 منطقة)
+              </button>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            
+            {/* بطاقة معلومات الفئة */}
+            <div className="bg-[#0F171B] border border-white/10 rounded-[28px] p-8 flex flex-col justify-between">
+              <div>
+                <div
+                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-mono text-xs font-bold mb-6 border ${
+                    selectedPrice === 3000
+                      ? "bg-[#CCFF00]/15 text-[#CCFF00] border-[#CCFF00]/30"
+                      : "bg-[#5FA8D3]/15 text-[#5FA8D3] border-[#5FA8D3]/30"
+                  }`}
+                >
+                  {selectedPrice === 3000 ? "سعر التوصيل الثابت" : "سعر توصيل الأطراف والقرى"}
+                </div>
+                <h3 className="text-4xl font-black text-white mb-2">
+                  {selectedPrice === 3000 ? "3,000 دينار" : "5,000 دينار"}
+                </h3>
+                <p className="text-white/60 text-sm leading-relaxed mb-6">
+                  {selectedPrice === 3000
+                    ? "يشمل كافة المناطق والأحياء داخل مركز قضاء أبي الخصيب والمناطق القريبة."
+                    : "يشمل المناطق البعيدة والأطراف والقرى الممتدة في قضاء أبي الخصيب."}
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-6 border-t border-white/10 text-sm text-white/80">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
+                  <span>إرجاع مجاني للطلب إذا كان به أي خلل</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
+                  <span>توصيل بسيارات مكيفة ومبردة</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
+                  <span>الدفع نقداً عند استلام الطلبية</span>
+                </div>
+              </div>
+            </div>
+
+            {/* سحابة أسماء المناطق */}
+            <div className="lg:col-span-2 bg-[#0F171B] border border-white/10 rounded-[28px] p-8">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                <div className="font-bold text-white text-base md:text-lg">قائمة المناطق المشمولة:</div>
+                <div className="font-mono text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                  {currentRegions.length} منطقة
                 </div>
               </div>
 
-              {/* 5000 IQD */}
-              <div className="flex-1 bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-[#BFE0F2] relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-[#5FA8D3] blur-[80px] rounded-full opacity-20" />
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="font-bold text-[26px] text-[#22323F]">5,000 دينار</h3>
-                    <span className="text-[#5FA8D3] text-sm font-bold bg-[#BFE0F2]/30 px-3 py-1 rounded-full mt-2 inline-block">هذه المناطق على 5</span>
+              <div className="flex flex-wrap gap-2.5 max-h-[380px] overflow-y-auto pr-2">
+                {currentRegions.map((region, idx) => (
+                  <div
+                    key={region}
+                    className={`px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold border transition-all hover:scale-105 cursor-pointer ${
+                      selectedPrice === 3000
+                        ? "bg-[#CCFF00]/10 text-[#CCFF00] border-[#CCFF00]/20 hover:border-[#CCFF00]"
+                        : "bg-[#5FA8D3]/10 text-[#5FA8D3] border-[#5FA8D3]/20 hover:border-[#5FA8D3]"
+                    }`}
+                  >
+                    <span className="opacity-40 font-mono text-xs ml-1.5">{String(idx + 1).padStart(2, "0")}</span>
+                    {region}
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#BFE0F2]/30 flex items-center justify-center text-[#5FA8D3]">
-                    <Car className="w-6 h-6" />
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 6. قسم التجار وأصحاب المحلات (B2B) */}
+      <section className="py-16 md:py-24 border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          
+          <div className="rounded-[36px] border-2 border-[#CCFF00] bg-[#0A0F12] p-8 md:p-14 relative overflow-hidden shadow-[0_0_50px_rgba(204,255,0,0.1)]">
+            
+            <div className="grid lg:grid-cols-2 gap-10 items-center relative z-10">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CCFF00] text-black font-mono text-[11px] font-black mb-6">
+                  FOR MERCHANTS // لأصحاب الأنشطة
+                </div>
+                <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-6">
+                  يا هلا بأصحاب المحلات والمتاجر! 🚚
+                </h2>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed mb-8">
+                  عندك محل أو بيج بيع بأبي الخصيب؟ احنا نكون كادر التوصيل الخاص بيك بدون التزام برواتب شهرية وبأعلى درجات الأمانة والسرعة.
+                </p>
+
+                <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                  <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                    <span className="text-xl">💵</span>
+                    <span className="font-bold text-sm">تسليم الحساب نقداً فوراً</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                    <span className="text-xl">🚀</span>
+                    <span className="font-bold text-sm">توصيل سريع خلال 10-30 دقيقة</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                    <span className="text-xl">📢</span>
+                    <span className="font-bold text-sm">ترويج مجاني لحسابك</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                    <span className="text-xl">🔄</span>
+                    <span className="font-bold text-sm">إرجاع مجاني للمرفوضات</span>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {regions5k.map(m => (
-                    <span key={m} className="px-2.5 py-1.5 bg-[#F6FAFD] text-[#5FA8D3] border border-[#BFE0F2]/50 rounded-lg text-sm font-medium">{m}</span>
-                  ))}
+
+                <a
+                  href="https://wa.me/9647733921468"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-3 bg-[#CCFF00] text-black font-black px-8 py-4 rounded-full text-sm md:text-base hover:bg-white transition-all shadow-[0_0_30px_rgba(204,255,0,0.35)]"
+                >
+                  <Handshake className="w-5 h-5" />
+                  <span>انضم كشريك تجاري الآن</span>
+                </a>
+              </div>
+
+              {/* بطاقة المجتمعات والكروبات */}
+              <div className="bg-[#0F171B] border border-white/15 rounded-[28px] p-8 text-center flex flex-col justify-center">
+                <h3 className="text-2xl font-black text-white mb-3">مجتمعات البيع والشراء 👥</h3>
+                <p className="text-white/60 text-sm leading-relaxed mb-6">
+                  انضم لأكبر المجموعات التفاعلية الخاصة بمدينة أبي الخصيب لعرض منتجاتك والتواصل المباشر:
+                </p>
+
+                <div className="space-y-3">
+                  <a
+                    href="https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold hover:bg-green-500/20 transition-all text-xs md:text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5" />
+                      <span>أكبر كروب واتساب مختلط للبيع والشراء</span>
+                    </div>
+                    <span>↗</span>
+                  </a>
+
+                  <a
+                    href="https://t.me/+IIH_puHB8Mg2MDIy"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold hover:bg-blue-500/20 transition-all text-xs md:text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Send className="w-5 h-5" />
+                      <span>أكبر كروب تليغرام للتجارة والخدمات</span>
+                    </div>
+                    <span>↗</span>
+                  </a>
                 </div>
               </div>
             </div>
-          </div>
-        </FadeInSection>
 
-        {/* المتجر بدون يوتيوب */}
-        <FadeInSection>
-          <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-xl border border-gray-100 text-center mb-12">
-            <h3 className="text-[26px] font-bold mb-8">بالإضافة... عدنة متجر تسوق شامل لأهالي أبي الخصيب</h3>
-            <Link href="/store" className="inline-flex items-center justify-center gap-3 bg-[#5FA8D3] text-white px-10 py-5 rounded-full font-bold text-[20px] hover:bg-[#4a8eb9] transition-colors w-full sm:w-auto shadow-lg hover:shadow-xl hover:-translate-y-1 duration-300">
-              <ShoppingCart className="w-7 h-7" />
-              ادخل (لخصيبي ستور) الآن
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. الفوتر ومتجر خصيبي ستور */}
+      <footer className="pt-16 pb-12 bg-[#080C0F]">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          
+          {/* بطاقة متجر خصيبي ستور */}
+          <div className="bg-gradient-to-r from-[#0F171B] to-[#142028] border border-white/15 rounded-[32px] p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div>
+              <div className="font-mono text-[#CCFF00] text-xs font-bold tracking-widest mb-2">KHASEEBI STORE // متجر أبي الخصيب</div>
+              <h3 className="text-2xl md:text-4xl font-black text-white mb-2">متجر تسوق شامل لأهالي أبي الخصيب 🛍️</h3>
+              <p className="text-white/60 text-sm md:text-base max-w-xl">
+                تصفح آلاف المنتجات من مختلف المحلات والمتاجر في مكان واحد مع توصيل مباشر للباب.
+              </p>
+            </div>
+            <Link
+              href="/store"
+              className="shrink-0 inline-flex items-center gap-3 bg-[#5FA8D3] hover:bg-[#4a8eb9] text-white font-black px-8 py-4 rounded-full text-base transition-all shadow-[0_0_30px_rgba(95,168,211,0.3)]"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span>ادخل لمتجر خصيبي ستور</span>
             </Link>
           </div>
-        </FadeInSection>
 
-        {/* وسائل التواصل - شكل أحدث */}
-        <FadeInSection>
-          <div className="text-center bg-[#E7F2FA] rounded-[32px] p-8 md:p-12 mb-12 shadow-inner">
-            <h2 className="text-[24px] font-bold text-[#22323F] mb-8">تابعنا وتواصل ويانا</h2>
-            <div className="flex flex-wrap justify-center gap-4">
-              <a href="https://wa.me/9647733921468" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-green-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20">
-                <MessageCircle className="w-6 h-6" />
-                واتساب الخدمة
-              </a>
-              <a href="https://instagram.com/k.o_kseb" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-gradient-to-tr from-pink-500 to-purple-500 text-white px-6 py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-pink-500/20">
-                <Camera className="w-6 h-6" />
-                حساب الانستكرام
-              </a>
-              <a href="https://t.me/ko_kseb" target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
-                <Send className="w-6 h-6" />
-                قناة التليكرام
-              </a>
+          {/* روابط التواصل والحقوق */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-black">أبو الأكبر للتوصيل</span>
+              <span className="font-mono text-xs text-white/40">© 2026 - صنع بكل فخر لأهالي أبي الخصيب</span>
             </div>
-            
-            <div className="mt-8 flex justify-center gap-4 flex-wrap">
-              <a href="https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH" target="_blank" rel="noreferrer" className="text-[15px] font-bold text-[#22323F]/80 hover:text-[#5FA8D3] flex items-center gap-2 bg-white/70 px-5 py-3 rounded-xl shadow-sm">
-                <Users className="w-5 h-5 text-[#128C7E]" /> أكبر كروب واتساب مختلط
+
+            <div className="flex items-center gap-3">
+              <a
+                href="https://instagram.com/k.o_kseb"
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-pink-500 hover:text-pink-400 flex items-center justify-center transition-all"
+                title="انستغرام"
+              >
+                <Instagram className="w-4 h-4" />
               </a>
-              <a href="https://t.me/+IIH_puHB8Mg2MDIy" target="_blank" rel="noreferrer" className="text-[15px] font-bold text-[#22323F]/80 hover:text-[#5FA8D3] flex items-center gap-2 bg-white/70 px-5 py-3 rounded-xl shadow-sm">
-                <Users className="w-5 h-5 text-[#0088cc]" /> أكبر كروب تليكرام للبيع والشراء
+              <a
+                href="https://t.me/ko_kseb"
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-blue-400 hover:text-blue-400 flex items-center justify-center transition-all"
+                title="تليغرام"
+              >
+                <Send className="w-4 h-4" />
+              </a>
+              <a
+                href="https://wa.me/9647733921468"
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-green-400 hover:text-green-400 flex items-center justify-center transition-all"
+                title="واتساب"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </a>
+              <a
+                href="tel:07733921468"
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#CCFF00] hover:text-[#CCFF00] flex items-center justify-center transition-all"
+                title="اتصال"
+              >
+                <Phone className="w-4 h-4" />
               </a>
             </div>
           </div>
-        </FadeInSection>
-        
-      </div>
+
+        </div>
+      </footer>
+
     </div>
   );
 }

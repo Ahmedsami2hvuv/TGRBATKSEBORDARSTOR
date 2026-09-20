@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أبو الأكبر للتوصيل | الإصدار المطور</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'IBM Plex Sans Arabic', sans-serif;
+      background-color: #080C0F;
+      color: #FFFFFF;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #CCFF00 #080C0F;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CCFF00;
+      border-radius: 4px;
+    }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(50%); }
+    }
+    .marquee-track {
+      animation: marquee 25s linear infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    @keyframes wave-bar {
+      0%, 100% { height: 6px; }
+      50% { height: 28px; }
+    }
+    .wave-anim {
+      animation: wave-bar 1.2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="selection:bg-[#CCFF00] selection:text-black">
+
+  <!-- خلفية النجوم والتوهج النيوني -->
+  <div class="pointer-events-none fixed inset-0 z-0 opacity-20">
+    <div class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#CCFF00] rounded-full blur-[140px] opacity-15"></div>
+    <div class="absolute bottom-[20%] left-[-10%] w-[400px] h-[400px] bg-[#5FA8D3] rounded-full blur-[120px] opacity-15"></div>
+  </div>
+
+  <!-- الشريط العلوي (Navbar) -->
+  <nav class="fixed top-0 inset-x-0 z-50 border-b border-white/10 backdrop-blur-xl bg-[#080C0F]/80">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8 h-[68px] flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <a href="#" class="text-[22px] md:text-[24px] font-black tracking-tight flex items-center gap-1">
+          <span>أبو الأكبر</span>
+          <span class="text-[#CCFF00]">.</span>
+        </a>
+        <div class="hidden sm:flex items-center gap-2 text-[12px] mono tracking-wider bg-white/[0.05] border border-white/10 rounded-full px-3.5 py-1.5">
+          <span class="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse-glow"></span>
+          <span class="opacity-80">14 مندوب متاح الآن</span>
+          <span class="w-px h-3 bg-white/20 mx-1"></span>
+          <span class="text-[#CCFF00] font-bold">أبي الخصيب</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden md:block text-[11px] mono opacity-40 tracking-widest">30.44°N 47.99°E</div>
+        <a href="https://wa.me/9647733921468" target="_blank" class="h-10 px-5 rounded-full bg-[#CCFF00] text-black text-[14px] font-black hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_20px_#CCFF0030]">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>اطلب على واتساب</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- القسم الرئيسي (Hero Section) -->
+  <section class="relative min-h-[90vh] pt-[100px] md:pt-[120px] pb-16 flex flex-col justify-center">
+    <div class="mx-auto max-w-[1400px] w-full px-4 md:px-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+      
+      <!-- النصوص والأزرار -->
+      <div class="flex flex-col justify-center z-10">
+        <div class="inline-flex items-center gap-2 mb-6">
+          <span class="h-px w-10 bg-[#CCFF00]"></span>
+          <span class="mono text-[12px] tracking-[0.25em] text-[#CCFF00] font-bold">نظام توصيل أبي الخصيب المطور</span>
+        </div>
+
+        <h1 class="font-black leading-[1.05] tracking-tight text-[44px] sm:text-[64px] lg:text-[76px] mb-6">
+          <span class="block text-white">كلشي تريده.</span>
+          <span class="block opacity-40">من أي مكان.</span>
+          <span class="block text-[#CCFF00]">يوصل لباب بيتك.</span>
+        </h1>
+
+        <p class="text-[16px] md:text-[18px] leading-[1.8] text-white/70 font-normal max-w-[500px] mb-8">
+          خدمة توصيل سريعة وشاملة داخل قضاء أبي الخصيب، بدون الحاجة لتحميل تطبيق أو تسجيل حساب، بس دز رسالة بالواتساب واحنه نتكفل بالباقي.
+        </p>
+
+        <!-- أزرار الإجراء السريع -->
+        <div class="flex flex-wrap gap-4 mb-10">
+          <a href="https://wa.me/9647733921468" target="_blank" class="h-[56px] px-8 rounded-full bg-[#CCFF00] text-black font-black text-[16px] flex items-center gap-3 hover:bg-white transition-all shadow-[0_0_30px_#CCFF0040]">
+            <i data-lucide="send" class="w-5 h-5"></i>
+            <span>راسلنا واطلب الآن</span>
+            <span class="w-7 h-7 rounded-full bg-black text-[#CCFF00] flex items-center justify-center text-sm font-bold">↗</span>
+          </a>
+
+          <a href="tel:07733921468" class="h-[56px] px-6 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/[0.05] text-[15px] font-bold transition-all flex items-center gap-2 text-white">
+            <i data-lucide="phone-call" class="w-5 h-5 text-[#5FA8D3]"></i>
+            <span>اتصل: 07733921468</span>
+          </a>
+        </div>
+
+        <!-- إحصائيات سريعة -->
+        <div class="flex items-center gap-6 pt-6 border-t border-white/10">
+          <div class="flex -space-x-2 space-x-reverse">
+            <div class="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-[#CCFF00] text-black font-black text-xs flex items-center justify-center">99%</div>
+            <div class="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-[#5FA8D3] text-black font-black text-xs flex items-center justify-center">4.9★</div>
+            <div class="w-10 h-10 rounded-full border-2 border-[#080C0F] bg-white text-black font-black text-xs flex items-center justify-center">24h</div>
+          </div>
+          <div class="text-[13px] leading-snug">
+            <div class="font-bold text-white">+1,200 طلب أسبوعياً</div>
+            <div class="text-white/40 mono">توصيل بسيارات مبردة ودراجات حديثة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- بطاقة الرادار والخريطة التفاعلية -->
+      <div class="relative h-[480px] lg:h-[560px] rounded-[32px] border border-white/15 bg-[#0D1418] overflow-hidden shadow-2xl flex flex-col justify-between p-6">
+        
+        <!-- شبكة الخلفية -->
+        <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0); background-size: 24px 24px;"></div>
+
+        <!-- شريط علوي في البطاقة -->
+        <div class="relative z-10 flex justify-between items-center bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-2xl">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#CCFF00] animate-pulse-glow"></span>
+            <span class="mono text-[11px] font-bold text-white/90">قطاع أبي الخصيب - مباشر</span>
+          </div>
+          <div class="mono text-[10px] text-[#5FA8D3] bg-[#5FA8D3]/10 border border-[#5FA8D3]/30 px-2.5 py-1 rounded-full">
+            66+ منطقة مغطاة
+          </div>
+        </div>
+
+        <!-- مسار متحرك للمندوب والدراجة -->
+        <div class="relative flex-1 my-4 flex items-center justify-center">
+          <svg class="w-full h-full opacity-60" viewBox="0 0 400 300" fill="none">
+            <path id="deliveryPath" d="M 40 240 Q 120 40 200 150 T 360 80" stroke="rgba(204,255,0,0.3)" stroke-width="2" stroke-dasharray="6 6"/>
+            <circle cx="40" cy="240" r="6" fill="#5FA8D3"/>
+            <text x="40" y="265" fill="#5FA8D3" font-size="11" font-weight="bold" text-anchor="middle">المركز</text>
+            
+            <circle cx="200" cy="150" r="6" fill="#CCFF00"/>
+            <text x="200" y="175" fill="#CCFF00" font-size="11" font-weight="bold" text-anchor="middle">المحيلة</text>
+            
+            <circle cx="360" cy="80" r="6" fill="#5FA8D3"/>
+            <text x="360" y="105" fill="#5FA8D3" font-size="11" font-weight="bold" text-anchor="middle">السراجي</text>
+
+            <g>
+              <circle r="12" fill="#CCFF00"></circle>
+              <text text-anchor="middle" dy="4" font-size="12">🛵</text>
+              <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
+                <mpath href="#deliveryPath"/>
+              </animateMotion>
+            </g>
+          </svg>
+        </div>
+
+        <!-- بطاقة الطلب الحالي النشط -->
+        <div class="relative z-10 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black text-xl shrink-0">
+              <i data-lucide="zap" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="mono text-[10px] text-white/40">طلب قيد التوصيل الآن</div>
+              <div class="text-[14px] font-bold text-white">صيدلية الميناء ➔ كوت الصلحي</div>
+              <div class="text-[11px] text-[#5FA8D3]">سيارة مبردة • الوصول المتوقع: 12 دقيقة</div>
+            </div>
+          </div>
+          <div class="text-left shrink-0">
+            <div class="mono text-[20px] font-black text-[#CCFF00] leading-none">3,000</div>
+            <div class="mono text-[9px] text-white/50">دينار عراقي</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- شريط الماركي للخدمات (Marquee Strip) -->
+  <div class="relative border-y border-white/10 bg-[#CCFF00] text-black overflow-hidden h-[50px] flex items-center">
+    <div class="marquee-track flex whitespace-nowrap font-black mono text-[14px] tracking-wider gap-8">
+      <span>💊 أدوية وصيدليات</span> <span>•</span>
+      <span>🍔 مطاعم ووجبات</span> <span>•</span>
+      <span>🛒 سوبرماركت ومخضر</span> <span>•</span>
+      <span>🎁 هدايا ومناسبات</span> <span>•</span>
+      <span>💄 كوزمتك ومكياج</span> <span>•</span>
+      <span>🧁 حلويات وكيك</span> <span>•</span>
+      <span>📚 قرطاسية ومستلزمات</span> <span>•</span>
+      <span>🔄 استبدال وإرجاع مجاني</span> <span>•</span>
+      <span>💊 أدوية وصيدليات</span> <span>•</span>
+      <span>🍔 مطاعم ووجبات</span> <span>•</span>
+      <span>🛒 سوبرماركت ومخضر</span> <span>•</span>
+      <span>🎁 هدايا ومناسبات</span> <span>•</span>
+    </div>
+  </div>
+
+  <!-- قسم أوقات الدوام والشفتات -->
+  <section class="py-16 md:py-20 border-b border-white/10 bg-[#0A0F12]">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8">
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <div class="mono text-[11px] tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">TIMETABLE // الشفتات اليومية</div>
+        <h2 class="text-[32px] md:text-[44px] font-black tracking-tight text-white">أوقات عمل وتوصيل الطلبات ⏰</h2>
+        <p class="text-white/60 text-[15px] mt-2">نعمل بنظام الشفتات المنتظمة لضمان وصول طلباتكم في وقتها المحدد</p>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-6">
+        <!-- شفت الصباح -->
+        <div class="bg-[#0F171B] border border-white/10 rounded-[24px] p-6 hover:border-[#CCFF00]/40 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-[#CCFF00]/10 border border-[#CCFF00]/30 text-[#CCFF00] flex items-center justify-center mb-4 text-2xl">
+            🌅
+          </div>
+          <div class="text-[#CCFF00] mono text-[12px] font-bold">الشفت الأول</div>
+          <h3 class="text-[20px] font-black text-white mt-1 mb-2">الفترة الصباحية</h3>
+          <p class="text-white/60 text-[14px] leading-relaxed">من الصباح الباكر حتى الساعة <strong>12:00 ظهراً</strong> لاستلام وتوصيل كافة طلبيات الصباح.</p>
+        </div>
+
+        <!-- فترة الاستراحة -->
+        <div class="bg-[#0F171B] border border-white/10 rounded-[24px] p-6 hover:border-orange-500/40 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-400 flex items-center justify-center mb-4 text-2xl">
+            ☕
+          </div>
+          <div class="text-orange-400 mono text-[12px] font-bold">استراحة الكادر</div>
+          <h3 class="text-[20px] font-black text-white mt-1 mb-2">استراحة الظهيرة</h3>
+          <p class="text-white/60 text-[14px] leading-relaxed">استراحة لمدة <strong>4 ساعات</strong> (من الساعة 12:00 ظهراً إلى 4:00 عصراً) لإعادة شحن وترتيب الشفت التالي.</p>
+        </div>
+
+        <!-- شفت المساء -->
+        <div class="bg-[#0F171B] border border-white/10 rounded-[24px] p-6 hover:border-[#5FA8D3]/40 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-[#5FA8D3]/10 border border-[#5FA8D3]/30 text-[#5FA8D3] flex items-center justify-center mb-4 text-2xl">
+            🌆
+          </div>
+          <div class="text-[#5FA8D3] mono text-[12px] font-bold">الشفت الثاني</div>
+          <h3 class="text-[20px] font-black text-white mt-1 mb-2">الفترة المسائية</h3>
+          <p class="text-white/60 text-[14px] leading-relaxed">من الساعة <strong>4:00 عصراً</strong> وحتى الساعة <strong>8:00 مساءً</strong> لتوصيل وجبات العشاء وطلبيات المساء.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- قسم كيفية عمل النظام (3 خطوات بسيطة) -->
+  <section class="py-16 md:py-24 border-b border-white/10">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8">
+      
+      <div class="flex flex-wrap items-end justify-between gap-6 mb-12">
+        <div>
+          <div class="mono text-[11px] tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">WORKFLOW // خطوات الطلب</div>
+          <h2 class="text-[36px] md:text-[52px] font-black tracking-tight text-white leading-none">شلون نشتغل؟ ⚡</h2>
+        </div>
+        <div class="mono text-[12px] text-white/50 bg-white/[0.05] border border-white/10 px-4 py-2 rounded-full">
+          3 خطوات بسيطة • بدون أي تعقيد
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- خطوة 1 -->
+        <div class="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all relative overflow-hidden group">
+          <div class="text-[48px] font-black mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">01</div>
+          <div class="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+            <i data-lucide="message-square"></i>
+          </div>
+          <h3 class="text-[24px] font-black text-white mb-3">تطلب بالواتساب</h3>
+          <p class="text-white/60 text-[15px] leading-relaxed">دز رسالة أو تسجيل صوتي أو حتى صورة من انستغرام باللي تريده وموقع بيتك.</p>
+        </div>
+
+        <!-- خطوة 2 -->
+        <div class="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#5FA8D3]/40 transition-all relative overflow-hidden group">
+          <div class="text-[48px] font-black mono text-white/10 mb-4 group-hover:text-[#5FA8D3]/20 transition-colors">02</div>
+          <div class="w-12 h-12 rounded-2xl bg-[#5FA8D3] text-black flex items-center justify-center text-xl font-black mb-6">
+            <i data-lucide="shopping-bag"></i>
+          </div>
+          <h3 class="text-[24px] font-black text-white mb-3">نشتري ونفحص</h3>
+          <p class="text-white/60 text-[15px] leading-relaxed">المندوب يروح للمحل المفضل عندك، يشتري الغراض ويفحصها ويتأكد منها 100%.</p>
+        </div>
+
+        <!-- خطوة 3 -->
+        <div class="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all relative overflow-hidden group">
+          <div class="text-[48px] font-black mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">03</div>
+          <div class="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+            <i data-lucide="truck"></i>
+          </div>
+          <h3 class="text-[24px] font-black text-white mb-3">نوصل لبابك</h3>
+          <p class="text-white/60 text-[15px] leading-relaxed">توصيل فوري بسيارة مبردة أو دراجة سريعة، وتدفع الحساب عند استلام طلبيتك.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- قسم وين بيتكم؟ والأسعار والمناطق -->
+  <section class="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]" id="regions-section">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8">
+      
+      <div class="flex flex-wrap items-center justify-between gap-6 mb-10">
+        <div>
+          <div class="mono text-[11px] tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">COVERAGE // دليل المناطق والأسعار</div>
+          <h2 class="text-[36px] md:text-[52px] font-black tracking-tight text-white leading-none">وين بيتكم بأبي الخصيب؟ 📍</h2>
+        </div>
+
+        <!-- أزرار التبديل بين الأسعار -->
+        <div class="flex items-center gap-2 bg-black border border-white/10 p-1.5 rounded-full">
+          <button id="btn-3k" onclick="switchPrice(3000)" class="h-[44px] px-6 rounded-full font-black text-[14px] transition-all bg-[#CCFF00] text-black shadow-[0_0_20px_#CCFF0040]">
+            مناطق الـ 3,000 د.ع (44 منطقة)
+          </button>
+          <button id="btn-5k" onclick="switchPrice(5000)" class="h-[44px] px-6 rounded-full font-black text-[14px] transition-all text-white/60 hover:text-white">
+            مناطق الـ 5,000 د.ع (22 منطقة)
+          </button>
+        </div>
+      </div>
+
+      <!-- عرض المناطق -->
+      <div class="grid lg:grid-cols-3 gap-8">
+        
+        <!-- بطاقة معلومات الفئة -->
+        <div class="bg-[#0F171B] border border-white/10 rounded-[28px] p-8 flex flex-col justify-between">
+          <div>
+            <div id="price-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CCFF00]/15 text-[#CCFF00] border border-[#CCFF00]/30 mono text-xs font-bold mb-6">
+              سعر التوصيل الثابت
+            </div>
+            <h3 id="price-title" class="text-[36px] font-black text-white mb-2">3,000 دينار</h3>
+            <p id="price-desc" class="text-white/60 text-[15px] leading-relaxed mb-6">
+              يشمل كافة المناطق والأحياء داخل مركز قضاء أبي الخصيب والمناطق القريبة.
+            </p>
+          </div>
+
+          <div class="space-y-3 pt-6 border-t border-white/10">
+            <div class="flex items-center gap-3 text-white/80 text-[14px]">
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-[#CCFF00]"></i>
+              <span>إرجاع مجاني للطلب إذا كان به أي خلل</span>
+            </div>
+            <div class="flex items-center gap-3 text-white/80 text-[14px]">
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-[#CCFF00]"></i>
+              <span>توصيل بسيارات مكيفة ومبردة</span>
+            </div>
+            <div class="flex items-center gap-3 text-white/80 text-[14px]">
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-[#CCFF00]"></i>
+              <span>الدفع نقداً عند استلام الطلبية</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- قائمة وسحابة أسماء المناطق -->
+        <div class="lg:col-span-2 bg-[#0F171B] border border-white/10 rounded-[28px] p-8">
+          <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+            <div class="font-bold text-white text-[18px]">قائمة المناطق المشمولة:</div>
+            <div id="count-badge" class="mono text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+              44 منطقة
+            </div>
+          </div>
+
+          <!-- صندوق المناطق -->
+          <div id="regions-container" class="flex flex-wrap gap-2.5 max-h-[380px] overflow-y-auto pr-2">
+            <!-- سيتم توليد المناطق برمجياً -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- قسم التجار وأصحاب المحلات (B2B) -->
+  <section class="py-16 md:py-24 border-b border-white/10">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8">
+      
+      <div class="rounded-[36px] border-2 border-[#CCFF00] bg-[#0A0F12] p-8 md:p-14 relative overflow-hidden shadow-[0_0_50px_rgba(204,255,0,0.1)]">
+        
+        <div class="grid lg:grid-cols-2 gap-10 items-center relative z-10">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CCFF00] text-black mono text-[11px] font-black mb-6">
+              FOR MERCHANTS // لأصحاب الأنشطة
+            </div>
+            <h2 class="text-[36px] md:text-[50px] font-black text-white leading-tight mb-6">
+              يا هلا بأصحاب المحلات والمتاجر! 🚚
+            </h2>
+            <p class="text-white/70 text-[16px] leading-relaxed mb-8">
+              عندك محل أو بيج بيع بأبي الخصيب؟ احنا نكون كادر التوصيل الخاص بيك بدون التزام برواتب شهرية وبأعلى درجات الأمانة والسرعة.
+            </p>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-8">
+              <div class="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                <span class="text-xl">💵</span>
+                <span class="font-bold text-sm">تسليم الحساب نقداً فوراً</span>
+              </div>
+              <div class="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                <span class="text-xl">🚀</span>
+                <span class="font-bold text-sm">توصيل سريع خلال 10-30 دقيقة</span>
+              </div>
+              <div class="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                <span class="text-xl">📢</span>
+                <span class="font-bold text-sm">ترويج مجاني لحسابك</span>
+              </div>
+              <div class="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
+                <span class="text-xl">🔄</span>
+                <span class="font-bold text-sm">إرجاع مجاني للمرفوضات</span>
+              </div>
+            </div>
+
+            <a href="https://wa.me/9647733921468" target="_blank" class="inline-flex items-center gap-3 bg-[#CCFF00] text-black font-black px-8 py-4 rounded-full text-[16px] hover:bg-white transition-all shadow-[0_0_30px_#CCFF0040]">
+              <i data-lucide="handshake"></i>
+              <span>انضم كشريك تجاري الآن</span>
+            </a>
+          </div>
+
+          <!-- بطاقة الكروبات والمجتمعات -->
+          <div class="bg-[#0F171B] border border-white/15 rounded-[28px] p-8 text-center flex flex-col justify-center">
+            <h3 class="text-[24px] font-black text-white mb-3">مجتمعات البيع والشراء 👥</h3>
+            <p class="text-white/60 text-[14px] leading-relaxed mb-6">
+              انضم لأكبر المجموعات التفاعلية الخاصة بمدينة أبي الخصيب لعرض منتجاتك والتواصل المباشر:
+            </p>
+
+            <div class="space-y-3">
+              <a href="https://chat.whatsapp.com/JSqEm7M1CgqBglStuRyItH" target="_blank" class="flex items-center justify-between p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold hover:bg-green-500/20 transition-all">
+                <div class="flex items-center gap-3">
+                  <i data-lucide="message-circle" class="w-5 h-5"></i>
+                  <span>أكبر كروب واتساب مختلط للبيع والشراء</span>
+                </div>
+                <span>↗</span>
+              </a>
+
+              <a href="https://t.me/+IIH_puHB8Mg2MDIy" target="_blank" class="flex items-center justify-between p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold hover:bg-blue-500/20 transition-all">
+                <div class="flex items-center gap-3">
+                  <i data-lucide="send" class="w-5 h-5"></i>
+                  <span>أكبر كروب تليغرام للتجارة والخدمات</span>
+                </div>
+                <span>↗</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- قسم متجر خصيبي ستور والتواصل النهائي -->
+  <footer class="pt-16 pb-12 bg-[#080C0F]">
+    <div class="mx-auto max-w-[1400px] px-4 md:px-8">
+      
+      <!-- بطاقة متجر خصيبي ستور -->
+      <div class="bg-gradient-to-r from-[#0F171B] to-[#142028] border border-white/15 rounded-[32px] p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div>
+          <div class="mono text-[#CCFF00] text-xs font-bold tracking-widest mb-2">KHASEEBI STORE // متجر أبي الخصيب</div>
+          <h3 class="text-[28px] md:text-[38px] font-black text-white mb-2">متجر تسوق شامل لأهالي أبي الخصيب 🛍️</h3>
+          <p class="text-white/60 text-[15px] max-w-xl">
+            تصفح آلاف المنتجات من مختلف المحلات والمتاجر في مكان واحد مع توصيل مباشر للباب.
+          </p>
+        </div>
+        <a href="/store" class="shrink-0 inline-flex items-center gap-3 bg-[#5FA8D3] hover:bg-[#4a8eb9] text-white font-black px-8 py-4 rounded-full text-[16px] transition-all shadow-[0_0_30px_rgba(95,168,211,0.3)]">
+          <i data-lucide="shopping-cart"></i>
+          <span>ادخل لمتجر خصيبي ستور</span>
+        </a>
+      </div>
+
+      <!-- روابط السوشيال ميديا والحقوق -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10">
+        <div class="flex items-center gap-3">
+          <span class="text-xl font-black">أبو الأكبر للتوصيل</span>
+          <span class="mono text-xs text-white/40">© 2026 - صنع بكل فخر لأهالي أبي الخصيب</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="https://instagram.com/k.o_kseb" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-pink-500 hover:text-pink-400 flex items-center justify-center transition-all">
+            <i data-lucide="instagram" class="w-4 h-4"></i>
+          </a>
+          <a href="https://t.me/ko_kseb" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-blue-400 hover:text-blue-400 flex items-center justify-center transition-all">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </a>
+          <a href="https://wa.me/9647733921468" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-green-400 hover:text-green-400 flex items-center justify-center transition-all">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+          </a>
+          <a href="tel:07733921468" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#CCFF00] hover:text-[#CCFF00] flex items-center justify-center transition-all">
+            <i data-lucide="phone" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    // تهيئة أيقونات Lucide
+    lucide.createIcons();
+
+    // قائمة المناطق الكاملة
+    const regions3k = ['الاسمدة', 'جيكور حزبه', 'جيكور', 'العصفورية', 'باب سليمان', 'باب طويل', 'باب العريض', 'باب عباس', 'كوت بازل', 'باب دباغ', 'باب ميدان', 'بلد سلطان', 'ام الصخر', 'باب رمانه', 'اهل عيد', 'الباني', 'نهر خوز', 'ابو مغيرة', 'مجيبرة', 'السبيليات', 'الصنگر', 'محيلة قبل دورة ام زباله', 'طريق الوسطي', 'العاگولية', 'الصحراء', 'ابو كوصرة', 'طريزاوية', 'العوجة', 'المقيمين', 'الابطاح', 'اللكطة', 'الشجرة الطيبة', 'شيخ ابراهيم', 'نزيلة', 'عميرية', 'بلد', 'كوت البلجاني', 'الحوطة', 'السوق', 'الصنكر', 'محيله الوسطي', 'محيله قرب الجسر', 'محيله بالسوق', 'محيله قرب السيطرة', 'محيله شارع المشروع'];
+    const regions5k = ['محيله شارع سيد حامد', 'محيله شارع الاندلس', 'محيله الصكاروة', 'المعهد الصناعي', 'دورة ام زباله بعد الاستدارة', 'الاندلس', 'طريق سيد حامد بعد الاندلس', 'الجديدة', 'الرومية', 'الصكاروة', 'كوت الصلحي', 'كوت الفداغ', 'جامع الشهيد', 'يوسفان', 'حمدان', 'كوت ثويني', 'البهادرية', 'محولة الزهير', 'كوت الحمداني', 'عويسيان', 'مهيجران', 'السراجي'];
+
+    function renderRegions(list, colorClass, borderClass) {
+      const container = document.getElementById('regions-container');
+      container.innerHTML = '';
+      list.forEach((reg, idx) => {
+        const item = document.createElement('div');
+        item.className = `px-3.5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 cursor-pointer ${colorClass} ${borderClass}`;
+        item.innerHTML = `<span class="opacity-40 mono text-xs ml-1.5">${String(idx + 1).padStart(2, '0')}</span> ${reg}`;
+        container.appendChild(item);
+      });
+    }
+
+    function switchPrice(price) {
+      const btn3k = document.getElementById('btn-3k');
+      const btn5k = document.getElementById('btn-5k');
+      const title = document.getElementById('price-title');
+      const desc = document.getElementById('price-desc');
+      const badge = document.getElementById('price-badge');
+      const countBadge = document.getElementById('count-badge');
+
+      if (price === 3000) {
+        btn3k.className = "h-[44px] px-6 rounded-full font-black text-[14px] transition-all bg-[#CCFF00] text-black shadow-[0_0_20px_#CCFF0040]";
+        btn5k.className = "h-[44px] px-6 rounded-full font-black text-[14px] transition-all text-white/60 hover:text-white";
+        
+        title.innerText = "3,000 دينار";
+        desc.innerText = "يشمل كافة المناطق والأحياء داخل مركز قضاء أبي الخصيب والمناطق القريبة.";
+        badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CCFF00]/15 text-[#CCFF00] border border-[#CCFF00]/30 mono text-xs font-bold mb-6";
+        badge.innerText = "سعر التوصيل الثابت";
+        countBadge.innerText = "44 منطقة";
+
+        renderRegions(regions3k, "bg-[#CCFF00]/10 text-[#CCFF00]", "border-[#CCFF00]/20 hover:border-[#CCFF00]");
+      } else {
+        btn5k.className = "h-[44px] px-6 rounded-full font-black text-[14px] transition-all bg-[#5FA8D3] text-black shadow-[0_0_20px_#5FA8D340]";
+        btn3k.className = "h-[44px] px-6 rounded-full font-black text-[14px] transition-all text-white/60 hover:text-white";
+        
+        title.innerText = "5,000 دينار";
+        desc.innerText = "يشمل المناطق البعيدة والأطراف والقرى الممتدة في قضاء أبي الخصيب.";
+        badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#5FA8D3]/15 text-[#5FA8D3] border border-[#5FA8D3]/30 mono text-xs font-bold mb-6";
+        badge.innerText = "سعر توصيل الأطراف والقرى";
+        countBadge.innerText = "22 منطقة";
+
+        renderRegions(regions5k, "bg-[#5FA8D3]/10 text-[#5FA8D3]", "border-[#5FA8D3]/20 hover:border-[#5FA8D3]");
+      }
+    }
+
+    // التشغيل الأولي
+    switchPrice(3000);
+  </script>
+</body>
+</html>
