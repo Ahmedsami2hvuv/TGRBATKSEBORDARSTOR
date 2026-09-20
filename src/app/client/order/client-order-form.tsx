@@ -511,22 +511,22 @@ function ClientOrderFormInner({
       <div className="relative mx-auto max-w-[480px] px-[14px] py-[14px] pb-[140px]">
         {/* الهيدر العلوي */}
         <div className="rounded-[20px] bg-[#FFFFFF] border border-[#C9A86A]/25 shadow-[0_4px_20px_rgba(5,40,28,0.06)] px-[12px] py-[10px] mb-[12px]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-[8px]">
-              <div className="w-[36px] h-[36px] rounded-full bg-[#FFFEFB] border-[1.5px] border-[#C9A86A]/60 flex items-center justify-center shadow-sm">
-                <Store className="w-[18px] h-[18px] text-[#0A3D2E]" />
+          <div className="flex items-center justify-between gap-[8px]">
+            <div className="flex items-center gap-[8px] min-w-0">
+              <div className="relative w-[34px] h-[34px] rounded-full overflow-hidden border-[1.5px] border-[#C9A86A]/60 shadow-sm flex items-center justify-center shrink-0">
+                <Image
+                  src="/images/order-luxury/ak-submit-btn-v3.webp"
+                  alt="أبو ألأكبر للتوصيل الشامل"
+                  fill
+                  className="object-contain"
+                />
               </div>
-              <div className="flex flex-col leading-[1]">
-                <span className="text-[#0A3D2E] font-black text-[13px] tracking-wide">
-                  أبو الأكبر
-                </span>
-                <span className="text-[#0A3D2E]/60 font-bold text-[9px] tracking-[0.18em]">
-                  للتوصيل السريع
-                </span>
-              </div>
+              <span className="text-[#0A3D2E] font-black text-[13.5px] sm:text-[14px] tracking-tight whitespace-nowrap truncate">
+                أبو ألأكبر للتوصيل الشامل
+              </span>
             </div>
 
-            <div className="flex items-center gap-[6px]">
+            <div className="flex items-center gap-[6px] shrink-0">
               <div className="h-[26px] px-[10px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/35 flex items-center gap-[5px]">
                 <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
                 <span className="text-[#0A3D2E] text-[11px] font-bold">
