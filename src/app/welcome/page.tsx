@@ -596,10 +596,45 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 8. الفوتر ومتجر خصيبي ستور */}
-      <footer className="pt-16 pb-12 bg-[#080C0F]">
+      {/* 8. الفوتر ومتجر خصيبي ستور وتذكير حفظ الرقم */}
+      <footer className="pt-14 pb-12 bg-[#080C0F]">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
+          {/* بطاقة تذكير نهائي بحفظ الرقم */}
+          <div className="bg-[#0F171B] border border-[#CCFF00]/30 rounded-[32px] p-6 md:p-8 mb-10 text-center relative overflow-hidden shadow-[0_0_40px_rgba(204,255,0,0.08)]">
+            <div className="absolute top-0 right-1/2 translate-x-1/2 w-72 h-32 bg-[#CCFF00]/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className="relative z-10 max-w-2xl mx-auto">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#CCFF00]/15 text-[#CCFF00] font-mono text-xs font-bold mb-3">
+                <Phone className="w-3.5 h-3.5" />
+                <span>تذكير مهم</span>
+              </span>
+              <h3 className="text-xl md:text-3xl font-black text-white mb-2">
+                قبل لا تطلع... لا تنسى تخزن رقمنا بجهازك! 📲
+              </h3>
+              <p className="text-white/70 text-xs md:text-sm leading-relaxed mb-6">
+                احفظ اسم (أبو الأكبر للتوصيل) برقم <strong>07733921468</strong> حتى تطلب بأي وقت بضغطة زر وتوصلك عروض محلات أبي الخصيب أول بأول.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <a
+                  href="tel:07733921468"
+                  className="h-12 px-7 rounded-full bg-[#CCFF00] text-black font-black text-sm flex items-center gap-2.5 hover:bg-white transition-all shadow-[0_0_20px_rgba(204,255,0,0.3)] active:scale-95"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>احفظ الرقم (07733921468)</span>
+                </a>
+                <a
+                  href="https://wa.me/9647733921468"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="h-12 px-6 rounded-full border border-white/20 hover:border-white/50 text-white font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4 text-green-400" />
+                  <span>مراسلة واتساب</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
           {/* بطاقة متجر خصيبي ستور */}
           <div className="bg-gradient-to-r from-[#0F171B] to-[#142028] border border-white/15 rounded-[32px] p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
