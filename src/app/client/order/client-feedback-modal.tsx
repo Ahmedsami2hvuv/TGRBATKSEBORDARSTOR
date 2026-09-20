@@ -23,16 +23,16 @@ export function ClientFeedbackModal({
   employeePhone,
   onSubmitted,
 }: ClientFeedbackModalProps) {
-  const [designRating, setDesignRating] = useState<number>(5);
+  const [designRating, setDesignRating] = useState<number>(0);
   const [designReason, setDesignReason] = useState<string>("");
 
-  const [buttonsRating, setButtonsRating] = useState<number>(5);
+  const [buttonsRating, setButtonsRating] = useState<number>(0);
   const [buttonsReason, setButtonsReason] = useState<string>("");
 
-  const [fieldsRating, setFieldsRating] = useState<number>(5);
+  const [fieldsRating, setFieldsRating] = useState<number>(0);
   const [fieldsReason, setFieldsReason] = useState<string>("");
 
-  const [easeRating, setEaseRating] = useState<number>(5);
+  const [easeRating, setEaseRating] = useState<number>(0);
   const [easeReason, setEaseReason] = useState<string>("");
 
   const [generalFeedback, setGeneralFeedback] = useState<string>("");
@@ -42,6 +42,12 @@ export function ClientFeedbackModal({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (designRating === 0 || buttonsRating === 0 || fieldsRating === 0 || easeRating === 0) {
+      toast.error("يرجى النقر على النجوم لتحديد تقييمك لجميع الأقسام ⭐");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -100,14 +106,14 @@ export function ClientFeedbackModal({
                 key={star}
                 type="button"
                 onClick={() => setRating(star)}
-                className="p-1 hover:scale-115 active:scale-95 transition-transform"
+                className="p-1 hover:scale-115 active:scale-95 transition-transform cursor-pointer"
                 title={`${star} من 5`}
               >
                 <Star
-                  className={`w-[22px] h-[22px] transition-colors ${
-                    star <= rating
+                  className={`w-[24px] h-[24px] transition-colors ${
+                    rating > 0 && star <= rating
                       ? "fill-[#F59E0B] text-[#D97706] drop-shadow-[0_2px_6px_rgba(245,158,11,0.4)]"
-                      : "fill-transparent text-[#CBD5E1]"
+                      : "fill-transparent text-[#CBD5E1] hover:text-[#F59E0B]/60"
                   }`}
                 />
               </button>
@@ -115,8 +121,8 @@ export function ClientFeedbackModal({
           </div>
         </div>
 
-        {/* إذا كان التقييم أقل من 5، تظهر خانة توضيح السبب والمقترح */}
-        {rating < 5 && (
+        {/* إذا اختار المستخدم تقييماً أقل من 5 نجوم تظهر خانة توضيح السبب والمقترح */}
+        {rating > 0 && rating < 5 && (
           <div className="mt-[8px] pt-[8px] border-t border-[#C9A86A]/20 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center gap-1.5 mb-[4px]">
               <AlertCircle className="w-[13px] h-[13px] text-[#B45309]" />
