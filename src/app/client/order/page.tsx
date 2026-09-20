@@ -280,27 +280,25 @@ export default async function ClientOrderPage(props: Props) {
     }
 
     return (
-      <div className="min-h-screen bg-[#FDF8EE] relative px-4 py-8 pb-24 text-slate-800" dir="rtl">
-        <div className="mx-auto max-w-lg">
-          <ClientOrderForm
-            shopId={shop.id}
-            shopName={shop.name}
-            employeeName={employee.name}
-            photoUrl={shop.photoUrl}
-            shopRegionName={shop.region?.name || "غير محددة"}
-            shopDeliveryAlf={shopDeliveryAlf}
-            e={sp.e!}
-            exp={sp.exp!}
-            sig={sp.s!}
-            viewerName=""
-            initialOrder={initialOrder}
-            botUsername={botUsername}
-            portalUrl={portalUrl}
-            botStartParam={botStartParam}
-            noCarsMode={currentNoCarsMode}
-            employeePhone={employee.phone}
-          />
-        </div>
+      <div className="min-h-screen bg-[#FFFEFB]" dir="rtl">
+        <ClientOrderForm
+          shopId={shop.id}
+          shopName={shop.name}
+          employeeName={employee.name}
+          photoUrl={shop.photoUrl}
+          shopRegionName={shop.region?.name || "غير محددة"}
+          shopDeliveryAlf={shopDeliveryAlf}
+          e={sp.e!}
+          exp={sp.exp!}
+          sig={sp.s!}
+          viewerName=""
+          initialOrder={initialOrder}
+          botUsername={botUsername}
+          portalUrl={portalUrl}
+          botStartParam={botStartParam}
+          noCarsMode={currentNoCarsMode}
+          employeePhone={employee.phone}
+        />
       </div>
     );
   } catch (error: any) {
