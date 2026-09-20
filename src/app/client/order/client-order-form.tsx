@@ -220,8 +220,8 @@ function ClientOrderFormInner({
     } catch {
       // fallback
     }
-    const defaultX = Math.max(15, window.innerWidth - 90);
-    const defaultY = Math.max(15, window.innerHeight - 130);
+    const defaultX = Math.max(15, window.innerWidth - 105);
+    const defaultY = Math.max(15, window.innerHeight - 150);
     setFloatingPos({ x: defaultX, y: defaultY });
   }, []);
 
@@ -240,8 +240,8 @@ function ClientOrderFormInner({
     if (!isDraggingRef.current) return;
     const newX = ev.clientX - dragOffsetRef.current.offsetX;
     const newY = ev.clientY - dragOffsetRef.current.offsetY;
-    const maxX = Math.max(10, window.innerWidth - 85);
-    const maxY = Math.max(10, window.innerHeight - 85);
+    const maxX = Math.max(10, window.innerWidth - 100);
+    const maxY = Math.max(10, window.innerHeight - 100);
     const clampedX = Math.max(10, Math.min(newX, maxX));
     const clampedY = Math.max(10, Math.min(newY, maxY));
     setFloatingPos({ x: clampedX, y: clampedY });
@@ -1153,7 +1153,7 @@ function ClientOrderFormInner({
         </div>
       </div>
 
-      {/* الزر العائم لرفع الطلب بنمط نانو بنانا WEBP */}
+      {/* الزر العائم لرفع الطلب بنمط نانو بنانا WEBP المشرق الفاخر بدون أي إطار أسود */}
       <button
         ref={fabRef}
         type="button"
@@ -1172,34 +1172,34 @@ function ClientOrderFormInner({
             ? "typingDance 0.5s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite"
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
-        className={`fixed z-[60] w-[74px] h-[74px] rounded-full border-[2px] border-[#C9A86A] flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 shadow-[0_12px_32px_rgba(10,61,46,0.45)] overflow-hidden ${
+        className={`fixed z-[60] w-[88px] h-[88px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 drop-shadow-[0_12px_28px_rgba(10,61,46,0.35)] bg-transparent border-0 p-0 ${
           isDragging
-            ? "cursor-grabbing scale-[1.08] shadow-[0_18px_45px_rgba(10,61,46,0.65),0_0_0_3px_#F5D77F]"
+            ? "cursor-grabbing scale-[1.08] drop-shadow-[0_18px_36px_rgba(10,61,46,0.55)]"
             : "cursor-grab"
         }`}
       >
-        {/* خلفية وصورة نانو بنانا WEBP المضيئة */}
-        <div className="absolute inset-0 bg-[#06281D]">
+        {/* صورة نانو بنانا WEBP المفرغة بدقة ووضوح */}
+        <div className="absolute inset-0 pointer-events-none">
           <Image
             src="/images/order-luxury/btn-submit-nanobanana.webp"
             alt="رفع الطلب"
             fill
             priority
             unoptimized
-            className="object-cover"
+            className="object-contain"
           />
         </div>
 
         {/* محتوى الزر العائم وتأثير اللمعان والتفاعل */}
-        <div className="relative z-10 flex flex-col items-center justify-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+        <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none mt-[6px]">
           {pending ? (
-            <Loader2 className="w-[24px] h-[24px] text-[#F5D77F] animate-spin" />
+            <Loader2 className="w-[28px] h-[28px] text-[#F5D77F] animate-spin" />
           ) : (
             <>
-              <span className="text-white font-black text-[12px] leading-[1] tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+              <span className="text-white font-black text-[13px] leading-[1] tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                 رفع
               </span>
-              <span className="text-[#F5D77F] font-black text-[12px] leading-[1] tracking-wide mt-[1px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+              <span className="text-[#F5D77F] font-black text-[13px] leading-[1] tracking-wide mt-[2px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                 الطلب
               </span>
             </>
