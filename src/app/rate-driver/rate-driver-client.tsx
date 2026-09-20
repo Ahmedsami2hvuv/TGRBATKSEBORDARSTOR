@@ -3,18 +3,23 @@
 import React, { useState } from "react";
 import {
   Star,
-  Sparkles,
-  Heart,
   Truck,
   Store,
   MapPin,
-  CheckCircle2,
   AlertCircle,
   MessageSquare,
-  ArrowRight,
   ShieldCheck,
   Send,
-  UserCheck,
+  Heart,
+  Zap,
+  Users,
+  ShoppingBag,
+  CheckCircle2,
+  MessageCircle,
+  Phone,
+  Clock,
+  BookmarkPlus,
+  ArrowLeft,
 } from "lucide-react";
 
 interface RateDriverClientProps {
@@ -37,17 +42,17 @@ export function RateDriverClient({
   alreadyRated = false,
   existingRating = null,
 }: RateDriverClientProps) {
-  // حالات التقييم (تبدأ من 0 حتى يختار الزبون بنفسه)
-  const [mannerRating, setMannerRating] = useState<number>(existingRating?.mannerRating || 0);
-  const [mannerReason, setMannerReason] = useState<string>(existingRating?.mannerReason || "");
+  // حالات التقييم — تبدأ بـ 0 (غير محددة)
+  const [mannerRating, setMannerRating] = useState<number>(0);
+  const [mannerReason, setMannerReason] = useState<string>("");
 
-  const [speedRating, setSpeedRating] = useState<number>(existingRating?.speedRating || 0);
-  const [speedReason, setSpeedReason] = useState<string>(existingRating?.speedReason || "");
+  const [speedRating, setSpeedRating] = useState<number>(0);
+  const [speedReason, setSpeedReason] = useState<string>("");
 
-  const [overallRating, setOverallRating] = useState<number>(existingRating?.overallRating || 0);
-  const [overallReason, setOverallReason] = useState<string>(existingRating?.overallReason || "");
+  const [overallRating, setOverallRating] = useState<number>(0);
+  const [overallReason, setOverallReason] = useState<string>("");
 
-  const [notes, setNotes] = useState<string>(existingRating?.notes || "");
+  const [notes, setNotes] = useState<string>("");
 
   // حالات الإرسال والواجهة
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,16 +64,13 @@ export function RateDriverClient({
   const shopName = orderData?.shopName || "المتجر";
   const courierName = orderData?.courierName || "مندوب التوصيل";
 
+  // هل النموذج جاهز للإرسال؟
+  const isFormReady = mannerRating > 0 && speedRating > 0 && overallRating > 0;
+
   // دالة الإرسال
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orderData) return;
-
-    // التحقق من أن الزبون حدد كل التقييمات
-    if (mannerRating === 0 || speedRating === 0 || overallRating === 0) {
-      setErrorMessage("يرجى تحديد عدد النجوم لجميع بنود التقييم قبل الإرسال ⭐");
-      return;
-    }
+    if (!orderData || !isFormReady) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -121,54 +123,51 @@ export function RateDriverClient({
     label: string;
     icon: React.ReactNode;
   }) => {
+    const [hovered, setHovered] = useState(0);
+
+    const getLabel = (v: number) => {
+      if (v === 0) return <span className="text-white/40 font-mono text-[11px]">اختر تقييمك</span>;
+      if (v === 5) return <span className="text-[#CCFF00] font-mono text-[11px] font-black">ممتاز! ⭐ (5/5)</span>;
+      if (v === 4) return <span className="text-[#a8e060] font-mono text-[11px] font-bold">جيد جداً (4/5)</span>;
+      if (v === 3) return <span className="text-orange-400 font-mono text-[11px] font-bold">متوسط (3/5)</span>;
+      if (v === 2) return <span className="text-orange-500 font-mono text-[11px] font-bold">مقبول (2/5)</span>;
+      return <span className="text-red-400 font-mono text-[11px] font-bold">ضعيف (1/5)</span>;
+    };
+
+    const displayVal = hovered > 0 ? hovered : value;
+
     return (
-      <div className="flex flex-col gap-2">
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-black text-[#0A3D2E] flex items-center gap-1.5">
+          <span className="text-sm font-black text-white flex items-center gap-1.5">
             {icon}
             {label}
           </span>
-          <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border transition-all ${
-            value === 0
-              ? "bg-slate-100 text-slate-500 border-slate-200"
-              : value === 5
-              ? "bg-[#FFF8F0] border-[#C9A86A]/40 text-[#B45309]"
-              : "bg-amber-100 border-amber-300 text-amber-900 font-black"
-          }`}>
-            {value === 0
-              ? "اضغط لتحديد النجوم"
-              : value === 5
-              ? "ممتاز 🌟 (5/5)"
-              : value === 4
-              ? "جيد جداً (4/5)"
-              : value === 3
-              ? "متوسط (3/5)"
-              : value === 2
-              ? "مقبول (2/5)"
-              : "ضعيف (1/5)"}
-          </span>
+          {getLabel(displayVal)}
         </div>
 
         {/* النجوم */}
-        <div className="flex items-center justify-center gap-2 py-2.5 bg-[#FFFDF9] rounded-[18px] border border-[#C9A86A]/30 shadow-inner" dir="ltr">
+        <div
+          className="flex items-center justify-center gap-3 py-3 bg-white/[0.04] rounded-2xl border border-white/10 hover:border-[#CCFF00]/30 transition-colors"
+          dir="ltr"
+        >
           {[1, 2, 3, 4, 5].map((star) => {
-            const isFilled = value > 0 && star <= value;
+            const isFilled = star <= displayVal;
             return (
               <button
                 key={star}
                 type="button"
-                onClick={() => {
-                  onChange(star);
-                  setErrorMessage(null);
-                }}
-                className="p-1 hover:scale-125 active:scale-95 transition-all transform cursor-pointer"
+                onClick={() => onChange(star)}
+                onMouseEnter={() => setHovered(star)}
+                onMouseLeave={() => setHovered(0)}
+                className="p-1 hover:scale-125 active:scale-95 transition-all transform cursor-pointer select-none"
                 title={`${star} نجوم`}
               >
                 <Star
-                  className={`w-8 h-8 md:w-9 md:h-9 transition-colors ${
+                  className={`w-9 h-9 md:w-10 md:h-10 transition-all duration-150 ${
                     isFilled
-                      ? "fill-[#F59E0B] text-[#D97706] drop-shadow-[0_2px_4px_rgba(245,158,11,0.4)]"
-                      : "fill-transparent text-[#CBD5E1] hover:text-[#FDE68A]"
+                      ? "fill-[#CCFF00] text-[#CCFF00] drop-shadow-[0_0_8px_rgba(204,255,0,0.6)]"
+                      : "fill-transparent text-white/20 hover:text-white/40"
                   }`}
                 />
               </button>
@@ -182,48 +181,109 @@ export function RateDriverClient({
   // شاشة الشكر بعد إكمال التقييم
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A3D2E] via-[#0D4434] to-[#06241B] flex items-center justify-center p-4 py-8" dir="rtl">
-        <div className="w-full max-w-lg bg-white rounded-[32px] border-2 border-[#C9A86A] shadow-2xl p-6 md:p-8 text-center relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          {/* زخرفة خلفية */}
-          <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#FFF8F0] rounded-full border border-[#C9A86A]/20 blur-xl pointer-events-none" />
-          <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-[#0A3D2E]/10 rounded-full blur-xl pointer-events-none" />
+      <div
+        className="min-h-screen bg-[#080C0F] text-white flex items-center justify-center p-4 py-8 overflow-x-hidden"
+        dir="rtl"
+      >
+        {/* توهجات خلفية */}
+        <div className="pointer-events-none fixed inset-0 z-0 opacity-30">
+          <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#CCFF00] rounded-full blur-[150px] opacity-10" />
+          <div className="absolute bottom-[10%] left-[-10%] w-[350px] h-[350px] bg-[#5FA8D3] rounded-full blur-[140px] opacity-10" />
+        </div>
 
-          {/* أيقونة النجاح */}
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#0A3D2E] to-[#14532D] border-4 border-[#F5D77F] flex items-center justify-center mx-auto mb-4 text-[#F5D77F] shadow-lg animate-bounce duration-1000">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-
-          <h2 className="text-2xl font-black text-[#0A3D2E] mb-2">
-            شكراً جزيلاً لتقييمك! ❤️
-          </h2>
-          <p className="text-sm font-bold text-slate-600 mb-6 leading-relaxed">
-            تم استلام تقييمك للمندوب <span className="text-[#0A3D2E] font-black">{courierName}</span> بنجاح. سيقوم أحد مسؤولي مدينتك بمراجعة تقييمك والاهتمام به.
-          </p>
-
-          {/* بطاقة الدعوة لصفحة الترحيب والخدمات */}
-          <div className="bg-gradient-to-br from-[#FFFDF7] via-[#FFF9EE] to-[#FFF3DC] border-2 border-[#C9A86A] rounded-[24px] p-5 mb-6 text-right shadow-md relative group">
-            <div className="flex items-center gap-2 mb-2 text-[#0A3D2E]">
-              <Sparkles className="w-5 h-5 text-[#C9A86A] shrink-0" />
-              <h3 className="text-base font-black text-[#0A3D2E]">
-                مادام قيّمت المندوب.. تعال نسولفلك عن خدمتنا! 🌟
-              </h3>
+        <div className="relative z-10 w-full max-w-lg">
+          {/* بطاقة الشكر */}
+          <div className="bg-[#0F171B] border border-white/10 rounded-[32px] p-6 md:p-8 text-center shadow-2xl">
+            {/* أيقونة النجاح */}
+            <div className="w-20 h-20 rounded-full bg-[#CCFF00]/10 border-2 border-[#CCFF00]/40 flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(204,255,0,0.2)]">
+              <CheckCircle2 className="w-10 h-10 text-[#CCFF00]" />
             </div>
-            <p className="text-xs font-bold text-slate-700 leading-relaxed mb-4">
-              تعرف على كافة مميزات التوصيل، المتابعة، والخدمات الحصرية التي نقدمها لك وللمتاجر الشريكة في بغداد وجميع المحافظات.
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#CCFF00]/10 border border-[#CCFF00]/30 font-mono text-xs font-bold text-[#CCFF00] mb-4">
+              <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+              <span>تم استلام تقييمك بنجاح</span>
+            </div>
+
+            <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
+              شكراً جزيلاً لتقييمك! ❤️
+            </h2>
+            <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mb-8">
+              تم استلام تقييمك للمندوب{" "}
+              <strong className="text-[#CCFF00]">{courierName}</strong> بنجاح.
+              رأيك يساهم في تطوير خدمتنا وتقديم أفضل تجربة توصيل تليق بكم.
             </p>
 
+            {/* بطاقة التعريف بالخدمات */}
+            <div className="bg-[#080C0F] border border-[#CCFF00]/20 rounded-[24px] p-5 mb-6 text-right space-y-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="h-px flex-1 bg-[#CCFF00]/20" />
+                <span className="font-mono text-xs text-[#CCFF00] font-bold tracking-widest">تعرّف على خدماتنا</span>
+                <span className="h-px flex-1 bg-[#CCFF00]/20" />
+              </div>
+
+              <p className="text-white/80 text-sm leading-relaxed font-bold">
+                هل تعلم أننا نوصّل <strong className="text-[#CCFF00]">كلشي تريده</strong> لباب بيتك داخل قضاء أبي الخصيب؟ 🚀
+              </p>
+
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                {[
+                  { icon: "💊", text: "أدوية وصيدليات" },
+                  { icon: "🍔", text: "مطاعم ووجبات" },
+                  { icon: "🛒", text: "سوبرماركت ومخضر" },
+                  { icon: "🎁", text: "هدايا ومناسبات" },
+                  { icon: "💄", text: "كوزمتك ومكياج" },
+                  { icon: "🧁", text: "حلويات وكيك" },
+                  { icon: "📚", text: "قرطاسية ومستلزمات" },
+                  { icon: "🔄", text: "توصيل فوري 24/7" },
+                ].map((item) => (
+                  <div
+                    key={item.text}
+                    className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 font-bold text-white/80 hover:border-[#CCFF00]/30 transition"
+                  >
+                    <span className="text-base shrink-0">{item.icon}</span>
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-white/10 space-y-2 text-xs font-bold text-white/70">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00] shrink-0" />
+                  <span>بدون حاجة لتطبيق أو تسجيل — بس رسالة واتساب!</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00] shrink-0" />
+                  <span>سيارات مبردة ودراجات حديثة — توصيل آمن وسريع</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00] shrink-0" />
+                  <span>الدفع نقداً أو بطاقة عند الاستلام</span>
+                </div>
+                {orderData?.shopName && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#5FA8D3] shrink-0" />
+                    <span>
+                      صاحب متجر؟ انضم إلينا كـ{" "}
+                      <strong className="text-[#5FA8D3]">شريك توصيل</strong> وسع نطاق مبيعاتك!
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* زر الانتقال */}
             <a
               href="https://aboakbr.com/welcome"
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-[18px] bg-gradient-to-r from-[#0A3D2E] to-[#14532D] text-[#F5D77F] font-black text-sm border border-[#C9A86A] hover:scale-[1.02] active:scale-95 transition shadow-lg cursor-pointer text-center"
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-[20px] bg-[#CCFF00] text-black font-black text-sm hover:bg-white transition-all shadow-[0_0_25px_rgba(204,255,0,0.3)] active:scale-95"
             >
-              <span>اضغط هنا وتعرف على خدماتنا ومميزاتنا</span>
-              <ArrowRight className="w-4 h-4 text-[#F5D77F] rotate-180" />
+              <span>تعرف أكثر عن خدماتنا</span>
+              <ArrowLeft className="w-4 h-4" />
             </a>
-          </div>
 
-          <div className="text-[11px] font-bold text-slate-400 flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#0A3D2E]" />
-            <span>نظام التوصيل وإدارة الطلبيات — جميع الحقوق محفوظة</span>
+            <div className="mt-5 text-[11px] font-bold text-white/30 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>أبو الأكبر للتوصيل — أبي الخصيب</span>
+            </div>
           </div>
         </div>
       </div>
@@ -233,18 +293,18 @@ export function RateDriverClient({
   // إذا لم يكن هناك بيانات طلب
   if (!orderData) {
     return (
-      <div className="min-h-screen bg-[#0A3D2E] flex items-center justify-center p-4" dir="rtl">
-        <div className="w-full max-w-md bg-white rounded-[28px] border-2 border-[#C9A86A] p-6 text-center shadow-xl">
-          <AlertCircle className="w-12 h-12 text-[#B45309] mx-auto mb-3" />
-          <h2 className="text-lg font-black text-[#0A3D2E] mb-1">الرابط غير صحيح أو منتهي</h2>
-          <p className="text-xs font-bold text-slate-500 mb-4">
+      <div className="min-h-screen bg-[#080C0F] text-white flex items-center justify-center p-4" dir="rtl">
+        <div className="w-full max-w-md bg-[#0F171B] border border-white/10 rounded-[28px] p-6 text-center shadow-xl">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <h2 className="text-lg font-black text-white mb-1">الرابط غير صحيح أو منتهي</h2>
+          <p className="text-xs font-bold text-white/50 mb-4">
             يرجى التأكد من الدخول عبر رابط التقييم المرفق مع رسالة الطلب
           </p>
           <a
             href="https://aboakbr.com/welcome"
-            className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-[14px] bg-[#0A3D2E] text-[#F5D77F] text-xs font-black border border-[#C9A86A]"
+            className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-[14px] bg-[#CCFF00] text-black text-xs font-black hover:bg-white transition"
           >
-            الانتقال لصفحة الترحيب
+            الانتقال لصفحة خدماتنا
           </a>
         </div>
       </div>
@@ -252,185 +312,230 @@ export function RateDriverClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A3D2E] via-[#0E4938] to-[#07261D] flex items-center justify-center p-3 sm:p-5 py-6 sm:py-10" dir="rtl">
-      <div className="w-full max-w-lg bg-white rounded-[32px] border-2 border-[#C9A86A] shadow-2xl p-5 sm:p-7 relative overflow-hidden">
-        {/* الترويسة وبطاقة الترحيب المخصصة */}
-        <div className="bg-gradient-to-r from-[#0A3D2E] via-[#124B3A] to-[#0A3D2E] rounded-[24px] p-4 sm:p-5 text-white border border-[#C9A86A]/50 shadow-md mb-5">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">👋</span>
-            <h1 className="text-base sm:text-lg font-black text-[#F5D77F]">
-              أهلاً بك زبوننا العزيز
-            </h1>
-          </div>
+    <div
+      className="min-h-screen bg-[#080C0F] text-white flex items-center justify-center p-3 sm:p-5 py-6 sm:py-10 overflow-x-hidden"
+      dir="rtl"
+    >
+      {/* توهجات خلفية */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-25">
+        <div className="absolute top-[-5%] right-[-5%] w-[350px] h-[350px] bg-[#CCFF00] rounded-full blur-[150px] opacity-10" />
+        <div className="absolute bottom-[15%] left-[-5%] w-[300px] h-[300px] bg-[#5FA8D3] rounded-full blur-[140px] opacity-10" />
+      </div>
 
-          <div className="space-y-1.5 text-xs font-bold text-slate-200">
-            <p className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#F5D77F] shrink-0" />
-              <span>من منطقة: <strong className="text-white">{regionName}</strong></span>
-            </p>
-            <p className="flex items-center gap-1.5">
-              <Store className="w-3.5 h-3.5 text-[#F5D77F] shrink-0" />
-              <span>طلبك من محل: <strong className="text-white">{shopName}</strong></span>
-            </p>
-            <p className="flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-[#F5D77F] shrink-0" />
-              <span>وصلك مع المندوب: <strong className="text-[#F5D77F] text-sm">{courierName}</strong></span>
-            </p>
+      <div className="relative z-10 w-full max-w-lg">
+        {/* الشريط العلوي للعلامة التجارية */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2 text-xl font-black">
+            <span>أبو الأكبر</span>
+            <span className="text-[#CCFF00]">.</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono bg-white/[0.05] border border-white/10 rounded-full px-3.5 py-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+            <span className="text-white/70">نظام تقييم المندوبين</span>
           </div>
         </div>
 
-        {/* نبذة التقييم */}
-        <div className="text-center mb-5">
-          <h2 className="text-base sm:text-lg font-black text-[#0A3D2E]">
-            تقييم مندوب التوصيل ⭐
-          </h2>
-          <p className="text-xs font-bold text-slate-500 mt-1">
-            نسعد بمعرفة رأيك وتقييمك لأداء المندوب من 5 نجوم لمساعدتنا في تقديم أفضل خدمة
+        {/* بطاقة الترحيب المخصصة */}
+        <div className="bg-[#0F171B] border border-white/10 rounded-[24px] p-4 sm:p-5 mb-5 hover:border-[#CCFF00]/20 transition-all">
+          <div className="font-mono text-xs tracking-[0.2em] text-[#CCFF00] font-bold mb-2">
+            أهلاً وسهلاً بك
+          </div>
+          <div className="space-y-2 text-sm font-bold text-white/80">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#5FA8D3] shrink-0" />
+              <span>
+                من منطقة:{" "}
+                <strong className="text-white">{regionName}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-[#5FA8D3] shrink-0" />
+              <span>
+                طلبك من محل:{" "}
+                <strong className="text-white">{shopName}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-white/10">
+              <Truck className="w-4 h-4 text-[#CCFF00] shrink-0" />
+              <span>
+                وصّل طلبك المندوب:{" "}
+                <strong className="text-[#CCFF00] text-base">{courierName}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* عنوان التقييم */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-1.5">
+            قيّم مندوب التوصيل ⭐
+          </h1>
+          <p className="text-white/50 text-sm font-bold">
+            رأيك يساعدنا لنقدم خدمة أفضل — اختر من 1 إلى 5 نجوم
           </p>
         </div>
 
+        {/* رسالة الخطأ */}
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-[16px] bg-red-50 border-2 border-red-300 text-xs font-black text-red-700 flex items-center gap-2 animate-shake">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="mb-4 p-3 rounded-[16px] bg-red-500/10 border border-red-500/30 text-xs font-bold text-red-400 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* نموذج التقييم */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* 1. أسلوب وتعامل المندوب */}
-          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
-            mannerRating > 0 && mannerRating < 5
-              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
-              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
-          }`}>
+          <div className="bg-[#0F171B] border border-white/10 rounded-[22px] p-4 sm:p-5 hover:border-[#CCFF00]/20 transition-all">
             <InteractiveStarGroup
               value={mannerRating}
               onChange={setMannerRating}
               label="أسلوب وتعامل المندوب"
-              icon={<Heart className="w-4 h-4 text-[#C9A86A]" />}
+              icon={<Heart className="w-4 h-4 text-[#CCFF00]" />}
             />
 
-            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
             {mannerRating > 0 && mannerRating < 5 && (
-              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
-                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
-                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>لماذا أقل من 5 نجوم؟ يرجى إخبارنا بالسبب لنعالجه فوراً:</span>
-                </div>
+              <div className="mt-3 pt-3 border-t border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="block text-xs font-black text-orange-400 mb-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>لماذا أقل من 5 نجوم؟ أخبرنا لنعالجه فوراً:</span>
+                </label>
                 <textarea
                   value={mannerReason}
                   onChange={(e) => setMannerReason(e.target.value)}
-                  placeholder="اكتب سبب التقييم هنا (مثال: أسلوب غير لائق، تعامل غير مريح...)"
+                  placeholder="مثال: المندوب كان متعجلاً أو أسلوبه لم يكن لائقاً..."
                   rows={2}
-                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
+                  className="w-full p-3 rounded-[14px] bg-white/[0.04] border border-orange-500/30 text-xs font-bold text-white placeholder:text-white/30 outline-none focus:border-orange-400 resize-none"
                 />
               </div>
             )}
           </div>
 
           {/* 2. سهولة وسرعة توصيل الطلب */}
-          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
-            speedRating > 0 && speedRating < 5
-              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
-              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
-          }`}>
+          <div className="bg-[#0F171B] border border-white/10 rounded-[22px] p-4 sm:p-5 hover:border-[#5FA8D3]/20 transition-all">
             <InteractiveStarGroup
               value={speedRating}
               onChange={setSpeedRating}
               label="سهولة وسرعة توصيل الطلب"
-              icon={<Truck className="w-4 h-4 text-[#C9A86A]" />}
+              icon={<Truck className="w-4 h-4 text-[#5FA8D3]" />}
             />
 
-            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
             {speedRating > 0 && speedRating < 5 && (
-              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
-                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
-                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>ما الذي سبب تأخير أو صعوبة التوصيل؟</span>
-                </div>
+              <div className="mt-3 pt-3 border-t border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="block text-xs font-black text-orange-400 mb-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>لماذا أقل من 5 نجوم؟ ما الذي سبب المشكلة؟</span>
+                </label>
                 <textarea
                   value={speedReason}
                   onChange={(e) => setSpeedReason(e.target.value)}
-                  placeholder="اكتب سبب التأخير أو صعوبة الوصول (مثال: تأخر في الوصول، صعوبة في معرفة العنوان...)"
+                  placeholder="مثال: تأخر في الوصول، صعوبة في إيجاد العنوان..."
                   rows={2}
-                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
+                  className="w-full p-3 rounded-[14px] bg-white/[0.04] border border-orange-500/30 text-xs font-bold text-white placeholder:text-white/30 outline-none focus:border-orange-400 resize-none"
                 />
               </div>
             )}
           </div>
 
-          {/* 3. التقييم العام للمندوب */}
-          <div className={`p-4 rounded-[22px] border transition-all duration-300 ${
-            overallRating > 0 && overallRating < 5
-              ? "bg-amber-50/90 border-amber-300 shadow-md ring-2 ring-amber-300/60"
-              : "bg-[#FAF6EE] border-[#C9A86A]/30 shadow-sm"
-          }`}>
+          {/* 3. التقييم العام */}
+          <div className="bg-[#0F171B] border border-white/10 rounded-[22px] p-4 sm:p-5 hover:border-[#CCFF00]/20 transition-all">
             <InteractiveStarGroup
               value={overallRating}
               onChange={setOverallRating}
-              label="التقييم الإجمالي للخدمة"
-              icon={<Star className="w-4 h-4 text-[#C9A86A]" />}
+              label="التقييم العام للمندوب والخدمة"
+              icon={<Star className="w-4 h-4 text-[#CCFF00]" />}
             />
 
-            {/* يظهر الحقل بحركة لافتة إذا كان التقييم أقل من 5 نجوم */}
             {overallRating > 0 && overallRating < 5 && (
-              <div className="mt-3 pt-3 border-t border-amber-200 animate-in zoom-in-95 duration-300">
-                <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 mb-2 bg-amber-100/90 p-2 rounded-[12px] border border-amber-300 animate-pulse">
-                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>سبب تقييم الخدمة الإجمالية بأقل من 5 نجوم:</span>
-                </div>
+              <div className="mt-3 pt-3 border-t border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="block text-xs font-black text-orange-400 mb-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>لماذا أقل من 5 نجوم؟ اذكر لنا السبب:</span>
+                </label>
                 <textarea
                   value={overallReason}
                   onChange={(e) => setOverallReason(e.target.value)}
-                  placeholder="اكتب تفاصيل إضافية حول التقييم العام وما تقترحه علينا..."
+                  placeholder="اكتب تفاصيل إضافية حول التقييم العام..."
                   rows={2}
-                  className="w-full p-3 rounded-[14px] bg-white border-2 border-amber-400 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner"
+                  className="w-full p-3 rounded-[14px] bg-white/[0.04] border border-orange-500/30 text-xs font-bold text-white placeholder:text-white/30 outline-none focus:border-orange-400 resize-none"
                 />
               </div>
             )}
           </div>
 
-          {/* خانة ملاحظات إضافية */}
-          <div className="bg-white p-3.5 rounded-[20px] border border-[#C9A86A]/30">
-            <label className="block text-xs font-black text-[#0A3D2E] mb-1.5 flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-[#C9A86A]" />
-              <span>هل لديك أي ملاحظات أو اقتراحات أخرى؟ (اختياري)</span>
+          {/* خانة الملاحظات الإضافية */}
+          <div className="bg-[#0F171B] border border-white/10 rounded-[22px] p-4 sm:p-5">
+            <label className="block text-sm font-black text-white mb-3 flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 text-[#5FA8D3]" />
+              <span>ملاحظات أو اقتراحات إضافية (اختياري)</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="اكتب أي ملاحظة تحب مشاركتها معنا..."
+              placeholder="اكتب أي ملاحظة أو اقتراح تريد مشاركته معنا..."
               rows={2}
-              className="w-full p-2.5 rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/30 text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A3D2E]"
+              className="w-full p-3 rounded-[14px] bg-white/[0.04] border border-white/10 text-xs font-bold text-white placeholder:text-white/30 outline-none focus:border-[#CCFF00]/30 resize-none"
             />
           </div>
 
-          {/* بطاقة التنبيه والملاحظة الإدارية قبل زر الإرسال */}
-          <div className="p-3.5 rounded-[20px] bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-2 border-emerald-300 shadow-sm flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-              <UserCheck className="w-4 h-4" />
+          {/* بلوك معلومات ما قبل الإرسال */}
+          <div className="bg-[#0A0F12] border border-[#CCFF00]/15 rounded-[22px] p-4 sm:p-5 space-y-3">
+            <div className="font-mono text-[10px] tracking-[0.25em] text-[#CCFF00] font-bold">
+              INFO // تعرّف على خدماتنا
             </div>
-            <div className="text-xs font-bold text-emerald-950 leading-relaxed">
-              <strong className="block text-emerald-900 font-black mb-0.5">
-                🛡️ ضمان المتابعة والاهتمام برأيك:
-              </strong>
-              سوف يراجع هذا التقييم أحد مسؤولي إدارتنا في منطقتك ويقرأ ملاحظاتك ويتواصل معك إذا كانت هناك أي مشكلة لضمان رضاك التام.
+            <p className="text-white/70 text-xs leading-relaxed font-bold">
+              نحن نقدم خدمة توصيل شاملة داخل قضاء أبي الخصيب تشمل أكثر من{" "}
+              <strong className="text-[#CCFF00]">66 منطقة</strong>. سواء كنت
+              زبوناً يريد توصيل طلبيته أو صاحب متجر يريد توسيع نطاق مبيعاته،
+              نحن هنا لك.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
+              <div className="flex items-center gap-1.5 text-white/60">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#CCFF00] shrink-0" />
+                <span>بدون تطبيق — واتساب فقط</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-white/60">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#CCFF00] shrink-0" />
+                <span>سيارات مبردة ودراجات</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-white/60">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#CCFF00] shrink-0" />
+                <span>الدفع نقداً أو بطاقة</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-white/60">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#CCFF00] shrink-0" />
+                <span>تقييمك سيُراجع من فريقنا</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-white/10 text-[11px] font-bold text-white/40 flex items-start gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#CCFF00] mt-0.5 shrink-0" />
+              <span>
+                ملاحظة: سيتم مراجعة تقييمك من أحد أعضاء فريقنا والتواصل معك
+                في حال وجود أي ملاحظات تستحق المتابعة.
+              </span>
             </div>
           </div>
 
           {/* زر الإرسال */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3.5 px-6 rounded-[20px] bg-gradient-to-r from-[#0A3D2E] via-[#0F4D3A] to-[#0A3D2E] text-[#F5D77F] font-black text-sm border-2 border-[#C9A86A] shadow-xl hover:scale-[1.01] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            disabled={isSubmitting || !isFormReady}
+            className={`w-full py-4 px-6 rounded-[20px] font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 cursor-pointer disabled:cursor-not-allowed ${
+              isFormReady
+                ? "bg-[#CCFF00] text-black hover:bg-white shadow-[0_0_30px_rgba(204,255,0,0.3)]"
+                : "bg-white/[0.05] border border-white/10 text-white/40"
+            }`}
           >
             {isSubmitting ? (
               <span>جاري إرسال التقييم... ⏳</span>
+            ) : !isFormReady ? (
+              <span>يرجى اختيار تقييمك بالنجوم أولاً ⭐</span>
             ) : (
               <>
                 <span>إرسال التقييم الآن</span>
-                <Send className="w-4 h-4 text-[#F5D77F]" />
+                <Send className="w-4 h-4" />
               </>
             )}
           </button>

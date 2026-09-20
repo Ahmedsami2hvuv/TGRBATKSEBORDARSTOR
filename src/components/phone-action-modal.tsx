@@ -1,6 +1,6 @@
 "use client";
 
-import { whatsappMeUrl, telHref, openUrlFromUserGesture } from "@/lib/whatsapp";
+import { whatsappMeUrl, whatsappAppUrl, telHref, openUrlFromUserGesture } from "@/lib/whatsapp";
 
 export type PhoneActionModalProps = {
   type: "whatsapp" | "call";
@@ -22,7 +22,9 @@ export function PhoneActionModal({
   const handleSelectPhone = (chosenPhone: string) => {
     onClose();
     if (isWhatsapp) {
-      const url = whatsappMeUrl(chosenPhone, messageText);
+      // على الجوال نفتح واتساب مباشرة بدون "جاري البحث"
+      const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const url = isMobile ? whatsappAppUrl(chosenPhone, messageText) : whatsappMeUrl(chosenPhone, messageText);
       if (url && url !== "#") {
         openUrlFromUserGesture(url);
       }

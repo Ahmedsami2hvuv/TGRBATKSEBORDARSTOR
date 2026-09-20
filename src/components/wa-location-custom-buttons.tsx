@@ -6,7 +6,7 @@ import {
   splitMandoubWaTemplateVariants,
   type MandoubWaButtonVariableValues,
 } from "@/lib/mandoub-wa-button-template";
-import { openUrlFromUserGesture, whatsappMeUrl } from "@/lib/whatsapp";
+import { openUrlFromUserGesture, whatsappMeUrl, whatsappAppUrl } from "@/lib/whatsapp";
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import {
   type OrderCardDesignerConfig,
@@ -179,7 +179,10 @@ export function WaLocationCustomButtons({
         ? shopPhone
         : p1 || p2;
 
-    const url = whatsappMeUrl(targetPhone, text);
+    // على الجوال نستخدم رابط whatsapp:// المباشر لتفادي شاشة "جاري البحث"
+    // وعلى الحاسوب نستخدم wa.me كالعادة
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile ? whatsappAppUrl(targetPhone, text) : whatsappMeUrl(targetPhone, text);
     if (url && url !== "#") {
       openUrlFromUserGesture(url);
     } else {
