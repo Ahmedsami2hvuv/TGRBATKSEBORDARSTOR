@@ -173,6 +173,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/shop-card/btn-whatsapp.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/shop-card/btn-camera.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/shop-card/btn-gallery.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/ak-submit-btn-v3.webp" as="image" type="image/webp" />
 
         {/* التحميل المسبق الديناميكي لأي أصول وصور مخصصة من استوديو التصميم */}
         {customAssetUrls.map((url, idx) => (

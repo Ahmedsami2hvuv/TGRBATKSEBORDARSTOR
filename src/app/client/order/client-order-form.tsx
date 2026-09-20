@@ -201,7 +201,7 @@ function ClientOrderFormInner({
 
   // موضع الزر العائم مع السحب وتخزينه
   const STORAGE_KEY_BTN = "kse_client_submit_ak_btn_pos";
-  const STORAGE_KEY_BTN_HINT = "kse_client_seen_ak_gold_btn_hint_v2";
+  const STORAGE_KEY_BTN_HINT = "kse_client_seen_ak_gold_btn_hint_v3";
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number }>({ x: 20, y: 500 });
   const [isDragging, setIsDragging] = useState(false);
   const [showNewBtnHint, setShowNewBtnHint] = useState(false);
@@ -1230,7 +1230,7 @@ function ClientOrderFormInner({
             ? "typingDance 0.5s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite"
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
-        className={`fixed z-[60] w-[88px] h-[88px] sm:w-[96px] sm:h-[96px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
+        className={`fixed z-[60] w-[96px] h-[96px] sm:w-[104px] sm:h-[104px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
           showNewBtnHint ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-[#0A3D2E] scale-105" : ""
         } ${
           isDragging
@@ -1238,28 +1238,22 @@ function ClientOrderFormInner({
             : "cursor-grab"
         }`}
       >
-        {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي */}
+        {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي مع عبارة رفع الطلب المدمجة */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/images/order-luxury/ak-gold-submit-btn.webp"
+            src="/images/order-luxury/ak-submit-btn-v3.webp"
             alt="رفع الطلب"
             fill
             priority
             unoptimized
-            className="object-contain drop-shadow-[0_4px_14px_rgba(0,0,0,0.35)]"
+            className="object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
           />
-        </div>
-
-        {/* كبسولة توضيحية لرفع الطلب أسفل الختم مباشرة */}
-        <div className="absolute -bottom-[4px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border-[1.5px] border-[#C9A86A] text-[#F5D77F] text-[10.5px] sm:text-[11.5px] font-black px-2.5 py-[2px] rounded-full shadow-[0_3px_10px_rgba(0,0,0,0.5)] flex items-center gap-1 select-none pointer-events-none whitespace-nowrap">
-          <span>رفع الطلب</span>
-          <span className="text-[10px]">🚀</span>
         </div>
 
         {/* مؤشر التحميل أثناء الرفع */}
         {pending && (
-          <div className="absolute inset-0 rounded-full bg-black/45 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
-            <Loader2 className="w-[36px] h-[36px] text-[#F5D77F] animate-spin" />
+          <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
+            <Loader2 className="w-[38px] h-[38px] text-[#F5D77F] animate-spin" />
           </div>
         )}
       </button>
@@ -1269,17 +1263,17 @@ function ClientOrderFormInner({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#05281C]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
           <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFEFB] via-[#FFFDF7] to-[#FAF6EE] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
             {/* أيقونة الختم الملكي مع هالة ذهبية */}
-            <div className="relative mx-auto w-[84px] h-[84px] rounded-full p-1 bg-gradient-to-b from-[#FAF0D7] to-[#E8D39E] border-2 border-[#C9A86A] flex items-center justify-center shadow-lg mb-[14px]">
+            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#FAF0D7] to-[#E8D39E] border-2 border-[#C9A86A] flex items-center justify-center shadow-lg mb-[14px]">
               <div className="relative w-full h-full rounded-full overflow-hidden">
                 <Image
-                  src="/images/order-luxury/ak-gold-submit-btn.webp"
-                  alt="زر رفع الطلب"
+                  src="/images/order-luxury/ak-submit-btn-v3.webp"
+                  alt="زر رفع الطلب الجديد"
                   fill
                   className="object-contain"
                 />
               </div>
               <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0A3D2E] border border-[#F5D77F] text-white flex items-center justify-center text-xs shadow-md">
-                🚀
+                👑
               </div>
             </div>
 
