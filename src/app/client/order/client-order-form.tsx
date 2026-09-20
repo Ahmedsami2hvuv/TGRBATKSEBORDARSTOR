@@ -8,6 +8,7 @@ import { resolvePublicImageSrc } from "@/lib/image-url";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
 import { ClientFeedbackModal } from "./client-feedback-modal";
+import { ClientSettingsModal, STORAGE_KEY_AUTO_WA } from "./client-settings-modal";
 import "leaflet/dist/leaflet.css";
 import { submitOrder, type ClientOrderState } from "./actions";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -36,6 +37,7 @@ import {
   Send,
   Loader2,
   Store,
+  Settings,
 } from "lucide-react";
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
@@ -209,6 +211,7 @@ function ClientOrderFormInner({
   const [isDragging, setIsDragging] = useState(false);
   const [showNewBtnHint, setShowNewBtnHint] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [lastWaUrl, setLastWaUrl] = useState<string | null>(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
@@ -352,6 +355,23 @@ function ClientOrderFormInner({
     if (state.ok) {
       if (state.waUrl) {
         setLastWaUrl(state.waUrl);
+
+        // التحقق من تفعيل خيار إرسال تفاصيل الطلب للواتساب تلقائياً
+        let isAutoWa = true;
+        try {
+          const savedWa = localStorage.getItem(STORAGE_KEY_AUTO_WA);
+          if (savedWa !== null) {
+            isAutoWa = savedWa === "true";
+          }
+        } catch {}
+
+        if (isAutoWa) {
+          try {
+            window.open(state.waUrl, "_blank");
+          } catch {
+            // fallback
+          }
+        }
       }
 
       const calcTotal = (
@@ -551,12 +571,22 @@ function ClientOrderFormInner({
             </div>
 
             <div className="flex items-center gap-[6px] shrink-0">
-              <div className="h-[26px] px-[10px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/35 flex items-center gap-[5px]">
+              <div className="h-[28px] px-[10px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/35 flex items-center gap-[5px] shadow-sm">
                 <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
                 <span className="text-[#0A3D2E] text-[11px] font-bold">
                   {shopRegionName || "المنصور"}
                 </span>
               </div>
+
+              {/* زر إعدادات صفحة العميل */}
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(true)}
+                className="h-[28px] w-[28px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2E] hover:bg-white hover:border-[#C9A86A] active:scale-90 transition shadow-sm"
+                title="إعدادات صفحة العميل"
+              >
+                <Settings className="w-[14.5px] h-[14.5px] text-[#0A3D2E]" />
+              </button>
             </div>
           </div>
         </div>
@@ -1503,6 +1533,13 @@ function ClientOrderFormInner({
             setShowSuccessModal(true);
           }
         }}
+      />
+
+      {/* نافذة إعدادات صفحة العميل */}
+      <ClientSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onOpenFeedback={() => setShowFeedbackModal(true)}
       />
     </div>
   );
