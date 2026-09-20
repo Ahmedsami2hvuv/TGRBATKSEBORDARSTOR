@@ -468,10 +468,10 @@ function ClientOrderFormInner({
         }
         @keyframes fabGlow {
           0%, 100% {
-            box-shadow: 0 8px 24px rgba(10, 61, 46, 0.4), 0 0 0 2px #C9A86A, 0 0 0 5px rgba(201, 168, 106, 0.18), 0 0 24px rgba(201, 168, 106, 0.35);
+            filter: drop-shadow(0 0 10px rgba(245, 215, 127, 0.45));
           }
           50% {
-            box-shadow: 0 14px 34px rgba(10, 61, 46, 0.55), 0 0 0 2px #F5D77F, 0 0 0 8px rgba(245, 215, 127, 0.28), 0 0 34px rgba(201, 168, 106, 0.55);
+            filter: drop-shadow(0 0 18px rgba(201, 168, 106, 0.75));
           }
         }
         @keyframes typingDance {
@@ -1208,16 +1208,16 @@ function ClientOrderFormInner({
             ? "typingDance 0.5s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite"
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
-        className={`fixed z-[60] w-[88px] h-[88px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 drop-shadow-[0_12px_28px_rgba(10,61,46,0.35)] bg-transparent border-0 p-0 ${
+        className={`fixed z-[60] w-[92px] h-[92px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
           isDragging
-            ? "cursor-grabbing scale-[1.08] drop-shadow-[0_18px_36px_rgba(10,61,46,0.55)]"
+            ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
             : "cursor-grab"
         }`}
       >
         {/* صورة نانو بنانا WEBP المفرغة بدقة ووضوح */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/images/order-luxury/btn-submit-nanobanana.webp"
+            src="/images/order-luxury/nanobanana-submit-v4.webp?v=4"
             alt="رفع الطلب"
             fill
             priority
@@ -1229,7 +1229,7 @@ function ClientOrderFormInner({
         {/* محتوى الزر العائم وتأثير اللمعان والتفاعل */}
         <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none mt-[6px]">
           {pending ? (
-            <Loader2 className="w-[28px] h-[28px] text-[#F5D77F] animate-spin" />
+            <Loader2 className="w-[30px] h-[30px] text-[#F5D77F] animate-spin" />
           ) : (
             <>
               <span className="text-white font-black text-[13px] leading-[1] tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
