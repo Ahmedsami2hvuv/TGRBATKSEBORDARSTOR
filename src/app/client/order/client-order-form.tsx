@@ -86,6 +86,8 @@ type PropsInner = {
   shopId: string;
   noCarsMode?: string;
   employeePhone?: string;
+  recentOrderTypes?: string[];
+  recentOrderTimes?: string[];
   initialOrder: {
     orderNumber: number;
     customerPhone: string;
@@ -123,6 +125,8 @@ function ClientOrderFormInner({
   shopId,
   noCarsMode = "off",
   employeePhone = "",
+  recentOrderTypes = [],
+  recentOrderTimes = [],
   initialOrder,
   onResetForNewOrder,
 }: PropsInner) {
@@ -290,18 +294,24 @@ function ClientOrderFormInner({
   // جلب المناطق السابقة للزبون عند إدخال الهاتف
   useEffect(() => {
     const clean = sanitizePhone(customerPhone);
-    if (clean.length < 10) {
+    if (clean.length < 8) {
       setPreviousRegions([]);
       return;
     }
     let isCancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/client/customer-profile?phone=${encodeURIComponent(clean)}`);
+        const res = await fetch(`/api/customers/regions-by-phone?phone=${encodeURIComponent(clean)}`);
         if (!res.ok) return;
         const data = await res.json();
-        if (!isCancelled && Array.isArray(data.previousRegions)) {
-          setPreviousRegions(data.previousRegions);
+        if (!isCancelled && Array.isArray(data.regions)) {
+          setPreviousRegions(
+            data.regions.map((r: any) => ({
+              id: r.id,
+              name: r.name,
+              deliveryPrice: r.deliveryPrice ? String(r.deliveryPrice) : "0",
+            }))
+          );
         }
       } catch {
         // ignore
@@ -624,8 +634,8 @@ function ClientOrderFormInner({
             <div className="h-[2px] w-full bg-gradient-to-r from-[#C9A86A] via-[#F5D77F]/60 to-transparent rounded-full mb-[14px]" />
 
             {/* السطر الأول: رقم الزبون بجانب منطقة الزبون */}
-            <div className="grid grid-cols-[105px_1fr] gap-[10px] items-end">
-              {/* رقم الزبون */}
+            <div className="grid grid-cols-[135px_1fr] gap-[8px] items-end">
+              {/* رقم الزبون (مكبر ومريح) */}
               <div className="flex flex-col gap-[6px]">
                 <label className="text-[11px] font-black text-[#1E293B] pr-[4px] flex items-center gap-[4px]">
                   <span className="w-[14px] h-[14px] rounded-[5px] bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center">
@@ -644,9 +654,9 @@ function ClientOrderFormInner({
                     onBlur={() => handlePhoneBlur(customerPhone, setCustomerPhone)}
                     placeholder="07XXXXXXXX"
                     inputMode="numeric"
-                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#C9A86A]/40 bg-white px-[12px] text-center font-mono font-black text-[13px] text-[#1E293B] outline-none placeholder:text-[#94A3B8] placeholder:font-bold"
+                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#C9A86A]/40 bg-white px-[8px] text-center font-mono font-black text-[14px] text-[#1E293B] outline-none placeholder:text-[#94A3B8] placeholder:font-bold"
                   />
-                  <span className="pointer-events-none absolute left-[10px] top-1/2 -translate-y-1/2 opacity-60">
+                  <span className="pointer-events-none absolute left-[8px] top-1/2 -translate-y-1/2 opacity-60">
                     <Phone className="w-[12px] h-[12px] text-[#94A3B8]" />
                   </span>
                 </div>
@@ -679,7 +689,7 @@ function ClientOrderFormInner({
                     }}
                     onFocus={() => setShowRegionHits(true)}
                     placeholder="ابحث عن المنطقة..."
-                    className={`focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] bg-white pr-[12px] pl-[64px] text-[13px] font-black outline-none placeholder:text-[#94A3B8] ${
+                    className={`focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] bg-white pr-[10px] pl-[56px] text-[13px] font-black outline-none placeholder:text-[#94A3B8] ${
                       selected && q === selected.name
                         ? "border-[#0A3D2E] text-[#0A3D2E] font-black"
                         : "border-[#C9A86A]/40 text-[#1E293B]"
@@ -780,9 +790,9 @@ function ClientOrderFormInner({
                 <label className="text-[11px] font-black text-[#1E293B] pr-[4px]">
                   نوع الطلب
                 </label>
-                {/* اقتراحان سريعان */}
+                {/* اقتراحان سريعان من آخر طلبيتين مرفوعتين */}
                 <div className="flex flex-wrap gap-[5px]">
-                  {["طعام", "ملابس"].map((tag) => (
+                  {(recentOrderTypes.length > 0 ? recentOrderTypes.slice(0, 2) : ["طعام", "ملابس"]).map((tag) => (
                     <button
                       key={tag}
                       type="button"
@@ -858,6 +868,31 @@ function ClientOrderFormInner({
               </div>
             </div>
 
+            {/* شريط الإجمالي وسعر الطلب الكلي المباشر */}
+            {(orderPrice || selected) && (
+              <div className="mt-[12px] rounded-[16px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border-[1.5px] border-[#C9A86A] p-[10px] px-[14px] flex items-center justify-between shadow-[0_4px_16px_rgba(10,61,46,0.25)]">
+                <div className="flex items-center gap-[8px]">
+                  <div className="w-[28px] h-[28px] rounded-[8px] bg-[#F5D77F] flex items-center justify-center">
+                    <CreditCard className="w-[14px] h-[14px] text-[#0A3D2E]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#F5D77F] font-black text-[12px] leading-[1]">
+                      السعر الكلي للطلب
+                    </span>
+                    <span className="text-white/75 font-bold text-[10px] mt-[2px]">
+                      الطلب: {(Number(orderPrice) || 0)} الف + التوصيل: {currentTotalDeliveryAlf} الف
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-[3px]">
+                  <span className="text-[#F5D77F] font-black text-[18px] font-mono leading-[1]">
+                    {(Number(orderPrice) || 0) + currentTotalDeliveryAlf}
+                  </span>
+                  <span className="text-white font-black text-[11px]">الف د.ع</span>
+                </div>
+              </div>
+            )}
+
             {/* السطر الثالث: شوكت تحب نستلم الطلب */}
             <div className="mt-[14px] rounded-[18px] bg-[#FFF8F0] border-[1.5px] border-[#C9A86A]/30 p-[12px] flex items-center gap-[12px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]">
               <div className="w-[44px] h-[44px] rounded-[14px] bg-white border border-[#C9A86A]/30 shadow-sm flex items-center justify-center shrink-0">
@@ -867,8 +902,9 @@ function ClientOrderFormInner({
                 <p className="text-[11px] font-black text-[#0A3D2E] leading-[1]">
                   شوكت تحب نستلم الطلب
                 </p>
+                {/* اقتراحان سريعان من آخر طلبيتين مرفوعتين */}
                 <div className="flex gap-[6px] mt-[6px]">
-                  {["فوراً", "بعد ساعة"].map((t) => (
+                  {(recentOrderTimes.length > 0 ? recentOrderTimes.slice(0, 2) : ["فوراً", "بعد ساعة"]).map((t) => (
                     <button
                       key={t}
                       type="button"
