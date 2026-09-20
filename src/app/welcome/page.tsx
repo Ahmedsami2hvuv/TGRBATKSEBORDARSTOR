@@ -16,13 +16,13 @@ import {
   ShoppingBag,
   ShoppingCart,
   Users,
-  Instagram,
   ArrowUpRight,
   Handshake,
   MapPin,
   ShieldCheck,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Camera
 } from "lucide-react";
 
 // قائمة المناطق الكاملة لقضاء أبي الخصيب
@@ -559,7 +559,11 @@ export default function WelcomePage() {
                 className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-pink-500 hover:text-pink-400 flex items-center justify-center transition-all"
                 title="انستغرام"
               >
-                <Instagram className="w-4 h-4" />
+                <svg className="w-4 h-4 fill-none stroke-currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                </svg>
               </a>
               <a
                 href="https://t.me/ko_kseb"
