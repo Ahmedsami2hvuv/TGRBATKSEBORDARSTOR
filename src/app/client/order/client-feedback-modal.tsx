@@ -106,13 +106,13 @@ export function ClientFeedbackModal({
                 key={star}
                 type="button"
                 onClick={() => setRating(star)}
-                className="p-1 hover:scale-115 active:scale-95 transition-transform cursor-pointer"
+                className="p-1 hover:scale-125 active:scale-90 transition-all cursor-pointer"
                 title={`${star} من 5`}
               >
                 <Star
-                  className={`w-[24px] h-[24px] transition-colors ${
+                  className={`w-[24px] h-[24px] transition-all ${
                     rating > 0 && star <= rating
-                      ? "fill-[#F59E0B] text-[#D97706] drop-shadow-[0_2px_6px_rgba(245,158,11,0.4)]"
+                      ? "fill-[#F59E0B] text-[#D97706] drop-shadow-[0_2px_8px_rgba(245,158,11,0.5)] scale-105"
                       : "fill-transparent text-[#CBD5E1] hover:text-[#F59E0B]/60"
                   }`}
                 />
@@ -121,22 +121,40 @@ export function ClientFeedbackModal({
           </div>
         </div>
 
-        {/* إذا اختار المستخدم تقييماً أقل من 5 نجوم تظهر خانة توضيح السبب والمقترح */}
+        {/* إذا اختار المستخدم تقييماً أقل من 5 نجوم تظهر خانة توضيح السبب والمقترح مع تأثير حركي لافت */}
         {rating > 0 && rating < 5 && (
-          <div className="mt-[8px] pt-[8px] border-t border-[#C9A86A]/20 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-1.5 mb-[4px]">
-              <AlertCircle className="w-[13px] h-[13px] text-[#B45309]" />
-              <p className="text-[11px] font-bold text-[#B45309]">
-                ما سبب التقييم وما هو الحل أو التحسين المقترح؟
-              </p>
+          <div
+            key={`reason-box-${rating}`}
+            className="mt-[10px] pt-[10px] border-t border-[#C9A86A]/30 animate-in slide-in-from-top-3 fade-in duration-300"
+          >
+            <div
+              className="rounded-[16px] bg-gradient-to-b from-[#FFFDF5] to-[#FFF6E5] border-[2px] border-[#D97706] p-[10px] shadow-[0_6px_20px_rgba(217,119,6,0.22)] transition-all"
+              style={{
+                animation: "reasonAttentionPulse 0.75s ease-out 1",
+              }}
+            >
+              <div className="flex items-center justify-between gap-1.5 mb-[6px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base inline-block animate-bounce">
+                    ✍️
+                  </span>
+                  <p className="text-[12px] font-black text-[#92400E]">
+                    ما سبب التقييم وما هو الحل أو المقترح؟
+                  </p>
+                </div>
+                <span className="text-[10px] font-black bg-[#FEF3C7] text-[#B45309] px-2 py-0.5 rounded-full border border-[#F59E0B]/50 shadow-sm animate-pulse">
+                  اكتب هنا 👇
+                </span>
+              </div>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="اكتب ملاحظتك واقتراحك هنا لنقوم بتطويرها فوراً..."
+                rows={2}
+                autoFocus
+                className="w-full rounded-[10px] border-[1.5px] border-[#F59E0B]/70 bg-white p-[8px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner transition"
+              />
             </div>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="اكتب ملاحظتك واقتراحك هنا لنقوم بتطويرها فوراً..."
-              rows={2}
-              className="w-full rounded-[12px] border border-[#C9A86A]/40 bg-white p-[8px] text-[11.5px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0A3D2E]"
-            />
           </div>
         )}
       </div>
@@ -148,6 +166,22 @@ export function ClientFeedbackModal({
       className="fixed inset-0 z-[120] flex items-center justify-center p-[14px] bg-[#05281C]/75 backdrop-blur-[10px] animate-in fade-in duration-300"
       dir="rtl"
     >
+      <style jsx>{`
+        @keyframes reasonAttentionPulse {
+          0% {
+            transform: scale(0.96) translateY(-4px);
+            box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+          }
+          50% {
+            transform: scale(1.02) translateY(0px);
+            box-shadow: 0 0 20px 4px rgba(217, 119, 6, 0.45);
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.22);
+          }
+        }
+      `}</style>
       <div className="relative w-full max-w-[440px] max-h-[92vh] flex flex-col rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FFFEFB] via-[#FFFDF7] to-[#FAF6EE] shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
         {/* زر الإغلاق */}
         <button
