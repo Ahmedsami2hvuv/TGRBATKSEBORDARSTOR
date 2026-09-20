@@ -22,7 +22,13 @@ export const metadata: Metadata = {
   // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.5
 };
 
-export const viewport: Viewport = { themeColor: "#0ea5e9" };
+export const viewport: Viewport = {
+  themeColor: "#0ea5e9",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
