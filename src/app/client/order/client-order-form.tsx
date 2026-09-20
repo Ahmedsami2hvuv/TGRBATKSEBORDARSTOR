@@ -1208,7 +1208,7 @@ function ClientOrderFormInner({
             ? "typingDance 0.5s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite"
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
-        className={`fixed z-[60] w-[92px] h-[92px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
+        className={`fixed z-[60] w-[98px] h-[98px] sm:w-[104px] sm:h-[104px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
           isDragging
             ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
             : "cursor-grab"
@@ -1226,19 +1226,31 @@ function ClientOrderFormInner({
           />
         </div>
 
-        {/* محتوى الزر العائم وتأثير اللمعان والتفاعل */}
-        <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none mt-[6px]">
+        {/* محتوى الزر العائم وكلمة رفع الطلب مكبرة جداً وواضحة وبارزة */}
+        <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none mt-[4px]">
           {pending ? (
-            <Loader2 className="w-[30px] h-[30px] text-[#F5D77F] animate-spin" />
+            <Loader2 className="w-[34px] h-[34px] text-[#F5D77F] animate-spin" />
           ) : (
-            <>
-              <span className="text-white font-black text-[13px] leading-[1] tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+            <div className="flex flex-col items-center justify-center -space-y-0.5">
+              <span
+                className="text-white font-black text-[17px] sm:text-[19px] leading-[1.1] tracking-tight select-none"
+                style={{
+                  textShadow:
+                    "0 2px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.95), 0 0 3px #000000",
+                }}
+              >
                 رفع
               </span>
-              <span className="text-[#F5D77F] font-black text-[13px] leading-[1] tracking-wide mt-[2px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              <span
+                className="text-[#FFE885] font-black text-[17px] sm:text-[19px] leading-[1.1] tracking-tight select-none"
+                style={{
+                  textShadow:
+                    "0 2px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.95), 0 0 3px #000000",
+                }}
+              >
                 الطلب
               </span>
-            </>
+            </div>
           )}
         </div>
       </button>
