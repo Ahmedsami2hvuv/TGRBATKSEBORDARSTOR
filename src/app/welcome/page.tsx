@@ -16,13 +16,11 @@ import {
   ShoppingBag,
   ShoppingCart,
   Users,
-  ArrowUpRight,
   Handshake,
   MapPin,
   ShieldCheck,
-  RotateCcw,
-  Sparkles,
-  Camera
+  CreditCard,
+  BookmarkPlus
 } from "lucide-react";
 
 // قائمة المناطق الكاملة لقضاء أبي الخصيب
@@ -53,6 +51,22 @@ export default function WelcomePage() {
   return (
     <div dir="rtl" className="min-h-screen bg-[#080C0F] text-white selection:bg-[#CCFF00] selection:text-black overflow-x-hidden font-sans">
       
+      {/* أنيميشن شريط الكلمات التلقائي المتواصل كدائرة */}
+      <style jsx global>{`
+        @keyframes marquee-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(50%); }
+        }
+        .animate-marquee-infinite {
+          display: flex;
+          width: max-content;
+          animation: marquee-scroll 25s linear infinite;
+        }
+        .animate-marquee-infinite:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* خلفيات التوهج النيوني */}
       <div className="pointer-events-none fixed inset-0 z-0 opacity-25">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#CCFF00] rounded-full blur-[150px] opacity-15" />
@@ -90,7 +104,7 @@ export default function WelcomePage() {
       </nav>
 
       {/* 1. القسم الرئيسي (Hero Section) */}
-      <section className="relative pt-[120px] md:pt-[150px] pb-16 md:pb-24">
+      <section className="relative pt-[120px] md:pt-[150px] pb-14 md:pb-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
           
           {/* نصوص الهيرو */}
@@ -165,12 +179,12 @@ export default function WelcomePage() {
               </div>
             </div>
 
-            {/* مسار دراجة التوصيل */}
+            {/* مسار دراجة التوصيل مع تعديل المركز إلى الاسمدة */}
             <div className="relative flex-1 my-4 flex items-center justify-center">
               <svg className="w-full h-full opacity-60" viewBox="0 0 400 300" fill="none">
                 <path id="routePath" d="M 40 240 Q 120 40 200 150 T 360 80" stroke="rgba(204,255,0,0.3)" strokeWidth="2" strokeDasharray="6 6"/>
                 <circle cx="40" cy="240" r="6" fill="#5FA8D3"/>
-                <text x="40" y="265" fill="#5FA8D3" fontSize="11" fontWeight="bold" textAnchor="middle">المركز</text>
+                <text x="40" y="265" fill="#5FA8D3" fontSize="11" fontWeight="bold" textAnchor="middle">الاسمدة</text>
                 
                 <circle cx="200" cy="150" r="6" fill="#CCFF00"/>
                 <text x="200" y="175" fill="#CCFF00" fontSize="11" fontWeight="bold" textAnchor="middle">المحيلة</text>
@@ -188,21 +202,25 @@ export default function WelcomePage() {
               </svg>
             </div>
 
-            {/* بطاقة الطلب قيد التنفيذ */}
-            <div className="relative z-10 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black shrink-0">
-                  <Zap className="w-6 h-6" />
+            {/* بطاقة الطلب قيد التنفيذ: صيدلية النور ← نهر خوز في سطر واحد */}
+            <div className="relative z-10 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-[#CCFF00] text-black flex items-center justify-center font-black shrink-0">
+                  <Zap className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="font-mono text-[10px] text-white/40">طلب قيد التوصيل الآن</div>
-                  <div className="text-sm font-bold text-white">صيدلية النور ➔ كوت الصلحي</div>
-                  <div className="text-xs text-[#5FA8D3]">سيارة مبردة • الوصول المتوقع: 12 دقيقة</div>
+                  <div className="text-xs sm:text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-1.5">
+                    <span>صيدلية النور</span>
+                    <span className="text-[#CCFF00] font-mono">←</span>
+                    <span>نهر خوز</span>
+                  </div>
+                  <div className="text-[11px] text-[#5FA8D3] whitespace-nowrap">سيارة مبردة • الوصول: 12 دقيقة</div>
                 </div>
               </div>
               <div className="text-left shrink-0">
-                <div className="font-mono text-xl font-black text-[#CCFF00] leading-none">3,000</div>
-                <div className="font-mono text-[10px] text-white/50">د.ع</div>
+                <div className="font-mono text-lg sm:text-xl font-black text-[#CCFF00] leading-none">3,000</div>
+                <div className="font-mono text-[9px] text-white/50">د.ع</div>
               </div>
             </div>
 
@@ -211,9 +229,9 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 2. شريط الكلمات المتحرك (Marquee Strip) */}
+      {/* 2. شريط الكلمات المتحرك المتواصل ذاتياً كدائرة */}
       <div className="relative border-y border-white/10 bg-[#CCFF00] text-black overflow-hidden py-3">
-        <div className="flex whitespace-nowrap font-black font-mono text-xs md:text-sm tracking-wider gap-8 justify-center overflow-x-auto">
+        <div className="animate-marquee-infinite font-black font-mono text-xs md:text-sm tracking-wider flex items-center gap-8">
           <span>💊 أدوية وصيدليات</span> <span>•</span>
           <span>🍔 مطاعم ووجبات</span> <span>•</span>
           <span>🛒 سوبرماركت ومخضر</span> <span>•</span>
@@ -221,11 +239,76 @@ export default function WelcomePage() {
           <span>💄 كوزمتك ومكياج</span> <span>•</span>
           <span>🧁 حلويات وكيك</span> <span>•</span>
           <span>📚 قرطاسية ومستلزمات</span> <span>•</span>
-          <span>🔄 استبدال وإرجاع مجاني</span>
+          <span>🔄 استبدال وتوصيل فوري</span> <span>•</span>
+          <span>💊 أدوية وصيدليات</span> <span>•</span>
+          <span>🍔 مطاعم ووجبات</span> <span>•</span>
+          <span>🛒 سوبرماركت ومخضر</span> <span>•</span>
+          <span>🎁 هدايا ومناسبات</span> <span>•</span>
+          <span>💄 كوزمتك ومكياج</span> <span>•</span>
+          <span>🧁 حلويات وكيك</span> <span>•</span>
+          <span>📚 قرطاسية ومستلزمات</span> <span>•</span>
+          <span>🔄 استبدال وتوصيل فوري</span>
         </div>
       </div>
 
-      {/* 3. قسم أوقات الدوام والشفتات (معدل ومضبوط) */}
+      {/* 3. قسم شلون نشتغل؟ (تم تقديمه ليكون أولاً قبل أوقات العمل مع الترقيم 1, 2, 3) */}
+      <section className="py-16 md:py-24 border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          
+          <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">WORKFLOW // خطوات الطلب</div>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">شلون نشتغل؟ ⚡</h2>
+            </div>
+            <div className="font-mono text-xs text-white/50 bg-white/[0.05] border border-white/10 px-4 py-2 rounded-full">
+              3 خطوات بسيطة • بدون تطبيق
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            
+            {/* 1. تطلب */}
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
+              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/30 transition-colors">1</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl md:text-2xl font-black text-white mb-3">تطلب من الواتساب أو من المتجر</h3>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                دز رسالة أو بصمة أو من المتجر أو بأي طريقة، ودزلنة موقعك مرة وحدة.
+              </p>
+            </div>
+
+            {/* 2. نشتري إلك */}
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#5FA8D3]/40 transition-all group">
+              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#5FA8D3]/30 transition-colors">2</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#5FA8D3] text-black flex items-center justify-center text-xl font-black mb-6">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl md:text-2xl font-black text-white mb-3">نشتري إلك</h3>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                نشتري إلك كل اللي طلبته واللي ممتوفر نبلغك حتى نشوفلك البديل.
+              </p>
+            </div>
+
+            {/* 3. نوصلك الطلب */}
+            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
+              <div className="text-5xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/30 transition-colors">3</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
+                <Truck className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl md:text-2xl font-black text-white mb-3">نوصلك الطلب</h3>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                نوصلك الطلب لباب بيتك، وبراحتك تحب تدفع كاش أو ماستر كارد.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. قسم أوقات الدوام والشفتات (بعد شلون نشتغل) */}
       <section className="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -243,7 +326,7 @@ export default function WelcomePage() {
               <div className="text-[#CCFF00] font-mono text-xs font-bold">الشفت الأول</div>
               <h3 className="text-xl font-black text-white mt-1 mb-2">الفترة الصباحية</h3>
               <p className="text-white/60 text-sm leading-relaxed">
-                من الصباح الباكر حتى الساعة <strong>12:00 ظهراً</strong> لاستلام وتوصيل كافة طلبيات الصباح والصيدليات.
+                من الصباح الباكر حتى الساعة <strong>12:00 ظهراً</strong> لاستلام وتوصيل كافة طلبيات الصباح والصيدليات والمطاعم.
               </p>
             </div>
 
@@ -255,7 +338,7 @@ export default function WelcomePage() {
               <div className="text-orange-400 font-mono text-xs font-bold">استراحة الكادر</div>
               <h3 className="text-xl font-black text-white mt-1 mb-2">استراحة الظهيرة</h3>
               <p className="text-white/60 text-sm leading-relaxed">
-                استراحة لمدة <strong>4 ساعات</strong> (من الساعة 12:00 ظهراً إلى 4:00 عصراً) لإعادة شحن وترتيب الشفت التالي.
+                استراحة لمدة <strong>4 ساعات</strong> (من الساعة 12:00 ظهراً إلى 4:00 عصراً) لتجهيز وترتيب شفت المساء.
               </p>
             </div>
 
@@ -274,60 +357,42 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 4. قسم كيفية عمل النظام (3 خطوات) */}
-      <section className="py-16 md:py-24 border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          
-          <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
-            <div>
-              <div className="font-mono text-xs tracking-[0.3em] text-[#CCFF00] mb-2 font-bold">WORKFLOW // خطوات الطلب</div>
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">شلون نشتغل؟ ⚡</h2>
-            </div>
-            <div className="font-mono text-xs text-white/50 bg-white/[0.05] border border-white/10 px-4 py-2 rounded-full">
-              3 خطوات بسيطة • بدون تطبيق
-            </div>
+      {/* 5. فقرة حفظ الرقم (مضافة قبل فقرة المحلات والمناطق) */}
+      <section className="py-12 md:py-16 border-b border-white/10 bg-gradient-to-r from-[#0F171B] via-[#15232d] to-[#0F171B]">
+        <div className="mx-auto max-w-5xl px-4 md:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#CCFF00]/15 text-[#CCFF00] border border-[#CCFF00]/30 font-mono text-xs font-bold mb-4">
+            <BookmarkPlus className="w-4 h-4" />
+            <span>خزن الرقم مهم جداً</span>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
-              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">01</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
-                <MessageCircle className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-black text-white mb-3">تطلب بالواتساب</h3>
-              <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                دز رسالة أو تسجيل صوتي أو حتى صورة من انستغرام باللي تريده وموقع بيتك.
-              </p>
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#5FA8D3]/40 transition-all group">
-              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#5FA8D3]/20 transition-colors">02</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#5FA8D3] text-black flex items-center justify-center text-xl font-black mb-6">
-                <ShoppingBag className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-black text-white mb-3">نشتري ونفحص</h3>
-              <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                المندوب يروح للمحل المفضل عندك، يشتري الغراض ويفحصها ويتأكد منها 100%.
-              </p>
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-[#0F171B] p-8 hover:border-[#CCFF00]/40 transition-all group">
-              <div className="text-4xl font-black font-mono text-white/10 mb-4 group-hover:text-[#CCFF00]/20 transition-colors">03</div>
-              <div className="w-12 h-12 rounded-2xl bg-[#CCFF00] text-black flex items-center justify-center text-xl font-black mb-6">
-                <Truck className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-black text-white mb-3">نوصل لبابك</h3>
-              <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                توصيل فوري بسيارة مبردة أو دراجة سريعة، وتدفع الحساب عند استلام طلبيتك.
-              </p>
-            </div>
+          <h2 className="text-2xl md:text-4xl font-black text-white mb-4">
+            اخزن رقمنا حتى تشوف كل الحالات اليومية والعروض! 📲
+          </h2>
+          <p className="text-white/70 text-sm md:text-base max-w-2xl mx-auto leading-relaxed mb-8">
+            ننشر يومياً على حالة الواتساب أحدث العروض والمنتجات المتوفرة بشتى المحلات والمطاعم بأبي الخصيب، احفظ الرقم بجهازك حتى لا تفوتك الفرص والعروض الحصرية.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a
+              href="tel:07733921468"
+              className="h-14 px-8 rounded-full bg-[#CCFF00] text-black font-black text-base flex items-center gap-3 hover:bg-white transition-all shadow-[0_0_30px_rgba(204,255,0,0.3)] active:scale-95"
+            >
+              <Phone className="w-5 h-5" />
+              <span>احفظ الرقم (07733921468)</span>
+            </a>
+            <a
+              href="https://wa.me/9647733921468"
+              target="_blank"
+              rel="noreferrer"
+              className="h-14 px-7 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/[0.05] text-sm md:text-base font-bold transition-all flex items-center gap-2.5 text-white active:scale-95"
+            >
+              <MessageCircle className="w-5 h-5 text-green-400" />
+              <span>مراسلة عبر واتساب</span>
+            </a>
           </div>
-
         </div>
       </section>
 
-      {/* 5. قسم المناطق والأسعار التفاعلي الكامل */}
-      <section className="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]">
+      {/* 6. قسم المناطق والأسعار (تم تعديل الميزات وإزالة إرجاع مجاني) */}
+      <section className="py-16 md:py-24 border-b border-white/10 bg-[#0A0F12]" id="regions-section">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
           <div className="flex flex-wrap items-center justify-between gap-6 mb-10">
@@ -385,18 +450,15 @@ export default function WelcomePage() {
                 </p>
               </div>
 
-              <div className="space-y-3 pt-6 border-t border-white/10 text-sm text-white/80">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
-                  <span>إرجاع مجاني للطلب إذا كان به أي خلل</span>
+              {/* الميزات المعدلة */}
+              <div className="space-y-4 pt-6 border-t border-white/10 text-sm text-white/80">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-[#CCFF00] shrink-0" />
+                  <span className="font-bold">توصيل بدراجات حديثة وسيارات مكيفة</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
-                  <span>توصيل بسيارات مكيفة ومبردة</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#CCFF00]" />
-                  <span>الدفع نقداً عند استلام الطلبية</span>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-[#CCFF00] shrink-0" />
+                  <span className="font-bold">الدفع نقداً أو بطاقة عند الاستلام</span>
                 </div>
               </div>
             </div>
@@ -432,7 +494,7 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 6. قسم التجار وأصحاب المحلات (B2B) */}
+      {/* 7. قسم التجار وأصحاب المحلات (B2B - معدل النصوص بدقة) */}
       <section className="py-16 md:py-24 border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
@@ -457,15 +519,15 @@ export default function WelcomePage() {
                   </div>
                   <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
                     <span className="text-xl">🚀</span>
-                    <span className="font-bold text-sm">توصيل سريع خلال 10-30 دقيقة</span>
+                    <span className="font-bold text-sm">توصيل بنفس الفترة من 10 دقائق لـ 3 ساعات أقصى حد</span>
                   </div>
                   <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
                     <span className="text-xl">📢</span>
-                    <span className="font-bold text-sm">ترويج مجاني لحسابك</span>
+                    <span className="font-bold text-sm">ترويج مجاني لحسابك ومحلك</span>
                   </div>
                   <div className="flex items-center gap-3 bg-white/[0.04] p-3.5 rounded-xl border border-white/10">
                     <span className="text-xl">🔄</span>
-                    <span className="font-bold text-sm">إرجاع مجاني للمرفوضات</span>
+                    <span className="font-bold text-sm">إرجاع مجاني للطلب الذي لا يُرد</span>
                   </div>
                 </div>
 
@@ -522,7 +584,7 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 7. الفوتر ومتجر خصيبي ستور */}
+      {/* 8. الفوتر ومتجر خصيبي ستور */}
       <footer className="pt-16 pb-12 bg-[#080C0F]">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
