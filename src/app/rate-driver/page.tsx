@@ -57,22 +57,6 @@ export default async function RateDriverPage({ searchParams }: Props) {
     return <RateDriverClient orderData={null} />;
   }
 
-  // التحقق هل تم التقييم مسبقاً
-  let existingRating: any = null;
-  try {
-    existingRating = await (prisma as any).driverRating.findFirst({
-      where: {
-        OR: [
-          { orderId: order.id },
-          { orderNumber: order.orderNumber },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  } catch {
-    // تجاهل
-  }
-
   const orderData = {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -84,11 +68,12 @@ export default async function RateDriverPage({ searchParams }: Props) {
     courierName: order.courier?.name || "مندوب التوصيل",
   };
 
+  // دائماً نفتح النموذج — الزبون يقدر يقيم في أي وقت بدون قيود
   return (
     <RateDriverClient
       orderData={orderData}
-      alreadyRated={Boolean(existingRating)}
-      existingRating={existingRating ? JSON.parse(JSON.stringify(existingRating)) : null}
+      alreadyRated={false}
     />
   );
 }
+
