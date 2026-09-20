@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { resolvePublicImageSrc } from "@/lib/image-url";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
+import { ClientFeedbackModal } from "./client-feedback-modal";
 import "leaflet/dist/leaflet.css";
 import { submitOrder, type ClientOrderState } from "./actions";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -202,9 +203,13 @@ function ClientOrderFormInner({
   // موضع الزر العائم مع السحب وتخزينه
   const STORAGE_KEY_BTN = "kse_client_submit_ak_btn_pos";
   const STORAGE_KEY_BTN_HINT = "kse_client_seen_ak_gold_btn_hint_v3";
+  const STORAGE_KEY_FEEDBACK_SEEN = "kse_client_seen_feedback_modal_v1";
+
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number }>({ x: 20, y: 500 });
   const [isDragging, setIsDragging] = useState(false);
   const [showNewBtnHint, setShowNewBtnHint] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [lastWaUrl, setLastWaUrl] = useState<string | null>(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
 
@@ -345,6 +350,10 @@ function ClientOrderFormInner({
   // معالجة نتيجة الرفع
   useEffect(() => {
     if (state.ok) {
+      if (state.waUrl) {
+        setLastWaUrl(state.waUrl);
+      }
+
       const calcTotal = (
         (Number(orderPrice) || 0) +
         (selected ? Number(selected.deliveryPrice) / ALF_PER_DINAR : 0) +
@@ -356,7 +365,22 @@ function ClientOrderFormInner({
         regionName: selected?.name || q,
         totalAlf: calcTotal,
       });
-      setShowSuccessModal(true);
+
+      // التحقق من ظهور التقييم لأول مرة فقط
+      let hasSeenFeedback = false;
+      try {
+        hasSeenFeedback = !!localStorage.getItem(STORAGE_KEY_FEEDBACK_SEEN);
+      } catch {}
+
+      if (!hasSeenFeedback) {
+        setShowFeedbackModal(true);
+        try {
+          localStorage.setItem(STORAGE_KEY_FEEDBACK_SEEN, "true");
+        } catch {}
+      } else {
+        setShowSuccessModal(true);
+      }
+
       toast.success("تم إرسال الطلبية بنجاح");
     } else if (state.error) {
       toast.error(state.error);
@@ -1202,6 +1226,28 @@ function ClientOrderFormInner({
                       className="focus-ring w-full rounded-[14px] border-[1.5px] border-[#C9A86A]/30 bg-[#FFF8F0] p-[10px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8]"
                     />
                   </div>
+
+                  {/* أزرار التقييم والتواصل الإضافية */}
+                  <div className="pt-[10px] border-t border-[#C9A86A]/25 grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedbackModal(true)}
+                      className="h-[42px] rounded-[13px] bg-gradient-to-r from-[#FAF0D7] via-[#FFFDF7] to-[#FAF0D7] border-[1.5px] border-[#C9A86A] text-[#0A3D2E] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-[15px] h-[15px] text-[#C9A86A]" />
+                      <span>تقييم التجربة / تقييم جديد ⭐</span>
+                    </button>
+
+                    <a
+                      href="https://api.whatsapp.com/send?phone=9647733921468"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-[42px] rounded-[13px] bg-[#25D366]/10 border-[1.5px] border-[#25D366]/40 text-[#128C7E] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>تواصل مع الإدارة واتساب</span>
+                      <span className="text-[14px]">💬</span>
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -1400,16 +1446,64 @@ function ClientOrderFormInner({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={resetFormForNew}
-              className="mt-[14px] w-full h-[46px] rounded-[14px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border border-[#C9A86A] text-[#F5D77F] font-black text-[14px] shadow-md active:scale-95 transition"
-            >
-              رفع طلب جديد
-            </button>
+            {/* أزرار الإجراءات بعد النجاح */}
+            <div className="mt-[14px] space-y-[8px]">
+              {/* زر التحويل للواتساب */}
+              <a
+                href={lastWaUrl || "https://api.whatsapp.com/send?phone=9647733921468"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-[46px] rounded-[14px] bg-[#25D366] hover:bg-[#20bd5a] border border-[#1ebd56] text-white font-black text-[14px] shadow-md active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>تحويل تفاصيل الطلب للواتساب</span>
+                <span className="text-base">💬</span>
+              </a>
+
+              {/* زر تقييم التجربة */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setShowFeedbackModal(true);
+                }}
+                className="w-full h-[40px] rounded-[12px] bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] font-black text-[12px] hover:bg-white active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-[14px] h-[14px] text-[#C9A86A]" />
+                <span>تقييم تجربتك في رفع الطلب ⭐</span>
+              </button>
+
+              {/* زر رفع طلب جديد */}
+              <button
+                type="button"
+                onClick={resetFormForNew}
+                className="w-full h-[44px] rounded-[14px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border border-[#C9A86A] text-[#F5D77F] font-black text-[13.5px] shadow-md active:scale-95 transition cursor-pointer"
+              >
+                رفع طلب جديد 🚀
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      {/* نافذة تقييم تجربة الاستخدام التفاعلية */}
+      <ClientFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          if (lastSubmittedOrder) {
+            setShowSuccessModal(true);
+          }
+        }}
+        shopId={shopId}
+        shopName={shopName}
+        employeeName={viewerName || employeeName || "العميل"}
+        employeePhone={customerPhone || employeePhone}
+        onSubmitted={() => {
+          if (lastSubmittedOrder) {
+            setShowSuccessModal(true);
+          }
+        }}
+      />
     </div>
   );
 }

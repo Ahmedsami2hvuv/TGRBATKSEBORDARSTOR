@@ -131,6 +131,7 @@ model Shop {
   orders        Order[]
   preparerLinks PreparerShop[]
   blockedPhones ShopBlockedPhone[]
+  clientFeedbacks ClientFeedback[]
   region        Region         @relation(fields: [regionId], references: [id])
 }
 
@@ -1097,3 +1098,28 @@ model AiLearnedRule {
   @@index([triggerPattern])
   @@index([intentCategory])
 }
+
+model ClientFeedback {
+  id              String   @id @default(cuid())
+  shopId          String?
+  shopName        String   @default("")
+  employeeName    String   @default("")
+  employeePhone   String   @default("")
+  designRating    Int      // 1-5
+  designReason    String?
+  buttonsRating   Int      // 1-5
+  buttonsReason   String?
+  fieldsRating    Int      // 1-5
+  fieldsReason    String?
+  easeRating      Int      // 1-5
+  easeReason      String?
+  generalFeedback String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  shop            Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, createdAt])
+  @@index([createdAt])
+}
+
