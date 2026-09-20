@@ -51,6 +51,7 @@ const SAMPLE_DATA: Record<string, string> = {
   customer_phone: "07701234567",
   customer_phone2: "07809876543",
   shop_phone: "07700000000",
+  driver_review_url: "https://aboakbr.com/rate-driver?order=9842",
 };
 
 export function WaButtonDetailClient({ row }: Props) {

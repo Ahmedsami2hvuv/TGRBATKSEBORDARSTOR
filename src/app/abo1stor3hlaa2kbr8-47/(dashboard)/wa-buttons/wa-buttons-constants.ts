@@ -9,6 +9,7 @@ export const WA_BUTTON_VARIABLE_CHIPS: Array<{ key: string; label: string }> = [
   { key: "customer_phone", label: "هاتف الزبون" },
   { key: "customer_phone2", label: "هاتف الزبون 2" },
   { key: "shop_phone", label: "هاتف المحل" },
+  { key: "driver_review_url", label: "رابط تقييم المندوب ⭐" },
 ];
 
 export const ICON_CHOICES = ["💬", "📍", "🗺️", "🚚", "💰", "⚡", "🧾", "⭐", "📝"];

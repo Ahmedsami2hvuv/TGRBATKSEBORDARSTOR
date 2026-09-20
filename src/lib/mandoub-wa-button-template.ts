@@ -41,6 +41,23 @@ export function applyMandoubWaTemplate(
     if (k === "shop_phone" || k === "senderphone") {
       return vars.shop_phone || vars.senderPhone || vars.shopPhone || "";
     }
+    if (
+      k === "driver_review_url" ||
+      k === "review_url" ||
+      k === "rating_url" ||
+      k === "rate_url" ||
+      k === "driverreviewurl" ||
+      k === "reviewurl"
+    ) {
+      return (
+        vars.driver_review_url ||
+        vars.review_url ||
+        vars.rating_url ||
+        vars.rate_url ||
+        vars.driverReviewUrl ||
+        ""
+      );
+    }
     return vars[key] ?? vars[k] ?? "";
   };
 

@@ -256,6 +256,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
         order_number: String(order.orderNumber || ""),
         customer_phone: order.customerPhone || "",
         shop_phone: submitterPhone || "",
+        driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
       };
       const messages = splitMandoubWaTemplateVariants(r.templateText || "").map((t) => applyMandoubWaTemplate(t, vars));
       return messages.length > 0 ? [{ id: r.id, label: r.label, iconKey: r.iconKey, messages }] : [];

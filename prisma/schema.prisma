@@ -578,6 +578,7 @@ model Order {
   submittedByCompanyPreparer            CompanyPreparer?         @relation("OrderSubmittedByPreparer", fields: [submittedByCompanyPreparerId], references: [id])
   submittedBy                           Employee?                @relation("OrderSubmittedByEmployee", fields: [submittedByEmployeeId], references: [id])
   moneyEvents                           OrderCourierMoneyEvent[]
+  driverRatings                         DriverRating[]
 
   @@index([shopId])
   @@index([assignedCourierId])
@@ -1122,4 +1123,37 @@ model ClientFeedback {
   @@index([shopId, createdAt])
   @@index([createdAt])
 }
+
+model DriverRating {
+  id               String   @id @default(cuid())
+  orderId          String?
+  orderNumber      Int?
+  customerPhone    String   @default("")
+  customerRegion   String   @default("")
+  customerLandmark String   @default("")
+  shopName         String   @default("")
+  courierId        String?
+  courierName      String   @default("")
+  
+  mannerRating     Int      @default(5) // تقييم أسلوب وتعامل المندوب (1-5)
+  mannerReason     String?  // سبب التقييم إن كان أقل من 5
+  
+  speedRating      Int      @default(5) // تقييم سهولة وسرعة التوصيل (1-5)
+  speedReason      String?  // سبب التقييم إن كان أقل من 5
+  
+  overallRating    Int      @default(5) // التقييم العام (1-5)
+  overallReason    String?  // سبب التقييم إن كان أقل من 5
+  
+  notes            String?  // ملاحظات إضافية
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  order            Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([courierId])
+  @@index([customerPhone])
+  @@index([createdAt])
+}
+
 

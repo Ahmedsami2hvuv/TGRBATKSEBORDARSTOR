@@ -92,6 +92,7 @@ export function MandoubFloatingBar(props: Props) {
     second_customer_phone: props.secondCustomerPhone ?? "",
     second_customer_phone2: props.secondCustomerAlternatePhone ?? "",
     shop_phone: props.shopPhone,
+    driver_review_url: `https://aboakbr.com/rate-driver?order=${props.orderNumber}`,
   };
 
   const customWaButtons = useMemo(() => {

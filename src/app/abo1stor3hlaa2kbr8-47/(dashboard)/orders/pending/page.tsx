@@ -321,6 +321,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         order_number: String(o.orderNumber),
         customer_phone: o.customerPhone,
         shop_phone: submitterPhone,
+        driver_review_url: `https://aboakbr.com/rate-driver?order=${o.orderNumber || o.id}`,
       };
 
       if (requestLocationBtn && o.customerPhone) {

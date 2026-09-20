@@ -592,6 +592,7 @@ export function OrderDetailSection({
                         customer_phone: order.customerPhone || "",
                         customer_phone2: order.customerPhone2 || "",
                         shop_phone: shopContactPhone || "",
+                        driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
                       }}
                       customButtons={customWaButtons}
                       designerConfig={designerConfig || undefined}
@@ -744,6 +745,7 @@ export function OrderDetailSection({
                           customer_phone: order.customerPhone || "",
                           customer_phone2: order.customerPhone2 || "",
                           shop_phone: shopContactPhone || "",
+                          driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
                         }}
                         customButtons={customWaButtons}
                         designerConfig={designerConfig || undefined}
@@ -839,6 +841,7 @@ export function OrderDetailSection({
                           customer_phone: order.secondCustomerPhone || order.customerPhone || "",
                           customer_phone2: order.customerPhone2 || "",
                           shop_phone: shopContactPhone || "",
+                          driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
                         }}
                         customButtons={customWaButtons}
                         designerConfig={designerConfig || undefined}
