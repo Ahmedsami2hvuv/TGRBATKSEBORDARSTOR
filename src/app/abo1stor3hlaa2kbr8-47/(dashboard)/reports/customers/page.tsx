@@ -77,6 +77,11 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
           phone: true,
         },
       },
+      shop: {
+        select: {
+          phone: true,
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -98,6 +103,12 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
   const customerMap = new Map<string, CustomerStat>();
 
   for (const order of orders) {
+    // إذا كان رقم هاتف الزبون مساوياً لرقم هاتف المحل نفسه، نتخطى الطلب لأنه بون أو دين للعميل من محله وليس زبون خارجي
+    const cleanPhone = (p: string) => p.replace(/[\s\-\+\(\)]/g, "");
+    if (order.customerPhone && order.shop?.phone && cleanPhone(order.customerPhone) === cleanPhone(order.shop.phone)) {
+      continue;
+    }
+
     // مفتاح الزبون: إما الـ customerId أو رقم الهاتف
     const key = order.customerId ?? `phone:${order.customerPhone}`;
     const iraqTime = new Date(order.createdAt.getTime() + 3 * 60 * 60 * 1000);
