@@ -137,8 +137,9 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
     if (order.createdAt > stat.lastOrderDate) stat.lastOrderDate = order.createdAt;
   }
 
-  // تحويل الخريطة إلى مصفوفة ومرتبة حسب عدد الطلبات
+  // تحويل الخريطة إلى مصفوفة وتصفيتها لتبقي فقط من لديهم طلبات مكتملة أو مؤرشفة، ومرتبة حسب عدد الطلبات
   const customerStats = Array.from(customerMap.values())
+    .filter((s) => s.deliveredOrders > 0)
     .sort((a, b) => b.totalOrders - a.totalOrders)
     .map((s) => ({
       ...s,
