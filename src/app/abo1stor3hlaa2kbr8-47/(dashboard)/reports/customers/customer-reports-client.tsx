@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const MONTH_NAMES = [
-  "يناير", "فبراير", "مارس", "إبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+  "1", "2", "3", "4", "5", "6",
+  "7", "8", "9", "10", "11", "12",
 ];
 
 type CustomerStat = {
