@@ -121,7 +121,7 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
     const stat = customerMap.get(key)!;
     stat.totalOrders += 1;
 
-    if (order.status === "delivered" || order.status === "completed") {
+    if (order.status === "delivered" || order.status === "completed" || order.status === "archived") {
       stat.deliveredOrders += 1;
     } else if (order.status === "canceled" || order.status === "rejected") {
       stat.canceledOrders += 1;
