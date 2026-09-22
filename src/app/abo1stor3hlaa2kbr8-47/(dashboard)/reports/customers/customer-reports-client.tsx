@@ -8,7 +8,6 @@ const MONTH_NAMES = [
   "7", "8", "9", "10", "11", "12",
 ];
 
-// ترجمة حالات الطلب
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending:    { label: "قيد الانتظار",  color: "bg-amber-100 text-amber-800" },
   assigned:   { label: "مسند للمندوب", color: "bg-sky-100 text-sky-800" },
@@ -64,9 +63,9 @@ type Props = {
   secretAdminPath: string;
 };
 
-// ==============================
-// مكون المودال
-// ==============================
+// ============================================================
+// مودال طلبات زبون واحد
+// ============================================================
 function CustomerOrdersModal({
   customer,
   selectedYear,
@@ -89,18 +88,13 @@ function CustomerOrdersModal({
     setError("");
     try {
       const params = new URLSearchParams();
-      if (customer.customerId) {
-        params.set("customerId", customer.customerId);
-      } else {
-        params.set("phone", customer.customerPhone);
-      }
+      if (customer.customerId) params.set("customerId", customer.customerId);
+      else params.set("phone", customer.customerPhone);
       params.set("year", String(selectedYear));
       if (selectedMonth !== null) params.set("month", String(selectedMonth));
 
-      const res = await fetch(
-        `${secretAdminPath}/api/customer-report-orders?${params.toString()}`
-      );
-      if (!res.ok) throw new Error("فشل في جلب البيانات");
+      const res = await fetch(`${secretAdminPath}/api/customer-report-orders?${params}`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setOrders(data.orders ?? []);
     } catch {
@@ -110,91 +104,54 @@ function CustomerOrdersModal({
     }
   }, [customer, selectedYear, selectedMonth, secretAdminPath]);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  // إغلاق عند الضغط على Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, [onClose]);
 
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString("ar-IQ", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("ar-IQ", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
     });
-  };
 
-  const statusInfo = (status: string) =>
-    STATUS_LABELS[status] ?? { label: status, color: "bg-slate-100 text-slate-600" };
-
-  const periodLabel =
-    selectedMonth !== null
-      ? `شهر ${MONTH_NAMES[selectedMonth]} ${selectedYear}`
-      : `سنة ${selectedYear}`;
+  const st = (s: string) => STATUS_LABELS[s] ?? { label: s, color: "bg-slate-100 text-slate-600" };
+  const period = selectedMonth !== null
+    ? `شهر ${MONTH_NAMES[selectedMonth]} — ${selectedYear}`
+    : `سنة ${selectedYear} كاملة`;
 
   return (
-    // خلفية المودال
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-12 overflow-y-auto"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-10 overflow-y-auto"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl"
-        dir="rtl"
-      >
-        {/* رأس المودال */}
+      <div className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl" dir="rtl">
+        {/* رأس */}
         <div className="flex items-start justify-between gap-3 rounded-t-3xl bg-gradient-to-l from-violet-50 to-purple-50 border-b border-violet-100 p-5">
           <div>
-            <h2 className="text-lg font-black text-slate-800">
-              {customer.customerName}
-            </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              📞 {customer.customerPhone}
-            </p>
-            <p className="text-xs text-violet-600 mt-1 font-bold">
-              طلبات {periodLabel}
-            </p>
+            <h2 className="text-lg font-black text-slate-800">{customer.customerName}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">📞 {customer.customerPhone}</p>
+            <p className="text-xs text-violet-600 mt-1 font-bold">طلبات {period}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 rounded-xl p-2 text-slate-400 hover:bg-white hover:text-slate-700 transition"
-            aria-label="إغلاق"
-          >
+          <button onClick={onClose} className="flex-shrink-0 rounded-xl p-2 text-slate-400 hover:bg-white hover:text-slate-700 transition">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* ملخص سريع */}
-        <div className="flex flex-wrap gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-          <span className="text-xs font-bold text-violet-700 bg-violet-50 rounded-full px-3 py-1">
-            إجمالي: {customer.totalOrders} طلب
-          </span>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1">
-            مكتملة: {customer.deliveredOrders}
-          </span>
-          <span className="text-xs font-bold text-rose-600 bg-rose-50 rounded-full px-3 py-1">
-            ملغاة: {customer.canceledOrders}
-          </span>
-          <span className="text-xs font-bold text-amber-600 bg-amber-50 rounded-full px-3 py-1">
-            أخرى: {customer.pendingOrders}
-          </span>
+        {/* ملخص */}
+        <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+          <span className="text-xs font-bold text-violet-700 bg-violet-50 rounded-full px-3 py-1">إجمالي: {customer.totalOrders} طلب</span>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1">مكتملة: {customer.deliveredOrders}</span>
+          <span className="text-xs font-bold text-rose-600 bg-rose-50 rounded-full px-3 py-1">ملغاة: {customer.canceledOrders}</span>
+          <span className="text-xs font-bold text-amber-600 bg-amber-50 rounded-full px-3 py-1">أخرى: {customer.pendingOrders}</span>
         </div>
 
-        {/* المحتوى */}
+        {/* محتوى */}
         <div className="p-5 max-h-[65vh] overflow-y-auto">
           {loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -202,29 +159,21 @@ function CustomerOrdersModal({
               <p className="text-sm text-slate-400">جارٍ تحميل الطلبات...</p>
             </div>
           )}
-
           {!loading && error && (
             <div className="text-center py-10">
               <p className="text-rose-600 text-sm font-bold">{error}</p>
-              <button
-                onClick={fetchOrders}
-                className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 transition"
-              >
-                إعادة المحاولة
-              </button>
+              <button onClick={fetchOrders} className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 transition">إعادة المحاولة</button>
             </div>
           )}
-
           {!loading && !error && orders.length === 0 && (
             <div className="text-center py-16">
               <p className="text-slate-400 text-sm">لا توجد طلبات في هذه الفترة</p>
             </div>
           )}
-
           {!loading && !error && orders.length > 0 && (
             <div className="space-y-3">
               {orders.map((order, idx) => {
-                const st = statusInfo(order.status);
+                const s = st(order.status);
                 return (
                   <a
                     key={order.id}
@@ -234,103 +183,41 @@ function CustomerOrdersModal({
                     className="block rounded-2xl border border-slate-200 bg-white p-4 hover:border-violet-300 hover:shadow-md transition group"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      {/* رقم تسلسلي + رقم الطلب */}
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-300 font-mono w-5 text-center">
-                          {idx + 1}
-                        </span>
+                        <span className="text-xs text-slate-300 font-mono w-5 text-center">{idx + 1}</span>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-base font-black text-violet-700">
-                              #{order.orderNumber}
-                            </span>
-                            <span
-                              className={`text-xs font-bold rounded-full px-2 py-0.5 ${st.color}`}
-                            >
-                              {st.label}
-                            </span>
+                            <span className="text-base font-black text-violet-700">#{order.orderNumber}</span>
+                            <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${s.color}`}>{s.label}</span>
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {formatDate(order.createdAt)}
-                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{formatDate(order.createdAt)}</p>
                         </div>
                       </div>
-
-                      {/* زر فتح الطلب */}
-                      <span className="flex-shrink-0 text-xs font-bold text-violet-500 group-hover:text-violet-700 transition">
-                        عرض ←
-                      </span>
+                      <span className="flex-shrink-0 text-xs font-bold text-violet-500 group-hover:text-violet-700 transition">عرض ←</span>
                     </div>
-
-                    {/* تفاصيل الطلب */}
                     <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-xs text-slate-600">
-                      {order.shop && (
-                        <span>🏪 <span className="font-medium">{order.shop.name}</span></span>
-                      )}
-                      {order.customerRegion && (
-                        <span>📍 <span className="font-medium">{order.customerRegion.name}</span></span>
-                      )}
-                      {order.courier && (
-                        <span>🛵 <span className="font-medium">{order.courier.name}</span></span>
-                      )}
-                      {order.submittedBy && (
-                        <span>👤 <span className="font-medium">{order.submittedBy.name}</span></span>
-                      )}
-                      {order.customerLandmark && (
-                        <span className="col-span-2">🏠 {order.customerLandmark}</span>
-                      )}
+                      {order.shop && <span>🏪 <span className="font-medium">{order.shop.name}</span></span>}
+                      {order.customerRegion && <span>📍 <span className="font-medium">{order.customerRegion.name}</span></span>}
+                      {order.courier && <span>🛵 <span className="font-medium">{order.courier.name}</span></span>}
+                      {order.submittedBy && <span>👤 <span className="font-medium">{order.submittedBy.name}</span></span>}
+                      {order.customerLandmark && <span className="col-span-2">🏠 {order.customerLandmark}</span>}
                     </div>
-
-                    {/* المبالغ */}
                     <div className="mt-3 flex flex-wrap gap-3 text-xs border-t border-slate-100 pt-2">
-                      {order.orderSubtotal && (
-                        <span className="text-slate-500">
-                          مجموع المنتجات:{" "}
-                          <span className="font-bold text-slate-700">
-                            {Number(order.orderSubtotal).toLocaleString()} د.ع
-                          </span>
-                        </span>
-                      )}
-                      {order.deliveryPrice && (
-                        <span className="text-slate-500">
-                          التوصيل:{" "}
-                          <span className="font-bold text-slate-700">
-                            {Number(order.deliveryPrice).toLocaleString()} د.ع
-                          </span>
-                        </span>
-                      )}
-                      {order.totalAmount && (
-                        <span className="text-slate-500">
-                          الإجمالي:{" "}
-                          <span className="font-bold text-violet-700">
-                            {Number(order.totalAmount).toLocaleString()} د.ع
-                          </span>
-                        </span>
-                      )}
-                      {!order.orderSubtotal && !order.deliveryPrice && !order.totalAmount && (
-                        <span className="text-slate-300">لا توجد مبالغ مسجلة</span>
-                      )}
+                      {order.orderSubtotal && <span className="text-slate-500">مجموع المنتجات: <span className="font-bold text-slate-700">{Number(order.orderSubtotal).toLocaleString()} د.ع</span></span>}
+                      {order.deliveryPrice && <span className="text-slate-500">التوصيل: <span className="font-bold text-slate-700">{Number(order.deliveryPrice).toLocaleString()} د.ع</span></span>}
+                      {order.totalAmount && <span className="text-slate-500">الإجمالي: <span className="font-bold text-violet-700">{Number(order.totalAmount).toLocaleString()} د.ع</span></span>}
+                      {!order.orderSubtotal && !order.deliveryPrice && !order.totalAmount && <span className="text-slate-300">لا توجد مبالغ مسجلة</span>}
                     </div>
-
-                    {/* ملاحظة الطلب إن وجدت */}
-                    {order.summary && (
-                      <p className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-2 line-clamp-2">
-                        {order.summary}
-                      </p>
-                    )}
+                    {order.summary && <p className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-2 line-clamp-2">{order.summary}</p>}
                   </a>
                 );
               })}
             </div>
           )}
         </div>
-
-        {/* تذييل المودال */}
         {!loading && orders.length > 0 && (
           <div className="px-5 py-3 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400">
-              يعرض {orders.length} طلب • اضغط على أي طلب لفتحه في نافذة جديدة
-            </p>
+            <p className="text-xs text-slate-400">يعرض {orders.length} طلب • اضغط على أي طلب لفتحه في نافذة جديدة</p>
           </div>
         )}
       </div>
@@ -338,9 +225,144 @@ function CustomerOrdersModal({
   );
 }
 
-// ==============================
+// ============================================================
+// مودال الإحصائية (للكروت الأربعة)
+// ============================================================
+type StatModalType = "all" | "customers" | "repeat" | "top";
+
+function StatModal({
+  type,
+  customerStats,
+  totalOrders,
+  onClose,
+  onSelectCustomer,
+}: {
+  type: StatModalType;
+  customerStats: CustomerStat[];
+  totalOrders: number;
+  onClose: () => void;
+  onSelectCustomer: (c: CustomerStat) => void;
+}) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  // تحديد القائمة حسب نوع الكرت
+  const list = (() => {
+    if (type === "repeat") return customerStats.filter(c => c.totalOrders > 1);
+    if (type === "top") return customerStats.slice(0, 1);
+    return customerStats; // all أو customers
+  })();
+
+  const config: Record<StatModalType, { title: string; subtitle: string; color: string; badgeColor: string }> = {
+    all:       { title: "إجمالي الطلبات",       subtitle: `${totalOrders} طلب موزعة على ${customerStats.length} زبون`, color: "from-slate-50 to-white", badgeColor: "bg-slate-100 text-slate-700" },
+    customers: { title: "جميع الزبائن",          subtitle: `${customerStats.length} زبون مرتبون حسب عدد الطلبات`,      color: "from-violet-50 to-purple-50", badgeColor: "bg-violet-100 text-violet-700" },
+    repeat:    { title: "الزبائن المتكررون",     subtitle: `${list.length} زبون طلبوا أكثر من مرة`,                     color: "from-emerald-50 to-teal-50", badgeColor: "bg-emerald-100 text-emerald-700" },
+    top:       { title: "الزبون الأكثر طلباً",  subtitle: `${list[0]?.customerName ?? ""} — ${list[0]?.totalOrders ?? 0} طلب`, color: "from-amber-50 to-orange-50", badgeColor: "bg-amber-100 text-amber-700" },
+  };
+
+  const c = config[type];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-10 overflow-y-auto"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl" dir="rtl">
+        {/* رأس */}
+        <div className={`flex items-start justify-between gap-3 rounded-t-3xl bg-gradient-to-l ${c.color} border-b border-slate-100 p-5`}>
+          <div>
+            <h2 className="text-lg font-black text-slate-800">{c.title}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">{c.subtitle}</p>
+          </div>
+          <button onClick={onClose} className="flex-shrink-0 rounded-xl p-2 text-slate-400 hover:bg-white hover:text-slate-700 transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* قائمة الزبائن */}
+        <div className="max-h-[70vh] overflow-y-auto divide-y divide-slate-100">
+          {list.length === 0 && (
+            <div className="py-16 text-center text-slate-400 text-sm">لا توجد بيانات</div>
+          )}
+          {list.map((customer, idx) => {
+            const deliveryRate = customer.totalOrders > 0
+              ? Math.round((customer.deliveredOrders / customer.totalOrders) * 100) : 0;
+            const maxOrders = list[0]?.totalOrders || 1;
+
+            return (
+              <button
+                key={customer.customerId ?? `phone:${customer.customerPhone}`}
+                onClick={() => { onClose(); onSelectCustomer(customer); }}
+                className="w-full text-right px-5 py-4 hover:bg-slate-50 transition group flex items-center gap-3"
+              >
+                {/* الترتيب */}
+                <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${
+                  idx === 0 ? "bg-amber-100 text-amber-700" :
+                  idx === 1 ? "bg-slate-200 text-slate-600" :
+                  idx === 2 ? "bg-orange-100 text-orange-700" :
+                  "bg-slate-100 text-slate-400"
+                }`}>
+                  {idx + 1}
+                </div>
+
+                {/* المعلومات */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800 group-hover:text-violet-700 transition truncate">
+                      {customer.customerName}
+                    </span>
+                    <span className="text-xs text-slate-400">{customer.customerPhone}</span>
+                    {customer.customerId && (
+                      <span className="text-[10px] font-bold text-violet-500 bg-violet-50 rounded-full px-2 py-0.5">مسجل</span>
+                    )}
+                  </div>
+                  {/* شريط التقدم */}
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-violet-400 transition-all"
+                        style={{ width: `${(customer.totalOrders / maxOrders) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400 whitespace-nowrap">{deliveryRate}% مكتمل</span>
+                  </div>
+                </div>
+
+                {/* عدد الطلبات */}
+                <div className="flex-shrink-0 text-center">
+                  <span className={`text-lg font-black ${c.badgeColor} rounded-xl px-3 py-1`}>
+                    {customer.totalOrders}
+                  </span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">طلب</p>
+                </div>
+
+                {/* سهم */}
+                <div className="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-violet-100 flex items-center justify-center transition flex-shrink-0">
+                  <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-violet-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-5 py-3 border-t border-slate-100 text-center">
+          <p className="text-xs text-slate-400">اضغط على أي زبون لعرض تفاصيل طلباته</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // المكون الرئيسي
-// ==============================
+// ============================================================
 export function CustomerReportsClient({
   selectedYear,
   selectedMonth,
@@ -354,6 +376,7 @@ export function CustomerReportsClient({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [modalCustomer, setModalCustomer] = useState<CustomerStat | null>(null);
+  const [statModal, setStatModal] = useState<StatModalType | null>(null);
 
   const isMonthlyView = selectedMonth !== null;
 
@@ -376,23 +399,30 @@ export function CustomerReportsClient({
   const filteredCustomers = customerStats.filter((c) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
-    return (
-      c.customerName.toLowerCase().includes(q) ||
-      c.customerPhone.includes(q)
-    );
+    return c.customerName.toLowerCase().includes(q) || c.customerPhone.includes(q);
   });
 
-  const avgOrdersPerCustomer =
-    uniqueCustomers > 0 ? (totalOrders / uniqueCustomers).toFixed(1) : "0";
+  const avgOrdersPerCustomer = uniqueCustomers > 0 ? (totalOrders / uniqueCustomers).toFixed(1) : "0";
   const topCustomer = customerStats[0];
-  const repeatRate =
-    uniqueCustomers > 0
-      ? Math.round((repeatCustomers / uniqueCustomers) * 100)
-      : 0;
+  const repeatRate = uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 100) : 0;
 
   return (
     <>
-      {/* ===== المودال ===== */}
+      {/* مودال إحصائية الكرت */}
+      {statModal && !modalCustomer && (
+        <StatModal
+          type={statModal}
+          customerStats={customerStats}
+          totalOrders={totalOrders}
+          onClose={() => setStatModal(null)}
+          onSelectCustomer={(c) => {
+            setStatModal(null);
+            setModalCustomer(c);
+          }}
+        />
+      )}
+
+      {/* مودال طلبات زبون */}
       {modalCustomer && (
         <CustomerOrdersModal
           customer={modalCustomer}
@@ -427,7 +457,6 @@ export function CustomerReportsClient({
               ))}
             </div>
           </div>
-
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleMonthChange(null)}
@@ -458,42 +487,54 @@ export function CustomerReportsClient({
         {/* ===== عنوان الفترة ===== */}
         <div className="text-center">
           <span className="inline-block rounded-full bg-violet-50 px-5 py-2 text-sm font-bold text-violet-700 border border-violet-200">
-            {isMonthlyView
-              ? `شهر ${MONTH_NAMES[selectedMonth!]} — ${selectedYear}`
-              : `سنة ${selectedYear} كاملة`}
+            {isMonthlyView ? `شهر ${MONTH_NAMES[selectedMonth!]} — ${selectedYear}` : `سنة ${selectedYear} كاملة`}
           </span>
         </div>
 
-        {/* ===== كروت الإحصائيات السريعة ===== */}
+        {/* ===== كروت الإحصائيات (قابلة للضغط) ===== */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
+          {/* 1) إجمالي الطلبات */}
+          <button
+            onClick={() => setStatModal("all")}
+            className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm text-right hover:border-slate-300 hover:shadow-md transition group"
+          >
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">إجمالي الطلبات</p>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-800">{totalOrders.toLocaleString()}</span>
+              <span className="text-3xl font-black text-slate-800 group-hover:text-violet-700 transition">{totalOrders.toLocaleString()}</span>
               <span className="text-sm font-medium text-slate-500">طلب</span>
             </div>
+            <p className="mt-2 text-xs text-slate-400 group-hover:text-violet-500 transition">اضغط لعرض التفاصيل ←</p>
             <div className="absolute -left-4 -bottom-4 text-violet-100 pointer-events-none">
               <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
               </svg>
             </div>
-          </div>
+          </button>
 
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          {/* 2) عدد الزبائن */}
+          <button
+            onClick={() => setStatModal("customers")}
+            className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm text-right hover:border-violet-300 hover:shadow-md transition group"
+          >
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">عدد الزبائن</p>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-violet-700">{uniqueCustomers.toLocaleString()}</span>
               <span className="text-sm font-medium text-slate-500">زبون</span>
             </div>
-            <p className="mt-2 text-xs text-slate-400">متوسط {avgOrdersPerCustomer} طلب / زبون</p>
+            <p className="mt-2 text-xs text-slate-400 group-hover:text-violet-500 transition">متوسط {avgOrdersPerCustomer} طلب / زبون ←</p>
             <div className="absolute -left-4 -bottom-4 text-violet-100 pointer-events-none">
               <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
               </svg>
             </div>
-          </div>
+          </button>
 
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          {/* 3) الزبائن المتكررون */}
+          <button
+            onClick={() => setStatModal("repeat")}
+            className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm text-right hover:border-emerald-300 hover:shadow-md transition group"
+          >
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">الزبائن المتكررون</p>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-emerald-700">{repeatCustomers.toLocaleString()}</span>
@@ -505,9 +546,14 @@ export function CustomerReportsClient({
                 <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${repeatRate}%` }} />
               </div>
             </div>
-          </div>
+            <p className="mt-1 text-xs text-slate-400 group-hover:text-emerald-600 transition">اضغط لعرض القائمة ←</p>
+          </button>
 
-          <div className="relative overflow-hidden rounded-3xl border border-amber-200 bg-amber-50/40 p-6 shadow-sm">
+          {/* 4) الزبون الأكثر طلباً */}
+          <button
+            onClick={() => topCustomer && setModalCustomer(topCustomer)}
+            className="relative overflow-hidden rounded-3xl border border-amber-200 bg-amber-50/40 p-6 shadow-sm text-right hover:border-amber-300 hover:shadow-md transition group"
+          >
             <p className="text-xs font-bold uppercase tracking-wider text-amber-600">الزبون الأكثر طلباً</p>
             {topCustomer ? (
               <>
@@ -519,6 +565,7 @@ export function CustomerReportsClient({
                   <span className="text-2xl font-black text-amber-600">{topCustomer.totalOrders}</span>
                   <span className="text-xs text-slate-500">طلب</span>
                 </div>
+                <p className="text-xs text-slate-400 group-hover:text-amber-600 transition mt-1">اضغط لعرض طلباته ←</p>
               </>
             ) : (
               <p className="mt-3 text-sm text-slate-400">لا توجد بيانات</p>
@@ -528,7 +575,7 @@ export function CustomerReportsClient({
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* ===== جدول الزبائن ===== */}
@@ -560,80 +607,60 @@ export function CustomerReportsClient({
             <div className="divide-y divide-slate-100">
               {filteredCustomers.map((customer, index) => {
                 const customerKey = customer.customerId ?? `phone:${customer.customerPhone}`;
-                const deliveryRate =
-                  customer.totalOrders > 0
-                    ? Math.round((customer.deliveredOrders / customer.totalOrders) * 100)
-                    : 0;
+                const deliveryRate = customer.totalOrders > 0
+                  ? Math.round((customer.deliveredOrders / customer.totalOrders) * 100) : 0;
 
-                let rankColor = "text-slate-400";
-                let rankBg = "bg-slate-100";
+                let rankColor = "text-slate-400"; let rankBg = "bg-slate-100";
                 if (index === 0) { rankColor = "text-amber-700"; rankBg = "bg-amber-100"; }
                 else if (index === 1) { rankColor = "text-slate-600"; rankBg = "bg-slate-200"; }
                 else if (index === 2) { rankColor = "text-orange-700"; rankBg = "bg-orange-100"; }
 
-                const maxMonthlyOrders = Math.max(...customer.monthlyOrders, 1);
-
                 return (
-                  <div key={customerKey}>
-                    {/* صف الزبون — قابل للضغط لفتح المودال */}
-                    <button
-                      onClick={() => setModalCustomer(customer)}
-                      className="w-full text-right p-4 hover:bg-violet-50/50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* رقم الترتيب */}
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${rankBg} ${rankColor}`}>
-                          {index + 1}
+                  <button
+                    key={customerKey}
+                    onClick={() => setModalCustomer(customer)}
+                    className="w-full text-right p-4 hover:bg-violet-50/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${rankBg} ${rankColor}`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="font-bold text-slate-800 group-hover:text-violet-700 transition truncate">{customer.customerName}</span>
+                          <span className="text-xs text-slate-400">{customer.customerPhone}</span>
                         </div>
-
-                        {/* معلومات الزبون */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2 flex-wrap">
-                            <span className="font-bold text-slate-800 group-hover:text-violet-700 transition truncate">
-                              {customer.customerName}
-                            </span>
-                            <span className="text-xs text-slate-400">{customer.customerPhone}</span>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-violet-500 transition-all"
+                              style={{ width: `${Math.min((customer.totalOrders / (customerStats[0]?.totalOrders || 1)) * 100, 100)}%` }}
+                            />
                           </div>
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-violet-500 transition-all"
-                                style={{
-                                  width: `${Math.min(
-                                    (customer.totalOrders / (customerStats[0]?.totalOrders || 1)) * 100,
-                                    100
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-slate-400 whitespace-nowrap">{deliveryRate}% مكتمل</span>
-                          </div>
-                        </div>
-
-                        {/* إحصائيات + أيقونة فتح */}
-                        <div className="flex-shrink-0 flex items-center gap-3">
-                          <div className="text-center">
-                            <p className="text-lg font-black text-violet-700">{customer.totalOrders}</p>
-                            <p className="text-xs text-slate-400">طلب</p>
-                          </div>
-                          <div className="hidden sm:block text-center">
-                            <p className="text-sm font-bold text-emerald-600">{customer.deliveredOrders}</p>
-                            <p className="text-xs text-slate-400">مُكتمل</p>
-                          </div>
-                          <div className="hidden sm:block text-center">
-                            <p className="text-sm font-bold text-rose-500">{customer.canceledOrders}</p>
-                            <p className="text-xs text-slate-400">ملغي</p>
-                          </div>
-                          {/* أيقونة "عرض التفاصيل" */}
-                          <div className="w-8 h-8 rounded-xl bg-violet-100 group-hover:bg-violet-200 flex items-center justify-center transition flex-shrink-0">
-                            <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </div>
+                          <span className="text-xs text-slate-400 whitespace-nowrap">{deliveryRate}% مكتمل</span>
                         </div>
                       </div>
-                    </button>
-                  </div>
+                      <div className="flex-shrink-0 flex items-center gap-3">
+                        <div className="text-center">
+                          <p className="text-lg font-black text-violet-700">{customer.totalOrders}</p>
+                          <p className="text-xs text-slate-400">طلب</p>
+                        </div>
+                        <div className="hidden sm:block text-center">
+                          <p className="text-sm font-bold text-emerald-600">{customer.deliveredOrders}</p>
+                          <p className="text-xs text-slate-400">مكتمل</p>
+                        </div>
+                        <div className="hidden sm:block text-center">
+                          <p className="text-sm font-bold text-rose-500">{customer.canceledOrders}</p>
+                          <p className="text-xs text-slate-400">ملغي</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-xl bg-violet-100 group-hover:bg-violet-200 flex items-center justify-center transition flex-shrink-0">
+                          <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
                 );
               })}
             </div>
