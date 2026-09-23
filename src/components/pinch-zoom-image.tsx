@@ -41,16 +41,20 @@ export function ImageZoomModal({
   const isDraggingRef = useRef(false);
   const lastPositionRef = useRef({ x: 0, y: 0 });
 
-  // منع السحب الافتراضي للمتصفح (Scroll) أثناء التكبير
+  // منع السحب الافتراضي للمتصفح (Scroll / Pull-to-refresh) بالكامل أثناء فتح المودال لتكبير الصورة بحرية
   useEffect(() => {
-    const preventDefault = (e: TouchEvent) => {
-      if (scale > 1) {
-        e.preventDefault();
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      // إذا كان اللمس بأصبعين أو أكثر (Pinch) أو إذا كانت الصورة مكبرة أو اللمس داخل الحاوية
+      if (e.touches.length >= 2 || scale > 1 || (containerRef.current && containerRef.current.contains(e.target as Node))) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
       }
     };
-    document.addEventListener("touchmove", preventDefault, { passive: false });
+
+    document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
     return () => {
-      document.removeEventListener("touchmove", preventDefault);
+      document.removeEventListener("touchmove", handleGlobalTouchMove);
     };
   }, [scale]);
 
@@ -179,12 +183,15 @@ export function ImageZoomModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-4 transition-all duration-300 animate-fade-in"
+      ref={containerRef}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md p-3 sm:p-4 transition-all duration-300 animate-fade-in select-none"
+      style={{ touchAction: "none", overscrollBehavior: "none" }}
       onClick={onClose}
       dir="rtl"
     >
       <div
         className="relative w-full h-full flex flex-col items-center justify-center select-none touch-none"
+        style={{ touchAction: "none", overscrollBehavior: "none" }}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

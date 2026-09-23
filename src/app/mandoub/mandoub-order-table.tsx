@@ -834,7 +834,7 @@ function MandoubFullBlockCardGrid({
                 const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
 
                 const headerTextStr = isDoubleRouteOrder
-                  ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
+                  ? `من ${o.regionLine || "المرسل"} ➔ إلى ${o.secondCustomerRegionName || "المستلم"}`
                   : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
 
                 const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");

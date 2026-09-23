@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 
 export type ModalActionType = "call" | "chat" | "location" | "door" | "customer";
 
@@ -47,80 +48,17 @@ export function MandoubActionMenuModal({
 
   // في حال كان عارض الصورة المكبرة نشطاً
   if (activePreviewImage) {
-    const resolvedSrc = resolvePublicAssetSrc(activePreviewImage.url);
-    const viewerContent = (
-      <div
-        className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
-        dir="rtl"
-        onClick={() => {
+    const resolvedSrc = resolvePublicAssetSrc(activePreviewImage.url) || activePreviewImage.url;
+    return (
+      <ImageZoomModal
+        imageUrl={resolvedSrc}
+        title={activePreviewImage.title}
+        onClose={() => {
           setActivePreviewImage(null);
           if (onClosePreviewImage) onClosePreviewImage();
         }}
-      >
-        <div
-          className="relative w-full max-w-lg rounded-[28px] overflow-hidden border-2 border-[#C9A86A] bg-[#0A1A18] text-white shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* شريط رأس عارض الصور الملكي */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#C9A86A]/40 bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A]">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🚪</span>
-              <span className="text-sm sm:text-base font-black text-[#F5D77F] truncate">
-                {activePreviewImage.title}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setActivePreviewImage(null);
-                if (onClosePreviewImage) onClosePreviewImage();
-              }}
-              className="w-8 h-8 rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] flex items-center justify-center font-black text-sm transition active:scale-90 cursor-pointer shadow-md"
-              title="إغلاق"
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* حاوي الصورة المكبرة */}
-          <div className="p-3 bg-black/60 flex-1 overflow-auto flex items-center justify-center min-h-[220px]">
-            {resolvedSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={resolvedSrc}
-                alt={activePreviewImage.title}
-                className="max-w-full max-h-[65vh] object-contain rounded-xl shadow-2xl border border-[#C9A86A]/30"
-              />
-            ) : (
-              <div className="text-center py-12 text-slate-400 font-bold text-sm">
-                لم يتم العثور على ملف الصورة أو الرابط غير صالح
-              </div>
-            )}
-          </div>
-
-          {/* زر سفلي لإغلاق المعاينة */}
-          <div className="p-3 border-t border-[#C9A86A]/30 bg-[#0A1A18] flex justify-center">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setActivePreviewImage(null);
-                if (onClosePreviewImage) onClosePreviewImage();
-              }}
-              className="w-full py-2.5 rounded-xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-sm transition hover:scale-[1.01] active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>✕</span>
-              <span>إغلاق المعاينة</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      />
     );
-    if (typeof document === "undefined") return null;
-    return createPortal(viewerContent, document.body);
   }
 
   if (!isOpen) return null;

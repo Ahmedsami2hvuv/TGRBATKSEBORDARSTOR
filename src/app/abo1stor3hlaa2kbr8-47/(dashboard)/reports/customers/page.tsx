@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { CustomerReportsClient } from "./customer-reports-client";
 
 export const dynamic = "force-dynamic";
@@ -101,13 +102,21 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
   };
 
   const customerMap = new Map<string, CustomerStat>();
+  const isSameNormalizedPhone = (a?: string | null, b?: string | null) => {
+    if (!a || !b) return false;
+
+    const pa = normalizeIraqMobileLocal11(a);
+    const pb = normalizeIraqMobileLocal11(b);
+    if (pa && pb) return pa === pb;
+
+    const cleanA = a.replace(/\D/g, "");
+    const cleanB = b.replace(/\D/g, "");
+    return !!cleanA && !!cleanB && cleanA === cleanB;
+  };
 
   for (const order of orders) {
-    // إذا كان رقم هاتف الزبون مساوياً لرقم هاتف المحل نفسه، نتخطى الطلب لأنه بون أو دين للعميل من محله وليس زبون خارجي
-    const cleanPhone = (p: string) => p.replace(/[\s\-\+\(\)]/g, "");
-    if (order.customerPhone && order.shop?.phone && cleanPhone(order.customerPhone) === cleanPhone(order.shop.phone)) {
-      continue;
-    }
+    // إذا كان هاتف الزبون مطابقاً لهاتف المحل نفسه، فهذا طلب من صاحب المحل لا يُعد زبوناً خارجيًا
+    if (isSameNormalizedPhone(order.customerPhone, order.shop?.phone)) continue;
 
     // مفتاح الزبون: إما الـ customerId أو رقم الهاتف
     const key = order.customerId ?? `phone:${order.customerPhone}`;
@@ -132,7 +141,7 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
     const stat = customerMap.get(key)!;
     stat.totalOrders += 1;
 
-    if (order.status === "delivered" || order.status === "completed" || order.status === "archived") {
+    if (order.status === "delivered" || order.status === "completed") {
       stat.deliveredOrders += 1;
     } else if (order.status === "canceled" || order.status === "rejected") {
       stat.canceledOrders += 1;
@@ -148,9 +157,8 @@ export default async function CustomerReportsPage({ searchParams }: Props) {
     if (order.createdAt > stat.lastOrderDate) stat.lastOrderDate = order.createdAt;
   }
 
-  // تحويل الخريطة إلى مصفوفة وتصفيتها لتبقي فقط من لديهم طلبات مكتملة أو مؤرشفة، ومرتبة حسب عدد الطلبات
+  // تحويل الخريطة إلى مصفوفة ومرتبة حسب عدد الطلبات
   const customerStats = Array.from(customerMap.values())
-    .filter((s) => s.deliveredOrders > 0)
     .sort((a, b) => b.totalOrders - a.totalOrders)
     .map((s) => ({
       ...s,

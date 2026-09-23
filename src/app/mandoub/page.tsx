@@ -830,7 +830,9 @@ export default async function MandoubPage({ searchParams }: Props) {
       shortId: String(o.orderNumber),
       orderStatus: o.status,
       shopName: (() => {
-        if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
+        if (o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionId) {
+          return o.customerRegion?.name ? `من ${o.customerRegion.name}` : "طلب وجهتين";
+        }
         if (
           o.submittedByCompanyPreparer?.name ||
           o.submittedByCompanyPreparerId != null ||
@@ -982,7 +984,9 @@ export default async function MandoubPage({ searchParams }: Props) {
     secondCustomerLandmark: o.secondCustomerLandmark,
     orderNoteTime: o.orderNoteTime?.trim() ?? "",
       shopName: (() => {
-        if ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") return "طلب وجهتين";
+        if (o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionId) {
+          return o.customerRegion?.name ? `من ${o.customerRegion.name}` : "طلب وجهتين";
+        }
         if (
           o.submittedByCompanyPreparer?.name ||
           o.submittedByCompanyPreparerId != null ||

@@ -589,7 +589,10 @@ export function MandoubWalletClient({
           const hasMismatch = line.expectedDinar != null && Math.abs(diff) > 0.01;
           const orderHref = line.source === "order" ? buildOrderHref(auth, line.orderId) : null;
           const cashBalance = (line.balanceEarnings ?? 0) + (line.balanceAdmin ?? 0);
-          const orderAreaLabel = line.regionName ? `${line.shopName}_${line.regionName}` : line.shopName;
+          const isDoubleLine = line.shopName?.startsWith("من ") || line.shopName?.includes("وجهتين");
+          const orderAreaLabel = isDoubleLine
+            ? (line.regionName ? `${line.shopName} ➔ إلى ${line.regionName}` : line.shopName)
+            : (line.regionName ? `${line.shopName}_${line.regionName}` : line.shopName);
           const amountSuffix = !deleted && line.source === "order" && line.expectedDinar != null && !hasMismatch ? (
             <span className="inline-flex items-center">
               <DynamicIcon icon={icons?.ui_success} fallback=" ✅" width={14} height={14} />

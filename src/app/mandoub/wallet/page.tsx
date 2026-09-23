@@ -298,8 +298,12 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
           createdAt: e.createdAt.toISOString(),
           orderId: o.id,
           orderNumber: o.orderNumber,
-          shopName: o.shop?.name || "محل",
-          regionName: o.customerRegion?.name || o.shop?.region?.name,
+          shopName: o.routeMode === "double" || !!o.secondCustomerPhone
+            ? (o.customerRegion?.name ? `من ${o.customerRegion.name}` : "طلب وجهتين (من زبون)")
+            : (o.shop?.name || "محل"),
+          regionName: o.routeMode === "double" || !!o.secondCustomerPhone
+            ? (o.secondCustomerRegion?.name || "المستلم")
+            : (o.customerRegion?.name || o.shop?.region?.name),
           orderNotes: o.summary,
           miscLabel: null,
           deletedAt: e.deletedAt?.toISOString() ?? null,

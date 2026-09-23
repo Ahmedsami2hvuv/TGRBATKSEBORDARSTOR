@@ -9,6 +9,7 @@ import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 
 /** مكون مشغل الصوت المصغر */
 function MiniAudioPlayer({ url }: { url: string }) {
@@ -941,8 +942,8 @@ export function UnifiedOrderListTable({
         </tbody>
       </table>
       {modalImg && (
-        <ImageModal
-          url={modalImg.url}
+        <ImageZoomModal
+          imageUrl={resolvePublicAssetSrc(modalImg.url) || modalImg.url}
           title={modalImg.title}
           onClose={() => setModalImg(null)}
         />

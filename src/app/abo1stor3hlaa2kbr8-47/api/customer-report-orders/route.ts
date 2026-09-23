@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -59,12 +60,25 @@ export async function GET(request: Request) {
       summary: true,
       customerLandmark: true,
       customerLocationUrl: true,
-      shop: { select: { name: true } },
+      customerPhone: true,
+      shop: { select: { name: true, phone: true } },
       customerRegion: { select: { name: true } },
       courier: { select: { name: true } },
       submittedBy: { select: { name: true } },
     },
   });
 
-  return NextResponse.json({ orders });
+  const filteredOrders = orders.filter((order) => {
+    const customerPhone = order.customerPhone ?? "";
+    const shopPhone = order.shop?.phone ?? "";
+    if (!customerPhone || !shopPhone) return true;
+
+    const a = normalizeIraqMobileLocal11(customerPhone);
+    const b = normalizeIraqMobileLocal11(shopPhone);
+    if (a && b) return a !== b;
+
+    return customerPhone.replace(/\D/g, "") !== shopPhone.replace(/\D/g, "");
+  });
+
+  return NextResponse.json({ orders: filteredOrders });
 }
