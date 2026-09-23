@@ -56,6 +56,19 @@ function revalidateMandoubPaths(nextUrl: string, orderId?: string) {
   }
 }
 
+function buildKeepOrderReturnUrl(nextRaw: string, orderId?: string): string {
+  const target = safeMandoubReturn(nextRaw);
+  if (!orderId) return target;
+  if (target.includes(orderId) || target.includes("activeOrderId=")) {
+    return target;
+  }
+  if (target.startsWith("/mandoub/order/")) {
+    return target;
+  }
+  const hasQuery = target.includes("?");
+  return `${target}${hasQuery ? "&" : "?"}activeOrderId=${encodeURIComponent(orderId)}`;
+}
+
 function revalidateAdminTrackingForStatusChange() {
   revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
 }
@@ -252,8 +265,8 @@ export async function uploadShopDoorPhoto(
     data: { photoUrl: url },
   });
 
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+  revalidateMandoubPaths(nextRaw, orderId);
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 
@@ -677,8 +690,8 @@ export async function uploadMandoubCustomerDoorPhoto(
   }
 
   await syncPhoneProfileFromOrder(orderId);
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+  revalidateMandoubPaths(nextRaw, orderId);
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 /** لـ `<form action>` بدون useActionState — متوافق مع توقيع Next.js 16 */
@@ -686,7 +699,8 @@ export async function uploadMandoubCustomerDoorPhotoSubmit(formData: FormData): 
   const result = await uploadMandoubCustomerDoorPhoto({}, formData);
   if (result.error) {
     const nextRaw = String(formData.get("next") ?? "/mandoub");
-    redirect(safeMandoubReturn(nextRaw));
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 }
 
@@ -702,19 +716,19 @@ export async function uploadMandoubSecondCustomerDoorPhotoSubmit(
 
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok || !orderId) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const file = formData.get("secondCustomerDoorPhoto");
   if (!(file instanceof File) || file.size === 0) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, assignedCourierId: v.courierId },
   });
   if (!order) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   let url: string;
@@ -725,7 +739,7 @@ export async function uploadMandoubSecondCustomerDoorPhotoSubmit(
     });
     url = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const uploadedBy = await courierUploaderLabel(v.courierId);
@@ -738,8 +752,8 @@ export async function uploadMandoubSecondCustomerDoorPhotoSubmit(
   });
 
   await syncSecondPhoneProfileFromOrder(orderId);
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+  revalidateMandoubPaths(nextRaw, orderId);
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 /** استبدال صورة الطلبية من المندوب — كاميرا أو معرض */
@@ -752,22 +766,22 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
 
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok) {
-    redirect("/mandoub");
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
   if (!orderId) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const file = formData.get("orderImage");
   if (!(file instanceof File) || file.size === 0) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, assignedCourierId: v.courierId },
   });
   if (!order) {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   let url: string;
@@ -778,7 +792,7 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
     });
     url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch {
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   const uploadedBy = await courierUploaderLabel(v.courierId);
@@ -787,8 +801,8 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
     data: { imageUrl: url, orderImageUploadedByName: uploadedBy },
   });
 
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+  revalidateMandoubPaths(nextRaw, orderId);
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 /** رفع صورة الطلبية من المندوب متوافق مع useActionState */
