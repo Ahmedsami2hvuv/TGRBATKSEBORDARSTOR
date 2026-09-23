@@ -25,15 +25,16 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
            <span className="text-[10px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded-full shadow-sm animate-pulse">اسحب للمزيد 👈</span>
         </div>
       )}
-      <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-4 hide-scrollbar px-2 accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
+      <div className="flex items-start gap-4 overflow-x-auto pb-3 pt-4 hide-scrollbar px-2 accelerate-gpu" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
       <Link 
         href={`/store/c/${categoryId}`} 
         onClick={() => setOptimisticBranch(null)}
-        className="shrink-0 flex flex-col items-center gap-1"
+        className="shrink-0 flex flex-col items-center gap-1.5"
       >
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all ${!activeBranchId ? 'border-green-500 bg-green-50 shadow-md scale-105' : 'border-slate-100 bg-slate-50 opacity-80 hover:opacity-100'}`}>
-          <span className={`text-xs font-black ${!activeBranchId ? 'text-green-600' : 'text-slate-600'}`}>الكل</span>
+        <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center border-2 transition-all ${!activeBranchId ? 'border-green-500 bg-green-50 shadow-lg scale-105 ring-2 ring-green-500/20' : 'border-slate-200 bg-slate-50 opacity-90 hover:opacity-100 shadow-sm'}`}>
+          <span className={`text-sm sm:text-base font-black ${!activeBranchId ? 'text-green-600' : 'text-slate-700'}`}>الكل</span>
         </div>
+        <span className={`text-xs sm:text-sm font-bold text-center ${!activeBranchId ? 'text-green-600 font-extrabold' : 'text-slate-500'}`}>عرض الجميع</span>
       </Link>
       
       {branches.map((b) => {
@@ -43,16 +44,16 @@ export function CategoryBranchesScroll({ branches, categoryId, productCount }: {
             key={b.id} 
             href={`/store/c/${categoryId}?b=${b.id}`} 
             onClick={() => setOptimisticBranch(b.id)}
-            className="shrink-0 flex flex-col items-center gap-1"
+            className="shrink-0 flex flex-col items-center gap-1.5"
           >
-             <div className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${isActive ? 'border-green-500 shadow-md scale-105' : 'border-slate-100 opacity-80 hover:opacity-100'}`}>
+             <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 transition-all ${isActive ? 'border-green-500 shadow-lg scale-105 ring-2 ring-green-500/20' : 'border-slate-200 opacity-90 hover:opacity-100 shadow-sm'}`}>
                 {b.photoUrl ? (
                   <img src={b.photoUrl} alt={b.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">{b.name.charAt(0)}</div>
+                  <div className="w-full h-full bg-slate-200 flex items-center justify-center text-base font-bold text-slate-600">{b.name.charAt(0)}</div>
                 )}
              </div>
-             <span className={`text-[10px] md:text-xs font-bold line-clamp-1 w-16 text-center ${isActive ? 'text-green-600' : 'text-slate-500'}`}>{b.name}</span>
+             <span className={`text-xs sm:text-sm font-bold line-clamp-1 w-20 sm:w-24 text-center ${isActive ? 'text-green-600 font-extrabold' : 'text-slate-700'}`}>{b.name}</span>
           </Link>
         )
       })}
