@@ -311,7 +311,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         p.transactions.forEach((t) => {
           const amt = Number(t.amount);
-          if (t.kind === "gave") {
+          if (t.kind === "gave" || t.kind === "expense") {
             totalGave += amt;
           } else if (t.kind === "took") {
             totalTook += amt;
@@ -1074,7 +1074,7 @@ export async function getPartnerDetails(partnerId: string) {
     // حساب المعاملات اليدوية بالدفتر
     const manualTransactions = partner.transactions.map((t) => {
       const amt = Number(t.amount);
-      if (t.kind === "gave") {
+      if (t.kind === "gave" || t.kind === "expense") {
         totalGave += amt;
       } else if (t.kind === "took") {
         totalTook += amt;
@@ -1271,10 +1271,19 @@ export async function createPartner(name: string, phone: string | null, type: Pa
 }
 
 // 4. إضافة معاملة مالية
-export async function addTransaction(partnerId: string, amount: number, kind: "gave" | "took", note: string | null, date?: Date, imageUrl?: string | null) {
+export async function addTransaction(partnerId: string, amount: number, kind: "gave" | "took" | "expense", note: string | null, date?: Date, imageUrl?: string | null) {
   try {
     if (amount <= 0) {
       return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
+    }
+
+    let finalNote = note?.trim() || null;
+    if (kind === "expense") {
+      if (!finalNote) {
+        finalNote = "[مصروفات]";
+      } else if (!finalNote.includes("[مصروفات]")) {
+        finalNote = `[مصروفات] ${finalNote}`;
+      }
     }
 
     const tx = await prisma.creditBookTransaction.create({
@@ -1282,7 +1291,7 @@ export async function addTransaction(partnerId: string, amount: number, kind: "g
         partnerId,
         amount,
         kind,
-        note: note?.trim() || null,
+        note: finalNote,
         imageUrl: imageUrl || null,
         createdAt: date || new Date(),
       },
@@ -1333,7 +1342,7 @@ export async function uploadTransactionImage(formData: FormData) {
 }
 
 // 5. تعديل معاملة مالية
-export async function updateTransaction(transactionId: string, amount: number, note: string | null, kind: "gave" | "took", date?: Date, imageUrl?: string | null) {
+export async function updateTransaction(transactionId: string, amount: number, note: string | null, kind: "gave" | "took" | "expense", date?: Date, imageUrl?: string | null) {
   try {
     if (amount <= 0) {
       return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
@@ -1344,11 +1353,20 @@ export async function updateTransaction(transactionId: string, amount: number, n
     });
     if (!originalTx) return { success: false, error: "المعاملة غير موجودة" };
 
+    let finalNote = note?.trim() || null;
+    if (kind === "expense") {
+      if (!finalNote) {
+        finalNote = "[مصروفات]";
+      } else if (!finalNote.includes("[مصروفات]")) {
+        finalNote = `[مصروفات] ${finalNote}`;
+      }
+    }
+
     const tx = await prisma.creditBookTransaction.update({
       where: { id: transactionId },
       data: {
         amount,
-        note: note?.trim() || null,
+        note: finalNote,
         kind,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         createdAt: date || undefined,

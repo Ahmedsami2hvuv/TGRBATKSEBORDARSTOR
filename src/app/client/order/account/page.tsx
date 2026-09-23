@@ -282,69 +282,87 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
               لا توجد أي حركات أو معاملات مسجلة في سجل الديون حتى الآن.
             </div>
           ) : (
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-0.5">
-              {transactions.map((tx: any) => {
-                const isGave = tx.kind === "gave"; // أعطيت = تسديد
-                return (
-                  <div
-                    key={tx.id}
-                    className={`rounded-2xl border p-3 sm:p-3.5 shadow-2xs transition-all bg-[#FFFEFB] ${
-                      isGave
-                        ? "border-emerald-300 ring-1 ring-emerald-100"
-                        : "border-rose-300 ring-1 ring-rose-100"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                            isGave
-                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : "bg-rose-100 text-rose-800 border-rose-300"
-                          }`}
-                        >
-                          {isGave ? "🟢 تسديد / استلام" : "🔴 طلب / دين"}
-                        </span>
-                        {tx.isPaid && (
-                          <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
-                            مسدد ✓
-                          </span>
-                        )}
-                      </div>
+            (() => {
+              const pinnedTxs = transactions.filter((tx: any) => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
+              const normalTxs = transactions.filter((tx: any) => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+              const displayTxs = [...pinnedTxs, ...normalTxs];
 
-                      <span
-                        dir="ltr"
-                        className={`text-sm sm:text-base font-black font-mono tabular-nums ${
-                          isGave ? "text-emerald-700" : "text-rose-700"
+              return (
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-0.5">
+                  {displayTxs.map((tx: any) => {
+                    const isExpense = tx.kind === "expense" || tx.note?.includes("[مصروفات]");
+                    const isGave = tx.kind === "gave"; // أعطيت = تسديد
+                    return (
+                      <div
+                        key={tx.id}
+                        className={`rounded-2xl border p-3 sm:p-3.5 shadow-2xs transition-all bg-[#FFFEFB] ${
+                          isExpense
+                            ? "border-sky-400 ring-2 ring-sky-200 bg-sky-50/40"
+                            : isGave
+                              ? "border-emerald-300 ring-1 ring-emerald-100"
+                              : "border-rose-300 ring-1 ring-rose-100"
                         }`}
                       >
-                        {formatDinarAsAlfWithUnit(tx.amount)}
-                      </span>
-                    </div>
+                        {isExpense && (
+                          <div className="text-[10px] font-black text-sky-800 bg-sky-100 px-2 py-0.5 rounded-lg mb-1.5 inline-flex items-center gap-1 border border-sky-200">
+                            📌 <span>مصروفات مثبتة في بداية كشف الديون</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                                isExpense
+                                  ? "bg-sky-600 text-white border-sky-600"
+                                  : isGave
+                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                    : "bg-rose-100 text-rose-800 border-rose-300"
+                              }`}
+                            >
+                              {isExpense ? "📦 مصروفات" : isGave ? "🟢 تسديد / استلام" : "🔴 طلب / دين"}
+                            </span>
+                            {tx.isPaid && (
+                              <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
+                                مسدد ✓
+                              </span>
+                            )}
+                          </div>
 
-                    <p className="text-xs font-bold text-slate-800 leading-relaxed">
-                      {tx.note || "بدون ملاحظات"}
-                    </p>
+                          <span
+                            dir="ltr"
+                            className={`text-sm sm:text-base font-black font-mono tabular-nums ${
+                              isExpense ? "text-sky-700" : isGave ? "text-emerald-700" : "text-rose-700"
+                            }`}
+                          >
+                            {formatDinarAsAlfWithUnit(tx.amount)}
+                          </span>
+                        </div>
 
-                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-1.5">
-                      <span>
-                        {new Date(tx.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", {
-                          year: "numeric",
-                          month: "numeric",
-                          day: "numeric",
-                        })}
-                      </span>
-                      <span>
-                        {new Date(tx.createdAt).toLocaleTimeString("ar-IQ-u-nu-latn", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        <p className="text-xs font-bold text-slate-800 leading-relaxed">
+                          {tx.note || "بدون ملاحظات"}
+                        </p>
+
+                        <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-1.5">
+                          <span>
+                            {new Date(tx.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                            })}
+                          </span>
+                          <span>
+                            {new Date(tx.createdAt).toLocaleTimeString("ar-IQ-u-nu-latn", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </section>
 

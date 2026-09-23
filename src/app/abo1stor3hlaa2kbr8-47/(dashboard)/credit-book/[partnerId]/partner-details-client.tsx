@@ -64,8 +64,9 @@ interface Transaction {
   id: string;
   partnerId: string;
   amount: number;
-  kind: string; // "gave" or "took"
+  kind: string; // "gave", "took", or "expense"
   note: string | null;
+  imageUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
   isAuto?: boolean;
@@ -241,7 +242,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   // نموذج إضافة معاملة
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [kind, setKind] = useState<"gave" | "took">("gave");
+  const [kind, setKind] = useState<"gave" | "took" | "expense">("gave");
   const [note, setNote] = useState("");
   const [date, setDate] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -252,7 +253,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   const [calcExpr, setCalcExpr] = useState("");
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleOpenForm = (selectedKind: "gave" | "took") => {
+  const handleOpenForm = (selectedKind: "gave" | "took" | "expense") => {
     setKind(selectedKind);
     setIsFormOpen(true);
   };
@@ -261,7 +262,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   // نموذج تعديل معاملة
   const [editTxId, setEditTxId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
-  const [editKind, setEditKind] = useState<"gave" | "took">("gave");
+  const [editKind, setEditKind] = useState<"gave" | "took" | "expense">("gave");
   const [editNote, setEditNote] = useState("");
   const [editDate, setEditDate] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -390,7 +391,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
       formData.append("image", imageFile);
       const uploadRes = await uploadTransactionImage(formData);
       if (uploadRes.success) {
-        uploadedUrl = uploadRes.url;
+        uploadedUrl = uploadRes.url ?? null;
       } else {
         setError(uploadRes.error || "فشل تحميل الصورة");
         setIsAdding(false);
@@ -421,7 +422,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
     if (tx.isAuto) return;
     setEditTxId(tx.id);
     setEditAmount(tx.amount.toString());
-    setEditKind(tx.kind as "gave" | "took");
+    setEditKind((tx.kind as "gave" | "took" | "expense") || "gave");
     setEditNote(tx.note || "");
     // تحويل التاريخ ليكون متوافقاً مع حقل التاريخ في html
     const txDate = new Date(tx.createdAt);
@@ -659,7 +660,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
             </span>
           </div>
 
-          {/* زرا تسجيل أعطيت وأخذت وتصفير الحساب */}
+          {/* أزرار تسجيل أعطيت وأخذت ومصروفات وتصفير الحساب */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleOpenForm("gave")}
@@ -672,6 +673,12 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               className="flex-1 py-2 px-3 text-xs font-black text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
             >
               🔴 تسجيل أخذت
+            </button>
+            <button
+              onClick={() => handleOpenForm("expense")}
+              className="flex-1 py-2 px-3 text-xs font-black text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              📦 تسجيل مصروفات
             </button>
             {partner.balance !== 0 && (
               <button
@@ -716,7 +723,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <h3 className="text-md font-black text-slate-800">
-                ✍️ تسجيل {kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"} جديد
+                {kind === "expense" ? "📦 تسجيل مصروفات جديدة (طلب/مسواق شخصي)" : `✍️ تسجيل ${kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"} جديد`}
               </h3>
               <button
                 type="button"
@@ -748,6 +755,31 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                 🗑️ حذف هذا الحساب بالكامل
               </button>
             </div>
+          </div>
+
+          {/* تبديل نوع المعاملة: أعطيت | أخذت | مصروفات */}
+          <div className="flex rounded-2xl bg-slate-100 p-1 border border-slate-200/80 gap-1 font-black text-xs max-w-xl">
+            <button
+              type="button"
+              onClick={() => setKind("gave")}
+              className={`flex-1 py-2 px-3 rounded-xl transition ${kind === "gave" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200/60"}`}
+            >
+              🟢 أعطيت (نطلبه)
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind("took")}
+              className={`flex-1 py-2 px-3 rounded-xl transition ${kind === "took" ? "bg-rose-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200/60"}`}
+            >
+              🔴 أخذت (يطلبنا)
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind("expense")}
+              className={`flex-1 py-2 px-3 rounded-xl transition ${kind === "expense" ? "bg-sky-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200/60"}`}
+            >
+              📦 مصروفات
+            </button>
           </div>
 
           {/* الحاسبة الذكية المدمجة */}
@@ -1021,8 +1053,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             sortedAsc.forEach((tx) => {
               const amt = Number(tx.amount || 0);
-              if (tx.kind === "gave") {
-                running += amt; // أعطيت = سددنا له / نطلبه
+              if (tx.kind === "gave" || tx.kind === "expense") {
+                running += amt; // أعطيت أو مصروفات = سددنا له / نطلبه
               } else if (tx.kind === "took") {
                 running -= amt; // أخذت = بضاعة أخذناها منه / يطلبنا
               }
@@ -1040,10 +1072,16 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               return <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مطابقة لمصطلح البحث.</div>;
             }
 
+            // فصل وتثبيت معاملات المصروفات في قمة الكشف (Pinned at top)
+            const pinnedTxs = filteredTxs.filter(tx => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
+            const normalTxs = filteredTxs.filter(tx => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+            const sortedFilteredTxs = [...pinnedTxs, ...normalTxs];
+
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
-                {filteredTxs.map((tx, index) => {
+                {sortedFilteredTxs.map((tx, index) => {
                   const notesLower = tx.note?.toLowerCase() || "";
+                  const isExpense = tx.kind === "expense" || notesLower.includes("[مصروفات]") || notesLower.includes("مصروفات");
                   const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
                   const isTransfer = notesLower.includes("تحويل");
                   const isDebt = notesLower.includes("دين");
@@ -1051,7 +1089,11 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   let containerClasses = "";
                   let tagClasses = "";
 
-                  if (isSalary) {
+                  if (isExpense) {
+                    // أزرق سماوي/مائي أنيق وفاخر للمصروفات المثبتة بالقمة
+                    containerClasses = "border-2 border-sky-500 bg-gradient-to-r from-sky-100/90 via-sky-50/40 to-white hover:from-sky-200/90 hover:via-sky-50/50 hover:to-white/95 dark:from-sky-950/50 dark:to-slate-950 text-sky-950 dark:text-sky-200 ring-2 ring-sky-400/40 shadow-md";
+                    tagClasses = "bg-sky-600 text-white border-sky-600 dark:bg-sky-700 dark:border-sky-700 font-black shadow-sm";
+                  } else if (isSalary) {
                     // أزرق متدرج للأبيض مثل محفظة المجهز تماماً
                     containerClasses = "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/35 via-[#c7d2fe]/10 to-white hover:from-[#818cf8]/45 hover:via-[#c7d2fe]/20 hover:to-white/95 dark:from-[#2e2a72]/40 dark:to-[#0b0b1a] dark:border-[#6366f1] text-[#1e1b4b] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/40";
                     tagClasses = "bg-[#4f46e5]/10 text-[#4f46e5] border-[#4f46e5]/20 dark:bg-[#6366f1]/20 dark:text-[#a5b4fc] dark:border-[#6366f1]/30";
@@ -1073,8 +1115,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   }
 
                   const d1 = new Date(tx.createdAt).toDateString();
-                  const prevD = index > 0 ? new Date(filteredTxs[index - 1].createdAt).toDateString() : null;
-                  const showDaySeparator = index === 0 || d1 !== prevD;
+                  const prevD = index > 0 ? new Date(sortedFilteredTxs[index - 1].createdAt).toDateString() : null;
+                  const showDaySeparator = !isExpense && (index === 0 || d1 !== prevD || (index > 0 && sortedFilteredTxs[index - 1].kind === "expense"));
 
                   return (
                     <React.Fragment key={tx.id}>
@@ -1096,8 +1138,6 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                         </div>
                       )}
 
-
-
                       <div 
                         className={`p-3 md:p-4 rounded-2xl transition flex flex-col gap-2 md:gap-3 shadow-sm border-2 ${containerClasses} ${
                           tx.orderId ? "cursor-pointer hover:scale-[1.005] active:scale-[0.995] transition-transform" : ""
@@ -1109,14 +1149,26 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                         }}
                         title={tx.orderId ? "انقر لفتح تفاصيل الطلبية" : undefined}
                       >
+                        {/* شريط تمييز عريض للمعاملات المصروفات المثبتة بالقمة */}
+                        {isExpense && (
+                          <div className="flex items-center justify-between text-[11px] font-black text-sky-900 dark:text-sky-300 bg-sky-100/90 dark:bg-sky-950/70 px-3 py-1 rounded-xl border border-sky-300/80 dark:border-sky-800/60">
+                            <span className="flex items-center gap-1.5">
+                              📌 <span>معاملة مصروفات (طلب/مسواق شخصي) — مثبتة في بداية دفتر الديون</span>
+                            </span>
+                            <span className="text-[10px] text-sky-800 dark:text-sky-400 font-black">
+                              تظهر بالقمة دائماً
+                            </span>
+                          </div>
+                        )}
+
                         {/* السطر الأول: أزرار الحالة، التاريخ، الباقي، وإجراءات التحكم */}
                         <div className="flex flex-wrap items-center justify-between gap-1.5 md:gap-3 w-full" dir="rtl">
                         
-                          {/* الجهة اليمنى: زر أخذت/أعطيت + التاريخ والوقت + الرصيد المتبقي (الباقي) */}
+                          {/* الجهة اليمنى: زر أخذت/أعطيت/مصروفات + التاريخ والوقت + الرصيد المتبقي (الباقي) */}
                           <div className="flex flex-wrap items-center gap-1.5 md:gap-2.5">
-                            {/* زر أخذت / أعطيت */}
+                            {/* زر أخذت / أعطيت / مصروفات */}
                             <span className={`text-[11px] md:text-sm font-black px-2.5 py-1 md:px-4 md:py-2 rounded-lg md:rounded-xl border ${tagClasses}`}>
-                              {tx.kind === "gave" ? "أعطيت" : "أخذت"} {formatDinarAsAlfWithUnit(tx.amount)}
+                              {isExpense ? "📦 مصروفات" : tx.kind === "gave" ? "أعطيت" : "أخذت"} {formatDinarAsAlfWithUnit(tx.amount)}
                             </span>
 
                             {/* التاريخ والوقت (مخفي في الهاتف ليظهر بالأسفل) */}
@@ -1128,13 +1180,25 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                             <span className={`text-[10px] md:text-xs font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl border ${
                               isTransfer 
                                 ? "bg-white/10 text-white border-white/10" 
-                                : tx.runningBalance > 0
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
-                                  : tx.runningBalance < 0
-                                    ? "bg-rose-50 text-rose-800 border-rose-200/80"
-                                    : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
+                                : isExpense
+                                  ? partner.balance > 0
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-black"
+                                    : partner.balance < 0
+                                      ? "bg-rose-50 text-rose-800 border-rose-300 font-black"
+                                      : "bg-slate-100 text-slate-700 border-slate-300 font-black"
+                                  : tx.runningBalance > 0
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
+                                    : tx.runningBalance < 0
+                                      ? "bg-rose-50 text-rose-800 border-rose-200/80"
+                                      : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
                             }`}>
-                              الرصيد حينها: <span className="tabular-nums font-black">{tx.runningBalance > 0 ? "+" : ""}{tx.runningBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? "(نطلبه)" : tx.runningBalance < 0 ? "(يطلبنا)" : "(مصفّر)"}</span>
+                              {isExpense ? "المتبقي الحالي: " : "الرصيد حينها: "}
+                              <span className="tabular-nums font-black">
+                                {(() => {
+                                  const displayBal = isExpense ? partner.balance : tx.runningBalance;
+                                  return `${displayBal > 0 ? "+" : ""}${displayBal < 0 ? "-" : ""}${formatDinarAsAlfWithUnit(Math.abs(displayBal))} ${displayBal > 0 ? "(نطلبه)" : displayBal < 0 ? "(يطلبنا)" : "(مصفّر)"}`;
+                                })()}
+                              </span>
                             </span>
 
                             {/* وسم تلقائي في حال كانت حركة من النظام (أيقونة فقط في الهاتف) */}
