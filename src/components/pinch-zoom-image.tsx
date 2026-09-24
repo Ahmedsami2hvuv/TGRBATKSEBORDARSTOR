@@ -36,6 +36,7 @@ export function ImageZoomModal({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // لحفظ القيم أثناء السحب واللمس
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
