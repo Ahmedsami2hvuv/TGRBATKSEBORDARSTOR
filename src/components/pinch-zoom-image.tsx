@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 export function ImageZoomModal({
   imageUrl,
@@ -29,9 +30,11 @@ export function ImageZoomModal({
   revertLabel?: string;
   isReverting?: boolean;
 }) {
-  const finalImageUrl = (imageUrl || src || "").trim();
+  const rawUrl = (imageUrl || src || "").trim();
+  const finalImageUrl = resolvePublicAssetSrc(rawUrl) || rawUrl;
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   
   // لحفظ القيم أثناء السحب واللمس
@@ -58,24 +61,7 @@ export function ImageZoomModal({
     };
   }, [scale]);
 
-  // التحكم بـ زر الرجوع في الهاتف أو المتصفح لإغلاق الصورة فقط دون إغلاق الطلبية
-  useEffect(() => {
-    const stateId = "img-zoom-" + Math.random().toString(36).substring(2, 9);
-    window.history.pushState({ imageZoomModalId: stateId }, "");
 
-    const handlePopState = () => {
-      onClose();
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      if (window.history.state?.imageZoomModalId === stateId) {
-        window.history.back();
-      }
-    };
-  }, [onClose]);
 
   // حساب المسافة بين نقطتين (لمعرفة المسافة بين الإصبعين)
   const getDistance = (touches: React.TouchList) => {
@@ -272,13 +258,28 @@ export function ImageZoomModal({
             transform: `translate3d(${position.x}px, ${position.y}px, 0) scale3d(${scale}, ${scale}, 1)`,
           }}
         >
-          <img
-            ref={imgRef}
-            src={finalImageUrl}
-            alt={title || "معاينة الصورة"}
-            className="max-w-[95vw] max-h-[80vh] object-contain rounded-xl pointer-events-none"
-            draggable={false}
-          />
+          {hasError ? (
+            <div className="p-6 text-center text-white flex flex-col items-center gap-3">
+              <span className="text-4xl">⚠️</span>
+              <p className="font-bold text-sm text-slate-200">تعذر تحميل الصورة أو أن مسار الصورة غير متوفر حالياً.</p>
+              <button
+                type="button"
+                onClick={() => setHasError(false)}
+                className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs hover:bg-amber-400 transition"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          ) : (
+            <img
+              ref={imgRef}
+              src={finalImageUrl}
+              alt={title || "معاينة الصورة"}
+              className="max-w-[95vw] max-h-[80vh] object-contain rounded-xl pointer-events-none"
+              draggable={false}
+              onError={() => setHasError(true)}
+            />
+          )}
         </div>
         
         {/* شريط معلومات رافع الصورة والعنوان وأسفل الشاشة */}

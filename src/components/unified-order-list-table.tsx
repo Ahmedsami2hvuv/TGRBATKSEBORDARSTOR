@@ -943,7 +943,7 @@ export function UnifiedOrderListTable({
       </table>
       {modalImg && (
         <ImageZoomModal
-          imageUrl={resolvePublicAssetSrc(modalImg.url) || modalImg.url}
+          imageUrl={modalImg.url}
           title={modalImg.title}
           onClose={() => setModalImg(null)}
         />
