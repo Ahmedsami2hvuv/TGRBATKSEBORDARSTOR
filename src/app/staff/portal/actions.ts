@@ -12,6 +12,7 @@ import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
+import { getSystemDoubleOrderShopId } from "@/lib/double-order-shop";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -273,7 +274,6 @@ export async function submitStaffDoubleOrder(
   const bPhone = normalizeIraqMobileLocal11(buyerPhone);
   if (!sPhone || !bPhone) return { error: "أرقام الهاتف غير صالحة." };
 
-  // Fetch profiles on server for extra reliability if client-side didn't provide them
   const [sProf, bProf] = await Promise.all([
     prisma.customerPhoneProfile.findUnique({
       where: { phone_regionId: { phone: sPhone, regionId: sellerRegionId } }
@@ -283,7 +283,6 @@ export async function submitStaffDoubleOrder(
     })
   ]);
 
-  // Merge Data: Priority to manual input, fallback to stored profile
   const finalSellerLandmark = sellerLandmark || sProf?.landmark || "";
   const finalSellerLoc = sellerLocationUrl || sProf?.locationUrl || "";
   const finalSellerPhoto = sProf?.photoUrl || null;
@@ -314,14 +313,10 @@ export async function submitStaffDoubleOrder(
   const totalAmount = sellerAmount + profit + deliveryPrice;
 
   try {
-    const doubleShop = await prisma.shop.findFirst({
-      where: { name: { contains: "وجهتين" } }
-    }) || await prisma.shop.findFirst();
-
-    if (!doubleShop) return { error: "لا يوجد محل معرف في النظام لاستقبال الطلب." };
+    const systemShopId = await getSystemDoubleOrderShopId();
 
     const sellerCustomerRow = await upsertCustomerByPhone({
-      shopId: doubleShop.id,
+      shopId: systemShopId,
       phone: sPhone,
       regionId: sellerRegionId,
       locationUrl: finalSellerLoc,
@@ -331,7 +326,7 @@ export async function submitStaffDoubleOrder(
     });
 
     await upsertCustomerByPhone({
-      shopId: doubleShop.id,
+      shopId: systemShopId,
       phone: bPhone,
       regionId: buyerRegionId,
       locationUrl: finalBuyerLoc,
@@ -341,7 +336,7 @@ export async function submitStaffDoubleOrder(
 
     const order = await prisma.order.create({
       data: {
-        shop: { connect: { id: doubleShop.id } },
+        shop: { connect: { id: systemShopId } },
         customer: sellerCustomerRow.id ? { connect: { id: sellerCustomerRow.id } } : undefined,
         routeMode: "double",
         orderType: orderType,
@@ -366,7 +361,6 @@ export async function submitStaffDoubleOrder(
         adminOrderCode: orderNoteText,
         submissionSource: "staff_portal",
         summary: `طلب وجهتين (${orderType}): من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
-        // تخزين بيانات الربح والموظف في حقل JSON
         preparerShoppingJson: {
           staffId: staff.id,
           staffProfit: profit,
@@ -378,7 +372,6 @@ export async function submitStaffDoubleOrder(
     await syncPhoneProfileFromOrder(order.id);
     await syncSecondPhoneProfileFromOrder(order.id);
 
-    // إشعار الإدارة بطلب جديد
     void notifyTelegramNewOrder(order.id).catch(err => console.error("Telegram notify failed:", err));
 
     revalidatePath("/staff/portal/submitted");
