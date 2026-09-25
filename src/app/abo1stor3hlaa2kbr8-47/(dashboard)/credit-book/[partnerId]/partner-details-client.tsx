@@ -1177,6 +1177,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
                 {displayTxs.map((tx, index) => {
                   const notesLower = tx.note?.toLowerCase() || "";
+                  const isExpense = tx.kind === "expense" || notesLower.includes("[مصروفات]") || notesLower.includes("مصروفات");
                   const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
                   const isTransfer = notesLower.includes("تحويل");
                   const isDebt = notesLower.includes("دين");
