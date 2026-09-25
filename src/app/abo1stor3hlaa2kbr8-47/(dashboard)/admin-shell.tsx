@@ -668,7 +668,7 @@ export function AdminShell({
             </div>
          </header>
 
-        <main className="w-full flex-1 px-2 py-6 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="w-full flex-1 px-1 py-3 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1400px]">
             {/* The inner children wrapper is totally transparent so dashboard grid displays natively */}
             <div className="relative z-10 w-full h-full">
