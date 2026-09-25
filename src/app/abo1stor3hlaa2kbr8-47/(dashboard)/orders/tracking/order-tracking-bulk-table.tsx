@@ -983,26 +983,26 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] px-3.5 sm:px-6 pt-3.5 pb-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2.5 sm:gap-3 bg-transparent bg-no-repeat bg-[length:100%_100%] w-full ${
+                    className={`group relative rounded-[20px] px-3.5 sm:px-5 py-2.5 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full h-[218px] sm:h-[230px] max-w-[430px] mx-auto ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "235px",
+                      height: "218px",
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full">
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 min-w-0 w-full shrink-0">
                       {/* اليمين: بلوك اسم المحل (متوسط الكرت ومحمي من خروج النص) */}
-                      <div className="relative flex-1 min-w-0 max-w-[70%] sm:max-w-[76%]">
+                      <div className="relative flex-1 min-w-0 max-w-[70%] sm:max-w-[75%]">
                         <div
-                          className="w-full h-11 sm:h-12 rounded-full flex items-center justify-center px-3 sm:px-5 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                          className="w-full h-[46px] sm:h-[50px] rounded-full flex items-center justify-center px-3.5 sm:px-5 mr-0.5 sm:mr-1 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
                             backgroundImage: `url('${headerWebpBg}')`,
                           }}
                         >
                           <span
-                            className="font-black text-[12px] sm:text-sm leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
+                            className="font-black text-[12.5px] sm:text-[14px] leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
                             style={{
                               color: "#FFFFFF",
                               textShadow: "0 1px 3px rgba(0,0,0,0.9)",
@@ -1029,7 +1029,7 @@ function TrackingCardsView({
                         <div className="relative shrink-0">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص متمركز وكبير في قلبها */}
                           <div
-                            className="min-w-[76px] sm:min-w-[92px] h-10.5 sm:h-12 px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
+                            className="min-w-[80px] sm:min-w-[92px] h-[46px] sm:h-[50px] px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-[18px] sm:text-[21px] tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
@@ -1045,11 +1045,11 @@ function TrackingCardsView({
                     </div>
 
                     {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع وضع الصادر والوارد بجانبيها وكبسولات آمنة للبضاعة والوقت */}
-                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto py-1 px-0.5 sm:px-1 w-full min-h-[72px] sm:min-h-[82px]">
+                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto px-0.5 sm:px-1 w-full h-[74px] shrink-0">
                       {/* النص الأيمن (نوع البضاعة داخل كبسولة أنيقة مؤطرة داخل الإطار) */}
                       <div className="flex items-center justify-start flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
-                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                          <span className="text-[10.5px] sm:text-xs font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
+                        <div className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
+                          <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
                             {displayGoodsType}
                           </span>
                         </div>
@@ -1064,7 +1064,7 @@ function TrackingCardsView({
 
                         {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
                         <div
-                          className="w-17 h-17 sm:w-19 sm:h-19 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
+                          className="w-[74px] h-[74px] sm:w-[80px] sm:h-[80px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
@@ -1088,12 +1088,12 @@ function TrackingCardsView({
                             <span
                               className={`${
                                 numericPrice.length >= 5
-                                  ? "text-[17px] sm:text-[20px]"
+                                  ? "text-[18px] sm:text-[21px]"
                                   : numericPrice.length >= 4
-                                  ? "text-[21px] sm:text-[25px]"
+                                  ? "text-[22px] sm:text-[26px]"
                                   : numericPrice.length === 3
-                                  ? "text-[26px] sm:text-[30px]"
-                                  : "text-[32px] sm:text-[38px]"
+                                  ? "text-[27px] sm:text-[32px]"
+                                  : "text-[34px] sm:text-[40px]"
                               } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
                               style={{
                                 color: "#F5D77F",
@@ -1112,8 +1112,8 @@ function TrackingCardsView({
 
                       {/* النص الأيسر (وقت الطلب داخل كبسولة عنابية أنيقة مؤطرة داخل الإطار) */}
                       <div className="flex items-center justify-end flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
-                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                          <span className="text-[10px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
+                        <div className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
+                          <span className="text-[10.5px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
                             {o.orderNoteTime || "فوري"}
                           </span>
                         </div>
@@ -1121,10 +1121,10 @@ function TrackingCardsView({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً في سطر واحد بدون التفاف */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 sm:gap-2 pt-0.5 w-full">
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 w-full shrink-0">
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
-                        className="flex items-center gap-0.5 sm:gap-1.5 rounded-full px-1.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-8.5 sm:h-10 shrink min-w-0 mr-0.5"
+                        className="flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-[42px] sm:h-[46px] shrink min-w-0 mr-0.5"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
@@ -1134,16 +1134,16 @@ function TrackingCardsView({
                           <a
                             href={`tel:${o.customerPhone}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
+                            className="w-7 h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
                             title={`اتصال بالزبون: ${o.customerPhone}`}
                           />
                         ) : (
-                          <div className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
+                          <div className="w-7 h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
                         )}
 
                         {/* 2. رقم هاتف الزبون */}
                         <div className="flex items-center px-0.5 min-w-0 truncate">
-                          <span className="text-[10px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all truncate">
+                          <span className="text-[10.5px] sm:text-[12px] font-mono font-black text-slate-900 tracking-tight select-all truncate">
                             {o.customerPhone || "—"}
                           </span>
                         </div>
@@ -1156,7 +1156,7 @@ function TrackingCardsView({
                           />
                         ) : (
                           <div
-                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                            className="w-6 h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-no-location.webp?v=royalLocV2')",
                             }}
@@ -1169,7 +1169,7 @@ function TrackingCardsView({
                           <Link
                             href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
+                            className="w-7 h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/1789252908710.webp?v=royal3D')",
                             }}
@@ -1181,7 +1181,7 @@ function TrackingCardsView({
                         <Link
                           href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
+                          className="w-7 h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                           style={{
                             backgroundImage: "url('/images/order-luxury/btn-edit.webp?v=royal3D')",
                           }}
@@ -1196,7 +1196,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onRejectOrder(o);
                             }}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
+                            className="w-7 h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-reject.webp?v=royal3D')",
                             }}
@@ -1210,7 +1210,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onRestoreOrder(o);
                             }}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
+                            className="w-7 h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-restore.webp?v=royal3D')",
                             }}
@@ -1220,7 +1220,7 @@ function TrackingCardsView({
                       </div>
 
                       {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم ومسحوبة لليمين */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 ml-0.5 shrink-0">
+                      <div className="flex items-center gap-1.5 ml-0.5 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -1229,7 +1229,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminPickup(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-[50px] h-[50px] sm:w-[54px] sm:h-[54px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -1245,7 +1245,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminDelivery(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-[50px] h-[50px] sm:w-[54px] sm:h-[54px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -1261,7 +1261,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAssignOrder(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-[50px] h-[50px] sm:w-[54px] sm:h-[54px] rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1270,7 +1270,7 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[10px] sm:text-xs max-w-[44px] sm:max-w-[54px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
+                              <span className="text-[#FFF8F0] text-[10.5px] sm:text-xs max-w-[46px] sm:max-w-[50px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
                                 {o.courierName}
                               </span>
                             )}
