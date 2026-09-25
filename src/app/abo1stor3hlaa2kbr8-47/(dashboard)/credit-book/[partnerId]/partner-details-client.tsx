@@ -275,6 +275,10 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   // نظام فحص الأخطاء والتسويات (Audit)
   const [showAuditModal, setShowAuditModal] = useState(false);
 
+  // حالة إظهار/إخفاء قائمة المصروفات المخفية في زر
+  const [showExpensesList, setShowExpensesList] = useState(false);
+  const isExpenseAllowed = partner.type !== "customer";
+
   const handleStartEditAdminPayment = (tx: Transaction) => {
     setEditAdminPaymentId(tx.id.replace("auto-payment-", ""));
     setEditAdminPaymentAmount(tx.amount.toString());
@@ -981,7 +985,97 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
         </div>
       )}
 
-      {/* كشف الحساب وتفاصيل المعاملات التاريخية */}
+      {/* 📦 زر وقائمة المصروفات المخفية المعروض فيها إجمالي السعر الكلي للمصروفات */}
+      {isExpenseAllowed && (() => {
+        const expenseTxs = partner.transactions.filter(tx => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
+        if (expenseTxs.length === 0) return null;
+
+        const totalExpenseAmount = expenseTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+
+        return (
+          <div className="bg-sky-50/80 dark:bg-sky-950/40 border-2 border-sky-300/80 dark:border-sky-800/60 rounded-3xl p-4 shadow-sm text-right animate-in fade-in duration-200">
+            <button
+              type="button"
+              onClick={() => setShowExpensesList(!showExpensesList)}
+              className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-right group focus:outline-none"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-2 bg-sky-200/70 dark:bg-sky-900/70 rounded-2xl border border-sky-300/80">📦</span>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-black text-sky-950 dark:text-sky-100">
+                      قائمة المصروفات ({expenseTxs.length})
+                    </h3>
+                    <span className="px-3 py-1 bg-sky-600 text-white font-black text-xs rounded-xl shadow-xs tabular-nums">
+                      إجمالي المصروفات الكلي: {formatDinarAsAlfWithUnit(totalExpenseAmount)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-sky-700 dark:text-sky-300 font-bold mt-0.5">
+                    انقر هنا {showExpensesList ? "لإخفاء" : "لفتح واستعراض"} تفاصيل المصروفات والطلبات الشخصية.
+                  </p>
+                </div>
+              </div>
+              <span className="px-4 py-2 bg-sky-200/90 dark:bg-sky-900/90 text-sky-950 dark:text-sky-100 text-xs font-black rounded-2xl border border-sky-300/80 shrink-0 self-end sm:self-auto group-hover:bg-sky-300 transition">
+                {showExpensesList ? "🔼 إخفاء المصروفات" : "🔽 فتح وعرض المصروفات"}
+              </span>
+            </button>
+
+            {/* تفاصيل قائمة المصروفات القابلة للإظهار والإخفاء */}
+            {showExpensesList && (
+              <div className="mt-4 pt-4 border-t border-sky-200/80 dark:border-sky-900/60 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                {expenseTxs.map((tx) => (
+                  <div key={tx.id} className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border-2 border-sky-200 dark:border-sky-900 shadow-2xs flex flex-col gap-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2" dir="rtl">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-3 py-1 bg-sky-600 text-white text-xs font-black rounded-xl shadow-xs">
+                          📦 مصروفات {formatDinarAsAlfWithUnit(tx.amount)}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">
+                          {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      
+                      {!tx.isAuto && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleStartEdit(tx)}
+                            className="px-2.5 py-1 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition"
+                          >
+                            ✏️ تعديل
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTx(tx.id)}
+                            className="px-2.5 py-1 text-xs font-black text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition"
+                          >
+                            🗑️ حذف
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed text-right">
+                      تفاصيل الطلب/المسواق: {tx.note || "بدون تفاصيل"}
+                    </p>
+
+                    {tx.imageUrl && (
+                      <div className="mt-1 text-right">
+                        <img
+                          src={tx.imageUrl}
+                          alt="صورة المصروفات"
+                          className="max-h-24 rounded-xl border border-slate-200 object-contain cursor-zoom-in"
+                          onClick={() => window.open(tx.imageUrl!, "_blank")}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* كشف الحساب وتفاصيل المعاملات التاريخية العادية */}
       <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 p-6 rounded-3xl shadow-sm text-right space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h3 className="text-md font-black text-slate-800 dark:text-slate-200">📄 كشف المعاملات التاريخية</h3>
@@ -1068,20 +1162,21 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
 
-            if (filteredTxs.length === 0) {
+            // تصفية المعاملات العادية للكشف الرئيسي (إخفاء المصروفات من القائمة العادية لأنها محفوظة ومجمعة بداخل زر المصروفات أعلاه)
+            const displayTxs = filteredTxs.filter(tx => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+
+            if (displayTxs.length === 0 && filteredTxs.length > 0) {
+              return <div className="py-10 text-center text-sky-700 dark:text-sky-300 font-bold bg-sky-50/50 rounded-2xl border border-sky-100">المعاملات المسجلة لهذا الحساب هي مصروفات فقط، وهي محفوظة بداخل زر "قائمة المصروفات" أعلى الكشف.</div>;
+            }
+
+            if (displayTxs.length === 0) {
               return <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مطابقة لمصطلح البحث.</div>;
             }
 
-            // فصل وتثبيت معاملات المصروفات في قمة الكشف (Pinned at top)
-            const pinnedTxs = filteredTxs.filter(tx => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
-            const normalTxs = filteredTxs.filter(tx => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
-            const sortedFilteredTxs = [...pinnedTxs, ...normalTxs];
-
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
-                {sortedFilteredTxs.map((tx, index) => {
+                {displayTxs.map((tx, index) => {
                   const notesLower = tx.note?.toLowerCase() || "";
-                  const isExpense = tx.kind === "expense" || notesLower.includes("[مصروفات]") || notesLower.includes("مصروفات");
                   const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
                   const isTransfer = notesLower.includes("تحويل");
                   const isDebt = notesLower.includes("دين");
@@ -1089,34 +1184,26 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   let containerClasses = "";
                   let tagClasses = "";
 
-                  if (isExpense) {
-                    // أزرق سماوي/مائي أنيق وفاخر للمصروفات المثبتة بالقمة
-                    containerClasses = "border-2 border-sky-500 bg-gradient-to-r from-sky-100/90 via-sky-50/40 to-white hover:from-sky-200/90 hover:via-sky-50/50 hover:to-white/95 dark:from-sky-950/50 dark:to-slate-950 text-sky-950 dark:text-sky-200 ring-2 ring-sky-400/40 shadow-md";
-                    tagClasses = "bg-sky-600 text-white border-sky-600 dark:bg-sky-700 dark:border-sky-700 font-black shadow-sm";
-                  } else if (isSalary) {
-                    // أزرق متدرج للأبيض مثل محفظة المجهز تماماً
+                  if (isSalary) {
                     containerClasses = "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/35 via-[#c7d2fe]/10 to-white hover:from-[#818cf8]/45 hover:via-[#c7d2fe]/20 hover:to-white/95 dark:from-[#2e2a72]/40 dark:to-[#0b0b1a] dark:border-[#6366f1] text-[#1e1b4b] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/40";
                     tagClasses = "bg-[#4f46e5]/10 text-[#4f46e5] border-[#4f46e5]/20 dark:bg-[#6366f1]/20 dark:text-[#a5b4fc] dark:border-[#6366f1]/30";
                   } else if (isDebt) {
                     containerClasses = "border-yellow-500 bg-yellow-50/60 hover:bg-yellow-100/70 dark:bg-yellow-950/20 dark:border-yellow-900 text-yellow-950 dark:text-yellow-250 ring-2 ring-yellow-400/60";
                     tagClasses = "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-350 dark:border-yellow-900";
                   } else if (isTransfer) {
-                    // بنفسجي غامق مثل زر التحويل في المحفظة
                     containerClasses = "border-violet-700 bg-violet-600 text-white hover:bg-violet-650/95 dark:bg-violet-900 dark:border-violet-800 dark:text-violet-100 ring-2 ring-violet-500/30";
                     tagClasses = "bg-white/20 text-white border-white/25 dark:bg-violet-950/40 dark:text-violet-350 dark:border-violet-900";
                   } else if (tx.kind === "gave") {
-                    // أخضر واضح مميز
                     containerClasses = "border-2 border-emerald-500 bg-gradient-to-r from-emerald-100/65 via-emerald-50/20 to-white hover:from-emerald-200/70 hover:via-emerald-50/30 hover:to-white/95 dark:from-emerald-950/40 dark:to-slate-950 text-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-400/20";
                     tagClasses = "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-700 dark:border-emerald-700 font-black shadow-sm";
                   } else {
-                    // أحمر واضح مميز
                     containerClasses = "border-2 border-rose-500 bg-gradient-to-r from-rose-100/65 via-rose-50/20 to-white hover:from-rose-200/70 hover:via-rose-50/30 hover:to-white/95 dark:from-rose-950/40 dark:to-slate-950 text-rose-950 dark:text-red-350 ring-2 ring-rose-400/20";
                     tagClasses = "bg-rose-600 text-white border-rose-600 dark:bg-rose-700 dark:border-rose-700 font-black shadow-sm";
                   }
 
                   const d1 = new Date(tx.createdAt).toDateString();
-                  const prevD = index > 0 ? new Date(sortedFilteredTxs[index - 1].createdAt).toDateString() : null;
-                  const showDaySeparator = !isExpense && (index === 0 || d1 !== prevD || (index > 0 && sortedFilteredTxs[index - 1].kind === "expense"));
+                  const prevD = index > 0 ? new Date(displayTxs[index - 1].createdAt).toDateString() : null;
+                  const showDaySeparator = index === 0 || d1 !== prevD;
 
                   return (
                     <React.Fragment key={tx.id}>
