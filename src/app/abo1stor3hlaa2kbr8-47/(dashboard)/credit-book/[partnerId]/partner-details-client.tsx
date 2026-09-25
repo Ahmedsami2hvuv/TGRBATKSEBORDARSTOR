@@ -985,7 +985,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
         </div>
       )}
 
-      {/* 📦 زر وقائمة المصروفات المخفية المعروض فيها إجمالي السعر الكلي للمصروفات */}
+      {/* 📦 زر المصروفات المختصر الجذاب */}
       {isExpenseAllowed && (() => {
         const expenseTxs = partner.transactions.filter(tx => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
         if (expenseTxs.length === 0) return null;
@@ -993,59 +993,49 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
         const totalExpenseAmount = expenseTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
 
         return (
-          <div className="bg-sky-50/80 dark:bg-sky-950/40 border-2 border-sky-300/80 dark:border-sky-800/60 rounded-3xl p-4 shadow-sm text-right animate-in fade-in duration-200">
+          <div className="bg-sky-50/90 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-800 rounded-2xl p-3 shadow-sm text-right animate-in fade-in duration-200">
             <button
               type="button"
               onClick={() => setShowExpensesList(!showExpensesList)}
-              className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-right group focus:outline-none"
+              className="w-full flex items-center justify-between font-black text-sm text-sky-950 dark:text-sky-100 hover:text-sky-700 transition cursor-pointer"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl p-2 bg-sky-200/70 dark:bg-sky-900/70 rounded-2xl border border-sky-300/80">📦</span>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-black text-sky-950 dark:text-sky-100">
-                      قائمة المصروفات ({expenseTxs.length})
-                    </h3>
-                    <span className="px-3 py-1 bg-sky-600 text-white font-black text-xs rounded-xl shadow-xs tabular-nums">
-                      إجمالي المصروفات الكلي: {formatDinarAsAlfWithUnit(totalExpenseAmount)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-sky-700 dark:text-sky-300 font-bold mt-0.5">
-                    انقر هنا {showExpensesList ? "لإخفاء" : "لفتح واستعراض"} تفاصيل المصروفات والطلبات الشخصية.
-                  </p>
-                </div>
+              <div className="flex items-center gap-2">
+                <span>📦 المصروفات:</span>
+                <span className="text-sky-700 dark:text-sky-300 font-mono text-base font-black">
+                  {formatDinarAsAlfWithUnit(totalExpenseAmount)}
+                </span>
               </div>
-              <span className="px-4 py-2 bg-sky-200/90 dark:bg-sky-900/90 text-sky-950 dark:text-sky-100 text-xs font-black rounded-2xl border border-sky-300/80 shrink-0 self-end sm:self-auto group-hover:bg-sky-300 transition">
-                {showExpensesList ? "🔼 إخفاء المصروفات" : "🔽 فتح وعرض المصروفات"}
+              <span className="text-base px-2 py-1 bg-sky-200/80 dark:bg-sky-900/80 rounded-xl border border-sky-300/70">
+                {showExpensesList ? "👆 إخفاء" : "👈 فتح"}
               </span>
             </button>
 
-            {/* تفاصيل قائمة المصروفات القابلة للإظهار والإخفاء */}
+            {/* تفاصيل قائمة المصروفات عند النقر على الزر */}
             {showExpensesList && (
-              <div className="mt-4 pt-4 border-t border-sky-200/80 dark:border-sky-900/60 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="mt-3 pt-3 border-t border-sky-200/80 dark:border-sky-900/60 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
                 {expenseTxs.map((tx) => (
-                  <div key={tx.id} className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border-2 border-sky-200 dark:border-sky-900 shadow-2xs flex flex-col gap-2.5">
+                  <div key={tx.id} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-sky-200 dark:border-sky-900 shadow-2xs flex flex-col gap-2">
                     <div className="flex flex-wrap items-center justify-between gap-2" dir="rtl">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-3 py-1 bg-sky-600 text-white text-xs font-black rounded-xl shadow-xs">
-                          📦 مصروفات {formatDinarAsAlfWithUnit(tx.amount)}
+                        <span className="px-2.5 py-0.5 bg-sky-600 text-white text-xs font-black rounded-lg shadow-xs">
+                          📦 {formatDinarAsAlfWithUnit(tx.amount)}
                         </span>
-                        <span className="text-xs font-bold text-slate-400">
+                        <span className="text-[11px] font-bold text-slate-400">
                           {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                       
                       {!tx.isAuto && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleStartEdit(tx)}
-                            className="px-2.5 py-1 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition"
+                            className="px-2 py-0.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
                           >
                             ✏️ تعديل
                           </button>
                           <button
                             onClick={() => handleDeleteTx(tx.id)}
-                            className="px-2.5 py-1 text-xs font-black text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition"
+                            className="px-2 py-0.5 text-xs font-black text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition"
                           >
                             🗑️ حذف
                           </button>
@@ -1053,8 +1043,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                       )}
                     </div>
 
-                    <p className="text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed text-right">
-                      تفاصيل الطلب/المسواق: {tx.note || "بدون تفاصيل"}
+                    <p className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 leading-relaxed text-right">
+                      {tx.note || "بدون تفاصيل"}
                     </p>
 
                     {tx.imageUrl && (
@@ -1062,7 +1052,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                         <img
                           src={tx.imageUrl}
                           alt="صورة المصروفات"
-                          className="max-h-24 rounded-xl border border-slate-200 object-contain cursor-zoom-in"
+                          className="max-h-20 rounded-lg border border-slate-200 object-contain cursor-zoom-in"
                           onClick={() => window.open(tx.imageUrl!, "_blank")}
                         />
                       </div>
