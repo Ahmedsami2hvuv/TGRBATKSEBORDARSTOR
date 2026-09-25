@@ -131,7 +131,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }
         `}} />
         {/* التحميل المسبق والتكييش الدائم لكافة عناصر وأزرار كروت الطلبات الفاخرة لضمان فتح فوري دون وميض في الـ APK */}
-        <link rel="preload" href="/images/order-luxury/order-card-frame.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/order-card-frame-edge-v2.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/order-number-bg.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/price-circle.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/customer-phone-pill.webp" as="image" type="image/webp" />

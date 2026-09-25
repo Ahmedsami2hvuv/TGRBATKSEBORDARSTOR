@@ -868,10 +868,10 @@ function TrackingCardsView({
 
   const gridColsClass =
     columns === 1
-      ? "grid grid-cols-1 gap-2.5 w-full -mx-1 sm:mx-auto max-sm:w-[calc(100%+0.5rem)]"
+      ? "grid grid-cols-1 gap-2.5 w-full -mx-1.5 sm:mx-auto max-sm:w-[calc(100%+0.75rem)]"
       : columns === 2
-      ? "grid grid-cols-1 md:grid-cols-2 gap-3 w-full -mx-1 sm:mx-auto max-sm:w-[calc(100%+0.5rem)] max-w-5xl"
-      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 w-full -mx-1 sm:mx-auto max-sm:w-[calc(100%+0.5rem)] max-w-7xl";
+      ? "grid grid-cols-1 md:grid-cols-2 gap-3 w-full -mx-1.5 sm:mx-auto max-sm:w-[calc(100%+0.75rem)] max-w-5xl"
+      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 w-full -mx-1.5 sm:mx-auto max-sm:w-[calc(100%+0.75rem)] max-w-7xl";
 
   // تجميع الطلبات حسب اليوم بالتاريخ البغدادي الدقيق
   const groupedByDate: { dateKey: string; dateLabel: string; items: TrackingTableRow[] }[] = [];
@@ -991,7 +991,9 @@ function TrackingCardsView({
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
-                      backgroundImage: "url('/images/order-luxury/order-card-frame.webp?v=fullEdge')",
+                      backgroundImage: "url('/images/order-luxury/order-card-frame-edge-v2.webp')",
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة على نفس الخط */}
