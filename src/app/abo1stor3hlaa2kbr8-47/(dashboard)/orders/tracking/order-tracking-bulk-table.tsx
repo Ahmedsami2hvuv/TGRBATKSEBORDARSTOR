@@ -983,20 +983,20 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] px-4 sm:px-6 pt-3.5 pb-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-1.5 sm:gap-2 bg-transparent bg-no-repeat bg-[length:100%_100%] w-full ${
+                    className={`group relative rounded-[20px] px-3.5 sm:px-5 py-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full min-h-[210px] sm:min-h-[220px] select-none ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "220px",
+                      minHeight: "215px",
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full">
-                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
-                      <div className="relative flex-1 min-w-0 max-w-[68%] sm:max-w-[74%]">
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0 h-11 sm:h-12">
+                      {/* اليمين: بلوك اسم المحل */}
+                      <div className="relative flex-1 min-w-0 h-full">
                         <div
-                          className="w-full h-11 sm:h-12.5 rounded-full flex items-center justify-center px-3 sm:px-6 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                          className="w-full h-full rounded-full flex items-center justify-center px-3 sm:px-5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
                             backgroundImage: `url('${headerWebpBg}')`,
                           }}
@@ -1015,7 +1015,7 @@ function TrackingCardsView({
                       </div>
 
                       {/* اليسار: كبسولة رقم الطلب المكيشة + مربع الاختيار في أقصى اليسار */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-0.5 sm:ml-1">
+                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 h-full">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
@@ -1026,10 +1026,10 @@ function TrackingCardsView({
                           />
                         )}
 
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 h-full">
                           {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص متمركز وكبير في قلبها */}
                           <div
-                            className="min-w-[76px] sm:min-w-[92px] h-10.5 sm:h-12 px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
+                            className="min-w-[74px] sm:min-w-[86px] h-full px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
                             style={{
                               backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
                               color: "#F5D77F",
@@ -1044,12 +1044,12 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع وضع الصادر والوارد بجانبيها وكبسولات آمنة للبضاعة والوقت */}
-                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 -mt-2 sm:-mt-3 py-0 px-0.5 sm:px-1 w-full min-h-[70px] sm:min-h-[80px]">
+                    {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع كبسولات آمنة للبضاعة والوقت بدون هوامش سالبة */}
+                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto px-0.5 sm:px-1 w-full min-h-[66px] sm:min-h-[74px]">
                       {/* النص الأيمن (نوع البضاعة داخل كبسولة أنيقة مؤطرة داخل الإطار) */}
                       <div className="flex items-center justify-start flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
                         <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/90 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                          <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
+                          <span className="text-[10.5px] sm:text-xs font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
                             {displayGoodsType}
                           </span>
                         </div>
@@ -1058,13 +1058,13 @@ function TrackingCardsView({
                       {/* حاوية السعر المركزية المثبتة 100% في منتصف الكرت دائماً */}
                       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
                         {/* بلوك الصادر (مثبت على يمين دائرة السعر دون زحزحتها) */}
-                        <div className="absolute right-full mr-1 sm:mr-1.5 pointer-events-auto shrink-0">
+                        <div className="absolute right-full mr-1 pointer-events-auto shrink-0">
                           <OrderSaderSideBadge o={o} />
                         </div>
 
                         {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
                         <div
-                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
+                          className="w-16 h-16 sm:w-18 sm:h-18 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
@@ -1072,13 +1072,13 @@ function TrackingCardsView({
                           {isAllPaid ? (
                             <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
                               <span
-                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 كلشي
                               </span>
                               <span
-                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[11px] sm:text-[13px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 واصل
@@ -1088,12 +1088,12 @@ function TrackingCardsView({
                             <span
                               className={`${
                                 numericPrice.length >= 5
-                                  ? "text-[18px] sm:text-[21px]"
+                                  ? "text-[16px] sm:text-[19px]"
                                   : numericPrice.length >= 4
-                                  ? "text-[22px] sm:text-[26px]"
+                                  ? "text-[20px] sm:text-[24px]"
                                   : numericPrice.length === 3
-                                  ? "text-[27px] sm:text-[32px]"
-                                  : "text-[34px] sm:text-[40px]"
+                                  ? "text-[24px] sm:text-[28px]"
+                                  : "text-[30px] sm:text-[36px]"
                               } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
                               style={{
                                 color: "#F5D77F",
@@ -1105,7 +1105,7 @@ function TrackingCardsView({
                         </div>
 
                         {/* بلوك الوارد (مثبت على يسار دائرة السعر دون زحزحتها) */}
-                        <div className="absolute left-full ml-1 sm:ml-1.5 pointer-events-auto shrink-0">
+                        <div className="absolute left-full ml-1 pointer-events-auto shrink-0">
                           <OrderWardSideBadge o={o} />
                         </div>
                       </div>
@@ -1113,18 +1113,18 @@ function TrackingCardsView({
                       {/* النص الأيسر (وقت الطلب داخل كبسولة عنابية أنيقة مؤطرة داخل الإطار) */}
                       <div className="flex items-center justify-end flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
                         <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                          <span className="text-[10.5px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
+                          <span className="text-[10px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
                             {o.orderNoteTime || "فوري"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً في سطر واحد بدون التفاف */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-2 sm:-mt-3 pt-0 w-full">
-                      {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
+                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً بدون تداخل أو هوامش سالبة */}
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 w-full shrink-0 min-h-[38px] sm:min-h-[42px]">
+                      {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة */}
                       <div
-                        className="flex items-center gap-0.5 sm:gap-1.5 rounded-full px-1.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-8.5 sm:h-10 shrink min-w-0 mr-0.5"
+                        className="flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-9 sm:h-10 shrink min-w-0 flex-1 max-w-[230px] sm:max-w-[250px]"
                         style={{
                           backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
                         }}
@@ -1134,93 +1134,96 @@ function TrackingCardsView({
                           <a
                             href={`tel:${o.customerPhone}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
+                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-0.5"
                             title={`اتصال بالزبون: ${o.customerPhone}`}
                           />
                         ) : (
-                          <div className="w-5.5 h-5.5 sm:w-7 sm:h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full shrink-0 -mr-0.5 opacity-50" />
                         )}
 
                         {/* 2. رقم هاتف الزبون */}
                         <div className="flex items-center px-0.5 min-w-0 truncate">
-                          <span className="text-[10px] sm:text-xs font-mono font-black text-slate-900 tracking-tight select-all truncate">
+                          <span className="text-[10px] sm:text-[11.5px] font-mono font-black text-slate-900 tracking-tight select-all truncate">
                             {o.customerPhone || "—"}
                           </span>
                         </div>
 
-                        {/* 3. زر اللوكيشن 📍 */}
-                        {hasGps ? (
-                          <RedGlassOrbButton3D
-                            href={o.customerLocationUrl || "#"}
-                            title="فتح موقع الزبون 📍"
-                          />
-                        ) : (
-                          <div
-                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-no-location.webp?v=royalLocV2')",
-                            }}
-                            title="الزبون لا يملك لوكيشن ⚠️"
-                          />
-                        )}
+                        {/* 3. أزرار الإجراءات في يسار الكبسولة */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {/* زر اللوكيشن 📍 */}
+                          {hasGps ? (
+                            <RedGlassOrbButton3D
+                              href={o.customerLocationUrl || "#"}
+                              title="فتح موقع الزبون 📍"
+                            />
+                          ) : (
+                            <div
+                              className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
+                              style={{
+                                backgroundImage: "url('/images/order-luxury/btn-no-location.webp?v=royalLocV2')",
+                              }}
+                              title="الزبون لا يملك لوكيشن ⚠️"
+                            />
+                          )}
 
-                        {/* 4. زر تعديل أسعار التجهيز 💰 (يظهر فقط لطلبات التجهيز) */}
-                        {isFromPreparer && (
+                          {/* زر تعديل أسعار التجهيز 💰 */}
+                          {isFromPreparer && (
+                            <Link
+                              href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
+                              style={{
+                                backgroundImage: "url('/images/order-luxury/1789252908710.webp?v=royal3D')",
+                              }}
+                              title="تعديل تفاصيل وأسعار التجهيز 💰"
+                            />
+                          )}
+
+                          {/* زر تعديل الطلب ✏️ */}
                           <Link
-                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
+                            className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/1789252908710.webp?v=royal3D')",
+                              backgroundImage: "url('/images/order-luxury/btn-edit.webp?v=royal3D')",
                             }}
-                            title="تعديل تفاصيل وأسعار التجهيز 💰"
+                            title="تعديل الطلب ✏️"
                           />
-                        )}
 
-                        {/* 5. زر تعديل الطلب ✏️ */}
-                        <Link
-                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/btn-edit.webp?v=royal3D')",
-                          }}
-                          title="تعديل الطلب ✏️"
-                        />
-
-                        {/* 6. زر الرفض / الإرجاع ❌ (أقصى اليسار) */}
-                        {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRejectOrder(o);
-                            }}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-reject.webp?v=royal3D')",
-                            }}
-                            title="رفض الطلب ❌"
-                          />
-                        )}
-                        {onRestoreOrder && isCancelled && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRestoreOrder(o);
-                            }}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-restore.webp?v=royal3D')",
-                            }}
-                            title="إرجاع الطلب المرفوض إلى جديد 🔄"
-                          />
-                        )}
+                          {/* زر الرفض / الإرجاع ❌ */}
+                          {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRejectOrder(o);
+                              }}
+                              className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
+                              style={{
+                                backgroundImage: "url('/images/order-luxury/btn-reject.webp?v=royal3D')",
+                              }}
+                              title="رفض الطلب ❌"
+                            />
+                          )}
+                          {onRestoreOrder && isCancelled && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRestoreOrder(o);
+                              }}
+                              className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
+                              style={{
+                                backgroundImage: "url('/images/order-luxury/btn-restore.webp?v=royal3D')",
+                              }}
+                              title="إرجاع الطلب المرفوض إلى جديد 🔄"
+                            />
+                          )}
+                        </div>
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم ومسحوبة لليمين */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 -translate-y-1 ml-0.5 shrink-0">
+                      {/* الجهة اليسرى: أزرار الاستلام والإسناد متناسقة الحجم وتمنع التكدس */}
+                      <div className="flex items-center gap-1 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -1229,7 +1232,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminPickup(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full text-xs font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
                             }}
@@ -1245,7 +1248,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminDelivery(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full text-xs font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
                             style={{
                               backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
                             }}
@@ -1261,7 +1264,7 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAssignOrder(o);
                             }}
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full text-xs font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
                             style={{
                               backgroundImage: hasAssignedCourier
                                 ? "url('/images/order-luxury/btn-assign-empty.webp')"
@@ -1270,14 +1273,14 @@ function TrackingCardsView({
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[10px] sm:text-xs max-w-[44px] sm:max-w-[54px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
+                              <span className="text-[#FFF8F0] text-[9.5px] sm:text-[10px] max-w-[34px] sm:max-w-[40px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
                                 {o.courierName}
                               </span>
                             )}
                           </button>
                         )}
 
-                        {/* زر/شارة طلب عكسي 🔄 يظهر فقط للطلبات العكسية */}
+                        {/* زر/شارة طلب عكسي 🔄 */}
                         {isReverse && (
                           <LuxuryReverseOrderButton
                             orderId={o.id}
@@ -1290,8 +1293,8 @@ function TrackingCardsView({
                         {/* زر وجهتين 📦➔ */}
                         {isDoubleRoute && (
                           <div onClick={(e) => e.stopPropagation()}>
-                            <GlassOrbButton3D title="طلب وجهتين" size="lg">
-                              <span className="text-sm">📦➔</span>
+                            <GlassOrbButton3D title="طلب وجهتين" size="sm">
+                              <span className="text-xs">📦➔</span>
                             </GlassOrbButton3D>
                           </div>
                         )}
