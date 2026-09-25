@@ -548,13 +548,13 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      className="w-12 h-7.5 sm:w-13.5 sm:h-8.5 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
       style={{
         backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-sader.webp" : "/images/order-luxury/badge-sader.webp"}')`,
       }}
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[9.5px] sm:text-[11px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
         {text}
       </span>
     </div>
@@ -594,13 +594,13 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
+      className="w-12 h-7.5 sm:w-13.5 sm:h-8.5 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
       style={{
         backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-ward.webp" : "/images/order-luxury/badge-ward.webp"}')`,
       }}
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[9.5px] sm:text-[11px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
         {text}
       </span>
     </div>
@@ -983,26 +983,26 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] px-4 sm:px-6 pt-3.5 pb-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-1.5 sm:gap-2 bg-transparent bg-no-repeat bg-[length:100%_100%] w-full ${
+                    className={`group relative rounded-[20px] px-3.5 sm:px-6 pt-3.5 pb-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between gap-2.5 sm:gap-3 bg-transparent bg-no-repeat bg-[length:100%_100%] w-full ${
                       selected ? "ring-2 ring-[#0A3D2E]" : ""
                     }`}
                     style={{
                       backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                      minHeight: "220px",
+                      minHeight: "235px",
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة */}
                     <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full">
-                      {/* اليمين: بلوك اسم المحل (مزاح لليسار ومنزل للأسفل ليتوسط الكرت ومحمي من خروج النص) */}
-                      <div className="relative flex-1 min-w-0 max-w-[68%] sm:max-w-[74%]">
+                      {/* اليمين: بلوك اسم المحل (متوسط الكرت ومحمي من خروج النص) */}
+                      <div className="relative flex-1 min-w-0 max-w-[70%] sm:max-w-[76%]">
                         <div
-                          className="w-full h-11 sm:h-12.5 rounded-full flex items-center justify-center px-3 sm:px-6 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
+                          className="w-full h-11 sm:h-12 rounded-full flex items-center justify-center px-3 sm:px-5 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
                           style={{
                             backgroundImage: `url('${headerWebpBg}')`,
                           }}
                         >
                           <span
-                            className="font-black text-xs sm:text-sm leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
+                            className="font-black text-[12px] sm:text-sm leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
                             style={{
                               color: "#FFFFFF",
                               textShadow: "0 1px 3px rgba(0,0,0,0.9)",
@@ -1045,11 +1045,11 @@ function TrackingCardsView({
                     </div>
 
                     {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع وضع الصادر والوارد بجانبيها وكبسولات آمنة للبضاعة والوقت */}
-                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 -mt-2 sm:-mt-3 py-0 px-0.5 sm:px-1 w-full min-h-[70px] sm:min-h-[80px]">
+                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto py-1 px-0.5 sm:px-1 w-full min-h-[72px] sm:min-h-[82px]">
                       {/* النص الأيمن (نوع البضاعة داخل كبسولة أنيقة مؤطرة داخل الإطار) */}
-                      <div className="flex items-center justify-start flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
-                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/90 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                          <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
+                      <div className="flex items-center justify-start flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
+                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
+                          <span className="text-[10.5px] sm:text-xs font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
                             {displayGoodsType}
                           </span>
                         </div>
@@ -1064,7 +1064,7 @@ function TrackingCardsView({
 
                         {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
                         <div
-                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
+                          className="w-17 h-17 sm:w-19 sm:h-19 rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
                           style={{
                             backgroundImage: "url('/images/order-luxury/price-circle.webp')",
                           }}
@@ -1072,13 +1072,13 @@ function TrackingCardsView({
                           {isAllPaid ? (
                             <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
                               <span
-                                className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[12.5px] sm:text-[14.5px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 كلشي
                               </span>
                               <span
-                                className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                                className="text-[11.5px] sm:text-[13.5px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                                 style={{ color: "#F5D77F" }}
                               >
                                 واصل
@@ -1088,12 +1088,12 @@ function TrackingCardsView({
                             <span
                               className={`${
                                 numericPrice.length >= 5
-                                  ? "text-[18px] sm:text-[21px]"
+                                  ? "text-[17px] sm:text-[20px]"
                                   : numericPrice.length >= 4
-                                  ? "text-[22px] sm:text-[26px]"
+                                  ? "text-[21px] sm:text-[25px]"
                                   : numericPrice.length === 3
-                                  ? "text-[27px] sm:text-[32px]"
-                                  : "text-[34px] sm:text-[40px]"
+                                  ? "text-[26px] sm:text-[30px]"
+                                  : "text-[32px] sm:text-[38px]"
                               } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
                               style={{
                                 color: "#F5D77F",
@@ -1111,9 +1111,9 @@ function TrackingCardsView({
                       </div>
 
                       {/* النص الأيسر (وقت الطلب داخل كبسولة عنابية أنيقة مؤطرة داخل الإطار) */}
-                      <div className="flex items-center justify-end flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
+                      <div className="flex items-center justify-end flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
                         <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                          <span className="text-[10.5px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
+                          <span className="text-[10px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
                             {o.orderNoteTime || "فوري"}
                           </span>
                         </div>
@@ -1121,7 +1121,7 @@ function TrackingCardsView({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون يميناً + أزرار الاستلام والإسناد يساراً في سطر واحد بدون التفاف */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 -mt-2 sm:-mt-3 pt-0 w-full">
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 sm:gap-2 pt-0.5 w-full">
                       {/* الجهة اليمنى: كبسولة هاتف الزبون العاجية المذهبة بالترتيب المطابق للصورة المرجعية */}
                       <div
                         className="flex items-center gap-0.5 sm:gap-1.5 rounded-full px-1.5 sm:px-3 py-0.5 bg-no-repeat bg-[length:100%_100%] h-8.5 sm:h-10 shrink min-w-0 mr-0.5"
@@ -1220,7 +1220,7 @@ function TrackingCardsView({
                       </div>
 
                       {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم ومسحوبة لليمين */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 -translate-y-1 ml-0.5 shrink-0">
+                      <div className="flex items-center gap-1 sm:gap-1.5 ml-0.5 shrink-0">
                         {/* زر استلام ⚡ */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
@@ -1330,7 +1330,7 @@ export function OrderTrackingBulkTable({
   const [quickStatus, setQuickStatus] = useState<string>("all");
   const [quickCourier, setQuickCourier] = useState<string>("any");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
-  const [cardColumns, setCardColumns] = useState<1 | 2 | 3>(2);
+  const [cardColumns, setCardColumns] = useState<1 | 2 | 3>(1);
   const [showCardsMenu, setShowCardsMenu] = useState(false);
 
   useEffect(() => {
