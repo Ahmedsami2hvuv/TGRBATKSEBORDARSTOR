@@ -725,32 +725,20 @@ export function PreparerOrderTable({
                       const hasPaidSomething = (preparerPickupDinar != null && Number.isFinite(preparerPickupDinar) && preparerPickupDinar > 0) || Boolean(o.pickupComplete);
 
                       let normalCardStyle = "border-2 border-slate-300 bg-white/95 dark:bg-slate-900/95";
-                      let normalBadgeStyle = "bg-slate-600 text-white";
-                      let normalBadgeText = "طلب";
 
                       if (isPending) {
                         // الجديد: أزرق فاتح
                         normalCardStyle = "border-2 border-sky-400/90 bg-gradient-to-l from-sky-100 via-sky-50 to-blue-100/90 dark:from-sky-950/70 dark:via-sky-900/50 dark:to-blue-950/70 shadow-[0_3px_10px_rgba(56,189,248,0.2)]";
-                        normalBadgeStyle = "bg-sky-600 text-white";
-                        normalBadgeText = "جديد ⚡";
                       } else if (isAssigned) {
                         // المسند لمندوب: أحمر
                         normalCardStyle = "border-2 border-rose-400/90 bg-gradient-to-l from-rose-100 via-rose-50 to-red-100/90 dark:from-rose-950/70 dark:via-rose-900/50 dark:to-red-950/70 shadow-[0_3px_10px_rgba(244,63,94,0.2)]";
-                        normalBadgeStyle = "bg-rose-600 text-white";
-                        normalBadgeText = "مسند لمندوب";
                       } else if (isDelivering) {
                         // المستلم من قبل المندوب: أصفر
                         normalCardStyle = "border-2 border-amber-400/90 bg-gradient-to-l from-amber-100 via-amber-50 to-yellow-100/90 dark:from-amber-950/70 dark:via-amber-900/50 dark:to-yellow-950/70 shadow-[0_3px_10px_rgba(245,158,11,0.25)]";
-                        normalBadgeStyle = "bg-amber-500 text-amber-950 font-black";
-                        normalBadgeText = "مستلم للمندوب";
                       } else if (isDelivered) {
                         normalCardStyle = "border-2 border-emerald-400 bg-gradient-to-l from-emerald-100 via-emerald-50 to-teal-100 dark:from-emerald-950/70 dark:via-emerald-900/50 dark:to-teal-950/70 shadow-sm";
-                        normalBadgeStyle = "bg-emerald-600 text-white";
-                        normalBadgeText = "تم التسليم ✓";
                       } else if (isCancelled) {
                         normalCardStyle = "border-2 border-slate-300 bg-slate-100/90 dark:bg-slate-900/90 opacity-80 shadow-sm";
-                        normalBadgeStyle = "bg-slate-600 text-white";
-                        normalBadgeText = "ملغي ✕";
                       }
 
                       // سعر الطلب يكون أصفر إن لم يدفع المجهز شيء بالطلب وإن دفع بها شيء يتحول لأخضر، وزر الدفع هو نفسه زر السعر
@@ -779,9 +767,9 @@ export function PreparerOrderTable({
                           <div className="absolute top-1 left-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">❧</div>
                           <div className="absolute top-1 right-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">☙</div>
 
-                          {/* 1. السطر العلوي: اسم المحل واسم المنطقة + زر سعر الطلب (زر الدفع) */}
+                          {/* 1. السطر العلوي: اسم المحل واسم المنطقة باليمين + زر السعر باليسار فقط السعر */}
                           <div className="flex items-center justify-between gap-2 w-full">
-                            {/* اليمين: التحديد السريع + شارة تلوين الحالة + اسم المحل واسم المنطقة */}
+                            {/* اليمين: التحديد السريع + اسم المحل واسم المنطقة */}
                             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                               {showQuickSelect && (
                                 <input
@@ -793,46 +781,36 @@ export function PreparerOrderTable({
                                 />
                               )}
 
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 shadow-2xs ${normalBadgeStyle}`}>
-                                {normalBadgeText}
-                              </span>
-
-                              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 truncate">
+                              <div className="flex items-center gap-1.5 min-w-0 truncate">
                                 <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                                   {o.shopName || "المحل"}
                                 </span>
-                                <span className="text-[10px] text-[#C9A86A] font-black shrink-0">⟵</span>
+                                <span className="text-[11px] text-[#C9A86A] font-black shrink-0">⟵</span>
                                 <span className="font-bold text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 truncate">
                                   {o.regionLine || "المنطقة"}
                                 </span>
                               </div>
                             </div>
 
-                            {/* اليسار: زر سعر الطلب (وهو نفسه زر الدفع للعميل) */}
-                            <div className="shrink-0 flex items-center gap-1">
+                            {/* اليسار: زر سعر الطلب فقط بدون أي كلمة (يفتح نافذة الدفع) */}
+                            <div className="shrink-0 flex items-center">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setPayOrder(o);
                                 }}
-                                className={`px-3 py-1 rounded-xl font-black font-mono transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer select-none ${payBtnStyle}`}
+                                className={`min-w-[58px] px-3.5 py-1.5 rounded-xl font-black font-mono transition-transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer select-none text-base sm:text-lg leading-none ${payBtnStyle}`}
                                 title="سعر الطلب (انقر لتسجيل دفع للعميل) ⚡"
                               >
-                                <span className="text-[10px] font-sans font-bold opacity-90">
-                                  {hasPaidSomething ? "مدفوع ✓" : "دفع ⚡"}
-                                </span>
-                                <span className="text-sm sm:text-base font-black font-mono">
-                                  {isAllPaid ? "واصل" : (numericPrice || "—")}
-                                </span>
-                                {!isAllPaid && <span className="text-[10px] font-sans font-bold">ألف</span>}
+                                <span>{isAllPaid ? "واصل" : (numericPrice || "—")}</span>
                               </button>
                             </div>
                           </div>
 
-                          {/* 2. السطر السفلي: نوع الطلب + وقت الطلب + زر تعديل + زر إسناد + رقم الطلب أسفل اليسار */}
+                          {/* 2. السطر السفلي: نوع الطلب + وقت الطلب + (زر التعديل بجانب زر الإسناد) + رقم الطلب أسفل اليسار */}
                           <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-black/5 dark:border-white/5 w-full mt-2">
-                            {/* اليمين: نوع الطلب، وقت الطلب، زر تعديل، زر إسناد */}
+                            {/* اليمين: نوع الطلب، وقت الطلب، وبجانبهما زر التعديل وزر الإسناد */}
                             <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
                               {/* نوع الطلب */}
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/75 dark:bg-slate-900/60 border border-[#C9A86A]/40 text-slate-900 dark:text-[#F5D77F] font-black text-[11px] sm:text-xs shadow-2xs truncate max-w-[120px]">
@@ -846,49 +824,52 @@ export function PreparerOrderTable({
                                 <span>{o.orderNoteTime || o.timeLine || "فوري"}</span>
                               </span>
 
-                              {/* زر التعديل */}
-                              <Link
-                                href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-7.5 px-2.5 rounded-lg bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border border-[#C9A86A] text-[#F5D77F] font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
-                                title="تعديل الطلب ✏️"
-                              >
-                                <span>✏️</span>
-                                <span>تعديل</span>
-                              </Link>
-
-                              {/* زر الإسناد */}
-                              {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAssignOrder(o);
-                                  }}
-                                  className={`h-7.5 px-2.5 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all select-none border shadow-2xs cursor-pointer hover:scale-105 active:scale-95 ${
-                                    hasAssignedCourier
-                                      ? "bg-slate-900 text-[#F5D77F] border-[#C9A86A]"
-                                      : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border-blue-400"
-                                  }`}
-                                  title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر للتعديل)` : "إسناد الطلب لمندوب 👤"}
+                              {/* مجموعة: زر التعديل بجانب زر الإسناد */}
+                              <div className="inline-flex items-center gap-1 shrink-0">
+                                {/* زر التعديل */}
+                                <Link
+                                  href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="h-7.5 px-2.5 rounded-lg bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border border-[#C9A86A] text-[#F5D77F] font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
+                                  title="تعديل الطلب ✏️"
                                 >
-                                  <span>👤</span>
-                                  <span className="truncate max-w-[85px] sm:max-w-[110px]">
-                                    {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
-                                  </span>
-                                </button>
-                              )}
+                                  <span>✏️</span>
+                                  <span>تعديل</span>
+                                </Link>
 
-                              {/* زر الطلب العكسي إذا كان عكسي */}
-                              {isReverse && (
-                                <LuxuryReverseOrderButton
-                                  orderId={o.id}
-                                  orderNumber={o.shortId}
-                                  customerPhone={o.customerPhone || o.phoneLine}
-                                  role="preparer"
-                                  size="sm"
-                                />
-                              )}
+                                {/* زر الإسناد */}
+                                {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAssignOrder(o);
+                                    }}
+                                    className={`h-7.5 px-2.5 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all select-none border shadow-2xs cursor-pointer hover:scale-105 active:scale-95 ${
+                                      hasAssignedCourier
+                                        ? "bg-slate-900 text-[#F5D77F] border-[#C9A86A]"
+                                        : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border-blue-400"
+                                    }`}
+                                    title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر للتعديل)` : "إسناد الطلب لمندوب 👤"}
+                                  >
+                                    <span>👤</span>
+                                    <span className="truncate max-w-[85px] sm:max-w-[110px]">
+                                      {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
+                                    </span>
+                                  </button>
+                                )}
+
+                                {/* زر الطلب العكسي إذا كان عكسي */}
+                                {isReverse && (
+                                  <LuxuryReverseOrderButton
+                                    orderId={o.id}
+                                    orderNumber={o.shortId}
+                                    customerPhone={o.customerPhone || o.phoneLine}
+                                    role="preparer"
+                                    size="sm"
+                                  />
+                                )}
+                              </div>
                             </div>
 
                             {/* اليسار: رقم الطلب بشكل صغير أسفل اليسار */}
