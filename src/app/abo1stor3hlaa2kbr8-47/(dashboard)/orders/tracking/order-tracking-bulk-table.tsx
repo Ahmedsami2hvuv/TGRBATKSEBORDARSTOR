@@ -815,19 +815,19 @@ function GoldOrbButton3D({
 function getHeaderBannerWebp(orderStatus: string) {
   switch (orderStatus) {
     case "pending":
-      // الأزرق الفاتح للطلب الجديد
-      return "/images/order-luxury/header-new.webp";
+      // الأزرق الفاتح للطلب الجديد (مكبر عمودياً)
+      return "/images/order-luxury/header-new-v2.webp";
     case "assigned":
-      // الأحمر للمسند للمندوب
-      return "/images/order-luxury/header-assigned.webp";
+      // الأحمر للمسند للمندوب (مكبر عمودياً)
+      return "/images/order-luxury/header-assigned-v2.webp";
     case "delivering":
-      // الأصفر للمستلم من قبل المندوب
-      return "/images/order-luxury/header-received.webp";
+      // الأصفر للمستلم من قبل المندوب (مكبر عمودياً)
+      return "/images/order-luxury/header-received-v2.webp";
     case "delivered":
-      // الأخضر / الأزرق النيلي للمسلم
-      return "/images/order-luxury/header-delivered.webp";
+      // الأخضر / الأزرق النيلي للمسلم (مكبر عمودياً)
+      return "/images/order-luxury/header-delivered-v2.webp";
     default:
-      return "/images/order-luxury/header-assigned.webp";
+      return "/images/order-luxury/header-assigned-v2.webp";
   }
 }
 
@@ -997,7 +997,7 @@ function TrackingCardsView({
                     }}
                   >
                     {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة على نفس الخط */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0 h-11 sm:h-12">
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0 h-11.5 sm:h-12.5">
                       {/* اليمين: بلوك اسم المحل */}
                       <div className="relative flex-1 min-w-0 h-full">
                         <div

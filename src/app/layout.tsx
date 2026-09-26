@@ -135,10 +135,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/order-number-bg.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/price-circle.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/customer-phone-pill.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/header-new.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/header-assigned.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/header-received.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/header-delivered.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-new-v2.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-assigned-v2.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-received-v2.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/header-delivered-v2.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-sader.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-ward.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-preparer-sader.webp" as="image" type="image/webp" />
