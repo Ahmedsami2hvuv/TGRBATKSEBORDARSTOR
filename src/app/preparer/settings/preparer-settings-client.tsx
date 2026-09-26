@@ -33,6 +33,20 @@ export default function PreparerSettingsClient({
   const [showDisableForm, setShowDisableForm] = useState(false);
   const [showChangeForm, setShowChangeForm] = useState(false);
   const [showGesturesPage, setShowGesturesPage] = useState(false);
+  const [viewMode, setViewMode] = useState<"royal" | "normal">("royal");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("preparer_view_mode");
+    if (saved === "normal" || saved === "royal") {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: "royal" | "normal") => {
+    setViewMode(mode);
+    localStorage.setItem("preparer_view_mode", mode);
+    toast.success(mode === "royal" ? "تم تفعيل الوضع الملكي 👑" : "تم تفعيل الوضع العادي 📋");
+  };
 
   // إعدادات إيماءات الأصابع (24 إيماءة مختلفة تشمل 2، 3، 4، 5 أصابع مع النقرات والسحبات)
   const [gestures, setGestures] = useState<Record<string, string>>({});
@@ -195,6 +209,47 @@ export default function PreparerSettingsClient({
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تخصيص واجهة المجهز: {preparerName}</p>
           </div>
         </header>
+
+        {/* شكل عرض الطلبات (الوضع الملكي أو الوضع العادي) */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">✨</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">شكل عرض الطلبات</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">اختر شكل كروت الطلبات المناسب لك في صفحة المجهز</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 bg-slate-100/80 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("royal")}
+              className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                viewMode === "royal"
+                  ? "bg-gradient-to-b from-[#104D3B] to-[#06281D] text-[#F5D77F] border-[#C9A86A] shadow-md scale-[1.02]"
+                  : "bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-transparent hover:border-slate-300"
+              }`}
+            >
+              <span className="text-2xl mb-1.5">👑</span>
+              <span className="font-black text-sm">الوضع الملكي</span>
+              <span className="text-[10px] opacity-75 mt-0.5">الشكل الحالي الفاخر</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("normal")}
+              className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                viewMode === "normal"
+                  ? "bg-gradient-to-b from-sky-600 to-blue-700 text-white border-sky-400 shadow-md scale-[1.02]"
+                  : "bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-transparent hover:border-slate-300"
+              }`}
+            >
+              <span className="text-2xl mb-1.5">📋</span>
+              <span className="font-black text-sm">الوضع العادي</span>
+              <span className="text-[10px] opacity-75 mt-0.5">مستطيل مقتضب وملون</span>
+            </button>
+          </div>
+        </section>
 
         {/* الرمز السري للراتب */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">

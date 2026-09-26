@@ -209,6 +209,29 @@ export function PreparerOrderTable({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
+  const [viewMode, setViewMode] = useState<"royal" | "normal">("royal");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("preparer_view_mode");
+    if (saved === "normal" || saved === "royal") {
+      setViewMode(saved);
+    }
+    const handleStorage = () => {
+      const s = localStorage.getItem("preparer_view_mode");
+      if (s === "normal" || s === "royal") {
+        setViewMode(s);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const handleSetViewMode = (mode: "royal" | "normal") => {
+    setViewMode(mode);
+    localStorage.setItem("preparer_view_mode", mode);
+    toast.success(mode === "royal" ? "تم تفعيل الوضع الملكي 👑" : "تم تفعيل الوضع العادي 📋");
+  };
+
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkAssignOrdersByPreparer,
     bulkInitial,
@@ -574,6 +597,36 @@ export function PreparerOrderTable({
         </div>
       )}
 
+      {/* شريط التبديل السريع بين الوضع الملكي والوضع العادي */}
+      <div className="flex items-center justify-between gap-2 px-2 sm:px-4 mb-3" dir="rtl">
+        <div className="inline-flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-1 rounded-2xl border border-[#C9A86A]/50 shadow-sm backdrop-blur">
+          <button
+            type="button"
+            onClick={() => handleSetViewMode("royal")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+              viewMode === "royal"
+                ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] shadow-sm border border-[#C9A86A]"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <span>👑</span>
+            <span>الوضع الملكي</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetViewMode("normal")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+              viewMode === "normal"
+                ? "bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-sm border border-sky-400"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <span>📋</span>
+            <span>الوضع العادي</span>
+          </button>
+        </div>
+      </div>
+
       {/* عرض الطلبات بتصميم الكروت الملكية الفاخرة المطابقة للإدارة والمندوب */}
       {!rows.length ? (
         <div className="py-12 text-center text-[#0A3D2E] font-bold bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-[#C9A86A]/40 shadow-sm text-sm sm:text-base">
@@ -666,6 +719,191 @@ export function PreparerOrderTable({
                     const showPay = o.orderSubtotalDinar != null && !o.pickupComplete && !isPrepOrder;
 
                     const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
+
+                    if (viewMode === "normal") {
+                      const preparerPickupDinar = o.preparerPickupSumDinar ?? null;
+                      const hasPaidSomething = (preparerPickupDinar != null && Number.isFinite(preparerPickupDinar) && preparerPickupDinar > 0) || Boolean(o.pickupComplete);
+
+                      let normalCardStyle = "border-2 border-slate-300 bg-white/95 dark:bg-slate-900/95";
+                      let normalBadgeStyle = "bg-slate-600 text-white";
+                      let normalBadgeText = "طلب";
+
+                      if (isPending) {
+                        // الجديد: أزرق فاتح
+                        normalCardStyle = "border-2 border-sky-400/90 bg-gradient-to-l from-sky-100 via-sky-50 to-blue-100/90 dark:from-sky-950/70 dark:via-sky-900/50 dark:to-blue-950/70 shadow-[0_3px_10px_rgba(56,189,248,0.2)]";
+                        normalBadgeStyle = "bg-sky-600 text-white";
+                        normalBadgeText = "جديد ⚡";
+                      } else if (isAssigned) {
+                        // المسند لمندوب: أحمر
+                        normalCardStyle = "border-2 border-rose-400/90 bg-gradient-to-l from-rose-100 via-rose-50 to-red-100/90 dark:from-rose-950/70 dark:via-rose-900/50 dark:to-red-950/70 shadow-[0_3px_10px_rgba(244,63,94,0.2)]";
+                        normalBadgeStyle = "bg-rose-600 text-white";
+                        normalBadgeText = "مسند لمندوب";
+                      } else if (isDelivering) {
+                        // المستلم من قبل المندوب: أصفر
+                        normalCardStyle = "border-2 border-amber-400/90 bg-gradient-to-l from-amber-100 via-amber-50 to-yellow-100/90 dark:from-amber-950/70 dark:via-amber-900/50 dark:to-yellow-950/70 shadow-[0_3px_10px_rgba(245,158,11,0.25)]";
+                        normalBadgeStyle = "bg-amber-500 text-amber-950 font-black";
+                        normalBadgeText = "مستلم للمندوب";
+                      } else if (isDelivered) {
+                        normalCardStyle = "border-2 border-emerald-400 bg-gradient-to-l from-emerald-100 via-emerald-50 to-teal-100 dark:from-emerald-950/70 dark:via-emerald-900/50 dark:to-teal-950/70 shadow-sm";
+                        normalBadgeStyle = "bg-emerald-600 text-white";
+                        normalBadgeText = "تم التسليم ✓";
+                      } else if (isCancelled) {
+                        normalCardStyle = "border-2 border-slate-300 bg-slate-100/90 dark:bg-slate-900/90 opacity-80 shadow-sm";
+                        normalBadgeStyle = "bg-slate-600 text-white";
+                        normalBadgeText = "ملغي ✕";
+                      }
+
+                      // سعر الطلب يكون أصفر إن لم يدفع المجهز شيء بالطلب وإن دفع بها شيء يتحول لأخضر، وزر الدفع هو نفسه زر السعر
+                      const payBtnStyle = hasPaidSomething
+                        ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 text-white border-2 border-emerald-300 shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
+                        : "bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 text-slate-950 border-2 border-amber-500 shadow-[0_2px_8px_rgba(245,158,11,0.4)]";
+
+                      return (
+                        <div
+                          key={o.id}
+                          onClick={() => {
+                            if (showQuickSelect) {
+                              toggleOne(o.id);
+                            } else {
+                              setActiveOrderId(o.id);
+                              const p = new URLSearchParams(window.location.search);
+                              p.set("activeOrderId", o.id);
+                              window.history.pushState({ orderId: o.id }, "", `?${p.toString()}`);
+                            }
+                          }}
+                          className={`group relative rounded-2xl p-3 sm:p-3.5 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between w-full shadow-sm hover:shadow-md ${normalCardStyle} ${
+                            selected ? "ring-2 ring-[#0A3D2E]" : ""
+                          }`}
+                        >
+                          {/* زخرفة إسلامية ناعمة في الزوايا بنمط ملكي إسلامي */}
+                          <div className="absolute top-1 left-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">❧</div>
+                          <div className="absolute top-1 right-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">☙</div>
+
+                          {/* 1. السطر العلوي: اسم المحل واسم المنطقة + زر سعر الطلب (زر الدفع) */}
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            {/* اليمين: التحديد السريع + شارة تلوين الحالة + اسم المحل واسم المنطقة */}
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                              {showQuickSelect && (
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={() => toggleOne(o.id)}
+                                  className="size-4.5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer shrink-0"
+                                />
+                              )}
+
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 shadow-2xs ${normalBadgeStyle}`}>
+                                {normalBadgeText}
+                              </span>
+
+                              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 truncate">
+                                <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                                  {o.shopName || "المحل"}
+                                </span>
+                                <span className="text-[10px] text-[#C9A86A] font-black shrink-0">⟵</span>
+                                <span className="font-bold text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 truncate">
+                                  {o.regionLine || "المنطقة"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* اليسار: زر سعر الطلب (وهو نفسه زر الدفع للعميل) */}
+                            <div className="shrink-0 flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPayOrder(o);
+                                }}
+                                className={`px-3 py-1 rounded-xl font-black font-mono transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer select-none ${payBtnStyle}`}
+                                title="سعر الطلب (انقر لتسجيل دفع للعميل) ⚡"
+                              >
+                                <span className="text-[10px] font-sans font-bold opacity-90">
+                                  {hasPaidSomething ? "مدفوع ✓" : "دفع ⚡"}
+                                </span>
+                                <span className="text-sm sm:text-base font-black font-mono">
+                                  {isAllPaid ? "واصل" : (numericPrice || "—")}
+                                </span>
+                                {!isAllPaid && <span className="text-[10px] font-sans font-bold">ألف</span>}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 2. السطر السفلي: نوع الطلب + وقت الطلب + زر تعديل + زر إسناد + رقم الطلب أسفل اليسار */}
+                          <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-black/5 dark:border-white/5 w-full mt-2">
+                            {/* اليمين: نوع الطلب، وقت الطلب، زر تعديل، زر إسناد */}
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
+                              {/* نوع الطلب */}
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/75 dark:bg-slate-900/60 border border-[#C9A86A]/40 text-slate-900 dark:text-[#F5D77F] font-black text-[11px] sm:text-xs shadow-2xs truncate max-w-[120px]">
+                                <span>📦</span>
+                                <span className="truncate">{displayGoodsType}</span>
+                              </span>
+
+                              {/* وقت الطلب */}
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/75 dark:bg-slate-900/60 border border-[#8B0000]/25 text-[#8B0000] dark:text-rose-300 font-black text-[11px] sm:text-xs shadow-2xs shrink-0">
+                                <span>⏱️</span>
+                                <span>{o.orderNoteTime || o.timeLine || "فوري"}</span>
+                              </span>
+
+                              {/* زر التعديل */}
+                              <Link
+                                href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-7.5 px-2.5 rounded-lg bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border border-[#C9A86A] text-[#F5D77F] font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
+                                title="تعديل الطلب ✏️"
+                              >
+                                <span>✏️</span>
+                                <span>تعديل</span>
+                              </Link>
+
+                              {/* زر الإسناد */}
+                              {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAssignOrder(o);
+                                  }}
+                                  className={`h-7.5 px-2.5 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all select-none border shadow-2xs cursor-pointer hover:scale-105 active:scale-95 ${
+                                    hasAssignedCourier
+                                      ? "bg-slate-900 text-[#F5D77F] border-[#C9A86A]"
+                                      : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border-blue-400"
+                                  }`}
+                                  title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر للتعديل)` : "إسناد الطلب لمندوب 👤"}
+                                >
+                                  <span>👤</span>
+                                  <span className="truncate max-w-[85px] sm:max-w-[110px]">
+                                    {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
+                                  </span>
+                                </button>
+                              )}
+
+                              {/* زر الطلب العكسي إذا كان عكسي */}
+                              {isReverse && (
+                                <LuxuryReverseOrderButton
+                                  orderId={o.id}
+                                  orderNumber={o.shortId}
+                                  customerPhone={o.customerPhone || o.phoneLine}
+                                  role="preparer"
+                                  size="sm"
+                                />
+                              )}
+                            </div>
+
+                            {/* اليسار: رقم الطلب بشكل صغير أسفل اليسار */}
+                            <div className="shrink-0 flex items-center">
+                              <div
+                                className="text-[11px] sm:text-xs font-mono font-black text-slate-700 dark:text-[#F5D77F] bg-white/90 dark:bg-black/60 px-2 py-0.5 rounded-md border border-[#C9A86A]/60 shadow-2xs select-none"
+                                title={`رقم الطلب: #${o.shortId}`}
+                              >
+                                #{o.shortId}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div
