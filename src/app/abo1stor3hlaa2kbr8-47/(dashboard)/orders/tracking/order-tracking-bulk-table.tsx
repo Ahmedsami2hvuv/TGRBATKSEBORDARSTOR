@@ -1126,7 +1126,7 @@ function TrackingCardsView({
                     </div>
 
                     {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون المكبرة الفخمة يميناً + أزرار الاستلام والإسناد يساراً */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 w-full shrink-0 h-[44px] sm:h-[48px]">
+                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 w-full shrink-0 h-[48px] sm:h-[52px]">
                       {/* الجهة اليمنى: كبسولة هاتف الزبون المكبرة والمحيطة بالأزرار */}
                       <div
                         className="flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-full shrink min-w-0 flex-1 max-w-[230px] sm:max-w-[250px]"
@@ -1229,7 +1229,7 @@ function TrackingCardsView({
 
                       {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم متناسقة الحجم ومفصولة بنظافة عن الكبسولة */}
                       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 h-full">
-                        {/* زر استلام ⚡ */}
+                        {/* زر استلام ⚡ (مكبر) */}
                         {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
@@ -1237,15 +1237,15 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminPickup(o);
                             }}
-                            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-pickup.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-pickup-v2.webp')",
                             }}
                             title="استلام الطلب وتسجيل الصادر ⚡"
                           />
                         )}
 
-                        {/* زر تسليم 🫴 */}
+                        {/* زر تسليم 🫴 (مكبر) */}
                         {onAdminDelivery && isDelivering && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
@@ -1253,15 +1253,15 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAdminDelivery(o);
                             }}
-                            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0"
+                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-sm"
                             style={{
-                              backgroundImage: "url('/images/order-luxury/btn-delivery.webp')",
+                              backgroundImage: "url('/images/order-luxury/btn-delivery-v2.webp')",
                             }}
                             title="تسليم الطلب وتسجيل الوارد 🫴"
                           />
                         )}
 
-                        {/* زر إسناد الطلب */}
+                        {/* زر إسناد الطلب (مكبر) */}
                         {!isCancelled && (
                           <button
                             type="button"
@@ -1269,16 +1269,16 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAssignOrder(o);
                             }}
-                            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer"
+                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-sm"
                             style={{
                               backgroundImage: hasAssignedCourier
-                                ? "url('/images/order-luxury/btn-assign-empty.webp')"
-                                : "url('/images/order-luxury/btn-assign.webp')",
+                                ? "url('/images/order-luxury/btn-assign-empty-v2.webp')"
+                                : "url('/images/order-luxury/btn-assign-v2.webp')",
                             }}
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
                             {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[10px] sm:text-[11px] max-w-[42px] sm:max-w-[48px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
+                              <span className="text-[#FFF8F0] text-[11px] sm:text-[12px] max-w-[46px] sm:max-w-[50px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
                                 {o.courierName}
                               </span>
                             )}

@@ -143,12 +143,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" href="/images/order-luxury/badge-ward.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-preparer-sader.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/badge-preparer-ward.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-pickup.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-delivery.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-pickup-v2.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-delivery-v2.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-istilam.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-tasleem.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-assign.webp" as="image" type="image/webp" />
-        <link rel="preload" href="/images/order-luxury/btn-assign-empty.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-assign-v2.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/images/order-luxury/btn-assign-empty-v2.webp" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-open-location.webp?v=royalLocV2" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-no-location.webp?v=royalLocV2" as="image" type="image/webp" />
         <link rel="preload" href="/images/order-luxury/btn-edit.webp?v=royal3D" as="image" type="image/webp" />
