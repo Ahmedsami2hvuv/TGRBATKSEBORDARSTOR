@@ -973,9 +973,11 @@ function TrackingCardsView({
 
                 const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
 
-                const cleanNoteTime = (o.orderNoteTime || "فوري")
-                  .replace(new RegExp(`^${o.orderType || ""}\\s*-\\s*`, "i"), "")
-                  .trim() || "فوري";
+                let cleanNoteTime = (o.orderNoteTime || "").trim();
+                if (o.orderType && cleanNoteTime.startsWith(o.orderType)) {
+                  cleanNoteTime = cleanNoteTime.slice(o.orderType.length).replace(/^[\s\-–—:]+/, "").trim();
+                }
+                if (!cleanNoteTime) cleanNoteTime = "فوري";
 
                 return (
                   <div
