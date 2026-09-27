@@ -533,7 +533,7 @@ export function PickupMoneyForm(props: {
       <input type="hidden" name="s" value={props.auth.s} />
       <input type="hidden" name="orderId" value={props.orderId} />
       <input type="hidden" name="next" value={props.nextUrl} />
-      <input type="hidden" name="advanceStatus" value="delivering" />
+      <input type="hidden" name="advanceStatus" value={props.advanceToDelivering ? "delivering" : ""} />
 
       {props.error && (
         <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
