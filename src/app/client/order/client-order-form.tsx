@@ -642,7 +642,7 @@ function ClientOrderFormInner({
             </Link>
 
             <Link
-              href={`/client/orders?e=${e}&exp=${exp}&s=${sig}`}
+              href={`/client/order/history?e=${e}&exp=${exp}&s=${sig}`}
               className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#C9A86A]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#C9A86A]/60"
             >
               <FileText className="w-[16px] h-[16px] text-[#0A3D2E]" />

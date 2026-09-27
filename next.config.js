@@ -36,6 +36,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/client/orders',
+        destination: '/client/order/history',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
