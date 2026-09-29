@@ -80,6 +80,16 @@ class FloatingAiChatActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         Thread.setDefaultUncaughtExceptionHandler { _, _ -> }
 
         try {
+            val mainIntent = Intent(this, MainActivity::class.java).apply {
+                putExtra("OPEN_URL", "https://aboakbr.com/admin/ai")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(mainIntent)
+            finish()
+            return
+        } catch (e: Exception) {}
+
+        try {
             // طلب إذن الظهور فوق التطبيقات إذا لم يكن ممنوحاً لضمان ظهور الزر العائم
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                 Toast.makeText(this, "يرجى تفعيل إذن الظهور فوق التطبيقات لظهور الزر العائم 🚀", Toast.LENGTH_LONG).show()

@@ -197,6 +197,11 @@ class MainActivity : AppCompatActivity() {
         // استرداد آخر رقم طلب مسجل
         lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
 
+        val openUrl = intent?.getStringExtra("OPEN_URL")
+        if (!openUrl.isNullOrEmpty()) {
+            webView.post { webView.loadUrl(openUrl) }
+        }
+
         requestAppPermissions()
         
         setupLongPressMenu()
@@ -849,9 +854,9 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val targetUrl = intent?.getStringExtra("target_url")
-        if (!targetUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
-            webView.loadUrl(targetUrl)
+        val openUrl = intent?.getStringExtra("OPEN_URL") ?: intent?.getStringExtra("target_url")
+        if (!openUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
+            webView.loadUrl(openUrl)
         }
     }
 

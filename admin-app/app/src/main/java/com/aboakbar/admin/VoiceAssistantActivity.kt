@@ -104,6 +104,16 @@ class VoiceAssistantActivity : AppCompatActivity(), TextToSpeech.OnInitListener 
         Thread.setDefaultUncaughtExceptionHandler { _, _ -> }
 
         try {
+            val mainIntent = Intent(this, MainActivity::class.java).apply {
+                putExtra("OPEN_URL", "https://aboakbr.com/admin/ai")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(mainIntent)
+            finish()
+            return
+        } catch (e: Exception) {}
+
+        try {
             setContentView(R.layout.activity_voice_assistant)
 
             rootVoiceAssistantLayout = findViewById(R.id.rootVoiceAssistantLayout)

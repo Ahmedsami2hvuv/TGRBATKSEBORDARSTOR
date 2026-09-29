@@ -1,7 +1,6 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { AdminAiChatModal } from "@/components/admin-ai-chat-modal";
 
 interface CustomLink {
   id: string;
@@ -29,7 +28,6 @@ export function FloatingAdminMenu() {
   const [menuScale, setMenuScale] = useState(1);
   const [menuFontSize, setMenuFontSize] = useState(8);
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
-  const [isAiOpen, setIsAiOpen] = useState(false);
 
   const dragStartPos = useRef({ x: 0, y: 0 });
   const positionRef = useRef({ x: 50, y: 300 });
@@ -165,7 +163,7 @@ export function FloatingAdminMenu() {
 
       if (isHovered) {
         if (isAiAction) {
-          setIsAiOpen(true);
+          window.location.href = "/admin/ai";
           setIsHovered(false);
           setHoveredCategory(null);
         } else if (url) {
@@ -405,13 +403,6 @@ export function FloatingAdminMenu() {
           </div>
         </div>
       </div>
-
-      {/* نافذة محادثة المساعد الذكي والصوتي المتكاملة */}
-      <AdminAiChatModal
-        isOpen={isAiOpen}
-        onClose={() => setIsAiOpen(false)}
-        initialPosition={position}
-      />
     </>
   );
 }

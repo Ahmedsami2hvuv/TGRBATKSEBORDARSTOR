@@ -12,6 +12,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { FloatingAdminMenu } from "@/components/floating-admin-menu";
+import { PremiumBottomNav } from "@/components/premium-bottom-nav";
 import { AdminGestureHandler } from "./admin-gesture-handler";
 import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
@@ -424,6 +425,7 @@ export function AdminShell({
       )}
       <OneSignalInitializer externalId="admin_global" />
       <FloatingAdminMenu />
+      <PremiumBottomNav />
       
       <button
         id="navToggleButton"
