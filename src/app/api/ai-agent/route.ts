@@ -90,21 +90,21 @@ export async function POST(req: Request) {
         }
       }
 
-      const regionName = stepData.area || stepData.receiverArea || "البصرة"
+      const regionName = (stepData.area || stepData.receiverArea || "البصرة").trim()
       let region = await prisma.region.findFirst({
-        where: { name: { contains: regionName, mode: 'insensitive' } }
+        where: { name: { equals: regionName, mode: 'insensitive' } }
       })
+      if (!region) {
+        region = await prisma.region.findFirst({
+          where: { name: { contains: regionName, mode: 'insensitive' } }
+        })
+      }
       if (!region) {
         region = await prisma.region.findFirst()
       }
 
-      // حساب السعر: السعر المدخل هو سعر المواد الصافي بدون التوصيل
-      let rawPrice = parseInt(String(stepData.price || stepData.orderSubtotal || stepData.total || "10000").replace(/[^\d]/g, "")) || 10000
-      if (rawPrice > 0 && rawPrice <= 500) {
-        rawPrice = rawPrice * 1000 // مثلاً 10 تصبح 10,000 د.ع
-      }
-
-      const orderSubtotalNum = rawPrice
+      // السعر كما يدخله المستخدم بالضبط (إذا أدخل 10 يعني 10، وإذا أدخل 10000 يعني 10000)
+      const orderSubtotalNum = parseInt(String(stepData.price || stepData.orderSubtotal || stepData.total || "0").replace(/[^\d]/g, "")) || 0
       const deliveryPriceNum = region?.deliveryPrice ? Number(region.deliveryPrice) : 3000
       const totalAmountNum = orderSubtotalNum + deliveryPriceNum
 

@@ -267,34 +267,147 @@ export default function AdminAiPage() {
       timestamp: currentTime
     };
 
-    setMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
+    // فحص ذكي: هل تحتوي الرسالة على رقم هاتف ومنطقة معاً؟
+    const phonePattern = /(07\d{9}|9647\d{9}|\+9647\d{9})/;
+    const phoneMatch = clean.match(phonePattern);
+    const textWithoutPhone = clean.replace(phonePattern, "").replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
 
-    // الخطوة 1: انتظار رقم هاتف الزبون
+    // الخطوة 1: انتظار رقم هاتف الزبون (أو إذا كتب الهاتف والمنطقة معاً)
     if (wizardStep === "awaiting_phone") {
-      setOrderDraft(prev => ({ ...prev, customerPhone: clean }));
-      setWizardStep("awaiting_area");
-      setIsLoading(false);
-      isSendingRef.current = false;
+      const extractedPhone = phoneMatch ? phoneMatch[0] : (clean.length >= 10 && /^\d+$/.test(clean) ? clean : "");
+      const possibleArea = textWithoutPhone || (lines.length > 1 ? lines[1] : "");
 
-      const reply = `سجلت رقم الهاتف: ${clean} 📱\nهسه انطيني **منطقة الزبون** (مثلاً: نهر خوز، محيلة، سيحان):`;
-      setMessages(prev => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
-      ]);
-      speak(reply);
-      fetchAreaSuggestions("");
-      return;
+      if (extractedPhone) {
+        setOrderDraft(prev => ({ ...prev, customerPhone: extractedPhone }));
+        
+        // إذا كان كتب المنطقة مع الهاتف في نفس الرسالة
+        if (possibleArea && possibleArea.length >= 2 && !/^\d+$/.test(possibleArea)) {
+          // جلب المناطق للتحقق من وجود خيارات متعددة
+          try {
+            const res = await fetch(`/api/areas/search?q=${encodeURIComponent(possibleArea)}`);
+            const data = await res.json();
+            const matchedAreas: string[] = data.areas || [];
+
+            if (matchedAreas.length > 1) {
+              setAreaSuggestions(matchedAreas);
+              setWizardStep("awaiting_area");
+              setIsLoading(false);
+              isSendingRef.current = false;
+
+              const reply = `سجلت الهاتف: ${extractedPhone} 📱\nلقيت عدة مناطق تطابق **${possibleArea}**، يرجى اختيار المنطقة المحددة من الأزرار أدناه:`;
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: (Date.now() + 1).toString(),
+                  sender: "ai",
+                  text: reply,
+                  type: "area_suggestions",
+                  suggestions: matchedAreas,
+                  timestamp: currentTime
+                }
+              ]);
+              speak(`سجلت الهاتف، يرجى اختيار المنطقة من الخيارات المتاحة`);
+              return;
+            } else if (matchedAreas.length === 1) {
+              setOrderDraft(prev => ({ ...prev, area: matchedAreas[0] }));
+              setWizardStep("awaiting_type");
+              setIsLoading(false);
+              isSendingRef.current = false;
+
+              const reply = `سجلت الهاتف: ${extractedPhone} 📱 والمنطقة: ${matchedAreas[0]} 📍\nهسه اختار **نوع الطلب** من الخيارات الأربعة أدناه:`;
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: (Date.now() + 1).toString(),
+                  sender: "ai",
+                  text: reply,
+                  type: "type_selection",
+                  timestamp: currentTime
+                }
+              ]);
+              speak(`سجلت الهاتف والمنطقة، هسه اختار نوع الطلب`);
+              return;
+            }
+          } catch (e) {}
+
+          setOrderDraft(prev => ({ ...prev, area: possibleArea }));
+          setWizardStep("awaiting_type");
+          setIsLoading(false);
+          isSendingRef.current = false;
+
+          const reply = `سجلت الهاتف: ${extractedPhone} 📱 والمنطقة: ${possibleArea} 📍\nهسه اختار **نوع الطلب** من الخيارات الأربعة أدناه:`;
+          setMessages(prev => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              sender: "ai",
+              text: reply,
+              type: "type_selection",
+              timestamp: currentTime
+            }
+          ]);
+          speak(`سجلت الهاتف والمنطقة، هسه اختار نوع الطلب`);
+          return;
+        }
+
+        // إذا كتب الهاتف فقط
+        setWizardStep("awaiting_area");
+        setIsLoading(false);
+        isSendingRef.current = false;
+
+        const reply = `سجلت رقم الهاتف: ${extractedPhone} 📱\nهسه انطيني **منطقة الزبون** (مثلاً: جيكور، نهر خوز، محيلة):`;
+        setMessages(prev => [
+          ...prev,
+          { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
+        ]);
+        speak(reply);
+        fetchAreaSuggestions("");
+        return;
+      }
     }
 
     // الخطوة 2: انتظار منطقة الزبون
     if (wizardStep === "awaiting_area") {
-      setOrderDraft(prev => ({ ...prev, area: clean }));
+      const areaText = clean.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
+      
+      // جلب اقتراحات المناطق المشابهة
+      try {
+        const res = await fetch(`/api/areas/search?q=${encodeURIComponent(areaText)}`);
+        const data = await res.json();
+        const matchedAreas: string[] = data.areas || [];
+
+        // إذا وجدنا أكثر من منطقة مشابهة وكان الإدخال ليس نقرة صريحة على زر خيار كامل
+        const exactMatch = matchedAreas.find(a => a === areaText);
+        if (matchedAreas.length > 1 && (!exactMatch || matchedAreas.length > 1 && areaText.split(" ").length === 1)) {
+          setAreaSuggestions(matchedAreas);
+          setIsLoading(false);
+          isSendingRef.current = false;
+
+          const reply = `لقيت عدة مناطق تطابق **${areaText}** 📍\nأي منطقة منها تقصد يا أبو الأكبر؟ (اختر من الأزرار أدناه):`;
+          setMessages(prev => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              sender: "ai",
+              text: reply,
+              type: "area_suggestions",
+              suggestions: matchedAreas,
+              timestamp: currentTime
+            }
+          ]);
+          speak(`لقيت عدة مناطق، أي منطقة منها تقصد؟`);
+          return;
+        }
+      } catch (e) {}
+
+      const chosenArea = areaText;
+      setOrderDraft(prev => ({ ...prev, area: chosenArea }));
+      setAreaSuggestions([]);
       setWizardStep("awaiting_type");
       setIsLoading(false);
       isSendingRef.current = false;
 
-      const reply = `عاشت إيدك! المنطقة: ${clean} 📍\nهسه اختار **نوع الطلب** من الخيارات الأربعة أدناه:`;
+      const reply = `عاشت إيدك! المنطقة: ${chosenArea} 📍\nهسه اختار **نوع الطلب** من الخيارات الأربعة أدناه:`;
       setMessages(prev => [
         ...prev,
         {
@@ -738,6 +851,31 @@ export default function AdminAiPage() {
                     <span>التالي (تحديد السعر)</span>
                     <ArrowLeft className="w-4 h-4" />
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* خيارات المناطق المقترحة والمتشابهة كأزرار مباشرة */}
+            {msg.type === "area_suggestions" && msg.suggestions && msg.suggestions.length > 0 && (
+              <div className="w-full max-w-[95%] p-3.5 bg-[#121A2B]/90 border border-sky-500/30 rounded-3xl space-y-2.5 shadow-lg animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs font-bold text-sky-400">
+                  <MapPin className="w-4 h-4" />
+                  <span>انقر على المنطقة المطلوبة مباشرة:</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {msg.suggestions.map((areaName, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(areaName)}
+                      className="p-3 bg-[#1A2336] hover:bg-sky-600 border border-white/10 hover:border-sky-400/50 rounded-2xl flex items-center justify-between text-right text-xs font-bold text-white transition-all active:scale-95 shadow-sm group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-sky-400 group-hover:text-white shrink-0" />
+                        <span>{areaName}</span>
+                      </div>
+                      <span className="text-[10px] text-sky-300/70 group-hover:text-white">اختيار 👈</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
