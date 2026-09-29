@@ -884,21 +884,11 @@ export async function handleTelegramAdminPrivateMessage(message: {
     }
   }
 
-  // جلب الذكاء الاصطناعي لمعالجة النصوص الطبيعية والرسائل
+  // جلب معالجة النصوص والرسائل
   const quickHandled = await handleAdminQuickOrderMessage(message);
   if (quickHandled) return true;
 
-  // توجيه الرسالة إلى المحرك الذكي Gemini AI مع حفظ وتمرير سياق المحادثة والذاكرة
-  try {
-    const { processAdminAiMessage } = await import("./ai-admin-agent");
-    const aiReply = await processAdminAiMessage(txt, telegramUserId);
-    const { sendTelegramHtmlToChat } = await import("./telegram");
-    await sendTelegramHtmlToChat(chatId, aiReply, botToken);
-    return true;
-  } catch (err) {
-    console.error("[telegram-admin] Error calling AI agent:", err);
-    return false;
-  }
+  return false;
 }
 
 async function handleAdminQuickOrderMessage(message: {
