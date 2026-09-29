@@ -10,8 +10,10 @@ import android.service.voice.VoiceInteractionSession
 import android.service.voice.VoiceInteractionSessionService
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.*
 import android.widget.ProgressBar
+import android.widget.TextView
 
 class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
 
@@ -24,7 +26,15 @@ class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
         private var aiWebView: WebView? = null
         private var aiProgressBar: ProgressBar? = null
         private var dismissOverlay: View? = null
+        private var btnCloseDialog: TextView? = null
         private val AI_URL = "https://aboakbr.com/admin/ai"
+
+        override fun onCreate() {
+            super.onCreate()
+            try {
+                setUiEnabled(true)
+            } catch (e: Exception) {}
+        }
 
         override fun onCreateContentView(): View {
             val inflater = LayoutInflater.from(ctx)
@@ -33,8 +43,12 @@ class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
             aiWebView = root.findViewById(R.id.aiWebView)
             aiProgressBar = root.findViewById(R.id.aiProgressBar)
             dismissOverlay = root.findViewById(R.id.dismissOverlay)
+            btnCloseDialog = root.findViewById(R.id.btnCloseDialog)
 
             dismissOverlay?.setOnClickListener {
+                hide()
+            }
+            btnCloseDialog?.setOnClickListener {
                 hide()
             }
 
@@ -76,7 +90,7 @@ class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
                 }
             }
 
-            // حقن التوكن
+            // مزامنة التوكن والكوكيز
             val sharedPreferences = ctx.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
             val savedToken = sharedPreferences.getString("admin_token", null)
             if (!savedToken.isNullOrEmpty()) {
@@ -94,20 +108,29 @@ class AdminVoiceInteractionSessionService : VoiceInteractionSessionService() {
         override fun onShow(args: Bundle?, showFlags: Int) {
             super.onShow(args, showFlags)
             try {
-                if (aiWebView == null) {
-                    setContentView(onCreateContentView())
+                window?.window?.setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            } catch (e: Exception) {}
+
+            // ضمان فتح النشاط العائم 100% في كافة واجهات الأجهزة كـ Assistant Activity
+            try {
+                val intent = Intent(ctx, FloatingAiChatActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    startAssistantActivity(intent)
                 } else {
-                    aiWebView?.reload()
+                    startVoiceActivity(intent)
                 }
             } catch (e: Exception) {
                 try {
                     val intent = Intent(ctx, FloatingAiChatActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     }
                     ctx.startActivity(intent)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+                } catch (ex: Exception) {}
             }
         }
 

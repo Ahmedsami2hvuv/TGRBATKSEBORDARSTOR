@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.*
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class FloatingAiChatActivity : AppCompatActivity() {
@@ -26,8 +27,12 @@ class FloatingAiChatActivity : AppCompatActivity() {
         aiWebView = findViewById(R.id.aiWebView)
         aiProgressBar = findViewById(R.id.aiProgressBar)
         dismissOverlay = findViewById(R.id.dismissOverlay)
+        val btnCloseDialog: TextView? = findViewById(R.id.btnCloseDialog)
 
         dismissOverlay.setOnClickListener {
+            finish()
+        }
+        btnCloseDialog?.setOnClickListener {
             finish()
         }
 
