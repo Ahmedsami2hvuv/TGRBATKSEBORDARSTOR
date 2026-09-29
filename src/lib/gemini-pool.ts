@@ -145,3 +145,48 @@ export async function markGeminiKeyError(keyId: string, isQuotaError: boolean = 
     });
   } catch (e) {}
 }
+
+export async function callGemini(prompt: string): Promise<string> {
+  const keys = await getAllActiveGeminiKeys();
+  const candidateModels = [
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash"
+  ];
+
+  for (const k of keys) {
+    if (!k.key) continue;
+    for (const modelName of candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k.key}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            await markGeminiKeySuccess(k.id);
+            return text;
+          }
+        } else {
+          await markGeminiKeyError(k.id);
+        }
+      } catch (err) {}
+    }
+  }
+
+  throw new Error("لم نتمكن من الحصول على رد من نماذج جمناي");
+}
+
