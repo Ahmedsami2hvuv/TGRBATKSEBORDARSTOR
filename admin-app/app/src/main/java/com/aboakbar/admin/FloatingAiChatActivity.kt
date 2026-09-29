@@ -32,6 +32,18 @@ class FloatingAiChatActivity : AppCompatActivity() {
         }
 
         setupWebView()
+
+        val sharedPreferences = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+        val savedToken = sharedPreferences.getString("admin_token", null)
+        if (!savedToken.isNullOrEmpty()) {
+            val cookieManager = CookieManager.getInstance()
+            cookieManager.setAcceptCookie(true)
+            cookieManager.setAcceptThirdPartyCookies(aiWebView, true)
+            val cookieString = "admin_token=$savedToken; Domain=aboakbr.com; Path=/; Secure; SameSite=Lax"
+            cookieManager.setCookie("https://aboakbr.com", cookieString)
+            cookieManager.flush()
+        }
+
         aiWebView.loadUrl(AI_URL)
     }
 
@@ -53,7 +65,13 @@ class FloatingAiChatActivity : AppCompatActivity() {
 
         aiWebView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.grant(request.resources)
+                runOnUiThread {
+                    try {
+                        request?.grant(request?.resources ?: arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
         }
 

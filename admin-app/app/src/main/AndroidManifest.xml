@@ -88,6 +88,24 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name="com.aboakbar.admin.AdminVoiceInteractionService"
+            android:label="مدير النظام - مساعد الذكاء الاصطناعي الصوتي"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
+            android:exported="true">
+            <meta-data
+                android:name="android.voice_interaction"
+                android:resource="@xml/voice_interaction_service" />
+            <intent-filter>
+                <action android:name="android.service.voice.VoiceInteractionService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="com.aboakbar.admin.AdminVoiceInteractionSessionService"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
+            android:exported="true" />
+
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
