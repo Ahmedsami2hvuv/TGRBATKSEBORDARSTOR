@@ -349,6 +349,51 @@ class MainActivity : AppCompatActivity() {
                     val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     sharedPreferences.edit().putString("last_visited_url", url).apply()
                 }
+
+                // حقن كود جافا سكريبت للنقر المطول على زر الهوم لفتح المساعد العائم الشفاف
+                val injectHomeJs = """
+                    (function() {
+                        if (window._homeAiInjected) return;
+                        window._homeAiInjected = true;
+                        function attachHome() {
+                            const selectors = [
+                                'a[href="/abo1stor3hlaa2kbr8-47"]',
+                                'a[href="/admin"]',
+                                'a[href="/"]',
+                                'button[title*="رئيسية"]',
+                                'button[title*="Home"]',
+                                'nav a:first-child'
+                            ];
+                            selectors.forEach(sel => {
+                                document.querySelectorAll(sel).forEach(el => {
+                                    if (el._hasAiHold) return;
+                                    el._hasAiHold = true;
+                                    let holdTimer = null;
+                                    el.addEventListener('touchstart', function() {
+                                        holdTimer = setTimeout(function() {
+                                            if (navigator.vibrate) navigator.vibrate(60);
+                                            if (window.AndroidGestures && window.AndroidGestures.openFloatingAiChat) {
+                                                window.AndroidGestures.openFloatingAiChat();
+                                            }
+                                        }, 600);
+                                    }, { passive: true });
+                                    el.addEventListener('touchend', function() { if (holdTimer) clearTimeout(holdTimer); });
+                                    el.addEventListener('touchmove', function() { if (holdTimer) clearTimeout(holdTimer); });
+                                    el.addEventListener('contextmenu', function(e) {
+                                        e.preventDefault();
+                                        if (navigator.vibrate) navigator.vibrate(60);
+                                        if (window.AndroidGestures && window.AndroidGestures.openFloatingAiChat) {
+                                            window.AndroidGestures.openFloatingAiChat();
+                                        }
+                                    });
+                                });
+                            });
+                        }
+                        attachHome();
+                        setInterval(attachHome, 2000);
+                    })();
+                """.trimIndent()
+                view?.evaluateJavascript(injectHomeJs, null)
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
@@ -1064,6 +1109,19 @@ class MainActivity : AppCompatActivity() {
         fun saveCustomGestureUrl(gestureKey: String, urlValue: String) {
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putString("gesture_custom_url_$gestureKey", urlValue).apply()
+        }
+
+        @JavascriptInterface
+        fun openFloatingAiChat() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(this@MainActivity, FloatingAiChatActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    webView.loadUrl("https://aboakbr.com/admin/ai")
+                }
+            }
         }
     }
 

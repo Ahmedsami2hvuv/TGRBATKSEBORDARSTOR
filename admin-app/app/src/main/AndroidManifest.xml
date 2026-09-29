@@ -67,6 +67,28 @@
         </activity>
 
         <activity
+            android:name="com.aboakbar.admin.FloatingAiChatActivity"
+            android:theme="@style/Theme.TransparentVoiceAssistant"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:windowSoftInputMode="adjustResize"
+            android:label="المساعد الذكي"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:excludeFromRecents="true"

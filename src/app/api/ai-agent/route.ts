@@ -138,6 +138,15 @@ export async function POST(req: Request) {
       const totalNum = parseInt(String(stepData.price || stepData.total || "15000").replace(/[^\d]/g, "")) || 15000
       const deliveryPriceNum = region?.deliveryPrice ? Number(region.deliveryPrice) : 3000
 
+      // بناء ملخص المنتجات والمجهزين إن وجدت
+      let summaryText = stepData.notes || `طلب ${stepData.orderType || "جديد"} - ${regionName}`
+      if (stepData.items && Array.isArray(stepData.items) && stepData.items.length > 0) {
+        summaryText = `منتجات:\n` + stepData.items.map((it: string, idx: number) => `${idx + 1}- ${it}`).join("\n")
+        if (stepData.selectedPreparers && stepData.selectedPreparers.length > 0) {
+          summaryText += `\nالمجهزون: ${stepData.selectedPreparers.join(", ")}`
+        }
+      }
+
       const newOrder = await prisma.order.create({
         data: {
           shopId: defaultShop.id,
@@ -146,26 +155,62 @@ export async function POST(req: Request) {
           totalAmount: new Decimal(totalNum),
           orderSubtotal: new Decimal(Math.max(0, totalNum - deliveryPriceNum)),
           deliveryPrice: new Decimal(deliveryPriceNum),
-          status: "pending",
+          status: stepData.orderType === "تجهيز طلب" ? "preparing" : "pending",
           orderType: stepData.orderType || "من الإدارة",
-          summary: stepData.notes || `طلب ${stepData.orderType || "جديد"} - ${regionName}`,
+          summary: summaryText,
           orderNoteTime: stepData.deliveryTime || stepData.time || "فوري",
           customerLandmark: stepData.landmark || "",
           customerLocationUrl: stepData.locationUrl || ""
         }
       })
+
       return NextResponse.json({
         done: true,
-        message: `تم انشاء طلب جديد رقم #${newOrder.orderNumber} بنجاح ✅`
+        message: `تم انشاء طلب جديد رقم #${newOrder.orderNumber} بنجاح ✅`,
+        orderNumber: newOrder.orderNumber
       })
     }
 
-    // اذا بس كتب "سويلي طلب" يرجع يطلب نوع الطلب
+    // تحليل إذا كانت رسالة كاملة متعددة الأسطر لطلب تجهيز
+    const lines = prompt.split("\n").map((l: string) => l.trim()).filter(Boolean)
+    if (lines.length >= 2) {
+      let extractedPhone = ""
+      let extractedArea = ""
+      const remainingItems: string[] = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const phoneMatch = line.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/)
+        if (phoneMatch && !extractedPhone && i < 2) {
+          extractedPhone = phoneMatch[0]
+        } else if (!extractedArea && i < 2 && !phoneMatch) {
+          extractedArea = line.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "")
+        } else {
+          remainingItems.push(line.replace(/^[-*•\d+.)]\s*/, ""))
+        }
+      }
+
+      if (extractedPhone || extractedArea) {
+        return NextResponse.json({
+          done: false,
+          isFullMessageOrder: true,
+          extractedData: {
+            customerPhone: extractedPhone || "07700000000",
+            area: extractedArea || "البصرة",
+            items: remainingItems.length > 0 ? remainingItems : ["طلب عام"],
+            orderType: "تجهيز طلب"
+          },
+          message: "تم استخراج بيانات الطلب! يرجى تحديد المجهزين والموردين المطلوبين:"
+        })
+      }
+    }
+
+    // اذا بس كتب "سويلي طلب" يرجع يطلب نوع الطلب مع الخيار الرابع "تجهيز طلب"
     if (text.includes("سويلي طلب") || text.includes("سوي طلب") || text.includes("اضافة طلب")) {
       return NextResponse.json({
         done: false,
         needType: true,
-        message: "شنو نوع الطلب؟ اختار:\n1- من الادارة\n2- وجهتين\n3- من محل"
+        message: "شنو نوع الطلب؟ اختار:\n1- من الادارة\n2- وجهتين\n3- من محل\n4- تجهيز طلب"
       })
     }
 
