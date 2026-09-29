@@ -18,7 +18,6 @@ import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
-import { FloatingMenuSettings } from "./floating-menu-settings";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 import { AdminGesturesSettings } from "./admin-gestures-settings";
@@ -207,13 +206,6 @@ export function SettingsBlocks({
       subtitle: "تخصيص حركات أصابعك على الشاشة لتنفيذ إجراءات سريعة فورية داخل تطبيق المدير.",
       tone: "emerald",
       content: <AdminGesturesSettings />
-    },
-    {
-      id: "floating-menu",
-      title: "القائمة الدائرية 🔘",
-      subtitle: "تخصيص الروابط والأقسام العائمة.",
-      tone: "sky",
-      content: <FloatingMenuSettings icons={globalIcons} />
     },
     {
       id: "sidebar-settings",

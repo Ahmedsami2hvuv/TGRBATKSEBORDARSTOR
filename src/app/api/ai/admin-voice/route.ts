@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { processAdminAiMessage, resetChatSessionContext } from "@/lib/ai-admin-agent";
+import { executeAutonomousGeminiAgent, askGeminiFreeChat } from "@/lib/ai-autonomous-agent";
+import { resetChatSessionContext } from "@/lib/ai-admin-agent";
 
 export async function GET(req: Request) {
   try {
@@ -15,17 +16,23 @@ export async function GET(req: Request) {
     if (!text) {
       return NextResponse.json({
         ok: true,
-        message: "أهلاً بك! نقطة الاتصال الذكية تعمل بنجاح. يمكنك إرسال الأوامر عبر طلب POST أو إضافة ?text= للأمر في الرابط."
+        message: "أهلاً بك يا أبو الأكبر! مساعد الذكاء الاصطناعي Gemini جاهز للعمل."
       });
     }
 
-    const res = await processAdminAiMessage(text, "voice_admin_get");
+    const userId = searchParams.get("userId") || "admin_ai_page";
+
+    let geminiRes = await executeAutonomousGeminiAgent(text, userId);
+    if (!geminiRes || !geminiRes.reply) {
+      const freeText = await askGeminiFreeChat(text);
+      geminiRes = { reply: freeText || "تدلل يا أبو الأكبر، أنا أسمعك وجاهز لأي استفسار أو أمر بالخدمة دائماً 🌸" };
+    }
 
     return NextResponse.json({
       ok: true,
       prompt: text,
-      reply: res.reply,
-      buttons: res.buttons || []
+      reply: geminiRes.reply,
+      buttons: geminiRes.buttons || []
     });
   } catch (error: any) {
     console.error("[admin-voice-api GET] Error:", error);
@@ -45,22 +52,25 @@ export async function POST(req: Request) {
     }
 
     if (!text) {
-      return NextResponse.json({ ok: false, message: "يرجى تزويد النص أو الأمر الصوتي المطلوب تنفيذه." }, { status: 400 });
+      return NextResponse.json({ ok: false, message: "يرجى تزويد النص أو الأمر المطلوب تنفيذه." }, { status: 400 });
     }
 
-    const userId = body.userId || "voice_admin";
-    const history = body.history || [];
+    const userId = body.userId || "admin_ai_page";
 
-    const res = await processAdminAiMessage(text, userId, undefined, undefined, history);
+    let geminiRes = await executeAutonomousGeminiAgent(text, userId);
+    if (!geminiRes || !geminiRes.reply) {
+      const freeText = await askGeminiFreeChat(text);
+      geminiRes = { reply: freeText || "تدلل يا أبو الأكبر، أنا وياك وبخدمتك لأي سؤال أو استشارة أو تحليل 🚀" };
+    }
 
     return NextResponse.json({
       ok: true,
       prompt: text,
-      reply: res.reply,
-      buttons: res.buttons || []
+      reply: geminiRes.reply,
+      buttons: geminiRes.buttons || []
     });
   } catch (error: any) {
     console.error("[admin-voice-api POST] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message || "حدث خطأ أثناء معالجة الطلب الصوتي" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error.message || "حدث خطأ أثناء المعالجة" }, { status: 500 });
   }
 }
