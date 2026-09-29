@@ -103,6 +103,13 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        if (intent?.action == Intent.ACTION_ASSIST || intent?.action == Intent.ACTION_VOICE_COMMAND) {
+            val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            startActivity(aiIntent)
+        }
         
         // تشغيل خدمة البقاء في الخلفية الوهمية لمنع الأندرويد من قتل التطبيق
         try {
@@ -823,6 +830,13 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (intent?.action == Intent.ACTION_ASSIST || intent?.action == Intent.ACTION_VOICE_COMMAND) {
+            val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            startActivity(aiIntent)
+            return
+        }
         val openUrl = intent?.getStringExtra("OPEN_URL") ?: intent?.getStringExtra("target_url")
         if (!openUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
             webView.loadUrl(openUrl)
@@ -1120,6 +1134,28 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 } catch (e: Exception) {
                     webView.loadUrl("https://aboakbr.com/admin/ai")
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun openAssistantSettings() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    Toast.makeText(this@MainActivity, "يرجى اختيار تطبيق (أبو الأكبر) كمساعد رقمي افتراضي ليعمل زر الهوم فوراً", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    try {
+                        val fallback = Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(fallback)
+                    } catch (ex: Exception) {
+                        Toast.makeText(this@MainActivity, "يرجى فتح إعدادات الهاتف > التطبيقات الافتراضية > تطبيق المساعد الرقمي", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }

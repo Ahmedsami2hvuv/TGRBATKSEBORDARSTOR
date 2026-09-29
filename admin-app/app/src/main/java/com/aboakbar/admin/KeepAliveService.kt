@@ -1,4 +1,4 @@
-﻿package com.aboakbar.admin
+package com.aboakbar.admin
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -32,12 +32,18 @@ class KeepAliveService : Service() {
         }
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, pendingIntentFlags)
 
+        val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val aiPendingIntent = PendingIntent.getActivity(this, 102, aiIntent, pendingIntentFlags)
+
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("التطبيق يعمل")
-            .setContentText("التطبيق يعمل في الخلفية لتلقي الطلبات")
+            .setContentTitle("تطبيق أبو الأكبر - قيد التشغيل")
+            .setContentText("المساعد الذكي الخارق جاهز دائماً في خدمتك 🚀")
             .setSmallIcon(R.drawable.ic_notification_small)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(R.drawable.ic_notification_small, "🤖 فتح المساعد الذكي", aiPendingIntent)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

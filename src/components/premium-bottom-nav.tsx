@@ -15,7 +15,9 @@ export function PremiumBottomNav() {
 
   const triggerFloatingAi = () => {
     if (typeof window !== "undefined") {
-      if (navigator.vibrate) navigator.vibrate(60);
+      if (navigator.vibrate) {
+        try { navigator.vibrate(60); } catch (e) {}
+      }
       const anyWin = window as any;
       if (anyWin.AndroidGestures && anyWin.AndroidGestures.openFloatingAiChat) {
         anyWin.AndroidGestures.openFloatingAiChat();
@@ -30,7 +32,7 @@ export function PremiumBottomNav() {
     holdTimerRef.current = setTimeout(() => {
       isHoldTriggeredRef.current = true;
       triggerFloatingAi();
-    }, 500);
+    }, 350);
   };
 
   const handleHomeTouchEnd = (e: React.TouchEvent) => {
