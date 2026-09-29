@@ -655,9 +655,26 @@ export function AdminShell({
         {/* Sleek Top Bar matching Mockup */}
          <header className="h-16 w-full bg-white/80 dark:bg-[#131418]/80 backdrop-blur-md border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.05)] px-4 sm:px-8 flex items-center justify-between z-40 relative">
             <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-[rgba(0,243,255,0.1)] to-transparent pointer-events-none" />
-            <div className="flex items-center gap-4 w-full h-full justify-between ms-12">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <ThemeSwitcher />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      const anyWin = window as any;
+                      if (anyWin.AndroidGestures && anyWin.AndroidGestures.openFloatingAiChat) {
+                        anyWin.AndroidGestures.openFloatingAiChat();
+                      } else {
+                        window.location.href = "/admin/ai";
+                      }
+                    }
+                  }}
+                  title="فتح المساعد الذكي الخارق"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-sky-500/15 via-blue-600/15 to-indigo-600/15 border border-sky-400/30 text-sky-500 dark:text-sky-300 hover:bg-sky-500/25 active:scale-95 transition-all text-xs font-black shadow-xs"
+                >
+                  <span className="text-sm">🤖</span>
+                  <span className="hidden xs:inline">المساعد الذكي</span>
+                </button>
                 <AdminLiveSearchInput
                    id="admin-super-search-header"
                    ariaLabel="البحث"
@@ -665,7 +682,6 @@ export function AdminShell({
                    className="rounded-full border border-slate-300 dark:border-[rgba(255,255,255,0.1)] bg-slate-100 dark:bg-[#09090b] px-4 py-2 w-[240px] text-sm text-slate-900 dark:text-[#f8fafc] placeholder:text-slate-500 shadow-inner focus:border-sky-500 dark:focus:border-[#00f3ff] focus:ring-1 focus:ring-sky-500 dark:focus:ring-[#00f3ff] outline-none transition-all hidden md:block"
                  />
               </div>
-            </div>
          </header>
 
         <main className="w-full flex-1 px-1 py-3 sm:p-6 lg:p-8 overflow-y-auto">
