@@ -114,11 +114,10 @@ export async function getAllActiveGeminiKeys(): Promise<GeminiKeyRecord[]> {
 }
 
 export const SUPPORTED_GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-flash-latest",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-2.5-pro"
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.0-flash-lite"
 ];
 
 export async function getNextActiveGeminiKey(): Promise<GeminiKeyRecord | null> {
@@ -149,12 +148,10 @@ export async function markGeminiKeyError(keyId: string, isQuotaError: boolean = 
 export async function callGemini(prompt: string): Promise<string> {
   const keys = await getAllActiveGeminiKeys();
   const candidateModels = [
-    "gemini-2.5-flash",
-    "gemini-flash-latest",
-    "gemini-3.6-flash",
-    "gemini-3.7-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash"
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.0-flash-lite"
   ];
 
   for (const k of keys) {

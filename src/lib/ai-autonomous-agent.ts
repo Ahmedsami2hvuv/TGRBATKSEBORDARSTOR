@@ -219,7 +219,7 @@ export async function executeAutonomousAiCommand(
     let successfulKeyId: string | null = null;
 
     const cleanInputText = userText.replace(/#/g, "");
-    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-pro"];
+    const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite"];
 
     for (const k of keys) {
       if (functionCallResult || directTextReply) break;
@@ -1306,7 +1306,7 @@ export async function askGeminiFreeChat(userText: string): Promise<string | null
     const keys = await getAllActiveGeminiKeys();
     if (!keys || keys.length === 0) return null;
 
-    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash"];
+    const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite"];
     const cleanInput = userText.replace(/#/g, "").trim();
 
     for (const k of keys) {
