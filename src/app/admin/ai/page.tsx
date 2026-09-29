@@ -1,779 +1,332 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react";
+import { Mic, MicOff, Send, Volume2, VolumeX, Sparkles, Loader2, Trash2, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-interface Message {
-  id: string
-  sender: "user" | "ai"
-  text: string
-  options?: string[]
-  progress?: number
-  action?: string
-  status?: "success" | "error" | "info"
-  timestamp: string
-}
+type ChatMessage = {
+  id: string;
+  sender: "user" | "ai";
+  text: string;
+  buttons?: Array<{ text: string; action: string }>;
+  timestamp: string;
+};
 
-type OrderType = "admin" | "two_way" | "shop"
-
-interface OrderDraft {
-  orderTypeTitle?: string
-  orderType?: OrderType
-  customerPhone?: string
-  customerRegionName?: string
-  orderSubtype?: string
-  price?: string
-  orderTime?: string
-  senderPhone?: string
-  senderRegionName?: string
-  shopName?: string
-  customerName?: string
-}
-
-export default function AdminAiVoiceAgentPage() {
-  const [messages, setMessages] = useState<Message[]>([
+export default function AdminAiDirectPage() {
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: "welcome",
+      id: "welcome_init",
       sender: "ai",
-      text: "مرحباً بك يا أبو الأكبر في وكيل الطلبات الفائق بالصوت 🎙️🚀\nيمكنك التحدث بالصوت أو الكتابة:\n• لعمل طلب جديد، قل: «سويلي طلب» أو اضغط على الزر أدناه.\n• لتنفيذ أي أمر مباشر، قل مثلاً: «صفر حساب فارس» أو «اسند طلب 2815 لفارس».",
-      options: ["سويلي طلب", "صفر حساب فارس", "اسند طلب 2815 الى فارس", "حالة الطلبات اليوم"],
+      text: "يا هلا ومية هلا بيك يا أبو الأكبر! العقل المدبر والمساعد الذكي Gemini في خدمتك، أطلب أي استعلام أو أمر أو استشارة بصوتك أو كتابة! 🚀✨",
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     }
-  ])
+  ]);
 
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [activeStep, setActiveStep] = useState<string | null>(null)
-  const [orderDraft, setOrderDraft] = useState<OrderDraft>({})
-  const [areaSuggestions, setAreaSuggestions] = useState<string[]>([])
-  const [metadata, setMetadata] = useState<{ shops: any[]; customers: any[] }>({ shops: [], customers: [] })
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [statusText, setStatusText] = useState("المساعد الذكي جاهز");
 
-  const chatEndRef = useRef<HTMLDivElement>(null)
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<any>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
 
-  // التمرير التلقائي لأسفل المحادثة
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, loading, areaSuggestions])
-
-  // جلب المحلات والعملاء للاقتراحات الذكية
-  useEffect(() => {
-    fetch("/api/ai-agent?type=metadata")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.shops || data.customers) {
-          setMetadata({ shops: data.shops || [], customers: data.customers || [] })
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  // إعداد وتفعيل التعرف الصوتي (Web Speech API)
-  const toggleSpeechRecognition = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop()
-      setIsRecording(false)
-      return
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
+  }, [messages, isLoading]);
 
-    const SpeechRecognition =
-      (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+  const speakResponse = (text: string) => {
+    if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const cleanText = text
+      .replace(/[*#\-]|https?:\/\/\S+/g, "")
+      .replace(/[^\u0600-\u06FF\s0-9.,!؟]/g, " ")
+      .trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "ar-IQ";
+    utterance.rate = 1.05;
+    window.speechSynthesis.speak(utterance);
+  };
 
+  const startListening = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("متصفحك لا يدعم التعرف على الصوت المباشر. يرجى استخدام متصفح Google Chrome.")
-      return
+      alert("التعرف الصوتي غير مدعوم بهذا المتصفح.");
+      return;
     }
 
     try {
-      const recognition = new SpeechRecognition()
-      recognition.lang = "ar-IQ" || "ar-SA"
-      recognition.continuous = false
-      recognition.interimResults = false
-
-      recognition.onstart = () => {
-        setIsRecording(true)
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
       }
 
-      recognition.onresult = (e: any) => {
-        const transcript = e.results[0][0].transcript
-        if (transcript) {
-          setInput(transcript)
-          handleSend(transcript)
+      const rec = new SpeechRecognition();
+      rec.lang = "ar-IQ";
+      rec.continuous = false;
+      rec.interimResults = true;
+
+      rec.onstart = () => {
+        setIsListening(true);
+        setStatusText("🎙️ الميكروفون يستمع لك... تفضل بالتحدث");
+      };
+
+      rec.onresult = (event: any) => {
+        let transcript = "";
+        for (let i = 0; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
         }
-        setIsRecording(false)
-      }
+        setInputMessage(transcript);
+      };
 
-      recognition.onerror = (e: any) => {
-        console.error("Speech error:", e)
-        setIsRecording(false)
-      }
+      rec.onerror = () => {
+        setIsListening(false);
+        setStatusText("⚠️ تعذر التقاط الصوت، يمكنك الكتابة بالنص.");
+      };
 
-      recognition.onend = () => {
-        setIsRecording(false)
-      }
+      rec.onend = () => {
+        setIsListening(false);
+        setStatusText("المساعد الذكي جاهز");
+      };
 
-      recognitionRef.current = recognition
-      recognition.start()
-    } catch (err) {
-      console.error(err)
-      setIsRecording(false)
-    }
-  }
-
-  // البحث في API المناطق الذكية عند كتابة أو استدعاء منطقة
-  const fetchAreaSuggestions = async (q: string) => {
-    try {
-      const res = await fetch(`/api/areas/search?q=${encodeURIComponent(q)}`)
-      const data = await res.json()
-      const list = [...(data.suggestions || []), ...(data.areas || [])]
-      setAreaSuggestions(list.slice(0, 6))
-      return list
+      recognitionRef.current = rec;
+      rec.start();
     } catch (e) {
-      return ["نهر خوز", "ابو الخصيب مركز", "البلد", "محيلة", "باب طويل", "جيكور"]
+      setIsListening(false);
     }
-  }
+  };
 
-  // إضافة رسالة جديدة للمحادثة
-  const addMessage = (msg: Omit<Message, "id" | "timestamp">) => {
-    const newMsg: Message = {
-      ...msg,
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
-      timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
     }
-    setMessages((prev) => [...prev, newMsg])
-    return newMsg
-  }
+    setIsListening(false);
+  };
 
-  // إلغاء محادثة الطلب الحالية
-  const cancelOrderFlow = () => {
-    setActiveStep(null)
-    setOrderDraft({})
-    setAreaSuggestions([])
-    addMessage({
-      sender: "ai",
-      text: "تم إلغاء عملية إنشاء الطلب. كيف أساعدك الآن يا أبو الأكبر؟",
-      options: ["سويلي طلب", "صفر حساب فارس", "اسند طلب 2815 الى فارس"]
-    })
-  }
+  const sendMessage = async (textToSend: string) => {
+    const clean = textToSend.trim();
+    if (!clean || isSendingRef.current) return;
 
-  // معالجة تدفق خطوات إنشاء الطلب المتعدد
-  const handleOrderWizard = async (text: string) => {
-    const cleanText = text.trim()
-    const draft = { ...orderDraft }
+    isSendingRef.current = true;
+    setInputMessage("");
+    stopListening();
 
-    // الخطوة 0: اختيار نوع الطلب
-    if (activeStep === "CHOOSE_TYPE") {
-      if (cleanText.includes("1") || cleanText.includes("إدارة") || cleanText.includes("ادارة")) {
-        draft.orderType = "admin"
-        draft.orderTypeTitle = "طلب من الإدارة"
-        setOrderDraft(draft)
-        setActiveStep("ADMIN_PHONE")
-        addMessage({
-          sender: "ai",
-          text: "ممتاز! تم اختيار (طلب من الإدارة) 🏢\n\nالخطوة 1 من 5: ما هو رقم هاتف الزبون؟",
-          progress: 20,
-          options: ["077", "078", "075", "إلغاء الطلب"]
-        })
-      } else if (cleanText.includes("2") || cleanText.includes("وجهتين") || cleanText.includes("مرسل")) {
-        draft.orderType = "two_way"
-        draft.orderTypeTitle = "طلب وجهتين"
-        setOrderDraft(draft)
-        setActiveStep("TWOWAY_SENDER_PHONE")
-        addMessage({
-          sender: "ai",
-          text: "تم اختيار (طلب وجهتين) 🛵\n\nالخطوة 1 من 7: ما هو رقم هاتف المرسل؟",
-          progress: 14,
-          options: ["إلغاء الطلب"]
-        })
-      } else if (cleanText.includes("3") || cleanText.includes("محل") || cleanText.includes("متجر")) {
-        draft.orderType = "shop"
-        draft.orderTypeTitle = "طلب من محل"
-        setOrderDraft(draft)
-        setActiveStep("SHOP_NAME")
-        const shopNames = metadata.shops.slice(0, 6).map((s) => s.name)
-        addMessage({
-          sender: "ai",
-          text: "تم اختيار (طلب من محل) 🏪\n\nالخطوة 1 من 7: ما هو اسم المحل؟",
-          progress: 14,
-          options: shopNames.length > 0 ? [...shopNames, "إلغاء الطلب"] : ["محل البركة", "محل النور", "إلغاء الطلب"]
-        })
-      } else {
-        addMessage({
-          sender: "ai",
-          text: "يرجى اختيار نوع الطلب:\n1️⃣ طلب من الإدارة\n2️⃣ طلب وجهتين\n3️⃣ طلب من محل",
-          options: ["1️⃣ طلب من الإدارة", "2️⃣ طلب وجهتين", "3️⃣ طلب من محل", "إلغاء الطلب"]
-        })
-      }
-      return
-    }
-
-    // ==========================================
-    // مسار 1: طلب من الإدارة (5 خطوات)
-    // ==========================================
-    if (activeStep === "ADMIN_PHONE") {
-      draft.customerPhone = cleanText
-      setOrderDraft(draft)
-      setActiveStep("ADMIN_REGION")
-      const areas = await fetchAreaSuggestions("ابو الخصيب")
-      addMessage({
-        sender: "ai",
-        text: `تم حفظ الرقم: ${cleanText} ✅\n\nالخطوة 2 من 5: ما هي منطقة الزبون؟ (اكتبها أو اختر من الاقتراحات الذكية)`,
-        progress: 40,
-        options: [...areas, "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "ADMIN_REGION") {
-      const cleanRegion = cleanText.replace(/هل تقصد:\s*|\؟/g, "")
-      draft.customerRegionName = cleanRegion
-      setOrderDraft(draft)
-      setActiveStep("ADMIN_SUBTYPE")
-      addMessage({
-        sender: "ai",
-        text: `تم تثبيت المنطقة: ${cleanRegion} 📍\n\nالخطوة 3 من 5: ما هو نوع الطلب؟`,
-        progress: 60,
-        options: ["وجبة طعام", "حلويات وعصائر", "هدايا وورود", "مستلزمات منزلية", "أغراض وأمانة", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "ADMIN_SUBTYPE") {
-      draft.orderSubtype = cleanText
-      setOrderDraft(draft)
-      setActiveStep("ADMIN_PRICE")
-      addMessage({
-        sender: "ai",
-        text: `النوع: ${cleanText} 🛍️\n\nالخطوة 4 من 5: كم هو سعر أو مبلغ الطلب بالدينار؟`,
-        progress: 80,
-        options: ["5,000 د.ع", "10,000 د.ع", "15,000 د.ع", "25,000 د.ع", "50,000 د.ع", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "ADMIN_PRICE") {
-      draft.price = cleanText
-      setOrderDraft(draft)
-      setActiveStep("ADMIN_TIME")
-      addMessage({
-        sender: "ai",
-        text: `المبلغ: ${cleanText} 💰\n\nالخطوة 5 والأخيرة: ما هو وقت تسليم الطلب؟`,
-        progress: 95,
-        options: ["توصيل فوري الآن ⚡", "خلال ساعة", "بعد ساعتين", "العصر 4:00", "المساء 8:00", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "ADMIN_TIME") {
-      draft.orderTime = cleanText
-      setOrderDraft(draft)
-      await finalizeOrderCreation(draft)
-      return
-    }
-
-    // ==========================================
-    // مسار 2: طلب وجهتين (7 خطوات)
-    // ==========================================
-    if (activeStep === "TWOWAY_SENDER_PHONE") {
-      draft.senderPhone = cleanText
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_RECIPIENT_PHONE")
-      addMessage({
-        sender: "ai",
-        text: `هاتف المرسل: ${cleanText} ✅\n\nالخطوة 2 من 7: ما هو رقم هاتف المستلم؟`,
-        progress: 28,
-        options: ["إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_RECIPIENT_PHONE") {
-      draft.customerPhone = cleanText
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_SENDER_REGION")
-      const areas = await fetchAreaSuggestions("ابو الخصيب")
-      addMessage({
-        sender: "ai",
-        text: `هاتف المستلم: ${cleanText} ✅\n\nالخطوة 3 من 7: ما هي منطقة المرسل (نقطة الاستلام)؟`,
-        progress: 42,
-        options: [...areas, "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_SENDER_REGION") {
-      const cleanRegion = cleanText.replace(/هل تقصد:\s*|\؟/g, "")
-      draft.senderRegionName = cleanRegion
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_RECIPIENT_REGION")
-      const areas = await fetchAreaSuggestions("البصرة")
-      addMessage({
-        sender: "ai",
-        text: `منطقة المرسل: ${cleanRegion} 📍\n\nالخطوة 4 من 7: ما هي منطقة المستلم (وجهة التسليم)؟`,
-        progress: 57,
-        options: [...areas, "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_RECIPIENT_REGION") {
-      const cleanRegion = cleanText.replace(/هل تقصد:\s*|\؟/g, "")
-      draft.customerRegionName = cleanRegion
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_SUBTYPE")
-      addMessage({
-        sender: "ai",
-        text: `منطقة المستلم: ${cleanRegion} 🏁\n\nالخطوة 5 من 7: ما هو نوع وتفاصيل الطلب؟`,
-        progress: 71,
-        options: ["أمانة ومستندات", "طرد وملابس", "هدية خاصة", "أجهزة وقطع غيار", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_SUBTYPE") {
-      draft.orderSubtype = cleanText
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_PRICE")
-      addMessage({
-        sender: "ai",
-        text: `نوع الشحنة: ${cleanText} 📦\n\nالخطوة 6 من 7: ما هو سعر أو أجور الطلب؟`,
-        progress: 85,
-        options: ["5,000 د.ع", "7,000 د.ع", "10,000 د.ع", "15,000 د.ع", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_PRICE") {
-      draft.price = cleanText
-      setOrderDraft(draft)
-      setActiveStep("TWOWAY_TIME")
-      addMessage({
-        sender: "ai",
-        text: `المبلغ: ${cleanText} 💰\n\nالخطوة 7 والأخيرة: ما هو وقت التوصيل المناسب؟`,
-        progress: 95,
-        options: ["فوري الآن", "اليوم ظهراً", "المساء", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "TWOWAY_TIME") {
-      draft.orderTime = cleanText
-      setOrderDraft(draft)
-      await finalizeOrderCreation(draft)
-      return
-    }
-
-    // ==========================================
-    // مسار 3: طلب من محل (7 خطوات)
-    // ==========================================
-    if (activeStep === "SHOP_NAME") {
-      draft.shopName = cleanText
-      setOrderDraft(draft)
-      setActiveStep("SHOP_CUSTOMER_NAME")
-      const custNames = metadata.customers.slice(0, 6).map((c) => c.name)
-      addMessage({
-        sender: "ai",
-        text: `المحل: ${cleanText} 🏪\n\nالخطوة 2 من 7: ما هو اسم العميل؟ (اكتبه أو اختر من القائمة)`,
-        progress: 28,
-        options: custNames.length > 0 ? [...custNames, "عميل نقدي", "إلغاء الطلب"] : ["عميل نقدي", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_CUSTOMER_NAME") {
-      draft.customerName = cleanText
-      setOrderDraft(draft)
-      setActiveStep("SHOP_REGION")
-      const areas = await fetchAreaSuggestions("ابو الخصيب")
-      addMessage({
-        sender: "ai",
-        text: `اسم العميل: ${cleanText} 👤\n\nالخطوة 3 من 7: ما هي منطقة الزبون؟`,
-        progress: 42,
-        options: [...areas, "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_REGION") {
-      const cleanRegion = cleanText.replace(/هل تقصد:\s*|\؟/g, "")
-      draft.customerRegionName = cleanRegion
-      setOrderDraft(draft)
-      setActiveStep("SHOP_CUSTOMER_PHONE")
-      addMessage({
-        sender: "ai",
-        text: `المنطقة: ${cleanRegion} 📍\n\nالخطوة 4 من 7: ما هو رقم هاتف الزبون؟`,
-        progress: 57,
-        options: ["077", "078", "075", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_CUSTOMER_PHONE") {
-      draft.customerPhone = cleanText
-      setOrderDraft(draft)
-      setActiveStep("SHOP_PRICE")
-      addMessage({
-        sender: "ai",
-        text: `رقم الزبون: ${cleanText} 📱\n\nالخطوة 5 من 7: ما هو سعر أو مبلغ الطلب؟`,
-        progress: 71,
-        options: ["10,000 د.ع", "15,000 د.ع", "25,000 د.ع", "35,000 د.ع", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_PRICE") {
-      draft.price = cleanText
-      setOrderDraft(draft)
-      setActiveStep("SHOP_SUBTYPE")
-      addMessage({
-        sender: "ai",
-        text: `المبلغ: ${cleanText} 💰\n\nالخطوة 6 من 7: ما هو نوع ومحتوى الطلب؟`,
-        progress: 85,
-        options: ["أكل ومطاعم", "كيك وحلويات", "ملابس", "عطور ومكياج", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_SUBTYPE") {
-      draft.orderSubtype = cleanText
-      setOrderDraft(draft)
-      setActiveStep("SHOP_TIME")
-      addMessage({
-        sender: "ai",
-        text: `محتوى الطلب: ${cleanText} 📦\n\nالخطوة 7 والأخيرة: ما هو وقت التسليم؟`,
-        progress: 95,
-        options: ["فوري الآن ⚡", "خلال نصف ساعة", "خلال ساعة", "المساء", "إلغاء الطلب"]
-      })
-      return
-    }
-
-    if (activeStep === "SHOP_TIME") {
-      draft.orderTime = cleanText
-      setOrderDraft(draft)
-      await finalizeOrderCreation(draft)
-      return
-    }
-  }
-
-  // الإنشاء النهائي للطلب في قاعدة البيانات عبر POST إلى /api/ai-agent
-  const finalizeOrderCreation = async (completedDraft: OrderDraft) => {
-    setActiveStep(null)
-    setAreaSuggestions([])
-    setLoading(true)
-
-    addMessage({
-      sender: "ai",
-      text: "جاري إدخال وتثبيت الطلب في النظام فوراً... ⏳",
-      status: "info",
-      progress: 100
-    })
-
-    try {
-      const res = await fetch("/api/ai-agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create_order",
-          orderType: completedDraft.orderTypeTitle || "طلب من الإدارة",
-          customerPhone: completedDraft.customerPhone,
-          customerRegionName: completedDraft.customerRegionName,
-          senderPhone: completedDraft.senderPhone,
-          senderRegionName: completedDraft.senderRegionName,
-          shopName: completedDraft.shopName,
-          customerName: completedDraft.customerName,
-          orderSubtype: completedDraft.orderSubtype,
-          price: completedDraft.price,
-          orderTime: completedDraft.orderTime
-        })
-      })
-
-      const data = await res.json()
-
-      if (data.done) {
-        addMessage({
-          sender: "ai",
-          text: `🎉 ${data.message}\n\n• نوع الطلب: ${completedDraft.orderTypeTitle}\n• المنطقة: ${completedDraft.customerRegionName || "غير محدد"}\n• الهاتف: ${completedDraft.customerPhone || "—"}\n• السعر: ${completedDraft.price || "0"}\n• وقت التسليم: ${completedDraft.orderTime || "فوري"}\n\nالطلب الآن في حالة (معلق - Pending) وجاهز للإسناد!`,
-          action: `order_created_#${data.orderId}`,
-          status: "success",
-          options: ["سويلي طلب ثاني", "اسند هذا الطلب الى فارس", "صفر حساب فارس"]
-        })
-      } else {
-        addMessage({
-          sender: "ai",
-          text: `❌ تعذر إنشاء الطلب: ${data.error || "خطأ غير متوقع"}`,
-          status: "error",
-          options: ["أعد المحاولة", "سويلي طلب"]
-        })
-      }
-    } catch (err: any) {
-      addMessage({
-        sender: "ai",
-        text: `⚠️ خطأ في الاتصال بالخادم: ${err?.message}`,
-        status: "error",
-        options: ["سويلي طلب"]
-      })
-    } finally {
-      setLoading(false)
-      setOrderDraft({})
-    }
-  }
-
-  // إرسال النص العادي أو الأمر
-  const handleSend = async (commandToSend?: string) => {
-    const textToSend = (commandToSend || input).trim()
-    if (!textToSend || loading) return
-
-    // إضافة رسالة المستخدم
-    addMessage({
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
       sender: "user",
-      text: textToSend
-    })
+      text: clean,
+      timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+    };
 
-    if (!commandToSend) setInput("")
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+    setStatusText("⚡ جاري المعالجة والتنفيذ عبر Gemini...");
 
-    // معالجة خيار الإلغاء
-    if (textToSend.includes("إلغاء") || textToSend.includes("الغاء")) {
-      cancelOrderFlow()
-      return
-    }
-
-    // إذا كنا داخل محرك الأسئلة
-    if (activeStep) {
-      await handleOrderWizard(textToSend)
-      return
-    }
-
-    // إذا بدأ المستخدم بطلب جديد
-    if (
-      textToSend.includes("سويلي طلب") ||
-      textToSend.includes("طلب جديد") ||
-      textToSend.includes("انشئ طلب") ||
-      textToSend.includes("اريد اسوي طلب")
-    ) {
-      setActiveStep("CHOOSE_TYPE")
-      setOrderDraft({})
-      addMessage({
-        sender: "ai",
-        text: "حياك الله يا أبو الأكبر! تدلل، شنو نوع الطلب؟\n\n1️⃣ طلب من الإدارة\n2️⃣ طلب وجهتين\n3️⃣ طلب من محل",
-        progress: 5,
-        options: ["1️⃣ طلب من الإدارة", "2️⃣ طلب وجهتين", "3️⃣ طلب من محل"]
-      })
-      return
-    }
-
-    // الأوامر الأخرى (تصفير، إخفاء، إسناد، حالة...)
-    setLoading(true)
     try {
-      const res = await fetch("/api/ai-agent", {
+      const res = await fetch("/api/ai/admin-voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: textToSend })
-      })
+        body: JSON.stringify({ text: clean, userId: "admin_ai_page" })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
+      setIsLoading(false);
+      isSendingRef.current = false;
 
-      addMessage({
-        sender: "ai",
-        text: data.done ? data.message : `❌ ${data.error || "تعذر تنفيذ الأمر"}`,
-        action: data.action,
-        status: data.done ? "success" : "error",
-        options: data.done ? ["سويلي طلب", "صفر حساب فارس", "اسند طلب 2815 الى فارس"] : undefined
-      })
-    } catch (err: any) {
-      addMessage({
-        sender: "ai",
-        text: `⚠️ خطأ في الاتصال: ${err?.message}`,
-        status: "error"
-      })
-    } finally {
-      setLoading(false)
+      if (data.ok) {
+        setStatusText("✅ تم التنفيذ بنجاح");
+        const aiMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: data.reply || "",
+          buttons: Array.isArray(data.buttons) ? data.buttons : [],
+          timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        speakResponse(data.reply || "");
+      } else {
+        setStatusText("⚠️ حدث خطأ أثناء المعالجة");
+        const aiMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: data.error || data.message || "حدث خطأ غير متوقع",
+          timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+        };
+        setMessages(prev => [...prev, aiMsg]);
+      }
+    } catch (err) {
+      setIsLoading(false);
+      isSendingRef.current = false;
+      setStatusText("❌ تعذر الاتصال بالسيرفر");
     }
-  }
+  };
+
+  const clearChat = async () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setMessages([
+      {
+        id: "cleared_init",
+        sender: "ai",
+        text: "تم تصفير الدردشة والذاكرة بنجاح يا أبو الأكبر! تفضل بأمرك أو استفسارك الجديد 🚀",
+        timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+      }
+    ]);
+    await fetch("/api/ai/admin-voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clear_session", userId: "admin_ai_page" })
+    }).catch(() => {});
+  };
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-2 sm:p-4"
-    >
-      <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col h-[94vh] overflow-hidden">
-        {/* شريط الرأس */}
-        <div className="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-emerald-400 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/10">
-                🎙️
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col dir-rtl select-none">
+      {/* Header */}
+      <header className="px-4 py-3.5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/abo1stor3hlaa2kbr8-47"
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-2xl transition-colors flex items-center gap-1.5 text-xs font-bold"
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>لوحة الإدارة</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 via-sky-500 to-indigo-500 p-0.5 flex items-center justify-center shadow-lg shadow-sky-500/20">
+              <div className="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center">
+                <Sparkles className="w-4.5 h-4.5 text-sky-400 animate-pulse" />
               </div>
-              <span className="absolute -bottom-1 -left-1 flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-900"></span>
-              </span>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                وكيل الطلبات الفائق بالصوت
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  شغال 100%
-                </span>
+              <h1 className="font-extrabold text-sm leading-tight text-white flex items-center gap-1.5">
+                مساعد الذكاء الاصطناعي Gemini
               </h1>
-              <p className="text-xs text-slate-400">aboakbr.com — يفهم كلامك بالصوت والعراقي وينفذ فوراً</p>
+              <p className="text-[11px] text-sky-400 font-medium">{statusText}</p>
             </div>
           </div>
-
-          {activeStep && (
-            <button
-              onClick={cancelOrderFlow}
-              className="text-xs bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/80 px-3 py-1.5 rounded-xl transition-all"
-            >
-              ✕ إلغاء الطلب
-            </button>
-          )}
         </div>
 
-        {/* منطقة المحادثة */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.map((m) => {
-            const isUser = m.sender === "user"
-            return (
-              <div key={m.id} className={`flex ${isUser ? "justify-start" : "justify-end"}`}>
-                <div
-                  className={`max-w-[90%] sm:max-w-[78%] rounded-3xl p-4 shadow-md transition-all ${
-                    isUser
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-br-sm"
-                      : m.status === "error"
-                      ? "bg-rose-950/60 border border-rose-800 text-rose-200 rounded-bl-sm"
-                      : m.status === "success"
-                      ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-100 rounded-bl-sm"
-                      : "bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-bl-sm"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-4 mb-1">
-                    <span className="text-xs font-semibold opacity-75">
-                      {isUser ? "أنت (أبو الأكبر)" : "المساعد الذكي"}
-                    </span>
-                    <span className="text-[10px] opacity-60">{m.timestamp}</span>
-                  </div>
-
-                  {/* شريط التقدم إذا وجد في الرسالة */}
-                  {m.progress !== undefined && (
-                    <div className="mb-2">
-                      <div className="flex justify-between text-[11px] text-slate-300 mb-1">
-                        <span>تقدم إكمال الطلب</span>
-                        <span className="font-mono text-emerald-400">{m.progress}%</span>
-                      </div>
-                      <div className="w-full bg-slate-900/80 h-2 rounded-full overflow-hidden border border-slate-700/50">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300"
-                          style={{ width: `${m.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed font-medium">
-                    {m.text}
-                  </p>
-
-                  {/* أزرار الاقتراحات السريعة الخاصة بالرسالة */}
-                  {m.options && m.options.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-700/60 flex flex-wrap gap-1.5">
-                      {m.options.map((opt, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleSend(opt)}
-                          disabled={loading}
-                          className="text-xs bg-slate-900/80 hover:bg-emerald-600 hover:text-white text-slate-200 border border-slate-700 hover:border-emerald-500 px-3 py-1.5 rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {m.action && (
-                    <div className="mt-2 pt-2 border-t border-slate-700/40 flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
-                      <span>✓ العملية:</span>
-                      <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-700 text-[11px]">
-                        {m.action}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-
-          {loading && (
-            <div className="flex justify-end">
-              <div className="bg-slate-800/80 border border-slate-700 rounded-3xl rounded-bl-sm p-4 text-slate-300 flex items-center gap-3">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-bounce"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]"></div>
-                </div>
-                <span className="text-xs font-medium">جاري التنفيذ والحفظ في قاعدة البيانات...</span>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* حقل الإدخال وزر الصوت والإرسال */}
-        <div className="p-3 sm:p-4 bg-slate-950 border-t border-slate-800">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleSend()
-            }}
-            className="flex items-center gap-2"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={clearChat}
+            className="p-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded-2xl transition-colors"
+            title="مسح سجل المحادثة"
           >
-            {/* زر الصوت المباشر */}
-            <button
-              type="button"
-              onClick={toggleSpeechRecognition}
-              title={isRecording ? "إيقاف التسجيل" : "تحدث بالصوت"}
-              className={`p-3 sm:px-4 rounded-2xl flex items-center justify-center transition-all duration-300 active:scale-95 shadow-md ${
-                isRecording
-                  ? "bg-rose-600 hover:bg-rose-500 text-white animate-pulse ring-4 ring-rose-500/40"
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              const next = !isMuted;
+              setIsMuted(next);
+              if (next && typeof window !== "undefined" && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+              }
+            }}
+            className={`p-2.5 rounded-2xl transition-all ${
+              isMuted ? "bg-slate-800 text-slate-400" : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
+            }`}
+            title={isMuted ? "تشغيل الناطق" : "كتم الناطق"}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+        </div>
+      </header>
+
+      {/* Chat Messages Body */}
+      <main
+        ref={chatScrollRef}
+        className="flex-1 p-4 overflow-y-auto space-y-4 max-w-3xl w-full mx-auto pb-28 scrollbar-thin scrollbar-thumb-slate-800"
+      >
+        {messages.map(msg => (
+          <div
+            key={msg.id}
+            className={`flex flex-col ${msg.sender === "user" ? "items-start" : "items-end"} space-y-1`}
+          >
+            <div
+              className={`max-w-[88%] p-3.5 rounded-3xl text-sm leading-relaxed shadow-md whitespace-pre-wrap ${
+                msg.sender === "user"
+                  ? "bg-gradient-to-r from-blue-600 to-sky-600 text-white rounded-tr-none border border-blue-400/30"
+                  : "bg-slate-900/90 text-slate-100 rounded-tl-none border border-slate-800"
               }`}
             >
-              <span className="text-xl">{isRecording ? "🔴" : "🎙️"}</span>
-              <span className="hidden sm:inline-block mr-2 text-xs font-bold">
-                {isRecording ? "جاري الاستماع..." : "صوت"}
-              </span>
-            </button>
+              <div className="flex items-center gap-1.5 mb-1.5 opacity-80 text-[11px] font-bold">
+                {msg.sender === "user" ? <span>🎙️ أنـت</span> : <span>✨ الذكاء الاصطناعي Gemini</span>}
+              </div>
 
-            {/* حقل الكتابة */}
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value)
-                if (activeStep?.includes("REGION") && e.target.value.length > 1) {
-                  fetchAreaSuggestions(e.target.value)
-                }
-              }}
-              placeholder={
-                activeStep
-                  ? "أدخل الإجابة هنا أو انقر على أحد الخيارات..."
-                  : "اكتب أو تحدث: «سويلي طلب»، «صفر حساب فارس»، «اسند طلب 2815 لفارس»..."
+              <div>{msg.text}</div>
+
+              {msg.buttons && msg.buttons.length > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-slate-800 grid grid-cols-2 gap-2">
+                  {msg.buttons.map((b, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(b.action || b.text)}
+                      className="p-2.5 bg-blue-950/80 hover:bg-blue-900 text-sky-300 font-bold text-xs rounded-xl border border-sky-800/60 transition-colors text-center shadow-sm"
+                    >
+                      {b.text}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <span className="text-[10px] text-slate-500 px-2">{msg.timestamp}</span>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="flex items-center gap-2.5 p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-slate-300 text-xs w-fit">
+            <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
+            <span>جاري التفكير والتنفيذ في النظام...</span>
+          </div>
+        )}
+      </main>
+
+      {/* Fixed Bottom Input Area */}
+      <footer className="fixed bottom-0 left-0 right-0 p-3 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 z-50 shadow-2xl">
+        <div className="max-w-3xl mx-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={isListening ? stopListening : startListening}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95 shrink-0 ${
+              isListening
+                ? "bg-red-500 text-white animate-pulse ring-4 ring-red-500/30"
+                : "bg-gradient-to-tr from-blue-600 to-sky-500 text-white hover:opacity-90"
+            }`}
+            title={isListening ? "إيقاف الاستماع" : "تحدث بالصوت"}
+          >
+            {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+          </button>
+
+          <textarea
+            rows={1}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(inputMessage);
               }
-              disabled={loading}
-              className="flex-1 bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-            />
+            }}
+            placeholder="تحدث أو اكتب أمرك هنا..."
+            className="flex-1 px-4 py-3 text-sm bg-slate-950 text-white rounded-2xl border border-slate-800 focus:outline-none focus:border-sky-500 resize-none max-h-24 leading-relaxed"
+          />
 
-            {/* زر الإرسال */}
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-5 py-3 rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-            >
-              <span className="text-sm">إرسال</span>
-              <span>⚡</span>
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={() => sendMessage(inputMessage)}
+            disabled={!inputMessage.trim() || isLoading}
+            className="w-12 h-12 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-sky-600/30 shrink-0 active:scale-95"
+            title="إرسال"
+          >
+            <Send className="w-5 h-5" />
+          </button>
         </div>
-      </div>
+      </footer>
     </div>
-  )
+  );
 }

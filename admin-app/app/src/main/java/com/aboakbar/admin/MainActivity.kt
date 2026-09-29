@@ -344,6 +344,82 @@ class MainActivity : AppCompatActivity() {
                     val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     sharedPreferences.edit().putString("last_visited_url", url).apply()
                 }
+
+                // حقن كود جافا سكريبت للاستماع للنقر المطول على زر الهوم / الرئيسية لفتح الذكاء الاصطناعي فوراً
+                val injectHomeLongPressJs = """
+                    (function() {
+                        if (window._homeLongPressAiInjected) return;
+                        window._homeLongPressAiInjected = true;
+                        
+                        function attachHomeLongPress() {
+                            const selectors = [
+                                'a[href="/abo1stor3hlaa2kbr8-47"]',
+                                'a[href="/admin"]',
+                                'a[href="/"]',
+                                'a[href*="abo1stor3hlaa2kbr8-47"]',
+                                'button[title*="رئيسية"]',
+                                'button[title*="الرئيسية"]',
+                                'button[title*="Home"]',
+                                'button[title*="home"]',
+                                '[data-home="true"]',
+                                'nav a:first-child',
+                                '.home-btn',
+                                '#home-btn'
+                            ];
+                            
+                            selectors.forEach(sel => {
+                                document.querySelectorAll(sel).forEach(el => {
+                                    if (el._hasAiLongPress) return;
+                                    el._hasAiLongPress = true;
+                                    
+                                    let timer = null;
+                                    let isLongPressTriggered = false;
+                                    
+                                    el.addEventListener('touchstart', function(e) {
+                                        isLongPressTriggered = false;
+                                        timer = setTimeout(function() {
+                                            isLongPressTriggered = true;
+                                            if (navigator.vibrate) navigator.vibrate(70);
+                                            if (window.AndroidGestures && window.AndroidGestures.openAiPage) {
+                                                window.AndroidGestures.openAiPage();
+                                            } else {
+                                                window.location.href = '/admin/ai';
+                                            }
+                                        }, 600);
+                                    }, { passive: true });
+                                    
+                                    el.addEventListener('touchend', function(e) {
+                                        if (timer) clearTimeout(timer);
+                                        if (isLongPressTriggered) {
+                                            try {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            } catch(err) {}
+                                        }
+                                    });
+                                    
+                                    el.addEventListener('touchmove', function() {
+                                        if (timer) clearTimeout(timer);
+                                    });
+                                    
+                                    el.addEventListener('contextmenu', function(e) {
+                                        e.preventDefault();
+                                        if (navigator.vibrate) navigator.vibrate(70);
+                                        if (window.AndroidGestures && window.AndroidGestures.openAiPage) {
+                                            window.AndroidGestures.openAiPage();
+                                        } else {
+                                            window.location.href = '/admin/ai';
+                                        }
+                                    });
+                                });
+                            });
+                        }
+                        
+                        attachHomeLongPress();
+                        setInterval(attachHomeLongPress, 2000);
+                    })();
+                """.trimIndent()
+                view?.evaluateJavascript(injectHomeLongPressJs, null)
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
@@ -1059,6 +1135,26 @@ class MainActivity : AppCompatActivity() {
         fun saveCustomGestureUrl(gestureKey: String, urlValue: String) {
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putString("gesture_custom_url_$gestureKey", urlValue).apply()
+        }
+
+        @JavascriptInterface
+        fun openAiPage() {
+            runOnUiThread {
+                webView.loadUrl("https://aboakbr.com/admin/ai")
+            }
+        }
+
+        @JavascriptInterface
+        fun openFloatingAiChat() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(this@MainActivity, FloatingAiChatActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    webView.loadUrl("https://aboakbr.com/admin/ai")
+                }
+            }
         }
     }
 
