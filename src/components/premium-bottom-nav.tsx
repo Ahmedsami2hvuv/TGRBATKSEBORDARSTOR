@@ -32,7 +32,7 @@ export function PremiumBottomNav() {
     holdTimerRef.current = setTimeout(() => {
       isHoldTriggeredRef.current = true;
       triggerFloatingAi();
-    }, 350);
+    }, 250);
   };
 
   const handleHomeTouchEnd = (e: React.TouchEvent) => {
@@ -42,6 +42,14 @@ export function PremiumBottomNav() {
     if (isHoldTriggeredRef.current) {
       e.preventDefault();
       e.stopPropagation();
+    }
+  };
+
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (pathname === "/abo1stor3hlaa2kbr8-47") {
+      // إذا كان بالرئيسية ونقر على زر الهوم، يفتح المساعد فوراً
+      e.preventDefault();
+      triggerFloatingAi();
     }
   };
 
@@ -89,6 +97,7 @@ export function PremiumBottomNav() {
                   key={tab.id}
                   id="home-nav-btn"
                   href={tab.href}
+                  onClick={handleHomeClick}
                   onTouchStart={handleHomeTouchStart}
                   onTouchEnd={handleHomeTouchEnd}
                   onTouchCancel={() => {
@@ -98,7 +107,7 @@ export function PremiumBottomNav() {
                     e.preventDefault();
                     triggerFloatingAi();
                   }}
-                  title="انقر مطولاً لفتح المساعد الذكي الخارق"
+                  title="انقر لفتح المساعد الذكي الخارق"
                   className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-2xl transition-all duration-200 active:scale-90 ${
                     tab.active
                       ? "text-sky-400 font-bold bg-white/[0.08] shadow-sm"

@@ -244,8 +244,8 @@ class MainActivity : AppCompatActivity() {
                         android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         Uri.parse("package:$packageName")
                     )
-                    startActivity(intent)
-                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي تعمل الإشعارات المنبثقة الإجبارية بنجاح", Toast.LENGTH_LONG).show()
+                    startActivityForResult(intent, 1234)
+                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي تظهر واجهة الذكاء الاصطناعي بنجاح", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     // تجاهل فشل التوجيه للأجهزة النادرة
                 }
