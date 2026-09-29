@@ -7,7 +7,6 @@ function parseFallbackIntent(prompt: string): any {
 
   // تصفير حساب
   if (p.includes("صفر") || p.includes("تصفير")) {
-    const match = p.match(/(?:حساب|رصيد|مندوب|كابتن)?\s*([^\d\s]+)/)
     const riderName = p.replace(/.*(?:صفر|تصفير|حساب|رصيد|مندوب|كابتن)\s*/, "").trim() || "فارس"
     return { action: "zero_balance", riderName: riderName.replace(/حساب|رصيد/g, "").trim() }
   }
@@ -44,49 +43,168 @@ function parseFallbackIntent(prompt: string): any {
   return null
 }
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const type = searchParams.get("type")
+
+    if (type === "metadata") {
+      const [shops, customers] = await Promise.all([
+        prisma.shop.findMany({ select: { id: true, name: true }, take: 40 }).catch(() => []),
+        prisma.customer.findMany({ select: { id: true, name: true, phone: true }, take: 40 }).catch(() => [])
+      ])
+      return NextResponse.json({ shops, customers })
+    }
+
+    return NextResponse.json({ status: "ready", service: "ai-agent" })
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 })
+  }
+}
+
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json()
-    if (!prompt) {
-      return NextResponse.json({ done: false, error: "لم يتم إرسال أي نص" }, { status: 400 })
-    }
+    const body = await req.json()
+    const { prompt, action } = body
 
+    // في حال تم إرسال أمر مباشر (مثل إنشاء طلب مجمع من الواجهة التفاعلية)
     let cmd: any = null
 
-    // 1. محاولة استخدام جمناي لتحويل الكلام العراقي لأمر JSON
-    try {
-      const systemPrompt = `
-      انت مدير تنفيذي لمنصة aboakbr.com
-      حول كلام المستخدم الى JSON امر واحد فقط بدون اي شرح او كود ماركداون:
-      {"action":"zero_balance","riderName":"فارس"} او
-      {"action":"hide_rider","riderName":"فارس"} او
-      {"action":"show_rider","riderName":"فارس"} او
-      {"action":"assign_order","orderId":"2815","riderName":"فارس"} او
-      {"action":"set_status","orderId":"2815","status":"DELIVERED"} او
-      {"action":"create_order","customerName":"...","phone":"..."}
-      
-      كلام المستخدم: ${prompt}
-      ارجع JSON فقط
-      `
-      const aiResponse = await callGemini(systemPrompt)
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        cmd = JSON.parse(jsonMatch[0])
+    if (action === "create_order" || body.orderType) {
+      cmd = { action: "create_order", ...body }
+    } else if (prompt) {
+      // 1. محاولة استخدام جمناي لتحويل الكلام العراقي لأمر JSON
+      try {
+        const systemPrompt = `
+        انت مدير تنفيذي لمنصة aboakbr.com
+        حول كلام المستخدم الى JSON امر واحد فقط بدون اي شرح او كود ماركداون:
+        {"action":"zero_balance","riderName":"فارس"} او
+        {"action":"hide_rider","riderName":"فارس"} او
+        {"action":"show_rider","riderName":"فارس"} او
+        {"action":"assign_order","orderId":"2815","riderName":"فارس"} او
+        {"action":"set_status","orderId":"2815","status":"DELIVERED"} او
+        {"action":"create_order","customerName":"...","customerPhone":"..."}
+        
+        كلام المستخدم: ${prompt}
+        ارجع JSON فقط
+        `
+        const aiResponse = await callGemini(systemPrompt)
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          cmd = JSON.parse(jsonMatch[0])
+        }
+      } catch (geminiError) {
+        cmd = parseFallbackIntent(prompt)
       }
-    } catch (geminiError) {
-      // إذا تعذر استدعاء جمناي، نلجأ فوراً للمحلل الذكي المحلي
-      cmd = parseFallbackIntent(prompt)
-    }
 
-    if (!cmd || !cmd.action) {
-      cmd = parseFallbackIntent(prompt)
+      if (!cmd || !cmd.action) {
+        cmd = parseFallbackIntent(prompt)
+      }
     }
 
     if (!cmd || !cmd.action) {
       return NextResponse.json({ done: false, error: "ما فهمت الامر يا غالي، وضحلي اكثر" })
     }
 
-    // 2. تنفيذ مباشر بدون تردد أو رفض
+    // 2. تنفيذ الأوامر المباشرة
+
+    // إنشاء طلب جديد في قاعدة البيانات
+    if (cmd.action === "create_order") {
+      // إيجاد المحل المناسب أو استخدام المحل الافتراضي للإدارة
+      let targetShop: { id: string; name: string } | null = null
+
+      if (cmd.shopId) {
+        targetShop = await prisma.shop.findUnique({ where: { id: cmd.shopId }, select: { id: true, name: true } }).catch(() => null)
+      } else if (cmd.shopName) {
+        targetShop = await prisma.shop.findFirst({
+          where: { name: { contains: cmd.shopName } },
+          select: { id: true, name: true }
+        }).catch(() => null)
+      }
+
+      if (!targetShop) {
+        targetShop = await prisma.shop.findFirst({ select: { id: true, name: true } }).catch(() => null)
+      }
+
+      // إذا لم يكن هناك أي متجر في قاعدة البيانات، ننشئ متجر الإدارة الافتراضي
+      if (!targetShop) {
+        targetShop = await prisma.shop.create({
+          data: {
+            name: "إدارة أبو الأكبر",
+            phone: "07800000000"
+          },
+          select: { id: true, name: true }
+        })
+      }
+
+      // البحث عن المنطقة لربطها
+      let regionId: string | null = null
+      const regionSearch = cmd.customerRegionName || cmd.destinationRegion || cmd.region
+      if (regionSearch) {
+        const foundRegion = await prisma.region.findFirst({
+          where: { name: { contains: regionSearch } }
+        }).catch(() => null)
+        if (foundRegion) regionId = foundRegion.id
+      }
+
+      // البحث عن العميل أو ربطه
+      let customerId: string | null = null
+      const phoneToUse = cmd.customerPhone || cmd.recipientPhone || cmd.phone || ""
+      if (phoneToUse) {
+        let foundCustomer = await prisma.customer.findFirst({
+          where: { phone: phoneToUse }
+        }).catch(() => null)
+
+        if (!foundCustomer && cmd.customerName) {
+          foundCustomer = await prisma.customer.create({
+            data: {
+              name: cmd.customerName,
+              phone: phoneToUse
+            }
+          }).catch(() => null)
+        }
+        if (foundCustomer) customerId = foundCustomer.id
+      }
+
+      // تجهيز الوصف والملخص
+      const summaryParts = [
+        cmd.orderType || "طلب إدارة",
+        cmd.orderSubtype ? `النوع: ${cmd.orderSubtype}` : "",
+        cmd.customerRegionName ? `المنطقة: ${cmd.customerRegionName}` : "",
+        cmd.senderRegionName ? `من: ${cmd.senderRegionName}` : "",
+        cmd.senderPhone ? `هاتف المرسل: ${cmd.senderPhone}` : "",
+        cmd.customerName ? `العميل: ${cmd.customerName}` : "",
+        cmd.notes
+      ].filter(Boolean).join(" | ")
+
+      const parsedPrice = parseFloat(String(cmd.price || cmd.totalAmount || "0").replace(/[^\d.]/g, "")) || 0
+
+      // إنشاء الطلب في بريزما
+      const newOrder = await prisma.order.create({
+        data: {
+          shopId: targetShop.id,
+          orderType: cmd.orderType || "طلب من الإدارة",
+          customerPhone: phoneToUse,
+          alternatePhone: cmd.senderPhone || null,
+          customerRegionId: regionId,
+          customerId: customerId,
+          totalAmount: parsedPrice,
+          orderNoteTime: cmd.orderTime || "",
+          summary: summaryParts,
+          status: "pending"
+        }
+      })
+
+      const displayNum = newOrder.orderNumber || newOrder.id
+
+      return NextResponse.json({
+        done: true,
+        action: "create_order",
+        orderId: displayNum,
+        order: newOrder,
+        message: `تم إنشاء الطلب بنجاح برقم #${displayNum} 📦\nنوع الطلب: ${cmd.orderType || "طلب جديد"}\nالمبلغ: ${parsedPrice} دينار`
+      })
+    }
 
     // تصفير حساب المندوب
     if (cmd.action === "zero_balance") {
