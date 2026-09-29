@@ -111,6 +111,17 @@
             android:exported="true" />
 
         <service
+            android:name="com.aboakbar.admin.AdminRecognitionService"
+            android:label="التعرف الصوتي - أبو الأكبر"
+            android:permission="android.permission.BIND_RECOGNITION_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.speech.RecognitionService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name="com.aboakbar.admin.AiAssistantTileService"
             android:label="المساعد الذكي"
             android:icon="@mipmap/ic_launcher"
