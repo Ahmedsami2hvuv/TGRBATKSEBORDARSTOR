@@ -171,10 +171,54 @@ export async function POST(req: Request) {
       const totalAmountNum = orderSubtotalNum + deliveryPriceNum
 
       let summaryText = stepData.notes || `طلب ${stepData.orderType || "من الإدارة"} - ${regionName}`
+      const isPrepOrder = stepData.orderType === "تجهيز طلب" || stepData.orderType === "تجهيز" || (stepData.items && stepData.items.length > 0)
+      
       if (stepData.items && Array.isArray(stepData.items) && stepData.items.length > 0) {
         summaryText = `منتجات:\n` + stepData.items.map((it: string, idx: number) => `${idx + 1}- ${it}`).join("\n")
         if (stepData.selectedPreparers && stepData.selectedPreparers.length > 0) {
           summaryText += `\nالمجهزون: ${stepData.selectedPreparers.join(", ")}`
+        }
+      }
+
+      // إذا كان طلب تجهيز، ننشئ مسودة تجهيز في companyPreparerShoppingDraft
+      let prepDraftId = null
+      let prepDraftNumber = null
+      if (isPrepOrder && stepData.items && Array.isArray(stepData.items)) {
+        try {
+          const rawText = stepData.items.join("\n")
+          const products = stepData.items.map((line: string) => ({ line, buyAlf: null, sellAlf: null }))
+          
+          // البحث عن أول مجهز محدد
+          let primaryPreparerId = null
+          if (stepData.selectedPreparers && stepData.selectedPreparers.length > 0) {
+            const prepName = stepData.selectedPreparers[0].replace(/^[📦🏬\s]+/, "")
+            const foundPrep = await prisma.companyPreparer.findFirst({
+              where: { name: { contains: prepName, mode: 'insensitive' } }
+            })
+            if (foundPrep) primaryPreparerId = foundPrep.id
+          }
+
+          const draft = await prisma.companyPreparerShoppingDraft.create({
+            data: {
+              preparerId: primaryPreparerId,
+              titleLine: (stepData.items[0] || "طلب تجهيز جديد").substring(0, 100),
+              rawListText: rawText,
+              customerRegionId: region?.id || null,
+              customerPhone: stepData.customerPhone || "07700000000",
+              orderTime: stepData.deliveryTime || stepData.time || "فوري",
+              status: "draft",
+              data: {
+                version: 1,
+                products,
+                selectedPreparers: stepData.selectedPreparers || [],
+                fromSource: "admin_ai"
+              }
+            }
+          })
+          prepDraftId = draft.id
+          prepDraftNumber = draft.draftNumber
+        } catch (e) {
+          console.error("Failed to create prep draft:", e)
         }
       }
 
@@ -186,8 +230,8 @@ export async function POST(req: Request) {
           orderSubtotal: new Decimal(orderSubtotalNum),
           deliveryPrice: new Decimal(deliveryPriceNum),
           totalAmount: new Decimal(totalAmountNum),
-          status: stepData.orderType === "تجهيز طلب" ? "preparing" : "pending",
-          orderType: stepData.orderType || "من الإدارة",
+          status: isPrepOrder ? "preparing" : "pending",
+          orderType: isPrepOrder ? "تجهيز طلب" : (stepData.orderType || "من الإدارة"),
           submissionSource: "admin",
           summary: summaryText,
           orderNoteTime: stepData.deliveryTime || stepData.time || "فوري",
@@ -196,10 +240,17 @@ export async function POST(req: Request) {
         }
       })
 
+      let successMsg = `تم إنشاء وتثبيت الطلب رقم #${newOrder.orderNumber} بنجاح ✅`
+      if (prepDraftNumber) {
+        successMsg += ` (مسودة التجهيز #${prepDraftNumber})`
+      }
+      successMsg += ` (سعر الطلب: ${orderSubtotalNum.toLocaleString()} د.ع + توصيل: ${deliveryPriceNum.toLocaleString()} د.ع = الإجمالي: ${totalAmountNum.toLocaleString()} د.ع)`
+
       return NextResponse.json({
         done: true,
-        message: `تم إنشاء وتثبيت الطلب رقم #${newOrder.orderNumber} بنجاح ✅ (سعر الطلب: ${orderSubtotalNum.toLocaleString()} د.ع + توصيل: ${deliveryPriceNum.toLocaleString()} د.ع = الإجمالي: ${totalAmountNum.toLocaleString()} د.ع)`,
+        message: successMsg,
         orderNumber: newOrder.orderNumber,
+        prepDraftNumber: prepDraftNumber,
         subtotal: orderSubtotalNum,
         deliveryPrice: deliveryPriceNum,
         total: totalAmountNum

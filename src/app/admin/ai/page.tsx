@@ -84,6 +84,8 @@ export default function AdminAiPage() {
     | "awaiting_two_way_sender_area"
     | "awaiting_two_way_receiver_phone"
     | "awaiting_two_way_receiver_area"
+    | "awaiting_prep_details"
+    | "awaiting_prep_area"
     | "awaiting_price"
     | "awaiting_items"
     | "awaiting_preparers"
@@ -95,7 +97,7 @@ export default function AdminAiPage() {
   const [shopSuggestions, setShopSuggestions] = useState<Array<{ id: string; name: string; regionName?: string }>>([]);
   
   // قائمة المجهزين والموردين المتاحين
-  const [availablePreparers, setAvailablePreparers] = useState<Array<{ id: string; name: string }>>([]);
+  const [availablePreparers, setAvailablePreparers] = useState<Array<{ id: string; name: string; phone?: string; type?: string }>>([]);
   const [selectedPreparersMap, setSelectedPreparersMap] = useState<{ [key: string]: boolean }>({});
 
   const recognitionRef = useRef<any>(null);
@@ -103,17 +105,22 @@ export default function AdminAiPage() {
   const isSendingRef = useRef(false);
 
   // جلب المجهزين عند بدء التشغيل
+  const loadPreparersAndSuppliers = async () => {
+    try {
+      const res = await fetch("/api/preparers-and-suppliers");
+      const data = await res.json();
+      const list: Array<{ id: string; name: string; phone?: string; type?: string }> = [
+        ...(data.preparers || []).map((p: any) => ({ ...p, type: "preparer" })),
+        ...(data.suppliers || []).map((s: any) => ({ ...s, type: "supplier" }))
+      ];
+      setAvailablePreparers(list);
+    } catch (e) {
+      console.error("Failed to load preparers and suppliers:", e);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/preparers-and-suppliers")
-      .then(res => res.json())
-      .then(data => {
-        const list = [
-          ...(data.preparers || []),
-          ...(data.suppliers || [])
-        ];
-        setAvailablePreparers(list);
-      })
-      .catch(() => {});
+    loadPreparersAndSuppliers();
   }, []);
 
   useEffect(() => {
@@ -340,30 +347,33 @@ export default function AdminAiPage() {
       return;
     }
 
-    setOrderDraft(prev => ({ ...prev, orderType: type }));
-
-    if (type === "تجهيز طلب") {
-      setWizardStep("awaiting_items");
+    if (type === "تجهيز طلب" || type === "تجهيز") {
+      setOrderDraft(prev => ({ ...prev, orderType: "تجهيز طلب" }));
+      setWizardStep("awaiting_prep_details");
+      loadPreparersAndSuppliers();
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: `تمام يا أبو الأكبر! اخترنا **تجهيز طلب** 📦\nاكتب أو الصق **قائمة المنتجات والمواد** المطلوبة (كل مادة بسطر):`,
+        text: `تمام يا أبو الأكبر! اخترنا **طلب تجهيز** 📦\nأرسل لي رسالة تحتوي على تفاصيل الطلب:\n• رقم هاتف الزبون\n• منطقة الزبون\n• وباقي الأسطر للمنتجات والمواد المطلوبة (كل مادة بسطر عبر Enter):`,
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
       };
       setMessages(prev => [...prev, userMsg, aiMsg]);
-      speak("تمام يا أبو الأكبر! اخترنا تجهيز طلب. اكتب قائمة المنتجات والمواد المطلوبة كل مادة بسطر");
-    } else {
-      setWizardStep("awaiting_price");
-      const aiMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: "ai",
-        text: `سجلت نوع الطلب (${type}) 📝\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)** (مثلاً: 10 أو 10000):`,
-        timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
-      };
-      setMessages(prev => [...prev, userMsg, aiMsg]);
-      speak(`سجلت نوع الطلب. هسه انطيني سعر الطلب بدون التوصيل`);
+      speak("تمام يا أبو الأكبر! اخترنا طلب تجهيز. دزلي رسالة بيها هاتف ومنطقة الزبون وقائمة المواد المطلوبة");
+      return;
     }
+
+    setOrderDraft(prev => ({ ...prev, orderType: type }));
+    setWizardStep("awaiting_price");
+    const aiMsg: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      sender: "ai",
+      text: `سجلت نوع الطلب (${type}) 📝\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)** (مثلاً: 10 أو 10000):`,
+      timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+    };
+    setMessages(prev => [...prev, userMsg, aiMsg]);
+    speak(`سجلت نوع الطلب. هسه انطيني سعر الطلب بدون التوصيل`);
   };
+
 
   // تأكيد واختيار المجهزين والانتقال لخطوة السعر
   const handleConfirmPreparersAndProceed = () => {
@@ -753,10 +763,201 @@ export default function AdminAiPage() {
       return;
     }
 
+    // 3. فحص مسار "طلب تجهيز"
+    const isPrepTrigger = clean.includes("تجهيز") || clean.includes("طلب تجهيز") || clean.includes("تجهيز طلب") || wizardStep === "awaiting_prep_details" || wizardStep === "awaiting_prep_area" || orderDraft.orderType === "تجهيز طلب";
+
+    if (isPrepTrigger && (wizardStep === "awaiting_prep_details" || wizardStep === "awaiting_prep_area" || clean.includes("تجهيز") || lines.length >= 2)) {
+      let currentDraft: OrderDraft = {
+        ...orderDraft,
+        orderType: "تجهيز طلب"
+      };
+
+      // إذا كنا في خطوة اختيار/تأكيد المنطقة المحددة لطلب التجهيز
+      if (wizardStep === "awaiting_prep_area") {
+        const areaText = clean.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").replace("هل تقصد: ", "").replace("؟", "").trim();
+        
+        try {
+          const res = await fetch(`/api/areas/search?q=${encodeURIComponent(areaText)}`);
+          const data = await res.json();
+          const matchedAreas: string[] = data.areas || [];
+
+          const exactMatch = matchedAreas.find(a => a === areaText);
+          if (matchedAreas.length > 1 && (!exactMatch || (matchedAreas.length > 1 && areaText.split(" ").length === 1))) {
+            setAreaSuggestions(matchedAreas);
+            setIsLoading(false);
+            isSendingRef.current = false;
+
+            const reply = `لقيت عدة مناطق تطابق **${areaText}** 📍\nأي منطقة منها تقصد يا أبو الأكبر؟ (اختر من الأزرار أدناه):`;
+            setMessages(prev => [
+              ...prev,
+              {
+                id: (Date.now() + 1).toString(),
+                sender: "ai",
+                text: reply,
+                type: "area_suggestions",
+                suggestions: matchedAreas,
+                timestamp: currentTime
+              }
+            ]);
+            speak(`لقيت عدة مناطق، أي منطقة منها تقصد؟`);
+            return;
+          }
+          currentDraft.area = matchedAreas[0] || areaText;
+        } catch (e) {
+          currentDraft.area = areaText;
+        }
+
+        setOrderDraft(currentDraft);
+        setAreaSuggestions([]);
+        setWizardStep("awaiting_preparers");
+        loadPreparersAndSuppliers();
+        setIsLoading(false);
+        isSendingRef.current = false;
+
+        const reply = `سجلت المنطقة: ${currentDraft.area} 📍\nالهاتف: ${currentDraft.customerPhone || "غير محدد"} 📱\nالمواد (${currentDraft.items?.length || 0}): ${(currentDraft.items || []).join(" ، ")} 🛒\n\nيرجى تحديد المجهزين والموردين من القائمة أدناه ثم النقر على **التالي**:`;
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: "ai",
+            text: reply,
+            type: "preparer_selection",
+            timestamp: currentTime
+          }
+        ]);
+        speak("سجلت المنطقة. يرجى تحديد المجهزين والموردين من القائمة ثم النقر على التالي");
+        return;
+      }
+
+      // تحليل أسطر رسالة التجهيز
+      let extractedPhone = currentDraft.customerPhone || "";
+      let extractedArea = currentDraft.area || "";
+      const remainingItems: string[] = [];
+
+      // استخراج رقم الهاتف
+      const allPhones = clean.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/g) || [];
+      if (allPhones.length > 0) {
+        extractedPhone = allPhones[0];
+      }
+
+      // فحص الأسطر للبحث عن المنطقة والمنتجات
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+
+        // إذا كان السطر هو رقم الهاتف
+        if (allPhones.some(p => line.includes(p))) {
+          continue;
+        }
+
+        // فحص إذا كان السطر يمثل منطقة صريحة
+        if (!extractedArea && (line.startsWith("منطقة") || line.startsWith("المنطقة") || line.startsWith("عنوان") || line.startsWith("العنوان") || line.startsWith("الى ") || line.startsWith("إلى "))) {
+          extractedArea = line.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
+          continue;
+        }
+
+        // فحص إذا كان السطر اسم منطقة معروفة وقصيرة (كلمة أو كلمتين)
+        if (!extractedArea && line.length < 25 && !/\d+/.test(line)) {
+          try {
+            const res = await fetch(`/api/areas/search?q=${encodeURIComponent(line)}`);
+            const data = await res.json();
+            const matchedAreas: string[] = data.areas || [];
+            if (matchedAreas.length > 0) {
+              extractedArea = line;
+              continue;
+            }
+          } catch (e) {}
+        }
+
+        // ما تبقى يعتبر مادة/منتج
+        remainingItems.push(line.replace(/^[-*•\d+.)]\s*/, ""));
+      }
+
+      currentDraft.customerPhone = extractedPhone;
+      currentDraft.items = remainingItems.length > 0 ? remainingItems : (currentDraft.items || ["طلب عام"]);
+
+      // التحقق من صحة ودقة المنطقة:
+      if (extractedArea) {
+        try {
+          const res = await fetch(`/api/areas/search?q=${encodeURIComponent(extractedArea)}`);
+          const data = await res.json();
+          const matchedAreas: string[] = data.areas || [];
+
+          // إذا كانت هناك خيارات متعددة للمنطقة (مثل جيكور) أو اسم غير مؤكد
+          const exactMatch = matchedAreas.find(a => a === extractedArea);
+          if (matchedAreas.length > 1 && (!exactMatch || (matchedAreas.length > 1 && extractedArea.split(" ").length === 1))) {
+            currentDraft.area = "";
+            setOrderDraft(currentDraft);
+            setAreaSuggestions(matchedAreas);
+            setWizardStep("awaiting_prep_area");
+            setIsLoading(false);
+            isSendingRef.current = false;
+
+            const reply = `سجلت الهاتف (${extractedPhone || "مسجل"}) والمواد (${currentDraft.items.length}) 👍\nلكيت عدة مناطق تطابق **${extractedArea}** 📍، أي منطقة منها تقصد يا أبو الأكبر؟ (اختر من الأزرار أدناه):`;
+            setMessages(prev => [
+              ...prev,
+              {
+                id: (Date.now() + 1).toString(),
+                sender: "ai",
+                text: reply,
+                type: "area_suggestions",
+                suggestions: matchedAreas,
+                timestamp: currentTime
+              }
+            ]);
+            speak(`لكيت عدة مناطق، يرجى اختيار المنطقة من الخيارات أدناه`);
+            return;
+          }
+          currentDraft.area = exactMatch || matchedAreas[0] || extractedArea;
+        } catch (e) {
+          currentDraft.area = extractedArea;
+        }
+      }
+
+      setOrderDraft(currentDraft);
+
+      // إذا كانت المنطقة مفقودة
+      if (!currentDraft.area) {
+        setWizardStep("awaiting_prep_area");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        fetchAreaSuggestions("");
+
+        const reply = `سجلت الهاتف (${currentDraft.customerPhone || "مسجل"}) والمواد (${currentDraft.items.length}) 👍\nهسه انطيني **منطقة الزبون** (مثلاً: جيكور، نهر خوز، محيلة):`;
+        setMessages(prev => [
+          ...prev,
+          { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
+        ]);
+        speak("هسه انطيني منطقة الزبون");
+        return;
+      }
+
+      // إذا كانت كل تفاصيل التجهيز مكتملة (الهاتف والمنطقة والمنتجات)، ننتقل مباشرة لاختيار المجهزين!
+      setWizardStep("awaiting_preparers");
+      loadPreparersAndSuppliers();
+      setIsLoading(false);
+      isSendingRef.current = false;
+
+      const reply = `تم استخراج بيانات طلب التجهيز بنجاح يا أبو الأكبر! 📦\n• الهاتف: ${currentDraft.customerPhone || "07700000000"} 📱\n• المنطقة: ${currentDraft.area} 📍\n• المواد (${currentDraft.items.length}): ${currentDraft.items.join(" ، ")} 🛒\n\nيرجى تحديد المجهزين والموردين من القائمة أدناه ثم النقر على **التالي**:`;
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: reply,
+          type: "preparer_selection",
+          timestamp: currentTime
+        }
+      ]);
+      speak("تم استخراج بيانات طلب التجهيز. يرجى تحديد المجهزين والموردين من القائمة ثم النقر على التالي");
+      return;
+    }
+
     // فحص ذكي: هل تحتوي الرسالة على رقم هاتف ومنطقة معاً للطلب العادي؟
     const phonePattern = /(07\d{9}|9647\d{9}|\+9647\d{9})/;
     const phoneMatch = clean.match(phonePattern);
     const textWithoutPhone = clean.replace(phonePattern, "").replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
+
 
     // الخطوة 1: انتظار رقم هاتف الزبون (أو إذا كتب الهاتف والمنطقة معاً)
     if (wizardStep === "awaiting_phone") {
@@ -1292,54 +1493,101 @@ export default function AdminAiPage() {
               </div>
             )}
 
-            {/* قائمة المجهزين والموردين بـ Checkboxes */}
+            {/* قائمة المجهزين والموردين بـ Checkboxes وأزرار تحكم سريعة */}
             {msg.type === "preparer_selection" && wizardStep === "awaiting_preparers" && (
-              <div className="w-full max-w-[95%] p-4 bg-[#121A2B]/90 border border-emerald-500/30 rounded-3xl space-y-3 shadow-lg">
-                <div className="flex items-center justify-between">
+              <div className="w-full max-w-[95%] p-4 bg-[#121A2B]/95 border border-emerald-500/40 rounded-3xl space-y-3.5 shadow-xl animate-fadeIn">
+                <div className="flex items-center justify-between flex-wrap gap-2 border-b border-white/10 pb-2.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                     <Users className="w-4 h-4" />
                     <span>حدد المجهزين والموردين المطلوبين:</span>
                   </div>
-                  <span className="text-[10px] text-white/50">
-                    تم اختيار: {Object.values(selectedPreparersMap).filter(Boolean).length}
+                  
+                  {/* أزرار سريعة للتحكم بالاختيار */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        const newMap: { [key: string]: boolean } = {};
+                        availablePreparers.forEach(p => { newMap[p.name] = true; });
+                        setSelectedPreparersMap(newMap);
+                      }}
+                      className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-[10px] font-bold border border-emerald-500/30 transition-colors"
+                    >
+                      تحديد الكل ✅
+                    </button>
+                    <button
+                      onClick={() => setSelectedPreparersMap({})}
+                      className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-[10px] font-bold border border-white/10 transition-colors"
+                    >
+                      إلغاء ❌
+                    </button>
+                  </div>
+                </div>
+
+                {availablePreparers.length === 0 ? (
+                  <div className="py-4 text-center space-y-2">
+                    <p className="text-xs text-amber-300 font-bold">جاري تحميل قائمة المجهزين والموردين...</p>
+                    <button
+                      onClick={loadPreparersAndSuppliers}
+                      className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl border border-emerald-500/30 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>إعادة التحميل الآن</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                    {availablePreparers.map(prep => {
+                      const isChecked = !!selectedPreparersMap[prep.name];
+                      const isSupplier = prep.type === "supplier";
+                      return (
+                        <button
+                          key={prep.id}
+                          onClick={() => {
+                            setSelectedPreparersMap(prev => ({
+                              ...prev,
+                              [prep.name]: !prev[prep.name]
+                            }));
+                          }}
+                          className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-between gap-2 transition-all text-right shadow-sm ${
+                            isChecked
+                              ? isSupplier
+                                ? "bg-blue-500/25 border-blue-400 text-blue-200 shadow-blue-500/10"
+                                : "bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-emerald-500/10"
+                              : "bg-[#1A2336] border-white/5 text-white/70 hover:bg-[#232F4A]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate">
+                            {isChecked ? (
+                              <CheckSquare className={`w-4 h-4 ${isSupplier ? "text-blue-400" : "text-emerald-400"} shrink-0`} />
+                            ) : (
+                              <Square className="w-4 h-4 text-white/30 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <div className="truncate font-bold flex items-center gap-1">
+                                <span>{isSupplier ? "🏬 مورد:" : "📦 مجهز:"}</span>
+                                <span>{prep.name}</span>
+                              </div>
+                              {prep.phone && (
+                                <span className="text-[10px] text-white/40 block">{prep.phone}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-white/40">{isSupplier ? "مورد" : "مجهز"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="pt-2.5 flex items-center justify-between border-t border-white/10">
+                  <span className="text-[11px] text-emerald-300 font-bold">
+                    المحدد: {Object.values(selectedPreparersMap).filter(Boolean).length} من أصل {availablePreparers.length}
                   </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                  {availablePreparers.map(prep => {
-                    const isChecked = !!selectedPreparersMap[prep.name];
-                    return (
-                      <button
-                        key={prep.id}
-                        onClick={() => {
-                          setSelectedPreparersMap(prev => ({
-                            ...prev,
-                            [prep.name]: !prev[prep.name]
-                          }));
-                        }}
-                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all text-right ${
-                          isChecked
-                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-300"
-                            : "bg-[#1A2336] border-white/5 text-white/70 hover:bg-[#232F4A]"
-                        }`}
-                      >
-                        {isChecked ? (
-                          <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                        ) : (
-                          <Square className="w-4 h-4 text-white/30 shrink-0" />
-                        )}
-                        <span className="truncate">{prep.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/10">
                   <button
                     onClick={handleConfirmPreparersAndProceed}
-                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-emerald-500/25 active:scale-95 transition-all"
+                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
                   >
-                    <span>التالي (تحديد السعر)</span>
+                    <span>تأكيد المجهزين والمتابعة</span>
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                 </div>
