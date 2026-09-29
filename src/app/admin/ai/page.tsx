@@ -34,8 +34,9 @@ type ChatMessage = {
   sender: "user" | "ai";
   text: string;
   timestamp: string;
-  type?: "text" | "type_selection" | "preparer_selection" | "area_suggestions" | "summary";
+  type?: "text" | "type_selection" | "preparer_selection" | "area_suggestions" | "shop_suggestions" | "summary";
   suggestions?: string[];
+  shopSuggestions?: Array<{ id: string; name: string; regionName?: string }>;
   editableText?: string;
 };
 
@@ -61,7 +62,7 @@ export default function AdminAiPage() {
     {
       id: "welcome_init",
       sender: "ai",
-      text: "يا هلا ومية هلا بيك يا أبو الأكبر! المساعد الذكي الخارق في خدمتك 🚀\nتگدر تسألني، تصفر حساب مندوب، تسند طلب، تكول 'سويلي طلب'، أو تدزلي طلب وجهتين (برسالة وحدة أو خطوة بخطوة)!",
+      text: "يا هلا ومية هلا بيك يا أبو الأكبر! المساعد الذكي الخارق في خدمتك 🚀\nتگدر تسألني، تصفر حساب مندوب، تسند طلب، تكول 'سويلي طلب'، أو تدزلي طلب من محل أو وجهتين (برسالة وحدة أو خطوة بخطوة)!",
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     }
   ]);
@@ -76,6 +77,7 @@ export default function AdminAiPage() {
   const [wizardStep, setWizardStep] = useState<
     | "idle"
     | "awaiting_type"
+    | "awaiting_shop_name"
     | "awaiting_phone"
     | "awaiting_area"
     | "awaiting_two_way_sender_phone"
@@ -90,6 +92,7 @@ export default function AdminAiPage() {
   >("idle");
   const [orderDraft, setOrderDraft] = useState<OrderDraft>({});
   const [areaSuggestions, setAreaSuggestions] = useState<string[]>([]);
+  const [shopSuggestions, setShopSuggestions] = useState<Array<{ id: string; name: string; regionName?: string }>>([]);
   
   // قائمة المجهزين والموردين المتاحين
   const [availablePreparers, setAvailablePreparers] = useState<Array<{ id: string; name: string }>>([]);
@@ -117,7 +120,7 @@ export default function AdminAiPage() {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading, areaSuggestions, wizardStep]);
+  }, [messages, isLoading, areaSuggestions, shopSuggestions, wizardStep]);
 
   // نطق الرد
   const speak = (text: string) => {
@@ -167,6 +170,9 @@ export default function AdminAiPage() {
         if ((wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && transcript.trim().length > 1) {
           fetchAreaSuggestions(transcript.trim());
         }
+        if (wizardStep === "awaiting_shop_name" && transcript.trim().length > 1) {
+          fetchShopSuggestions(transcript.trim());
+        }
       };
 
       rec.onerror = () => {
@@ -204,6 +210,17 @@ export default function AdminAiPage() {
     } catch (e) {}
   };
 
+  // جلب اقتراحات المحلات
+  const fetchShopSuggestions = async (query: string) => {
+    try {
+      const res = await fetch(`/api/shops/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.shops && Array.isArray(data.shops)) {
+        setShopSuggestions(data.shops);
+      }
+    } catch (e) {}
+  };
+
   // إرسال طلب مكتمل للباك إند
   const submitCompletedOrder = async (draftToSubmit: OrderDraft, currentTime: string) => {
     try {
@@ -221,6 +238,8 @@ export default function AdminAiPage() {
       let summaryContent = "";
       if (draftToSubmit.orderType === "وجهتين") {
         summaryContent = `• نوع الطلب: وجهتين\n• هاتف المرسل: ${draftToSubmit.senderPhone}\n• منطقة المرسل: ${draftToSubmit.senderArea}\n• هاتف المستلم: ${draftToSubmit.receiverPhone}\n• منطقة المستلم: ${draftToSubmit.receiverArea}\n• سعر المواد: ${draftToSubmit.price} د.ع\n• وقت الطلب: ${draftToSubmit.deliveryTime || "فوري"}`;
+      } else if (draftToSubmit.orderType === "من محل") {
+        summaryContent = `• نوع الطلب: من محل (${draftToSubmit.shopName || "عام"})\n• رقم الهاتف: ${draftToSubmit.customerPhone}\n• المنطقة: ${draftToSubmit.area}\n• سعر المواد: ${draftToSubmit.price} د.ع\n• وقت الطلب: ${draftToSubmit.deliveryTime || "فوري"}`;
       } else {
         summaryContent = `• النوع: ${draftToSubmit.orderType || "من الإدارة"}\n• رقم الهاتف: ${draftToSubmit.customerPhone}\n• المنطقة: ${draftToSubmit.area}\n• سعر المواد: ${draftToSubmit.price} د.ع\n• وقت الطلب: ${draftToSubmit.deliveryTime || "فوري"}`;
       }
@@ -239,6 +258,7 @@ export default function AdminAiPage() {
       setOrderDraft({});
       setSelectedPreparersMap({});
       setAreaSuggestions([]);
+      setShopSuggestions([]);
     } catch (err) {
       setIsLoading(false);
       isSendingRef.current = false;
@@ -257,6 +277,16 @@ export default function AdminAiPage() {
       text: `نوع الطلب: ${type}`,
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     };
+
+    if (type === "من محل") {
+      setOrderDraft(prev => ({ ...prev, orderType: "من محل" }));
+      setWizardStep("awaiting_shop_name");
+      const reply = "تمام يا أبو الأكبر! اخترنا **طلب من محل** 🏬\nأولاً: اكتب **اسم المحل** المطلوب:";
+      setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+      speak("تمام يا أبو الأكبر! اخترنا طلب من محل. اكتب اسم المحل المطلوب");
+      fetchShopSuggestions("");
+      return;
+    }
 
     if (type === "وجهتين") {
       // إعداد طلب الوجهتين
@@ -570,6 +600,159 @@ export default function AdminAiPage() {
       return;
     }
 
+    // 2. فحص مسار "طلب من محل"
+    const isShopTrigger = clean.includes("من محل") || clean.includes("طلب محل") || clean.includes("محل ");
+    const isCurrentShopOrder = orderDraft.orderType === "من محل" || wizardStep === "awaiting_shop_name" || isShopTrigger;
+
+    if (isCurrentShopOrder) {
+      let currentDraft: OrderDraft = {
+        ...orderDraft,
+        orderType: "من محل"
+      };
+
+      // إذا كنا في خطوة انتظار اسم المحل أو الرسالة تحتوي على اسم محل
+      if (wizardStep === "awaiting_shop_name" || (!currentDraft.shopName && isShopTrigger)) {
+        let shopQuery = clean.replace(/^(طلب\s*)?(من\s*)?محل\s*[:：-]?\s*/, "").replace(/(طلب|جديد|سويلي|اريد)/g, "").trim();
+        
+        // فحص الهواتف واستخراجها أولاً حتى لا تختلط مع اسم المحل
+        const phonesInMsg = shopQuery.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/g) || [];
+        if (phonesInMsg.length > 0) {
+          currentDraft.customerPhone = phonesInMsg[0];
+          phonesInMsg.forEach(p => {
+            shopQuery = shopQuery.replace(p, " ");
+          });
+        }
+
+        // فحص السعر
+        const priceMatch = shopQuery.match(/(?:سعر|مبلغ|حساب|بـ|ب|بقيمة)?\s*(\d{1,6})\s*(?:الف|ألف|د\.ع|دينار|دع)?/);
+        if (priceMatch) {
+          const numVal = parseInt(priceMatch[1]);
+          if (numVal > 0 && numVal <= 500000 && !phonesInMsg.some(p => p.includes(priceMatch[1]))) {
+            currentDraft.price = String(numVal);
+            shopQuery = shopQuery.replace(priceMatch[0], " ");
+          }
+        }
+
+        // فحص الوقت
+        if (shopQuery.includes("فوري") || shopQuery.includes("هسه") || shopQuery.includes("عاجل")) {
+          currentDraft.deliveryTime = "فوري";
+        } else if (shopQuery.includes("العصر") || shopQuery.includes("عصر")) {
+          currentDraft.deliveryTime = "العصر";
+        }
+
+        shopQuery = shopQuery.trim();
+
+        if (shopQuery.length > 0) {
+          try {
+            const res = await fetch(`/api/shops/search?q=${encodeURIComponent(shopQuery)}`);
+            const data = await res.json();
+            const matchedShops: Array<{ id: string; name: string; regionName?: string }> = data.shops || [];
+
+            // إذا وجدنا محلات مشابهة وكان الاسم لم يتم النقر عليه كخيار مؤكد
+            const exactShop = matchedShops.find(s => s.name.trim() === shopQuery);
+            if (matchedShops.length > 1 && !exactShop) {
+              setOrderDraft(currentDraft);
+              setShopSuggestions(matchedShops);
+              setWizardStep("awaiting_shop_name");
+              setIsLoading(false);
+              isSendingRef.current = false;
+
+              const reply = `لقيت عدة محلات قريبة تطابق **${shopQuery}** 🏬\nاختر المحل المطلوب مباشرة من الأزرار أدناه:`;
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: (Date.now() + 1).toString(),
+                  sender: "ai",
+                  text: reply,
+                  type: "shop_suggestions",
+                  shopSuggestions: matchedShops,
+                  timestamp: currentTime
+                }
+              ]);
+              speak(`لقيت عدة محلات، اختر المحل المطلوب`);
+              return;
+            } else if (matchedShops.length >= 1) {
+              currentDraft.shopName = exactShop ? exactShop.name : matchedShops[0].name;
+            } else {
+              currentDraft.shopName = shopQuery;
+            }
+          } catch (e) {
+            currentDraft.shopName = shopQuery;
+          }
+        }
+      }
+
+      // فحص أرقام الهواتف والمناطق المتبقية لطلب المحل
+      const phoneMatch = clean.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/);
+      if (phoneMatch && !currentDraft.customerPhone) {
+        currentDraft.customerPhone = phoneMatch[0];
+      }
+
+      setOrderDraft(currentDraft);
+
+      // التحقق من الحقول المتبقية لطلب من محل:
+      // 1. اسم المحل
+      if (!currentDraft.shopName) {
+        setWizardStep("awaiting_shop_name");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = "طلب من محل 🏬\nأولاً: اكتب **اسم المحل** المطلوب:";
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("طلب من محل، اكتب اسم المحل المطلوب");
+        fetchShopSuggestions("");
+        return;
+      }
+
+      // 2. رقم هاتف الزبون
+      if (!currentDraft.customerPhone) {
+        setWizardStep("awaiting_phone");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت المحل: ${currentDraft.shopName} 🏬\nهسه انطيني **رقم هاتف الزبون** (ضروري):`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني رقم هاتف الزبون");
+        return;
+      }
+
+      // 3. منطقة الزبون
+      if (!currentDraft.area) {
+        setWizardStep("awaiting_area");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت الهاتف: ${currentDraft.customerPhone} 📱\nهسه انطيني **منطقة الزبون** (مثلاً: جيكور، نهر خوز، محيلة):`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني منطقة الزبون");
+        fetchAreaSuggestions("");
+        return;
+      }
+
+      // 4. سعر الطلب
+      if (!currentDraft.price) {
+        setWizardStep("awaiting_price");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت المنطقة: ${currentDraft.area} 📍\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني سعر الطلب بدون التوصيل");
+        return;
+      }
+
+      // 5. وقت الطلب
+      if (!currentDraft.deliveryTime) {
+        setWizardStep("awaiting_time");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت السعر: ${currentDraft.price} د.ع 💰\nشوكت **وقت الطلب أو الملاحظة**؟ (مثلاً: فوري، هسه، العصر):`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("شوكت وقت الطلب أو الملاحظة؟");
+        return;
+      }
+
+      // اكتمال كل بيانات طلب من محل
+      await submitCompletedOrder(currentDraft, currentTime);
+      return;
+    }
+
     // فحص ذكي: هل تحتوي الرسالة على رقم هاتف ومنطقة معاً للطلب العادي؟
     const phonePattern = /(07\d{9}|9647\d{9}|\+9647\d{9})/;
     const phoneMatch = clean.match(phonePattern);
@@ -585,7 +768,6 @@ export default function AdminAiPage() {
         
         // إذا كان كتب المنطقة مع الهاتف في نفس الرسالة
         if (possibleArea && possibleArea.length >= 2 && !/^\d+$/.test(possibleArea)) {
-          // جلب المناطق للتحقق من وجود خيارات متعددة
           try {
             const res = await fetch(`/api/areas/search?q=${encodeURIComponent(possibleArea)}`);
             const data = await res.json();
@@ -673,13 +855,11 @@ export default function AdminAiPage() {
     if (wizardStep === "awaiting_area") {
       const areaText = clean.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
       
-      // جلب اقتراحات المناطق المشابهة
       try {
         const res = await fetch(`/api/areas/search?q=${encodeURIComponent(areaText)}`);
         const data = await res.json();
         const matchedAreas: string[] = data.areas || [];
 
-        // إذا وجدنا أكثر من منطقة مشابهة وكان الإدخال ليس نقرة صريحة على زر خيار كامل
         const exactMatch = matchedAreas.find(a => a === areaText);
         if (matchedAreas.length > 1 && (!exactMatch || matchedAreas.length > 1 && areaText.split(" ").length === 1)) {
           setAreaSuggestions(matchedAreas);
@@ -704,8 +884,20 @@ export default function AdminAiPage() {
       } catch (e) {}
 
       const chosenArea = areaText;
-      setOrderDraft(prev => ({ ...prev, area: chosenArea }));
+      const updatedDraft = { ...orderDraft, area: chosenArea };
+      setOrderDraft(updatedDraft);
       setAreaSuggestions([]);
+
+      if (updatedDraft.orderType === "من محل") {
+        setWizardStep("awaiting_price");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت المنطقة: ${chosenArea} 📍\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني سعر الطلب بدون التوصيل");
+        return;
+      }
+
       setWizardStep("awaiting_type");
       setIsLoading(false);
       isSendingRef.current = false;
@@ -889,8 +1081,8 @@ export default function AdminAiPage() {
           ...prev,
           { id: (Date.now() + 1).toString(), sender: "ai", text: data.message || "تم التنفيذ", timestamp: currentTime }
         ]);
-        speak(data.message || "");
       }
+      speak(data.message || "");
     } catch (err) {
       setIsLoading(false);
       isSendingRef.current = false;
@@ -910,6 +1102,7 @@ export default function AdminAiPage() {
     setOrderDraft({});
     setSelectedPreparersMap({});
     setAreaSuggestions([]);
+    setShopSuggestions([]);
     setMessages([
       {
         id: "cleared_init",
@@ -1071,6 +1264,34 @@ export default function AdminAiPage() {
               </div>
             )}
 
+            {/* خيارات المحلات المقترحة كأزرار مباشرة */}
+            {msg.type === "shop_suggestions" && msg.shopSuggestions && msg.shopSuggestions.length > 0 && (
+              <div className="w-full max-w-[95%] p-3.5 bg-[#121A2B]/90 border border-blue-500/30 rounded-3xl space-y-2.5 shadow-lg animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
+                  <Store className="w-4 h-4" />
+                  <span>انقر على المحل المطلوب لتحديده:</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {msg.shopSuggestions.map((shp, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(shp.name)}
+                      className="p-3 bg-[#1A2336] hover:bg-blue-600 border border-white/10 hover:border-blue-400/50 rounded-2xl flex items-center justify-between text-right text-xs font-bold text-white transition-all active:scale-95 shadow-sm group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Store className="w-4 h-4 text-blue-400 group-hover:text-white shrink-0" />
+                        <div>
+                          <div className="font-bold">{shp.name}</div>
+                          {shp.regionName && <div className="text-[10px] text-white/50 group-hover:text-white/80">{shp.regionName}</div>}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-blue-300/70 group-hover:text-white">اختيار 👈</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* قائمة المجهزين والموردين بـ Checkboxes */}
             {msg.type === "preparer_selection" && wizardStep === "awaiting_preparers" && (
               <div className="w-full max-w-[95%] p-4 bg-[#121A2B]/90 border border-emerald-500/30 rounded-3xl space-y-3 shadow-lg">
@@ -1159,6 +1380,28 @@ export default function AdminAiPage() {
           </div>
         )}
 
+        {/* شريط اقتراحات المحلات السريعة */}
+        {shopSuggestions.length > 0 && wizardStep === "awaiting_shop_name" && (
+          <div className="p-3.5 bg-[#121A2B]/95 border border-blue-400/30 rounded-2xl space-y-2.5 animate-fadeIn shadow-lg">
+            <div className="flex items-center gap-1.5 text-xs text-blue-400 font-bold">
+              <Store className="w-4 h-4" />
+              <span>المحلات المقترحة (انقر للاختيار المباشر):</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {shopSuggestions.map((shp, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => sendMessage(shp.name)}
+                  className="px-3.5 py-2 bg-[#1A2336] hover:bg-blue-600 hover:text-white border border-white/10 rounded-xl text-xs font-medium text-slate-200 transition-colors shadow-sm flex items-center gap-1.5"
+                >
+                  <Store className="w-3.5 h-3.5 text-blue-400" />
+                  <span>{shp.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* شريط اقتراحات المناطق السريعة */}
         {areaSuggestions.length > 0 && (wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && (
           <div className="p-3.5 bg-[#121A2B]/95 border border-sky-400/30 rounded-2xl space-y-2.5 animate-fadeIn shadow-lg">
@@ -1207,7 +1450,9 @@ export default function AdminAiPage() {
               value={inputMessage}
               onChange={e => {
                 setInputMessage(e.target.value);
-                if ((wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && e.target.value.trim().length > 0) {
+                if (wizardStep === "awaiting_shop_name" && e.target.value.trim().length > 0) {
+                  fetchShopSuggestions(e.target.value.trim());
+                } else if ((wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && e.target.value.trim().length > 0) {
                   fetchAreaSuggestions(e.target.value.trim());
                 }
               }}
@@ -1219,7 +1464,9 @@ export default function AdminAiPage() {
                 }
               }}
               placeholder={
-                wizardStep === "awaiting_two_way_sender_phone"
+                wizardStep === "awaiting_shop_name"
+                  ? "اكتب اسم المحل (مثال: مشويات البركة)..."
+                  : wizardStep === "awaiting_two_way_sender_phone"
                   ? "أدخل رقم هاتف المرسل (نقطة الاستلام)..."
                   : wizardStep === "awaiting_two_way_sender_area"
                   ? "أدخل منطقة المرسل..."
@@ -1257,4 +1504,5 @@ export default function AdminAiPage() {
     </div>
   );
 }
+
 
