@@ -42,6 +42,10 @@ type ChatMessage = {
 type OrderDraft = {
   orderType?: string;
   shopName?: string;
+  senderPhone?: string;
+  senderArea?: string;
+  receiverPhone?: string;
+  receiverArea?: string;
   customerPhone?: string;
   area?: string;
   price?: string;
@@ -57,7 +61,7 @@ export default function AdminAiPage() {
     {
       id: "welcome_init",
       sender: "ai",
-      text: "يا هلا ومية هلا بيك يا أبو الأكبر! المساعد الذكي الخارق في خدمتك 🚀\nتگدر تسألني، تصفر حساب مندوب، تسند طلب، تكول 'سويلي طلب'، أو تدزلي رسالة طلب كاملة (أول سطرين رقم ومنطقة وباقي الأسطر مواد)!",
+      text: "يا هلا ومية هلا بيك يا أبو الأكبر! المساعد الذكي الخارق في خدمتك 🚀\nتگدر تسألني، تصفر حساب مندوب، تسند طلب، تكول 'سويلي طلب'، أو تدزلي طلب وجهتين (برسالة وحدة أو خطوة بخطوة)!",
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     }
   ]);
@@ -70,7 +74,19 @@ export default function AdminAiPage() {
   
   // حالة المعالج متعدد الخطوات
   const [wizardStep, setWizardStep] = useState<
-    "idle" | "awaiting_type" | "awaiting_phone" | "awaiting_area" | "awaiting_price" | "awaiting_items" | "awaiting_preparers" | "awaiting_landmark" | "awaiting_time"
+    | "idle"
+    | "awaiting_type"
+    | "awaiting_phone"
+    | "awaiting_area"
+    | "awaiting_two_way_sender_phone"
+    | "awaiting_two_way_sender_area"
+    | "awaiting_two_way_receiver_phone"
+    | "awaiting_two_way_receiver_area"
+    | "awaiting_price"
+    | "awaiting_items"
+    | "awaiting_preparers"
+    | "awaiting_landmark"
+    | "awaiting_time"
   >("idle");
   const [orderDraft, setOrderDraft] = useState<OrderDraft>({});
   const [areaSuggestions, setAreaSuggestions] = useState<string[]>([]);
@@ -148,7 +164,7 @@ export default function AdminAiPage() {
         }
         setInputMessage(transcript);
         
-        if (wizardStep === "awaiting_area" && transcript.trim().length > 1) {
+        if ((wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && transcript.trim().length > 1) {
           fetchAreaSuggestions(transcript.trim());
         }
       };
@@ -188,16 +204,113 @@ export default function AdminAiPage() {
     } catch (e) {}
   };
 
+  // إرسال طلب مكتمل للباك إند
+  const submitCompletedOrder = async (draftToSubmit: OrderDraft, currentTime: string) => {
+    try {
+      const res = await fetch("/api/ai-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "انشاء طلب مكتمل", stepData: draftToSubmit })
+      });
+      const data = await res.json();
+      setIsLoading(false);
+      isSendingRef.current = false;
+
+      const reply = data.message || "تم إنشاء وتثبيت الطلب بنجاح ✅";
+      
+      let summaryContent = "";
+      if (draftToSubmit.orderType === "وجهتين") {
+        summaryContent = `• نوع الطلب: وجهتين\n• هاتف المرسل: ${draftToSubmit.senderPhone}\n• منطقة المرسل: ${draftToSubmit.senderArea}\n• هاتف المستلم: ${draftToSubmit.receiverPhone}\n• منطقة المستلم: ${draftToSubmit.receiverArea}\n• سعر المواد: ${draftToSubmit.price} د.ع\n• وقت الطلب: ${draftToSubmit.deliveryTime || "فوري"}`;
+      } else {
+        summaryContent = `• النوع: ${draftToSubmit.orderType || "من الإدارة"}\n• رقم الهاتف: ${draftToSubmit.customerPhone}\n• المنطقة: ${draftToSubmit.area}\n• سعر المواد: ${draftToSubmit.price} د.ع\n• وقت الطلب: ${draftToSubmit.deliveryTime || "فوري"}`;
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: `🎉 **${reply}**\n\n📋 **ملخص الطلب:**\n${summaryContent}`,
+          timestamp: currentTime
+        }
+      ]);
+      speak(reply);
+      setWizardStep("idle");
+      setOrderDraft({});
+      setSelectedPreparersMap({});
+      setAreaSuggestions([]);
+    } catch (err) {
+      setIsLoading(false);
+      isSendingRef.current = false;
+      setMessages(prev => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), sender: "ai", text: "⚠️ تعذر إكمال إنشاء الطلب بالسيرفر.", timestamp: currentTime }
+      ]);
+    }
+  };
+
   // معالجة اختيار نوع الطلب (الأزرار الأربعة)
   const handleSelectOrderType = (type: string) => {
-    setOrderDraft(prev => ({ ...prev, orderType: type }));
-    
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       sender: "user",
       text: `نوع الطلب: ${type}`,
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     };
+
+    if (type === "وجهتين") {
+      // إعداد طلب الوجهتين
+      const updatedDraft: OrderDraft = {
+        ...orderDraft,
+        orderType: "وجهتين",
+        senderPhone: orderDraft.senderPhone || orderDraft.customerPhone || "",
+        senderArea: orderDraft.senderArea || orderDraft.area || ""
+      };
+      setOrderDraft(updatedDraft);
+
+      // فحص الحقل المفقود التالي:
+      if (!updatedDraft.senderPhone) {
+        setWizardStep("awaiting_two_way_sender_phone");
+        const reply = "تمام يا أبو الأكبر! اخترنا **طلب وجهتين** 🔄\nأولاً: انطيني **رقم هاتف المرسل (نقطة الاستلام)**:";
+        setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+        speak("تمام يا أبو الأكبر! اخترنا طلب وجهتين. انطيني رقم هاتف المرسل");
+        return;
+      }
+
+      if (!updatedDraft.senderArea) {
+        setWizardStep("awaiting_two_way_sender_area");
+        const reply = `سجلت هاتف المرسل: ${updatedDraft.senderPhone} 📱\nهسه انطيني **منطقة المرسل (نقطة الاستلام)**:`;
+        setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+        speak("هسه انطيني منطقة المرسل");
+        fetchAreaSuggestions("");
+        return;
+      }
+
+      if (!updatedDraft.receiverPhone) {
+        setWizardStep("awaiting_two_way_receiver_phone");
+        const reply = `سجلت المرسل: ${updatedDraft.senderPhone} (${updatedDraft.senderArea}) 👍\nهسه انطيني **رقم هاتف المستلم (نقطة التسليم)**:`;
+        setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+        speak("هسه انطيني رقم هاتف المستلم");
+        return;
+      }
+
+      if (!updatedDraft.receiverArea) {
+        setWizardStep("awaiting_two_way_receiver_area");
+        const reply = `سجلت هاتف المستلم: ${updatedDraft.receiverPhone} 📱\nهسه انطيني **منطقة المستلم (نقطة التسليم)**:`;
+        setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+        speak("هسه انطيني منطقة المستلم");
+        fetchAreaSuggestions("");
+        return;
+      }
+
+      setWizardStep("awaiting_price");
+      const reply = "سجلت بيانات المرسل والمستلم 👍\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)**:";
+      setMessages(prev => [...prev, userMsg, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: userMsg.timestamp }]);
+      speak("هسه انطيني سعر الطلب بدون التوصيل");
+      return;
+    }
+
+    setOrderDraft(prev => ({ ...prev, orderType: type }));
 
     if (type === "تجهيز طلب") {
       setWizardStep("awaiting_items");
@@ -267,7 +380,197 @@ export default function AdminAiPage() {
       timestamp: currentTime
     };
 
-    // فحص ذكي: هل تحتوي الرسالة على رقم هاتف ومنطقة معاً؟
+    // فحص الرسائل متعددة الأسطر لطلب التجهيز المباشر
+    const lines = clean.split("\n").map(l => l.trim()).filter(Boolean);
+
+    // 1. فحص طلب وجهتين مسبق أو حالي أو بدء طلب وجهتين
+    const isTwoWayTrigger = clean.includes("وجهتين") || clean.includes("وجهين") || clean.includes("استلام وتسليم") || clean.includes("طلب وجهتين");
+    const isCurrentTwoWay = orderDraft.orderType === "وجهتين" || wizardStep.startsWith("awaiting_two_way_") || isTwoWayTrigger;
+
+    if (isCurrentTwoWay) {
+      let currentDraft: OrderDraft = {
+        ...orderDraft,
+        orderType: "وجهتين"
+      };
+
+      // استخراج أرقام الهواتف
+      const allPhones = clean.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/g) || [];
+      if (allPhones.length >= 2) {
+        currentDraft.senderPhone = currentDraft.senderPhone || allPhones[0];
+        currentDraft.receiverPhone = currentDraft.receiverPhone || allPhones[1];
+      } else if (allPhones.length === 1) {
+        if (!currentDraft.senderPhone || wizardStep === "awaiting_two_way_sender_phone") {
+          currentDraft.senderPhone = allPhones[0];
+        } else if (!currentDraft.receiverPhone || wizardStep === "awaiting_two_way_receiver_phone") {
+          currentDraft.receiverPhone = allPhones[0];
+        }
+      }
+
+      // إزالة الهواتف من النص للبحث عن المناطق والأسعار
+      let cleanText = clean;
+      allPhones.forEach(p => {
+        cleanText = cleanText.replace(p, " ");
+      });
+
+      // استخراج السعر إذا وجد
+      const priceMatch = cleanText.match(/(?:سعر|مبلغ|حساب|بـ|ب|بقيمة)?\s*(\d{1,6})\s*(?:الف|ألف|د\.ع|دينار|دع)?/);
+      if (priceMatch && !currentDraft.price) {
+        const numVal = parseInt(priceMatch[1]);
+        if (numVal > 0 && numVal <= 500000 && !allPhones.some(p => p.includes(priceMatch[1]))) {
+          if (wizardStep === "awaiting_price" || cleanText.includes("سعر") || cleanText.includes("مبلغ") || cleanText.includes("الف") || cleanText.includes("د")) {
+            currentDraft.price = String(numVal);
+            cleanText = cleanText.replace(priceMatch[0], " ");
+          }
+        }
+      }
+
+      // استخراج الوقت إذا وجد
+      if (cleanText.includes("فوري") || cleanText.includes("هسه") || cleanText.includes("عاجل")) {
+        currentDraft.deliveryTime = "فوري";
+      } else if (cleanText.includes("العصر") || cleanText.includes("عصر")) {
+        currentDraft.deliveryTime = "العصر";
+      } else if (cleanText.includes("المغرب") || cleanText.includes("مغرب")) {
+        currentDraft.deliveryTime = "المغرب";
+      } else if (cleanText.includes("باجر") || cleanText.includes("غدا") || cleanText.includes("غداً")) {
+        currentDraft.deliveryTime = "باجر";
+      }
+
+      // معالجة المنطقة المدخلة
+      const remainingClean = cleanText
+        .replace(/^(المرسل|المستلم|منطقة المرسل|منطقة المستلم|المنطقة|منطقة|عنوان|العنوان|الى|إلى|من|السعر|سعر|الوقت|وقت)\s*[:：-]?\s*/g, "")
+        .replace(/(وجهتين|طلب|جديد|سويلي|اريد)/g, "")
+        .trim();
+
+      if (wizardStep === "awaiting_two_way_sender_area" || (!currentDraft.senderArea && remainingClean.length >= 2 && !/^\d+$/.test(remainingClean))) {
+        // فحص المنطقة
+        try {
+          const res = await fetch(`/api/areas/search?q=${encodeURIComponent(remainingClean)}`);
+          const data = await res.json();
+          const matched: string[] = data.areas || [];
+
+          if (matched.length > 1 && remainingClean.split(" ").length === 1 && !matched.some(m => m === remainingClean)) {
+            setOrderDraft(currentDraft);
+            setAreaSuggestions(matched);
+            setWizardStep("awaiting_two_way_sender_area");
+            setIsLoading(false);
+            isSendingRef.current = false;
+
+            const reply = `لقيت عدة مناطق تطابق **${remainingClean}** لمنطقة المرسل 📍\nأي منطقة منها تقصد؟`;
+            setMessages(prev => [
+              ...prev,
+              { id: (Date.now() + 1).toString(), sender: "ai", text: reply, type: "area_suggestions", suggestions: matched, timestamp: currentTime }
+            ]);
+            speak(reply);
+            return;
+          }
+          currentDraft.senderArea = matched[0] || remainingClean;
+        } catch (e) {
+          currentDraft.senderArea = remainingClean;
+        }
+      } else if (wizardStep === "awaiting_two_way_receiver_area" || (!currentDraft.receiverArea && currentDraft.senderArea && remainingClean.length >= 2 && !/^\d+$/.test(remainingClean) && remainingClean !== currentDraft.senderArea)) {
+        try {
+          const res = await fetch(`/api/areas/search?q=${encodeURIComponent(remainingClean)}`);
+          const data = await res.json();
+          const matched: string[] = data.areas || [];
+
+          if (matched.length > 1 && remainingClean.split(" ").length === 1 && !matched.some(m => m === remainingClean)) {
+            setOrderDraft(currentDraft);
+            setAreaSuggestions(matched);
+            setWizardStep("awaiting_two_way_receiver_area");
+            setIsLoading(false);
+            isSendingRef.current = false;
+
+            const reply = `لقيت عدة مناطق تطابق **${remainingClean}** لمنطقة المستلم 📍\nأي منطقة منها تقصد؟`;
+            setMessages(prev => [
+              ...prev,
+              { id: (Date.now() + 1).toString(), sender: "ai", text: reply, type: "area_suggestions", suggestions: matched, timestamp: currentTime }
+            ]);
+            speak(reply);
+            return;
+          }
+          currentDraft.receiverArea = matched[0] || remainingClean;
+        } catch (e) {
+          currentDraft.receiverArea = remainingClean;
+        }
+      }
+
+      setOrderDraft(currentDraft);
+
+      // التحقق من الحقول المتبقية لطلب الوجهتين:
+      // 1. رقم هاتف المرسل
+      if (!currentDraft.senderPhone) {
+        setWizardStep("awaiting_two_way_sender_phone");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = "طلب وجهتين 🔄\nأولاً: انطيني **رقم هاتف المرسل (نقطة الاستلام)**:";
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("طلب وجهتين، انطيني رقم هاتف المرسل");
+        return;
+      }
+
+      // 2. منطقة المرسل
+      if (!currentDraft.senderArea) {
+        setWizardStep("awaiting_two_way_sender_area");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت هاتف المرسل: ${currentDraft.senderPhone} 📱\nهسه انطيني **منطقة المرسل (نقطة الاستلام)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني منطقة المرسل");
+        fetchAreaSuggestions("");
+        return;
+      }
+
+      // 3. رقم هاتف المستلم
+      if (!currentDraft.receiverPhone) {
+        setWizardStep("awaiting_two_way_receiver_phone");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت المرسل: ${currentDraft.senderPhone} (${currentDraft.senderArea}) 👍\nهسه انطيني **رقم هاتف المستلم (نقطة التسليم)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني رقم هاتف المستلم");
+        return;
+      }
+
+      // 4. منطقة المستلم
+      if (!currentDraft.receiverArea) {
+        setWizardStep("awaiting_two_way_receiver_area");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت هاتف المستلم: ${currentDraft.receiverPhone} 📱\nهسه انطيني **منطقة المستلم (نقطة التسليم)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني منطقة المستلم");
+        fetchAreaSuggestions("");
+        return;
+      }
+
+      // 5. سعر الطلب
+      if (!currentDraft.price) {
+        setWizardStep("awaiting_price");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت بيانات المرسل والمستلم:\n• المرسل: ${currentDraft.senderPhone} (${currentDraft.senderArea})\n• المستلم: ${currentDraft.receiverPhone} (${currentDraft.receiverArea})\n\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)**:`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("هسه انطيني سعر الطلب بدون التوصيل");
+        return;
+      }
+
+      // 6. وقت الطلب
+      if (!currentDraft.deliveryTime) {
+        setWizardStep("awaiting_time");
+        setIsLoading(false);
+        isSendingRef.current = false;
+        const reply = `سجلت السعر: ${currentDraft.price} د.ع 💰\nشوكت **وقت الطلب أو الملاحظة**؟ (مثلاً: فوري، هسه، العصر):`;
+        setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }]);
+        speak("شوكت وقت الطلب أو الملاحظة؟");
+        return;
+      }
+
+      // إذا اكتملت جميع البيانات، يتم إرسال وتثبيت الطلب فوراً!
+      await submitCompletedOrder(currentDraft, currentTime);
+      return;
+    }
+
+    // فحص ذكي: هل تحتوي الرسالة على رقم هاتف ومنطقة معاً للطلب العادي؟
     const phonePattern = /(07\d{9}|9647\d{9}|\+9647\d{9})/;
     const phoneMatch = clean.match(phonePattern);
     const textWithoutPhone = clean.replace(phonePattern, "").replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "").trim();
@@ -467,39 +770,7 @@ export default function AdminAiPage() {
         ...orderDraft,
         deliveryTime: clean
       };
-      
-      try {
-        const res = await fetch("/api/ai-agent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: "انشاء طلب مكتمل", stepData: finalDraft })
-        });
-        const data = await res.json();
-        setIsLoading(false);
-        isSendingRef.current = false;
-
-        const reply = data.message || "تم إنشاء وتثبيت الطلب بنجاح ✅";
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: "ai",
-            text: `🎉 **${reply}**\n\n📋 **ملخص الطلب:**\n• رقم الهاتف: ${finalDraft.customerPhone}\n• المنطقة: ${finalDraft.area}\n• النوع: ${finalDraft.orderType || "من الإدارة"}\n• سعر المواد: ${finalDraft.price} د.ع\n• وقت الطلب: ${finalDraft.deliveryTime}`,
-            timestamp: currentTime
-          }
-        ]);
-        speak(reply);
-        setWizardStep("idle");
-        setOrderDraft({});
-        setSelectedPreparersMap({});
-      } catch (err) {
-        setIsLoading(false);
-        isSendingRef.current = false;
-        setMessages(prev => [
-          ...prev,
-          { id: (Date.now() + 1).toString(), sender: "ai", text: "⚠️ تعذر إكمال إنشاء الطلب بالسيرفر.", timestamp: currentTime }
-        ]);
-      }
+      await submitCompletedOrder(finalDraft, currentTime);
       return;
     }
 
@@ -524,7 +795,6 @@ export default function AdminAiPage() {
     }
 
     // فحص الرسائل متعددة الأسطر لطلب التجهيز المباشر
-    const lines = clean.split("\n").map(l => l.trim()).filter(Boolean);
     if (lines.length >= 2) {
       let extractedPhone = "";
       let extractedArea = "";
@@ -890,7 +1160,7 @@ export default function AdminAiPage() {
         )}
 
         {/* شريط اقتراحات المناطق السريعة */}
-        {areaSuggestions.length > 0 && wizardStep === "awaiting_area" && (
+        {areaSuggestions.length > 0 && (wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && (
           <div className="p-3.5 bg-[#121A2B]/95 border border-sky-400/30 rounded-2xl space-y-2.5 animate-fadeIn shadow-lg">
             <div className="flex items-center gap-1.5 text-xs text-sky-400 font-bold">
               <MapPin className="w-4 h-4" />
@@ -937,7 +1207,7 @@ export default function AdminAiPage() {
               value={inputMessage}
               onChange={e => {
                 setInputMessage(e.target.value);
-                if (wizardStep === "awaiting_area" && e.target.value.trim().length > 0) {
+                if ((wizardStep === "awaiting_area" || wizardStep === "awaiting_two_way_sender_area" || wizardStep === "awaiting_two_way_receiver_area") && e.target.value.trim().length > 0) {
                   fetchAreaSuggestions(e.target.value.trim());
                 }
               }}
@@ -949,7 +1219,15 @@ export default function AdminAiPage() {
                 }
               }}
               placeholder={
-                wizardStep === "awaiting_phone"
+                wizardStep === "awaiting_two_way_sender_phone"
+                  ? "أدخل رقم هاتف المرسل (نقطة الاستلام)..."
+                  : wizardStep === "awaiting_two_way_sender_area"
+                  ? "أدخل منطقة المرسل..."
+                  : wizardStep === "awaiting_two_way_receiver_phone"
+                  ? "أدخل رقم هاتف المستلم (نقطة التسليم)..."
+                  : wizardStep === "awaiting_two_way_receiver_area"
+                  ? "أدخل منطقة المستلم..."
+                  : wizardStep === "awaiting_phone"
                   ? "أدخل رقم هاتف الزبون..."
                   : wizardStep === "awaiting_area"
                   ? "أدخل منطقة الزبون..."

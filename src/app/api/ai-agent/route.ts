@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     // 1. إذا جاء الطلب مع بيانات متعددة الخطوات (stepData)
     if (stepData) {
       let targetShop = null
-      const isManagementOrder = !stepData.shopName || stepData.orderType === "من الإدارة" || stepData.orderType === "تجهيز طلب"
+      const isManagementOrder = !stepData.shopName || stepData.orderType === "من الإدارة" || stepData.orderType === "تجهيز طلب" || stepData.orderType === "وجهتين"
 
       if (isManagementOrder) {
         targetShop = await prisma.shop.findFirst({
@@ -90,6 +90,68 @@ export async function POST(req: Request) {
         }
       }
 
+      // إذا كان طلب وجهتين:
+      if (stepData.orderType === "وجهتين" || (stepData.senderPhone && stepData.receiverPhone)) {
+        const senderAreaName = (stepData.senderArea || stepData.area || "البصرة").trim()
+        const receiverAreaName = (stepData.receiverArea || stepData.secondArea || "البصرة").trim()
+
+        let senderRegion = await prisma.region.findFirst({
+          where: { name: { equals: senderAreaName, mode: 'insensitive' } }
+        })
+        if (!senderRegion) {
+          senderRegion = await prisma.region.findFirst({
+            where: { name: { contains: senderAreaName, mode: 'insensitive' } }
+          })
+        }
+
+        let receiverRegion = await prisma.region.findFirst({
+          where: { name: { equals: receiverAreaName, mode: 'insensitive' } }
+        })
+        if (!receiverRegion) {
+          receiverRegion = await prisma.region.findFirst({
+            where: { name: { contains: receiverAreaName, mode: 'insensitive' } }
+          })
+        }
+
+        const orderSubtotalNum = parseInt(String(stepData.price || stepData.orderSubtotal || stepData.total || "0").replace(/[^\d]/g, "")) || 0
+        const deliveryPriceNum = receiverRegion?.deliveryPrice ? Number(receiverRegion.deliveryPrice) : 3000
+        const totalAmountNum = orderSubtotalNum + deliveryPriceNum
+
+        const sPhone = stepData.senderPhone || stepData.customerPhone || "07700000000"
+        const rPhone = stepData.receiverPhone || stepData.secondCustomerPhone || "07700000000"
+
+        const newOrder = await prisma.order.create({
+          data: {
+            shopId: targetShop.id,
+            routeMode: "double",
+            orderType: "وجهتين",
+            customerPhone: sPhone,
+            customerRegionId: senderRegion?.id || null,
+            secondCustomerPhone: rPhone,
+            secondCustomerRegionId: receiverRegion?.id || null,
+            orderSubtotal: new Decimal(orderSubtotalNum),
+            deliveryPrice: new Decimal(deliveryPriceNum),
+            totalAmount: new Decimal(totalAmountNum),
+            status: "pending",
+            submissionSource: "admin",
+            summary: `طلب وجهتين: من ${sPhone} (${senderAreaName}) إلى ${rPhone} (${receiverAreaName})`,
+            orderNoteTime: stepData.deliveryTime || stepData.time || "فوري",
+            customerLandmark: stepData.senderLandmark || "",
+            secondCustomerLandmark: stepData.receiverLandmark || ""
+          }
+        })
+
+        return NextResponse.json({
+          done: true,
+          message: `تم إنشاء وتثبيت طلب الوجهتين رقم #${newOrder.orderNumber} بنجاح ✅ (من: ${senderAreaName} إلى: ${receiverAreaName} | السعر: ${orderSubtotalNum.toLocaleString()} د.ع + توصيل: ${deliveryPriceNum.toLocaleString()} د.ع = ${totalAmountNum.toLocaleString()} د.ع)`,
+          orderNumber: newOrder.orderNumber,
+          subtotal: orderSubtotalNum,
+          deliveryPrice: deliveryPriceNum,
+          total: totalAmountNum
+        })
+      }
+
+      // الطلبات العادية وتجهيز الطلب:
       const regionName = (stepData.area || stepData.receiverArea || "البصرة").trim()
       let region = await prisma.region.findFirst({
         where: { name: { equals: regionName, mode: 'insensitive' } }
