@@ -58,19 +58,36 @@ export async function POST(req: Request) {
 
     // 1. إذا جاء الطلب مع بيانات متعددة الخطوات (stepData)
     if (stepData) {
-      let defaultShop = await prisma.shop.findFirst({
-        where: stepData.shopName ? { name: { contains: stepData.shopName, mode: 'insensitive' } } : undefined
-      })
-      if (!defaultShop) {
-        defaultShop = await prisma.shop.findFirst()
-      }
-      if (!defaultShop) {
-        defaultShop = await prisma.shop.create({
-          data: {
-            name: "المتجر العام",
-            phone: "07700000000"
-          }
+      let targetShop = null
+      const isManagementOrder = !stepData.shopName || stepData.orderType === "من الإدارة" || stepData.orderType === "تجهيز طلب"
+
+      if (isManagementOrder) {
+        targetShop = await prisma.shop.findFirst({
+          where: { name: "الإدارة" }
         })
+        if (!targetShop) {
+          targetShop = await prisma.shop.create({
+            data: {
+              name: "الإدارة",
+              phone: "07700000000"
+            }
+          })
+        }
+      } else {
+        targetShop = await prisma.shop.findFirst({
+          where: { name: { contains: stepData.shopName, mode: 'insensitive' } }
+        })
+        if (!targetShop) {
+          targetShop = await prisma.shop.findFirst()
+        }
+        if (!targetShop) {
+          targetShop = await prisma.shop.create({
+            data: {
+              name: "الإدارة",
+              phone: "07700000000"
+            }
+          })
+        }
       }
 
       const regionName = stepData.area || stepData.receiverArea || "البصرة"
@@ -81,10 +98,17 @@ export async function POST(req: Request) {
         region = await prisma.region.findFirst()
       }
 
-      const totalNum = parseInt(String(stepData.price || stepData.total || "15000").replace(/[^\d]/g, "")) || 15000
-      const deliveryPriceNum = region?.deliveryPrice ? Number(region.deliveryPrice) : 3000
+      // حساب السعر: السعر المدخل هو سعر المواد الصافي بدون التوصيل
+      let rawPrice = parseInt(String(stepData.price || stepData.orderSubtotal || stepData.total || "10000").replace(/[^\d]/g, "")) || 10000
+      if (rawPrice > 0 && rawPrice <= 500) {
+        rawPrice = rawPrice * 1000 // مثلاً 10 تصبح 10,000 د.ع
+      }
 
-      let summaryText = stepData.notes || `طلب ${stepData.orderType || "جديد"} - ${regionName}`
+      const orderSubtotalNum = rawPrice
+      const deliveryPriceNum = region?.deliveryPrice ? Number(region.deliveryPrice) : 3000
+      const totalAmountNum = orderSubtotalNum + deliveryPriceNum
+
+      let summaryText = stepData.notes || `طلب ${stepData.orderType || "من الإدارة"} - ${regionName}`
       if (stepData.items && Array.isArray(stepData.items) && stepData.items.length > 0) {
         summaryText = `منتجات:\n` + stepData.items.map((it: string, idx: number) => `${idx + 1}- ${it}`).join("\n")
         if (stepData.selectedPreparers && stepData.selectedPreparers.length > 0) {
@@ -94,14 +118,15 @@ export async function POST(req: Request) {
 
       const newOrder = await prisma.order.create({
         data: {
-          shopId: defaultShop.id,
+          shopId: targetShop.id,
           customerPhone: stepData.customerPhone || stepData.receiverPhone || stepData.phone || "07700000000",
           customerRegionId: region?.id || null,
-          totalAmount: new Decimal(totalNum),
-          orderSubtotal: new Decimal(Math.max(0, totalNum - deliveryPriceNum)),
+          orderSubtotal: new Decimal(orderSubtotalNum),
           deliveryPrice: new Decimal(deliveryPriceNum),
+          totalAmount: new Decimal(totalAmountNum),
           status: stepData.orderType === "تجهيز طلب" ? "preparing" : "pending",
           orderType: stepData.orderType || "من الإدارة",
+          submissionSource: "admin",
           summary: summaryText,
           orderNoteTime: stepData.deliveryTime || stepData.time || "فوري",
           customerLandmark: stepData.landmark || "",
@@ -111,8 +136,11 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         done: true,
-        message: `تم إنشاء وتثبيت الطلب رقم #${newOrder.orderNumber} بنجاح ✅`,
-        orderNumber: newOrder.orderNumber
+        message: `تم إنشاء وتثبيت الطلب رقم #${newOrder.orderNumber} بنجاح ✅ (سعر الطلب: ${orderSubtotalNum.toLocaleString()} د.ع + توصيل: ${deliveryPriceNum.toLocaleString()} د.ع = الإجمالي: ${totalAmountNum.toLocaleString()} د.ع)`,
+        orderNumber: newOrder.orderNumber,
+        subtotal: orderSubtotalNum,
+        deliveryPrice: deliveryPriceNum,
+        total: totalAmountNum
       })
     }
 

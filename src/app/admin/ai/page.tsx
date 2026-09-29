@@ -200,68 +200,50 @@ export default function AdminAiPage() {
     };
 
     if (type === "تجهيز طلب") {
-      setWizardStep("awaiting_area");
+      setWizardStep("awaiting_items");
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: `تمام يا أبو الأكبر! اخترنا **تجهيز طلب** 📦\nأولاً: انطيني **اسم المنطقة** (مثلاً: نهر خوز، محيلة، سيحان):`,
+        text: `تمام يا أبو الأكبر! اخترنا **تجهيز طلب** 📦\nاكتب أو الصق **قائمة المنتجات والمواد** المطلوبة (كل مادة بسطر):`,
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
       };
       setMessages(prev => [...prev, userMsg, aiMsg]);
-      speak("تمام يا أبو الأكبر! اخترنا تجهيز طلب. أولاً انطيني اسم المنطقة");
-      fetchAreaSuggestions("");
+      speak("تمام يا أبو الأكبر! اخترنا تجهيز طلب. اكتب قائمة المنتجات والمواد المطلوبة كل مادة بسطر");
     } else {
-      setWizardStep("awaiting_phone");
+      setWizardStep("awaiting_price");
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: `تمام يا أبو الأكبر، سجلت نوع الطلب (${type}) 📝\nهسه انطيني **رقم هاتف الزبون** (ضروري):`,
+        text: `سجلت نوع الطلب (${type}) 📝\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)** (مثلاً: 10 أو 10000):`,
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
       };
       setMessages(prev => [...prev, userMsg, aiMsg]);
-      speak(`تمام يا أبو الأكبر، سجلت نوع الطلب. هسه انطيني رقم هاتف الزبون`);
+      speak(`سجلت نوع الطلب. هسه انطيني سعر الطلب بدون التوصيل`);
     }
   };
 
-  // تأكيد واختيار المجهزين والانتقال لإنشاء الطلب
-  const handleConfirmPreparersAndProceed = async () => {
+  // تأكيد واختيار المجهزين والانتقال لخطوة السعر
+  const handleConfirmPreparersAndProceed = () => {
     const selectedNames = Object.keys(selectedPreparersMap).filter(k => selectedPreparersMap[k]);
-    const finalDraft: OrderDraft = {
-      ...orderDraft,
+    setOrderDraft(prev => ({
+      ...prev,
       selectedPreparers: selectedNames.length > 0 ? selectedNames : ["المتجر الرئيسي"]
-    };
+    }));
 
-    setWizardStep("idle");
-    setIsLoading(true);
+    setWizardStep("awaiting_price");
+    const currentTime = new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
 
-    try {
-      const res = await fetch("/api/ai-agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: "انشاء طلب تجهيز", stepData: finalDraft })
-      });
-      const data = await res.json();
-      setIsLoading(false);
-
-      const reply = data.message || "تم إنشاء وتجهيز الطلب بنجاح ✅";
-      const currentTime = new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
-
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          text: `🎉 **${reply}**\n\n📦 **بيانات التجهيز:**\n• الهاتف: ${finalDraft.customerPhone || "غير محدد"}\n• المنطقة: ${finalDraft.area}\n• المجهزون: ${finalDraft.selectedPreparers?.join(", ")}\n• المواد: ${finalDraft.items?.join(" ، ") || "عام"}`,
-          timestamp: currentTime
-        }
-      ]);
-      speak(reply);
-      setOrderDraft({});
-      setSelectedPreparersMap({});
-    } catch (e) {
-      setIsLoading(false);
-      alert("حدث خطأ أثناء الاتصال بالسيرفر");
-    }
+    const reply = `عاشت إيدك! تم تحديد المجهزين بنجاح 👍\nهسه انطيني **سعر الطلب (مبلغ المواد الصافي بدون التوصيل)** (مثلاً: 10 أو 10000):`;
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: "ai",
+        text: reply,
+        timestamp: currentTime
+      }
+    ]);
+    speak("تم تحديد المجهزين. هسه انطيني سعر الطلب بدون التوصيل");
   };
 
   // إرسال الرسالة أو الإجابة
@@ -288,69 +270,14 @@ export default function AdminAiPage() {
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    // مسار تجهيز الطلب:
-    if (orderDraft.orderType === "تجهيز طلب") {
-      if (wizardStep === "awaiting_area") {
-        setOrderDraft(prev => ({ ...prev, area: clean }));
-        setWizardStep("awaiting_phone");
-        setIsLoading(false);
-        isSendingRef.current = false;
-
-        const reply = `عاشت إيدك! المنطقة: ${clean} 📍\nهسه انطيني **رقم هاتف الزبون**:`;
-        setMessages(prev => [
-          ...prev,
-          { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
-        ]);
-        speak(reply);
-        return;
-      }
-
-      if (wizardStep === "awaiting_phone") {
-        setOrderDraft(prev => ({ ...prev, customerPhone: clean }));
-        setWizardStep("awaiting_items");
-        setIsLoading(false);
-        isSendingRef.current = false;
-
-        const reply = `سجلت الهاتف: ${clean} 📱\nهسه اكتب أو كول **قائمة المنتجات والمواد** المطلوبة (كل مادة بسطر):`;
-        setMessages(prev => [
-          ...prev,
-          { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
-        ]);
-        speak(reply);
-        return;
-      }
-
-      if (wizardStep === "awaiting_items") {
-        const itemsList = clean.split("\n").map(s => s.trim()).filter(Boolean);
-        setOrderDraft(prev => ({ ...prev, items: itemsList }));
-        setWizardStep("awaiting_preparers");
-        setIsLoading(false);
-        isSendingRef.current = false;
-
-        const reply = `سجلت ${itemsList.length} منتجات 🛒\nهسه اختار المجهزين والموردين من القائمة أدناه ثم اضغط **التالي**:`;
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: "ai",
-            text: reply,
-            type: "preparer_selection",
-            timestamp: currentTime
-          }
-        ]);
-        speak(reply);
-        return;
-      }
-    }
-
-    // مسار الطلب العادي (من الإدارة / وجهتين / من محل):
+    // الخطوة 1: انتظار رقم هاتف الزبون
     if (wizardStep === "awaiting_phone") {
       setOrderDraft(prev => ({ ...prev, customerPhone: clean }));
       setWizardStep("awaiting_area");
       setIsLoading(false);
       isSendingRef.current = false;
 
-      const reply = `عاشت إيدك! رقم الهاتف: ${clean}\nهسه انطيني **منطقة الزبون** (مثلاً: نهر خوز، محيلة، سيحان):`;
+      const reply = `سجلت رقم الهاتف: ${clean} 📱\nهسه انطيني **منطقة الزبون** (مثلاً: نهر خوز، محيلة، سيحان):`;
       setMessages(prev => [
         ...prev,
         { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
@@ -360,44 +287,59 @@ export default function AdminAiPage() {
       return;
     }
 
+    // الخطوة 2: انتظار منطقة الزبون
     if (wizardStep === "awaiting_area") {
       setOrderDraft(prev => ({ ...prev, area: clean }));
-      setWizardStep("awaiting_price");
+      setWizardStep("awaiting_type");
       setIsLoading(false);
       isSendingRef.current = false;
 
-      const reply = `سجلت المنطقة: ${clean} 📍\nهسه انطيني **السعر الإجمالي للطلب** (مثلاً: 15000 أو 25):`;
+      const reply = `عاشت إيدك! المنطقة: ${clean} 📍\nهسه اختار **نوع الطلب** من الخيارات الأربعة أدناه:`;
       setMessages(prev => [
         ...prev,
-        { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: reply,
+          type: "type_selection",
+          timestamp: currentTime
+        }
       ]);
       speak(reply);
       return;
     }
 
+    // معالجة إدخال قائمة المواد لطلب التجهيز
+    if (wizardStep === "awaiting_items") {
+      const itemsList = clean.split("\n").map(s => s.trim()).filter(Boolean);
+      setOrderDraft(prev => ({ ...prev, items: itemsList }));
+      setWizardStep("awaiting_preparers");
+      setIsLoading(false);
+      isSendingRef.current = false;
+
+      const reply = `سجلت ${itemsList.length} مواد 🛒\nحدد المجهزين والموردين من القائمة أدناه ثم اضغط **التالي**:`;
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: reply,
+          type: "preparer_selection",
+          timestamp: currentTime
+        }
+      ]);
+      speak(reply);
+      return;
+    }
+
+    // الخطوة 4: انتظار سعر الطلب (مبلغ المواد الصافي)
     if (wizardStep === "awaiting_price") {
       setOrderDraft(prev => ({ ...prev, price: clean }));
-      setWizardStep("awaiting_landmark");
-      setIsLoading(false);
-      isSendingRef.current = false;
-
-      const reply = `تمام! السعر: ${clean} د.ع 💰\nأكو **نقطة دالة أو لوكيشن** للزبون؟ (إذا ماكو اكتب: ماكو أو تخطي):`;
-      setMessages(prev => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
-      ]);
-      speak(reply);
-      return;
-    }
-
-    if (wizardStep === "awaiting_landmark") {
-      const landmarkVal = (clean === "ماكو" || clean === "تخطي" || clean === "لا") ? "" : clean;
-      setOrderDraft(prev => ({ ...prev, landmark: landmarkVal }));
       setWizardStep("awaiting_time");
       setIsLoading(false);
       isSendingRef.current = false;
 
-      const reply = `سجلت النقطة الدالة 📌\nآخر شي: شوكت **وقت التوصيل أو الملاحظة**؟ (مثلاً: هسه، العصر، فوري):`;
+      const reply = `سجلت سعر الطلب: ${clean} د.ع 💰 (سيتم إضافة أجرة التوصيل فوقه تلقائياً)\nآخر متطلب: شوكت **وقت الطلب أو الملاحظة**؟ (مثلاً: فوري، هسه، العصر):`;
       setMessages(prev => [
         ...prev,
         { id: (Date.now() + 1).toString(), sender: "ai", text: reply, timestamp: currentTime }
@@ -406,6 +348,7 @@ export default function AdminAiPage() {
       return;
     }
 
+    // الخطوة 5: انتظار وقت الطلب أو الملاحظة وإنشاء الطلب
     if (wizardStep === "awaiting_time") {
       const finalDraft: OrderDraft = {
         ...orderDraft,
@@ -422,19 +365,20 @@ export default function AdminAiPage() {
         setIsLoading(false);
         isSendingRef.current = false;
 
-        const reply = data.message || "تم إنشاء الطلب بنجاح ✅";
+        const reply = data.message || "تم إنشاء وتثبيت الطلب بنجاح ✅";
         setMessages(prev => [
           ...prev,
           {
             id: (Date.now() + 1).toString(),
             sender: "ai",
-            text: `🎉 **${reply}**\n\n📋 **ملخص الطلب:**\n• النوع: ${finalDraft.orderType}\n• الهاتف: ${finalDraft.customerPhone}\n• المنطقة: ${finalDraft.area}\n• السعر: ${finalDraft.price} د.ع\n• الوقت: ${finalDraft.deliveryTime}`,
+            text: `🎉 **${reply}**\n\n📋 **ملخص الطلب:**\n• رقم الهاتف: ${finalDraft.customerPhone}\n• المنطقة: ${finalDraft.area}\n• النوع: ${finalDraft.orderType || "من الإدارة"}\n• سعر المواد: ${finalDraft.price} د.ع\n• وقت الطلب: ${finalDraft.deliveryTime}`,
             timestamp: currentTime
           }
         ]);
         speak(reply);
         setWizardStep("idle");
         setOrderDraft({});
+        setSelectedPreparersMap({});
       } catch (err) {
         setIsLoading(false);
         isSendingRef.current = false;
@@ -446,20 +390,19 @@ export default function AdminAiPage() {
       return;
     }
 
-    // فحص ما إذا كتب "سويلي طلب"
-    if (clean.includes("سويلي طلب") || clean.includes("سوي طلب") || clean.includes("طلب جديد")) {
+    // فحص ما إذا كتب "سويلي طلب" أو "طلب جديد"
+    if (clean.includes("سويلي طلب") || clean.includes("سوي طلب") || clean.includes("طلب جديد") || clean.includes("سويلي اوردر") || clean.includes("انشاء طلب")) {
       setIsLoading(false);
       isSendingRef.current = false;
-      setWizardStep("awaiting_type");
+      setWizardStep("awaiting_phone");
       
-      const reply = "تأمرني أمر يا أبو الأكبر! اختار نوع الطلب من الخيارات الأربعة أدناه 🚀";
+      const reply = "تأمرني أمر يا أبو الأكبر! 🚀\nأولاً: انطيني **رقم هاتف الزبون** (ضروري):";
       setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: "ai",
           text: reply,
-          type: "type_selection",
           timestamp: currentTime
         }
       ]);
@@ -467,7 +410,54 @@ export default function AdminAiPage() {
       return;
     }
 
-    // إرسال الأمر العام أو الرسالة الكاملة لمسار AI Agent
+    // فحص الرسائل متعددة الأسطر لطلب التجهيز المباشر
+    const lines = clean.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length >= 2) {
+      let extractedPhone = "";
+      let extractedArea = "";
+      const remainingItems: string[] = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const phoneMatch = line.match(/(07\d{9}|9647\d{9}|\+9647\d{9})/);
+        if (phoneMatch && !extractedPhone && i < 2) {
+          extractedPhone = phoneMatch[0];
+        } else if (!extractedArea && i < 2 && !phoneMatch) {
+          extractedArea = line.replace(/^(المنطقة|منطقة|عنوان|العنوان|الى|إلى)\s*[:：-]?\s*/, "");
+        } else {
+          remainingItems.push(line.replace(/^[-*•\d+.)]\s*/, ""));
+        }
+      }
+
+      if (extractedPhone || extractedArea) {
+        setOrderDraft({
+          customerPhone: extractedPhone || "07700000000",
+          area: extractedArea || "البصرة",
+          items: remainingItems.length > 0 ? remainingItems : ["طلب عام"],
+          orderType: "تجهيز طلب"
+        });
+        setWizardStep("awaiting_preparers");
+        setIsLoading(false);
+        isSendingRef.current = false;
+
+        const reply = `تم استخراج بيانات الطلب بنجاح يا أبو الأكبر! 📦\n• الهاتف: ${extractedPhone || "غير محدد"}\n• المنطقة: ${extractedArea || "البصرة"}\n• المواد (${remainingItems.length}): ${remainingItems.join(" ، ")}\n\nيرجى تحديد المجهزين والموردين من القائمة أدناه ثم النقر على **التالي**:`;
+        
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: "ai",
+            text: reply,
+            type: "preparer_selection",
+            timestamp: currentTime
+          }
+        ]);
+        speak("تم استخراج بيانات الطلب. يرجى تحديد المجهزين ثم النقر على التالي");
+        return;
+      }
+    }
+
+    // إرسال الأمر العام لمسار AI Agent
     try {
       const res = await fetch("/api/ai-agent", {
         method: "POST",
@@ -478,7 +468,6 @@ export default function AdminAiPage() {
       setIsLoading(false);
       isSendingRef.current = false;
 
-      // إذا كانت الرسالة كاملة واستخرج منها الهاتف والمنطقة وقائمة المواد
       if (data.isFullMessageOrder && data.extractedData) {
         setOrderDraft(data.extractedData);
         setWizardStep("awaiting_preparers");
@@ -500,24 +489,25 @@ export default function AdminAiPage() {
       }
 
       if (data.needType) {
-        setWizardStep("awaiting_type");
+        setWizardStep("awaiting_phone");
+        const reply = "تأمرني أمر يا أبو الأكبر! 🚀\nأولاً: انطيني **رقم هاتف الزبون** (ضروري):";
         setMessages(prev => [
           ...prev,
           {
             id: (Date.now() + 1).toString(),
             sender: "ai",
-            text: data.message || "اختار نوع الطلب:",
-            type: "type_selection",
+            text: reply,
             timestamp: currentTime
           }
         ]);
+        speak(reply);
       } else {
         setMessages(prev => [
           ...prev,
           { id: (Date.now() + 1).toString(), sender: "ai", text: data.message || "تم التنفيذ", timestamp: currentTime }
         ]);
+        speak(data.message || "");
       }
-      speak(data.message || "");
     } catch (err) {
       setIsLoading(false);
       isSendingRef.current = false;
@@ -605,7 +595,7 @@ export default function AdminAiPage() {
       </header>
 
       {/* منطقة الرسائل والمحادثة */}
-      <main ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl w-full mx-auto pb-36">
+      <main ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl w-full mx-auto pb-44">
         {messages.map(msg => (
           <div
             key={msg.id}
@@ -745,7 +735,7 @@ export default function AdminAiPage() {
                     onClick={handleConfirmPreparersAndProceed}
                     className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-emerald-500/25 active:scale-95 transition-all"
                   >
-                    <span>التالي وتثبيت الطلب</span>
+                    <span>التالي (تحديد السعر)</span>
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                 </div>
@@ -788,11 +778,11 @@ export default function AdminAiPage() {
 
       {/* الشريط السفلي للإدخال والصوت */}
       <footer className="fixed bottom-0 left-0 right-0 p-3 bg-[#0B1220]/95 backdrop-blur-2xl border-t border-white/10 z-50">
-        <div className="max-w-3xl mx-auto flex items-center gap-2">
+        <div className="max-w-3xl mx-auto flex items-end gap-2">
           {/* زر الميكروفون */}
           <button
             onClick={isListening ? stopListening : startListening}
-            className={`p-3.5 rounded-2xl flex items-center justify-center transition-all ${
+            className={`p-3.5 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
               isListening
                 ? "bg-rose-500 text-white animate-bounce shadow-lg shadow-rose-500/40"
                 : "bg-white/5 hover:bg-white/10 text-sky-400 border border-white/10"
@@ -802,10 +792,10 @@ export default function AdminAiPage() {
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
 
-          {/* حقل الإدخال النصي */}
+          {/* حقل الإدخال النصي المتعدد الأسطر (Textarea) */}
           <div className="flex-1 relative">
-            <input
-              type="text"
+            <textarea
+              rows={Math.min(5, Math.max(1, inputMessage.split("\n").length))}
               value={inputMessage}
               onChange={e => {
                 setInputMessage(e.target.value);
@@ -814,7 +804,8 @@ export default function AdminAiPage() {
                 }
               }}
               onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                // Enter ينزل سطر جديد، و Ctrl+Enter يرسل
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
                   sendMessage(inputMessage);
                 }
@@ -825,16 +816,14 @@ export default function AdminAiPage() {
                   : wizardStep === "awaiting_area"
                   ? "أدخل منطقة الزبون..."
                   : wizardStep === "awaiting_price"
-                  ? "أدخل السعر الإجمالي..."
+                  ? "أدخل سعر الطلب الصافي (بدون التوصيل)..."
                   : wizardStep === "awaiting_items"
-                  ? "اكتب قائمة المواد (مثال: لحم بعجين، صمون)..."
-                  : wizardStep === "awaiting_landmark"
-                  ? "أدخل النقطة الدالة أو اكتب 'ماكو'..."
+                  ? "اكتب قائمة المواد (كل مادة بسطر عبر Enter)..."
                   : wizardStep === "awaiting_time"
-                  ? "أدخل وقت التوصيل أو الملاحظة..."
-                  : "تحدث أو اكتب أمرك هنا (أو الصق رسالة طلب كاملة)..."
+                  ? "أدخل وقت الطلب أو الملاحظة (فوري، العصر)..."
+                  : "تحدث أو اكتب أمرك هنا (Enter للسطر الجديد، وزر الإرسال للإرسال)..."
               }
-              className="w-full bg-[#121A2B]/90 text-white placeholder-white/40 text-sm px-4 py-3.5 rounded-2xl border border-white/10 focus:outline-none focus:border-sky-400 transition-colors shadow-inner"
+              className="w-full bg-[#121A2B]/90 text-white placeholder-white/40 text-sm px-4 py-3 rounded-2xl border border-white/10 focus:outline-none focus:border-sky-400 transition-colors shadow-inner resize-none max-h-36 overflow-y-auto"
             />
           </div>
 
@@ -842,7 +831,7 @@ export default function AdminAiPage() {
           <button
             onClick={() => sendMessage(inputMessage)}
             disabled={!inputMessage.trim() || isLoading}
-            className="p-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 disabled:opacity-40 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-sky-500/25 active:scale-95"
+            className="p-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 disabled:opacity-40 text-white rounded-2xl flex items-center justify-center shrink-0 transition-all shadow-lg shadow-sky-500/25 active:scale-95"
             title="إرسال"
           >
             <Send className="w-5 h-5" />
@@ -852,3 +841,4 @@ export default function AdminAiPage() {
     </div>
   );
 }
+
