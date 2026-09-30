@@ -11,170 +11,323 @@ const GEMINI_KEYS = [
   process.env.NEXT_PUBLIC_GEMINI_KEY
 ].filter(Boolean) as string[]
 
-// دالة مساعدة لإنشاء طلب حقيقي داخل قاعدة بيانات Supabase
-async function executeCreateOrder({
-  orderType = "طلب من الإدارة",
-  customerPhone = "",
-  customerName = "زبون الوكيل الذكي",
-  regionName = "جيكور",
-  totalAmount = 0,
-  summary = ""
-}: {
-  orderType?: string
-  customerPhone?: string
-  customerName?: string
-  regionName?: string
-  totalAmount?: number
-  summary?: string
-}) {
-  // 1. العثور على أو إنشاء متجر الإدارة
-  let shop = await prisma.shop.findFirst({
-    where: { name: { in: ADMIN_SHOP_NAMES } },
-    include: { region: true }
-  })
-
-  if (!shop) {
-    let firstRegion = await prisma.region.findFirst()
-    if (!firstRegion) {
-      firstRegion = await prisma.region.create({
-        data: {
-          name: "جيكور",
-          deliveryPrice: new Decimal(3000)
-        }
-      })
-    }
-    shop = await prisma.shop.create({
-      data: {
-        name: ADMIN_OFFICE_LABEL,
-        phone: "07733921468",
-        locationUrl: "",
-        region: { connect: { id: firstRegion.id } }
-      },
-      include: { region: true }
-    })
-  }
-
-  // 2. العثور على المنطقة أو استخدام الأولى
-  let targetRegion = null
+// دالة مساعدة لجلب أو إنشاء منطقة
+async function getOrCreateRegion(regionName?: string) {
   if (regionName && regionName.trim()) {
-    targetRegion = await prisma.region.findFirst({
+    const found = await prisma.region.findFirst({
       where: { name: { contains: regionName.trim(), mode: 'insensitive' } }
     })
+    if (found) return found
   }
-  if (!targetRegion) {
-    targetRegion = await prisma.region.findFirst()
-    if (!targetRegion) {
-      targetRegion = await prisma.region.create({
+  const first = await prisma.region.findFirst()
+  if (first) return first
+  return await prisma.region.create({
+    data: {
+      name: regionName?.trim() || "جيكور",
+      deliveryPrice: new Decimal(3000)
+    }
+  })
+}
+
+// دالة مساعدة لإنشاء أي نوع من الطلبات بدقة داخل Supabase
+async function executeCreateOrder(payload: {
+  orderCategory: "single" | "double" | "shop" | "prep"
+  // وجهة واحدة
+  customerPhone?: string
+  regionName?: string
+  orderType?: string
+  totalAmount?: number
+  orderTime?: string
+  // وجهتين
+  senderPhone?: string
+  senderRegionName?: string
+  receiverPhone?: string
+  receiverRegionName?: string
+  // طلب من محل
+  shopName?: string
+  // طلب تجهيز
+  prepText?: string
+  summary?: string
+}) {
+  const {
+    orderCategory,
+    customerPhone = "",
+    regionName = "جيكور",
+    orderType = "توصيل عادي",
+    totalAmount = 0,
+    orderTime = "فوري",
+    senderPhone = "",
+    senderRegionName = "جيكور",
+    receiverPhone = "",
+    receiverRegionName = "جيكور",
+    shopName = "",
+    prepText = "",
+    summary = ""
+  } = payload
+
+  // 1. تحديد المتجر (متجر الإدارة أو متجر المحل)
+  let targetShop = null
+  if (orderCategory === "shop" && shopName && shopName.trim()) {
+    targetShop = await prisma.shop.findFirst({
+      where: { name: { contains: shopName.trim(), mode: 'insensitive' } },
+      include: { region: true }
+    })
+    if (!targetShop) {
+      const defaultReg = await getOrCreateRegion()
+      targetShop = await prisma.shop.create({
         data: {
-          name: regionName?.trim() || "جيكور",
-          deliveryPrice: new Decimal(3000)
-        }
+          name: shopName.trim(),
+          phone: "07700000000",
+          locationUrl: "",
+          region: { connect: { id: defaultReg.id } }
+        },
+        include: { region: true }
+      })
+    }
+  } else {
+    targetShop = await prisma.shop.findFirst({
+      where: { name: { in: ADMIN_SHOP_NAMES } },
+      include: { region: true }
+    })
+    if (!targetShop) {
+      const defaultReg = await getOrCreateRegion()
+      targetShop = await prisma.shop.create({
+        data: {
+          name: ADMIN_OFFICE_LABEL,
+          phone: "07733921468",
+          locationUrl: "",
+          region: { connect: { id: defaultReg.id } }
+        },
+        include: { region: true }
       })
     }
   }
 
-  // 3. معالجة وتطبيع رقم هاتف الزبون
-  const cleanPhone = normalizeIraqMobileLocal11(customerPhone?.trim() || "07700000000") || (customerPhone?.trim() || "07700000000")
-
-  // 4. إنشاء أو جلب العميل
-  let customer = await prisma.customer.findFirst({
-    where: { shopId: shop.id, phone: cleanPhone }
-  })
-
-  if (!customer) {
-    customer = await prisma.customer.create({
-      data: {
-        shopId: shop.id,
-        name: customerName?.trim() || "زبون الوكيل الذكي",
-        phone: cleanPhone,
-        customerRegionId: targetRegion.id,
-        customerLocationUrl: "",
-        customerLandmark: summary?.trim() || targetRegion.name
-      }
-    })
-  }
-
-  // 5. حساب رقم الطلب التالي
+  // 2. حساب رقم الطلب التالي
   const lastOrder = await prisma.order.findFirst({
     orderBy: { orderNumber: "desc" },
     select: { orderNumber: true }
   })
   const nextOrderNumber = (lastOrder?.orderNumber ?? 0) + 1
+  const amountDecimal = new Decimal(Number(totalAmount) || 0)
 
-  // 6. الحسابات المالية
-  const amountNum = Number(totalAmount) || 0
-  const orderSubtotal = new Decimal(amountNum)
-  const deliveryPrice = targetRegion.deliveryPrice ?? new Decimal(0)
-  const finalTotalAmount = orderSubtotal
+  // 3. التنفيذ حسب نوع الطلب المحدد:
 
-  // 7. إنشاء الطلب داخل جدول Order في Supabase
+  // === أ. طلب تجهيز (Preparation Order) ===
+  if (orderCategory === "prep") {
+    const cleanCustomerPhone = normalizeIraqMobileLocal11(customerPhone) || customerPhone || "07700000000"
+    const targetRegion = await getOrCreateRegion(regionName)
+
+    // إنشاء مسودة تجهيز في جدول الشركة
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        rawListText: prepText || summary || "طلب تجهيز جديد عبر الوكيل الذكي",
+        titleLine: prepText.split('\n')[0]?.substring(0, 80) || "طلب تجهيز مواد",
+        customerPhone: cleanCustomerPhone,
+        customerLandmark: summary || targetRegion.name,
+        customerRegionId: targetRegion.id,
+        orderTime: orderTime || "عاجل اليوم",
+        status: "draft"
+      }
+    })
+
+    // أيضاً إنشاء الطلب في جدول Order ليكون مرئياً في النظام
+    const createdOrder = await prisma.order.create({
+      data: {
+        orderNumber: nextOrderNumber,
+        orderType: "تجهيز طلب",
+        status: "pending",
+        shopId: targetShop.id,
+        customerPhone: cleanCustomerPhone,
+        customerRegionId: targetRegion.id,
+        customerLandmark: `تجهيز: ${draft.titleLine}`,
+        orderSubtotal: amountDecimal,
+        purchasePrice: amountDecimal,
+        deliveryPrice: targetRegion.deliveryPrice ?? new Decimal(0),
+        totalAmount: amountDecimal,
+        orderNoteTime: orderTime || "فوري",
+        summary: prepText,
+        submissionSource: "admin_ai_agent_prep"
+      }
+    })
+
+    return {
+      orderNumber: createdOrder.orderNumber,
+      orderId: createdOrder.id,
+      totalAmount: createdOrder.totalAmount,
+      typeLabel: "طلب تجهيز",
+      message: `تم تثبيت طلب التجهيز برقم #${createdOrder.orderNumber} في قاعدة البيانات ومسودة التجهيز بنجاح! 🛍️`
+    }
+  }
+
+  // === ب. طلب وجهتين (Two-way / Double Order) ===
+  if (orderCategory === "double") {
+    const cleanSenderPhone = normalizeIraqMobileLocal11(senderPhone) || senderPhone || "07700000000"
+    const cleanReceiverPhone = normalizeIraqMobileLocal11(receiverPhone) || receiverPhone || "07700000000"
+    const senderRegion = await getOrCreateRegion(senderRegionName)
+    const receiverRegion = await getOrCreateRegion(receiverRegionName)
+
+    const createdOrder = await prisma.order.create({
+      data: {
+        orderNumber: nextOrderNumber,
+        orderType: orderType || "طلب وجهتين",
+        routeMode: "double",
+        status: "pending",
+        shopId: targetShop.id,
+        customerPhone: cleanReceiverPhone, // رقم المستلم
+        customerRegionId: receiverRegion.id, // منطقة المستلم
+        secondCustomerPhone: cleanSenderPhone, // رقم المرسل
+        secondCustomerRegionId: senderRegion.id, // منطقة المرسل
+        customerLandmark: `مستلم: ${receiverRegion.name}`,
+        secondCustomerLandmark: `مرسل: ${senderRegion.name}`,
+        orderSubtotal: amountDecimal,
+        purchasePrice: amountDecimal,
+        deliveryPrice: receiverRegion.deliveryPrice ?? new Decimal(0),
+        totalAmount: amountDecimal,
+        orderNoteTime: orderTime || "فوري",
+        summary: summary || `طلب وجهتين من ${senderRegion.name} إلى ${receiverRegion.name}`,
+        submissionSource: "admin_ai_agent_double"
+      }
+    })
+
+    return {
+      orderNumber: createdOrder.orderNumber,
+      orderId: createdOrder.id,
+      totalAmount: createdOrder.totalAmount,
+      typeLabel: "طلب وجهتين",
+      message: `تم تثبيت طلب الوجهتين برقم #${createdOrder.orderNumber} (من ${senderRegion.name} إلى ${receiverRegion.name}) بنجاح! 🔄`
+    }
+  }
+
+  // === ج. طلب من محل (From Shop) ===
+  if (orderCategory === "shop") {
+    const cleanPhone = normalizeIraqMobileLocal11(customerPhone) || customerPhone || "07700000000"
+    const targetRegion = await getOrCreateRegion(regionName)
+
+    const createdOrder = await prisma.order.create({
+      data: {
+        orderNumber: nextOrderNumber,
+        orderType: orderType || "طلب من محل",
+        routeMode: "single",
+        status: "pending",
+        shopId: targetShop.id,
+        customerPhone: cleanPhone,
+        customerRegionId: targetRegion.id,
+        customerLandmark: targetRegion.name,
+        orderSubtotal: amountDecimal,
+        purchasePrice: amountDecimal,
+        deliveryPrice: targetRegion.deliveryPrice ?? new Decimal(0),
+        totalAmount: amountDecimal,
+        orderNoteTime: orderTime || "فوري",
+        summary: summary || `طلب لمحل: ${targetShop.name}`,
+        submissionSource: "admin_ai_agent_shop"
+      }
+    })
+
+    return {
+      orderNumber: createdOrder.orderNumber,
+      orderId: createdOrder.id,
+      totalAmount: createdOrder.totalAmount,
+      typeLabel: `طلب من محل (${targetShop.name})`,
+      message: `تم تثبيت طلب المحل (${targetShop.name}) برقم #${createdOrder.orderNumber} بمبلغ ${Number(createdOrder.totalAmount).toLocaleString()} د.ع بنجاح! 🏬`
+    }
+  }
+
+  // === د. طلب وجهة واحدة (Single / طلب من الإدارة) ===
+  const cleanPhone = normalizeIraqMobileLocal11(customerPhone) || customerPhone || "07700000000"
+  const targetRegion = await getOrCreateRegion(regionName)
+
   const createdOrder = await prisma.order.create({
     data: {
       orderNumber: nextOrderNumber,
-      orderType: orderType || "طلب من الإدارة",
+      orderType: orderType || "طلب وجهة واحدة",
+      routeMode: "single",
       status: "pending",
-      shopId: shop.id,
-      customerId: customer.id,
+      shopId: targetShop.id,
       customerPhone: cleanPhone,
       customerRegionId: targetRegion.id,
-      customerLandmark: summary?.trim() || targetRegion.name,
-      customerLocationUrl: "",
-      orderSubtotal: orderSubtotal,
-      purchasePrice: orderSubtotal,
-      deliveryPrice: deliveryPrice,
-      totalAmount: finalTotalAmount,
-      summary: summary?.trim() || null,
-      submissionSource: "admin_ai_agent",
-      createdAt: new Date(),
-      updatedAt: new Date()
+      customerLandmark: targetRegion.name,
+      orderSubtotal: amountDecimal,
+      purchasePrice: amountDecimal,
+      deliveryPrice: targetRegion.deliveryPrice ?? new Decimal(0),
+      totalAmount: amountDecimal,
+      orderNoteTime: orderTime || "فوري",
+      summary: summary || null,
+      submissionSource: "admin_ai_agent_single"
     }
   })
 
-  return createdOrder
+  return {
+    orderNumber: createdOrder.orderNumber,
+    orderId: createdOrder.id,
+    totalAmount: createdOrder.totalAmount,
+    typeLabel: "طلب وجهة واحدة",
+    message: `تم تثبيت طلب الوجهة الواحدة برقم #${createdOrder.orderNumber} بمبلغ ${Number(createdOrder.totalAmount).toLocaleString()} د.ع بنجاح! 📦`
+  }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}))
-    const {
-      prompt,
-      createOrder,
-      orderType,
-      customerPhone,
-      customerName,
-      regionName,
-      totalAmount,
-      summary
-    } = body
 
-    // أ- إذا كان الطلب إنشاء طلب مباشر من استمارة الدردشة التفاعلية
-    if (createOrder === true) {
-      const order = await executeCreateOrder({
-        orderType: orderType || "طلب من الإدارة",
-        customerPhone: customerPhone || "",
-        customerName: customerName || "زبون الإدارة",
-        regionName: regionName || "جيكور",
-        totalAmount: Number(totalAmount) || 0,
-        summary: summary || ""
+    // أ- استقبال التثبيت من استمارة الطلب التفاعلية المخصصة
+    if (body.createOrder === true) {
+      const result = await executeCreateOrder({
+        orderCategory: body.orderCategory || "single",
+        customerPhone: body.customerPhone,
+        regionName: body.regionName,
+        orderType: body.orderType,
+        totalAmount: body.totalAmount,
+        orderTime: body.orderTime,
+        senderPhone: body.senderPhone,
+        senderRegionName: body.senderRegionName,
+        receiverPhone: body.receiverPhone,
+        receiverRegionName: body.receiverRegionName,
+        shopName: body.shopName,
+        prepText: body.prepText,
+        summary: body.summary
       })
 
       return NextResponse.json({
         done: true,
         action: "create_order",
-        orderNumber: order.orderNumber,
-        orderId: order.id,
-        totalAmount: order.totalAmount,
-        customerPhone: order.customerPhone,
-        status: order.status,
-        message: `تم تثبيت ${order.orderType} بنجاح في قاعدة البيانات برقم #${order.orderNumber} بمبلغ ${Number(order.totalAmount).toLocaleString()} د.ع 🚀`
+        orderNumber: result.orderNumber,
+        orderId: result.orderId,
+        totalAmount: result.totalAmount,
+        message: result.message
       })
     }
 
+    const { prompt } = body
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ done: false, message: "يرجى كتابة أمر أو رسالة." })
     }
 
-    // 1. جلب البيانات الحية الحقيقية من Supabase عبر Prisma
+    // إذا طلب المستخدم صراحة فتح واجهة طلب أو نوع معين
+    const lower = prompt.toLowerCase()
+    if (
+      lower.includes("طلب") ||
+      lower.includes("سويلي") ||
+      lower.includes("انشاء") ||
+      lower.includes("وجهتين") ||
+      lower.includes("وجهة") ||
+      lower.includes("محل") ||
+      lower.includes("تجهيز")
+    ) {
+      let cat: "single" | "double" | "shop" | "prep" = "single"
+      if (prompt.includes("وجهتين") || prompt.includes("مرسل") || prompt.includes("مستلم")) cat = "double"
+      else if (prompt.includes("محل") || prompt.includes("بيج")) cat = "shop"
+      else if (prompt.includes("تجهيز") || prompt.includes("مواد") || prompt.includes("منتجات")) cat = "prep"
+
+      return NextResponse.json({
+        done: false,
+        needType: true,
+        selectedCategory: cat,
+        message: "تدلل يا أبو الأكبر! اخترتلك استمارة الطلب بالمعلومات المطلوبة بالضبط، عبيها واضغط تثبيت فوراً 🚀"
+      })
+    }
+
+    // 1. جلب البيانات الحية الحقيقية من Supabase عبر Prisma للاستكشاف الحر
     const [couriers, recentOrders, sampleRegions] = await Promise.all([
       prisma.courier.findMany({
         take: 15,
@@ -209,64 +362,35 @@ export async function POST(req: Request) {
 
     const systemPrompt = `
 أنت عقل نظام أبو الأكبر للتوصيل، عايش داخل قاعدة بيانات Supabase مباشرة.
-لا تملك أي أوامر مبرمجة مسبقاً. عندك حرية كاملة تستكشف، تفهم كلام المستخدم بالعراقي، وتقرر الإجراء المناسب.
+تفهم كلام المستخدم العراقي بذكاء وتستكشف وتنفذ مباشرة في الجداول.
 
 البيانات الحية المتاحة حالياً في Supabase:
-- المناديب المسجلين (جدول Courier):
-${JSON.stringify(couriers, null, 2)}
-
-- آخر 10 طلبات في النظام (جدول Order):
-${JSON.stringify(recentOrders, null, 2)}
-
-- عينة مناطق التوصيل:
-${JSON.stringify(sampleRegions, null, 2)}
-
-الأعمدة الحقيقية:
-- Courier: id, name, phone, blocked (إخفاء/حظر), hiddenFromReports (إخفاء من التقارير), mandoubTotalsResetAt (وقت تصفير الحساب)
-- Order: id, orderNumber (رقم الطلب), customerPhone, status ('pending', 'assigned', 'delivered', 'archived', 'cancelled'), totalAmount, assignedCourierId
+- المناديب (Courier): ${JSON.stringify(couriers)}
+- آخر الطلبات (Order): ${JSON.stringify(recentOrders)}
+- المناطق: ${JSON.stringify(sampleRegions)}
 
 المستخدم كتب بالعراقي: "${prompt}"
 
-مهمتك:
-- افهم النية الحقيقية من كلام المستخدم بدون قيود أو كلمات مفتاحية.
-- إذا أراد إخفاء مندوب (مثل boos أو فارس): افهم أنه تعديل في جدول Courier ليصبح blocked=true و hiddenFromReports=true.
-- إذا أراد إظهار أو فك حظر مندوب: افهم أنه تعديل في Courier ليصبح blocked=false و hiddenFromReports=false.
-- إذا أراد تصفير حساب مندوب: افهم أنه تحديث mandoubTotalsResetAt في Courier.
-- إذا سأل عن وضع طلب معين (مثل 2810): افهم أنه استعلام عن الطلب برقم orderNumber لجلب تفاصيله.
-- إذا قال انقل الطلبات المسلمة للأرشيف: افهم أنه تحديث الطلبات من delivered إلى archived.
-- إذا سأل هل توجد طلبات جديدة: افهم أنه استعلام عن الطلبات التي حالتها pending.
-- إذا قال سوي طلب أو طلب من الإدارة/وجهتين/محل بدون تفاصيل كاملة (رقم هاتف ومبلغ): افهم أنه يحتاج إظهار استمارة إدخال الطلب السريعة (needs_ui=true).
-- إذا ذكر في كلامه تفاصيل طلب كاملة (مثل رقم تلفون ومبلغ ومنطقة): افهم أنه CREATE وضع البيانات في create_payload.
+افهم المعنى:
+- إخفاء مندوب: blocked=true و hiddenFromReports=true
+- إظهار مندوب: blocked=false و hiddenFromReports=false
+- تصفير حساب: resetBalance=true
+- استعلام عن وضع طلب: QUERY برقم الطلب
+- أرشفة الطلبات المسلمة: UPDATE للطلبات من delivered إلى archived
+- إنشاء طلب: needs_ui=true
 
-أرجع كائن JSON فقط بدون أي علامات ماركداون:
+أرجع JSON فقط:
 {
-  "thinking": "تفكيرك بالعربي وشرح ما فهمته من كلام المستخدم",
-  "action_type": "QUERY | UPDATE | CREATE | UI | CHAT",
+  "thinking": "تفكيرك بالعربي",
+  "action_type": "QUERY | UPDATE | UI | CHAT",
   "target_table": "Courier | Order | null",
-  "query_filter": {
-    "orderNumber": number | null,
-    "courierName": string | null,
-    "status": string | null
-  },
-  "update_payload": {
-    "blocked": boolean | null,
-    "hiddenFromReports": boolean | null,
-    "resetBalance": boolean | null,
-    "targetStatus": string | null
-  },
-  "create_payload": {
-    "orderType": string | null,
-    "customerPhone": string | null,
-    "regionName": string | null,
-    "totalAmount": number | null,
-    "summary": string | null
-  },
-  "needs_ui": boolean,
-  "response": "رسالة واضحة وودية للعرض للمستخدم بالعراقي تشرح ما قمت به أو تجيب عليه"
+  "query_filter": { "orderNumber": null, "courierName": null, "status": null },
+  "update_payload": { "blocked": null, "hiddenFromReports": null, "resetBalance": null, "targetStatus": null },
+  "needs_ui": false,
+  "response": "ردك بالعراقي"
 }
 `
 
-    // 2. جلب المفاتيح من جدول GeminiApiKey ومن متغيرات البيئة
     const dbKeys = await prisma.geminiApiKey.findMany({
       where: { active: true },
       orderBy: { updatedAt: 'desc' }
@@ -277,7 +401,6 @@ ${JSON.stringify(sampleRegions, null, 2)}
       ...GEMINI_KEYS
     ].filter(Boolean)
 
-    // استدعاء نموذج جمناي ليفهم ويقرر
     let brain: any = null
     const models = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
 
@@ -300,9 +423,7 @@ ${JSON.stringify(sampleRegions, null, 2)}
             brain = JSON.parse(raw.substring(firstBrace, lastBrace + 1))
             break
           }
-        } catch (e) {
-          // تجربة التالي
-        }
+        } catch (e) {}
       }
       if (brain) break
     }
@@ -310,55 +431,22 @@ ${JSON.stringify(sampleRegions, null, 2)}
     if (!brain) {
       return NextResponse.json({
         done: false,
-        needType: true,
-        message: "تدلل يا أبو الأكبر! للبدء بإنشاء طلب جديد، اختر النوع وعبي التفاصيل أدناه أو تأكد من إعداد مفاتيح Gemini API."
+        message: "أهلاً بك يا أبو الأكبر، تفضل كيف أساعدك اليوم في إدارة الطلبات والمناديب؟"
       })
     }
 
-    // 3. تنفيذ ما قرره جمناي نفسه بدون أي تدخل مسبق
-    // أ- في حال إنشاء طلب مباشر مع تفاصيل (CREATE)
-    if (brain.action_type === "CREATE" && brain.create_payload) {
-      const p = brain.create_payload
-      const order = await executeCreateOrder({
-        orderType: p.orderType || "طلب من الإدارة",
-        customerPhone: p.customerPhone || "",
-        regionName: p.regionName || "جيكور",
-        totalAmount: Number(p.totalAmount) || 0,
-        summary: p.summary || ""
-      })
-
-      return NextResponse.json({
-        done: true,
-        action: "create_order",
-        orderNumber: order.orderNumber,
-        orderId: order.id,
-        totalAmount: order.totalAmount,
-        customerPhone: order.customerPhone,
-        status: order.status,
-        message: brain.response || `تم تثبيت الطلب بنجاح برقم #${order.orderNumber} ومبلغ ${Number(order.totalAmount).toLocaleString()} د.ع 🚀`,
-        thinking: brain.thinking
-      })
-    }
-
-    // ب- في حال طلب واجهة (UI / needs_ui)
+    // تنفيذ قرارات جمناي
     if (brain.needs_ui || brain.action_type === "UI") {
-      let defaultType = "طلب من الإدارة"
-      if (prompt.includes("وجهتين") || prompt.includes("وجهتين")) defaultType = "طلب وجهتين"
-      else if (prompt.includes("محل")) defaultType = "طلب من محل"
-      else if (prompt.includes("تجهيز")) defaultType = "تجهيز طلب"
-
       return NextResponse.json({
         done: false,
         needType: true,
-        selectedType: defaultType,
-        message: brain.response || "تدلل يا أبو الأكبر! جهزتلك استمارة الطلب السريعة تحت، عبيها وثبت الطلب فوراً 🚀",
+        selectedCategory: "single",
+        message: brain.response || "تدلل يا أبو الأكبر! اختر نوع الطلب وعبي المعلومات لتثبيته فوراً 🚀",
         thinking: brain.thinking
       })
     }
 
-    // ج- في حال التعديل (UPDATE)
     if (brain.action_type === "UPDATE") {
-      // 1. تعديل على جدول المناديب (Courier)
       if (brain.target_table === "Courier" && brain.query_filter?.courierName) {
         const cName = brain.query_filter.courierName.trim()
         const targetCourier = await prisma.courier.findFirst({
@@ -396,7 +484,6 @@ ${JSON.stringify(sampleRegions, null, 2)}
         }
       }
 
-      // 2. تعديل على جدول الطلبات (Order)
       if (brain.target_table === "Order") {
         if (brain.update_payload?.targetStatus === "archived" || brain.query_filter?.status === "delivered") {
           const res = await prisma.order.updateMany({
@@ -409,24 +496,10 @@ ${JSON.stringify(sampleRegions, null, 2)}
             thinking: brain.thinking
           })
         }
-
-        if (brain.query_filter?.orderNumber && brain.update_payload?.targetStatus) {
-          await prisma.order.updateMany({
-            where: { orderNumber: Number(brain.query_filter.orderNumber) },
-            data: { status: brain.update_payload.targetStatus }
-          })
-          return NextResponse.json({
-            done: true,
-            message: brain.response || `تم تحديث حالة الطلب #${brain.query_filter.orderNumber} بنجاح ✅`,
-            thinking: brain.thinking
-          })
-        }
       }
     }
 
-    // د- في حال الاستعلام (QUERY)
     if (brain.action_type === "QUERY") {
-      // 1. استعلام عن طلب معين
       if (brain.query_filter?.orderNumber) {
         const foundOrder = await prisma.order.findFirst({
           where: { orderNumber: Number(brain.query_filter.orderNumber) },
@@ -434,46 +507,17 @@ ${JSON.stringify(sampleRegions, null, 2)}
         })
 
         if (foundOrder) {
-          const courierName = foundOrder.courier?.name || "غير مسند لمندوب"
-          const reply = brain.response || `الطلب #${foundOrder.orderNumber} وضعه الحالي: "${foundOrder.status}" | المبلغ: ${Number(foundOrder.totalAmount).toLocaleString()} د.ع | المندوب: ${courierName} 📦`
+          const courierName = foundOrder.courier?.name || "غير مسند"
           return NextResponse.json({
             done: true,
-            message: reply,
+            message: brain.response || `الطلب #${foundOrder.orderNumber} وضعه: "${foundOrder.status}" | المبلغ: ${Number(foundOrder.totalAmount).toLocaleString()} د.ع | المندوب: ${courierName} 📦`,
             data: foundOrder,
             thinking: brain.thinking
           })
-        } else {
-          return NextResponse.json({
-            done: false,
-            message: `عذراً، لم أجد طلباً بالرقم #${brain.query_filter.orderNumber} في النظام.`
-          })
         }
-      }
-
-      // 2. استعلام عن طلبات جديدة أو معلقة
-      if (brain.query_filter?.status === "pending" || brain.target_table === "Order") {
-        const pendingList = await prisma.order.findMany({
-          where: { status: "pending" },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          select: { orderNumber: true, totalAmount: true, customerPhone: true }
-        })
-
-        const count = pendingList.length
-        const details = count > 0 
-          ? `\n` + pendingList.map(o => `• طلب #${o.orderNumber} بمبلغ ${Number(o.totalAmount).toLocaleString()} د.ع`).join('\n')
-          : " (لا توجد طلبات معلقة)"
-
-        return NextResponse.json({
-          done: true,
-          message: (brain.response || `يوجد ${count} طلبات معلقة حالياً`) + details,
-          data: pendingList,
-          thinking: brain.thinking
-        })
       }
     }
 
-    // هـ- رد عام أو محادثة
     return NextResponse.json({
       done: true,
       message: brain.response || "تم استلام طلبك بنجاح ✅",
@@ -481,22 +525,22 @@ ${JSON.stringify(sampleRegions, null, 2)}
     })
 
   } catch (err: any) {
-    console.error("[ai-agent route error]:", err)
+    console.error("[ai-agent error]:", err)
     return NextResponse.json({
       done: false,
-      message: `حدث خطأ أثناء تنفيذ طلب الذكاء: ${err.message}`
+      message: `حدث خطأ في النظام: ${err.message}`
     }, { status: 500 })
   }
 }
 
 export async function GET() {
   const regions = await prisma.region.findMany({
-    take: 20,
+    take: 30,
     select: { id: true, name: true, deliveryPrice: true }
   }).catch(() => [])
 
   return NextResponse.json({
-    status: "دماغ جمناي الحقيقي متصل مباشرة بـ Supabase 🚀",
+    status: "متصل بـ Supabase 🚀",
     regions
   })
 }
