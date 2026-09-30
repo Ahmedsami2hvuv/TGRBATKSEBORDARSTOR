@@ -1,12 +1,69 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-const GEMINI_KEYS = [
-  process.env.GEMINI_API_KEY,
-  process.env.GEMINI_API_KEY_2,
-  process.env.GEMINI_API_KEY_3,
-  process.env.NEXT_PUBLIC_GEMINI_KEY
-].filter(Boolean) as string[]
+/**
+ * جلب مفاتيح Gemini من البيئة ومن جدول المفاتيح في قاعدة البيانات
+ */
+async function getAvailableGeminiKeys(): Promise<string[]> {
+  const envKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.NEXT_PUBLIC_GEMINI_KEY
+  ].filter(Boolean) as string[]
+
+  try {
+    const dbKeysRecords: any = await prisma.$queryRawUnsafe(
+      'SELECT "key" FROM "GeminiApiKey" WHERE "active" = true ORDER BY "updatedAt" DESC LIMIT 5'
+    ).catch(() => [])
+
+    if (Array.isArray(dbKeysRecords)) {
+      for (const row of dbKeysRecords) {
+        if (row?.key && !envKeys.includes(row.key)) {
+          envKeys.push(row.key)
+        }
+      }
+    }
+  } catch (e) {
+    // تجاهل إن لم يكن الجدول موجوداً
+  }
+
+  return envKeys
+}
+
+/**
+ * استخراج السكيما الحقيقية الحية من قاعدة بيانات Supabase
+ */
+async function getDatabaseSchemaContext(): Promise<string> {
+  try {
+    const rows: any = await prisma.$queryRaw`
+      SELECT 
+        c.table_name,
+        string_agg(c.column_name || ' (' || c.data_type || ')', ', ') AS columns
+      FROM information_schema.columns c
+      JOIN information_schema.tables t ON c.table_name = t.table_name
+      WHERE t.table_schema = 'public' 
+        AND t.table_type = 'BASE TABLE'
+        AND c.table_name NOT IN ('_prisma_migrations', 'SchemaPlaceholder')
+      GROUP BY c.table_name
+      ORDER BY c.table_name;
+    `
+
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows.map((r: any) => `جدول "${r.table_name}": ${r.columns}`).join("\n")
+    }
+  } catch (err) {
+    console.warn("[ai-agent] Could not query full schema, using fallback structure:", err)
+  }
+
+  return `
+جدول "Courier": id (text), name (text), phone (text), blocked (boolean), hiddenFromReports (boolean), mandoubTotalsResetAt (timestamp), mandoubWalletCarryOverDinar (numeric)
+جدول "Order": id (text), orderNumber (integer), status (text), totalAmount (numeric), orderSubtotal (numeric), deliveryPrice (numeric), customerPhone (text), customerRegionId (text), shopId (text), assignedCourierId (text), summary (text), createdAt (timestamp)
+جدول "Shop": id (text), name (text), phone (text)
+جدول "Region": id (text), name (text), deliveryPrice (numeric)
+جدول "Customer": id (text), name (text), phone (text)
+`
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,214 +71,185 @@ export async function POST(req: Request) {
     const prompt = (body.prompt || body.message || "").trim()
 
     if (!prompt) {
-      return NextResponse.json({ done: false, message: "يرجى كتابة رسالة أو التحدث بالصوت." })
+      return NextResponse.json({ done: false, message: "يرجى إرسال أمر أو رسالة." })
     }
 
-    // 1. جلب سكيما قاعدة البيانات الحقيقية من Supabase
-    let tables: any = []
-    let columns: any = []
-    let ridersSample: any = []
-    let ordersSample: any = []
+    // 1. استخراج السكيما الحية الحقيقية من Supabase
+    const schemaContext = await getDatabaseSchemaContext()
+    const geminiKeys = await getAvailableGeminiKeys()
 
-    try {
-      tables = await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`
-      columns = await prisma.$queryRaw`
-        SELECT table_name, column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_schema='public' 
-        AND table_name IN ('Order', 'Courier', 'Shop', 'Region', 'Customer', 'Employee', 'CompanyPreparer')
-      `
-      ridersSample = await prisma.courier.findMany({ 
-        take: 3,
-        select: { id: true, name: true, phone: true, blocked: true, hiddenFromReports: true, mandoubTotalsResetAt: true }
-      }).catch(() => [])
-      ordersSample = await prisma.order.findMany({ 
-        take: 2,
-        select: { id: true, orderNumber: true, status: true, totalAmount: true, customerPhone: true }
-      }).catch(() => [])
-    } catch (e) {
-      console.warn("Schema query warning:", e)
-    }
+    // 2. توجيه الذكاء الاصطناعي للاستكشاف والفهم والتنفيذ بدون أوامر مسبقة
+    const systemPrompt = `
+أنت وكيل ذكي ومستكشف حقيقي لقاعدة بيانات Supabase (PostgreSQL) الخاصة بنظام توصيل طلبات "أبو الأكبر".
+ليس لديك أي أوامر مبرمجة مسبقاً. مهمتك هي قراءة سكيما قاعدة البيانات الحقيقية وفهم كلام المستخدم باللهجة العراقية، ثم استنتاج ما يريده بدقة وتنفيذه كاستعلام SQL.
 
-    const schemaContext = `
-  انت وكيل ذكي عايش داخل Supabase لنظام ابو الاكبر للتوصيل.
-  لا يوجد لديك اوامر جاهزة. مهمتك تستكشف وتفهم وتنفذ.
+سكيما الجداول الحقيقية المتاحة حالياً في Supabase:
+${schemaContext}
 
-  السكيما الحقيقية:
-  الجداول: ${JSON.stringify(tables)}
-  اعمدة الجداول: ${JSON.stringify(columns)}
-  عينة مندوبين: ${JSON.stringify(ridersSample)}
-  عينة طلبات: ${JSON.stringify(ordersSample)}
+كلام المستخدم: "${prompt}"
 
-  المستخدم كتب: "${prompt}"
+قواعد هامة جداً:
+1. فكر وافهم نية المستخدم وسياقه في نظام التوصيل:
+   - إذا أراد إخفاء مندوب: ابحث عن حقول الإخفاء أو الحظر في جدول "Courier" مثل blocked و hiddenFromReports.
+   - إذا أراد تصفير حساب مندوب: ابحث عن حقول التصفير والوقت في "Courier" مثل mandoubTotalsResetAt و mandoubWalletCarryOverDinar.
+   - إذا أراد إسناد طلب: اربط رقم الطلب بالمندوب في جدول "Order".
+   - إذا أراد الاستعلام عن بيانات أو إحصائيات: اكتب استعلام SELECT لجلبها.
+   - إذا أراد إنشاء طلب: إذا كانت البيانات غير مكتملة، اطلب التفاصيل أو حدد needMoreInfo=true.
+2. أسماء الجداول في PostgreSQL حساسة لحالة الأحرف، ضع دائماً أسماء الجداول والحقول المركبة بين علامتي اقتباس مزدوجتين مثل: "Courier", "Order", "mandoubTotalsResetAt", "orderNumber".
+3. استخدم ILIKE للبحث بالأسماء حتى لا تتأثر بحالة الأحرف أو الهمزات.
 
-  فكر خطوة بخطوة بالعربي:
-    1. منو او شنو يقصد المستخدم؟ دور عنه في الجداول
-    2. شنو معنى الفعل اللي يريده (اخفي، اظهر، سوي، صفر، اسند، غير حالة) في سياق النظام؟
-    3. شنو الحقول اللي لازم تغيرها؟ في جدول "Courier" (الحقول: name, blocked, hiddenFromReports, mandoubTotalsResetAt) وجدول "Order" (الحقول: orderNumber, status, assignedCourierId).
-    4. شنو الـ SQL اللي راح تنفذه في PostgreSQL / Supabase؟ (استخدم علامات التنصيص مثل "Courier" و "Order").
+أرجع فقط كائن JSON صالح وبدون أي علامات ماركداون:
+{
+  "reasoning": "شرح باللغة العربية لما فهمته من كلام المستخدم وما تنوي فعله في قاعدة البيانات",
+  "actionType": "EXECUTE_SQL" | "QUERY_SQL" | "NEED_INFO" | "CHAT",
+  "sql": "أمر الـ SQL المطلوب تنفيذه",
+  "needMoreInfo": false,
+  "userReply": "رسالة ودية وواضحة للمستخدم تشرح النتيجة باللهجة العراقية"
+}
+`
 
-  ارجع JSON فقط بدون ماركداون:
-  {
-    "reasoning": "تفكيرك بالعربي",
-    "searchQueries": ["استعلام بحث"],
-    "action": "UPDATE" | "SELECT" | "NONE",
-    "sql": "استعلام SQL للتنفيذ",
-    "needMoreInfo": false,
-    "askUser": "سؤال المستخدم إن لزم",
-    "finalMessage": "رسالة نهائية واضحة بالعراقي"
-  }
+    let aiResult: any = null
+    const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-pro"]
 
-  اذا الامر "سوي طلب" او "انشاء طلب": لا تنشئ SQL، ارجع needMoreInfo=true و askUser="شنو نوع الطلب؟ من الادارة/وجهتين/من محل/تجهيز؟" لان انشاء الطلب يحتاج واجهة
-  `
-
-    let decision: any = null
-
-    // تجربة أحدث النماذج المتاحة لـ Gemini (بما فيها gemini-3.8-flash و gemini-2.5-flash)
-    const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-1.5-flash"]
-    for (let i = 0; i < (GEMINI_KEYS.length || 1); i++) {
-      const key = GEMINI_KEYS[i]
-      if (!key) continue
+    for (const key of geminiKeys) {
       for (const model of models) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: schemaContext }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
           })
+
           if (!res.ok) continue
+
           const data = await res.json()
-          let txt = data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g, "").trim() || ""
-          const firstBrace = txt.indexOf('{')
-          const lastBrace = txt.lastIndexOf('}')
+          let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ""
+          const firstBrace = text.indexOf('{')
+          const lastBrace = text.lastIndexOf('}')
           if (firstBrace !== -1 && lastBrace !== -1) {
-            txt = txt.substring(firstBrace, lastBrace + 1)
-            decision = JSON.parse(txt)
+            text = text.substring(firstBrace, lastBrace + 1)
+            aiResult = JSON.parse(text)
             break
           }
         } catch (e) {
-          // المحاولة التالية
+          // تجربة الموديل التالي أو المفتاح التالي
         }
       }
-      if (decision) break
+      if (aiResult) break
     }
 
-    // محرك الفهم والاستكشاف الذاتي المباشر داخل Supabase (لا يتعطل أبداً)
-    if (!decision) {
-      const p = prompt.toLowerCase()
-      const nameMatch = prompt.match(/فارس|حسين|علي|محمد|نجم|احمد|أحمد|كرار|عباس|سجاد|مرتضى|زيد|يوسف|حسن/)
-      const numMatch = prompt.match(/\d{1,6}/)
-      const extractedName = nameMatch ? nameMatch[0] : ""
-      const extractedNum = numMatch ? numMatch[0] : ""
+    // 3. إذا لم ينجح الاتصال بالنموذج الخارجي، استخدم محرك الاستكشاف الذاتي لقاعدة البيانات
+    if (!aiResult) {
+      // تفكيك الكلمات لاستكشاف الجداول والأسماء تلقائياً في Supabase
+      const words = prompt.split(/\s+/).filter(Boolean)
+      let foundCourier: any = null
 
-      // 1. إخفاء مندوب
-      if (p.includes("اخفي") || p.includes("إخفاء") || p.includes("حظر") || p.includes("عطل") || p.includes("اخفاء")) {
-        const targetName = extractedName || p.replace(/.*(اخفي|إخفاء|حظر|عطل)\s*(لي)?\s*/i, "").trim()
-        decision = {
-          reasoning: `لقيت المندوب ${targetName} في جدول Courier، وإخفاؤه يعني تفعيل blocked و hiddenFromReports لمنعه من الظهور`,
-          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${targetName}%'`],
-          action: "UPDATE",
-          sql: `UPDATE "Courier" SET "blocked"=true, "hiddenFromReports"=true WHERE name ILIKE '%${targetName}%'`,
-          needMoreInfo: false,
-          finalMessage: `تم إخفاء وحظر المندوب ${targetName} بنجاح من النظام والتقارير ✅`
+      for (const w of words) {
+        if (w.length >= 3) {
+          const c: any = await prisma.$queryRawUnsafe(
+            `SELECT id, name FROM "Courier" WHERE name ILIKE '%${w}%' LIMIT 1`
+          ).catch(() => null)
+          if (Array.isArray(c) && c.length > 0) {
+            foundCourier = c[0]
+            break
+          }
         }
       }
-      // 2. إظهار أو تفعيل مندوب
-      else if (p.includes("اظهر") || p.includes("إظهار") || p.includes("فعل") || p.includes("تفعيل") || p.includes("فك حظر")) {
-        const targetName = extractedName || p.replace(/.*(اظهر|إظهار|فعل|تفعيل)\s*(لي)?\s*/i, "").trim()
-        decision = {
-          reasoning: `لقيت المندوب ${targetName} في جدول Courier، وإظهاره يعني إلغاء blocked و hiddenFromReports`,
-          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${targetName}%'`],
-          action: "UPDATE",
-          sql: `UPDATE "Courier" SET "blocked"=false, "hiddenFromReports"=false WHERE name ILIKE '%${targetName}%'`,
-          needMoreInfo: false,
-          finalMessage: `تم تفعيل وإظهار المندوب ${targetName} بنجاح في النظام 🛵✅`
+
+      if (foundCourier && (prompt.includes("اخفي") || prompt.includes("حظر") || prompt.includes("عطل"))) {
+        aiResult = {
+          reasoning: `استكشفت اسم المندوب (${foundCourier.name}) في جدول Courier، والمستخدم يريد إخفاءه من النظام`,
+          actionType: "EXECUTE_SQL",
+          sql: `UPDATE "Courier" SET "blocked" = true, "hiddenFromReports" = true WHERE id = '${foundCourier.id}'`,
+          userReply: `تم إخفاء وحظر المندوب ${foundCourier.name} بنجاح من النظام والتقارير ✅`
         }
-      }
-      // 3. تصفير حساب
-      else if (p.includes("صفر") || p.includes("تصفير") || p.includes("مسح حساب")) {
-        decision = {
-          reasoning: `لقيت ${extractedName} في جدول Courier، تصفير حسابه يعني تحديث mandoubTotalsResetAt وتصفير الرصيد المتبقي`,
-          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${extractedName}%'`],
-          action: "UPDATE",
-          sql: `UPDATE "Courier" SET "mandoubTotalsResetAt"=NOW(), "mandoubWalletCarryOverDinar"=0 WHERE name ILIKE '%${extractedName}%'`,
-          needMoreInfo: false,
-          finalMessage: `تم تصفير حساب المندوب ${extractedName} وسداد ذمته المالية بنجاح 💰✅`
+      } else if (foundCourier && (prompt.includes("صفر") || prompt.includes("تصفير") || prompt.includes("مسح"))) {
+        aiResult = {
+          reasoning: `استكشفت اسم المندوب (${foundCourier.name}) في جدول Courier، والمستخدم يريد تصفير حسابه`,
+          actionType: "EXECUTE_SQL",
+          sql: `UPDATE "Courier" SET "mandoubTotalsResetAt" = NOW(), "mandoubWalletCarryOverDinar" = 0 WHERE id = '${foundCourier.id}'`,
+          userReply: `تم تصفير حساب المندوب ${foundCourier.name} وسداد ذمته المالية بنجاح 💰✅`
         }
-      }
-      // 4. إسناد طلب
-      else if (p.includes("اسند") || p.includes("اسناد") || p.includes("حول طلب")) {
-        decision = {
-          reasoning: `إسناد الطلب #${extractedNum} للمندوب ${extractedName}`,
-          searchQueries: [`SELECT id FROM "Order" WHERE "orderNumber" = ${extractedNum || 0}`],
-          action: "UPDATE",
-          sql: `UPDATE "Order" SET "status"='assigned', "assignedCourierId"=(SELECT id FROM "Courier" WHERE name ILIKE '%${extractedName}%' LIMIT 1) WHERE "orderNumber" = ${extractedNum || 0}`,
-          needMoreInfo: false,
-          finalMessage: `تم إسناد الطلب #${extractedNum} للمندوب ${extractedName} بنجاح 🛵📦`
+      } else if (foundCourier && (prompt.includes("اظهر") || prompt.includes("فعل") || prompt.includes("فك"))) {
+        aiResult = {
+          reasoning: `استكشفت اسم المندوب (${foundCourier.name}) في جدول Courier، والمستخدم يريد إظهاره وتفعيله`,
+          actionType: "EXECUTE_SQL",
+          sql: `UPDATE "Courier" SET "blocked" = false, "hiddenFromReports" = false WHERE id = '${foundCourier.id}'`,
+          userReply: `تم إظهار وتفعيل المندوب ${foundCourier.name} في النظام بنجاح 🛵✅`
         }
-      }
-      // 5. إنشاء طلب
-      else if (p.includes("طلب") || p.includes("طلبية") || p.includes("اوردر") || p.includes("سوي") || p.includes("سويلي") || p.includes("انشاء")) {
-        decision = {
+      } else if (prompt.includes("طلب") && (prompt.includes("سوي") || prompt.includes("انشاء") || prompt.includes("اريد"))) {
+        aiResult = {
           reasoning: "المستخدم يريد إنشاء طلب جديد",
-          action: "NONE",
+          actionType: "NEED_INFO",
           needMoreInfo: true,
-          askUser: "تأمرني يا أبو الأكبر! شنو نوع الطلب اللي تريده؟\n1️⃣ من الإدارة\n2️⃣ وجهتين\n3️⃣ من محل\n4️⃣ تجهيز طلب",
-          finalMessage: "شنو نوع الطلب اللي تريده؟"
+          userReply: "تأمرني يا أبو الأكبر! شنو نوع الطلب اللي تريده؟\n1️⃣ من الإدارة\n2️⃣ وجهتين\n3️⃣ من محل\n4️⃣ تجهيز طلب"
         }
-      }
-      // 6. استفسار أو إحصائيات
-      else {
-        decision = {
-          reasoning: "استفسار عن وضع النظام",
-          action: "NONE",
-          needMoreInfo: false,
-          finalMessage: "يا هلا ومية هلا بيك يا أبو الأكبر! 🌹 أنا وكيلك الذكي المستكشف المتصل مباشرة بـ Supabase. اكتب أي أمر مثل: 'اخفيلي فارس'، 'صفر حساب فارس'، أو 'سوي طلب' وينفذ بثانية واحدة!"
+      } else {
+        aiResult = {
+          reasoning: "استفسار عام عن النظام",
+          actionType: "CHAT",
+          userReply: "يا هلا ومية هلا بيك يا أبو الأكبر! 🌹 أنا وكيلك الذكي المستكشف المتصل مباشرة بقاعدة البيانات. اكتب أي أمر تريده بدون قيود وسأفهمه وأنفذه فوراً."
         }
       }
     }
 
-    // 2. تنفيذ استكشاف البحث أولاً إن وجد
-    if (decision.searchQueries && Array.isArray(decision.searchQueries)) {
-      for (const q of decision.searchQueries) {
-        try { await prisma.$queryRawUnsafe(q) } catch {}
-      }
-    }
-
-    // 3. تنفيذ الـ SQL الفعلي داخل Supabase
-    if (decision.sql && decision.action !== "NONE") {
+    // 4. تنفيذ استعلام الـ SQL المستنتج مباشرة في Supabase
+    if (aiResult.sql && (aiResult.actionType === "EXECUTE_SQL" || aiResult.actionType === "UPDATE" || aiResult.actionType === "INSERT")) {
       try {
-        await prisma.$queryRawUnsafe(decision.sql)
-        return NextResponse.json({ 
-          done: true, 
-          message: `${decision.finalMessage || "تم التنفيذ بنجاح في قاعدة البيانات"} ✅`, 
-          sql: decision.sql,
-          reasoning: decision.reasoning
+        await prisma.$queryRawUnsafe(aiResult.sql)
+        return NextResponse.json({
+          done: true,
+          message: `${aiResult.userReply || "تم تنفيذ الأمر بنجاح في قاعدة البيانات"}`,
+          sql: aiResult.sql,
+          reasoning: aiResult.reasoning
         })
-      } catch (e: any) {
-        console.error("SQL execution error:", e)
-        return NextResponse.json({ 
-          done: false, 
-          message: `فهمت قصدك: ${decision.reasoning} ولكن حدث تنبيه في التنفيذ: ${e.message}` 
+      } catch (dbErr: any) {
+        console.error("[ai-agent] SQL execution error:", dbErr)
+        return NextResponse.json({
+          done: false,
+          message: `فهمت قصدك: ${aiResult.reasoning || ""} لكن حدث خطأ أثناء تنفيذ الأمر في قاعدة البيانات: ${dbErr.message}`,
+          sql: aiResult.sql
         })
       }
     }
 
-    return NextResponse.json({ 
-      done: false, 
-      needType: decision.needMoreInfo, 
-      message: decision.askUser || decision.finalMessage || decision.reasoning 
+    // 5. استعلامات القراءة (SELECT)
+    if (aiResult.sql && (aiResult.actionType === "QUERY_SQL" || aiResult.actionType === "SELECT")) {
+      try {
+        const queryData: any = await prisma.$queryRawUnsafe(aiResult.sql)
+        return NextResponse.json({
+          done: true,
+          message: `${aiResult.userReply || "إليك نتائج الاستعلام:"}\n\n${JSON.stringify(queryData, null, 2)}`,
+          data: queryData,
+          sql: aiResult.sql,
+          reasoning: aiResult.reasoning
+        })
+      } catch (dbErr: any) {
+        return NextResponse.json({
+          done: false,
+          message: `تعذر جلب البيانات: ${dbErr.message}`,
+          sql: aiResult.sql
+        })
+      }
+    }
+
+    return NextResponse.json({
+      done: !aiResult.needMoreInfo,
+      needType: aiResult.needMoreInfo,
+      message: aiResult.userReply || aiResult.reasoning
     })
 
   } catch (error: any) {
-    console.error("[ai-agent POST error]:", error)
-    return NextResponse.json({ 
-      done: false, 
-      message: `عذراً يا أبو الأكبر، حدث خطأ: ${error.message}` 
-    }, { status: 500 })
+    console.error("[ai-agent POST critical error]:", error)
+    return NextResponse.json(
+      { done: false, message: `عذراً يا أبو الأكبر، حدث خطأ: ${error.message}` },
+      { status: 500 }
+    )
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ status: "الوكيل المستكشف الحقيقي داخل Supabase شغال بأعلى سرعة 🚀" })
+  return NextResponse.json({
+    status: "الوكيل المستكشف الحقيقي داخل Supabase متصل وشغال 🚀"
+  })
 }
