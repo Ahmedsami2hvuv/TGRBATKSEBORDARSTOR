@@ -75,6 +75,7 @@ export function SettingsBlocks({
   customerOrderTemplate: string;
   telegramNewOrderTemplate: string;
   newOrderAlertTemplate: string;
+  twoWayTemplatesInitial: TwoWayTemplatesConfig;
   chatEnabledInitial: boolean;
   trackingEnabledInitial: boolean;
   mandoubFeaturesInitial: RoleFeaturesConfig;
