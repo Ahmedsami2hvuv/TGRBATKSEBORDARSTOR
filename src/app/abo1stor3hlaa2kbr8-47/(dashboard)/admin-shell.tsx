@@ -60,11 +60,29 @@ export function AdminShell({
   const [viewportWidth, setViewportWidth] = useState(0);
   const [pendingCount, setPendingCount] = useState(pendingInitialCount);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [hasOpenedAiAssistant, setHasOpenedAiAssistant] = useState(false);
+  const aiAssistantFrameRef = useRef<HTMLIFrameElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   // عند فتح صفحة كنافذة منبثقة (?view=modal) نُخفي الشريط الجانبي وشريط البحث
   // لأنّ النافذة الأمّ تعرضهما أصلاً ولا داعي لتكرارهما داخل الـ iframe
   const isModalView = searchParams?.get("view") === "modal";
+
+  useEffect(() => {
+    const handleAssistantMessage = (event: MessageEvent) => {
+      if (
+        event.origin === window.location.origin &&
+        event.source === aiAssistantFrameRef.current?.contentWindow &&
+        event.data?.type === "admin-ai-widget-close"
+      ) {
+        setIsAiAssistantOpen(false);
+      }
+    };
+
+    window.addEventListener("message", handleAssistantMessage);
+    return () => window.removeEventListener("message", handleAssistantMessage);
+  }, []);
 
   const sidebarConfig = initialSidebarConfig || DEFAULT_SIDEBAR_CONFIG;
   const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
@@ -660,20 +678,16 @@ export function AdminShell({
                 <button
                   type="button"
                   onClick={() => {
-                    if (typeof window !== "undefined") {
-                      const anyWin = window as any;
-                      if (anyWin.AndroidGestures && anyWin.AndroidGestures.openFloatingAiChat) {
-                        anyWin.AndroidGestures.openFloatingAiChat();
-                      } else {
-                        window.location.href = "/admin/ai";
-                      }
-                    }
+                    setHasOpenedAiAssistant(true);
+                    setIsAiAssistantOpen((open) => !open);
                   }}
-                  title="فتح المساعد الذكي الخارق"
+                  aria-expanded={isAiAssistantOpen}
+                  aria-controls="admin-ai-widget"
+                  title={isAiAssistantOpen ? "إغلاق المساعد الذكي" : "فتح المساعد الذكي"}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-sky-500/15 via-blue-600/15 to-indigo-600/15 border border-sky-400/30 text-sky-500 dark:text-sky-300 hover:bg-sky-500/25 active:scale-95 transition-all text-xs font-black shadow-xs"
                 >
                   <span className="text-sm">🤖</span>
-                  <span className="hidden xs:inline">المساعد الذكي</span>
+                  <span className="hidden xs:inline">{isAiAssistantOpen ? "إغلاق المساعد" : "المساعد الذكي"}</span>
                 </button>
                 <AdminLiveSearchInput
                    id="admin-super-search-header"
@@ -693,6 +707,25 @@ export function AdminShell({
           </div>
         </main>
       </div>
+      {hasOpenedAiAssistant && (
+        <section
+          id="admin-ai-widget"
+          aria-label="المساعد الذكي"
+          aria-hidden={!isAiAssistantOpen}
+          className={`fixed end-3 bottom-20 z-[180] h-[min(66dvh,34rem)] w-[calc(100vw-1.5rem)] max-w-md overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl transition-all duration-200 sm:end-6 sm:bottom-6 sm:h-[min(78dvh,42rem)] sm:w-[min(28rem,calc(100vw-3rem))] ${
+            isAiAssistantOpen
+              ? "visible translate-y-0 opacity-100"
+              : "invisible pointer-events-none translate-y-2 opacity-0"
+          }`}
+        >
+          <iframe
+            ref={aiAssistantFrameRef}
+            src="/admin/ai?view=widget"
+            title="المساعد الذكي"
+            className="h-full w-full border-0"
+          />
+        </section>
+      )}
     </div>
   );
 }

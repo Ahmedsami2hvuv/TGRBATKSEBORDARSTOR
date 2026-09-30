@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Mic,
   MicOff,
@@ -21,6 +22,7 @@ import {
   Clock,
   Store,
   Layers,
+  X,
 } from "lucide-react";
 
 type SpeechRecognitionResultEvent = {
@@ -88,6 +90,8 @@ const CATEGORIES: { id: OrderCategory; label: string; icon: string; desc: string
 const TIME_PRESETS = ["فوري", "الصباح", "العصر", "المساء", "باجر"];
 
 export default function AdminAiPage() {
+  const searchParams = useSearchParams();
+  const isWidgetView = searchParams?.get("view") === "widget";
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -486,13 +490,25 @@ export default function AdminAiPage() {
       {/* الشريط العلوي */}
       <header className="flex items-center justify-between px-4 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-3">
-          <Link
-            href="/abo1stor3hlaa2kbr8-47"
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
-            title="الرجوع للوحة التحكم"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          {isWidgetView ? (
+            <button
+              type="button"
+              onClick={() => window.parent.postMessage({ type: "admin-ai-widget-close" }, window.location.origin)}
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+              title="إغلاق المساعد"
+              aria-label="إغلاق المساعد"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          ) : (
+            <Link
+              href="/abo1stor3hlaa2kbr8-47"
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+              title="الرجوع للوحة التحكم"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Sparkles className="w-5 h-5 text-white" />
