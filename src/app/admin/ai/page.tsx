@@ -519,7 +519,7 @@ export default function AdminAiPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans">
       {/* الشريط العلوي */}
-      <header className="flex items-center justify-between px-4 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0">
+      <header className={`${isWidgetView ? "hidden " : ""}flex items-center justify-between px-4 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0`}>
         <div className="flex items-center gap-3">
           {isWidgetView ? (
             <button
@@ -595,9 +595,9 @@ export default function AdminAiPage() {
             <Trash2 className="w-5 h-5" />
           </button>
         </div>
-      </header>
+        </header>
 
-      {/* منطقة الرسائل */}
+        {/* منطقة الرسائل */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ zoom: assistantFontScale }}>
         {messages.map((msg) => (
           <div
