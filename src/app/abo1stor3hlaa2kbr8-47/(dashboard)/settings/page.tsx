@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
@@ -91,7 +92,7 @@ export default async function SettingsPage() {
           href="/abo1stor3hlaa2kbr8-47/settings/ai"
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:opacity-95 transition shrink-0"
         >
-          <span>🤖 مفاتيح الذكاء الاصطناعي (Gemini)</span>
+          <span>🤖 إعدادات الذكاء الاصطناعي والمزودات</span>
           <span>↗</span>
         </Link>
       </div>
@@ -147,4 +148,3 @@ export default async function SettingsPage() {
     </div>
   );
 }
-

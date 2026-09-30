@@ -12,20 +12,36 @@ import {
   ArrowRight,
   CheckCircle2,
   Package,
-  Bike,
-  Coins,
   BarChart3,
   ExternalLink,
   KeyRound,
   MapPin,
   Phone,
   DollarSign,
-  FileText,
   Clock,
   Store,
   Layers,
-  ShoppingBag
 } from "lucide-react";
+
+type SpeechRecognitionResultEvent = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+};
 
 type Message = {
   id: string;
@@ -34,9 +50,19 @@ type Message = {
   timestamp: string;
   action?: string;
   orderNumber?: number;
-  data?: any;
   needType?: boolean;
   selectedCategory?: "single" | "double" | "shop" | "prep";
+  pendingAction?: {
+    confirmationToken: string;
+    preview: {
+      model: string;
+      operation: "create" | "update" | "delete";
+      affectedCount: number;
+      filters: Record<string, unknown>;
+      data: Record<string, unknown>;
+      sample: Array<Record<string, unknown>>;
+    };
+  };
 };
 
 type OrderCategory = "single" | "double" | "shop" | "prep";
@@ -55,7 +81,7 @@ export default function AdminAiPage() {
     {
       id: "welcome",
       sender: "ai",
-      text: "يا هلا ومية هلا بيك يا أبو الأكبر! 🌹\nأنا وكيلك الذكي المتصل مباشرة بقاعدة البيانات في Supabase. احجي وياي بالعراقي أو اكتب براحتك:\n\n• سويلي طلب جديد (وجهة واحدة، وجهتين، من محل، تجهيز) 🚀\n• أغير حالة أي طلب أو أنقل المسلم للأرشيف ✅\n• أنطيك إحصائيات وملخص حركة النظام 📊",
+      text: "يا هلا ومية هلا بيك يا أبو الأكبر! 🌹\nأكدر أبحث وأجاوبك من جداول النظام. احچي وياي بالعراقي أو اكتب براحتك:\n\n• اسأل عن الطلبات أو المندوبين أو بيانات النظام 📊\n• اطلب إضافة أو تعديل؛ أعرض التفاصيل عليك قبل الحفظ ✅\n• سويلي طلب جديد (وجهة واحدة، وجهتين، من محل، تجهيز) 🚀",
       timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
     }
   ]);
@@ -64,7 +90,7 @@ export default function AdminAiPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // حالة استمارة الطلب التفصيلية
   const [activeFormMsgId, setActiveFormMsgId] = useState<string | null>(null);
@@ -102,15 +128,15 @@ export default function AdminAiPage() {
   // إعداد التعرف الصوتي (Web Speech API)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const speechWindow = window as SpeechRecognitionWindow;
+      const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = "ar-IQ";
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionResultEvent) => {
           const transcript = event.results[0][0].transcript;
           if (transcript) {
             setInputMessage((prev) => (prev ? `${prev} ${transcript}` : transcript));
@@ -137,8 +163,8 @@ export default function AdminAiPage() {
       try {
         recognitionRef.current.start();
         setIsListening(true);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        console.error("تعذر تشغيل التعرف على الصوت.");
       }
     }
   };
@@ -180,9 +206,9 @@ export default function AdminAiPage() {
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" }),
         action: data.action,
         orderNumber: data.orderNumber,
-        data: data.data,
         needType: data.needType,
-        selectedCategory: data.selectedCategory || "single"
+        selectedCategory: data.selectedCategory || "single",
+        pendingAction: data.pendingAction
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -194,7 +220,7 @@ export default function AdminAiPage() {
           setCategory(data.selectedCategory);
         }
       }
-    } catch (err: any) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -209,8 +235,54 @@ export default function AdminAiPage() {
     }
   };
 
+  const confirmDatabaseAction = async (message: Message) => {
+    const pendingAction = message.pendingAction;
+    if (!pendingAction || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/ai-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmationToken: pendingAction.confirmationToken }),
+      });
+      const result = await response.json();
+      setMessages((previous) =>
+        previous.map((item) =>
+          item.id === message.id
+            ? {
+                ...item,
+                text: result.message || "ما اكتمل تنفيذ التغيير.",
+                pendingAction: result.done ? undefined : item.pendingAction,
+              }
+            : item,
+        ),
+      );
+    } catch {
+      setMessages((previous) =>
+        previous.map((item) =>
+          item.id === message.id
+            ? { ...item, text: "تعذر الاتصال بالخادم لتنفيذ التغيير. جرّب مرة ثانية." }
+            : item,
+        ),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cancelDatabaseAction = (message: Message) => {
+    setMessages((previous) =>
+      previous.map((item) =>
+        item.id === message.id
+          ? { ...item, text: "تم إلغاء التغيير، وما انحفظت أي بيانات.", pendingAction: undefined }
+          : item,
+      ),
+    );
+  };
+
   // إرسال وتثبيت الطلب بحقوله الدقيقة حسب نوعه
-  const handleQuickOrderSubmit = async (msgId: string) => {
+  const handleQuickOrderSubmit = async () => {
     // التحقق من الحقول الإجبارية لكل نوع
     if (category === "single") {
       if (!formData.customerPhone.trim()) {
@@ -267,13 +339,12 @@ export default function AdminAiPage() {
           timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" }),
           action: "create_order",
           orderNumber: data.orderNumber,
-          data: data
         };
         setMessages((prev) => [...prev, successMsg]);
       } else {
         alert(data.message || "حدث خطأ أثناء تثبيت الطلب.");
       }
-    } catch (e: any) {
+    } catch {
       alert("تعذر الاتصال بالخادم لتثبيت الطلب.");
     } finally {
       setIsSubmittingOrder(false);
@@ -322,7 +393,7 @@ export default function AdminAiPage() {
                   Supabase Live
                 </span>
               </h1>
-              <p className="text-xs text-slate-400">يفهم عراقي وينفذ في قاعدة البيانات فوراً</p>
+              <p className="text-xs text-slate-400">يبحث في بيانات النظام ويعرض التغييرات قبل تنفيذها</p>
             </div>
           </div>
         </div>
@@ -331,10 +402,10 @@ export default function AdminAiPage() {
           <Link
             href="/abo1stor3hlaa2kbr8-47/settings/ai"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition"
-            title="إعداد مفاتيح Gemini"
+            title="إعداد مفاتيح الذكاء الاصطناعي"
           >
             <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">مفاتيح</span> Gemini
+            مفاتيح الذكاء
           </Link>
 
           <button
@@ -362,6 +433,71 @@ export default function AdminAiPage() {
               }`}
             >
               {msg.text}
+
+              {msg.pendingAction && (
+                <div className="mt-3 rounded-xl border border-amber-500/40 bg-slate-950 p-3 text-xs">
+                  <p className="font-bold text-amber-300">
+                    {msg.pendingAction.preview.operation === "create"
+                      ? "إنشاء سجل جديد"
+                      : msg.pendingAction.preview.operation === "update"
+                        ? "تعديل بيانات"
+                        : "حذف بيانات"}
+                    {" — "}
+                    {msg.pendingAction.preview.model}
+                  </p>
+                  <p className="mt-1 text-slate-300">
+                    عدد السجلات المتأثرة: {msg.pendingAction.preview.affectedCount}
+                  </p>
+                  {Object.keys(msg.pendingAction.preview.filters || {}).length > 0 && (
+                    <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-900 p-2 text-[10px] text-slate-300">
+                      شروط الاستهداف:{"\n"}
+                      {JSON.stringify(msg.pendingAction.preview.filters, null, 2)}
+                    </pre>
+                  )}
+                  {msg.pendingAction.preview.operation === "delete" && (
+                    <p className="mt-2 text-rose-300">
+                      انتبه: الحذف ممكن يأثر على بيانات مرتبطة بهذا السجل.
+                    </p>
+                  )}
+                  {Object.keys(msg.pendingAction.preview.data || {}).length > 0 && (
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-900 p-2 text-[10px] text-slate-300">
+                      {JSON.stringify(msg.pendingAction.preview.data, null, 2)}
+                    </pre>
+                  )}
+                  {msg.pendingAction.preview.sample.length > 0 && (
+                    <details className="mt-2 text-slate-300">
+                      <summary className="cursor-pointer">عرض عينة السجلات المتأثرة</summary>
+                      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-900 p-2 text-[10px]">
+                        {JSON.stringify(msg.pendingAction.preview.sample, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => confirmDatabaseAction(msg)}
+                      disabled={isLoading}
+                      className={`flex-1 rounded-lg px-3 py-2 font-bold text-white disabled:opacity-50 ${
+                        msg.pendingAction.preview.operation === "delete"
+                          ? "bg-rose-700 hover:bg-rose-600"
+                          : "bg-emerald-700 hover:bg-emerald-600"
+                      }`}
+                    >
+                      {msg.pendingAction.preview.operation === "delete"
+                        ? "تأكيد الحذف"
+                        : "تأكيد التغيير"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancelDatabaseAction(msg)}
+                      disabled={isLoading}
+                      className="rounded-lg border border-slate-700 px-3 py-2 font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* بطاقة الطلب المثبت بنجاح */}
               {msg.action === "create_order" && msg.orderNumber && (
@@ -714,7 +850,7 @@ export default function AdminAiPage() {
                   {/* زر التثبيت في Supabase */}
                   <button
                     type="button"
-                    onClick={() => handleQuickOrderSubmit(msg.id)}
+                    onClick={handleQuickOrderSubmit}
                     disabled={isSubmittingOrder}
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-950 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >

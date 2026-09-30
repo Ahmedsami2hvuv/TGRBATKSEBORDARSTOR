@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdminSession } from "@/lib/admin-session";
+import { getCurrentSessionIsAccountant, isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
@@ -556,5 +556,71 @@ export async function deleteGeminiApiKeyAction(id: string) {
   }
 }
 
+const AI_AGENT_PROVIDERS = ["gemini", "openai", "deepseek", "groq"] as const;
+type AiAgentProvider = (typeof AI_AGENT_PROVIDERS)[number];
 
+export async function addAiAgentProviderAction(
+  provider: AiAgentProvider,
+  apiKey: string,
+  label?: string,
+) {
+  if (!(await isAdminSession()) || (await getCurrentSessionIsAccountant())) {
+    return { error: "غير مصرح لك بإدارة مفاتيح الذكاء الاصطناعي." };
+  }
+  if (!AI_AGENT_PROVIDERS.includes(provider)) return { error: "مزود الذكاء غير مدعوم." };
 
+  const key = apiKey.trim();
+  if (key.length < 10 || key.length > 500) return { error: "المفتاح غير صالح." };
+  if (label && label.trim().length > 80) return { error: "اسم المفتاح طويل جداً." };
+
+  try {
+    await prisma.aIConfig.create({
+      data: {
+        provider,
+        apiKey: key,
+        label: label?.trim() || provider,
+        isActive: true,
+      },
+    });
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings/ai`);
+    return { ok: true };
+  } catch (error) {
+    console.error("[settings] Failed to add AI provider key", error);
+    return { error: "تعذرت إضافة المفتاح. تحقق من قاعدة البيانات وحاول مرة ثانية." };
+  }
+}
+
+export async function toggleAiAgentProviderAction(id: string, active: boolean) {
+  if (!(await isAdminSession()) || (await getCurrentSessionIsAccountant())) {
+    return { error: "غير مصرح لك بإدارة مفاتيح الذكاء الاصطناعي." };
+  }
+  try {
+    const result = await prisma.aIConfig.updateMany({
+      where: { id, provider: { in: [...AI_AGENT_PROVIDERS] } },
+      data: { isActive: active },
+    });
+    if (result.count === 0) return { error: "ما لقيت مفتاح الذكاء المطلوب." };
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings/ai`);
+    return { ok: true };
+  } catch (error) {
+    console.error("[settings] Failed to update AI provider key", error);
+    return { error: "تعذر تحديث المفتاح. حاول مرة ثانية." };
+  }
+}
+
+export async function deleteAiAgentProviderAction(id: string) {
+  if (!(await isAdminSession()) || (await getCurrentSessionIsAccountant())) {
+    return { error: "غير مصرح لك بإدارة مفاتيح الذكاء الاصطناعي." };
+  }
+  try {
+    const result = await prisma.aIConfig.deleteMany({
+      where: { id, provider: { in: [...AI_AGENT_PROVIDERS] } },
+    });
+    if (result.count === 0) return { error: "ما لقيت مفتاح الذكاء المطلوب." };
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings/ai`);
+    return { ok: true };
+  } catch (error) {
+    console.error("[settings] Failed to delete AI provider key", error);
+    return { error: "تعذر حذف المفتاح. حاول مرة ثانية." };
+  }
+}
