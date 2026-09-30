@@ -43,7 +43,8 @@ const allowedFilterOperators = new Set([
 ]);
 
 type DatabasePlan = {
-  kind: "query" | "change" | "answer";
+  kind: "query" | "change" | "answer" | "order_form";
+  category?: "single" | "double" | "shop" | "prep";
   model?: string;
   mode?: "rows" | "count" | "aggregate";
   filters?: Record<string, unknown>;
@@ -585,7 +586,7 @@ export function parseDatabasePlan(raw: string): DatabasePlan {
   const end = raw.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("ما قدرت أفهم نية المساعد. جرب صياغة الأمر بشكل أوضح.");
   const parsed = JSON.parse(raw.slice(start, end + 1)) as DatabasePlan;
-  if (!parsed || !["query", "change", "answer"].includes(parsed.kind)) {
+  if (!parsed || !["query", "change", "answer", "order_form"].includes(parsed.kind)) {
     throw new Error("رد المساعد ما كان بالصيغة المطلوبة.");
   }
   return parsed;
