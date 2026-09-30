@@ -48,36 +48,8 @@ class FloatingWidgetService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_HIDE) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        if (intent?.action == ACTION_SET_INVISIBLE) {
-            floatingBubbleView?.visibility = View.GONE
-            return START_STICKY
-        }
-
-        if (intent?.action == ACTION_SET_VISIBLE) {
-            floatingBubbleView?.visibility = View.VISIBLE
-            return START_STICKY
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "يرجى تفعيل صلاحية الظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        startForegroundNotification()
-
-        if (floatingBubbleView == null) {
-            initFloatingBubble()
-        } else {
-            floatingBubbleView?.visibility = View.VISIBLE
-        }
-
-        return START_STICKY
+        stopSelf()
+        return START_NOT_STICKY
     }
 
     private fun startForegroundNotification() {

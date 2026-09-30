@@ -213,27 +213,16 @@ class MainActivity : AppCompatActivity() {
         requestAppPermissions()
         
         setupLongPressMenu()
+
+        stopFloatingWidgetService()
     }
 
-    private fun startFloatingWidgetService() {
+    private fun stopFloatingWidgetService() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (android.provider.Settings.canDrawOverlays(this)) {
-                    val intent = Intent(this, FloatingWidgetService::class.java).apply {
-                        action = FloatingWidgetService.ACTION_SHOW
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(intent)
-                    } else {
-                        startService(intent)
-                    }
-                }
-            } else {
-                val intent = Intent(this, FloatingWidgetService::class.java).apply {
-                    action = FloatingWidgetService.ACTION_SHOW
-                }
-                startService(intent)
+            val intent = Intent(this, FloatingWidgetService::class.java).apply {
+                action = FloatingWidgetService.ACTION_HIDE
             }
+            stopService(intent)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -256,29 +245,6 @@ class MainActivity : AppCompatActivity() {
 
         if (toRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), 101)
-        } else {
-            checkOverlayPermission()
-        }
-    }
-
-    private fun checkOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!android.provider.Settings.canDrawOverlays(this)) {
-                try {
-                    val intent = Intent(
-                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:$packageName")
-                    )
-                    startActivityForResult(intent, 1234)
-                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي يظهر الزر العائم بنجاح", Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    // تجاهل فشل التوجيه للأجهزة النادرة
-                }
-            } else {
-                startFloatingWidgetService()
-            }
-        } else {
-            startFloatingWidgetService()
         }
     }
 
@@ -288,9 +254,6 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101) {
-            checkOverlayPermission()
-        }
     }
 
     private fun setupWebView() {
@@ -537,12 +500,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1234) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && android.provider.Settings.canDrawOverlays(this)) {
-                startFloatingWidgetService()
-                Toast.makeText(this, "تم تفعيل الزر العائم بنجاح 🔘", Toast.LENGTH_SHORT).show()
-            }
-        }
         if (requestCode == FILECHOOSER_RESULTCODE) {
             if (uploadMessage == null) return
             
@@ -881,7 +838,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        startFloatingWidgetService()
+        stopFloatingWidgetService()
         // مزامنة التوكن فوراً عند العودة للتطبيق لضمان عمل QuickDraftActivity
         syncTokenFromCookies()
         
