@@ -386,4 +386,24 @@ class FloatingAdminActivity : AppCompatActivity() {
             Toast.makeText(this, "تم تثبيت الزر العائم الدائم على الشاشة 🔘", Toast.LENGTH_SHORT).show()
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        try {
+            val hideIntent = Intent(this, FloatingWidgetService::class.java).apply {
+                action = FloatingWidgetService.ACTION_SET_INVISIBLE
+            }
+            startService(hideIntent)
+        } catch (e: Exception) {}
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            val showIntent = Intent(this, FloatingWidgetService::class.java).apply {
+                action = FloatingWidgetService.ACTION_SET_VISIBLE
+            }
+            startService(showIntent)
+        } catch (e: Exception) {}
+    }
 }

@@ -33,6 +33,8 @@ class FloatingWidgetService : Service() {
     companion object {
         const val ACTION_SHOW = "com.aboakbar.admin.ACTION_SHOW_FLOATING_WIDGET"
         const val ACTION_HIDE = "com.aboakbar.admin.ACTION_HIDE_FLOATING_WIDGET"
+        const val ACTION_SET_INVISIBLE = "com.aboakbar.admin.ACTION_SET_INVISIBLE"
+        const val ACTION_SET_VISIBLE = "com.aboakbar.admin.ACTION_SET_VISIBLE"
         var isRunning = false
             private set
     }
@@ -51,6 +53,16 @@ class FloatingWidgetService : Service() {
             return START_NOT_STICKY
         }
 
+        if (intent?.action == ACTION_SET_INVISIBLE) {
+            floatingBubbleView?.visibility = View.GONE
+            return START_STICKY
+        }
+
+        if (intent?.action == ACTION_SET_VISIBLE) {
+            floatingBubbleView?.visibility = View.VISIBLE
+            return START_STICKY
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Toast.makeText(this, "يرجى تفعيل صلاحية الظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
             stopSelf()
@@ -61,6 +73,8 @@ class FloatingWidgetService : Service() {
 
         if (floatingBubbleView == null) {
             initFloatingBubble()
+        } else {
+            floatingBubbleView?.visibility = View.VISIBLE
         }
 
         return START_STICKY
@@ -210,7 +224,9 @@ class FloatingWidgetService : Service() {
 
         val screenWidth = screenSize.x
         val middleX = screenWidth / 2
-        val targetX = if (params.x + 40 < middleX) 16 else screenWidth - 170
+        val buttonWidthPx = (56 * resources.displayMetrics.density).toInt()
+        val marginPx = (10 * resources.displayMetrics.density).toInt()
+        val targetX = if (params.x + buttonWidthPx / 2 < middleX) marginPx else screenWidth - buttonWidthPx - marginPx
 
         val animator = ValueAnimator.ofInt(params.x, targetX)
         animator.duration = 180

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/layoutFloatingBubble"
-    android:layout_width="62dp"
-    android:layout_height="62dp"
+    android:layout_width="56dp"
+    android:layout_height="56dp"
     android:background="@drawable/bg_floating_bubble"
-    android:elevation="20dp"
+    android:elevation="14dp"
     android:clickable="true"
     android:focusable="true">
 
     <ImageView
         android:id="@+id/imgFloatingIcon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
         android:layout_gravity="center"
         android:src="@drawable/ic_floating_widget"
-        android:contentDescription="الزر العائم" />
+        android:contentDescription="القائمة الدائرية" />
 </FrameLayout>
