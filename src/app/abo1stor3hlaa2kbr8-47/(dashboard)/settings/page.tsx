@@ -78,12 +78,22 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className={ad.h1}>الإعدادات</h1>
-        <p className={ad.lead}>
-          اختر الإعداد الذي تريد تعديله. سيتم تطبيق التعديلات على واجهة المندوب
-          مباشرة بعد الحفظ.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className={ad.h1}>الإعدادات</h1>
+          <p className={ad.lead}>
+            اختر الإعداد الذي تريد تعديله. سيتم تطبيق التعديلات على واجهة المندوب
+            مباشرة بعد الحفظ.
+          </p>
+        </div>
+
+        <Link
+          href="/abo1stor3hlaa2kbr8-47/settings/ai"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:opacity-95 transition shrink-0"
+        >
+          <span>🤖 مفاتيح الذكاء الاصطناعي (Gemini)</span>
+          <span>↗</span>
+        </Link>
       </div>
 
       <Suspense fallback={<div className="text-center py-12 text-slate-500 font-bold animate-pulse">جاري تحميل صفحة الإعدادات...</div>}>
