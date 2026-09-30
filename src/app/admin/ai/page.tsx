@@ -26,6 +26,7 @@ type Message = {
   action?: string;
   orderNumber?: number;
   data?: any;
+  needType?: boolean;
 };
 
 export default function AdminAiPage() {
@@ -138,7 +139,8 @@ export default function AdminAiPage() {
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" }),
         action: data.action,
         orderNumber: data.orderNumber,
-        data: data.data
+        data: data.data,
+        needType: data.needType
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -262,6 +264,35 @@ export default function AdminAiPage() {
                   <span>تم تحويل وإشعار المندوب لاستلام وتوصيل الطلب.</span>
                 </div>
               )}
+              {/* أزرار اختيار نوع الطلب عند طلب إنشاء طلب */}
+              {msg.needType && (
+                <div className="mt-3 grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => handleSendMessage("طلب من الإدارة")}
+                    className="p-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    📦 طلب من الإدارة
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("طلب وجهتين")}
+                    className="p-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    🔄 طلب وجهتين
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("طلب من محل")}
+                    className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    🏬 طلب من محل
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("تجهيز طلب")}
+                    className="p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    🛍️ تجهيز طلب
+                  </button>
+                </div>
+              )}
             </div>
             <span className="text-[10px] text-slate-500 mt-1 px-1">{msg.timestamp}</span>
           </div>
@@ -270,7 +301,7 @@ export default function AdminAiPage() {
         {isLoading && (
           <div className="flex items-center gap-2 text-slate-400 text-xs bg-slate-900 border border-slate-800 p-3 rounded-2xl w-fit">
             <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-            <span>الوكيل الذكي ينفذ الأمر في قاعدة البيانات...</span>
+            <span>الوكيل المستكشف ينفذ الأمر في Supabase...</span>
           </div>
         )}
 
@@ -280,18 +311,17 @@ export default function AdminAiPage() {
       {/* أزرار اقتراحات سريعة */}
       <div className="px-4 py-2 bg-slate-900/60 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
         <button
-          onClick={() => handleSendMessage("شنو وضع الطلبات اليوم؟")}
-          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
+          onClick={() => handleSendMessage("اخفيلي فارس")}
+          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
         >
-          <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
-          ملخص الطلبات اليوم
+          👁️ اخفيلي فارس
         </button>
         <button
-          onClick={() => handleSendMessage("سوي طلب للجزائر رقم 07701234567 سعره 25 الف")}
-          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
+          onClick={() => handleSendMessage("سويلي طلب")}
+          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
         >
           <Package className="w-3.5 h-3.5 text-emerald-400" />
-          طلب سريع للجزائر
+          سويلي طلب
         </button>
         <button
           onClick={() => handleSendMessage("صفر حساب فارس")}
@@ -299,6 +329,13 @@ export default function AdminAiPage() {
         >
           <Coins className="w-3.5 h-3.5 text-amber-400" />
           صفر حساب فارس
+        </button>
+        <button
+          onClick={() => handleSendMessage("شنو وضع الطلبات اليوم؟")}
+          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
+          ملخص الطلبات
         </button>
       </div>
 

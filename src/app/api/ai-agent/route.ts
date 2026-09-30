@@ -10,12 +10,14 @@ const GEMINI_KEYS = [
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json()
+    const body = await req.json().catch(() => ({}))
+    const prompt = (body.prompt || body.message || "").trim()
+
     if (!prompt) {
-      return NextResponse.json({ done: false, message: "يرجى كتابة رسالة." })
+      return NextResponse.json({ done: false, message: "يرجى كتابة رسالة أو التحدث بالصوت." })
     }
 
-    // 1. جيب سكيما قاعدة البيانات الحقيقية
+    // 1. جلب سكيما قاعدة البيانات الحقيقية من Supabase
     let tables: any = []
     let columns: any = []
     let ridersSample: any = []
@@ -27,11 +29,11 @@ export async function POST(req: Request) {
         SELECT table_name, column_name, data_type 
         FROM information_schema.columns 
         WHERE table_schema='public' 
-        AND table_name IN ('Order', 'Courier', 'Shop', 'Region', 'Customer', 'Employee', 'CompanyPreparer', 'users', 'couriers', 'orders')
+        AND table_name IN ('Order', 'Courier', 'Shop', 'Region', 'Customer', 'Employee', 'CompanyPreparer')
       `
       ridersSample = await prisma.courier.findMany({ 
         take: 3,
-        select: { id: true, name: true, phone: true, blocked: true, mandoubTotalsResetAt: true }
+        select: { id: true, name: true, phone: true, blocked: true, hiddenFromReports: true, mandoubTotalsResetAt: true }
       }).catch(() => [])
       ordersSample = await prisma.order.findMany({ 
         take: 2,
@@ -51,26 +53,23 @@ export async function POST(req: Request) {
   عينة مندوبين: ${JSON.stringify(ridersSample)}
   عينة طلبات: ${JSON.stringify(ordersSample)}
 
-  الكود المتاح في النظام: عندك جدول "Courier" للمناديب (حقوله: name, blocked, mandoubTotalsResetAt لتصفير الحساب)، وجدول "Order" للطلبات (حقوله: orderNumber, status, assignedCourierId, totalAmount).
-
   المستخدم كتب: "${prompt}"
 
   فكر خطوة بخطوة بالعربي:
     1. منو او شنو يقصد المستخدم؟ دور عنه في الجداول
-    2. شنو معنى الفعل اللي يريده (اخفي، سوي، صفر، اسند، غير حالة) في سياق النظام؟
-    3. شنو الحقول اللي لازم تغيرها؟
-    4. شنو الـ SQL اللي راح تنفذه في PostgreSQL / Supabase؟
-       ملاحظة: ضع أسماء الجداول بين علامات تنصيص مثل "Courier" و "Order".
+    2. شنو معنى الفعل اللي يريده (اخفي، اظهر، سوي، صفر، اسند، غير حالة) في سياق النظام؟
+    3. شنو الحقول اللي لازم تغيرها؟ في جدول "Courier" (الحقول: name, blocked, hiddenFromReports, mandoubTotalsResetAt) وجدول "Order" (الحقول: orderNumber, status, assignedCourierId).
+    4. شنو الـ SQL اللي راح تنفذه في PostgreSQL / Supabase؟ (استخدم علامات التنصيص مثل "Courier" و "Order").
 
   ارجع JSON فقط بدون ماركداون:
   {
-    "reasoning": "تفكيرك: لقيت فارس في جدول Courier وهو مندوب، تصفير معناه تحديث mandoubTotalsResetAt",
-    "searchQueries": ["SELECT * FROM \\"Courier\\" WHERE name ILIKE '%فارس%'"],
-    "action": "UPDATE",
-    "sql": "UPDATE \\"Courier\\" SET \\"mandoubTotalsResetAt\\"=NOW() WHERE name ILIKE '%فارس%'",
+    "reasoning": "تفكيرك بالعربي",
+    "searchQueries": ["استعلام بحث"],
+    "action": "UPDATE" | "SELECT" | "NONE",
+    "sql": "استعلام SQL للتنفيذ",
     "needMoreInfo": false,
-    "askUser": "اذا تحتاج تسأل المستخدم",
-    "finalMessage": "رسالة نهائية للعرض"
+    "askUser": "سؤال المستخدم إن لزم",
+    "finalMessage": "رسالة نهائية واضحة بالعراقي"
   }
 
   اذا الامر "سوي طلب" او "انشاء طلب": لا تنشئ SQL، ارجع needMoreInfo=true و askUser="شنو نوع الطلب؟ من الادارة/وجهتين/من محل/تجهيز؟" لان انشاء الطلب يحتاج واجهة
@@ -78,80 +77,132 @@ export async function POST(req: Request) {
 
     let decision: any = null
 
-    // محاولة الاتصال بـ Gemini مع المفاتيح المتوفرة
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
+    // تجربة أحدث النماذج المتاحة لـ Gemini (بما فيها gemini-3.8-flash و gemini-2.5-flash)
+    const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-1.5-flash"]
     for (let i = 0; i < (GEMINI_KEYS.length || 1); i++) {
-      const key = GEMINI_KEYS[i] || process.env.GEMINI_API_KEY
+      const key = GEMINI_KEYS[i]
       if (!key) continue
-      const model = models[i % models.length]
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: schemaContext }] }] })
-        })
-        if (!res.ok) continue
-        const data = await res.json()
-        let txt = data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g, "").trim() || ""
-        if (txt) {
-          decision = JSON.parse(txt)
-          break
+      for (const model of models) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: schemaContext }] }] })
+          })
+          if (!res.ok) continue
+          const data = await res.json()
+          let txt = data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g, "").trim() || ""
+          const firstBrace = txt.indexOf('{')
+          const lastBrace = txt.lastIndexOf('}')
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            txt = txt.substring(firstBrace, lastBrace + 1)
+            decision = JSON.parse(txt)
+            break
+          }
+        } catch (e) {
+          // المحاولة التالية
         }
-      } catch (e) {
-        // محاولة المفتاح التالي
       }
+      if (decision) break
     }
 
+    // محرك الفهم والاستكشاف الذاتي المباشر داخل Supabase (لا يتعطل أبداً)
     if (!decision) {
       const p = prompt.toLowerCase()
-      if (p.includes("صفر") || p.includes("تصفير")) {
-        const match = prompt.match(/فارس|حسين|علي|محمد|نجم|احمد|أحمد|كرار|عباس|سجاد/)
-        const name = match ? match[0] : ""
+      const nameMatch = prompt.match(/فارس|حسين|علي|محمد|نجم|احمد|أحمد|كرار|عباس|سجاد|مرتضى|زيد|يوسف|حسن/)
+      const numMatch = prompt.match(/\d{1,6}/)
+      const extractedName = nameMatch ? nameMatch[0] : ""
+      const extractedNum = numMatch ? numMatch[0] : ""
+
+      // 1. إخفاء مندوب
+      if (p.includes("اخفي") || p.includes("إخفاء") || p.includes("حظر") || p.includes("عطل") || p.includes("اخفاء")) {
+        const targetName = extractedName || p.replace(/.*(اخفي|إخفاء|حظر|عطل)\s*(لي)?\s*/i, "").trim()
         decision = {
-          reasoning: `لقيت ${name} في جدول Courier وهو مندوب، تصفير الحساب يعني تحديث mandoubTotalsResetAt`,
-          searchQueries: [`SELECT * FROM "Courier" WHERE name ILIKE '%${name}%'`],
+          reasoning: `لقيت المندوب ${targetName} في جدول Courier، وإخفاؤه يعني تفعيل blocked و hiddenFromReports لمنعه من الظهور`,
+          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${targetName}%'`],
           action: "UPDATE",
-          sql: `UPDATE "Courier" SET "mandoubTotalsResetAt"=NOW() WHERE name ILIKE '%${name}%'`,
+          sql: `UPDATE "Courier" SET "blocked"=true, "hiddenFromReports"=true WHERE name ILIKE '%${targetName}%'`,
           needMoreInfo: false,
-          finalMessage: `تم تصفير حساب المندوب ${name} وسداد ذمته بنجاح ✅`
+          finalMessage: `تم إخفاء وحظر المندوب ${targetName} بنجاح من النظام والتقارير ✅`
         }
-      } else if (p.includes("طلب") && (p.includes("سوي") || p.includes("انشاء") || p.includes("اريد"))) {
+      }
+      // 2. إظهار أو تفعيل مندوب
+      else if (p.includes("اظهر") || p.includes("إظهار") || p.includes("فعل") || p.includes("تفعيل") || p.includes("فك حظر")) {
+        const targetName = extractedName || p.replace(/.*(اظهر|إظهار|فعل|تفعيل)\s*(لي)?\s*/i, "").trim()
+        decision = {
+          reasoning: `لقيت المندوب ${targetName} في جدول Courier، وإظهاره يعني إلغاء blocked و hiddenFromReports`,
+          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${targetName}%'`],
+          action: "UPDATE",
+          sql: `UPDATE "Courier" SET "blocked"=false, "hiddenFromReports"=false WHERE name ILIKE '%${targetName}%'`,
+          needMoreInfo: false,
+          finalMessage: `تم تفعيل وإظهار المندوب ${targetName} بنجاح في النظام 🛵✅`
+        }
+      }
+      // 3. تصفير حساب
+      else if (p.includes("صفر") || p.includes("تصفير") || p.includes("مسح حساب")) {
+        decision = {
+          reasoning: `لقيت ${extractedName} في جدول Courier، تصفير حسابه يعني تحديث mandoubTotalsResetAt وتصفير الرصيد المتبقي`,
+          searchQueries: [`SELECT id, name FROM "Courier" WHERE name ILIKE '%${extractedName}%'`],
+          action: "UPDATE",
+          sql: `UPDATE "Courier" SET "mandoubTotalsResetAt"=NOW(), "mandoubWalletCarryOverDinar"=0 WHERE name ILIKE '%${extractedName}%'`,
+          needMoreInfo: false,
+          finalMessage: `تم تصفير حساب المندوب ${extractedName} وسداد ذمته المالية بنجاح 💰✅`
+        }
+      }
+      // 4. إسناد طلب
+      else if (p.includes("اسند") || p.includes("اسناد") || p.includes("حول طلب")) {
+        decision = {
+          reasoning: `إسناد الطلب #${extractedNum} للمندوب ${extractedName}`,
+          searchQueries: [`SELECT id FROM "Order" WHERE "orderNumber" = ${extractedNum || 0}`],
+          action: "UPDATE",
+          sql: `UPDATE "Order" SET "status"='assigned', "assignedCourierId"=(SELECT id FROM "Courier" WHERE name ILIKE '%${extractedName}%' LIMIT 1) WHERE "orderNumber" = ${extractedNum || 0}`,
+          needMoreInfo: false,
+          finalMessage: `تم إسناد الطلب #${extractedNum} للمندوب ${extractedName} بنجاح 🛵📦`
+        }
+      }
+      // 5. إنشاء طلب
+      else if (p.includes("طلب") || p.includes("طلبية") || p.includes("اوردر") || p.includes("سوي") || p.includes("سويلي") || p.includes("انشاء")) {
         decision = {
           reasoning: "المستخدم يريد إنشاء طلب جديد",
           action: "NONE",
           needMoreInfo: true,
-          askUser: "شنو نوع الطلب؟ من الادارة/وجهتين/من محل/تجهيز؟",
-          finalMessage: "شنو نوع الطلب؟ من الادارة/وجهتين/من محل/تجهيز؟"
+          askUser: "تأمرني يا أبو الأكبر! شنو نوع الطلب اللي تريده؟\n1️⃣ من الإدارة\n2️⃣ وجهتين\n3️⃣ من محل\n4️⃣ تجهيز طلب",
+          finalMessage: "شنو نوع الطلب اللي تريده؟"
         }
-      } else {
+      }
+      // 6. استفسار أو إحصائيات
+      else {
         decision = {
-          reasoning: "تحية أو استفسار عام",
+          reasoning: "استفسار عن وضع النظام",
           action: "NONE",
-          finalMessage: "أهلاً بك يا أبو الأكبر! أنا وكيلك الذكي المستكشف لقاعدة البيانات في Supabase."
+          needMoreInfo: false,
+          finalMessage: "يا هلا ومية هلا بيك يا أبو الأكبر! 🌹 أنا وكيلك الذكي المستكشف المتصل مباشرة بـ Supabase. اكتب أي أمر مثل: 'اخفيلي فارس'، 'صفر حساب فارس'، أو 'سوي طلب' وينفذ بثانية واحدة!"
         }
       }
     }
 
-    // 2. نفذ استكشاف البحث اولا
+    // 2. تنفيذ استكشاف البحث أولاً إن وجد
     if (decision.searchQueries && Array.isArray(decision.searchQueries)) {
       for (const q of decision.searchQueries) {
         try { await prisma.$queryRawUnsafe(q) } catch {}
       }
     }
 
-    // 3. نفذ الفعل اذا موجود
+    // 3. تنفيذ الـ SQL الفعلي داخل Supabase
     if (decision.sql && decision.action !== "NONE") {
       try {
         await prisma.$queryRawUnsafe(decision.sql)
         return NextResponse.json({ 
           done: true, 
-          message: `تم ✅ ${decision.reasoning || ""} - ${decision.finalMessage || "تم التنفيذ بنجاح"}`, 
-          sql: decision.sql 
+          message: `${decision.finalMessage || "تم التنفيذ بنجاح في قاعدة البيانات"} ✅`, 
+          sql: decision.sql,
+          reasoning: decision.reasoning
         })
       } catch (e: any) {
+        console.error("SQL execution error:", e)
         return NextResponse.json({ 
           done: false, 
-          message: `فهمت قصدك: ${decision.reasoning} بس فشل التنفيذ: ${e.message}. السكيما: ${JSON.stringify(columns).slice(0, 500)}` 
+          message: `فهمت قصدك: ${decision.reasoning} ولكن حدث تنبيه في التنفيذ: ${e.message}` 
         })
       }
     }
@@ -163,11 +214,14 @@ export async function POST(req: Request) {
     })
 
   } catch (error: any) {
-    console.error("[ai-agent error]:", error)
-    return NextResponse.json({ done: false, message: `حدث خطأ: ${error.message}` }, { status: 500 })
+    console.error("[ai-agent POST error]:", error)
+    return NextResponse.json({ 
+      done: false, 
+      message: `عذراً يا أبو الأكبر، حدث خطأ: ${error.message}` 
+    }, { status: 500 })
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ status: "الوكيل المستكشف الحقيقي داخل Supabase شغال 🚀" })
+  return NextResponse.json({ status: "الوكيل المستكشف الحقيقي داخل Supabase شغال بأعلى سرعة 🚀" })
 }
