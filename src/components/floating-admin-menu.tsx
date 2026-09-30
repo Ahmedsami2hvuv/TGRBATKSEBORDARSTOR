@@ -164,23 +164,37 @@ export function FloatingAdminMenu() {
         if (isAiAction) {
           setIsHovered(false);
           setHoveredCategory(null);
-          window.location.href = "/admin/ai";
+          // @ts-ignore
+          if (window.AndroidFloatingMenu?.openAi) {
+            // @ts-ignore
+            window.AndroidFloatingMenu.openAi();
+          } else {
+            window.location.href = "/admin/ai";
+          }
         } else if (url) {
-          if (url.startsWith("http")) {
+          setIsHovered(false);
+          setHoveredCategory(null);
+          // @ts-ignore
+          if (window.AndroidFloatingMenu?.openUrl) {
+            // @ts-ignore
+            window.AndroidFloatingMenu.openUrl(url);
+          } else if (url.startsWith("http")) {
             window.open(url, "_blank");
           } else {
             window.location.href = url;
           }
-          setIsHovered(false);
-          setHoveredCategory(null);
         } else if (catId) {
           setHoveredCategory(catId);
         } else {
           setIsHovered(false);
           setHoveredCategory(null);
+          // @ts-ignore
+          window.AndroidFloatingMenu?.onMenuStateChanged?.(false);
         }
       } else {
         setIsHovered(true);
+        // @ts-ignore
+        window.AndroidFloatingMenu?.onMenuStateChanged?.(true);
       }
     }
 
@@ -277,6 +291,10 @@ export function FloatingAdminMenu() {
           onClick={() => {
             setIsHovered(false);
             setHoveredCategory(null);
+            // @ts-ignore
+            window.AndroidFloatingMenu?.onMenuStateChanged?.(false);
+            // @ts-ignore
+            window.AndroidFloatingMenu?.closeOverlay?.();
           }}
         />
       )}

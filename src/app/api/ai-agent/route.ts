@@ -92,11 +92,22 @@ ${JSON.stringify(recentOrders, null, 2)}
 }
 `
 
-    // 2. استدعاء نموذج جمناي ليفهم ويقرر
+    // 2. جلب المفاتيح من جدول GeminiApiKey ومن متغيرات البيئة
+    const dbKeys = await prisma.geminiApiKey.findMany({
+      where: { active: true },
+      orderBy: { updatedAt: 'desc' }
+    }).catch(() => [])
+
+    const activeKeys = [
+      ...dbKeys.map(k => k.key),
+      ...GEMINI_KEYS
+    ].filter(Boolean)
+
+    // استدعاء نموذج جمناي ليفهم ويقرر
     let brain: any = null
     const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
 
-    for (const key of GEMINI_KEYS) {
+    for (const key of activeKeys) {
       if (!key) continue
       for (const model of models) {
         try {
