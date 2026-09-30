@@ -18,6 +18,13 @@ import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+type AssistantWindowGeometry = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
 function navItemActive(pathname: string, href: string): boolean {
   const base = href.split("#")[0] ?? href;
   if (base === SECRET_ADMIN_PATH) return pathname === SECRET_ADMIN_PATH;
@@ -62,7 +69,17 @@ export function AdminShell({
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [hasOpenedAiAssistant, setHasOpenedAiAssistant] = useState(false);
+  const [assistantWindowGeometry, setAssistantWindowGeometry] = useState<AssistantWindowGeometry | null>(null);
+  const [isAiAssistantMaximized, setIsAiAssistantMaximized] = useState(false);
   const aiAssistantFrameRef = useRef<HTMLIFrameElement>(null);
+  const aiAssistantWindowRef = useRef<HTMLElement>(null);
+  const assistantInteractionRef = useRef<{
+    mode: "drag" | "resize";
+    pointerX: number;
+    pointerY: number;
+    geometry: AssistantWindowGeometry;
+  } | null>(null);
+  const assistantRestoreGeometryRef = useRef<AssistantWindowGeometry | null>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   // عند فتح صفحة كنافذة منبثقة (?view=modal) نُخفي الشريط الجانبي وشريط البحث
@@ -83,6 +100,115 @@ export function AdminShell({
     window.addEventListener("message", handleAssistantMessage);
     return () => window.removeEventListener("message", handleAssistantMessage);
   }, []);
+
+  useEffect(() => {
+    const keepAssistantWindowOnScreen = () => {
+      setAssistantWindowGeometry((geometry) => {
+        if (!geometry) return geometry;
+        const minWidth = Math.min(280, window.innerWidth - 16);
+        const minHeight = Math.min(320, window.innerHeight - 16);
+        const width = Math.max(minWidth, Math.min(geometry.width, window.innerWidth - 16));
+        const height = Math.max(minHeight, Math.min(geometry.height, window.innerHeight - 16));
+        const left = Math.max(8, Math.min(geometry.left, window.innerWidth - width - 8));
+        const top = Math.max(8, Math.min(geometry.top, window.innerHeight - height - 8));
+        if (
+          left === geometry.left &&
+          top === geometry.top &&
+          width === geometry.width &&
+          height === geometry.height
+        ) {
+          return geometry;
+        }
+        return { left, top, width, height };
+      });
+    };
+    window.addEventListener("resize", keepAssistantWindowOnScreen);
+    return () => window.removeEventListener("resize", keepAssistantWindowOnScreen);
+  }, []);
+
+  const startAssistantWindowInteraction = (
+    event: React.PointerEvent<HTMLElement>,
+    mode: "drag" | "resize",
+  ) => {
+    if (event.button !== 0 || !aiAssistantWindowRef.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const rect = aiAssistantWindowRef.current.getBoundingClientRect();
+    assistantInteractionRef.current = {
+      mode,
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      geometry: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+    };
+  };
+
+  const updateAssistantWindowInteraction = (event: React.PointerEvent<HTMLElement>) => {
+    const interaction = assistantInteractionRef.current;
+    if (!interaction) return;
+    const deltaX = event.clientX - interaction.pointerX;
+    const deltaY = event.clientY - interaction.pointerY;
+    const maxWidth = Math.max(1, window.innerWidth - 16);
+    const maxHeight = Math.max(1, window.innerHeight - 16);
+    const minWidth = Math.min(280, maxWidth);
+    const minHeight = Math.min(320, maxHeight);
+    const left =
+      interaction.mode === "drag"
+        ? Math.max(
+            8,
+            Math.min(
+              interaction.geometry.left + deltaX,
+              window.innerWidth - Math.min(interaction.geometry.width, maxWidth) - 8,
+            ),
+          )
+        : interaction.geometry.left;
+    const top =
+      interaction.mode === "drag"
+        ? Math.max(
+            8,
+            Math.min(
+              interaction.geometry.top + deltaY,
+              window.innerHeight - Math.min(interaction.geometry.height, maxHeight) - 8,
+            ),
+          )
+        : interaction.geometry.top;
+    const width =
+      interaction.mode === "resize"
+        ? Math.min(Math.max(minWidth, interaction.geometry.width + deltaX), window.innerWidth - left - 8, maxWidth)
+        : interaction.geometry.width;
+    const height =
+      interaction.mode === "resize"
+        ? Math.min(Math.max(minHeight, interaction.geometry.height + deltaY), window.innerHeight - top - 8, maxHeight)
+        : interaction.geometry.height;
+    setAssistantWindowGeometry({ left, top, width, height });
+  };
+
+  const stopAssistantWindowInteraction = () => {
+    assistantInteractionRef.current = null;
+  };
+
+  const toggleAssistantMaximize = () => {
+    if (isAiAssistantMaximized) {
+      setAssistantWindowGeometry(assistantRestoreGeometryRef.current);
+      assistantRestoreGeometryRef.current = null;
+      setIsAiAssistantMaximized(false);
+      return;
+    }
+    const rect = aiAssistantWindowRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    assistantRestoreGeometryRef.current = {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+    setAssistantWindowGeometry({
+      left: 8,
+      top: 8,
+      width: Math.max(280, window.innerWidth - 16),
+      height: Math.max(320, window.innerHeight - 16),
+    });
+    setIsAiAssistantMaximized(true);
+  };
 
   const sidebarConfig = initialSidebarConfig || DEFAULT_SIDEBAR_CONFIG;
   const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
@@ -709,21 +835,83 @@ export function AdminShell({
       </div>
       {hasOpenedAiAssistant && (
         <section
+          ref={aiAssistantWindowRef}
           id="admin-ai-widget"
           aria-label="المساعد الذكي"
           aria-hidden={!isAiAssistantOpen}
-          className={`fixed end-3 bottom-20 z-[180] h-[min(66dvh,34rem)] w-[calc(100vw-1.5rem)] max-w-md overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl transition-all duration-200 sm:end-6 sm:bottom-6 sm:h-[min(78dvh,42rem)] sm:w-[min(28rem,calc(100vw-3rem))] ${
+          style={
+            assistantWindowGeometry
+              ? {
+                  left: assistantWindowGeometry.left,
+                  top: assistantWindowGeometry.top,
+                  width: assistantWindowGeometry.width,
+                  height: assistantWindowGeometry.height,
+                  right: "auto",
+                  bottom: "auto",
+                }
+              : undefined
+          }
+          className={`fixed end-3 bottom-20 z-[180] flex h-[min(66dvh,34rem)] w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl transition-[opacity,transform,visibility] duration-200 sm:end-6 sm:bottom-6 sm:h-[min(78dvh,42rem)] sm:w-[min(28rem,calc(100vw-3rem))] ${
             isAiAssistantOpen
               ? "visible translate-y-0 opacity-100"
               : "invisible pointer-events-none translate-y-2 opacity-0"
           }`}
         >
+          <div
+            className="flex h-12 shrink-0 touch-none items-center justify-between border-b border-slate-700 bg-slate-900 px-2"
+            onPointerDown={(event) => {
+              if ((event.target as HTMLElement).closest("button")) return;
+              startAssistantWindowInteraction(event, "drag");
+            }}
+            onPointerMove={updateAssistantWindowInteraction}
+            onPointerUp={stopAssistantWindowInteraction}
+            onPointerCancel={stopAssistantWindowInteraction}
+            title="اسحب لتحريك نافذة المساعد"
+          >
+            <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-200">
+              <span aria-hidden="true" className="cursor-move text-slate-500">⠿</span>
+              <span className="truncate">المساعد الذكي</span>
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleAssistantMaximize}
+                className="flex size-9 items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"
+                title={isAiAssistantMaximized ? "استعادة حجم النافذة" : "تكبير النافذة"}
+                aria-label={isAiAssistantMaximized ? "استعادة حجم النافذة" : "تكبير النافذة"}
+              >
+                <span aria-hidden="true">{isAiAssistantMaximized ? "❐" : "□"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAiAssistantOpen(false)}
+                className="flex size-9 items-center justify-center rounded-lg text-slate-300 hover:bg-rose-600 hover:text-white"
+                title="إغلاق المساعد"
+                aria-label="إغلاق المساعد"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
           <iframe
             ref={aiAssistantFrameRef}
             src="/admin/ai?view=widget"
             title="المساعد الذكي"
-            className="h-full w-full border-0"
+            className="min-h-0 w-full flex-1 border-0"
           />
+          <div
+            role="separator"
+            aria-label="تغيير حجم نافذة المساعد"
+            aria-orientation="horizontal"
+            className="absolute bottom-0 end-0 z-10 flex size-9 touch-none cursor-nwse-resize items-end justify-end p-1 text-xl leading-none text-slate-400 hover:text-white"
+            onPointerDown={(event) => startAssistantWindowInteraction(event, "resize")}
+            onPointerMove={updateAssistantWindowInteraction}
+            onPointerUp={stopAssistantWindowInteraction}
+            onPointerCancel={stopAssistantWindowInteraction}
+            title="اسحب لتغيير حجم النافذة"
+          >
+            ⠿
+          </div>
         </section>
       )}
     </div>
